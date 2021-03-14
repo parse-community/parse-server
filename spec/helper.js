@@ -123,6 +123,16 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 }
 
 const openConnections = {};
+const destroyAliveConnections = function () {
+  for (const socketId in openConnections) {
+    try {
+      openConnections[socketId].destroy();
+      delete openConnections[socketId];
+    } catch (e) {
+      /* */
+    }
+  }
+};
 // Set up a default API server for testing with default configuration.
 let server;
 
@@ -192,8 +202,9 @@ beforeAll(async () => {
 afterEach(function (done) {
   const afterLogOut = async () => {
     if (Object.keys(openConnections).length > 0) {
-      fail('There were open connections to the server left after the test finished');
+      console.warn('There were open connections to the server left after the test finished');
     }
+    destroyAliveConnections();
     await TestUtils.destroyAllDataPermanently(true);
     if (didChangeConfiguration) {
       await reconfigureServer();

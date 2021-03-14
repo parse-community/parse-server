@@ -317,10 +317,16 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(() => {
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             });
         },
       })
@@ -354,12 +360,18 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(error => {
               fail(JSON.stringify(error));
               if (server) {
-                server.close(done);
+                server.close(async () => {
+                  await reconfigureServer();
+                  done();
+                });
               } else {
                 done();
               }
