@@ -114,7 +114,7 @@ const defaultConfiguration = {
     custom: mockCustom(),
     facebook: mockFacebook(),
     myoauth: {
-      module: path.resolve(__dirname, 'myoauth'), // relative path as it's run from src
+      module: path.resolve(__dirname, 'support/myoauth'), // relative path as it's run from src
     },
     shortLivedAuth: mockShortLivedAuth(),
   },
