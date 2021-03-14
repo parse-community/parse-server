@@ -1,14 +1,12 @@
 'use strict';
 const semver = require('semver');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
+const { SpecReporter } = require('jasmine-spec-reporter');
 
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
-// if (process.env.PARSE_SERVER_LOG_LEVEL === 'debug') {
-const { SpecReporter } = require('jasmine-spec-reporter');
 jasmine.getEnv().addReporter(new SpecReporter());
-// }
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -147,7 +145,6 @@ const reconfigureServer = (changedConfiguration = {}) => {
           if (error) {
             reject(error);
           } else {
-            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
             resolve(parseServer);
           }
         },
