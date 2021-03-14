@@ -352,7 +352,7 @@ describe('batch', () => {
                 transaction: true,
               }),
             }).catch(error => {
-              expect(error.data).toBeDefined();
+              expect(error).toBeDefined();
               const query = new Parse.Query('MyObject');
               query.find().then(results => {
                 expect(results.length).toBe(0);
