@@ -343,7 +343,8 @@ export function getResponseObject(request, resolve, reject) {
           // https://github.com/parse-community/parse-server/issues/7192
           const e = resolveError(error, {
             code: Parse.Error.VALIDATION_ERROR,
-            message: 'Script success. But return object failed to converted to valid JSON.',
+            message:
+              'Even though the beforeSave script executed successfully without throwing exception, the returned object could not be converted to valid JSON.',
           });
           return reject(e);
         }
