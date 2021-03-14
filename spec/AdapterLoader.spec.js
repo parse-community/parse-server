@@ -23,7 +23,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should instantiate an adapter from string', done => {
-    const adapterPath = require('path').resolve('./spec/MockAdapter');
+    const adapterPath = require('path').resolve('./spec/support/MockAdapter');
     const adapter = loadAdapter(adapterPath);
 
     expect(adapter instanceof Object).toBe(true);
