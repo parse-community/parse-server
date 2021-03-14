@@ -351,14 +351,19 @@ describe('batch', () => {
                 ],
                 transaction: true,
               }),
-            }).catch(error => {
-              expect(error).toBeDefined();
-              const query = new Parse.Query('MyObject');
-              query.find().then(results => {
-                expect(results.length).toBe(0);
+            })
+              .then(response => {
+                console.log(response);
                 done();
+              })
+              .catch(error => {
+                expect(error).toBeDefined();
+                const query = new Parse.Query('MyObject');
+                query.find().then(results => {
+                  expect(results.length).toBe(0);
+                  done();
+                });
               });
-            });
           });
       });
 
