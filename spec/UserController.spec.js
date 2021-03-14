@@ -11,7 +11,7 @@ describe('UserController', () => {
   describe('sendVerificationEmail', () => {
     describe('parseFrameURL not provided', () => {
       it('uses publicServerURL', async done => {
-        reconfigureServer({
+        await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
             parseFrameURL: undefined,
@@ -33,7 +33,7 @@ describe('UserController', () => {
 
     describe('parseFrameURL provided', () => {
       it('uses parseFrameURL and includes the destination in the link parameter', async done => {
-        reconfigureServer({
+        await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
             parseFrameURL: 'http://someother.example.com/handle-parse-iframe',
