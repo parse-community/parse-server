@@ -175,6 +175,7 @@ describe('batch', () => {
   ) {
     describe('transactions', () => {
       beforeEach(async () => {
+        await TestUtils.destroyAllDataPermanently(true);
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
@@ -185,13 +186,13 @@ describe('batch', () => {
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
-          await TestUtils.destroyAllDataPermanently(true);
         } else {
           await reconfigureServer();
         }
       });
 
       it('should handle a batch request with transaction = true', async done => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         myObject
           .save()
