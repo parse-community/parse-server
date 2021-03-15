@@ -28,7 +28,7 @@ function createParseServer(options) {
   return new Promise((resolve, reject) => {
     const parseServer = new ParseServer.default(
       Object.assign({}, defaultConfiguration, options, {
-        serverURL: 'http://localhost:12666/parse',
+        serverURL: 'http://localhost:12668/parse',
         serverStartComplete: error => {
           if (error) {
             reject(error);
@@ -37,8 +37,8 @@ function createParseServer(options) {
             const app = express();
             app.use('/parse', parseServer.app);
 
-            const server = app.listen(12666);
-            Parse.serverURL = 'http://localhost:12666/parse';
+            const server = app.listen(12668);
+            Parse.serverURL = 'http://localhost:12668/parse';
             resolve(server);
           }
         },
