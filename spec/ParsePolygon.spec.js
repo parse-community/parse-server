@@ -9,8 +9,6 @@ const defaultHeaders = {
 };
 
 describe('Parse.Polygon testing', () => {
-  beforeAll(() => require('../lib/TestUtils').destroyAllDataPermanently());
-
   it('polygon save open path', done => {
     const coords = [
       [0, 0],
@@ -211,7 +209,9 @@ describe('Parse.Polygon testing', () => {
   });
 
   describe('with location', () => {
-    beforeAll(() => require('../lib/TestUtils').destroyAllDataPermanently());
+    if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
+      beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
+    }
 
     it('polygonContain query', done => {
       const points1 = [
@@ -236,13 +236,13 @@ describe('Parse.Polygon testing', () => {
       const polygon1 = new Parse.Polygon(points1);
       const polygon2 = new Parse.Polygon(points2);
       const polygon3 = new Parse.Polygon(points3);
-      const obj1 = new TestObject({ location: polygon1 });
-      const obj2 = new TestObject({ location: polygon2 });
-      const obj3 = new TestObject({ location: polygon3 });
+      const obj1 = new TestObject({ boundary: polygon1 });
+      const obj2 = new TestObject({ boundary: polygon2 });
+      const obj3 = new TestObject({ boundary: polygon3 });
       Parse.Object.saveAll([obj1, obj2, obj3])
         .then(() => {
           const where = {
-            location: {
+            boundary: {
               $geoIntersects: {
                 $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 0.5 },
               },
@@ -288,13 +288,13 @@ describe('Parse.Polygon testing', () => {
       const polygon1 = new Parse.Polygon(points1);
       const polygon2 = new Parse.Polygon(points2);
       const polygon3 = new Parse.Polygon(points3);
-      const obj1 = new TestObject({ location: polygon1 });
-      const obj2 = new TestObject({ location: polygon2 });
-      const obj3 = new TestObject({ location: polygon3 });
+      const obj1 = new TestObject({ boundary: polygon1 });
+      const obj2 = new TestObject({ boundary: polygon2 });
+      const obj3 = new TestObject({ boundary: polygon3 });
       Parse.Object.saveAll([obj1, obj2, obj3])
         .then(() => {
           const where = {
-            location: {
+            boundary: {
               $geoIntersects: {
                 $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 1.0 },
               },
@@ -326,12 +326,12 @@ describe('Parse.Polygon testing', () => {
         [42.631655189280224, -83.78406753121705],
       ];
       const polygon = new Parse.Polygon(detroit);
-      const obj = new TestObject({ location: polygon });
+      const obj = new TestObject({ boundary: polygon });
       obj
         .save()
         .then(() => {
           const where = {
-            location: {
+            boundary: {
               $geoIntersects: {
                 $point: {
                   __type: 'GeoPoint',
@@ -366,12 +366,12 @@ describe('Parse.Polygon testing', () => {
         [1, 0],
       ];
       const polygon = new Parse.Polygon(points);
-      const obj = new TestObject({ location: polygon });
+      const obj = new TestObject({ boundary: polygon });
       obj
         .save()
         .then(() => {
           const where = {
-            location: {
+            boundary: {
               $geoIntersects: {
                 $point: { __type: 'GeoPoint', latitude: 181, longitude: 181 },
               },
@@ -398,12 +398,12 @@ describe('Parse.Polygon testing', () => {
         [1, 0],
       ];
       const polygon = new Parse.Polygon(points);
-      const obj = new TestObject({ location: polygon });
+      const obj = new TestObject({ boundary: polygon });
       obj
         .save()
         .then(() => {
           const where = {
-            location: {
+            boundary: {
               $geoIntersects: {
                 $point: [],
               },

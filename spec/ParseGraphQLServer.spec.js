@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
-const { updateCLP } = require('./dev');
+const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
@@ -43,7 +43,7 @@ describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     parseServer = await global.reconfigureServer({});
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
@@ -394,7 +394,7 @@ describe('ParseGraphQLServer', () => {
       objects.push(object1, object2, object3, object4);
     }
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       const expressApp = express();
       httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
@@ -436,14 +436,11 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
-    });
-
-    beforeEach(() => {
       spyOn(console, 'warn').and.callFake(() => {});
       spyOn(console, 'error').and.callFake(() => {});
     });
 
-    afterAll(async () => {
+    afterEach(async () => {
       await parseLiveQueryServer.server.close();
       await httpServer.close();
     });
@@ -700,8 +697,12 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Relay Specific Types', () => {
-        beforeAll(async () => {
-          await resetGraphQLCache();
+        let clearCache;
+        beforeEach(async () => {
+          if (!clearCache) {
+            await resetGraphQLCache();
+            clearCache = true;
+          }
         });
 
         afterAll(async () => {
@@ -2175,11 +2176,7 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Relay Spec', () => {
-        beforeAll(async () => {
-          await resetGraphQLCache();
-        });
-
-        afterAll(async () => {
+        beforeEach(async () => {
           await resetGraphQLCache();
         });
 
@@ -9036,7 +9033,7 @@ describe('ParseGraphQLServer', () => {
 
         it('should support object values', async () => {
           try {
-            const someFieldValue = {
+            const someObjectFieldValue = {
               foo: { bar: 'baz' },
               number: 10,
             };
@@ -9051,7 +9048,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 schemaFields: {
-                  addObjects: [{ name: 'someField' }],
+                  addObjects: [{ name: 'someObjectField' }],
                 },
               },
               context: {
@@ -9060,11 +9057,10 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
-
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
-            expect(schema.fields.someField.type).toEqual('Object');
+            expect(schema.fields.someObjectField.type).toEqual('Object');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -9078,13 +9074,13 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 fields: {
-                  someField: someFieldValue,
+                  someObjectField: someObjectFieldValue,
                 },
               },
             });
 
             const where = {
-              someField: {
+              someObjectField: {
                 equalTo: { key: 'foo.bar', value: 'baz' },
                 notEqualTo: { key: 'foo.bar', value: 'bat' },
                 greaterThan: { key: 'number', value: 9 },
@@ -9096,13 +9092,13 @@ describe('ParseGraphQLServer', () => {
                 query GetSomeObject($id: ID!, $where: SomeClassWhereInput) {
                   someClass(id: $id) {
                     id
-                    someField
+                    someObjectField
                   }
                   someClasses(where: $where) {
                     edges {
                       node {
                         id
-                        someField
+                        someObjectField
                       }
                     }
                   }
@@ -9116,13 +9112,13 @@ describe('ParseGraphQLServer', () => {
 
             const { someClass: getResult, someClasses } = queryResult.data;
 
-            const { someField } = getResult;
-            expect(typeof someField).toEqual('object');
-            expect(someField).toEqual(someFieldValue);
+            const { someObjectField } = getResult;
+            expect(typeof someObjectField).toEqual('object');
+            expect(someObjectField).toEqual(someObjectFieldValue);
 
             // Checks class query results
             expect(someClasses.edges.length).toEqual(1);
-            expect(someClasses.edges[0].node.someField).toEqual(someFieldValue);
+            expect(someClasses.edges[0].node.someObjectField).toEqual(someObjectFieldValue);
           } catch (e) {
             handleError(e);
           }
@@ -9130,11 +9126,11 @@ describe('ParseGraphQLServer', () => {
 
         it('should support object composed queries', async () => {
           try {
-            const someFieldValue = {
+            const someObjectFieldValue1 = {
               lorem: 'ipsum',
               number: 10,
             };
-            const someFieldValue2 = {
+            const someObjectFieldValue2 = {
               foo: {
                 test: 'bar',
               },
@@ -9147,7 +9143,7 @@ describe('ParseGraphQLServer', () => {
                   createClass(
                     input: {
                       name: "SomeClass"
-                      schemaFields: { addObjects: [{ name: "someField" }] }
+                      schemaFields: { addObjects: [{ name: "someObjectField" }] }
                     }
                   ) {
                     clientMutationId
@@ -9183,10 +9179,10 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 fields1: {
-                  someField: someFieldValue,
+                  someObjectField: someObjectFieldValue1,
                 },
                 fields2: {
-                  someField: someFieldValue2,
+                  someObjectField: someObjectFieldValue2,
                 },
               },
             });
@@ -9194,24 +9190,24 @@ describe('ParseGraphQLServer', () => {
             const where = {
               AND: [
                 {
-                  someField: {
+                  someObjectField: {
                     greaterThan: { key: 'number', value: 9 },
                   },
                 },
                 {
-                  someField: {
+                  someObjectField: {
                     lessThan: { key: 'number', value: 11 },
                   },
                 },
                 {
                   OR: [
                     {
-                      someField: {
+                      someObjectField: {
                         equalTo: { key: 'lorem', value: 'ipsum' },
                       },
                     },
                     {
-                      someField: {
+                      someObjectField: {
                         equalTo: { key: 'foo.test', value: 'bar' },
                       },
                     },
@@ -9226,7 +9222,7 @@ describe('ParseGraphQLServer', () => {
                     edges {
                       node {
                         id
-                        someField
+                        someObjectField
                       }
                     }
                   }
@@ -9244,11 +9240,11 @@ describe('ParseGraphQLServer', () => {
             const { edges } = someClasses;
             expect(edges.length).toEqual(2);
             expect(
-              edges.find(result => result.node.id === create1.someClass.id).node.someField
-            ).toEqual(someFieldValue);
+              edges.find(result => result.node.id === create1.someClass.id).node.someObjectField
+            ).toEqual(someObjectFieldValue1);
             expect(
-              edges.find(result => result.node.id === create2.someClass.id).node.someField
-            ).toEqual(someFieldValue2);
+              edges.find(result => result.node.id === create2.someClass.id).node.someObjectField
+            ).toEqual(someObjectFieldValue2);
           } catch (e) {
             handleError(e);
           }
@@ -9256,7 +9252,7 @@ describe('ParseGraphQLServer', () => {
 
         it('should support array values', async () => {
           try {
-            const someFieldValue = [1, 'foo', ['bar'], { lorem: 'ipsum' }, true];
+            const someArrayFieldValue = [1, 'foo', ['bar'], { lorem: 'ipsum' }, true];
 
             await apolloClient.mutate({
               mutation: gql`
@@ -9268,7 +9264,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 schemaFields: {
-                  addArrays: [{ name: 'someField' }],
+                  addArrays: [{ name: 'someArrayField' }],
                 },
               },
               context: {
@@ -9281,7 +9277,7 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
-            expect(schema.fields.someField.type).toEqual('Array');
+            expect(schema.fields.someArrayField.type).toEqual('Array');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -9295,7 +9291,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 fields: {
-                  someField: someFieldValue,
+                  someArrayField: someArrayFieldValue,
                 },
               },
             });
@@ -9304,17 +9300,17 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetSomeObject($id: ID!) {
                   someClass(id: $id) {
-                    someField {
+                    someArrayField {
                       ... on Element {
                         value
                       }
                     }
                   }
-                  someClasses(where: { someField: { exists: true } }) {
+                  someClasses(where: { someArrayField: { exists: true } }) {
                     edges {
                       node {
                         id
-                        someField {
+                        someArrayField {
                           ... on Element {
                             value
                           }
@@ -9329,9 +9325,9 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            const { someField } = getResult.data.someClass;
-            expect(Array.isArray(someField)).toBeTruthy();
-            expect(someField.map(element => element.value)).toEqual(someFieldValue);
+            const { someArrayField } = getResult.data.someClass;
+            expect(Array.isArray(someArrayField)).toBeTruthy();
+            expect(someArrayField.map(element => element.value)).toEqual(someArrayFieldValue);
             expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
@@ -10079,7 +10075,7 @@ describe('ParseGraphQLServer', () => {
         'X-Parse-Javascript-Key': 'test',
       };
       let apolloClient;
-      beforeAll(async () => {
+      beforeEach(async () => {
         const expressApp = express();
         httpServer = http.createServer(expressApp);
         parseGraphQLServer = new ParseGraphQLServer(parseServer, {
@@ -10112,7 +10108,7 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
-      afterAll(async () => {
+      afterEach(async () => {
         await httpServer.close();
       });
 
@@ -10203,7 +10199,7 @@ describe('ParseGraphQLServer', () => {
       };
       let apolloClient;
 
-      beforeAll(async () => {
+      beforeEach(async () => {
         const expressApp = express();
         httpServer = http.createServer(expressApp);
         const TypeEnum = new GraphQLEnumType({
@@ -10296,7 +10292,7 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
-      afterAll(async () => {
+      afterEach(async () => {
         await httpServer.close();
       });
 
@@ -10393,31 +10389,33 @@ describe('ParseGraphQLServer', () => {
       };
       let apolloClient;
 
-      beforeAll(async () => {
-        const expressApp = express();
-        httpServer = http.createServer(expressApp);
-        parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-          graphQLPath: '/graphql',
-          graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
-            stitchSchemas({ subschemas: [autoSchema] }),
-        });
+      beforeEach(async () => {
+        if (!httpServer) {
+          const expressApp = express();
+          httpServer = http.createServer(expressApp);
+          parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+            graphQLPath: '/graphql',
+            graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
+              stitchSchemas({ subschemas: [autoSchema] }),
+          });
 
-        parseGraphQLServer.applyGraphQL(expressApp);
-        await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-        const httpLink = createUploadLink({
-          uri: 'http://localhost:13377/graphql',
-          fetch,
-          headers,
-        });
-        apolloClient = new ApolloClient({
-          link: httpLink,
-          cache: new InMemoryCache(),
-          defaultOptions: {
-            query: {
-              fetchPolicy: 'no-cache',
+          parseGraphQLServer.applyGraphQL(expressApp);
+          await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+          const httpLink = createUploadLink({
+            uri: 'http://localhost:13377/graphql',
+            fetch,
+            headers,
+          });
+          apolloClient = new ApolloClient({
+            link: httpLink,
+            cache: new InMemoryCache(),
+            defaultOptions: {
+              query: {
+                fetchPolicy: 'no-cache',
+              },
             },
-          },
-        });
+          });
+        }
       });
 
       afterAll(async () => {

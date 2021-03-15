@@ -22,11 +22,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   beforeEach(async () => {
     const config = Config.get('test');
     adapter = config.database.adapter;
-    await adapter.deleteAllClasses();
-    await adapter.performInitialization({ VolatileClassesSchemas: [] });
   });
 
-  it('schemaUpgrade, upgrade the database schema when schema changes', done => {
+  it('schemaUpgrade, upgrade the database schema when schema changes', async done => {
+    await adapter.deleteAllClasses();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
     const client = adapter._client;
     const className = '_PushStatus';
     const schema = {
@@ -50,11 +50,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         return adapter.schemaUpgrade(className, schema);
       })
       .then(() => getColumns(client, className))
-      .then(columns => {
+      .then(async columns => {
         expect(columns).toContain('pushTime');
         expect(columns).toContain('source');
         expect(columns).toContain('query');
         expect(columns).toContain('expiration_interval');
+        await reconfigureServer();
         done();
       })
       .catch(error => done.fail(error));
@@ -153,6 +154,10 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         objectId: { type: 'String' },
         username: { type: 'String' },
         email: { type: 'String' },
+        emailVerified: { type: 'Boolean' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        authData: { type: 'Object' },
       },
     };
     const client = adapter._client;
@@ -172,74 +177,66 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const caseInsensitiveData = 'bugs';
     const originalQuery = 'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)';
     const analyzedExplainQuery = adapter.createExplainableQuery(originalQuery, true);
-    await client
-      .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
-      .then(explained => {
-        const preIndexPlan = explained;
+    const preIndexPlan = await client.one(analyzedExplainQuery, [
+      tableName,
+      'objectId',
+      caseInsensitiveData,
+    ]);
+    preIndexPlan['QUERY PLAN'].forEach(element => {
+      //Make sure search returned with only 1 result
+      expect(element.Plan['Actual Rows']).toBe(1);
+      expect(element.Plan['Node Type']).toBe('Seq Scan');
+    });
+    const indexName = 'test_case_insensitive_column';
+    await adapter.ensureIndex(tableName, schema, ['objectId'], indexName, true);
 
-        preIndexPlan['QUERY PLAN'].forEach(element => {
-          //Make sure search returned with only 1 result
-          expect(element.Plan['Actual Rows']).toBe(1);
-          expect(element.Plan['Node Type']).toBe('Seq Scan');
-        });
-        const indexName = 'test_case_insensitive_column';
+    const postIndexPlan = await client.one(analyzedExplainQuery, [
+      tableName,
+      'objectId',
+      caseInsensitiveData,
+    ]);
+    postIndexPlan['QUERY PLAN'].forEach(element => {
+      //Make sure search returned with only 1 result
+      expect(element.Plan['Actual Rows']).toBe(1);
+      //Should not be a sequential scan
+      expect(element.Plan['Node Type']).not.toContain('Seq Scan');
 
-        adapter.ensureIndex(tableName, schema, ['objectId'], indexName, true).then(() => {
-          client
-            .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
-            .then(explained => {
-              const postIndexPlan = explained;
-
-              postIndexPlan['QUERY PLAN'].forEach(element => {
-                //Make sure search returned with only 1 result
-                expect(element.Plan['Actual Rows']).toBe(1);
-                //Should not be a sequential scan
-                expect(element.Plan['Node Type']).not.toContain('Seq Scan');
-
-                //Should be using the index created for this
-                element.Plan.Plans.forEach(innerElement => {
-                  expect(innerElement['Index Name']).toBe(indexName);
-                });
-              });
-
-              //These are the same query so should be the same size
-              for (let i = 0; i < preIndexPlan['QUERY PLAN'].length; i++) {
-                //Sequential should take more time to execute than indexed
-                expect(preIndexPlan['QUERY PLAN'][i]['Execution Time']).toBeGreaterThan(
-                  postIndexPlan['QUERY PLAN'][i]['Execution Time']
-                );
-              }
-
-              //Test explaining without analyzing
-              const basicExplainQuery = adapter.createExplainableQuery(originalQuery);
-              client
-                .one(basicExplainQuery, [tableName, 'objectId', caseInsensitiveData])
-                .then(explained => {
-                  explained['QUERY PLAN'].forEach(element => {
-                    //Check that basic query plans isn't a sequential scan
-                    expect(element.Plan['Node Type']).not.toContain('Seq Scan');
-
-                    //Basic query plans shouldn't have an execution time
-                    expect(element['Execution Time']).toBeUndefined();
-                  });
-                });
-            });
-        });
-      })
-      .catch(error => {
-        // Query on non existing table, don't crash
-        if (error.code !== '42P01') {
-          throw error;
-        }
-        return [];
+      //Should be using the index created for this
+      element.Plan.Plans.forEach(innerElement => {
+        expect(innerElement['Index Name']).toBe(indexName);
       });
+    });
+
+    //These are the same query so should be the same size
+    for (let i = 0; i < preIndexPlan['QUERY PLAN'].length; i++) {
+      //Sequential should take more time to execute than indexed
+      expect(preIndexPlan['QUERY PLAN'][i]['Execution Time']).toBeGreaterThan(
+        postIndexPlan['QUERY PLAN'][i]['Execution Time']
+      );
+    }
+    //Test explaining without analyzing
+    const basicExplainQuery = adapter.createExplainableQuery(originalQuery);
+    const explained = await client.one(basicExplainQuery, [
+      tableName,
+      'objectId',
+      caseInsensitiveData,
+    ]);
+    explained['QUERY PLAN'].forEach(element => {
+      //Check that basic query plans isn't a sequential scan
+      expect(element.Plan['Node Type']).not.toContain('Seq Scan');
+
+      //Basic query plans shouldn't have an execution time
+      expect(element['Execution Time']).toBeUndefined();
+    });
+    await dropTable(client, tableName);
   });
 
   it('should use index for caseInsensitive query', async () => {
     const tableName = '_User';
+
     const user = new Parse.User();
-    user.set('username', 'Bugs');
-    user.set('password', 'Bunny');
+    user.set('username', 'Elmer');
+    user.set('password', 'Fudd');
     await user.signUp();
     const database = Config.get(Parse.applicationId).database;
 
@@ -249,7 +246,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
-    const caseInsensitiveData = 'bugs';
+    const caseInsensitiveData = 'elmer';
     const fieldToSearch = 'username';
     //Check using find method for Parse
     const preIndexPlan = await database.find(
@@ -292,8 +289,8 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   it('should use index for caseInsensitive query using default indexname', async () => {
     const tableName = '_User';
     const user = new Parse.User();
-    user.set('username', 'Bugs');
-    user.set('password', 'Bunny');
+    user.set('username', 'Tweety');
+    user.set('password', 'Bird');
     await user.signUp();
     const database = Config.get(Parse.applicationId).database;
     const fieldToSearch = 'username';
@@ -308,7 +305,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       [tableName, 'objectId', 'username']
     );
 
-    const caseInsensitiveData = 'buGs';
+    const caseInsensitiveData = 'tweeTy';
     //Check using find method for Parse
     const indexPlan = await database.find(
       tableName,

@@ -2740,45 +2740,193 @@ describe('beforeLogin hook', () => {
     expect(beforeFinds).toEqual(1);
     expect(afterFinds).toEqual(1);
   });
+});
 
-  it('beforeSaveFile should not change file if nothing is returned', async () => {
-    await reconfigureServer({ filesAdapter: mockAdapter });
-    Parse.Cloud.beforeSaveFile(() => {
-      return;
+describe('afterLogin hook', () => {
+  it('should run afterLogin after successful login', async done => {
+    let hit = 0;
+    Parse.Cloud.afterLogin(req => {
+      hit++;
+      expect(req.object.get('username')).toEqual('testuser');
     });
-    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
-    const result = await file.save({ useMasterKey: true });
-    expect(result).toBe(file);
+
+    await Parse.User.signUp('testuser', 'p@ssword');
+    const user = await Parse.User.logIn('testuser', 'p@ssword');
+    expect(hit).toBe(1);
+    expect(user).toBeDefined();
+    expect(user.getUsername()).toBe('testuser');
+    expect(user.getSessionToken()).toBeDefined();
+    done();
   });
 
-  it('throw custom error from beforeSaveFile', async done => {
-    Parse.Cloud.beforeSaveFile(() => {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
+  it('should not run afterLogin after unsuccessful login', async done => {
+    let hit = 0;
+    Parse.Cloud.afterLogin(req => {
+      hit++;
+      expect(req.object.get('username')).toEqual('testuser');
     });
+
+    await Parse.User.signUp('testuser', 'p@ssword');
     try {
-      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
-      await file.save({ useMasterKey: true });
-      fail('error should have thrown');
+      await Parse.User.logIn('testuser', 'badpassword');
     } catch (e) {
-      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      done();
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
+    expect(hit).toBe(0);
+    done();
   });
 
-  it('throw empty error from beforeSaveFile', async done => {
-    Parse.Cloud.beforeSaveFile(() => {
-      throw null;
+  it('should not run afterLogin on sign up', async done => {
+    let hit = 0;
+    Parse.Cloud.afterLogin(req => {
+      hit++;
+      expect(req.object.get('username')).toEqual('testuser');
     });
-    try {
-      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
-      await file.save({ useMasterKey: true });
-      fail('error should have thrown');
-    } catch (e) {
-      expect(e.code).toBe(130);
-      done();
-    }
+
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    expect(user).toBeDefined();
+    expect(hit).toBe(0);
+    done();
   });
 
+  it('should have expected data in request', async done => {
+    Parse.Cloud.afterLogin(req => {
+      expect(req.object).toBeDefined();
+      expect(req.user).toBeDefined();
+      expect(req.headers).toBeDefined();
+      expect(req.ip).toBeDefined();
+      expect(req.installationId).toBeDefined();
+      expect(req.context).toBeUndefined();
+    });
+
+    await Parse.User.signUp('testuser', 'p@ssword');
+    await Parse.User.logIn('testuser', 'p@ssword');
+    done();
+  });
+
+  it('should have access to context when saving a new object', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new TestObject();
+    await obj.save(null, { context: { a: 'a' } });
+  });
+
+  it('should have access to context when saving an existing object', async () => {
+    const obj = new TestObject();
+    await obj.save(null);
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    await obj.save(null, { context: { a: 'a' } });
+  });
+
+  it('should have access to context when saving a new object in a trigger', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TriggerObject', async () => {
+      const obj = new TestObject();
+      await obj.save(null, { context: { a: 'a' } });
+    });
+    const obj = new Parse.Object('TriggerObject');
+    await obj.save(null);
+  });
+
+  it('should have access to context when cascade-saving objects', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.beforeSave('TestObject2', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject2', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    obj.set('obj2', obj2);
+    await obj.save(null, { context: { a: 'a' } });
+  });
+
+  it('should have access to context as saveAll argument', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+    await Parse.Object.saveAll([obj1, obj2], { context: { a: 'a' } });
+  });
+
+  it('should have access to context as destroyAll argument', async () => {
+    Parse.Cloud.beforeDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+    await Parse.Object.saveAll([obj1, obj2]);
+    await Parse.Object.destroyAll([obj1, obj2], { context: { a: 'a' } });
+  });
+
+  it('should have access to context as destroy a object', async () => {
+    Parse.Cloud.beforeDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new TestObject();
+    await obj.save();
+    await obj.destroy({ context: { a: 'a' } });
+  });
+
+  it('should have access to context in beforeFind hook', async () => {
+    Parse.Cloud.beforeFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const query = new Parse.Query('TestObject');
+    return query.find({ context: { a: 'a' } });
+  });
+
+  it('should have access to context when cloud function is called.', async () => {
+    Parse.Cloud.define('contextTest', async req => {
+      expect(req.context.a).toEqual('a');
+      return {};
+    });
+
+    await Parse.Cloud.run('contextTest', {}, { context: { a: 'a' } });
+  });
+
+  it('afterFind should have access to context', async () => {
+    Parse.Cloud.afterFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new TestObject();
+    await obj.save();
+    const query = new Parse.Query(TestObject);
+    await query.find({ context: { a: 'a' } });
+  });
+});
+
+describe('saveFile hooks', () => {
   it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
@@ -3023,189 +3171,43 @@ describe('beforeLogin hook', () => {
     const file = new Parse.File('popeye.txt');
     await file.destroy({ useMasterKey: true });
   });
-});
 
-describe('afterLogin hook', () => {
-  it('should run afterLogin after successful login', async done => {
-    let hit = 0;
-    Parse.Cloud.afterLogin(req => {
-      hit++;
-      expect(req.object.get('username')).toEqual('testuser');
+  it('beforeSaveFile should not change file if nothing is returned', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    Parse.Cloud.beforeSaveFile(() => {
+      return;
     });
-
-    await Parse.User.signUp('testuser', 'p@ssword');
-    const user = await Parse.User.logIn('testuser', 'p@ssword');
-    expect(hit).toBe(1);
-    expect(user).toBeDefined();
-    expect(user.getUsername()).toBe('testuser');
-    expect(user.getSessionToken()).toBeDefined();
-    done();
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    const result = await file.save({ useMasterKey: true });
+    expect(result).toBe(file);
   });
 
-  it('should not run afterLogin after unsuccessful login', async done => {
-    let hit = 0;
-    Parse.Cloud.afterLogin(req => {
-      hit++;
-      expect(req.object.get('username')).toEqual('testuser');
+  it('throw custom error from beforeSaveFile', async done => {
+    Parse.Cloud.beforeSaveFile(() => {
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
     });
-
-    await Parse.User.signUp('testuser', 'p@ssword');
     try {
-      await Parse.User.logIn('testuser', 'badpassword');
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      fail('error should have thrown');
     } catch (e) {
-      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
+      done();
     }
-    expect(hit).toBe(0);
-    done();
   });
 
-  it('should not run afterLogin on sign up', async done => {
-    let hit = 0;
-    Parse.Cloud.afterLogin(req => {
-      hit++;
-      expect(req.object.get('username')).toEqual('testuser');
+  it('throw empty error from beforeSaveFile', async done => {
+    Parse.Cloud.beforeSaveFile(() => {
+      throw null;
     });
-
-    const user = await Parse.User.signUp('testuser', 'p@ssword');
-    expect(user).toBeDefined();
-    expect(hit).toBe(0);
-    done();
-  });
-
-  it('should have expected data in request', async done => {
-    Parse.Cloud.afterLogin(req => {
-      expect(req.object).toBeDefined();
-      expect(req.user).toBeDefined();
-      expect(req.headers).toBeDefined();
-      expect(req.ip).toBeDefined();
-      expect(req.installationId).toBeDefined();
-      expect(req.context).toBeUndefined();
-    });
-
-    await Parse.User.signUp('testuser', 'p@ssword');
-    await Parse.User.logIn('testuser', 'p@ssword');
-    done();
-  });
-
-  it('should have access to context when saving a new object', async () => {
-    Parse.Cloud.beforeSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    const obj = new TestObject();
-    await obj.save(null, { context: { a: 'a' } });
-  });
-
-  it('should have access to context when saving an existing object', async () => {
-    const obj = new TestObject();
-    await obj.save(null);
-    Parse.Cloud.beforeSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    await obj.save(null, { context: { a: 'a' } });
-  });
-
-  it('should have access to context when saving a new object in a trigger', async () => {
-    Parse.Cloud.beforeSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterSave('TriggerObject', async () => {
-      const obj = new TestObject();
-      await obj.save(null, { context: { a: 'a' } });
-    });
-    const obj = new Parse.Object('TriggerObject');
-    await obj.save(null);
-  });
-
-  it('should have access to context when cascade-saving objects', async () => {
-    Parse.Cloud.beforeSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.beforeSave('TestObject2', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterSave('TestObject2', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    const obj = new Parse.Object('TestObject');
-    const obj2 = new Parse.Object('TestObject2');
-    obj.set('obj2', obj2);
-    await obj.save(null, { context: { a: 'a' } });
-  });
-
-  it('should have access to context as saveAll argument', async () => {
-    Parse.Cloud.beforeSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterSave('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    const obj1 = new TestObject();
-    const obj2 = new TestObject();
-    await Parse.Object.saveAll([obj1, obj2], { context: { a: 'a' } });
-  });
-
-  it('should have access to context as destroyAll argument', async () => {
-    Parse.Cloud.beforeDelete('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterDelete('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    const obj1 = new TestObject();
-    const obj2 = new TestObject();
-    await Parse.Object.saveAll([obj1, obj2]);
-    await Parse.Object.destroyAll([obj1, obj2], { context: { a: 'a' } });
-  });
-
-  it('should have access to context as destroy a object', async () => {
-    Parse.Cloud.beforeDelete('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterDelete('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    const obj = new TestObject();
-    await obj.save();
-    await obj.destroy({ context: { a: 'a' } });
-  });
-
-  it('should have access to context in beforeFind hook', async () => {
-    Parse.Cloud.beforeFind('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    const query = new Parse.Query('TestObject');
-    return query.find({ context: { a: 'a' } });
-  });
-
-  it('should have access to context when cloud function is called.', async () => {
-    Parse.Cloud.define('contextTest', async req => {
-      expect(req.context.a).toEqual('a');
-      return {};
-    });
-
-    await Parse.Cloud.run('contextTest', {}, { context: { a: 'a' } });
-  });
-
-  it('afterFind should have access to context', async () => {
-    Parse.Cloud.afterFind('TestObject', req => {
-      expect(req.context.a).toEqual('a');
-    });
-    const obj = new TestObject();
-    await obj.save();
-    const query = new Parse.Query(TestObject);
-    await query.find({ context: { a: 'a' } });
+    try {
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      fail('error should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(130);
+      done();
+    }
   });
 });
 
@@ -3215,7 +3217,7 @@ describe('sendEmail', () => {
       sendMail: mailData => {
         expect(mailData).toBeDefined();
         expect(mailData.to).toBe('test');
-        done();
+        reconfigureServer().then(done, done);
       },
     };
     await reconfigureServer({

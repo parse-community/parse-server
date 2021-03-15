@@ -13,7 +13,7 @@ env:
 jobs:
   check-ci:
     name: CI Self-Check
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -34,7 +34,7 @@ jobs:
         run: npm run ci:check
   check-lint:
      name: Lint
-     timeout-minutes: 30
+     timeout-minutes: 15
      runs-on: ubuntu-18.04
      steps:
        - uses: actions/checkout@v2
@@ -97,8 +97,9 @@ jobs:
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 15.11.0
+      fail-fast: false
     name: ${{ matrix.name }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     services:
       redis:
@@ -145,8 +146,9 @@ jobs:
             POSTGRES_IMAGE: postgis/postgis:12-3.0
           - name: Postgres 13, Postgis 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
+      fail-fast: false
     name: ${{ matrix.name }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     services:
       redis:

@@ -920,7 +920,8 @@ describe('cloud validator', () => {
 
     const role2 = new Parse.Role('Admin2', roleACL);
     role2.getUsers().add(user);
-    await Promise.all([role.save({ useMasterKey: true }), role2.save({ useMasterKey: true })]);
+    await role.save({ useMasterKey: true });
+    await role2.save({ useMasterKey: true });
     await Parse.Cloud.run('cloudFunction');
     done();
   });
@@ -981,7 +982,8 @@ describe('cloud validator', () => {
 
     const role2 = new Parse.Role('AdminB', roleACL);
     role2.getUsers().add(user);
-    await Promise.all([role.save({ useMasterKey: true }), role2.save({ useMasterKey: true })]);
+    await role.save({ useMasterKey: true });
+    await role2.save({ useMasterKey: true });
     await Parse.Cloud.run('cloudFunction');
     done();
   });
