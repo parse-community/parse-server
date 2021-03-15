@@ -235,122 +235,113 @@ describe('ParseServerRESTController', () => {
           .catch(done.fail);
       });
 
-      it('should not save anything when one operation fails in a transaction', done => {
+      it('should not save anything when one operation fails in a transaction', async () => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        myObject
-          .save()
-          .then(() => {
-            return myObject.destroy();
-          })
-          .then(() => {
-            RESTController.request('POST', 'batch', {
-              requests: [
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-              ],
-              transaction: true,
-            })
-              .then(response => {
-                console.log(response);
-                done();
-              })
-              .catch(error => {
-                expect(error).toBeDefined();
-                const query = new Parse.Query('MyObject');
-                query.find().then(results => {
-                  expect(results.length).toBe(0);
-                  done();
-                });
-              });
+        await myObject.save();
+        await myObject.destroy();
+        try {
+          await RESTController.request('POST', 'batch', {
+            requests: [
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+            ],
+            transaction: true,
           });
+          fail();
+        } catch (error) {
+          expect(error).toBeDefined();
+          const query = new Parse.Query('MyObject');
+          const results = await query.find();
+          expect(results.length).toBe(0);
+        }
       });
 
       it('should generate separate session for each call', async () => {
