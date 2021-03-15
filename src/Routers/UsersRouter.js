@@ -139,130 +139,97 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
-  handleCreate(req) {
-    return rest
-      .create(
-        req.config,
-        req.auth,
-        this.className(req),
-        req.body,
-        req.info.clientSDK,
-        req.info.context
-      )
-      .then(res => {
-        if (req.config.oauth20 === true) {
-          const sessionToken = res.response.sessionToken;
-          return rest
-            .find(
-              req.config,
-              Auth.master(req.config),
-              '_Session',
-              { sessionToken },
-              { include: 'user' },
-              req.info.clientSDK,
-              req.info.context
-            )
-            .then(result => {
-              const user = result.results[0];
-              const token = Auth.createJWT(
-                res.response.sessionToken,
-                req.config.oauthKey,
-                req.config.oauthTTL
-              );
-              res.response.accessToken = token.accessToken;
-              res.response.refreshToken = user.refreshToken;
-              res.response.expiresAt = token.expires_in;
-              delete res.response.sessionToken;
-              return res;
-            });
-        }
-        return res;
-      });
-  }
-
-  handleRefresh(req) {
-    const payload = req.body;
-    const { refreshToken } = payload;
-
-    if (!refreshToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid update token');
-    }
-
-    return rest
-      .find(
+  async handleCreate(req) {
+    const res = await rest.create(
+      req.config,
+      req.auth,
+      this.className(req),
+      req.body,
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (req.config.oauth20 === true) {
+      const sessionToken = res.response.sessionToken;
+      const result = await rest.find(
         req.config,
         Auth.master(req.config),
         '_Session',
-        { refreshToken },
+        { sessionToken },
         { include: 'user' },
         req.info.clientSDK,
         req.info.context
-      )
-      .then(response => {
-        if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_SESSION_TOKEN,
-            'Invalid update token or ClientID'
-          );
-        } else {
-          const data = response.results[0];
-          const newCode = Auth.generateRefreshToken();
-          const sessionId = data.objectId;
-          const token = Auth.createJWT(data.sessionToken, req.config.oauthKey, req.config.oauthTTL);
-
-          req.config.database.update(
-            '_Session',
-            { objectId: sessionId },
-            { refreshToken: newCode }
-          );
-
-          return {
-            response: {
-              accesstoken: token.accessToken,
-              refreshToken: newCode,
-              expiresAt: token.expires_in,
-            },
-          };
-        }
-      });
+      );
+      const user = result.results[0];
+      const token = Auth.createJWT(sessionToken, req.config.oauthKey, req.config.oauthTTL);
+      res.response.accessToken = token.accessToken;
+      res.response.refreshToken = user.refreshToken;
+      res.response.expiresAt = token.expires_in;
+      delete res.response.sessionToken;
+    }
+    return res;
   }
 
-  handleRevoke(req) {
-    const payload = req.body;
-    const { refreshToken } = payload;
-    const success = { response: {} };
-
+  async handleRefresh(req) {
+    const { refreshToken } = req.body;
     if (!refreshToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid refresh token');
     }
+    const res = await rest.find(
+      req.config,
+      Auth.master(req.config),
+      '_Session',
+      { refreshToken },
+      { include: 'user' },
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (!res.results || res.results.length == 0 || !res.results[0].user) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid refresh token');
+    } else {
+      const data = res.results[0];
+      const newCode = Auth.generateRefreshToken();
+      const sessionId = data.objectId;
+      const token = Auth.createJWT(data.sessionToken, req.config.oauthKey, req.config.oauthTTL);
+      await req.config.database.update(
+        '_Session',
+        { objectId: sessionId },
+        { refreshToken: newCode }
+      );
+      return {
+        response: {
+          accessToken: token.accessToken,
+          refreshToken: newCode,
+          expiresAt: token.expires_in,
+        },
+      };
+    }
+  }
 
-    return rest
-      .find(
+  async handleRevoke(req) {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid refresh token');
+    }
+    const res = await rest.find(
+      req.config,
+      Auth.master(req.config),
+      '_Session',
+      { refreshToken: refreshToken },
+      undefined,
+      req.info.clientSDK,
+      req.info.context
+    );
+    if (res.results && res.results.length) {
+      await rest.del(
         req.config,
         Auth.master(req.config),
         '_Session',
-        { refreshToken: refreshToken },
-        undefined,
-        req.info.clientSDK,
+        res.results[0].objectId,
         req.info.context
-      )
-      .then(records => {
-        if (records.results && records.results.length) {
-          return rest
-            .del(
-              req.config,
-              Auth.master(req.config),
-              '_Session',
-              records.results[0].objectId,
-              req.info.context
-            )
-            .then(() => {
-              this._runAfterLogoutTrigger(req, records.results[0]);
-              return Promise.resolve(success);
-            });
-        }
-        return Promise.resolve(success);
-      });
+      );
+      this._runAfterLogoutTrigger(req, res.results[0]);
+    }
+    return { response: {} };
   }
 
   handleMe(req) {
@@ -296,7 +263,6 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
         } else {
           const user = response.results[0].user;
-          // Send token back on the login, because SDKs expect that.
           if (req.config.oauth20 === true) {
             const decoded = Auth.decodeJWT(originalToken);
             user.accessToken = originalToken;
@@ -569,7 +535,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/users/refresh', req => {
       return this.handleRefresh(req);
     });
-    this.route('POST', '/revoke', req => {
+    this.route('POST', '/users/revoke', req => {
       return this.handleRevoke(req);
     });
     this.route('GET', '/users/:objectId', req => {

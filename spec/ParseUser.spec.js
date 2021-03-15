@@ -3925,6 +3925,146 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('user signup with JWT', async () => {
+    const oauthKey = 'jwt-secret';
+    const oauthTTL = 100;
+    await reconfigureServer({
+      oauth20: true,
+      oauthKey,
+      oauthTTL,
+    });
+    let response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/users',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        username: 'jwt-test',
+        password: 'jwt-password',
+      },
+    });
+    const { accessToken, refreshToken, expiresAt, sessionToken } = response.data;
+    expect(accessToken).toBeDefined();
+    expect(refreshToken).toBeDefined();
+    expect(expiresAt).toBeDefined();
+    expect(sessionToken).toBeUndefined();
+
+    response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/users/refresh',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        refreshToken,
+      },
+    });
+    const jwt = response.data;
+    expect(jwt.accessToken).toBe(accessToken);
+    expect(jwt.expiresAt).toBe(expiresAt);
+    expect(jwt.refreshToken).not.toBe(refreshToken);
+
+    const query = new Parse.Query('_Session');
+    query.equalTo('refreshToken', jwt.refreshToken);
+    let session = await query.first({ useMasterKey: true });
+    expect(session).toBeDefined();
+
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/users/revoke',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        refreshToken: jwt.refreshToken,
+      },
+    });
+    session = await query.first({ useMasterKey: true });
+    expect(session).toBeUndefined();
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users/refresh',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {
+          refreshToken: jwt.refreshToken,
+        },
+      });
+      fail();
+    } catch (response) {
+      const { code, error } = response.data;
+      expect(code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+      expect(error).toBe('Invalid refresh token');
+    }
+
+    response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/users/revoke',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        refreshToken: jwt.refreshToken,
+      },
+    });
+    expect(response.data).toEqual({});
+  });
+
+  it('handle JWT errors', async () => {
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users/refresh',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {
+          refreshToken: null,
+        },
+      });
+      fail();
+    } catch (response) {
+      const { code, error } = response.data;
+      expect(code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+      expect(error).toBe('Invalid refresh token');
+    }
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/users/revoke',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+        body: {
+          refreshToken: null,
+        },
+      });
+      fail();
+    } catch (response) {
+      const { code, error } = response.data;
+      expect(code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+      expect(error).toBe('Invalid refresh token');
+    }
+  });
+
   describe('issue #4897', () => {
     it_only_db('mongo')('should be able to login with a legacy user (no ACL)', async () => {
       // This issue is a side effect of the locked users and legacy users which don't have ACL's

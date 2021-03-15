@@ -30,42 +30,34 @@ function Auth({
   this.rolePromise = null;
 }
 
-function base64url(source) {
-  var encodedSource = CryptoJS.enc.Base64.stringify(source);
-
+const base64url = source => {
+  let encodedSource = CryptoJS.enc.Base64.stringify(source);
   encodedSource = encodedSource.replace(/=+$/, '');
-
   encodedSource = encodedSource.replace(/\+/g, '-');
   encodedSource = encodedSource.replace(/\//g, '_');
-
   return encodedSource;
-}
+};
 
-const generateRefreshToken = function () {
+const generateRefreshToken = () => {
   return SHA256(CryptoJS.lib.WordArray.random(256)).toString();
 };
 
-const createJWT = function (sessionToken, oauthKey, oauthTTL) {
+const createJWT = (sessionToken, oauthKey, oauthTTL) => {
   const header = {
     alg: 'HS256',
     typ: 'JWT',
   };
-
   const stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));
   const encodedHeader = base64url(stringifiedHeader);
-
   const timestamp = Math.floor(new Date().getTime() / 1000);
   const expiration = timestamp + oauthTTL;
-
   const data = {
     sub: sessionToken,
     iat: timestamp,
     exp: expiration,
   };
-
   const stringifiedData = CryptoJS.enc.Utf8.parse(JSON.stringify(data));
   const encodedData = base64url(stringifiedData);
-
   const token = encodedHeader + '.' + encodedData;
 
   let signature = CryptoJS.HmacSHA256(token, oauthKey);
@@ -77,7 +69,7 @@ const createJWT = function (sessionToken, oauthKey, oauthTTL) {
   };
 };
 
-const validJWT = function (token, secret) {
+const validJWT = (token, secret) => {
   try {
     return jwt.verify(token, secret);
   } catch (err) {
@@ -85,7 +77,7 @@ const validJWT = function (token, secret) {
   }
 };
 
-const decodeJWT = function (token) {
+const decodeJWT = token => {
   return jwt.decode(token);
 };
 
@@ -125,7 +117,6 @@ const getAuthForSessionToken = async function ({
 }) {
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
-    // Check if you use OAuth to retrieve the sessionToken from within the JWT
     if (config.oauth20 === true) {
       if (validJWT(sessionToken, config.oauthKey) === false) {
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
@@ -133,7 +124,6 @@ const getAuthForSessionToken = async function ({
       const decoded = decodeJWT(sessionToken);
       sessionToken = decoded.sub;
     }
-
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
@@ -392,8 +382,6 @@ const createSession = function (
     sessionData.installationId = installationId;
   }
 
-  // Check if you use OAuth to retrieve the sessionToken from within the JWT
-  // Generate a random hash
   if (config.oauth20 === true) {
     sessionData.refreshToken = generateRefreshToken();
   }
