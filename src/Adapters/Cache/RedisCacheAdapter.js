@@ -1,6 +1,6 @@
 import redis from 'redis';
-import logger from '../../../logger';
-import { KeyPromiseQueue } from './KeyPromiseQueue';
+import logger from '../../logger';
+import { KeyPromiseQueue } from '../../KeyPromiseQueue';
 
 const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
 const FLUSH_DB_KEY = '__flush_db__';
