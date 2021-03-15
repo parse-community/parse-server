@@ -170,6 +170,7 @@ describe('ParseServerRESTController', () => {
   ) {
     describe('transactions', () => {
       beforeEach(async () => {
+        await TestUtils.destroyAllDataPermanently(true);
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
@@ -180,7 +181,6 @@ describe('ParseServerRESTController', () => {
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
-          await TestUtils.destroyAllDataPermanently(true);
         } else {
           await reconfigureServer();
         }
