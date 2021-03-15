@@ -1215,16 +1215,10 @@ export default class SchemaController {
     const promises = [];
 
     for (const fieldName in object) {
-      if (object[fieldName] === undefined) {
-        continue;
-      }
-      const expected = getType(object[fieldName]);
-      if (expected === 'GeoPoint') {
+      if (object[fieldName] && getType(object[fieldName]) === 'GeoPoint') {
         geocount++;
       }
       if (geocount > 1) {
-        // Make sure all field validation operations run before we return.
-        // If not - we are continuing to run logic, but already provided response from the server.
         return Promise.reject(
           new Parse.Error(
             Parse.Error.INCORRECT_TYPE,
@@ -1232,6 +1226,12 @@ export default class SchemaController {
           )
         );
       }
+    }
+    for (const fieldName in object) {
+      if (object[fieldName] === undefined) {
+        continue;
+      }
+      const expected = getType(object[fieldName]);
       if (!expected) {
         continue;
       }

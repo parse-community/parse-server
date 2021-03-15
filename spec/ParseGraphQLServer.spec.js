@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
-const { updateCLP } = require('./dev');
+const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
@@ -9033,7 +9033,7 @@ describe('ParseGraphQLServer', () => {
 
         it('should support object values', async () => {
           try {
-            const someFieldValue = {
+            const someObjectFieldValue = {
               foo: { bar: 'baz' },
               number: 10,
             };
@@ -9048,7 +9048,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 schemaFields: {
-                  addObjects: [{ name: 'someField' }],
+                  addObjects: [{ name: 'someObjectField' }],
                 },
               },
               context: {
@@ -9057,11 +9057,10 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
-
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
-            expect(schema.fields.someField.type).toEqual('Object');
+            expect(schema.fields.someObjectField.type).toEqual('Object');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -9075,13 +9074,13 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 fields: {
-                  someField: someFieldValue,
+                  someObjectField: someObjectFieldValue,
                 },
               },
             });
 
             const where = {
-              someField: {
+              someObjectField: {
                 equalTo: { key: 'foo.bar', value: 'baz' },
                 notEqualTo: { key: 'foo.bar', value: 'bat' },
                 greaterThan: { key: 'number', value: 9 },
@@ -9093,13 +9092,13 @@ describe('ParseGraphQLServer', () => {
                 query GetSomeObject($id: ID!, $where: SomeClassWhereInput) {
                   someClass(id: $id) {
                     id
-                    someField
+                    someObjectField
                   }
                   someClasses(where: $where) {
                     edges {
                       node {
                         id
-                        someField
+                        someObjectField
                       }
                     }
                   }
@@ -9113,13 +9112,13 @@ describe('ParseGraphQLServer', () => {
 
             const { someClass: getResult, someClasses } = queryResult.data;
 
-            const { someField } = getResult;
-            expect(typeof someField).toEqual('object');
-            expect(someField).toEqual(someFieldValue);
+            const { someObjectField } = getResult;
+            expect(typeof someObjectField).toEqual('object');
+            expect(someObjectField).toEqual(someObjectFieldValue);
 
             // Checks class query results
             expect(someClasses.edges.length).toEqual(1);
-            expect(someClasses.edges[0].node.someField).toEqual(someFieldValue);
+            expect(someClasses.edges[0].node.someObjectField).toEqual(someObjectFieldValue);
           } catch (e) {
             handleError(e);
           }
@@ -9127,11 +9126,11 @@ describe('ParseGraphQLServer', () => {
 
         it('should support object composed queries', async () => {
           try {
-            const someFieldValue = {
+            const someObjectFieldValue1 = {
               lorem: 'ipsum',
               number: 10,
             };
-            const someFieldValue2 = {
+            const someObjectFieldValue2 = {
               foo: {
                 test: 'bar',
               },
@@ -9144,7 +9143,7 @@ describe('ParseGraphQLServer', () => {
                   createClass(
                     input: {
                       name: "SomeClass"
-                      schemaFields: { addObjects: [{ name: "someField" }] }
+                      schemaFields: { addObjects: [{ name: "someObjectField" }] }
                     }
                   ) {
                     clientMutationId
@@ -9180,10 +9179,10 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 fields1: {
-                  someField: someFieldValue,
+                  someObjectField: someObjectFieldValue1,
                 },
                 fields2: {
-                  someField: someFieldValue2,
+                  someObjectField: someObjectFieldValue2,
                 },
               },
             });
@@ -9191,24 +9190,24 @@ describe('ParseGraphQLServer', () => {
             const where = {
               AND: [
                 {
-                  someField: {
+                  someObjectField: {
                     greaterThan: { key: 'number', value: 9 },
                   },
                 },
                 {
-                  someField: {
+                  someObjectField: {
                     lessThan: { key: 'number', value: 11 },
                   },
                 },
                 {
                   OR: [
                     {
-                      someField: {
+                      someObjectField: {
                         equalTo: { key: 'lorem', value: 'ipsum' },
                       },
                     },
                     {
-                      someField: {
+                      someObjectField: {
                         equalTo: { key: 'foo.test', value: 'bar' },
                       },
                     },
@@ -9223,7 +9222,7 @@ describe('ParseGraphQLServer', () => {
                     edges {
                       node {
                         id
-                        someField
+                        someObjectField
                       }
                     }
                   }
@@ -9241,11 +9240,11 @@ describe('ParseGraphQLServer', () => {
             const { edges } = someClasses;
             expect(edges.length).toEqual(2);
             expect(
-              edges.find(result => result.node.id === create1.someClass.id).node.someField
-            ).toEqual(someFieldValue);
+              edges.find(result => result.node.id === create1.someClass.id).node.someObjectField
+            ).toEqual(someObjectFieldValue1);
             expect(
-              edges.find(result => result.node.id === create2.someClass.id).node.someField
-            ).toEqual(someFieldValue2);
+              edges.find(result => result.node.id === create2.someClass.id).node.someObjectField
+            ).toEqual(someObjectFieldValue2);
           } catch (e) {
             handleError(e);
           }
@@ -9253,7 +9252,7 @@ describe('ParseGraphQLServer', () => {
 
         it('should support array values', async () => {
           try {
-            const someFieldValue = [1, 'foo', ['bar'], { lorem: 'ipsum' }, true];
+            const someArrayFieldValue = [1, 'foo', ['bar'], { lorem: 'ipsum' }, true];
 
             await apolloClient.mutate({
               mutation: gql`
@@ -9265,7 +9264,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 schemaFields: {
-                  addArrays: [{ name: 'someField' }],
+                  addArrays: [{ name: 'someArrayField' }],
                 },
               },
               context: {
@@ -9278,7 +9277,7 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
-            expect(schema.fields.someField.type).toEqual('Array');
+            expect(schema.fields.someArrayField.type).toEqual('Array');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -9292,7 +9291,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 fields: {
-                  someField: someFieldValue,
+                  someArrayField: someArrayFieldValue,
                 },
               },
             });
@@ -9301,17 +9300,17 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetSomeObject($id: ID!) {
                   someClass(id: $id) {
-                    someField {
+                    someArrayField {
                       ... on Element {
                         value
                       }
                     }
                   }
-                  someClasses(where: { someField: { exists: true } }) {
+                  someClasses(where: { someArrayField: { exists: true } }) {
                     edges {
                       node {
                         id
-                        someField {
+                        someArrayField {
                           ... on Element {
                             value
                           }
@@ -9326,9 +9325,9 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            const { someField } = getResult.data.someClass;
-            expect(Array.isArray(someField)).toBeTruthy();
-            expect(someField.map(element => element.value)).toEqual(someFieldValue);
+            const { someArrayField } = getResult.data.someClass;
+            expect(Array.isArray(someArrayField)).toBeTruthy();
+            expect(someArrayField.map(element => element.value)).toEqual(someArrayFieldValue);
             expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
@@ -10201,101 +10200,99 @@ describe('ParseGraphQLServer', () => {
       let apolloClient;
 
       beforeEach(async () => {
-        if (!httpServer) {
-          const expressApp = express();
-          httpServer = http.createServer(expressApp);
-          const TypeEnum = new GraphQLEnumType({
-            name: 'TypeEnum',
-            values: {
-              human: { value: 'human' },
-              robot: { value: 'robot' },
-            },
-          });
-          const SomeClassType = new GraphQLObjectType({
-              name: 'SomeClass',
-              fields: {
-                nameUpperCase: {
-                  type: new GraphQLNonNull(GraphQLString),
-                  resolve: p => p.name.toUpperCase(),
-                },
-                type: { type: TypeEnum },
-                language: {
-                  type: new GraphQLEnumType({
-                    name: 'LanguageEnum',
-                    values: {
-                      fr: { value: 'fr' },
-                      en: { value: 'en' },
-                    },
-                  }),
-                  resolve: () => 'fr',
-                },
+        const expressApp = express();
+        httpServer = http.createServer(expressApp);
+        const TypeEnum = new GraphQLEnumType({
+          name: 'TypeEnum',
+          values: {
+            human: { value: 'human' },
+            robot: { value: 'robot' },
+          },
+        });
+        const SomeClassType = new GraphQLObjectType({
+            name: 'SomeClass',
+            fields: {
+              nameUpperCase: {
+                type: new GraphQLNonNull(GraphQLString),
+                resolve: p => p.name.toUpperCase(),
               },
-            }),
-            parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-              graphQLPath: '/graphql',
-              graphQLCustomTypeDefs: new GraphQLSchema({
-                query: new GraphQLObjectType({
-                  name: 'Query',
-                  fields: {
-                    customQuery: {
-                      type: new GraphQLNonNull(GraphQLString),
-                      args: {
-                        message: { type: new GraphQLNonNull(GraphQLString) },
-                      },
-                      resolve: (p, { message }) => message,
-                    },
-                    customQueryWithAutoTypeReturn: {
-                      type: SomeClassType,
-                      args: {
-                        id: { type: new GraphQLNonNull(GraphQLString) },
-                      },
-                      resolve: async (p, { id }) => {
-                        const obj = new Parse.Object('SomeClass');
-                        obj.id = id;
-                        await obj.fetch();
-                        return obj.toJSON();
-                      },
-                    },
+              type: { type: TypeEnum },
+              language: {
+                type: new GraphQLEnumType({
+                  name: 'LanguageEnum',
+                  values: {
+                    fr: { value: 'fr' },
+                    en: { value: 'en' },
                   },
                 }),
-                types: [
-                  new GraphQLInputObjectType({
-                    name: 'CreateSomeClassFieldsInput',
-                    fields: {
-                      type: { type: TypeEnum },
-                    },
-                  }),
-                  new GraphQLInputObjectType({
-                    name: 'UpdateSomeClassFieldsInput',
-                    fields: {
-                      type: { type: TypeEnum },
-                    },
-                  }),
-                  SomeClassType,
-                ],
-              }),
-            });
-
-          parseGraphQLServer.applyGraphQL(expressApp);
-          await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-          const httpLink = createUploadLink({
-            uri: 'http://localhost:13377/graphql',
-            fetch,
-            headers,
-          });
-          apolloClient = new ApolloClient({
-            link: httpLink,
-            cache: new InMemoryCache(),
-            defaultOptions: {
-              query: {
-                fetchPolicy: 'no-cache',
+                resolve: () => 'fr',
               },
             },
+          }),
+          parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+            graphQLPath: '/graphql',
+            graphQLCustomTypeDefs: new GraphQLSchema({
+              query: new GraphQLObjectType({
+                name: 'Query',
+                fields: {
+                  customQuery: {
+                    type: new GraphQLNonNull(GraphQLString),
+                    args: {
+                      message: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: (p, { message }) => message,
+                  },
+                  customQueryWithAutoTypeReturn: {
+                    type: SomeClassType,
+                    args: {
+                      id: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: async (p, { id }) => {
+                      const obj = new Parse.Object('SomeClass');
+                      obj.id = id;
+                      await obj.fetch();
+                      return obj.toJSON();
+                    },
+                  },
+                },
+              }),
+              types: [
+                new GraphQLInputObjectType({
+                  name: 'CreateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                new GraphQLInputObjectType({
+                  name: 'UpdateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                SomeClassType,
+              ],
+            }),
           });
-        }
+
+        parseGraphQLServer.applyGraphQL(expressApp);
+        await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+        const httpLink = createUploadLink({
+          uri: 'http://localhost:13377/graphql',
+          fetch,
+          headers,
+        });
+        apolloClient = new ApolloClient({
+          link: httpLink,
+          cache: new InMemoryCache(),
+          defaultOptions: {
+            query: {
+              fetchPolicy: 'no-cache',
+            },
+          },
+        });
       });
 
-      afterAll(async () => {
+      afterEach(async () => {
         await httpServer.close();
       });
 
