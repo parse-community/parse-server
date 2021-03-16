@@ -234,6 +234,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query', async () => {
+    await adapter.deleteAllClasses();
+    const config = Config.get('test');
+    config.schemaCache.clear();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
+
     const database = Config.get(Parse.applicationId).database;
     await database.loadSchema({ clearCache: true });
     const tableName = '_User';
@@ -290,6 +295,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query using default indexname', async () => {
+    await adapter.deleteAllClasses();
+    const config = Config.get('test');
+    config.schemaCache.clear();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
+
     const database = Config.get(Parse.applicationId).database;
     await database.loadSchema({ clearCache: true });
     const tableName = '_User';
