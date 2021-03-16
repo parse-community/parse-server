@@ -1693,60 +1693,42 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
+    await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
+    if (this.adapter instanceof MongoStorageAdapter) {
+      await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
+    }
 
-    const userClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_User'));
-    const roleClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
-    const idempotencyClassPromise =
-      this.adapter instanceof MongoStorageAdapter
-        ? this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'))
-        : Promise.resolve();
-
-    const usernameUniqueness = userClassPromise
-      .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
+    const usernameUniqueness = this.adapter
+      .ensureUniqueness('_User', requiredUserFields, ['username'])
       .catch(error => {
         logger.warn('Unable to ensure uniqueness for usernames: ', error);
         throw error;
       });
 
-    const usernameCaseInsensitiveIndex = userClassPromise
-      .then(() =>
-        this.adapter.ensureIndex(
-          '_User',
-          requiredUserFields,
-          ['username'],
-          'case_insensitive_username',
-          true
-        )
-      )
+    const usernameCaseInsensitiveIndex = this.adapter
+      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive username index: ', error);
         throw error;
       });
 
-    const emailUniqueness = userClassPromise
-      .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
+    const emailUniqueness = this.adapter
+      .ensureUniqueness('_User', requiredUserFields, ['email'])
       .catch(error => {
         logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
         throw error;
       });
 
-    const emailCaseInsensitiveIndex = userClassPromise
-      .then(() =>
-        this.adapter.ensureIndex(
-          '_User',
-          requiredUserFields,
-          ['email'],
-          'case_insensitive_email',
-          true
-        )
-      )
+    const emailCaseInsensitiveIndex = this.adapter
+      .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive email index: ', error);
         throw error;
       });
 
-    const roleUniqueness = roleClassPromise
-      .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
+    const roleUniqueness = this.adapter
+      .ensureUniqueness('_Role', requiredRoleFields, ['name'])
       .catch(error => {
         logger.warn('Unable to ensure uniqueness for role name: ', error);
         throw error;
@@ -1754,10 +1736,8 @@ class DatabaseController {
 
     const idempotencyRequestIdIndex =
       this.adapter instanceof MongoStorageAdapter
-        ? idempotencyClassPromise
-          .then(() =>
-            this.adapter.ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
-          )
+        ? this.adapter
+          .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
           .catch(error => {
             logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
             throw error;
@@ -1766,17 +1746,10 @@ class DatabaseController {
 
     const idempotencyExpireIndex =
       this.adapter instanceof MongoStorageAdapter
-        ? idempotencyClassPromise
-          .then(() =>
-            this.adapter.ensureIndex(
-              '_Idempotency',
-              requiredIdempotencyFields,
-              ['expire'],
-              'ttl',
-              false,
-              { ttl: 0 }
-            )
-          )
+        ? this.adapter
+          .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
+            ttl: 0,
+          })
           .catch(error => {
             logger.warn('Unable to create TTL index for idempotency expire date: ', error);
             throw error;

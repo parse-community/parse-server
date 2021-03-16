@@ -26,6 +26,8 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
 
   it('schemaUpgrade, upgrade the database schema when schema changes', async done => {
     await adapter.deleteAllClasses();
+    const config = Config.get('test');
+    config.schemaCache.clear();
     await adapter.performInitialization({ VolatileClassesSchemas: [] });
     const client = adapter._client;
     const className = '_PushStatus';
