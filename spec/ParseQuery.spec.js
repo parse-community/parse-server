@@ -3162,6 +3162,21 @@ describe('Parse.Query testing', () => {
       .then(function () {
         obj._clearServerData();
         const query = new Parse.Query(TestObject);
+        query.select();
+        return query.first();
+      })
+      .then(function (result) {
+        ok(result.id, 'expected object id to be set');
+        ok(result.createdAt, 'expected object createdAt to be set');
+        ok(result.updatedAt, 'expected object updatedAt to be set');
+        ok(!result.dirty(), 'expected result not to be dirty');
+        strictEqual(result.get('foo'), undefined, "expected 'foo' field to be unset");
+        strictEqual(result.get('bar'), undefined, "expected 'bar' field to be unset");
+        strictEqual(result.get('qux'), undefined, "expected 'qux' field to be unset");
+      })
+      .then(function () {
+        obj._clearServerData();
+        const query = new Parse.Query(TestObject);
         query.select([]);
         return query.first();
       })
@@ -3337,6 +3352,21 @@ describe('Parse.Query testing', () => {
         return result.fetch();
       })
       .then(function (result) {
+        strictEqual(result.get('foo'), 'baz');
+        strictEqual(result.get('bar'), 1);
+        strictEqual(result.get('qux'), 2);
+      })
+      .then(function () {
+        obj._clearServerData();
+        const query = new Parse.Query(TestObject);
+        query.exclude();
+        return query.first();
+      })
+      .then(function (result) {
+        ok(result.id, 'expected object id to be set');
+        ok(result.createdAt, 'expected object createdAt to be set');
+        ok(result.updatedAt, 'expected object updatedAt to be set');
+        ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
         strictEqual(result.get('qux'), 2);
