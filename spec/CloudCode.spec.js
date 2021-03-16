@@ -216,7 +216,7 @@ describe('Cloud Code', () => {
     );
   });
 
-  it('test beforeSave with invalid field', async () => {
+  xit('test beforeSave with invalid field', async () => {
     Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
       req.object.set('length', 0);
     });
