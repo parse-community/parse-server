@@ -9,7 +9,7 @@ on:
 env:
   COVERAGE_OPTION: ./node_modules/.bin/nyc
   NODE_VERSION: 10
-  PARSE_SERVER_TEST_TIMEOUT: 50000
+  PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-ci:
     name: CI Self-Check

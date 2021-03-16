@@ -91,6 +91,7 @@ ___
 ### Breaking Changes
 - Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) (dblythy, Manuel Trezza) [#7071](https://github.com/parse-community/parse-server/pull/7071)
 ### Notable Changes
+- Improve schema caching using a in-memory singleton and database hooks. Introduced `replicaSet` parameter for Mongo users in [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) (Diamond Lewis, SebC) [#7214](https://github.com/parse-community/parse-server/issues/7214)
 - Added Parse Server Security Check to report weak security settings (Manuel Trezza, dblythy) [#7247](https://github.com/parse-community/parse-server/issues/7247)
 - EXPERIMENTAL: Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification (Manuel Trezza) [#6891](https://github.com/parse-community/parse-server/issues/6891)
 - EXPERIMENTAL: Added custom routes to easily customize flows for password reset, email verification or build entirely new flows (Manuel Trezza) [#7231](https://github.com/parse-community/parse-server/issues/7231)

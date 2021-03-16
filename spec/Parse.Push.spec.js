@@ -29,6 +29,7 @@ const provideInstallations = function (num) {
   if (!num) {
     num = 2;
   }
+
   const installations = [];
   while (installations.length !== num) {
     // add Android installations
