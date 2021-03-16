@@ -116,6 +116,7 @@ ___
 - Test Parse Server continuously against all relevant Postgres versions (minor versions), added Postgres compatibility table to Parse Server docs (Corey Baker) [#7176](https://github.com/parse-community/parse-server/pull/7176)
 - Randomize test suite (Diamond Lewis) [#7265](https://github.com/parse-community/parse-server/pull/7265)
 - LDAP: Properly unbind client on group search error (Diamond Lewis) [#7265](https://github.com/parse-community/parse-server/pull/7265)
+- Improve data consistency in Push and Job Status update (Diamond Lewis) [#7267](https://github.com/parse-community/parse-server/pull/7267)
 - Fix select and excludeKey queries to properly accept JSON string arrays. Also allow nested fields in exclude. [#7242](https://github.com/parse-community/parse-server/pull/7242). Thanks to [Corey Baker](https://github.com/cbaker6).
 
 ___
