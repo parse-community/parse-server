@@ -796,7 +796,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
 
 export class PostgresStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
-  horizontalScaling: boolean;
+  enableHooks: boolean;
 
   // Private
   _collectionPrefix: string;
@@ -806,10 +806,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
   _stream: any;
   _uuid: any;
 
-  constructor({ uri, collectionPrefix = '', databaseOptions = {} }: any) {
+  constructor({ uri, collectionPrefix = '', databaseOptions = {}, enableHooks = false }: any) {
     this._collectionPrefix = collectionPrefix;
-    this.horizontalScaling = !!databaseOptions.horizontalScaling;
-    delete databaseOptions.horizontalScaling;
+    this.enableHooks = enableHooks;
+
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;
     this._onchange = () => {};
@@ -843,7 +843,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async _listenToSchema() {
-    if (!this._stream && this.horizontalScaling) {
+    if (!this._stream && this.enableHooks) {
       this._stream = await this._client.connect({ direct: true });
       this._stream.client.on('notification', data => {
         const payload = JSON.parse(data.payload);

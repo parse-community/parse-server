@@ -557,7 +557,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
           horizontalScaling: true,
           databaseAdapter: adapter,
         });
-        expect(adapter.horizontalScaling).toBe(true);
+        expect(adapter.enableHooks).toBe(true);
         spyOn(adapter, '_onchange');
         const schema = {
           fields: {

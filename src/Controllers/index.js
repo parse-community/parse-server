@@ -154,11 +154,15 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
     throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
   } else if (!databaseAdapter) {
     databaseOptions = databaseOptions || {};
-    databaseOptions.horizontalScaling = horizontalScaling;
-    databaseAdapter = getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions);
+    databaseAdapter = getDatabaseAdapter(
+      databaseURI,
+      collectionPrefix,
+      databaseOptions,
+      horizontalScaling
+    );
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
-    databaseAdapter.horizontalScaling = !!horizontalScaling;
+    databaseAdapter.enableHooks = !!horizontalScaling;
   }
   return new DatabaseController(databaseAdapter);
 }
@@ -220,7 +224,7 @@ export function getAuthDataManager(options: ParseServerOptions) {
   return authDataManager(auth, enableAnonymousUsers);
 }
 
-export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
+export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions, enableHooks) {
   let protocol;
   try {
     const parsedURI = url.parse(databaseURI);
@@ -234,12 +238,14 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
         uri: databaseURI,
         collectionPrefix,
         databaseOptions,
+        enableHooks,
       });
     default:
       return new MongoStorageAdapter({
         uri: databaseURI,
         collectionPrefix,
         mongoOptions: databaseOptions,
+        enableHooks,
       });
   }
 }

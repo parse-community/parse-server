@@ -392,20 +392,22 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should watch _SCHEMA changes', async () => {
+    const enableHooks = true;
     await reconfigureServer({
       horizontalScaling: true,
     });
     const { database } = Config.get(Parse.applicationId);
     const { adapter } = database;
-    expect(adapter.horizontalScaling).toBe(true);
+    expect(adapter.enableHooks).toBe(enableHooks);
     spyOn(adapter, '_onchange');
 
     const otherInstance = new PostgresStorageAdapter({
       uri: databaseURI,
       collectionPrefix: '',
-      databaseOptions: { horizontalScaling: true },
+      databaseOptions: {},
+      enableHooks,
     });
-    expect(otherInstance.horizontalScaling).toBe(true);
+    expect(otherInstance.enableHooks).toBe(enableHooks);
     otherInstance._listenToSchema();
 
     await otherInstance.createClass('Stuff', {
