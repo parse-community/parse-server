@@ -806,14 +806,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
   _stream: any;
   _uuid: any;
 
-  constructor({
-    uri,
-    collectionPrefix = '',
-    databaseOptions = {},
-    enableSchemaHooks = false,
-  }: any) {
+  constructor({ uri, collectionPrefix = '', databaseOptions = {} }: any) {
     this._collectionPrefix = collectionPrefix;
-    this.enableSchemaHooks = enableSchemaHooks;
+    this.enableSchemaHooks = !!databaseOptions.enableSchemaHooks;
+    delete databaseOptions.enableSchemaHooks;
 
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;

@@ -63,8 +63,9 @@ export interface ParseServerOptions {
   /* The full URI to your database. Supported databases are mongodb or postgres.
   :DEFAULT: mongodb://localhost:27017/parse */
   databaseURI: string;
-  /* Options to pass to the mongodb client */
-  databaseOptions: ?any;
+  /* Options to pass to the database client
+  :ENV: PARSE_SERVER_DATABASE_OPTIONS */
+  databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database */
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
@@ -218,10 +219,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* Enables database hooks to update single schema cache. Set to true if using multiple Parse Servers instances connected to the same database.
-  :ENV: PARSE_SERVER_ENABLE_SCHEMA_HOOKS
-  :DEFAULT: false */
-  enableSchemaHooks: ?boolean;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
@@ -413,4 +410,10 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+}
+
+export interface DatabaseOptions {
+  /* Enables database hooks to update single schema cache. Set to true if using multiple Parse Servers instances connected to the same database.
+  :DEFAULT: false */
+  enableSchemaHooks: ?boolean;
 }

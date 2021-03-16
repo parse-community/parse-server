@@ -10,10 +10,7 @@ describe_only_db('mongo')('Schema Performance', function () {
     config = Config.get('test');
     config.schemaCache.clear();
     const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
-    await reconfigureServer({
-      enableSchemaHooks: false,
-      databaseAdapter,
-    });
+    await reconfigureServer({ databaseAdapter });
     getAllSpy = spyOn(databaseAdapter, 'getAllClasses').and.callThrough();
   });
 

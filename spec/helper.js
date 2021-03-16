@@ -97,7 +97,6 @@ const defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
-  enableSchemaHooks: false,
   fileUpload: {
     enableForPublic: true,
     enableForAnonymousUser: true,

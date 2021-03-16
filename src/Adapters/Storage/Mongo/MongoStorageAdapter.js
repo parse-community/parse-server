@@ -123,12 +123,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
 
-  constructor({
-    uri = defaults.DefaultMongoURI,
-    collectionPrefix = '',
-    mongoOptions = {},
-    enableSchemaHooks = false,
-  }: any) {
+  constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
@@ -139,7 +134,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
-    this.enableSchemaHooks = enableSchemaHooks;
+    this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
+    delete mongoOptions.enableSchemaHooks;
     delete mongoOptions.maxTimeMS;
   }
 

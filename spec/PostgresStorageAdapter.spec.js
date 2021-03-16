@@ -394,7 +394,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   it('should watch _SCHEMA changes', async () => {
     const enableSchemaHooks = true;
     await reconfigureServer({
-      enableSchemaHooks: true,
+      databaseAdapter: undefined,
+      databaseURI,
+      collectionPrefix: '',
+      databaseOptions: {
+        enableSchemaHooks,
+      },
     });
     const { database } = Config.get(Parse.applicationId);
     const { adapter } = database;
@@ -405,8 +410,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const otherInstance = new PostgresStorageAdapter({
       uri: databaseURI,
       collectionPrefix: '',
-      databaseOptions: {},
-      enableSchemaHooks,
+      databaseOptions: { enableSchemaHooks },
     });
     expect(otherInstance.enableSchemaHooks).toBe(enableSchemaHooks);
     otherInstance._listenToSchema();

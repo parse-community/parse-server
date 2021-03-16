@@ -18,7 +18,7 @@
  * @property {String} collectionPrefix A collection prefix for the classes
  * @property {CustomPagesOptions} customPages custom pages for password validation and reset
  * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database
- * @property {Any} databaseOptions Options to pass to the mongodb client
+ * @property {DatabaseOptions} databaseOptions Options to pass to the database client
  * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postgres.
  * @property {Boolean} directAccess Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {String} dotNetKey Key for Unity and .Net SDK
@@ -27,7 +27,6 @@
  * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration, in seconds
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
- * @property {Boolean} enableSchemaHooks Enables database hooks to update single schema cache. Set to true if using multiple Parse Servers instances connected to the same database.
  * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
@@ -188,4 +187,9 @@
  * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
+ */
+
+/**
+ * @interface DatabaseOptions
+ * @property {Boolean} enableSchemaHooks Enables database hooks to update single schema cache. Set to true if using multiple Parse Servers instances connected to the same database.
  */

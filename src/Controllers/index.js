@@ -143,8 +143,8 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
 }
 
 export function getDatabaseController(options: ParseServerOptions): DatabaseController {
-  const { databaseURI, collectionPrefix, enableSchemaHooks } = options;
-  let { databaseAdapter, databaseOptions } = options;
+  const { databaseURI, collectionPrefix, databaseOptions } = options;
+  let { databaseAdapter } = options;
   if (
     (databaseOptions ||
       (databaseURI && databaseURI !== defaults.databaseURI) ||
@@ -153,16 +153,9 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
   ) {
     throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
   } else if (!databaseAdapter) {
-    databaseOptions = databaseOptions || {};
-    databaseAdapter = getDatabaseAdapter(
-      databaseURI,
-      collectionPrefix,
-      databaseOptions,
-      enableSchemaHooks
-    );
+    databaseAdapter = getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions);
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
-    databaseAdapter.enableSchemaHooks = !!enableSchemaHooks;
   }
   return new DatabaseController(databaseAdapter);
 }
@@ -224,12 +217,7 @@ export function getAuthDataManager(options: ParseServerOptions) {
   return authDataManager(auth, enableAnonymousUsers);
 }
 
-export function getDatabaseAdapter(
-  databaseURI,
-  collectionPrefix,
-  databaseOptions,
-  enableSchemaHooks
-) {
+export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
   let protocol;
   try {
     const parsedURI = url.parse(databaseURI);
@@ -243,14 +231,12 @@ export function getDatabaseAdapter(
         uri: databaseURI,
         collectionPrefix,
         databaseOptions,
-        enableSchemaHooks,
       });
     default:
       return new MongoStorageAdapter({
         uri: databaseURI,
         collectionPrefix,
         mongoOptions: databaseOptions,
-        enableSchemaHooks,
       });
   }
 }

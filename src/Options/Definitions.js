@@ -100,7 +100,7 @@ module.exports.ParseServerOptions = {
   },
   databaseOptions: {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
-    help: 'Options to pass to the mongodb client',
+    help: 'Options to pass to the database client',
     action: parsers.objectParser,
   },
   databaseURI: {
@@ -146,13 +146,6 @@ module.exports.ParseServerOptions = {
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
     help: 'Enables the default express error handler for all errors',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  enableSchemaHooks: {
-    env: 'PARSE_SERVER_ENABLE_SCHEMA_HOOKS',
-    help:
-      'Enables database hooks to update single schema cache. Set to true if using multiple Parse Servers instances connected to the same database.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -777,6 +770,15 @@ module.exports.FileUploadOptions = {
   enableForPublic: {
     env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_PUBLIC',
     help: 'Is true if file upload should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.DatabaseOptions = {
+  enableSchemaHooks: {
+    env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
+    help:
+      'Enables database hooks to update single schema cache. Set to true if using multiple Parse Servers instances connected to the same database.',
     action: parsers.booleanParser,
     default: false,
   },
