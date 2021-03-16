@@ -218,7 +218,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* Set to true if multiple Parse Servers instances are used with the same database.
+  /* Set to true if multiple Parse Servers instances are used with the same database. Enables database hooks to update single schema cache.
   :ENV: PARSE_SERVER_HORIZONTAL_SCALING
   :DEFAULT: false */
   horizontalScaling: ?boolean;

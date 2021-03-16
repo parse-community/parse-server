@@ -185,7 +185,8 @@ module.exports.ParseServerOptions = {
   },
   horizontalScaling: {
     env: 'PARSE_SERVER_HORIZONTAL_SCALING',
-    help: 'Set to true if multiple Parse Servers instances are used with the same database.',
+    help:
+      'Set to true if multiple Parse Servers instances are used with the same database. Enables database hooks to update single schema cache.',
     action: parsers.booleanParser,
     default: false,
   },

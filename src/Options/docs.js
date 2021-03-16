@@ -34,7 +34,7 @@
  * @property {FileUploadOptions} fileUpload Options for file uploads
  * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
- * @property {Boolean} horizontalScaling Set to true if multiple Parse Servers instances are used with the same database.
+ * @property {Boolean} horizontalScaling Set to true if multiple Parse Servers instances are used with the same database. Enables database hooks to update single schema cache.
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {IdempotencyOptions} idempotencyOptions Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {String} javascriptKey Key for the Javascript SDK
