@@ -239,7 +239,6 @@ describe('Auth', () => {
 
       const result = validJWT(jwt.accessToken, oauthKey);
       expect(result.sub).toBe(sessionToken);
-      expect(result.exp).toBe(jwt.expires_in);
 
       const decoded = decodeJWT(jwt.accessToken);
       expect(result).toEqual(decoded);

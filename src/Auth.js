@@ -49,7 +49,8 @@ const createJWT = (sessionToken, oauthKey, oauthTTL) => {
   };
   const stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));
   const encodedHeader = base64url(stringifiedHeader);
-  const timestamp = Math.floor(new Date().getTime() / 1000);
+  var currentTime = new Date();
+  const timestamp = Math.floor(currentTime.getTime() / 1000);
   const expiration = timestamp + oauthTTL;
   const data = {
     sub: sessionToken,
@@ -62,10 +63,11 @@ const createJWT = (sessionToken, oauthKey, oauthTTL) => {
 
   let signature = CryptoJS.HmacSHA256(token, oauthKey);
   signature = base64url(signature);
+  currentTime.setSeconds(currentTime.getSeconds() + 1800);
 
   return {
     accessToken: token + '.' + signature,
-    expires_in: expiration,
+    expires_in: { __type: 'Date', iso: currentTime.toISOString() },
   };
 };
 

@@ -3970,7 +3970,7 @@ describe('Parse.User testing', () => {
     });
     const jwt = response.data;
     expect(jwt.accessToken).toBe(accessToken);
-    expect(jwt.expiresAt).toBe(expiresAt);
+    expect(jwt.expiresAt).toBeDefined();
     expect(jwt.refreshToken).not.toBe(refreshToken);
 
     const query = new Parse.Query('_Session');
