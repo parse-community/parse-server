@@ -554,10 +554,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       it('should change', async done => {
         const adapter = new MongoStorageAdapter({ uri: databaseURI });
         await reconfigureServer({
-          horizontalScaling: true,
+          enableSchemaHooks: true,
           databaseAdapter: adapter,
         });
-        expect(adapter.enableHooks).toBe(true);
+        expect(adapter.enableSchemaHooks).toBe(true);
         spyOn(adapter, '_onchange');
         const schema = {
           fields: {

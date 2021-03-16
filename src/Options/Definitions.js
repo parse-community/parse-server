@@ -149,6 +149,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  enableSchemaHooks: {
+    env: 'PARSE_SERVER_ENABLE_SCHEMA_HOOKS',
+    help:
+      'Enables database hooks to update single schema cache. Set to true if using multiple Parse Servers instances connected to the same database.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
     help: 'Key for encrypting your files',
@@ -182,13 +189,6 @@ module.exports.ParseServerOptions = {
   graphQLSchema: {
     env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
     help: 'Full path to your GraphQL custom schema.graphql file',
-  },
-  horizontalScaling: {
-    env: 'PARSE_SERVER_HORIZONTAL_SCALING',
-    help:
-      'Set to true if multiple Parse Servers instances are used with the same database. Enables database hooks to update single schema cache.',
-    action: parsers.booleanParser,
-    default: false,
   },
   host: {
     env: 'PARSE_SERVER_HOST',

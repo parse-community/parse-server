@@ -143,7 +143,7 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
 }
 
 export function getDatabaseController(options: ParseServerOptions): DatabaseController {
-  const { databaseURI, collectionPrefix, horizontalScaling } = options;
+  const { databaseURI, collectionPrefix, enableSchemaHooks } = options;
   let { databaseAdapter, databaseOptions } = options;
   if (
     (databaseOptions ||
@@ -158,11 +158,11 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
       databaseURI,
       collectionPrefix,
       databaseOptions,
-      horizontalScaling
+      enableSchemaHooks
     );
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
-    databaseAdapter.enableHooks = !!horizontalScaling;
+    databaseAdapter.enableSchemaHooks = !!enableSchemaHooks;
   }
   return new DatabaseController(databaseAdapter);
 }
@@ -224,7 +224,12 @@ export function getAuthDataManager(options: ParseServerOptions) {
   return authDataManager(auth, enableAnonymousUsers);
 }
 
-export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions, enableHooks) {
+export function getDatabaseAdapter(
+  databaseURI,
+  collectionPrefix,
+  databaseOptions,
+  enableSchemaHooks
+) {
   let protocol;
   try {
     const parsedURI = url.parse(databaseURI);
@@ -238,14 +243,14 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
         uri: databaseURI,
         collectionPrefix,
         databaseOptions,
-        enableHooks,
+        enableSchemaHooks,
       });
     default:
       return new MongoStorageAdapter({
         uri: databaseURI,
         collectionPrefix,
         mongoOptions: databaseOptions,
-        enableHooks,
+        enableSchemaHooks,
       });
   }
 }

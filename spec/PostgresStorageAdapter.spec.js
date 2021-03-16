@@ -392,22 +392,23 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should watch _SCHEMA changes', async () => {
-    const enableHooks = true;
+    const enableSchemaHooks = true;
     await reconfigureServer({
-      horizontalScaling: true,
+      enableSchemaHooks: true,
     });
     const { database } = Config.get(Parse.applicationId);
     const { adapter } = database;
-    expect(adapter.enableHooks).toBe(enableHooks);
+    expect(adapter.enableSchemaHooks).toBe(enableSchemaHooks);
     spyOn(adapter, '_onchange');
+    enableSchemaHooks;
 
     const otherInstance = new PostgresStorageAdapter({
       uri: databaseURI,
       collectionPrefix: '',
       databaseOptions: {},
-      enableHooks,
+      enableSchemaHooks,
     });
-    expect(otherInstance.enableHooks).toBe(enableHooks);
+    expect(otherInstance.enableSchemaHooks).toBe(enableSchemaHooks);
     otherInstance._listenToSchema();
 
     await otherInstance.createClass('Stuff', {
