@@ -1710,6 +1710,12 @@ class DatabaseController {
         logger.warn('Unable to create case insensitive username index: ', error);
         throw error;
       });
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
+      .catch(error => {
+        logger.warn('Unable to create case insensitive username index: ', error);
+        throw error;
+      });
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
@@ -1727,27 +1733,23 @@ class DatabaseController {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
       throw error;
     });
-
-    (await this.adapter) instanceof MongoStorageAdapter
-      ? this.adapter
+    if (this.adapter instanceof MongoStorageAdapter) {
+      await this.adapter
         .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
         .catch(error => {
           logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
           throw error;
-        })
-      : Promise.resolve();
+        });
 
-    (await this.adapter) instanceof MongoStorageAdapter
-      ? this.adapter
+      await this.adapter
         .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
           ttl: 0,
         })
         .catch(error => {
           logger.warn('Unable to create TTL index for idempotency expire date: ', error);
           throw error;
-        })
-      : Promise.resolve();
-
+        });
+    }
     await this.adapter.updateSchemaWithIndexes();
   }
 
