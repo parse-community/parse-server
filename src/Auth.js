@@ -49,7 +49,7 @@ const createJWT = (sessionToken, oauthKey, oauthTTL) => {
   };
   const stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));
   const encodedHeader = base64url(stringifiedHeader);
-  var currentTime = new Date();
+  const currentTime = new Date();
   const timestamp = Math.floor(currentTime.getTime() / 1000);
   const expiration = timestamp + oauthTTL;
   const data = {
