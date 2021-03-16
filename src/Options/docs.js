@@ -34,6 +34,7 @@
  * @property {FileUploadOptions} fileUpload Options for file uploads
  * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
+ * @property {Boolean} horizontalScaling Set to true if multiple Parse Servers instances are used with the same database.
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {IdempotencyOptions} idempotencyOptions Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {String} javascriptKey Key for the Javascript SDK
@@ -63,7 +64,6 @@
  * @property {String} publicServerURL Public URL to your parse server with http:// or https://.
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
  * @property {String} readOnlyMasterKey Read-only key, which has the same capabilities as MasterKey without writes
- * @property {Boolean} replicaSet If you are using MongoDB specify whether you are using replica set.
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.

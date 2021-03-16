@@ -11,7 +11,7 @@ describe_only_db('mongo')('Schema Performance', function () {
     config.schemaCache.clear();
     const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
     await reconfigureServer({
-      replicaSet: false,
+      horizontalScaling: false,
       databaseAdapter,
     });
     getAllSpy = spyOn(databaseAdapter, 'getAllClasses').and.callThrough();

@@ -183,6 +183,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
     help: 'Full path to your GraphQL custom schema.graphql file',
   },
+  horizontalScaling: {
+    env: 'PARSE_SERVER_HORIZONTAL_SCALING',
+    help: 'Set to true if multiple Parse Servers instances are used with the same database.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   host: {
     env: 'PARSE_SERVER_HOST',
     help: 'The host to serve ParseServer on, defaults to 0.0.0.0',
@@ -341,12 +347,6 @@ module.exports.ParseServerOptions = {
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
-  },
-  replicaSet: {
-    env: 'PARSE_SERVER_REPLICA_SET',
-    help: 'If you are using MongoDB specify whether you are using replica set.',
-    action: parsers.booleanParser,
-    default: false,
   },
   restAPIKey: {
     env: 'PARSE_SERVER_REST_API_KEY',

@@ -392,12 +392,20 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should watch _SCHEMA changes', async () => {
+    await reconfigureServer({
+      horizontalScaling: true,
+    });
     const { database } = Config.get(Parse.applicationId);
     const { adapter } = database;
-
+    expect(adapter.horizontalScaling).toBe(true);
     spyOn(adapter, '_onchange');
 
-    const otherInstance = new PostgresStorageAdapter({ uri: databaseURI });
+    const otherInstance = new PostgresStorageAdapter({
+      uri: databaseURI,
+      collectionPrefix: '',
+      databaseOptions: { horizontalScaling: true },
+    });
+    expect(otherInstance.horizontalScaling).toBe(true);
     otherInstance._listenToSchema();
 
     await otherInstance.createClass('Stuff', {

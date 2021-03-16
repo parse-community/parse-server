@@ -143,7 +143,7 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
 }
 
 export function getDatabaseController(options: ParseServerOptions): DatabaseController {
-  const { databaseURI, collectionPrefix, replicaSet } = options;
+  const { databaseURI, collectionPrefix, horizontalScaling } = options;
   let { databaseAdapter, databaseOptions } = options;
   if (
     (databaseOptions ||
@@ -154,11 +154,11 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
     throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
   } else if (!databaseAdapter) {
     databaseOptions = databaseOptions || {};
-    databaseOptions.replicaSet = replicaSet;
+    databaseOptions.horizontalScaling = horizontalScaling;
     databaseAdapter = getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions);
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
-    databaseAdapter.replicaSet = !!replicaSet;
+    databaseAdapter.horizontalScaling = !!horizontalScaling;
   }
   return new DatabaseController(databaseAdapter);
 }

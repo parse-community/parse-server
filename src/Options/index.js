@@ -218,10 +218,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* If you are using MongoDB specify whether you are using replica set.
-  :ENV: PARSE_SERVER_REPLICA_SET
+  /* Set to true if multiple Parse Servers instances are used with the same database.
+  :ENV: PARSE_SERVER_HORIZONTAL_SCALING
   :DEFAULT: false */
-  replicaSet: ?boolean;
+  horizontalScaling: ?boolean;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
