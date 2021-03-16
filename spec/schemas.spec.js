@@ -145,10 +145,6 @@ describe('schemas', () => {
     config = Config.get('test');
   });
 
-  afterEach(async () => {
-    await config.database.schemaCache.clear();
-  });
-
   it('requires the master key to get all schemas', done => {
     request({
       url: 'http://localhost:8378/1/schemas',

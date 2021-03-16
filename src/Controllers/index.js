@@ -15,7 +15,6 @@ import { PushController } from './PushController';
 import { PushQueue } from '../Push/PushQueue';
 import { PushWorker } from '../Push/PushWorker';
 import DatabaseController from './DatabaseController';
-import SchemaCache from './SchemaCache';
 
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
@@ -26,6 +25,7 @@ import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -41,7 +41,7 @@ export function getControllers(options: ParseServerOptions) {
   const cacheController = getCacheController(options);
   const analyticsController = getAnalyticsController(options);
   const liveQueryController = getLiveQueryController(options);
-  const databaseController = getDatabaseController(options, cacheController);
+  const databaseController = getDatabaseController(options);
   const hooksController = getHooksController(options, databaseController);
   const authDataManager = getAuthDataManager(options);
   const parseGraphQLController = getParseGraphQLController(options, {
@@ -64,6 +64,7 @@ export function getControllers(options: ParseServerOptions) {
     databaseController,
     hooksController,
     authDataManager,
+    schemaCache: SchemaCache,
   };
 }
 
@@ -141,17 +142,8 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
   return new LiveQueryController(options.liveQuery);
 }
 
-export function getDatabaseController(
-  options: ParseServerOptions,
-  cacheController: CacheController
-): DatabaseController {
-  const {
-    databaseURI,
-    databaseOptions,
-    collectionPrefix,
-    schemaCacheTTL,
-    enableSingleSchemaCache,
-  } = options;
+export function getDatabaseController(options: ParseServerOptions): DatabaseController {
+  const { databaseURI, collectionPrefix, databaseOptions } = options;
   let { databaseAdapter } = options;
   if (
     (databaseOptions ||
@@ -165,10 +157,7 @@ export function getDatabaseController(
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(
-    databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
-  );
+  return new DatabaseController(databaseAdapter);
 }
 
 export function getHooksController(

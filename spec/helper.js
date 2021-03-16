@@ -2,6 +2,7 @@
 const semver = require('semver');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
+const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
 
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
@@ -206,6 +207,7 @@ afterEach(function (done) {
     }
     destroyAliveConnections();
     await TestUtils.destroyAllDataPermanently(true);
+    SchemaCache.clear();
     if (didChangeConfiguration) {
       await reconfigureServer();
     } else {
