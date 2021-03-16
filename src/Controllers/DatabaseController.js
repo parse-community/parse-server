@@ -1699,75 +1699,56 @@ class DatabaseController {
       await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
     }
 
-    const usernameUniqueness = this.adapter
-      .ensureUniqueness('_User', requiredUserFields, ['username'])
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for usernames: ', error);
-        throw error;
-      });
+    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for usernames: ', error);
+      throw error;
+    });
 
-    const usernameCaseInsensitiveIndex = this.adapter
+    await this.adapter
       .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive username index: ', error);
         throw error;
       });
 
-    const emailUniqueness = this.adapter
-      .ensureUniqueness('_User', requiredUserFields, ['email'])
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
-        throw error;
-      });
+    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
+      throw error;
+    });
 
-    const emailCaseInsensitiveIndex = this.adapter
+    await this.adapter
       .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive email index: ', error);
         throw error;
       });
 
-    const roleUniqueness = this.adapter
-      .ensureUniqueness('_Role', requiredRoleFields, ['name'])
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for role name: ', error);
-        throw error;
-      });
+    await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for role name: ', error);
+      throw error;
+    });
 
-    const idempotencyRequestIdIndex =
-      this.adapter instanceof MongoStorageAdapter
-        ? this.adapter
-          .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
-          .catch(error => {
-            logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
-            throw error;
-          })
-        : Promise.resolve();
+    (await this.adapter) instanceof MongoStorageAdapter
+      ? this.adapter
+        .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
+        .catch(error => {
+          logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
+          throw error;
+        })
+      : Promise.resolve();
 
-    const idempotencyExpireIndex =
-      this.adapter instanceof MongoStorageAdapter
-        ? this.adapter
-          .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
-            ttl: 0,
-          })
-          .catch(error => {
-            logger.warn('Unable to create TTL index for idempotency expire date: ', error);
-            throw error;
-          })
-        : Promise.resolve();
+    (await this.adapter) instanceof MongoStorageAdapter
+      ? this.adapter
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
+          ttl: 0,
+        })
+        .catch(error => {
+          logger.warn('Unable to create TTL index for idempotency expire date: ', error);
+          throw error;
+        })
+      : Promise.resolve();
 
-    const indexPromise = this.adapter.updateSchemaWithIndexes();
-
-    return Promise.all([
-      usernameUniqueness,
-      usernameCaseInsensitiveIndex,
-      emailUniqueness,
-      emailCaseInsensitiveIndex,
-      roleUniqueness,
-      idempotencyRequestIdIndex,
-      idempotencyExpireIndex,
-      indexPromise,
-    ]);
+    await this.adapter.updateSchemaWithIndexes();
   }
 
   static _validateQuery: any => void;
