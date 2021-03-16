@@ -4,7 +4,9 @@ const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapte
   .WinstonLoggerAdapter;
 const request = require('../lib/request');
 
-describe('info logs', () => {
+describe_only(() => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
+})('info logs', () => {
   it('Verify INFO logs', done => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
     winstonLoggerAdapter.log('info', 'testing info logs with 1234');
@@ -85,7 +87,9 @@ describe('info logs', () => {
   });
 });
 
-describe('error logs', () => {
+describe_only(() => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
+})('error logs', () => {
   it('Verify ERROR logs', done => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
     winstonLoggerAdapter.log('error', 'testing error logs');
@@ -167,7 +171,9 @@ describe('error logs', () => {
   });
 });
 
-describe('verbose logs', () => {
+describe_only(() => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
+})('verbose logs', () => {
   it('mask sensitive information in _User class', done => {
     reconfigureServer({ verbose: true })
       .then(() => createTestUser())

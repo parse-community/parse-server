@@ -10,9 +10,7 @@ describe('ParseGraphQLSchema', () => {
   const appId = 'test';
 
   beforeEach(async () => {
-    parseServer = await global.reconfigureServer({
-      schemaCacheTTL: 100,
-    });
+    parseServer = await global.reconfigureServer();
     databaseController = parseServer.config.databaseController;
     parseGraphQLController = parseServer.config.parseGraphQLController;
     parseGraphQLSchema = new ParseGraphQLSchema({
