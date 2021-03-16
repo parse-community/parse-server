@@ -5,7 +5,7 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
-const { updateCLP } = require('./dev');
+const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
@@ -10200,101 +10200,99 @@ describe('ParseGraphQLServer', () => {
       let apolloClient;
 
       beforeEach(async () => {
-        if (!httpServer) {
-          const expressApp = express();
-          httpServer = http.createServer(expressApp);
-          const TypeEnum = new GraphQLEnumType({
-            name: 'TypeEnum',
-            values: {
-              human: { value: 'human' },
-              robot: { value: 'robot' },
-            },
-          });
-          const SomeClassType = new GraphQLObjectType({
-              name: 'SomeClass',
-              fields: {
-                nameUpperCase: {
-                  type: new GraphQLNonNull(GraphQLString),
-                  resolve: p => p.name.toUpperCase(),
-                },
-                type: { type: TypeEnum },
-                language: {
-                  type: new GraphQLEnumType({
-                    name: 'LanguageEnum',
-                    values: {
-                      fr: { value: 'fr' },
-                      en: { value: 'en' },
-                    },
-                  }),
-                  resolve: () => 'fr',
-                },
+        const expressApp = express();
+        httpServer = http.createServer(expressApp);
+        const TypeEnum = new GraphQLEnumType({
+          name: 'TypeEnum',
+          values: {
+            human: { value: 'human' },
+            robot: { value: 'robot' },
+          },
+        });
+        const SomeClassType = new GraphQLObjectType({
+            name: 'SomeClass',
+            fields: {
+              nameUpperCase: {
+                type: new GraphQLNonNull(GraphQLString),
+                resolve: p => p.name.toUpperCase(),
               },
-            }),
-            parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-              graphQLPath: '/graphql',
-              graphQLCustomTypeDefs: new GraphQLSchema({
-                query: new GraphQLObjectType({
-                  name: 'Query',
-                  fields: {
-                    customQuery: {
-                      type: new GraphQLNonNull(GraphQLString),
-                      args: {
-                        message: { type: new GraphQLNonNull(GraphQLString) },
-                      },
-                      resolve: (p, { message }) => message,
-                    },
-                    customQueryWithAutoTypeReturn: {
-                      type: SomeClassType,
-                      args: {
-                        id: { type: new GraphQLNonNull(GraphQLString) },
-                      },
-                      resolve: async (p, { id }) => {
-                        const obj = new Parse.Object('SomeClass');
-                        obj.id = id;
-                        await obj.fetch();
-                        return obj.toJSON();
-                      },
-                    },
+              type: { type: TypeEnum },
+              language: {
+                type: new GraphQLEnumType({
+                  name: 'LanguageEnum',
+                  values: {
+                    fr: { value: 'fr' },
+                    en: { value: 'en' },
                   },
                 }),
-                types: [
-                  new GraphQLInputObjectType({
-                    name: 'CreateSomeClassFieldsInput',
-                    fields: {
-                      type: { type: TypeEnum },
-                    },
-                  }),
-                  new GraphQLInputObjectType({
-                    name: 'UpdateSomeClassFieldsInput',
-                    fields: {
-                      type: { type: TypeEnum },
-                    },
-                  }),
-                  SomeClassType,
-                ],
-              }),
-            });
-
-          parseGraphQLServer.applyGraphQL(expressApp);
-          await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-          const httpLink = createUploadLink({
-            uri: 'http://localhost:13377/graphql',
-            fetch,
-            headers,
-          });
-          apolloClient = new ApolloClient({
-            link: httpLink,
-            cache: new InMemoryCache(),
-            defaultOptions: {
-              query: {
-                fetchPolicy: 'no-cache',
+                resolve: () => 'fr',
               },
             },
+          }),
+          parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+            graphQLPath: '/graphql',
+            graphQLCustomTypeDefs: new GraphQLSchema({
+              query: new GraphQLObjectType({
+                name: 'Query',
+                fields: {
+                  customQuery: {
+                    type: new GraphQLNonNull(GraphQLString),
+                    args: {
+                      message: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: (p, { message }) => message,
+                  },
+                  customQueryWithAutoTypeReturn: {
+                    type: SomeClassType,
+                    args: {
+                      id: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: async (p, { id }) => {
+                      const obj = new Parse.Object('SomeClass');
+                      obj.id = id;
+                      await obj.fetch();
+                      return obj.toJSON();
+                    },
+                  },
+                },
+              }),
+              types: [
+                new GraphQLInputObjectType({
+                  name: 'CreateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                new GraphQLInputObjectType({
+                  name: 'UpdateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                SomeClassType,
+              ],
+            }),
           });
-        }
+
+        parseGraphQLServer.applyGraphQL(expressApp);
+        await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+        const httpLink = createUploadLink({
+          uri: 'http://localhost:13377/graphql',
+          fetch,
+          headers,
+        });
+        apolloClient = new ApolloClient({
+          link: httpLink,
+          cache: new InMemoryCache(),
+          defaultOptions: {
+            query: {
+              fetchPolicy: 'no-cache',
+            },
+          },
+        });
       });
 
-      afterAll(async () => {
+      afterEach(async () => {
         await httpServer.close();
       });
 

@@ -1,7 +1,7 @@
 'use strict';
 const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
@@ -319,10 +319,16 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(() => {
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             });
         },
       })
@@ -356,12 +362,18 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(error => {
               fail(JSON.stringify(error));
               if (server) {
-                server.close(done);
+                server.close(async () => {
+                  await reconfigureServer();
+                  done();
+                });
               } else {
                 done();
               }

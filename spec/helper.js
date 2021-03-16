@@ -1,14 +1,12 @@
 'use strict';
 const semver = require('semver');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
+const { SpecReporter } = require('jasmine-spec-reporter');
 
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
-if (process.env.PARSE_SERVER_LOG_LEVEL === 'debug') {
-  const { SpecReporter } = require('jasmine-spec-reporter');
-  jasmine.getEnv().addReporter(new SpecReporter());
-}
+jasmine.getEnv().addReporter(new SpecReporter());
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -28,6 +26,7 @@ if (global._babelPolyfill) {
 process.noDeprecation = true;
 
 const cache = require('../lib/cache').default;
+const defaults = require('../lib/defaults').default;
 const ParseServer = require('../lib/index').ParseServer;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
@@ -114,7 +113,7 @@ const defaultConfiguration = {
     custom: mockCustom(),
     facebook: mockFacebook(),
     myoauth: {
-      module: path.resolve(__dirname, 'myoauth'), // relative path as it's run from src
+      module: path.resolve(__dirname, 'support/myoauth'), // relative path as it's run from src
     },
     shortLivedAuth: mockShortLivedAuth(),
   },
@@ -125,6 +124,16 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 }
 
 const openConnections = {};
+const destroyAliveConnections = function () {
+  for (const socketId in openConnections) {
+    try {
+      openConnections[socketId].destroy();
+      delete openConnections[socketId];
+    } catch (e) {
+      /* */
+    }
+  }
+};
 // Set up a default API server for testing with default configuration.
 let server;
 
@@ -147,7 +156,6 @@ const reconfigureServer = (changedConfiguration = {}) => {
           if (error) {
             reject(error);
           } else {
-            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
             resolve(parseServer);
           }
         },
@@ -195,8 +203,9 @@ beforeAll(async () => {
 afterEach(function (done) {
   const afterLogOut = async () => {
     if (Object.keys(openConnections).length > 0) {
-      fail('There were open connections to the server left after the test finished');
+      console.warn('There were open connections to the server left after the test finished');
     }
+    destroyAliveConnections();
     await TestUtils.destroyAllDataPermanently(true);
     if (didChangeConfiguration) {
       await reconfigureServer();
@@ -206,6 +215,7 @@ afterEach(function (done) {
     done();
   };
   Parse.Cloud._removeAllHooks();
+  defaults.protectedFields = { _User: { '*': ['email'] } };
   databaseAdapter
     .getAllClasses()
     .then(allSchemas => {

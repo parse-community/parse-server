@@ -1,7 +1,7 @@
 'use strict';
 
 const request = require('../lib/request');
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
 const verifyPassword = function (login, password, isEmail = false) {
   const body = !isEmail ? { username: login, password } : { email: login, password };

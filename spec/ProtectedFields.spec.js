@@ -1,7 +1,7 @@
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
-const { className, createRole, createUser, logIn, updateCLP } = require('./dev');
+const { className, createRole, createUser, logIn, updateCLP } = require('./support/dev');
 
 describe('ProtectedFields', function () {
   it('should handle and empty protectedFields', async function () {
