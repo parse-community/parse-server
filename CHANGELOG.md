@@ -89,15 +89,13 @@ ___
 ## Unreleased (Master Branch)
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...master)
 ### Breaking Changes
-Leveraging database real-time hooks, schema caching has been drastically improved. These improvements allows for reduced calls to the DB, faster queries and prevention of memory leaks. A breaking change can occur if you are horizontally scaling Parse Server (multiple Parse Server instances connecting to the same DB). Set `databaseOptions: { enableSchemaHooks: true }` parameter in [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) (`enableSingleSchemaCache` and `schemaCacheTTL` have been removed). If you are horizontal scaling instances connected to MongoDB, you must use replica set clusters with WiredTiger, see [ChangeStream](https://docs.mongodb.com/manual/changeStreams/#availability)
-
-The new schema cache uses a singleton object that is stored in-memory. In a horizontally scaled environment, if you update the schema in one instance the DB hooks will update the schema in all other instances. `databaseOptions: { enableSchemaHooks: true }` enables the DB hooks. If you have multiple server instances but `databaseOptions: { enableSchemaHooks: false }`, your schema maybe out of sync in your instances (resyncing will happen if an instance restarts). (Diamond Lewis, SebC) [#7214](https://github.com/parse-community/parse-server/issues/7214)
+- Improved schema caching through database real-time hooks. Reduces DB queries, decreases Parse Query execution time and fixes a potential schema memory leak. If multiple Parse Server instances connect to the same DB (for example behind a load balancer), set the [Parse Server Option](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) `databaseOptions.enableSchemaHooks: true` to enable this feature and keep the schema in sync across all instances. Failing to do so will cause a schema change to not propagate to other instances and re-syncing will only happen when these instances restart. The options `enableSingleSchemaCache` and `schemaCacheTTL` have been removed. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required. (Diamond Lewis, SebC) [#7214](https://github.com/parse-community/parse-server/issues/7214)
 - Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) (dblythy, Manuel Trezza) [#7071](https://github.com/parse-community/parse-server/pull/7071)
 ### Notable Changes
 - Added Parse Server Security Check to report weak security settings (Manuel Trezza, dblythy) [#7247](https://github.com/parse-community/parse-server/issues/7247)
 - EXPERIMENTAL: Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification (Manuel Trezza) [#6891](https://github.com/parse-community/parse-server/issues/6891)
 - EXPERIMENTAL: Added custom routes to easily customize flows for password reset, email verification or build entirely new flows (Manuel Trezza) [#7231](https://github.com/parse-community/parse-server/issues/7231)
-### Other Commits
+### Other Changes
 - Fix error when a not yet inserted job is updated (Antonio Davi Macedo Coelho de Castro) [#7196](https://github.com/parse-community/parse-server/pull/7196)
 - request.context for afterFind triggers (dblythy) [#7078](https://github.com/parse-community/parse-server/pull/7078)
 - Winston Logger interpolating stdout to console (dplewis) [#7114](https://github.com/parse-community/parse-server/pull/7114)
@@ -125,7 +123,7 @@ ___
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
 ### Breaking Changes
 - FIX: Consistent casing for afterLiveQueryEvent. The afterLiveQueryEvent was introduced in 4.4.0 with inconsistent casing for the event names, which was fixed in 4.5.0. [#7023](https://github.com/parse-community/parse-server/pull/7023). Thanks to [dblythy](https://github.com/dblythy).
-### Other Commits
+### Other Changes
 - FIX: Properly handle serverURL and publicServerUrl in Batch requests. [#7049](https://github.com/parse-community/parse-server/pull/7049). Thanks to [Zach Goldberg](https://github.com/ZachGoldberg).
 - IMPROVE: Prevent invalid column names (className and length). [#7053](https://github.com/parse-community/parse-server/pull/7053). Thanks to [Diamond Lewis](https://github.com/dplewis).
 - IMPROVE: GraphQL: Remove viewer from logout mutation. [#7029](https://github.com/parse-community/parse-server/pull/7029). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
