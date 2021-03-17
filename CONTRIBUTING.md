@@ -13,6 +13,8 @@
     - [Postgres with Docker](#postgres-with-docker)
 - [Feature Considerations](#feature-considerations)
   - [Security Checks](#security-checks)
+    - [Add Security Check](#add-security-check)
+    - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
 - [Code of Conduct](#code-of-conduct)
@@ -82,6 +84,14 @@ Once you have babel running in watch mode, you can start making changes to parse
 * All the tests should point to sources in the `lib/` folder.
 * The `lib/` folder is produced by `babel` using either the `npm run build`, `npm run watch`, or the `npm run prepare` step.
 * The `npm run prepare` step is automatically invoked when your package depends on forked parse-server installed via git for example using `npm install --save git+https://github.com/[username]/parse-server#[branch/commit]`.
+* The tests are run against a single server instance. You can change the server configurations using `await reconfigureServer({ ... some configuration })` found in `spec/helper.js`.
+* The tests are ran at random.
+* Caches and Configurations are reset after every test.
+* Users are logged out after every test.
+* Cloud Code hooks are removed after every test.
+* Database is deleted after every test (indexes are not removed for speed)
+* Tests are located in the `spec` folder
+* For better test reporting enable `PARSE_SERVER_LOG_LEVEL=debug`
 
 ### Troubleshooting
 
@@ -106,6 +116,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 * Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
+* Mocks belong in the `spec/support` folder.
 * Please consider if any changes to the [docs](http://docs.parseplatform.org) are needed or add additional sections in the case of an enhancement or feature.
 
 ### Test against Postgres
@@ -162,7 +173,55 @@ A security check needs to be added for every new feature or enhancement that all
 
 For example, allowing public read and write to a class may be useful to simplify development but should be disallowed in a production environment.
 
-Security checks are added in [SecurityChecks.js](https://github.com/parse-community/parse-server/blob/master/src/SecurityChecks.js).
+Security checks are added in [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups).
+
+#### Add Security Check
+Adding a new security check for your feature is easy and fast:
+1. Look into [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups) whether there is an existing `CheckGroup[Category].js` file for the category of check to add. For example, a check regarding the database connection is added to `CheckGroupDatabase.js`.
+2. If you did not find a file, duplicate an existing file and replace the category name in `setName()` and the checks in `setChecks()`:
+    ```js
+    class CheckGroupNewCategory extends CheckGroup {
+      setName() {
+        return 'House';
+      }
+      setChecks() {
+        return [
+          new Check({
+            title: 'Door locked',
+            warning: 'Anyone can enter your house.',
+            solution: 'Lock the door.',
+            check: () => {    
+              return;     // Example of a passing check
+            }
+          }),
+          new Check({
+            title: 'Camera online',
+            warning: 'Security camera is offline.',
+            solution: 'Check the camera.',
+            check: async () => {  
+              throw 1;     // Example of a failing check
+            }
+          }),
+        ];
+      }
+    }
+    ```
+
+3. If you added a new file in the previous step, reference the file in [CheckGroups.js](https://github.com/parse-community/parse-server/blob/master/src/Security/CheckGroups/CheckGroups.js), which is the collector of all security checks:
+    ```
+    export { default as CheckGroupNewCategory } from './CheckGroupNewCategory';
+    ```
+4. Add a test that covers the new check to [SecurityCheckGroups.js](https://github.com/parse-community/parse-server/blob/master/spec/SecurityCheckGroups.js) for the cases of success and failure.
+
+#### Wording Guideline
+Consider the following when adding a new security check:
+- *Group.name*: The category name; ends without period as this is a headline.
+- *Check.title*: Is the positive hypothesis that should be checked, for example "Door locked" instead of "Door unlocked"; ends without period as this is a title.
+- *Check.warning*: The warning if the test fails; ends with period as this is a description.
+- *Check.solution*: The recommended solution if the test fails; ends with period as this is an instruction.
+- The wordings must not contain any sensitive information such as keys, as the security report may be exposed in logs.
+- The wordings should be concise and not contain verbose explanations, for example "Door locked" instead of "Door has been locked securely".
+- Do not use pronouns such as "you" or "your" because log files can have various readers with different roles. Do not use pronouns such as "I" or "me" because although we love it dearly, Parse Server is not a human.
 
 ### Parse Error
 

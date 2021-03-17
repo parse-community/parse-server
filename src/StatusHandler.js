@@ -1,10 +1,14 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
+import { KeyPromiseQueue } from './KeyPromiseQueue';
 import { logger } from './logger';
 import rest from './rest';
 import Auth from './Auth';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
+
+const pushPromiseQueue = new KeyPromiseQueue();
+const jobPromiseQueue = new KeyPromiseQueue();
 
 const incrementOp = function (object = {}, key, amount = 1) {
   if (!object[key]) {
@@ -28,22 +32,14 @@ export function flatten(array) {
 }
 
 function statusHandler(className, database) {
-  let lastPromise = Promise.resolve();
-
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return database.create(className, object).then(() => {
-        return Promise.resolve(object);
-      });
+    return database.create(className, object).then(() => {
+      return Promise.resolve(object);
     });
-    return lastPromise;
   }
 
   function update(where, object) {
-    lastPromise = lastPromise.then(() => {
-      return database.update(className, where, object);
-    });
-    return lastPromise;
+    return jobPromiseQueue.enqueue(where.objectId, () => database.update(className, where, object));
   }
 
   return Object.freeze({
@@ -53,29 +49,21 @@ function statusHandler(className, database) {
 }
 
 function restStatusHandler(className, config) {
-  let lastPromise = Promise.resolve();
   const auth = Auth.master(config);
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return rest.create(config, auth, className, object).then(({ response }) => {
-        // merge the objects
-        return Promise.resolve(Object.assign({}, object, response));
-      });
+    return rest.create(config, auth, className, object).then(({ response }) => {
+      return { ...object, ...response };
     });
-    return lastPromise;
   }
 
   function update(where, object) {
-    // TODO: when we have updateWhere, use that for proper interfacing
-    lastPromise = lastPromise.then(() => {
-      return rest
+    return pushPromiseQueue.enqueue(where.objectId, () =>
+      rest
         .update(config, auth, className, { objectId: where.objectId }, object)
         .then(({ response }) => {
-          // merge the objects
-          return Promise.resolve(Object.assign({}, object, response));
-        });
-    });
-    return lastPromise;
+          return { ...object, ...response };
+        })
+    );
   }
 
   return Object.freeze({

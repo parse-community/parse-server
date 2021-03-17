@@ -67,6 +67,7 @@ describe('miscellaneous', function () {
   });
 
   it('fail to create a duplicate username', async () => {
+    await reconfigureServer();
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({
@@ -114,6 +115,7 @@ describe('miscellaneous', function () {
   });
 
   it('ensure that email is uniquely indexed', async () => {
+    await reconfigureServer();
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({
@@ -170,6 +172,7 @@ describe('miscellaneous', function () {
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
+      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
       .then(() => config.database.adapter.createClass('_User', userSchema))
       .then(() =>
         config.database.adapter
@@ -210,6 +213,7 @@ describe('miscellaneous', function () {
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
+      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
       .then(() => config.database.adapter.createClass('_User', userSchema))
       .then(() =>
         config.database.adapter.createObject('_User', userSchema, {
@@ -244,7 +248,8 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', async done => {
+    await reconfigureServer();
     const config = Config.get('test');
     config.database.adapter
       .addFieldIfNotExists('_User', 'randomField', { type: 'String' })

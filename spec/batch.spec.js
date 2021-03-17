@@ -1,7 +1,7 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
-const TestUtils = require('../lib/TestUtils');
 const semver = require('semver');
+const TestUtils = require('../lib/TestUtils');
 
 const originalURL = '/parse/batch';
 const serverURL = 'http://localhost:1234/parse';
@@ -89,7 +89,7 @@ describe('batch', () => {
     expect(internalURL).toEqual('/classes/Object');
   });
 
-  it('should handle a batch request without transaction', done => {
+  it('should handle a batch request without transaction', async done => {
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
@@ -127,7 +127,8 @@ describe('batch', () => {
     });
   });
 
-  it('should handle a batch request with transaction = false', done => {
+  it('should handle a batch request with transaction = false', async done => {
+    await reconfigureServer();
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
@@ -173,7 +174,8 @@ describe('batch', () => {
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
+        await TestUtils.destroyAllDataPermanently(true);
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
@@ -184,14 +186,13 @@ describe('batch', () => {
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
+        } else {
+          await reconfigureServer();
         }
       });
 
-      beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
-      });
-
-      it('should handle a batch request with transaction = true', done => {
+      it('should handle a batch request with transaction = true', async done => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         myObject
           .save()
@@ -229,7 +230,6 @@ describe('batch', () => {
               const query = new Parse.Query('MyObject');
               query.find().then(results => {
                 expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
-                expect(databaseAdapter.createObject.calls.count() > 0).toEqual(true);
                 for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
                   expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
                     databaseAdapter.createObject.calls.argsFor(i + 1)[3]
@@ -245,125 +245,121 @@ describe('batch', () => {
           });
       });
 
-      it('should not save anything when one operation fails in a transaction', done => {
+      it('should not save anything when one operation fails in a transaction', async () => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        myObject
-          .save()
-          .then(() => {
-            return myObject.destroy();
-          })
-          .then(() => {
-            request({
-              method: 'POST',
-              headers: headers,
-              url: 'http://localhost:8378/1/batch',
-              body: JSON.stringify({
-                requests: [
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 10 },
-                  },
-                ],
-                transaction: true,
-              }),
-            }).catch(error => {
-              expect(error.data).toBeDefined();
-              const query = new Parse.Query('MyObject');
-              query.find().then(results => {
-                expect(results.length).toBe(0);
-                done();
-              });
-            });
+        await myObject.save();
+        await myObject.destroy();
+        try {
+          await request({
+            method: 'POST',
+            headers: headers,
+            url: 'http://localhost:8378/1/batch',
+            body: JSON.stringify({
+              requests: [
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+              ],
+              transaction: true,
+            }),
           });
+        } catch (error) {
+          expect(error).toBeDefined();
+          const query = new Parse.Query('MyObject');
+          const results = await query.find();
+          expect(results.length).toBe(0);
+        }
       });
 
       it('should generate separate session for each call', async () => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();

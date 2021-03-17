@@ -140,13 +140,9 @@ const masterKeyHeaders = {
 };
 
 describe('schemas', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await reconfigureServer();
     config = Config.get('test');
-  });
-
-  afterEach(async () => {
-    await config.database.schemaCache.clear();
-    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('requires the master key to get all schemas', done => {
@@ -1274,6 +1270,7 @@ describe('schemas', () => {
           },
         },
       }).then(response => {
+        delete response.data.indexes;
         expect(
           dd(response.data, {
             className: '_User',
@@ -1302,6 +1299,7 @@ describe('schemas', () => {
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
+          delete response.data.indexes;
           expect(
             dd(response.data, {
               className: '_User',
@@ -2816,7 +2814,11 @@ describe('schemas', () => {
   });
 
   describe('index management', () => {
-    beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
+    beforeEach(async () => {
+      await TestUtils.destroyAllDataPermanently(false);
+      await config.database.adapter.performInitialization({ VolatileClassesSchemas: [] });
+    });
+
     it('cannot create index if field does not exist', done => {
       request({
         url: 'http://localhost:8378/1/schemas/NewClass',
