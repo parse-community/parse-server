@@ -13,6 +13,9 @@ import deepcopy from 'deepcopy';
 import logger from '../logger';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
+import type { LoadSchemaOptions } from './types';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
 
 function addWriteACL(query, acl) {
@@ -230,9 +233,6 @@ const filterSensitiveData = (
   return object;
 };
 
-import type { LoadSchemaOptions } from './types';
-import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
-
 // Runs an update on the database.
 // Returns a promise for an object with the new values for field
 // modifications that don't know their results ahead of time, like
@@ -398,9 +398,8 @@ class DatabaseController {
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
 
-  constructor(adapter: StorageAdapter, schemaCache: any) {
+  constructor(adapter: StorageAdapter) {
     this.adapter = adapter;
-    this.schemaCache = schemaCache;
     // We don't want a mutable this.schema, because then you could have
     // one request that uses different schemas for different parts of
     // it. Instead, use loadSchema to get a schema.
@@ -434,7 +433,7 @@ class DatabaseController {
     if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
-    this.schemaPromise = SchemaController.load(this.adapter, this.schemaCache, options);
+    this.schemaPromise = SchemaController.load(this.adapter, options);
     this.schemaPromise.then(
       () => delete this.schemaPromise,
       () => delete this.schemaPromise
@@ -916,7 +915,8 @@ class DatabaseController {
    */
   deleteEverything(fast: boolean = false): Promise<any> {
     this.schemaPromise = null;
-    return Promise.all([this.adapter.deleteAllClasses(fast), this.schemaCache.clear()]);
+    SchemaCache.clear();
+    return this.adapter.deleteAllClasses(fast);
   }
 
   // Returns a promise for a list of related ids given an owning id.
@@ -1325,8 +1325,12 @@ class DatabaseController {
   }
 
   deleteSchema(className: string): Promise<void> {
+    let schemaController;
     return this.loadSchema({ clearCache: true })
-      .then(schemaController => schemaController.getOneSchema(className, true))
+      .then(s => {
+        schemaController = s;
+        return schemaController.getOneSchema(className, true);
+      })
       .catch(error => {
         if (error === undefined) {
           return { fields: {} };
@@ -1356,7 +1360,8 @@ class DatabaseController {
                   this.adapter.deleteClass(joinTableName(className, name))
                 )
               ).then(() => {
-                return;
+                SchemaCache.del(className);
+                return schemaController.reloadData();
               });
             } else {
               return Promise.resolve();
@@ -1666,7 +1671,10 @@ class DatabaseController {
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
   // have a Parse app without it having a _User collection.
-  performInitialization() {
+  async performInitialization() {
+    await this.adapter.performInitialization({
+      VolatileClassesSchemas: SchemaController.VolatileClassesSchemas,
+    });
     const requiredUserFields = {
       fields: {
         ...SchemaController.defaultColumns._Default,
@@ -1685,113 +1693,64 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
+    await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
+    if (this.adapter instanceof MongoStorageAdapter) {
+      await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
+    }
 
-    const userClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_User'));
-    const roleClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
-    const idempotencyClassPromise =
-      this.adapter instanceof MongoStorageAdapter
-        ? this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'))
-        : Promise.resolve();
+    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for usernames: ', error);
+      throw error;
+    });
 
-    const usernameUniqueness = userClassPromise
-      .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
       .catch(error => {
-        logger.warn('Unable to ensure uniqueness for usernames: ', error);
+        logger.warn('Unable to create case insensitive username index: ', error);
         throw error;
       });
-
-    const usernameCaseInsensitiveIndex = userClassPromise
-      .then(() =>
-        this.adapter.ensureIndex(
-          '_User',
-          requiredUserFields,
-          ['username'],
-          'case_insensitive_username',
-          true
-        )
-      )
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive username index: ', error);
         throw error;
       });
 
-    const emailUniqueness = userClassPromise
-      .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
-        throw error;
-      });
+    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
+      throw error;
+    });
 
-    const emailCaseInsensitiveIndex = userClassPromise
-      .then(() =>
-        this.adapter.ensureIndex(
-          '_User',
-          requiredUserFields,
-          ['email'],
-          'case_insensitive_email',
-          true
-        )
-      )
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive email index: ', error);
         throw error;
       });
 
-    const roleUniqueness = roleClassPromise
-      .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for role name: ', error);
-        throw error;
-      });
-
-    const idempotencyRequestIdIndex =
-      this.adapter instanceof MongoStorageAdapter
-        ? idempotencyClassPromise
-          .then(() =>
-            this.adapter.ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
-          )
-          .catch(error => {
-            logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
-            throw error;
-          })
-        : Promise.resolve();
-
-    const idempotencyExpireIndex =
-      this.adapter instanceof MongoStorageAdapter
-        ? idempotencyClassPromise
-          .then(() =>
-            this.adapter.ensureIndex(
-              '_Idempotency',
-              requiredIdempotencyFields,
-              ['expire'],
-              'ttl',
-              false,
-              { ttl: 0 }
-            )
-          )
-          .catch(error => {
-            logger.warn('Unable to create TTL index for idempotency expire date: ', error);
-            throw error;
-          })
-        : Promise.resolve();
-
-    const indexPromise = this.adapter.updateSchemaWithIndexes();
-
-    // Create tables for volatile classes
-    const adapterInit = this.adapter.performInitialization({
-      VolatileClassesSchemas: SchemaController.VolatileClassesSchemas,
+    await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for role name: ', error);
+      throw error;
     });
-    return Promise.all([
-      usernameUniqueness,
-      usernameCaseInsensitiveIndex,
-      emailUniqueness,
-      emailCaseInsensitiveIndex,
-      roleUniqueness,
-      idempotencyRequestIdIndex,
-      idempotencyExpireIndex,
-      adapterInit,
-      indexPromise,
-    ]);
+    if (this.adapter instanceof MongoStorageAdapter) {
+      await this.adapter
+        .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
+        .catch(error => {
+          logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
+          throw error;
+        });
+
+      await this.adapter
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
+          ttl: 0,
+        })
+        .catch(error => {
+          logger.warn('Unable to create TTL index for idempotency expire date: ', error);
+          throw error;
+        });
+    }
+    await this.adapter.updateSchemaWithIndexes();
   }
 
   static _validateQuery: any => void;

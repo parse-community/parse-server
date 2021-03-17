@@ -18,7 +18,7 @@
  * @property {String} collectionPrefix A collection prefix for the classes
  * @property {CustomPagesOptions} customPages custom pages for password validation and reset
  * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database
- * @property {Any} databaseOptions Options to pass to the mongodb client
+ * @property {DatabaseOptions} databaseOptions Options to pass to the database client
  * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postgres.
  * @property {Boolean} directAccess Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {String} dotNetKey Key for Unity and .Net SDK
@@ -27,7 +27,6 @@
  * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration, in seconds
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
- * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
  * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
@@ -54,6 +53,7 @@
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
+ * @property {PagesOptions} pages The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
@@ -66,7 +66,7 @@
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
- * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
+ * @property {SecurityOptions} security The security options to identify and report weak security settings.
  * @property {Function} serverCloseComplete Callback when server has closed
  * @property {Function} serverStartComplete Callback when server has started
  * @property {String} serverURL URL to your parse server with http:// or https://.
@@ -80,9 +80,51 @@
  */
 
 /**
+ * @interface SecurityOptions
+ * @property {CheckGroup[]} checkGroups The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`.
+ * @property {Boolean} enableCheck Is true if Parse Server should check for weak security settings.
+ * @property {Boolean} enableCheckLog Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
+ */
+
+/**
+ * @interface PagesOptions
+ * @property {PagesRoute[]} customRoutes The custom routes.
+ * @property {PagesCustomUrlsOptions} customUrls The URLs to the custom pages.
+ * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
+ * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+ * @property {Boolean} forceRedirect Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
+ * @property {String} localizationFallbackLocale The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
+ * @property {String} localizationJsonPath The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.
+ * @property {String} pagesEndpoint The API endpoint for the pages. Default is 'apps'.
+ * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
+ * @property {Object} placeholders The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
+ */
+
+/**
+ * @interface PagesRoute
+ * @property {Function} handler The route handler that is an async function.
+ * @property {String} method The route method, e.g. 'GET' or 'POST'.
+ * @property {String} path The route path.
+ */
+
+/**
+ * @interface PagesCustomUrlsOptions
+ * @property {String} emailVerificationLinkExpired The URL to the custom page for email verification -> link expired.
+ * @property {String} emailVerificationLinkInvalid The URL to the custom page for email verification -> link invalid.
+ * @property {String} emailVerificationSendFail The URL to the custom page for email verification -> link send fail.
+ * @property {String} emailVerificationSendSuccess The URL to the custom page for email verification -> resend link -> success.
+ * @property {String} emailVerificationSuccess The URL to the custom page for email verification -> success.
+ * @property {String} passwordReset The URL to the custom page for password reset.
+ * @property {String} passwordResetLinkInvalid The URL to the custom page for password reset -> link invalid.
+ * @property {String} passwordResetSuccess The URL to the custom page for password reset -> success.
+ */
+
+/**
  * @interface CustomPagesOptions
  * @property {String} choosePassword choose password page path
+ * @property {String} expiredVerificationLink expired verification link page path
  * @property {String} invalidLink invalid link page path
+ * @property {String} invalidPasswordResetLink invalid password reset link page path
  * @property {String} invalidVerificationLink invalid verification link page path
  * @property {String} linkSendFail verification link send fail page path
  * @property {String} linkSendSuccess verification link send success page path
@@ -126,6 +168,7 @@
  * @interface AccountLockoutOptions
  * @property {Number} duration number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
  * @property {Number} threshold number of failed sign-in attempts that will cause a user account to be locked
+ * @property {Boolean} unlockOnPasswordReset Is true if the account lock should be removed after a successful password reset.
  */
 
 /**
@@ -144,4 +187,9 @@
  * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
+ */
+
+/**
+ * @interface DatabaseOptions
+ * @property {Boolean} enableSchemaHooks Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
  */

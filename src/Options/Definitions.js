@@ -100,7 +100,7 @@ module.exports.ParseServerOptions = {
   },
   databaseOptions: {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
-    help: 'Options to pass to the mongodb client',
+    help: 'Options to pass to the database client',
     action: parsers.objectParser,
   },
   databaseURI: {
@@ -149,13 +149,6 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  enableSingleSchemaCache: {
-    env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
-    help:
-      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
-    action: parsers.booleanParser,
-    default: false,
-  },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
     help: 'Key for encrypting your files',
@@ -179,6 +172,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
     help: 'Options for file uploads',
     action: parsers.objectParser,
+    default: {},
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
@@ -288,6 +282,13 @@ module.exports.ParseServerOptions = {
     action: parsers.numberParser('objectIdSize'),
     default: 10,
   },
+  pages: {
+    env: 'PARSE_SERVER_PAGES',
+    help:
+      'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
+    action: parsers.objectParser,
+    default: {},
+  },
   passwordPolicy: {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
     help: 'Password policy for enforcing password related rules',
@@ -358,12 +359,11 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  schemaCacheTTL: {
-    env: 'PARSE_SERVER_SCHEMA_CACHE_TTL',
-    help:
-      'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
-    action: parsers.numberParser('schemaCacheTTL'),
-    default: 5000,
+  security: {
+    env: 'PARSE_SERVER_SECURITY',
+    help: 'The security options to identify and report weak security settings.',
+    action: parsers.objectParser,
+    default: {},
   },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
@@ -416,14 +416,157 @@ module.exports.ParseServerOptions = {
     help: 'Key sent with outgoing webhook calls',
   },
 };
+module.exports.SecurityOptions = {
+  checkGroups: {
+    env: 'PARSE_SERVER_SECURITY_CHECK_GROUPS',
+    help:
+      'The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`.',
+    action: parsers.arrayParser,
+  },
+  enableCheck: {
+    env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK',
+    help: 'Is true if Parse Server should check for weak security settings.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  enableCheckLog: {
+    env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK_LOG',
+    help:
+      'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.PagesOptions = {
+  customRoutes: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_ROUTES',
+    help: 'The custom routes.',
+    action: parsers.arrayParser,
+    default: [],
+  },
+  customUrls: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URLS',
+    help: 'The URLs to the custom pages.',
+    action: parsers.objectParser,
+    default: {},
+  },
+  enableLocalization: {
+    env: 'PARSE_SERVER_PAGES_ENABLE_LOCALIZATION',
+    help: 'Is true if pages should be localized; this has no effect on custom page redirects.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  enableRouter: {
+    env: 'PARSE_SERVER_PAGES_ENABLE_ROUTER',
+    help:
+      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  forceRedirect: {
+    env: 'PARSE_SERVER_PAGES_FORCE_REDIRECT',
+    help:
+      'Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  localizationFallbackLocale: {
+    env: 'PARSE_SERVER_PAGES_LOCALIZATION_FALLBACK_LOCALE',
+    help:
+      'The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.',
+    default: 'en',
+  },
+  localizationJsonPath: {
+    env: 'PARSE_SERVER_PAGES_LOCALIZATION_JSON_PATH',
+    help:
+      'The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.',
+  },
+  pagesEndpoint: {
+    env: 'PARSE_SERVER_PAGES_PAGES_ENDPOINT',
+    help: "The API endpoint for the pages. Default is 'apps'.",
+    default: 'apps',
+  },
+  pagesPath: {
+    env: 'PARSE_SERVER_PAGES_PAGES_PATH',
+    help:
+      "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.",
+    default: './public',
+  },
+  placeholders: {
+    env: 'PARSE_SERVER_PAGES_PLACEHOLDERS',
+    help:
+      'The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.',
+    action: parsers.objectParser,
+    default: {},
+  },
+};
+module.exports.PagesRoute = {
+  handler: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_HANDLER',
+    help: 'The route handler that is an async function.',
+    required: true,
+  },
+  method: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_METHOD',
+    help: "The route method, e.g. 'GET' or 'POST'.",
+    required: true,
+  },
+  path: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_PATH',
+    help: 'The route path.',
+    required: true,
+  },
+};
+module.exports.PagesCustomUrlsOptions = {
+  emailVerificationLinkExpired: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_EXPIRED',
+    help: 'The URL to the custom page for email verification -> link expired.',
+  },
+  emailVerificationLinkInvalid: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_INVALID',
+    help: 'The URL to the custom page for email verification -> link invalid.',
+  },
+  emailVerificationSendFail: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_FAIL',
+    help: 'The URL to the custom page for email verification -> link send fail.',
+  },
+  emailVerificationSendSuccess: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_SUCCESS',
+    help: 'The URL to the custom page for email verification -> resend link -> success.',
+  },
+  emailVerificationSuccess: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SUCCESS',
+    help: 'The URL to the custom page for email verification -> success.',
+  },
+  passwordReset: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET',
+    help: 'The URL to the custom page for password reset.',
+  },
+  passwordResetLinkInvalid: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_LINK_INVALID',
+    help: 'The URL to the custom page for password reset -> link invalid.',
+  },
+  passwordResetSuccess: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_SUCCESS',
+    help: 'The URL to the custom page for password reset -> success.',
+  },
+};
 module.exports.CustomPagesOptions = {
   choosePassword: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_CHOOSE_PASSWORD',
     help: 'choose password page path',
   },
+  expiredVerificationLink: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_EXPIRED_VERIFICATION_LINK',
+    help: 'expired verification link page path',
+  },
   invalidLink: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK',
     help: 'invalid link page path',
+  },
+  invalidPasswordResetLink: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_PASSWORD_RESET_LINK',
+    help: 'invalid password reset link page path',
   },
   invalidVerificationLink: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_VERIFICATION_LINK',
@@ -569,6 +712,12 @@ module.exports.AccountLockoutOptions = {
     help: 'number of failed sign-in attempts that will cause a user account to be locked',
     action: parsers.numberParser('threshold'),
   },
+  unlockOnPasswordReset: {
+    env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_UNLOCK_ON_PASSWORD_RESET',
+    help: 'Is true if the account lock should be removed after a successful password reset.',
+    action: parsers.booleanParser,
+    default: false,
+  },
 };
 module.exports.PasswordPolicyOptions = {
   doNotAllowUsername: {
@@ -621,6 +770,15 @@ module.exports.FileUploadOptions = {
   enableForPublic: {
     env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_PUBLIC',
     help: 'Is true if file upload should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.DatabaseOptions = {
+  enableSchemaHooks: {
+    env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
+    help:
+      'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
   },

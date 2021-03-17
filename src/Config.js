@@ -3,13 +3,16 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import AppCache from './cache';
-import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import {
   IdempotencyOptions,
   FileUploadOptions,
+  AccountLockoutOptions,
+  PagesOptions,
+  SecurityOptions,
 } from './Options/Definitions';
+import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -31,12 +34,7 @@ export class Config {
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
       if (key == 'databaseController') {
-        const schemaCache = new SchemaCache(
-          cacheInfo.cacheController,
-          cacheInfo.schemaCacheTTL,
-          cacheInfo.enableSingleSchemaCache
-        );
-        config.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+        config.database = new DatabaseController(cacheInfo.databaseController.adapter);
       } else {
         config[key] = cacheInfo[key];
       }
@@ -75,6 +73,8 @@ export class Config {
     idempotencyOptions,
     emailVerifyTokenReuseIfValid,
     fileUpload,
+    pages,
+    security,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -109,6 +109,83 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
+    this.validatePagesOptions(pages);
+    this.validateSecurityOptions(security);
+  }
+
+  static validateSecurityOptions(security) {
+    if (Object.prototype.toString.call(security) !== '[object Object]') {
+      throw 'Parse Server option security must be an object.';
+    }
+    if (security.enableCheck === undefined) {
+      security.enableCheck = SecurityOptions.enableCheck.default;
+    } else if (!isBoolean(security.enableCheck)) {
+      throw 'Parse Server option security.enableCheck must be a boolean.';
+    }
+    if (security.enableCheckLog === undefined) {
+      security.enableCheckLog = SecurityOptions.enableCheckLog.default;
+    } else if (!isBoolean(security.enableCheckLog)) {
+      throw 'Parse Server option security.enableCheckLog must be a boolean.';
+    }
+  }
+
+  static validatePagesOptions(pages) {
+    if (Object.prototype.toString.call(pages) !== '[object Object]') {
+      throw 'Parse Server option pages must be an object.';
+    }
+    if (pages.enableRouter === undefined) {
+      pages.enableRouter = PagesOptions.enableRouter.default;
+    } else if (!isBoolean(pages.enableRouter)) {
+      throw 'Parse Server option pages.enableRouter must be a boolean.';
+    }
+    if (pages.enableLocalization === undefined) {
+      pages.enableLocalization = PagesOptions.enableLocalization.default;
+    } else if (!isBoolean(pages.enableLocalization)) {
+      throw 'Parse Server option pages.enableLocalization must be a boolean.';
+    }
+    if (pages.localizationJsonPath === undefined) {
+      pages.localizationJsonPath = PagesOptions.localizationJsonPath.default;
+    } else if (!isString(pages.localizationJsonPath)) {
+      throw 'Parse Server option pages.localizationJsonPath must be a string.';
+    }
+    if (pages.localizationFallbackLocale === undefined) {
+      pages.localizationFallbackLocale = PagesOptions.localizationFallbackLocale.default;
+    } else if (!isString(pages.localizationFallbackLocale)) {
+      throw 'Parse Server option pages.localizationFallbackLocale must be a string.';
+    }
+    if (pages.placeholders === undefined) {
+      pages.placeholders = PagesOptions.placeholders.default;
+    } else if (
+      Object.prototype.toString.call(pages.placeholders) !== '[object Object]' &&
+      typeof pages.placeholders !== 'function'
+    ) {
+      throw 'Parse Server option pages.placeholders must be an object or a function.';
+    }
+    if (pages.forceRedirect === undefined) {
+      pages.forceRedirect = PagesOptions.forceRedirect.default;
+    } else if (!isBoolean(pages.forceRedirect)) {
+      throw 'Parse Server option pages.forceRedirect must be a boolean.';
+    }
+    if (pages.pagesPath === undefined) {
+      pages.pagesPath = PagesOptions.pagesPath.default;
+    } else if (!isString(pages.pagesPath)) {
+      throw 'Parse Server option pages.pagesPath must be a string.';
+    }
+    if (pages.pagesEndpoint === undefined) {
+      pages.pagesEndpoint = PagesOptions.pagesEndpoint.default;
+    } else if (!isString(pages.pagesEndpoint)) {
+      throw 'Parse Server option pages.pagesEndpoint must be a string.';
+    }
+    if (pages.customUrls === undefined) {
+      pages.customUrls = PagesOptions.customUrls.default;
+    } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
+      throw 'Parse Server option pages.customUrls must be an object.';
+    }
+    if (pages.customRoutes === undefined) {
+      pages.customRoutes = PagesOptions.customRoutes.default;
+    } else if (!(pages.customRoutes instanceof Array)) {
+      throw 'Parse Server option pages.customRoutes must be an array.';
+    }
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
@@ -145,6 +222,12 @@ export class Config {
         accountLockout.threshold > 999
       ) {
         throw 'Account lockout threshold should be an integer greater than 0 and less than 1000';
+      }
+
+      if (accountLockout.unlockOnPasswordReset === undefined) {
+        accountLockout.unlockOnPasswordReset = AccountLockoutOptions.unlockOnPasswordReset.default;
+      } else if (!isBoolean(accountLockout.unlockOnPasswordReset)) {
+        throw 'Parse Server option accountLockout.unlockOnPasswordReset must be a boolean.';
       }
     }
   }
@@ -250,11 +333,15 @@ export class Config {
   }
 
   static validateFileUploadOptions(fileUpload) {
-    if (!fileUpload) {
-      fileUpload = {};
-    }
-    if (typeof fileUpload !== 'object' || fileUpload instanceof Array) {
-      throw 'fileUpload must be an object value.';
+    try {
+      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
+        throw 'fileUpload must be an object value.';
+      }
+    } catch (e) {
+      if (e instanceof ReferenceError) {
+        return;
+      }
+      throw e;
     }
     if (fileUpload.enableForAnonymousUser === undefined) {
       fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
@@ -382,7 +469,7 @@ export class Config {
   }
 
   get requestResetPasswordURL() {
-    return `${this.publicServerURL}/apps/${this.applicationId}/request_password_reset`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/request_password_reset`;
   }
 
   get passwordResetSuccessURL() {
@@ -397,7 +484,15 @@ export class Config {
   }
 
   get verifyEmailURL() {
-    return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
+  }
+
+  // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
+  // the (default) endpoint has to be defined in PagesRouter only.
+  get pagesEndpoint() {
+    return this.pages && this.pages.enableRouter && this.pages.pagesEndpoint
+      ? this.pages.pagesEndpoint
+      : 'apps';
   }
 }
 

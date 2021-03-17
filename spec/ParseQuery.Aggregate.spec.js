@@ -83,18 +83,6 @@ describe('Parse.Query Aggregate testing', () => {
     );
   });
 
-  it('invalid query invalid key', done => {
-    const options = Object.assign({}, masterKeyOptions, {
-      body: {
-        unknown: {},
-      },
-    });
-    get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
-      expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
-      done();
-    });
-  });
-
   it('invalid query group _id', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
@@ -1312,7 +1300,8 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('aggregate allow multiple of same stage', done => {
+  it_exclude_dbs(['postgres'])('aggregate allow multiple of same stage', async done => {
+    await reconfigureServer();
     const pointer1 = new TestObject({ value: 1 });
     const pointer2 = new TestObject({ value: 2 });
     const pointer3 = new TestObject({ value: 3 });
@@ -1415,20 +1404,16 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results.length).toEqual(2);
     expect(results[0].value).toEqual(2);
     expect(results[1].value).toEqual(3);
+    await database.adapter.deleteAllClasses(false);
   });
 
   it_only_db('mongo')('aggregate geoNear with near GeoJSON point', async () => {
     // Create geo index which is required for `geoNear` query
     const database = Config.get(Parse.applicationId).database;
     const schema = await new Parse.Schema('GeoObject').save();
-    await database.adapter.ensureIndex(
-      'GeoObject',
-      schema,
-      ['location'],
-      undefined,
-      false,
-      '2dsphere'
-    );
+    await database.adapter.ensureIndex('GeoObject', schema, ['location'], undefined, false, {
+      indexType: '2dsphere',
+    });
     // Create objects
     const GeoObject = Parse.Object.extend('GeoObject');
     const obj1 = new GeoObject({
@@ -1465,20 +1450,16 @@ describe('Parse.Query Aggregate testing', () => {
     const results = await query.aggregate(pipeline);
     // Check results
     expect(results.length).toEqual(3);
+    await database.adapter.deleteAllClasses(false);
   });
 
   it_only_db('mongo')('aggregate geoNear with near legacy coordinate pair', async () => {
     // Create geo index which is required for `geoNear` query
     const database = Config.get(Parse.applicationId).database;
     const schema = await new Parse.Schema('GeoObject').save();
-    await database.adapter.ensureIndex(
-      'GeoObject',
-      schema,
-      ['location'],
-      undefined,
-      false,
-      '2dsphere'
-    );
+    await database.adapter.ensureIndex('GeoObject', schema, ['location'], undefined, false, {
+      indexType: '2dsphere',
+    });
     // Create objects
     const GeoObject = Parse.Object.extend('GeoObject');
     const obj1 = new GeoObject({
@@ -1512,5 +1493,6 @@ describe('Parse.Query Aggregate testing', () => {
     const results = await query.aggregate(pipeline);
     // Check results
     expect(results.length).toEqual(3);
+    await database.adapter.deleteAllClasses(false);
   });
 });

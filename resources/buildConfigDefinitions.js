@@ -42,13 +42,18 @@ function getCommentValue(comment) {
 function getENVPrefix(iface) {
   const options = {
     'ParseServerOptions' : 'PARSE_SERVER_',
+    'PagesOptions' : 'PARSE_SERVER_PAGES_',
+    'PagesRoute': 'PARSE_SERVER_PAGES_ROUTE_',
+    'PagesCustomUrlsOptions' : 'PARSE_SERVER_PAGES_CUSTOM_URL_',
     'CustomPagesOptions' : 'PARSE_SERVER_CUSTOM_PAGES_',
     'LiveQueryServerOptions' : 'PARSE_LIVE_QUERY_SERVER_',
     'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
     'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
     'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
     'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
-    'FileUploadOptions' : 'PARSE_SERVER_FILE_UPLOAD_'
+    'FileUploadOptions' : 'PARSE_SERVER_FILE_UPLOAD_',
+    'SecurityOptions': 'PARSE_SERVER_SECURITY_',
+    'DatabaseOptions': 'PARSE_SERVER_DATABASE_'
   }
   if (options[iface.id.name]) {
     return options[iface.id.name]
@@ -164,7 +169,7 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    const literalTypes = ['IdempotencyOptions','FileUploadOptions','CustomPagesOptions'];
+    const literalTypes = ['Object', 'SecurityOptions', 'PagesRoute', 'IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions', 'DatabaseOptions'];
     if (literalTypes.includes(type)) {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
@@ -215,7 +220,9 @@ function inject(t, list) {
       type = elt.typeAnnotation.id.name;
     }
     if (type === 'Array') {
-      type = `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
+      type = elt.typeAnnotation.elementType.id
+        ? `${elt.typeAnnotation.elementType.id.name}[]`
+        : `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
     }
     if (type === 'NumberOrBoolean') {
       type = 'Number|Boolean';

@@ -13,6 +13,71 @@ function getClassName(parseClass) {
   return parseClass;
 }
 
+function validateValidator(validator) {
+  if (!validator || typeof validator === 'function') {
+    return;
+  }
+  const fieldOptions = {
+    type: ['Any'],
+    constant: [Boolean],
+    default: ['Any'],
+    options: [Array, 'function', 'Any'],
+    required: [Boolean],
+    error: [String],
+  };
+  const allowedKeys = {
+    requireUser: [Boolean],
+    requireAnyUserRoles: [Array, 'function'],
+    requireAllUserRoles: [Array, 'function'],
+    requireMaster: [Boolean],
+    validateMasterKey: [Boolean],
+    skipWithMasterKey: [Boolean],
+    requireUserKeys: [Array, Object],
+    fields: [Array, Object],
+  };
+  const getType = fn => {
+    if (Array.isArray(fn)) {
+      return 'array';
+    }
+    if (fn === 'Any' || fn === 'function') {
+      return fn;
+    }
+    const type = typeof fn;
+    if (typeof fn === 'function') {
+      const match = fn && fn.toString().match(/^\s*function (\w+)/);
+      return (match ? match[1] : 'function').toLowerCase();
+    }
+    return type;
+  };
+  const checkKey = (key, data, validatorParam) => {
+    const parameter = data[key];
+    if (!parameter) {
+      throw `${key} is not a supported parameter for Cloud Function validations.`;
+    }
+    const types = parameter.map(type => getType(type));
+    const type = getType(validatorParam);
+    if (!types.includes(type) && !types.includes('Any')) {
+      throw `Invalid type for Cloud Function validation key ${key}. Expected ${types.join(
+        '|'
+      )}, actual ${type}`;
+    }
+  };
+  for (const key in validator) {
+    checkKey(key, allowedKeys, validator[key]);
+    if (key === 'fields' || key === 'requireUserKeys') {
+      const values = validator[key];
+      if (Array.isArray(values)) {
+        continue;
+      }
+      for (const value in values) {
+        const data = values[value];
+        for (const subKey in data) {
+          checkKey(subKey, fieldOptions, data[subKey]);
+        }
+      }
+    }
+  }
+}
 /** @namespace
  * @name Parse
  * @description The Parse SDK.
@@ -50,6 +115,7 @@ var ParseCloud = {};
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.define = function (functionName, handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
 };
 
@@ -96,6 +162,7 @@ ParseCloud.job = function (functionName, handler) {
  */
 ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeSave,
     className,
@@ -131,6 +198,7 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeDelete,
     className,
@@ -260,6 +328,7 @@ ParseCloud.afterLogout = function (handler) {
  */
 ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterSave,
     className,
@@ -295,6 +364,7 @@ ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterDelete,
     className,
@@ -330,6 +400,7 @@ ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeFind,
     className,
@@ -365,6 +436,7 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
   const className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterFind,
     className,
@@ -397,6 +469,7 @@ ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSaveFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.beforeSaveFile,
     handler,
@@ -428,6 +501,7 @@ ParseCloud.beforeSaveFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterSaveFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.afterSaveFile,
     handler,
@@ -459,6 +533,7 @@ ParseCloud.afterSaveFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.beforeDeleteFile,
     handler,
@@ -490,6 +565,7 @@ ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterDeleteFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.afterDeleteFile,
     handler,
@@ -521,6 +597,7 @@ ParseCloud.afterDeleteFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.ConnectTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeConnect = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addConnectTrigger(
     triggers.Types.beforeConnect,
     handler,
@@ -585,6 +662,7 @@ ParseCloud.sendEmail = function (data) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
+  validateValidator(validationHandler);
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeSubscribe,
@@ -624,6 +702,7 @@ ParseCloud.onLiveQueryEvent = function (handler) {
  */
 ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandler) {
   const className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterEvent,
     className,
@@ -750,6 +829,9 @@ module.exports = ParseCloud;
  * @property {String} requireUserKeys.field If requireUserKeys is an object, name of field to validate on request user
  * @property {Array|function|Any} requireUserKeys.field.options array of options that the field can be, function to validate field, or single value. Throw an error if value is invalid.
  * @property {String} requireUserKeys.field.error custom error message if field is invalid.
+ *
+ * @property {Array<String>|function}requireAnyUserRoles If set, request.user has to be part of at least one roles name to make the request. If set to a function, function must return role names.
+ * @property {Array<String>|function}requireAllUserRoles If set, request.user has to be part all roles name to make the request. If set to a function, function must return role names.
  *
  * @property {Object|Array<String>} fields if an array of strings, validator will look for keys in request.params, and throw if not provided. If Object, fields to validate. If the trigger is a cloud function, `request.params` will be validated, otherwise `request.object`.
  * @property {String} fields.field name of field to validate.
