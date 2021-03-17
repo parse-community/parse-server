@@ -5704,7 +5704,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual([object3.id, object1.id, object2.id]);
           });
 
-          fit('should support including relation', async () => {
+          it('should support including relation', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
