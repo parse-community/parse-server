@@ -3860,6 +3860,28 @@ describe('Parse.User testing', () => {
       });
   });
 
+  it('can logout with expired session token', async () => {
+    await Parse.User.signUp('asdf', 'zxcv');
+    const sessionQuery = new Parse.Query(Parse.Session);
+    const session = await sessionQuery.first({ useMasterKey: true });
+    const database = Config.get(Parse.applicationId).database;
+    await database.update(
+      '_Session',
+      { objectId: session.id },
+      { expiresAt: new Date().setFullYear(2010) },
+      {}
+    );
+    await Parse.User.logOut();
+  });
+
+  it('can logout with invalid session token', async () => {
+    await Parse.User.signUp('asdf', 'zxcv');
+    const sessionQuery = new Parse.Query(Parse.Session);
+    const session = await sessionQuery.first({ useMasterKey: true });
+    await session.destroy({ useMasterKey: true });
+    await Parse.User.logOut();
+  });
+
   it('does not duplicate session when logging in multiple times #3451', done => {
     const user = new Parse.User();
     user
