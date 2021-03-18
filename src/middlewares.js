@@ -220,6 +220,9 @@ export function handleParseHeaders(req, res, next) {
   return Promise.resolve()
     .then(() => {
       // handle the upgradeToRevocableSession path on it's own
+      if (req.url === '/logout') {
+        return Promise.resolve();
+      }
       if (
         info.sessionToken &&
         req.url === '/upgradeToRevocableSession' &&
@@ -241,8 +244,8 @@ export function handleParseHeaders(req, res, next) {
     .then(auth => {
       if (auth) {
         req.auth = auth;
-        next();
       }
+      next();
     })
     .catch(error => {
       if (error instanceof Parse.Error) {
