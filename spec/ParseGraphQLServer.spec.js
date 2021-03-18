@@ -5703,6 +5703,67 @@ describe('ParseGraphQLServer', () => {
               result.data.parentClass.graphQLClasses.edges.map(edge => edge.node.objectId)
             ).toEqual([object3.id, object1.id, object2.id]);
           });
+
+          it('should support including relation', async () => {
+            await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+            const result1 = await apolloClient.query({
+              query: gql`
+                query FindRoles {
+                  roles {
+                    edges {
+                      node {
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {},
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            const result2 = await apolloClient.query({
+              query: gql`
+                query FindRoles {
+                  roles {
+                    edges {
+                      node {
+                        name
+                        users {
+                          edges {
+                            node {
+                              username
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {},
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            expect(result1.data.roles.edges[0].node.name).toBeDefined();
+            expect(result1.data.roles.edges[0].node.users).toBeUndefined();
+            expect(result1.data.roles.edges[0].node.roles).toBeUndefined();
+            expect(result2.data.roles.edges[0].node.name).toBeDefined();
+            expect(result2.data.roles.edges[0].node.users).toBeDefined();
+            expect(result2.data.roles.edges[0].node.users.edges[0].node.username).toBeDefined();
+            expect(result2.data.roles.edges[0].node.roles).toBeUndefined();
+          });
         });
       });
 
