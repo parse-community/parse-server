@@ -100,7 +100,7 @@ module.exports.ParseServerOptions = {
   },
   databaseOptions: {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
-    help: 'Options to pass to the mongodb client',
+    help: 'Options to pass to the database client',
     action: parsers.objectParser,
   },
   databaseURI: {
@@ -146,13 +146,6 @@ module.exports.ParseServerOptions = {
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
     help: 'Enables the default express error handler for all errors',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  enableSingleSchemaCache: {
-    env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
-    help:
-      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -365,13 +358,6 @@ module.exports.ParseServerOptions = {
     help: 'Configuration for push scheduling, defaults to false.',
     action: parsers.booleanParser,
     default: false,
-  },
-  schemaCacheTTL: {
-    env: 'PARSE_SERVER_SCHEMA_CACHE_TTL',
-    help:
-      'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
-    action: parsers.numberParser('schemaCacheTTL'),
-    default: 5000,
   },
   security: {
     env: 'PARSE_SERVER_SECURITY',
@@ -784,6 +770,15 @@ module.exports.FileUploadOptions = {
   enableForPublic: {
     env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_PUBLIC',
     help: 'Is true if file upload should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.DatabaseOptions = {
+  enableSchemaHooks: {
+    env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
+    help:
+      'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
   },

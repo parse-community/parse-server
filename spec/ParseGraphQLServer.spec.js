@@ -538,7 +538,7 @@ describe('ParseGraphQLServer', () => {
       const resetGraphQLCache = async () => {
         await Promise.all([
           parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
-          parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear(),
+          parseGraphQLServer.parseGraphQLSchema.schemaCache.clear(),
         ]);
       };
 
@@ -1092,7 +1092,7 @@ describe('ParseGraphQLServer', () => {
           const obj = new Parse.Object('SomeClass');
           await obj.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const createObjectInputFields = (
             await apolloClient.query({
@@ -1117,7 +1117,7 @@ describe('ParseGraphQLServer', () => {
           const obj = new Parse.Object('SomeClass');
           await obj.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const createObjectPayloadFields = (
             await apolloClient.query({
@@ -1142,7 +1142,7 @@ describe('ParseGraphQLServer', () => {
           const obj = new Parse.Object('SomeClass');
           await obj.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const createObjectInputFields = (
             await apolloClient.query({
@@ -1167,7 +1167,7 @@ describe('ParseGraphQLServer', () => {
           const obj = new Parse.Object('SomeClass');
           await obj.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const createObjectPayloadFields = (
             await apolloClient.query({
@@ -1192,7 +1192,7 @@ describe('ParseGraphQLServer', () => {
           const obj = new Parse.Object('SomeClass');
           await obj.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const createObjectInputFields = (
             await apolloClient.query({
@@ -1217,7 +1217,7 @@ describe('ParseGraphQLServer', () => {
           const obj = new Parse.Object('SomeClass');
           await obj.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const createObjectPayloadFields = (
             await apolloClient.query({
@@ -1339,7 +1339,7 @@ describe('ParseGraphQLServer', () => {
         const resetGraphQLCache = async () => {
           await Promise.all([
             parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
-            parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear(),
+            parseGraphQLServer.parseGraphQLSchema.schemaCache.clear(),
           ]);
         };
 
@@ -3921,7 +3921,7 @@ describe('ParseGraphQLServer', () => {
             obj.set('someField', 'someValue');
             await obj.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = (
               await apolloClient.query({
@@ -3964,7 +3964,7 @@ describe('ParseGraphQLServer', () => {
             obj3.set('manyRelations', [obj1, obj2]);
             await obj3.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = (
               await apolloClient.query({
@@ -4039,7 +4039,7 @@ describe('ParseGraphQLServer', () => {
               obj1.set('country', obj4);
               await obj1.save();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const result = (
                 await apolloClient.query({
@@ -4130,7 +4130,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             async function getObject(className, id, headers) {
               const alias = className.charAt(0).toLowerCase() + className.slice(1);
@@ -4260,7 +4260,7 @@ describe('ParseGraphQLServer', () => {
           it('should support keys argument', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result1 = await apolloClient.query({
               query: gql`
@@ -4310,7 +4310,7 @@ describe('ParseGraphQLServer', () => {
           it('should support include argument', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result1 = await apolloClient.query({
               query: gql`
@@ -4358,7 +4358,7 @@ describe('ParseGraphQLServer', () => {
 
           it('should respect protectedFields', async done => {
             await prepareData();
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const className = 'GraphQLClass';
 
@@ -4439,7 +4439,7 @@ describe('ParseGraphQLServer', () => {
               try {
                 await prepareData();
 
-                await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+                await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
                 const databaseAdapter = parseServer.config.databaseController.adapter;
                 spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
@@ -4486,7 +4486,7 @@ describe('ParseGraphQLServer', () => {
             it('should support readPreference argument', async () => {
               await prepareData();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const databaseAdapter = parseServer.config.databaseController.adapter;
               spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
@@ -4530,7 +4530,7 @@ describe('ParseGraphQLServer', () => {
             it('should support includeReadPreference argument', async () => {
               await prepareData();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const databaseAdapter = parseServer.config.databaseController.adapter;
               spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
@@ -4585,7 +4585,7 @@ describe('ParseGraphQLServer', () => {
             obj2.set('someField', 'someValue1');
             await obj2.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.query({
               query: gql`
@@ -4618,7 +4618,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             async function findObjects(className, headers) {
               const graphqlClassName = pluralize(
@@ -4724,7 +4724,7 @@ describe('ParseGraphQLServer', () => {
           it('should support where argument using class specific query', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.query({
               query: gql`
@@ -4776,7 +4776,7 @@ describe('ParseGraphQLServer', () => {
           it('should support in pointer operator using class specific query', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.query({
               query: gql`
@@ -4816,7 +4816,7 @@ describe('ParseGraphQLServer', () => {
           it('should support OR operation', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.query({
               query: gql`
@@ -4856,7 +4856,7 @@ describe('ParseGraphQLServer', () => {
               obj.set('field2', 'It rocks!');
               await obj.save();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const result = await apolloClient.query({
                 query: gql`
@@ -4914,7 +4914,7 @@ describe('ParseGraphQLServer', () => {
               city2.set('name', 'city2');
               await city2.save();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const {
                 data: {
@@ -4970,7 +4970,7 @@ describe('ParseGraphQLServer', () => {
             }
             await Promise.all(promises);
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.query({
               query: gql`
@@ -5024,7 +5024,7 @@ describe('ParseGraphQLServer', () => {
             }
             await Promise.all(promises);
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const find = async ({ skip, after, first, before, last } = {}) => {
               return await apolloClient.query({
@@ -5152,7 +5152,7 @@ describe('ParseGraphQLServer', () => {
           it('should support count', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const where = {
               someField: {
@@ -5207,7 +5207,7 @@ describe('ParseGraphQLServer', () => {
           it('should only count', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const where = {
               someField: {
@@ -5265,7 +5265,7 @@ describe('ParseGraphQLServer', () => {
             }
             await Promise.all(promises);
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.query({
               query: gql`
@@ -5297,7 +5297,7 @@ describe('ParseGraphQLServer', () => {
           it('should support keys argument', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result1 = await apolloClient.query({
               query: gql`
@@ -5359,7 +5359,7 @@ describe('ParseGraphQLServer', () => {
           it('should support include argument', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const where = {
               id: {
@@ -5422,7 +5422,7 @@ describe('ParseGraphQLServer', () => {
             it('should read from primary by default', async () => {
               await prepareData();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const databaseAdapter = parseServer.config.databaseController.adapter;
               spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
@@ -5467,7 +5467,7 @@ describe('ParseGraphQLServer', () => {
             it('should support readPreference argument', async () => {
               await prepareData();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const databaseAdapter = parseServer.config.databaseController.adapter;
               spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
@@ -5512,7 +5512,7 @@ describe('ParseGraphQLServer', () => {
             it('should support includeReadPreference argument', async () => {
               await prepareData();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
               const databaseAdapter = parseServer.config.databaseController.adapter;
               spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
@@ -5560,7 +5560,7 @@ describe('ParseGraphQLServer', () => {
               try {
                 await prepareData();
 
-                await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+                await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
                 const databaseAdapter = parseServer.config.databaseController.adapter;
                 spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
@@ -5703,6 +5703,67 @@ describe('ParseGraphQLServer', () => {
               result.data.parentClass.graphQLClasses.edges.map(edge => edge.node.objectId)
             ).toEqual([object3.id, object1.id, object2.id]);
           });
+
+          it('should support including relation', async () => {
+            await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+            const result1 = await apolloClient.query({
+              query: gql`
+                query FindRoles {
+                  roles {
+                    edges {
+                      node {
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {},
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            const result2 = await apolloClient.query({
+              query: gql`
+                query FindRoles {
+                  roles {
+                    edges {
+                      node {
+                        name
+                        users {
+                          edges {
+                            node {
+                              username
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {},
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            expect(result1.data.roles.edges[0].node.name).toBeDefined();
+            expect(result1.data.roles.edges[0].node.users).toBeUndefined();
+            expect(result1.data.roles.edges[0].node.roles).toBeUndefined();
+            expect(result2.data.roles.edges[0].node.name).toBeDefined();
+            expect(result2.data.roles.edges[0].node.users).toBeDefined();
+            expect(result2.data.roles.edges[0].node.users.edges[0].node.username).toBeDefined();
+            expect(result2.data.roles.edges[0].node.roles).toBeUndefined();
+          });
         });
       });
 
@@ -5714,7 +5775,7 @@ describe('ParseGraphQLServer', () => {
             customerSchema.addString('someField');
             await customerSchema.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.mutate({
               mutation: gql`
@@ -5757,7 +5818,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             async function createObject(className, headers) {
               const getClassName = className.charAt(0).toLowerCase() + className.slice(1);
@@ -5837,7 +5898,7 @@ describe('ParseGraphQLServer', () => {
             obj.set('someField2', 'someField2Value1');
             await obj.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.mutate({
               mutation: gql`
@@ -5880,7 +5941,7 @@ describe('ParseGraphQLServer', () => {
             obj.set('someField2', 'someField2Value1');
             await obj.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.mutate({
               mutation: gql`
@@ -5912,7 +5973,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             async function updateObject(className, id, fields, headers) {
               return await apolloClient.mutate({
@@ -6107,7 +6168,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions with specific class mutation', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             function updateObject(className, id, fields, headers) {
               const mutationName = className.charAt(0).toLowerCase() + className.slice(1);
@@ -6327,7 +6388,7 @@ describe('ParseGraphQLServer', () => {
             obj.set('someField2', 'someField2Value1');
             await obj.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const result = await apolloClient.mutate({
               mutation: gql`
@@ -6364,7 +6425,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             function deleteObject(className, id, headers) {
               const mutationName = className.charAt(0).toLowerCase() + className.slice(1);
@@ -6454,7 +6515,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions with specific class mutation', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             function deleteObject(className, id, headers) {
               const mutationName = className.charAt(0).toLowerCase() + className.slice(1);
@@ -6666,7 +6727,7 @@ describe('ParseGraphQLServer', () => {
           user.set('userFoo', foo);
           await user.signUp();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const session = await Parse.Session.current();
           const result = await apolloClient.query({
@@ -6717,7 +6778,7 @@ describe('ParseGraphQLServer', () => {
           user.set('userFoo', foo);
           await user.signUp();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const session = await Parse.Session.current();
           const result = await apolloClient.query({
@@ -6758,7 +6819,7 @@ describe('ParseGraphQLServer', () => {
           userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
               mutation SignUp($input: SignUpInput!) {
@@ -6819,7 +6880,7 @@ describe('ParseGraphQLServer', () => {
           userSchema.addString('someField');
           userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
               mutation LogInWith($input: LogInWithInput!) {
@@ -6877,7 +6938,7 @@ describe('ParseGraphQLServer', () => {
           user.set('someField', 'someValue');
           await user.signUp();
           await Parse.User.logOut();
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
               mutation LogInUser($input: LogInInput!) {
@@ -7120,7 +7181,7 @@ describe('ParseGraphQLServer', () => {
           const car = new Parse.Object('Car');
           await car.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           try {
             await apolloClient.query({
@@ -7418,7 +7479,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someField.type).toEqual('String');
@@ -7493,7 +7554,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -7568,7 +7629,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someField.type).toEqual('Number');
@@ -7644,7 +7705,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someFieldTrue.type).toEqual('Boolean');
@@ -7734,7 +7795,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someField.type).toEqual('Date');
@@ -7827,7 +7888,7 @@ describe('ParseGraphQLServer', () => {
           const role2 = new Parse.Role('aRole2', roleACL);
           await role2.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const gqlUser = (
             await apolloClient.query({
@@ -8013,7 +8074,7 @@ describe('ParseGraphQLServer', () => {
           company2.set('name', 'imACompany2');
           await company2.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8058,7 +8119,7 @@ describe('ParseGraphQLServer', () => {
           country.set('company', company);
           await country.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8109,7 +8170,7 @@ describe('ParseGraphQLServer', () => {
           company2.set('name', 'imACompany2');
           await company2.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8154,7 +8215,7 @@ describe('ParseGraphQLServer', () => {
           country.set('company', company);
           await country.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8201,7 +8262,7 @@ describe('ParseGraphQLServer', () => {
           country.relation('companies').add(company);
           await country.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8269,7 +8330,7 @@ describe('ParseGraphQLServer', () => {
           country.relation('companies').add(company);
           await country.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8362,7 +8423,7 @@ describe('ParseGraphQLServer', () => {
           country.relation('companies').add(company1);
           await country.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8421,7 +8482,7 @@ describe('ParseGraphQLServer', () => {
           country.relation('companies').add(company);
           await country.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const {
             data: {
@@ -8489,7 +8550,7 @@ describe('ParseGraphQLServer', () => {
           country.relation('companies').add([company1, company2]);
           await country.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           // Without where
           const {
@@ -8589,7 +8650,7 @@ describe('ParseGraphQLServer', () => {
           country3.set('president', president);
           await country3.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           let {
             data: {
@@ -8856,7 +8917,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const body2 = new FormData();
             body2.append(
@@ -9057,7 +9118,7 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someObjectField.type).toEqual('Object');
@@ -9157,7 +9218,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -9274,7 +9335,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someArrayField.type).toEqual('Array');
@@ -9342,7 +9403,7 @@ describe('ParseGraphQLServer', () => {
           const obj = new Parse.Object('SomeClass');
           await obj.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const getResult = await apolloClient.query({
             query: gql`
@@ -9391,7 +9452,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -9485,7 +9546,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someField.type).toEqual('Bytes');
@@ -9576,7 +9637,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someField.type).toEqual('GeoPoint');
@@ -9735,7 +9796,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.somePolygonField.type).toEqual('Polygon');
@@ -9830,7 +9891,7 @@ describe('ParseGraphQLServer', () => {
           });
           await someClass.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
           const schema = await new Parse.Schema('SomeClass').get();
           expect(schema.fields.someField.type).toEqual('Bytes');
 
@@ -9930,7 +9991,7 @@ describe('ParseGraphQLServer', () => {
           user.setPassword('user1');
           await user.signUp();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const getResult = await apolloClient.query({
             query: gql`
@@ -9954,7 +10015,7 @@ describe('ParseGraphQLServer', () => {
             deviceType: 'foo',
           });
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const getResult = await apolloClient.query({
             query: gql`
@@ -9978,7 +10039,7 @@ describe('ParseGraphQLServer', () => {
           const role = new Parse.Role('MyRole', roleACL);
           await role.save();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const getResult = await apolloClient.query({
             query: gql`
@@ -10002,7 +10063,7 @@ describe('ParseGraphQLServer', () => {
           user.setPassword('user1');
           await user.signUp();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const session = await Parse.Session.current();
           const getResult = await apolloClient.query({
@@ -10041,7 +10102,7 @@ describe('ParseGraphQLServer', () => {
             { useMasterKey: true }
           );
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
           const getResult = await apolloClient.query({
             query: gql`
@@ -10170,7 +10231,7 @@ describe('ParseGraphQLServer', () => {
 
         await Promise.all([
           parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
-          parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear(),
+          parseGraphQLServer.parseGraphQLSchema.schemaCache.clear(),
         ]);
 
         await expectAsync(
@@ -10311,7 +10372,7 @@ describe('ParseGraphQLServer', () => {
       it('can resolve a custom query with auto type return', async () => {
         const obj = new Parse.Object('SomeClass');
         await obj.save({ name: 'aname', type: 'robot' });
-        await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+        await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
         const result = await apolloClient.query({
           variables: { id: obj.id },
           query: gql`
@@ -10334,7 +10395,7 @@ describe('ParseGraphQLServer', () => {
       it('can resolve a custom extend type', async () => {
         const obj = new Parse.Object('SomeClass');
         await obj.save({ name: 'aname', type: 'robot' });
-        await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+        await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
         const result = await apolloClient.query({
           variables: { id: obj.id },
           query: gql`

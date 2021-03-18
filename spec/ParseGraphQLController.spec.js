@@ -30,9 +30,7 @@ describe('ParseGraphQLController', () => {
 
   beforeEach(async () => {
     if (!parseServer) {
-      parseServer = await global.reconfigureServer({
-        schemaCacheTTL: 100,
-      });
+      parseServer = await global.reconfigureServer();
       databaseController = parseServer.config.databaseController;
       cacheController = parseServer.config.cacheController;
 
