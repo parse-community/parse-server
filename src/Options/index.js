@@ -63,8 +63,9 @@ export interface ParseServerOptions {
   /* The full URI to your database. Supported databases are mongodb or postgres.
   :DEFAULT: mongodb://localhost:27017/parse */
   databaseURI: string;
-  /* Options to pass to the mongodb client */
-  databaseOptions: ?any;
+  /* Options to pass to the database client
+  :ENV: PARSE_SERVER_DATABASE_OPTIONS */
+  databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database */
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
@@ -158,9 +159,6 @@ export interface ParseServerOptions {
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
   :DEFAULT: true */
   revokeSessionOnPasswordReset: ?boolean;
-  /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
-  :DEFAULT: 5000 */
-  schemaCacheTTL: ?number;
   /* Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
   :DEFAULT: 5000 */
   cacheTTL: ?number;
@@ -171,9 +169,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
   :DEFAULT: false */
   directAccess: ?boolean;
-  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
-  :DEFAULT: false */
-  enableSingleSchemaCache: ?boolean;
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
   enableExpressErrorHandler: ?boolean;
@@ -415,4 +410,10 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+}
+
+export interface DatabaseOptions {
+  /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
+  :DEFAULT: false */
+  enableSchemaHooks: ?boolean;
 }

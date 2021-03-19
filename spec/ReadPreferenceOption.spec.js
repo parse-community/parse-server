@@ -7,7 +7,7 @@ const Config = require('../lib/Config');
 
 function waitForReplication() {
   return new Promise(function (resolve) {
-    setTimeout(resolve, 300);
+    setTimeout(resolve, 1000);
   });
 }
 

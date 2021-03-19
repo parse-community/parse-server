@@ -106,6 +106,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             selectedFields
               .filter(field => field.startsWith('edges.node.'))
               .map(field => field.replace('edges.node.', ''))
+              .filter(field => field.indexOf('edges.node') < 0)
           );
           const parseOrder = order && order.join(',');
 
