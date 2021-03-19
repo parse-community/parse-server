@@ -807,9 +807,8 @@ export default class SchemaController {
           className,
         })
       );
-      // TODO: Remove by updating schema cache directly
-      await this.reloadData({ clearCache: true });
       const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
+      SchemaCache.set(className, parseSchema);
       return parseSchema;
     } catch (error) {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
@@ -933,6 +932,7 @@ export default class SchemaController {
     return (
       // The schema update succeeded. Reload the schema
       this.addClassIfNotExists(className)
+        .then(() => this.reloadData())
         .catch(() => {
           // The schema update failed. This can be okay - it might
           // have failed because there's a race condition and a different
@@ -1118,6 +1118,13 @@ export default class SchemaController {
         return Promise.resolve();
       })
       .then(() => {
+        const cached = SchemaCache.get(className);
+        if (cached) {
+          if (cached && !cached.fields[fieldName]) {
+            cached.fields[fieldName] = type;
+            SchemaCache.set(className, cached);
+          }
+        }
         return {
           className,
           fieldName,
@@ -1210,7 +1217,7 @@ export default class SchemaController {
   async validateObject(className: string, object: any, query: any) {
     let geocount = 0;
     const schema = await this.enforceClassExists(className);
-    const promises = [];
+    const results = [];
 
     for (const fieldName in object) {
       if (object[fieldName] && getType(object[fieldName]) === 'GeoPoint') {
@@ -1237,14 +1244,12 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promises.push(schema.enforceFieldExists(className, fieldName, expected));
+      results.push(await schema.enforceFieldExists(className, fieldName, expected));
     }
-    const results = await Promise.all(promises);
     const enforceFields = results.filter(result => !!result);
 
     if (enforceFields.length !== 0) {
-      // TODO: Remove by updating schema cache directly
-      await this.reloadData({ clearCache: true });
+      await this.reloadData();
     }
     this.ensureFields(enforceFields);
 
