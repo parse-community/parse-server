@@ -273,7 +273,7 @@ const load = parseGraphQLSchema => {
         type: new GraphQLNonNull(GraphQLString),
       },
       token: {
-        descriptions: 'Reset email token that was sent to user',
+        descriptions: 'Reset email token that was emailed to the user',
         type: new GraphQLNonNull(GraphQLString),
       },
     },
