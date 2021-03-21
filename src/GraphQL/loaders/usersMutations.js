@@ -214,10 +214,10 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(logOutMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation('logOut', logOutMutation, true, true);
 
-  const resetPasswordMutation = mutationWithClientMutationId({
-    name: 'ResetPassword',
+  const requestResetPasswordMutation = mutationWithClientMutationId({
+    name: 'RequestResetPassword',
     description:
-      'The resetPassword mutation can be used to reset the password of an existing user.',
+      'The requestResetPassword mutation can be used to reset the password of an existing user.',
     inputFields: {
       email: {
         descriptions: 'Email of the user that should receive the reset email',
@@ -236,6 +236,60 @@ const load = parseGraphQLSchema => {
       await usersRouter.handleResetRequest({
         body: {
           email,
+        },
+        config,
+        auth,
+        info,
+      });
+
+      return { ok: true };
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    requestResetPasswordMutation.args.input.type.ofType,
+    true,
+    true
+  );
+  parseGraphQLSchema.addGraphQLType(requestResetPasswordMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation(
+    'requestResetPassword',
+    requestResetPasswordMutation,
+    true,
+    true
+  );
+
+  const resetPasswordMutation = mutationWithClientMutationId({
+    name: 'ResetPassword',
+    description:
+      'The resetPassword mutation can be used to reset the password of an existing user.',
+    inputFields: {
+      username: {
+        descriptions: 'Username of the user that have received the reset email',
+        type: new GraphQLNonNull(GraphQLString),
+      },
+      password: {
+        descriptions: 'New password of the user',
+        type: new GraphQLNonNull(GraphQLString),
+      },
+      token: {
+        descriptions: 'Reset email token that was sent to user',
+        type: new GraphQLNonNull(GraphQLString),
+      },
+    },
+    outputFields: {
+      ok: {
+        description: "It's always true.",
+        type: new GraphQLNonNull(GraphQLBoolean),
+      },
+    },
+    mutateAndGetPayload: async ({ username, password, token }, context) => {
+      const { config, auth, info } = context;
+      await usersRouter.handleResetPassword({
+        body: {
+          username,
+          password,
+          token,
         },
         config,
         auth,
