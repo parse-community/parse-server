@@ -265,8 +265,9 @@ export class UsersRouter extends ClassesRouter {
           const user = response.results[0].user;
           if (req.config.oauth20 === true) {
             const decoded = Auth.decodeJWT(originalToken);
+            const expiresDate = new Date(decoded.exp * 1000);
             user.accessToken = originalToken;
-            user.expiresAt = decoded.exp;
+            user.expiresAt = { __type: 'Date', iso: expiresDate.toISOString() };
           } else {
             user.sessionToken = sessionToken;
           }

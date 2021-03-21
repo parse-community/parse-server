@@ -63,7 +63,7 @@ const createJWT = (sessionToken, oauthKey, oauthTTL) => {
 
   let signature = CryptoJS.HmacSHA256(token, oauthKey);
   signature = base64url(signature);
-  currentTime.setSeconds(currentTime.getSeconds() + 1800);
+  currentTime.setSeconds(currentTime.getSeconds() + oauthTTL);
 
   return {
     accessToken: token + '.' + signature,
