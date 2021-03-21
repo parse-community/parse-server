@@ -7065,8 +7065,8 @@ describe('ParseGraphQLServer', () => {
           await Parse.User.logOut();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation ResetPassword($input: ResetPasswordInput!) {
-                resetPassword(input: $input) {
+              mutation RequestResetPassword($input: RequestResetPasswordInput!) {
+                requestResetPassword(input: $input) {
                   clientMutationId
                   ok
                 }
@@ -7080,8 +7080,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(result.data.resetPassword.clientMutationId).toEqual(clientMutationId);
-          expect(result.data.resetPassword.ok).toBeTruthy();
+          expect(result.data.requestResetPassword.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.requestResetPassword.ok).toBeTruthy();
         });
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
