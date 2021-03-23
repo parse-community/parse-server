@@ -19,6 +19,7 @@
     - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
+- [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
 
 ## Contributing
@@ -280,6 +281,13 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 1. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
 1. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
 1. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
+
+## Versioning
+
+Parse Server follows [semantic versioning](https://semver.org) with syntax `x.y.z` which defines:
+- `x` is the *major* version number which means a *breaking release* that may include changes that are not backwards compatible
+- `y` is the *minor* version number which means a *feature release* that may include new features, improvements or other changes that are backwards compatible
+- `z` is the *patch* version number which means a *patch release* that may include bug fixes that are backwards compatible
 
 ## Code of Conduct
 
