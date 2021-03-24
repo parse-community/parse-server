@@ -286,7 +286,7 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 
 > The following versioning system is applied since Parse Server 5.0.0 and does not necessarily apply to previous releases.
 
-Parse Server follows [semantic versioning](https://semver.org) with a flavor of [calendric versioning](https://calver.org). Semantic versioning makes Parse Server easy to upgrade because breaking changes only occur in major releases. Calendric versioning gives an additional sense of how old a Parse Server release is and allows for future Long Term Support concepts, which Parse Server currently does not provide.
+Parse Server follows [semantic versioning](https://semver.org) with a flavor of [calendric versioning](https://calver.org). Semantic versioning makes Parse Server easy to upgrade because breaking changes only occur in major releases. Calendric versioning gives an additional sense of how old a Parse Server release is and allows for future Long-Term Support concepts, which Parse Server currently does not provide.
 
 Syntax: `[major]`**.**`[feature]`**.**`[fix]`**-**`[pre-release-label]`
 
