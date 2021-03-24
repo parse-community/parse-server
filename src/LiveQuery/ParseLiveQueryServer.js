@@ -170,7 +170,7 @@ class ParseLiveQueryServer {
             };
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
-              const auth = await this.getAuthForSessionToken(res.sessionToken);
+              const { auth } = await this.getAuthForSessionToken(res.sessionToken);
               res.user = auth.user;
               if (res.object) {
                 res.object = Parse.Object.fromJSON(res.object);
@@ -317,7 +317,7 @@ class ParseLiveQueryServer {
               if (res.original) {
                 res.original = Parse.Object.fromJSON(res.original);
               }
-              const auth = await this.getAuthForSessionToken(res.sessionToken);
+              const { auth } = await this.getAuthForSessionToken(res.sessionToken);
               res.user = auth.user;
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
@@ -631,7 +631,7 @@ class ParseLiveQueryServer {
       };
       const trigger = getTrigger('@Connect', 'beforeConnect', Parse.applicationId);
       if (trigger) {
-        const auth = await this.getAuthForSessionToken(req.sessionToken);
+        const { auth } = await this.getAuthForSessionToken(req.sessionToken);
         req.user = auth.user;
         await runTrigger(trigger, `beforeConnect.@Connect`, req, auth);
       }
@@ -690,7 +690,7 @@ class ParseLiveQueryServer {
     try {
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
-        const auth = await this.getAuthForSessionToken(request.sessionToken);
+        const { auth } = await this.getAuthForSessionToken(request.sessionToken);
         request.user = auth.user;
 
         const parseQuery = new Parse.Query(className);
