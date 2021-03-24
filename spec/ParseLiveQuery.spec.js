@@ -645,6 +645,62 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  it('LiveQuery with ACL', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['Chat'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
+
+    let calls = 0;
+
+    Parse.Cloud.beforeConnect(req => {
+      expect(req.event).toBe('connect');
+      expect(req.clients).toBe(0);
+      expect(req.subscriptions).toBe(0);
+      expect(req.useMasterKey).toBe(false);
+      expect(req.installationId).toBeDefined();
+      expect(req.user).toBeDefined();
+      expect(req.client).toBeDefined();
+      calls++;
+    });
+
+    Parse.Cloud.beforeSubscribe('Chat', req => {
+      expect(req.op).toBe('subscribe');
+      expect(req.requestId).toBe(1);
+      expect(req.query).toBeDefined();
+      expect(req.user).toBeDefined();
+      calls++;
+    });
+
+    Parse.Cloud.afterLiveQueryEvent('Chat', req => {
+      expect(req.event).toBe('create');
+      expect(req.user).toBeDefined();
+      expect(req.object.get('foo')).toBe('bar');
+      calls++;
+    });
+
+    const chatQuery = new Parse.Query('Chat');
+    const subscription = await chatQuery.subscribe();
+    subscription.on('create', object => {
+      expect(object.get('foo')).toBe('bar');
+      expect(calls).toEqual(3);
+      done();
+    });
+    const object = new Parse.Object('Chat');
+    const acl = new Parse.ACL(user);
+    object.setACL(acl);
+    object.set({ foo: 'bar' });
+    await object.save();
+  });
+
   it('handle invalid websocket payload length', async done => {
     await reconfigureServer({
       liveQuery: {
