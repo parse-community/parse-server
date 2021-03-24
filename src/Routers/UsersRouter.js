@@ -357,30 +357,6 @@ export class UsersRouter extends ClassesRouter {
     );
   }
 
-  handleResetPassword(req) {
-    const { username, password, token } = req.body;
-    if (!username) {
-      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'you must provide a username');
-    }
-    if (!password) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'you must provide a password');
-    }
-    if (typeof password !== 'string' || typeof username !== 'string') {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
-    }
-    const userController = req.config.userController;
-    return userController.updatePassword(username, token, password).then(
-      () => {
-        return Promise.resolve({
-          response: {},
-        });
-      },
-      err => {
-        throw err;
-      }
-    );
-  }
-
   handleVerificationEmailRequest(req) {
     this._throwOnBadEmailConfig(req);
 
@@ -446,9 +422,6 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
-    });
-    this.route('POST', '/resetPassword', req => {
-      return this.handleResetPassword(req);
     });
     this.route('POST', '/verificationEmailRequest', req => {
       return this.handleVerificationEmailRequest(req);
