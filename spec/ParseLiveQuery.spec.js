@@ -667,7 +667,6 @@ describe('ParseLiveQuery', function () {
       expect(req.subscriptions).toBe(0);
       expect(req.useMasterKey).toBe(false);
       expect(req.installationId).toBeDefined();
-      expect(req.user).toBeDefined();
       expect(req.client).toBeDefined();
       calls++;
     });

@@ -170,7 +170,8 @@ class ParseLiveQueryServer {
             };
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
-              const { auth } = await this.getAuthForSessionToken(res.sessionToken);
+              const sessionToken = this.getSessionFromClient(client, requestId);
+              const { auth } = await this.getAuthForSessionToken(sessionToken);
               if (auth && auth.user) {
                 res.user = auth.user;
               }
@@ -319,7 +320,8 @@ class ParseLiveQueryServer {
               if (res.original) {
                 res.original = Parse.Object.fromJSON(res.original);
               }
-              const { auth } = await this.getAuthForSessionToken(res.sessionToken);
+              const sessionToken = this.getSessionFromClient(client, requestId);
+              const { auth } = await this.getAuthForSessionToken(sessionToken);
               if (auth && auth.user) {
                 res.user = auth.user;
               }
@@ -582,7 +584,19 @@ class ParseLiveQueryServer {
         return false;
       });
   }
-
+  getSessionFromClient(client: any, requestId: number): String {
+    if (!client) {
+      return;
+    }
+    if (client.sessionToken) {
+      return client.sessionToken;
+    }
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    if (typeof subscriptionInfo === 'undefined') {
+      return;
+    }
+    return subscriptionInfo.sessionToken;
+  }
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
     if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
