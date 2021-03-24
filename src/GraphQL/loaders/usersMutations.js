@@ -5,6 +5,7 @@ import * as objectsMutations from '../helpers/objectsMutations';
 import { OBJECT } from './defaultGraphQLTypes';
 import { getUserFromSessionToken } from './usersQueries';
 import { transformTypes } from '../transformers/mutation';
+import Parse from 'parse/node';
 
 const usersRouter = new UsersRouter();
 
@@ -284,18 +285,19 @@ const load = parseGraphQLSchema => {
       },
     },
     mutateAndGetPayload: async ({ username, password, token }, context) => {
-      const { config, auth, info } = context;
-      await usersRouter.handleResetPassword({
-        body: {
-          username,
-          password,
-          token,
-        },
-        config,
-        auth,
-        info,
-      });
+      const { config } = context;
+      if (!username) {
+        throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'you must provide a username');
+      }
+      if (!password) {
+        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'you must provide a password');
+      }
+      if (!token) {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'you must provide a token');
+      }
 
+      const userController = config.userController;
+      await userController.updatePassword(username, token, password);
       return { ok: true };
     },
   });
