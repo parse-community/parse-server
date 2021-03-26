@@ -7083,6 +7083,77 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.requestResetPassword.clientMutationId).toEqual(clientMutationId);
           expect(result.data.requestResetPassword.ok).toBeTruthy();
         });
+
+        it('should reset password', async () => {
+          const clientMutationId = uuidv4();
+          let resetPasswordToken;
+          const emailAdapter = {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: ({ link }) => {
+              resetPasswordToken = link.split('token=')[1].split('&')[0];
+            },
+            sendMail: () => {},
+          };
+          parseServer = await global.reconfigureServer({
+            appName: 'test',
+            emailAdapter: emailAdapter,
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              myAuth: {
+                module: global.mockCustomAuthenticator('parse', 'graphql'),
+              },
+            },
+          });
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
+          await user.signUp();
+          await Parse.User.logOut();
+          await Parse.User.requestPasswordReset('user1@user1.user1');
+          await apolloClient.mutate({
+            mutation: gql`
+              mutation ResetPassword($input: ResetPasswordInput!) {
+                resetPassword(input: $input) {
+                  clientMutationId
+                  ok
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                username: 'user1',
+                password: 'newPassword',
+                token: resetPasswordToken,
+              },
+            },
+          });
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation LogInUser($input: LogInInput!) {
+                logIn(input: $input) {
+                  clientMutationId
+                  viewer {
+                    sessionToken
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                username: 'user1',
+                password: 'newPassword',
+              },
+            },
+          });
+
+          expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.logIn.viewer.sessionToken).toBeDefined();
+          expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
+        });
+
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
