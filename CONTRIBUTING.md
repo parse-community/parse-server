@@ -288,19 +288,19 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 
 Parse Server follows [semantic versioning](https://semver.org) with a flavor of [calendric versioning](https://calver.org). Semantic versioning makes Parse Server easy to upgrade because breaking changes only occur in major releases. Calendric versioning gives an additional sense of how old a Parse Server release is and allows for future Long-Term Support concepts, which Parse Server currently does not provide.
 
-Syntax: `[major]`**.**`[feature]`**.**`[fix]`**-**`[pre-release-label]`
+Syntax: `[major]`**.**`[minor]`**.**`[patch]`**-**`[pre-release-label]`
 
 - The `major` version increments every year and may include changes that are *not* backwards compatible.
-- The `feature` version increments during the year and may include new features or improvements of existing features that are backwards compatible.
-- The `fix` version increments during the year and may include bug fixes that are backwards compatible.
+- The `minor` version increments during the year and may include new features or improvements of existing features that are backwards compatible.
+- The `patch` version increments during the year and may include bug fixes that are backwards compatible.
 - The `pre-release-label` is optional for pre-release versions such as:
   - `-alpha` (likely to contain bugs, likely to change in features until release)
   - `-beta` (likely to contain bugs, no change in features until release)
   - `-rc0` (unlikely to contain bugs, no change in features until release)
 
 Exceptions:
-- The major version may increment during the year in the unlikely event that a breaking change is so urgent that it cannot wait for the next yearly release. This should be as rare as the planetary alignment of Jupiter and Saturn.
-- Bug fixes of security vulnerabilities are `fix` releases, unless they cause a breaking change, then they are `major` releases.
+- The `major` version may increment during the year in the unlikely event that a breaking change is so urgent that it cannot wait for the next yearly release. This should be as rare as the planetary alignment of Jupiter and Saturn.
+- Bug fixes of security vulnerabilities are `patch` releases, unless they cause a breaking change, then they are `major` releases.
 
 ## Code of Conduct
 
