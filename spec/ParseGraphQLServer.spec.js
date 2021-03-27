@@ -7065,8 +7065,8 @@ describe('ParseGraphQLServer', () => {
           await Parse.User.logOut();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation RequestResetPassword($input: RequestResetPasswordInput!) {
-                requestResetPassword(input: $input) {
+              mutation ResetPassword($input: ResetPasswordInput!) {
+                resetPassword(input: $input) {
                   clientMutationId
                   ok
                 }
@@ -7080,8 +7080,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(result.data.requestResetPassword.clientMutationId).toEqual(clientMutationId);
-          expect(result.data.requestResetPassword.ok).toBeTruthy();
+          expect(result.data.resetPassword.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.resetPassword.ok).toBeTruthy();
         });
 
         it('should reset password', async () => {
@@ -7113,8 +7113,8 @@ describe('ParseGraphQLServer', () => {
           await Parse.User.requestPasswordReset('user1@user1.user1');
           await apolloClient.mutate({
             mutation: gql`
-              mutation ResetPassword($input: ResetPasswordInput!) {
-                resetPassword(input: $input) {
+              mutation ConfirmResetPassword($input: ConfirmResetPasswordInput!) {
+                confirmResetPassword(input: $input) {
                   clientMutationId
                   ok
                 }
@@ -7148,7 +7148,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-
+          console.log(result);
           expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
           expect(result.data.logIn.viewer.sessionToken).toBeDefined();
           expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
