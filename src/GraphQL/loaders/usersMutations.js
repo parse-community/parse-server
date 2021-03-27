@@ -215,10 +215,10 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(logOutMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation('logOut', logOutMutation, true, true);
 
-  const requestResetPasswordMutation = mutationWithClientMutationId({
-    name: 'RequestResetPassword',
+  const resetPasswordMutation = mutationWithClientMutationId({
+    name: 'ResetPassword',
     description:
-      'The requestResetPassword mutation can be used to reset the password of an existing user.',
+      'The resetPassword mutation can be used to reset the password of an existing user.',
     inputFields: {
       email: {
         descriptions: 'Email of the user that should receive the reset email',
@@ -247,23 +247,14 @@ const load = parseGraphQLSchema => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(
-    requestResetPasswordMutation.args.input.type.ofType,
-    true,
-    true
-  );
-  parseGraphQLSchema.addGraphQLType(requestResetPasswordMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation(
-    'requestResetPassword',
-    requestResetPasswordMutation,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLType(resetPasswordMutation.args.input.type.ofType, true, true);
+  parseGraphQLSchema.addGraphQLType(resetPasswordMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation('resetPassword', resetPasswordMutation, true, true);
 
-  const resetPasswordMutation = mutationWithClientMutationId({
-    name: 'ResetPassword',
+  const confirmResetPasswordMutation = mutationWithClientMutationId({
+    name: 'ConfirmResetPassword',
     description:
-      'The resetPassword mutation can be used to reset the password of an existing user.',
+      'The confirmResetPassword mutation can be used to reset the password of an existing user.',
     inputFields: {
       username: {
         descriptions: 'Username of the user that have received the reset email',
@@ -302,9 +293,18 @@ const load = parseGraphQLSchema => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(resetPasswordMutation.args.input.type.ofType, true, true);
-  parseGraphQLSchema.addGraphQLType(resetPasswordMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation('resetPassword', resetPasswordMutation, true, true);
+  parseGraphQLSchema.addGraphQLType(
+    confirmResetPasswordMutation.args.input.type.ofType,
+    true,
+    true
+  );
+  parseGraphQLSchema.addGraphQLType(confirmResetPasswordMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation(
+    'confirmResetPassword',
+    confirmResetPasswordMutation,
+    true,
+    true
+  );
 
   const sendVerificationEmailMutation = mutationWithClientMutationId({
     name: 'SendVerificationEmail',

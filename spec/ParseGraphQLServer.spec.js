@@ -7148,7 +7148,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-          console.log(result);
+
           expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
           expect(result.data.logIn.viewer.sessionToken).toBeDefined();
           expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
