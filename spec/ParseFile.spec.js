@@ -213,6 +213,8 @@ describe('Parse.File testing', () => {
       file.setTags(tags);
       expect(file.url()).toBeUndefined();
       const result = await file.save();
+      expect(file.name()).toBeDefined();
+      expect(file.url()).toBeDefined();
       expect(result.tags()).toEqual(tags);
       expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
         tags: tags,
@@ -224,7 +226,9 @@ describe('Parse.File testing', () => {
       spyOn(FilesController.prototype, 'createFile').and.callThrough();
       const file = new Parse.File('hello.txt', data, 'text/plain');
       expect(file.url()).toBeUndefined();
+      expect(file.name()).toBeDefined();
       await file.save();
+      expect(file.url()).toBeDefined();
       expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
         metadata: {},
       });
