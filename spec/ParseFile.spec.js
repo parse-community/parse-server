@@ -206,23 +206,24 @@ describe('Parse.File testing', () => {
       notEqual(file.name(), 'hello.txt');
     });
 
-    it('save file with tags', async () => {
+    it('saves the file with tags', async () => {
       spyOn(FilesController.prototype, 'createFile').and.callThrough();
       const file = new Parse.File('hello.txt', data, 'text/plain');
-      file.setTags({ hello: 'world' });
-      ok(!file.url());
+      const tags = { hello: 'world' };
+      file.setTags(tags);
+      expect(file.url()).toBeUndefined();
       const result = await file.save();
-      equal(result.tags(), { hello: 'world' });
+      expect(result.tags()).toEqual(tags);
       expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
-        tags: { hello: 'world' },
+        tags: tags,
         metadata: {},
       });
     });
 
-    it('empty file tags should not be passed while saving', async () => {
+    it('does not pass empty file tags while saving', async () => {
       spyOn(FilesController.prototype, 'createFile').and.callThrough();
       const file = new Parse.File('hello.txt', data, 'text/plain');
-      ok(!file.url());
+      expect(file.url()).toBeUndefined();
       await file.save();
       expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
         metadata: {},
