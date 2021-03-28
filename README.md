@@ -300,7 +300,7 @@ For the full list of available options, run `parse-server --help` or take a look
 * `port` - The default port is 1337, specify this parameter to use a different port.
 * `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
-* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
+* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](https://docs.parseplatform.org/parse-server/guide/#push-notifications-quick-start).
 
 ## Client Key Options
 
