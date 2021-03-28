@@ -3,6 +3,7 @@
 
 'use strict';
 
+const { FilesController } = require('../lib/Controllers/FilesController');
 const request = require('../lib/request');
 
 const str = 'Hello World!';
@@ -203,6 +204,29 @@ describe('Parse.File testing', () => {
       ok(file.name());
       ok(file.url());
       notEqual(file.name(), 'hello.txt');
+    });
+
+    it('save file with tags', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.setTags({ hello: 'world' });
+      ok(!file.url());
+      const result = await file.save();
+      equal(result.tags(), { hello: 'world' });
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        tags: { hello: 'world' },
+        metadata: {},
+      });
+    });
+
+    it('empty file tags should not be passed while saving', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      ok(!file.url());
+      await file.save();
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        metadata: {},
+      });
     });
 
     it('save file in object', async done => {
