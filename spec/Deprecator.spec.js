@@ -25,7 +25,7 @@ describe('Deprecator', () => {
     expect(logSpy.calls.all()[0].args[0]).toContain(deprecations[0].changeNewDefault);
   });
 
-  fit('does not log deprecation for new default if option is set manually', async () => {
+  it('does not log deprecation for new default if option is set manually', async () => {
     deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
