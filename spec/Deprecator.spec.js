@@ -13,7 +13,7 @@ describe('Deprecator', () => {
     expect(Deprecator._getDeprecations()).toBeInstanceOf(Array);
   });
 
-  fit('logs deprecation for new default', async () => {
+  it('logs deprecation for new default', async () => {
     deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
