@@ -10,15 +10,15 @@ describe('Deprecator', () => {
   });
 
   it('deprecations are an array', async () => {
-    expect(Deprecator.getDeprecations()).toBeInstanceOf(Array);
+    expect(Deprecator._getDeprecations()).toBeInstanceOf(Array);
   });
 
-  it('logs deprecation for new default', async () => {
+  fit('logs deprecation for new default', async () => {
     deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
     const logger = require('../lib/logger').logger;
-    const logSpy = spyOn(logger, 'warn').and.callThrough();
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
 
     await reconfigureServer();
     expect(logSpy.calls.all()[0].args[0]).toContain(deprecations[0].optionKey);
@@ -29,9 +29,7 @@ describe('Deprecator', () => {
     deprecations = [{ optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' }];
 
     spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
-    const logger = require('../lib/logger').logger;
-    const logSpy = spyOn(logger, 'warn').and.callThrough();
-
+    const logSpy = spyOn(Deprecator, '_log').and.callFake(() => {});
     await reconfigureServer({ [deprecations[0].optionKey]: 'manuallySet' });
     expect(logSpy).not.toHaveBeenCalled();
   });
