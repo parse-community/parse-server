@@ -58,7 +58,7 @@ class Deprecator {
           : `removed`;
 
     // Compose message
-    let output = `⚠️ The Parse Server ${type} '${key}' `;
+    let output = `DeprecationWarning: The Parse Server ${type} '${key}' `;
     output += changeNewKey ? `is deprecated and will be ${keyAction} in a future version.` : '';
     output += changeNewDefault
       ? `default will change to '${changeNewDefault}' in a future version.`
