@@ -11,4 +11,4 @@
  *
  * If there are no deprecations this must return an empty array anyway.
  */
-module.exports = [{ optionKey: 'directAccess', changeNewDefault: 'true' }];
+module.exports = [];
