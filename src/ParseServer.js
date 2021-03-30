@@ -43,6 +43,7 @@ import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
+import Deprecator from './Deprecator/Deprecator';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -55,6 +56,9 @@ class ParseServer {
    * @param {ParseServerOptions} options the parse server initialization options
    */
   constructor(options: ParseServerOptions) {
+    // Scan for deprecated Parse Server options
+    Deprecator.scanParseServerOptions(options);
+    // Set option defaults
     injectDefaults(options);
     const {
       appId = requiredParameter('You must provide an appId!'),

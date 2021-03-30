@@ -5703,6 +5703,67 @@ describe('ParseGraphQLServer', () => {
               result.data.parentClass.graphQLClasses.edges.map(edge => edge.node.objectId)
             ).toEqual([object3.id, object1.id, object2.id]);
           });
+
+          it('should support including relation', async () => {
+            await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+            const result1 = await apolloClient.query({
+              query: gql`
+                query FindRoles {
+                  roles {
+                    edges {
+                      node {
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {},
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            const result2 = await apolloClient.query({
+              query: gql`
+                query FindRoles {
+                  roles {
+                    edges {
+                      node {
+                        name
+                        users {
+                          edges {
+                            node {
+                              username
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {},
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            expect(result1.data.roles.edges[0].node.name).toBeDefined();
+            expect(result1.data.roles.edges[0].node.users).toBeUndefined();
+            expect(result1.data.roles.edges[0].node.roles).toBeUndefined();
+            expect(result2.data.roles.edges[0].node.name).toBeDefined();
+            expect(result2.data.roles.edges[0].node.users).toBeDefined();
+            expect(result2.data.roles.edges[0].node.users.edges[0].node.username).toBeDefined();
+            expect(result2.data.roles.edges[0].node.roles).toBeUndefined();
+          });
         });
       });
 
@@ -7022,6 +7083,77 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.resetPassword.clientMutationId).toEqual(clientMutationId);
           expect(result.data.resetPassword.ok).toBeTruthy();
         });
+
+        it('should reset password', async () => {
+          const clientMutationId = uuidv4();
+          let resetPasswordToken;
+          const emailAdapter = {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: ({ link }) => {
+              resetPasswordToken = link.split('token=')[1].split('&')[0];
+            },
+            sendMail: () => {},
+          };
+          parseServer = await global.reconfigureServer({
+            appName: 'test',
+            emailAdapter: emailAdapter,
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              myAuth: {
+                module: global.mockCustomAuthenticator('parse', 'graphql'),
+              },
+            },
+          });
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
+          await user.signUp();
+          await Parse.User.logOut();
+          await Parse.User.requestPasswordReset('user1@user1.user1');
+          await apolloClient.mutate({
+            mutation: gql`
+              mutation ConfirmResetPassword($input: ConfirmResetPasswordInput!) {
+                confirmResetPassword(input: $input) {
+                  clientMutationId
+                  ok
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                username: 'user1',
+                password: 'newPassword',
+                token: resetPasswordToken,
+              },
+            },
+          });
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation LogInUser($input: LogInInput!) {
+                logIn(input: $input) {
+                  clientMutationId
+                  viewer {
+                    sessionToken
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                username: 'user1',
+                password: 'newPassword',
+              },
+            },
+          });
+
+          expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.logIn.viewer.sessionToken).toBeDefined();
+          expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
+        });
+
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
