@@ -115,7 +115,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Node.js 10 | 10.24.0              | April 2021       | ✅ Fully compatible |
 | Node.js 12 | 12.21.0              | April 2022       | ✅ Fully compatible |
 | Node.js 14 | 14.16.0              | April 2023       | ✅ Fully compatible |
-| Node.js 15 | 15.11.0               | June 2021        | ✅ Fully compatible |
+| Node.js 15 | 15.12.0               | June 2021        | ✅ Fully compatible |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
@@ -300,7 +300,7 @@ For the full list of available options, run `parse-server --help` or take a look
 * `port` - The default port is 1337, specify this parameter to use a different port.
 * `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
-* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
+* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](https://docs.parseplatform.org/parse-server/guide/#push-notifications-quick-start).
 
 ## Client Key Options
 
