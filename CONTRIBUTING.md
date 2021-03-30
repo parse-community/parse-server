@@ -168,23 +168,28 @@ Note that the script above will ONLY be executed during initialization of the co
 
 ## Breaking Changes
 
-To make breaking changes more predictable we follow a [Deprecation Policy](#deprecation-policy) when changing or removing existing features.
+Breaking changes should be avoided whenever possible. For a breaking change to be accepted, the benefits of the change have to clearly outweigh the costs of developers having to adapt their deployments. If a breaking change is only cosmetic it will likely be rejected and preferred to become obsolete organically during the course of further development, unless it is required as part of a larger change. Breaking changes should follow the [Deprecation Policy](#deprecation-policy).
 
-We acknowledge that Parse Server is just one component in a stack that requires attention. A breaking change requires resources and effort to adapt a production environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
+Please consider that Parse Server is just one component in a stack that requires attention. A breaking change requires resources and effort to adapt an environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
 - "upgrade fatigue" where developers run old versions of Parse Server because they cannot always attend to every update that contains a breaking change
 - less secure Parse Server deployments that run on old versions which is contrary to the security evangelism Parse Server intends to facilitate for developers
 - less feedback and slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
 
 ### Deprecation Policy
 
-If you change or remove an existing feature that would lead to a breaking change, consider the following:
-1. Only urgent changes with security relevance are allowed to be sudden breaking changes.
-2. Use a phased deprecation pattern for all other changes:
-   - Make the new feature or change optional, if necessary with a new Parse Server option parameter.
-   - Use a default value that falls back to the existing behavior.
-   - Add a warning log message to the Parse Server options validation in [Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js) that the option value will be deprecated in the future, for example:
-     > `Warning: The option <option_name>: <old_option_value> will be deprecated in a future release. Use <option_name>: <new_option_value> instead which will become the new default.`
-3. Breaking changes are collected into the next major release of Parse Server. Developers should be notified of breaking changes at least 6 months before they become mandatory.
+If you change or remove an existing feature that would lead to a breaking change, use the following deprecation pattern:
+  - Make the new feature or change optional, if necessary with a new Parse Server option parameter.
+  - Use a default value that falls back to existing behavior.
+  - Add a deprecation definition in `Deprecator/Deprecations.js` that will output a deprecation warning log message on Parse Server launch, for example:
+    > DeprecationWarning: The Parse Server option 'example' will be removed in a future release.
+  
+Deprecations become breaking changes after notifying developers through deprecation warnings for at least one entire previous major release. For example:
+  - `4.5.0` is the current version
+  - `4.6.0` adds a new optional feature and a deprecation warning for the existing feature
+  - `5.0.0` marks the beginning of logging the deprecation warning for one entire major release
+  - `6.0.0` makes the breaking change by removing the deprecation warning and making the new feature replace the existing feature
+
+Developer feedback during the deprecation period may further postpone the introduction of a breaking change.
 
 ## Feature Considerations
 ### Security Checks
