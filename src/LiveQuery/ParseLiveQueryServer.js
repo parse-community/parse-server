@@ -10,7 +10,7 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers, getTrigger, runTrigger } from '../triggers';
+import { runLiveQueryEventHandlers, getTrigger, runTrigger, toJSONwithObjects } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -181,8 +181,7 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              deletedParseObject = res.object.toJSON();
-              deletedParseObject.className = className;
+              deletedParseObject = toJSONwithObjects(res.object);
             }
             client.pushDelete(requestId, deletedParseObject);
           } catch (error) {
@@ -326,12 +325,11 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              currentParseObject = res.object.toJSON();
+              currentParseObject = toJSONwithObjects(res.object);
               currentParseObject.className = res.object.className || className;
             }
-
             if (res.original && typeof res.original.toJSON === 'function') {
-              originalParseObject = res.original.toJSON();
+              originalParseObject = toJSONwithObjects(res.original);
               originalParseObject.className = res.original.className || className;
             }
             const functionName =
