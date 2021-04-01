@@ -148,7 +148,7 @@ jobs:
             POSTGRES_IMAGE: postgis/postgis:13-3.1
       fail-fast: false
     name: ${{ matrix.name }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     runs-on: ubuntu-18.04
     services:
       redis:
