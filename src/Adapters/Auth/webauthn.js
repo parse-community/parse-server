@@ -89,7 +89,7 @@ const registerOptions = (user, options = {}, config) => {
     authenticatorSelection: {
       // Use required to avoid silent sign up
       userVerification: 'required',
-      requireResidentKey: options.requireResidentKey || false,
+      residentKey: options.residentKey || 'preferred',
     },
   });
   return {
@@ -108,7 +108,7 @@ const verifyRegister = async ({ signedChallenge, attestation }, options = {}, co
   if (!attestation) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'attestation is required.');
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
   try {
-    const { verified, authenticatorInfo } = await verifyAttestationResponse({
+    const { verified, attestationInfo } = await verifyAttestationResponse({
       credential: attestation,
       expectedChallenge,
       expectedOrigin: options.origin || getOrigin(config),
@@ -116,8 +116,8 @@ const verifyRegister = async ({ signedChallenge, attestation }, options = {}, co
     });
     if (verified) {
       return {
-        counter: authenticatorInfo.counter,
-        publicKey: authenticatorInfo.base64PublicKey,
+        counter: attestationInfo.counter,
+        publicKey: attestationInfo.credentialPublicKey.toString('base64'),
         id: attestation.id,
       };
     }
@@ -147,21 +147,21 @@ const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user)
   if (!assertion) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'assertion is required.');
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
   try {
-    const { verified, authenticatorInfo } = verifyAssertionResponse({
+    const { verified, assertionInfo } = verifyAssertionResponse({
       credential: assertion,
       expectedChallenge,
       expectedOrigin: options.origin || getOrigin(config),
       expectedRPID: options.rpId || getOrigin(config),
       authenticator: {
-        credentialID: dbAuthData.id,
+        credentialID: Buffer.from(dbAuthData.id, 'base64'),
         counter: dbAuthData.counter,
-        publicKey: dbAuthData.publicKey,
+        credentialPublicKey: Buffer.from(dbAuthData.publicKey, 'base64'),
       },
     });
     if (verified) {
       return {
         ...dbAuthData,
-        counter: authenticatorInfo.counter,
+        counter: assertionInfo.newCounter,
       };
     }
     throw new Error();

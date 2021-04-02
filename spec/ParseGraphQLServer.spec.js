@@ -6827,7 +6827,6 @@ describe('ParseGraphQLServer', () => {
           });
           const clientMutationId = uuidv4();
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
               mutation createUser($input: CreateUserInput!) {

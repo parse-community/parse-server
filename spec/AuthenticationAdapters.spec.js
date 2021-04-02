@@ -3062,7 +3062,7 @@ describe('Webauthn', () => {
       clientDataJSON:
         'eyJjaGFsbGVuZ2UiOiJkRzkwWVd4c2VWVnVhWEYxWlZaaGJIVmxSWFpsY25sQmRIUmxjM1JoZEdsdmJnIiwiY2xpZW50RXh0ZW5zaW9ucyI6e30sImhhc2hBbGdvcml0aG0iOiJTSEEtMjU2Iiwib3JpZ2luIjoiaHR0cHM6Ly9kZXYuZG9udG5lZWRhLnB3IiwidHlwZSI6IndlYmF1dGhuLmNyZWF0ZSJ9',
     },
-    getClientExtensionResults: () => ({}),
+    clientExtensionResults: {},
     type: 'public-key',
   };
   const attestationOrigin = 'https://dev.dontneeda.pw';
@@ -3139,6 +3139,7 @@ describe('Webauthn', () => {
 
     expect(typeof signedChallenge).toEqual('string');
     const { challenge, ...otherOptions } = options;
+    delete otherOptions.authenticatorSelection.residentKey;
     expect(typeof challenge).toEqual('string');
     expect(otherOptions).toEqual({
       rp: { name: 'Localhost', id: 'localhost' },
@@ -3365,7 +3366,7 @@ describe('Webauthn', () => {
             rpName: 'App',
             origin: 'app.com',
             attestationType: 'direct',
-            requireResidentKey: true,
+            residentKey: 'required',
             getUserDisplayName: user => user.get('username').toUpperCase(),
             getUsername: user => user.get('username') + user.id,
           },
