@@ -123,7 +123,6 @@
     "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.4.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} TESTING=1 nyc jasmine",
     "start": "node ./bin/parse-server",
     "prettier": "prettier --write '{src,spec}/{**/*,*}.js'",
-    "prepare": "npm run build",
     "postinstall": "node -p 'require(\"./postinstall.js\")()'"
   },
   "engines": {
