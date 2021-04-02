@@ -18,6 +18,7 @@ const fakeClient = {
 describe_only_db('mongo')('MongoStorageAdapter', () => {
   beforeEach(done => {
     new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses().then(done, fail);
+    Config.get(Parse.applicationId).schemaCache.clear();
   });
 
   it('auto-escapes symbols in auth information', () => {
@@ -314,6 +315,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     await user.signUp();
 
     const database = Config.get(Parse.applicationId).database;
+    await database.adapter.dropAllIndexes('_User');
+
     const preIndexPlan = await database.find(
       '_User',
       { username: 'bugs' },
@@ -376,15 +379,12 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         'X-Parse-REST-API-Key': 'rest',
       };
 
-      beforeAll(async () => {
+      beforeEach(async () => {
         await reconfigureServer({
           databaseAdapter: undefined,
           databaseURI:
             'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
         });
-      });
-
-      beforeEach(async () => {
         await TestUtils.destroyAllDataPermanently(true);
       });
 
@@ -547,6 +547,34 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         calls.forEach(call => {
           expect(call.args[2].session.transaction.state).toBe('NO_TRANSACTION');
         });
+      });
+    });
+
+    describe('watch _SCHEMA', () => {
+      it('should change', async done => {
+        const adapter = new MongoStorageAdapter({
+          uri: databaseURI,
+          collectionPrefix: '',
+          mongoOptions: { enableSchemaHooks: true },
+        });
+        await reconfigureServer({ databaseAdapter: adapter });
+        expect(adapter.enableSchemaHooks).toBe(true);
+        spyOn(adapter, '_onchange');
+        const schema = {
+          fields: {
+            array: { type: 'Array' },
+            object: { type: 'Object' },
+            date: { type: 'Date' },
+          },
+        };
+
+        await adapter.createClass('Stuff', schema);
+        const myClassSchema = await adapter.getClass('Stuff');
+        expect(myClassSchema).toBeDefined();
+        setTimeout(() => {
+          expect(adapter._onchange).toHaveBeenCalled();
+          done();
+        }, 5000);
       });
     });
   }

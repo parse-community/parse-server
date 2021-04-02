@@ -6,6 +6,7 @@ import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
+import { CheckGroup } from '../Security/CheckGroup';
 
 // @flow
 type Adapter<T> = string | any | T;
@@ -62,8 +63,9 @@ export interface ParseServerOptions {
   /* The full URI to your database. Supported databases are mongodb or postgres.
   :DEFAULT: mongodb://localhost:27017/parse */
   databaseURI: string;
-  /* Options to pass to the mongodb client */
-  databaseOptions: ?any;
+  /* Options to pass to the database client
+  :ENV: PARSE_SERVER_DATABASE_OPTIONS */
+  databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database */
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
@@ -138,6 +140,9 @@ export interface ParseServerOptions {
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
+  /* The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
+  :DEFAULT: {} */
+  pages: ?PagesOptions;
   /* custom pages for password validation and reset
   :DEFAULT: {} */
   customPages: ?CustomPagesOptions;
@@ -154,9 +159,6 @@ export interface ParseServerOptions {
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
   :DEFAULT: true */
   revokeSessionOnPasswordReset: ?boolean;
-  /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
-  :DEFAULT: 5000 */
-  schemaCacheTTL: ?number;
   /* Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
   :DEFAULT: 5000 */
   cacheTTL: ?number;
@@ -167,9 +169,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
   :DEFAULT: false */
   directAccess: ?boolean;
-  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
-  :DEFAULT: false */
-  enableSingleSchemaCache: ?boolean;
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
   enableExpressErrorHandler: ?boolean;
@@ -224,23 +223,101 @@ export interface ParseServerOptions {
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+  /* The security options to identify and report weak security settings.
+  :DEFAULT: {} */
+  security: ?SecurityOptions;
+}
+
+export interface SecurityOptions {
+  /* Is true if Parse Server should check for weak security settings.
+  :DEFAULT: false */
+  enableCheck: ?boolean;
+  /* Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
+  :DEFAULT: false */
+  enableCheckLog: ?boolean;
+  /* The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`. */
+  checkGroups: ?(CheckGroup[]);
+}
+
+export interface PagesOptions {
+  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+  :DEFAULT: false */
+  enableRouter: ?boolean;
+  /* Is true if pages should be localized; this has no effect on custom page redirects.
+  :DEFAULT: false */
+  enableLocalization: ?boolean;
+  /* The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale. */
+  localizationJsonPath: ?string;
+  /* The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
+  :DEFAULT: en */
+  localizationFallbackLocale: ?string;
+  /* The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
+  :DEFAULT: {} */
+  placeholders: ?Object;
+  /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
+  :DEFAULT: false */
+  forceRedirect: ?boolean;
+  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
+  :DEFAULT: ./public */
+  pagesPath: ?string;
+  /* The API endpoint for the pages. Default is 'apps'.
+  :DEFAULT: apps */
+  pagesEndpoint: ?string;
+  /* The URLs to the custom pages.
+  :DEFAULT: {} */
+  customUrls: ?PagesCustomUrlsOptions;
+  /* The custom routes.
+  :DEFAULT: [] */
+  customRoutes: ?(PagesRoute[]);
+}
+
+export interface PagesRoute {
+  /* The route path. */
+  path: string;
+  /* The route method, e.g. 'GET' or 'POST'. */
+  method: string;
+  /* The route handler that is an async function. */
+  handler: () => void;
+}
+
+export interface PagesCustomUrlsOptions {
+  /* The URL to the custom page for password reset. */
+  passwordReset: ?string;
+  /* The URL to the custom page for password reset -> link invalid. */
+  passwordResetLinkInvalid: ?string;
+  /* The URL to the custom page for password reset -> success. */
+  passwordResetSuccess: ?string;
+  /* The URL to the custom page for email verification -> success. */
+  emailVerificationSuccess: ?string;
+  /* The URL to the custom page for email verification -> link send fail. */
+  emailVerificationSendFail: ?string;
+  /* The URL to the custom page for email verification -> resend link -> success. */
+  emailVerificationSendSuccess: ?string;
+  /* The URL to the custom page for email verification -> link invalid. */
+  emailVerificationLinkInvalid: ?string;
+  /* The URL to the custom page for email verification -> link expired. */
+  emailVerificationLinkExpired: ?string;
 }
 
 export interface CustomPagesOptions {
   /* invalid link page path */
   invalidLink: ?string;
-  /* verify email success page path */
-  verifyEmailSuccess: ?string;
-  /* invalid verification link page path */
-  invalidVerificationLink: ?string;
-  /* verification link send success page path */
-  linkSendSuccess: ?string;
   /* verification link send fail page path */
   linkSendFail: ?string;
   /* choose password page path */
   choosePassword: ?string;
+  /* verification link send success page path */
+  linkSendSuccess: ?string;
+  /* verify email success page path */
+  verifyEmailSuccess: ?string;
   /* password reset success page path */
   passwordResetSuccess: ?string;
+  /* invalid verification link page path */
+  invalidVerificationLink: ?string;
+  /* expired verification link page path */
+  expiredVerificationLink: ?string;
+  /* invalid password reset link page path */
+  invalidPasswordResetLink: ?string;
   /* for masking user-facing pages */
   parseFrameURL: ?string;
 }
@@ -301,6 +378,9 @@ export interface AccountLockoutOptions {
   duration: ?number;
   /* number of failed sign-in attempts that will cause a user account to be locked */
   threshold: ?number;
+  /* Is true if the account lock should be removed after a successful password reset.
+  :DEFAULT: false */
+  unlockOnPasswordReset: ?boolean;
 }
 
 export interface PasswordPolicyOptions {
@@ -330,4 +410,10 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+}
+
+export interface DatabaseOptions {
+  /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
+  :DEFAULT: false */
+  enableSchemaHooks: ?boolean;
 }

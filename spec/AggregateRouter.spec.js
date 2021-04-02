@@ -74,4 +74,15 @@ describe('AggregateRouter', () => {
       expect(e.message).toBe('Pipeline stages should only have one key found group, match');
     }
   });
+
+  it('get search pipeline from Pipeline Operator (Array)', () => {
+    const body = {
+      pipeline: {
+        search: {},
+      },
+    };
+    const expected = [{ $search: {} }];
+    const result = AggregateRouter.getPipeline(body);
+    expect(result).toEqual(expected);
+  });
 });

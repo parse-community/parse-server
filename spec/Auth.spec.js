@@ -1,3 +1,5 @@
+'use strict';
+
 describe('Auth', () => {
   const { Auth, getAuthForSessionToken } = require('../lib/Auth.js');
   const Config = require('../lib/Config');
@@ -151,7 +153,7 @@ describe('Auth', () => {
   });
 
   describe('getRolesForUser', () => {
-    const rolesNumber = 300;
+    const rolesNumber = 100;
 
     it('should load all roles without config', async () => {
       const user = new Parse.User();
@@ -201,7 +203,6 @@ describe('Auth', () => {
     });
 
     it('should load all roles for different users with config', async () => {
-      const rolesNumber = 100;
       const user = new Parse.User();
       await user.signUp({
         username: 'hello',
@@ -229,10 +230,10 @@ describe('Auth', () => {
         const role2 = new Parse.Role('role2loadtest' + i, acl2);
         role.getUsers().add([user]);
         role2.getUsers().add([user2]);
-        roles.push(role.save());
-        roles.push(role2.save());
+        roles.push(role);
+        roles.push(role2);
       }
-      const savedRoles = await Promise.all(roles);
+      const savedRoles = await Parse.Object.saveAll(roles);
       expect(savedRoles.length).toBe(rolesNumber * 2);
       const cloudRoles = await userAuth.getRolesForUser();
       const cloudRoles2 = await user2Auth.getRolesForUser();

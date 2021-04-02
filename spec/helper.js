@@ -1,6 +1,13 @@
 'use strict';
+const semver = require('semver');
+const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
+const { SpecReporter } = require('jasmine-spec-reporter');
+const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
+
 // Sets up a Parse API server for testing.
-jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+jasmine.getEnv().addReporter(new CurrentSpecReporter());
+jasmine.getEnv().addReporter(new SpecReporter());
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -20,6 +27,7 @@ if (global._babelPolyfill) {
 process.noDeprecation = true;
 
 const cache = require('../lib/cache').default;
+const defaults = require('../lib/defaults').default;
 const ParseServer = require('../lib/index').ParseServer;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
@@ -30,6 +38,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -104,7 +113,7 @@ const defaultConfiguration = {
     custom: mockCustom(),
     facebook: mockFacebook(),
     myoauth: {
-      module: path.resolve(__dirname, 'myoauth'), // relative path as it's run from src
+      module: path.resolve(__dirname, 'support/myoauth'), // relative path as it's run from src
     },
     shortLivedAuth: mockShortLivedAuth(),
   },
@@ -115,11 +124,23 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 }
 
 const openConnections = {};
+const destroyAliveConnections = function () {
+  for (const socketId in openConnections) {
+    try {
+      openConnections[socketId].destroy();
+      delete openConnections[socketId];
+    } catch (e) {
+      /* */
+    }
+  }
+};
 // Set up a default API server for testing with default configuration.
 let server;
 
+let didChangeConfiguration = false;
+
 // Allows testing specific configurations of Parse Server
-const reconfigureServer = changedConfiguration => {
+const reconfigureServer = (changedConfiguration = {}) => {
   return new Promise((resolve, reject) => {
     if (server) {
       return server.close(() => {
@@ -129,12 +150,12 @@ const reconfigureServer = changedConfiguration => {
     }
     try {
       let parseServer = undefined;
+      didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
       const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
         serverStartComplete: error => {
           if (error) {
             reject(error);
           } else {
-            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
             resolve(parseServer);
           }
         },
@@ -165,7 +186,7 @@ const reconfigureServer = changedConfiguration => {
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
-beforeEach(done => {
+beforeAll(async () => {
   try {
     Parse.User.enableUnsafeCurrentUser();
   } catch (error) {
@@ -173,33 +194,29 @@ beforeEach(done => {
       throw error;
     }
   }
-  TestUtils.destroyAllDataPermanently(true)
-    .catch(error => {
-      // For tests that connect to their own mongo, there won't be any data to delete.
-      if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
-        return;
-      } else {
-        fail(error);
-        return;
-      }
-    })
-    .then(reconfigureServer)
-    .then(() => {
-      Parse.initialize('test', 'test', 'test');
-      Parse.serverURL = 'http://localhost:' + port + '/1';
-      done();
-    })
-    .catch(done.fail);
+  await reconfigureServer();
+
+  Parse.initialize('test', 'test', 'test');
+  Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
 afterEach(function (done) {
-  const afterLogOut = () => {
+  const afterLogOut = async () => {
     if (Object.keys(openConnections).length > 0) {
-      fail('There were open connections to the server left after the test finished');
+      console.warn('There were open connections to the server left after the test finished');
     }
-    TestUtils.destroyAllDataPermanently(true).then(done, done);
+    destroyAliveConnections();
+    await TestUtils.destroyAllDataPermanently(true);
+    SchemaCache.clear();
+    if (didChangeConfiguration) {
+      await reconfigureServer();
+    } else {
+      await databaseAdapter.performInitialization({ VolatileClassesSchemas });
+    }
+    done();
   };
   Parse.Cloud._removeAllHooks();
+  defaults.protectedFields = { _User: { '*': ['email'] } };
   databaseAdapter
     .getAllClasses()
     .then(allSchemas => {
@@ -412,6 +429,42 @@ global.it_only_db = db => {
     (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
   ) {
     return it;
+  } else {
+    return xit;
+  }
+};
+
+global.it_only_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.it_exclude_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_exclude_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return fit;
   } else {
     return xit;
   }

@@ -6,7 +6,7 @@ const Config = require('../lib/Config');
 
 describe('AdapterLoader', () => {
   it('should instantiate an adapter from string in object', done => {
-    const adapterPath = require('path').resolve('./spec/MockAdapter');
+    const adapterPath = require('path').resolve('./spec/support/MockAdapter');
 
     const adapter = loadAdapter({
       adapter: adapterPath,
@@ -23,7 +23,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should instantiate an adapter from string', done => {
-    const adapterPath = require('path').resolve('./spec/MockAdapter');
+    const adapterPath = require('path').resolve('./spec/support/MockAdapter');
     const adapter = loadAdapter(adapterPath);
 
     expect(adapter instanceof Object).toBe(true);
@@ -119,7 +119,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should load custom push adapter from string (#3544)', done => {
-    const adapterPath = require('path').resolve('./spec/MockPushAdapter');
+    const adapterPath = require('path').resolve('./spec/support/MockPushAdapter');
     const options = {
       ios: {
         bundleId: 'bundle.id',

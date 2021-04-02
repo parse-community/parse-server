@@ -833,7 +833,8 @@ describe('Parse.File testing', () => {
   // Because GridStore is not loaded on PG, those are perfect
   // for fallback tests
   describe_only_db('postgres')('Default Range tests', () => {
-    it('fallback to regular request', done => {
+    it('fallback to regular request', async done => {
+      await reconfigureServer();
       const headers = {
         'Content-Type': 'application/octet-stream',
         'X-Parse-Application-Id': 'test',

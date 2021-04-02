@@ -1,7 +1,7 @@
 'use strict';
 const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
@@ -70,6 +70,8 @@ describe('server', () => {
         },
       }),
     }).catch(() => {
+      const config = Config.get('test');
+      config.schemaCache.clear();
       //Need to use rest api because saving via JS SDK results in fail() not getting called
       request({
         method: 'POST',
@@ -163,7 +165,8 @@ describe('server', () => {
     });
   });
 
-  it('can report the server version', done => {
+  it('can report the server version', async done => {
+    await reconfigureServer();
     request({
       url: 'http://localhost:8378/1/serverInfo',
       headers: {
@@ -177,7 +180,8 @@ describe('server', () => {
     });
   });
 
-  it('can properly sets the push support', done => {
+  it('can properly sets the push support', async done => {
+    await reconfigureServer();
     // default config passes push options
     const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);
@@ -315,10 +319,16 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(() => {
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             });
         },
       })
@@ -352,12 +362,18 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(error => {
               fail(JSON.stringify(error));
               if (server) {
-                server.close(done);
+                server.close(async () => {
+                  await reconfigureServer();
+                  done();
+                });
               } else {
                 done();
               }
