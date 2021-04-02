@@ -59,8 +59,7 @@ async function checkNodeVersions() {
     releasedVersions,
     latestComponent: CiVersionCheck.versionComponents.minor,
     ignoreReleasedVersions: [
-      '<10.0.0', // These versions have reached their end-of-life support date
-      '>=11.0.0 <12.0.0', // These versions have reached their end-of-life support date
+      '<12.0.0', // These versions have reached their end-of-life support date
       '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
       '>=16.0.0', // This version has not been officially released yet
     ],
