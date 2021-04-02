@@ -3,7 +3,7 @@ const Config = require('../lib/Config');
 
 describe('Pointer Permissions', () => {
   beforeEach(() => {
-    Config.get(Parse.applicationId).database.schemaCache.clear();
+    Config.get(Parse.applicationId).schemaCache.clear();
   });
 
   describe('using single user-pointers', () => {
@@ -2020,7 +2020,7 @@ describe('Pointer Permissions', () => {
       let obj2;
 
       async function initialize() {
-        await Config.get(Parse.applicationId).database.schemaCache.clear();
+        await Config.get(Parse.applicationId).schemaCache.clear();
 
         [user1, user2] = await Promise.all([createUser('user1'), createUser('user2')]);
 
@@ -2442,7 +2442,7 @@ describe('Pointer Permissions', () => {
       let objNobody;
 
       async function initialize() {
-        await Config.get(Parse.applicationId).database.schemaCache.clear();
+        await Config.get(Parse.applicationId).schemaCache.clear();
 
         [user1, user2, user3] = await Promise.all([
           createUser('user1'),
@@ -2919,7 +2919,7 @@ describe('Pointer Permissions', () => {
       let obj2;
 
       async function initialize() {
-        await Config.get(Parse.applicationId).database.schemaCache.clear();
+        await Config.get(Parse.applicationId).schemaCache.clear();
 
         [user1, user2] = await Promise.all([createUser('user1'), createUser('user2')]);
 
@@ -3033,7 +3033,7 @@ describe('Pointer Permissions', () => {
        * Clear cache, create user and object, login user
        */
       async function initialize() {
-        await Config.get(Parse.applicationId).database.schemaCache.clear();
+        await Config.get(Parse.applicationId).schemaCache.clear();
 
         user1 = await createUser('user1');
         user1 = await logIn(user1);

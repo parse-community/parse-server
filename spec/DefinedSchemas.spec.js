@@ -35,7 +35,6 @@ describe('DefinedSchemas', () => {
       };
       expect(schema.fields).toEqual(expectedFields);
 
-      await server.config.databaseController.schemaCache.clear();
       // Will perform update
       await new DefinedSchemas([{ className: 'Test' }], server.config).execute();
       schema = await new Parse.Schema('Test').get();
@@ -137,7 +136,6 @@ describe('DefinedSchemas', () => {
       let installationSchema = await new Parse.Schema('_Installation').get();
       expect(installationSchema.fields).toEqual(expectedInstallationFields);
 
-      await server.config.databaseController.schemaCache.clear();
       // Perform update
       await new DefinedSchemas(schemas, server.config).execute();
       schema = await new Parse.Schema('Test').get();
@@ -348,10 +346,13 @@ describe('DefinedSchemas', () => {
       let testSchema = await new Parse.Schema('Test').get();
       cleanUpIndexes(userSchema);
       cleanUpIndexes(testSchema);
-      // If indexes are undefined it means that their
-      // were not touched
       expect(testSchema.indexes).toBeUndefined();
-      expect(userSchema.indexes).toBeUndefined();
+      expect(userSchema.indexes).toEqual({
+        username_1: { username: 1 },
+        case_insensitive_username: { username: 1 },
+        email_1: { email: 1 },
+        case_insensitive_email: { email: 1 },
+      });
 
       // Update
       await new DefinedSchemas(schemas, server.config).execute();
@@ -359,10 +360,14 @@ describe('DefinedSchemas', () => {
       testSchema = await new Parse.Schema('Test').get();
       cleanUpIndexes(userSchema);
       cleanUpIndexes(testSchema);
-      // If indexes are undefined it means that their
-      // were not touched
+
       expect(testSchema.indexes).toBeUndefined();
-      expect(userSchema.indexes).toBeUndefined();
+      expect(userSchema.indexes).toEqual({
+        username_1: { username: 1 },
+        case_insensitive_username: { username: 1 },
+        email_1: { email: 1 },
+        case_insensitive_email: { email: 1 },
+      });
     });
   });
 

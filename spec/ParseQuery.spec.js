@@ -18,6 +18,10 @@ const masterKeyOptions = {
   headers: masterKeyHeaders,
 };
 
+const BoxedNumber = Parse.Object.extend({
+  className: 'BoxedNumber',
+});
+
 describe('Parse.Query testing', () => {
   it('basic query', function (done) {
     const baz = new TestObject({ foo: 'baz' });
@@ -275,32 +279,26 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('query with limit equal to maxlimit', function (done) {
+  it('query with limit equal to maxlimit', async () => {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
-    reconfigureServer({ maxLimit: 1 });
-    Parse.Object.saveAll([baz, qux]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.limit(1);
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+    await reconfigureServer({ maxLimit: 1 });
+    await Parse.Object.saveAll([baz, qux]);
+    const query = new Parse.Query(TestObject);
+    query.limit(1);
+    const results = await query.find();
+    equal(results.length, 1);
   });
 
-  it('query with limit exceeding maxlimit', function (done) {
+  it('query with limit exceeding maxlimit', async () => {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
-    reconfigureServer({ maxLimit: 1 });
-    Parse.Object.saveAll([baz, qux]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.limit(2);
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+    await reconfigureServer({ maxLimit: 1 });
+    await Parse.Object.saveAll([baz, qux]);
+    const query = new Parse.Query(TestObject);
+    query.limit(2);
+    const results = await query.find();
+    equal(results.length, 1);
   });
 
   it('containedIn object array queries', function (done) {
@@ -937,10 +935,6 @@ describe('Parse.Query testing', () => {
         equal(response.data.error, 'bad $containedBy: should be an array');
         done();
       });
-  });
-
-  const BoxedNumber = Parse.Object.extend({
-    className: 'BoxedNumber',
   });
 
   it('equalTo queries', function (done) {
@@ -2048,9 +2042,9 @@ describe('Parse.Query testing', () => {
       const query = new Parse.Query(TestObject);
       query.matches(
         'myString',
-        "parse # First fragment. We'll write this in one case but match " +
-          'insensitively\n.com  # Second fragment. This can be separated by any ' +
-          'character, including newline',
+        "parse # First fragment. We'll write this in one case but match insensitively\n" +
+          '.com  # Second fragment. This can be separated by any character, including newline;' +
+          'however, this comment must end with a newline to recognize it as a comment\n',
         'mixs'
       );
       query.find().then(
@@ -2933,10 +2927,10 @@ describe('Parse.Query testing', () => {
     const saves = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (x) {
       const obj = new Parse.Object('TestObject');
       obj.set('x', x + 1);
-      return obj.save();
+      return obj;
     });
 
-    Promise.all(saves)
+    Parse.Object.saveAll(saves)
       .then(function () {
         const query = new Parse.Query('TestObject');
         query.ascending('x');
@@ -3209,6 +3203,7 @@ describe('Parse.Query testing', () => {
         }
       );
   });
+
   it('exclude keys', async () => {
     const obj = new TestObject({ foo: 'baz', hello: 'world' });
     await obj.save();
