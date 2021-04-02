@@ -8,7 +8,7 @@ on:
       - '**'
 env:
   COVERAGE_OPTION: ./node_modules/.bin/nyc
-  NODE_VERSION: 10
+  NODE_VERSION: 14.16.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-ci:
@@ -82,11 +82,6 @@ jobs:
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.16.0
-          - name: Node 10
-            MONGODB_VERSION: 4.4.4
-            MONGODB_TOPOLOGY: standalone
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 10.24.0
           - name: Node 12
             MONGODB_VERSION: 4.4.4
             MONGODB_TOPOLOGY: standalone
