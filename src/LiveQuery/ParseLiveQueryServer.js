@@ -170,11 +170,7 @@ class ParseLiveQueryServer {
             };
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
-              const sessionToken = this.getSessionFromClient(client, requestId);
-              const { auth } = await this.getAuthForSessionToken(sessionToken);
-              if (auth && auth.user) {
-                res.user = auth.user;
-              }
+              const auth = this.getAuthFromClient(client, res, requestId);
               if (res.object) {
                 res.object = Parse.Object.fromJSON(res.object);
               }
@@ -320,11 +316,7 @@ class ParseLiveQueryServer {
               if (res.original) {
                 res.original = Parse.Object.fromJSON(res.original);
               }
-              const sessionToken = this.getSessionFromClient(client, requestId);
-              const { auth } = await this.getAuthForSessionToken(sessionToken);
-              if (auth && auth.user) {
-                res.user = auth.user;
-              }
+              const auth = this.getAuthFromClient(client, res, requestId);
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
             if (!res.sendEvent) {
@@ -584,12 +576,20 @@ class ParseLiveQueryServer {
         return false;
       });
   }
-  getSessionFromClient(client: any, requestId: number): String {
-    const subscriptionInfo = client.getSubscriptionInfo(requestId);
-    if (typeof subscriptionInfo === 'undefined') {
-      return client.sessionToken;
+  async getAuthFromClient(client: any, res: any, requestId: number) {
+    const getSessionFromClient = () => {
+      const subscriptionInfo = client.getSubscriptionInfo(requestId);
+      if (typeof subscriptionInfo === 'undefined') {
+        return client.sessionToken;
+      }
+      return subscriptionInfo.sessionToken || client.sessionToken;
+    };
+    const sessionToken = getSessionFromClient();
+    const { auth } = await this.getAuthForSessionToken(sessionToken);
+    if (auth && auth.user) {
+      res.user = auth.user;
     }
-    return subscriptionInfo.sessionToken || client.sessionToken;
+    return auth;
   }
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
