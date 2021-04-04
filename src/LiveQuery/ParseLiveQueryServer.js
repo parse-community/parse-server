@@ -170,7 +170,7 @@ class ParseLiveQueryServer {
             };
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
-              const auth = this.getAuthFromClient(client, res, requestId);
+              const auth = await this.getAuthFromClient(client, res, requestId);
               if (res.object) {
                 res.object = Parse.Object.fromJSON(res.object);
               }
@@ -316,9 +316,7 @@ class ParseLiveQueryServer {
               if (res.original) {
                 res.original = Parse.Object.fromJSON(res.original);
               }
-              const auth = this.getAuthFromClient(client, res, requestId);
-              console.log('auth', auth);
-              console.log('user', res.user);
+              const auth = await this.getAuthFromClient(client, res, requestId);
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
             if (!res.sendEvent) {
