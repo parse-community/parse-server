@@ -161,7 +161,7 @@ export function _unregisterAll() {
   Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
 }
 
-export function toJSONwithObjects(object) {
+export function toJSONwithObjects(object, className) {
   if (!object || !object.toJSON) {
     return {};
   }
@@ -176,6 +176,9 @@ export function toJSONwithObjects(object) {
     json.className = pointer.className;
     json.__type = 'Object';
     toJSON[key] = json;
+  }
+  if (className) {
+    toJSON.className = className;
   }
   return toJSON;
 }

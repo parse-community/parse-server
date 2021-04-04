@@ -181,7 +181,7 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              deletedParseObject = toJSONwithObjects(res.object);
+              deletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
             client.pushDelete(requestId, deletedParseObject);
           } catch (error) {
@@ -325,12 +325,13 @@ class ParseLiveQueryServer {
               return;
             }
             if (res.object && typeof res.object.toJSON === 'function') {
-              currentParseObject = toJSONwithObjects(res.object);
-              currentParseObject.className = res.object.className || className;
+              currentParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
             if (res.original && typeof res.original.toJSON === 'function') {
-              originalParseObject = toJSONwithObjects(res.original);
-              originalParseObject.className = res.original.className || className;
+              originalParseObject = toJSONwithObjects(
+                res.original,
+                res.original.className || className
+              );
             }
             const functionName =
               'push' + message.event.charAt(0).toUpperCase() + message.event.slice(1);
