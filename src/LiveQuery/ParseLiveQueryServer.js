@@ -577,6 +577,7 @@ class ParseLiveQueryServer {
       });
   }
   async getAuthFromClient(client: any, res: any, requestId: number) {
+    console.log('client', client);
     const getSessionFromClient = () => {
       const subscriptionInfo = client.getSubscriptionInfo(requestId);
       if (typeof subscriptionInfo === 'undefined') {
@@ -586,6 +587,7 @@ class ParseLiveQueryServer {
     };
     const sessionToken = getSessionFromClient();
     const { auth } = await this.getAuthForSessionToken(sessionToken);
+    console.log('auth', auth);
     if (auth && auth.user) {
       res.user = auth.user;
     }
