@@ -588,14 +588,11 @@ class ParseLiveQueryServer {
     if (!client) {
       return;
     }
-    if (client.sessionToken) {
-      return client.sessionToken;
-    }
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     if (typeof subscriptionInfo === 'undefined') {
-      return;
+      return client.sessionToken;
     }
-    return subscriptionInfo.sessionToken;
+    return subscriptionInfo.sessionToken || client.sessionToken;
   }
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
