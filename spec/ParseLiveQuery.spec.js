@@ -680,7 +680,6 @@ describe('ParseLiveQuery', function () {
     });
 
     Parse.Cloud.afterLiveQueryEvent('Chat', req => {
-      expect(req.event).toBe('create');
       expect(req.user).toBeDefined();
       expect(req.object.get('foo')).toBe('bar');
       calls++;
@@ -691,6 +690,10 @@ describe('ParseLiveQuery', function () {
     subscription.on('create', object => {
       expect(object.get('foo')).toBe('bar');
       expect(calls).toEqual(3);
+    });
+    subscription.on('delete', object => {
+      expect(object.get('foo')).toBe('bar');
+      expect(calls).toEqual(4);
       done();
     });
     const object = new Parse.Object('Chat');
@@ -698,6 +701,7 @@ describe('ParseLiveQuery', function () {
     object.setACL(acl);
     object.set({ foo: 'bar' });
     await object.save();
+    await object.destroy();
   });
 
   it('handle invalid websocket payload length', async done => {

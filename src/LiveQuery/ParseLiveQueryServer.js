@@ -585,9 +585,6 @@ class ParseLiveQueryServer {
       });
   }
   getSessionFromClient(client: any, requestId: number): String {
-    if (!client) {
-      return;
-    }
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     if (typeof subscriptionInfo === 'undefined') {
       return client.sessionToken;
