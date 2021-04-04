@@ -317,6 +317,8 @@ class ParseLiveQueryServer {
                 res.original = Parse.Object.fromJSON(res.original);
               }
               const auth = this.getAuthFromClient(client, res, requestId);
+              console.log('auth', auth);
+              console.log('user', res.user);
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
             if (!res.sendEvent) {
@@ -577,7 +579,6 @@ class ParseLiveQueryServer {
       });
   }
   async getAuthFromClient(client: any, res: any, requestId: number) {
-    console.log('client', client);
     const getSessionFromClient = () => {
       const subscriptionInfo = client.getSubscriptionInfo(requestId);
       if (typeof subscriptionInfo === 'undefined') {
@@ -587,7 +588,6 @@ class ParseLiveQueryServer {
     };
     const sessionToken = getSessionFromClient();
     const { auth } = await this.getAuthForSessionToken(sessionToken);
-    console.log('auth', auth);
     if (auth && auth.user) {
       res.user = auth.user;
     }

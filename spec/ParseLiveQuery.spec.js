@@ -645,7 +645,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('LiveQuery with ACL', async done => {
+  fit('LiveQuery with ACL', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['Chat'],
