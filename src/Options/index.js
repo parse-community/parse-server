@@ -226,6 +226,10 @@ export interface ParseServerOptions {
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
+  /* Is true if Parse Server should set public read and write access on new Parse.Users to false
+  :ENV: PARSE_SERVER_ENFORCE_PRIVATE_USERS
+  :DEFAULT: false */
+  enforcePrivateUsers: ?boolean;
 }
 
 export interface SecurityOptions {

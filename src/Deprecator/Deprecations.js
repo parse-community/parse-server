@@ -11,4 +11,4 @@
  *
  * If there are no deprecations this must return an empty array anyway.
  */
-module.exports = [];
+module.exports = [{ optionKey: 'enforcePrivateUsers', changeNewDefault: true }];
