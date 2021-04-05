@@ -117,7 +117,7 @@ export class Config {
 
   static validateEnforcePrivateUsers(enforcePrivateUsers) {
     if (typeof enforcePrivateUsers !== 'boolean') {
-      throw 'Parse Server option enforcePrivateUsers must be a boolean value';
+      throw 'Parse Server option enforcePrivateUsers must be a boolean.';
     }
   }
 
