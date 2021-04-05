@@ -171,9 +171,7 @@ class ParseLiveQueryServer {
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
               const auth = await this.getAuthFromClient(client, requestId);
-              if (auth && auth.user) {
-                res.user = auth.user;
-              }
+              res.user = auth.user;
               if (res.object) {
                 res.object = Parse.Object.fromJSON(res.object);
               }
@@ -320,9 +318,7 @@ class ParseLiveQueryServer {
                 res.original = Parse.Object.fromJSON(res.original);
               }
               const auth = await this.getAuthFromClient(client, requestId);
-              if (auth && auth.user) {
-                res.user = auth.user;
-              }
+              res.user = auth.user;
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
             if (!res.sendEvent) {
@@ -595,7 +591,7 @@ class ParseLiveQueryServer {
       sessionToken = getSessionFromClient();
     }
     const { auth } = await this.getAuthForSessionToken(sessionToken);
-    return auth;
+    return auth || {};
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
@@ -651,9 +647,7 @@ class ParseLiveQueryServer {
       const trigger = getTrigger('@Connect', 'beforeConnect', Parse.applicationId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, req.sessionToken);
-        if (auth && auth.user) {
-          req.user = auth.user;
-        }
+        req.user = auth.user;
         await runTrigger(trigger, `beforeConnect.@Connect`, req, auth);
       }
       parseWebsocket.clientId = clientId;
@@ -712,9 +706,7 @@ class ParseLiveQueryServer {
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, request.sessionToken);
-        if (auth && auth.user) {
-          request.user = auth.user;
-        }
+        request.user = auth.user;
 
         const parseQuery = new Parse.Query(className);
         parseQuery.withJSON(request.query);
