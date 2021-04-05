@@ -112,9 +112,12 @@ export class Config {
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
+    this.validateEnforcePrivateUsers(enforcePrivateUsers);
+  }
 
+  static validateEnforcePrivateUsers(enforcePrivateUsers) {
     if (typeof enforcePrivateUsers !== 'boolean') {
-      throw 'enforcePrivateUsers must be a boolean value';
+      throw 'Parse Server option enforcePrivateUsers must be a boolean value';
     }
   }
 
