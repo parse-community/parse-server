@@ -576,6 +576,7 @@ class ParseLiveQueryServer {
         return false;
       });
   }
+
   async getAuthFromClient(client: any, res: any, requestId: number, sessionToken: string) {
     const getSessionFromClient = () => {
       const subscriptionInfo = client.getSubscriptionInfo(requestId);
@@ -593,6 +594,7 @@ class ParseLiveQueryServer {
     }
     return auth;
   }
+
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
     if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
