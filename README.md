@@ -75,6 +75,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
       - [Reserved Keys](#reserved-keys)
       - [Parameters](#parameters-1)
   - [Logging](#logging)
+- [Deprecations](#deprecations)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
   - [Running](#running)
@@ -753,6 +754,14 @@ Logs are also viewable in Parse Dashboard.
 **Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+# Deprecations
+
+The following Parse Server options and APIs are deprecated and will change in future versions. The "Deprecation" version indicates from when an item has been deprecated with runtime warnings. The "End-of-Life" version indicates when the deprecation period has ended and the breaking change came into effect. In rare cases, deprecations may be revoked without any breaking change coming into effect.
+
+| Type   | Item           | Deprecation | End-of-Life | Details                                 |
+|--------|----------------|-------------|-------------|-----------------------------------------|
+| Option | `directAccess` | `5.0.0`     | tbd         | Default changes from `false` to `true`. |
 
 # Live Query
 
