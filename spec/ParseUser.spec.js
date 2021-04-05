@@ -3926,7 +3926,7 @@ describe('Parse.User testing', () => {
     }
   });
 
-  fit('should throw when enforcePrivateUsers is invalid', async () => {
+  it('should throw when enforcePrivateUsers is invalid', async () => {
     const options = [[], 'a', 0, {}];
     for (const option of options) {
       await expectAsync(reconfigureServer({ enforcePrivateUsers: option })).toBeRejected();
