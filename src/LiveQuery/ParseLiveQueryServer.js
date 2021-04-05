@@ -576,7 +576,7 @@ class ParseLiveQueryServer {
         return false;
       });
   }
-  async getAuthFromClient(client: any, res: any, requestId: number) {
+  async getAuthFromClient(client: any, res: any, requestId: number, sessionToken: string) {
     const getSessionFromClient = () => {
       const subscriptionInfo = client.getSubscriptionInfo(requestId);
       if (typeof subscriptionInfo === 'undefined') {
@@ -584,7 +584,9 @@ class ParseLiveQueryServer {
       }
       return subscriptionInfo.sessionToken || client.sessionToken;
     };
-    const sessionToken = getSessionFromClient();
+    if (!sessionToken) {
+      sessionToken = getSessionFromClient();
+    }
     const { auth } = await this.getAuthForSessionToken(sessionToken);
     if (auth && auth.user) {
       res.user = auth.user;
@@ -643,10 +645,7 @@ class ParseLiveQueryServer {
       };
       const trigger = getTrigger('@Connect', 'beforeConnect', Parse.applicationId);
       if (trigger) {
-        const { auth } = await this.getAuthForSessionToken(req.sessionToken);
-        if (auth && auth.user) {
-          req.user = auth.user;
-        }
+        const auth = await this.getAuthFromClient(client, req, request.requestId, req.sessionToken);
         await runTrigger(trigger, `beforeConnect.@Connect`, req, auth);
       }
       parseWebsocket.clientId = clientId;
@@ -704,10 +703,12 @@ class ParseLiveQueryServer {
     try {
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
-        const { auth } = await this.getAuthForSessionToken(request.sessionToken);
-        if (auth && auth.user) {
-          request.user = auth.user;
-        }
+        const auth = await this.getAuthFromClient(
+          client,
+          request,
+          request.requestId,
+          request.sessionToken
+        );
 
         const parseQuery = new Parse.Query(className);
         parseQuery.withJSON(request.query);
