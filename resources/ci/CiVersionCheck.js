@@ -193,6 +193,13 @@ class CiVersionCheck {
         ? '^'
         : '~'
     const latest = semver.maxSatisfying(versions, `${operator}${version}`);
+
+    // If the version should be ignored, skip it
+    if (this.ignoreReleasedVersions.length > 0 && semver.satisfies(latest, this.ignoreReleasedVersions.join(' || '))) {
+      return undefined;
+    }
+
+    // Return the latest version if it is newer than any currently used version
     return semver.gt(latest, version) ? latest : undefined;
   }
 
