@@ -1,6 +1,9 @@
+const CryptoJS = require('crypto-js');
 const cryptoUtils = require('./cryptoUtils');
+const jwt = require('jsonwebtoken');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
+const SHA256 = require('crypto-js/sha256');
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -26,6 +29,59 @@ function Auth({
   this.fetchedRoles = false;
   this.rolePromise = null;
 }
+
+const base64url = source => {
+  let encodedSource = CryptoJS.enc.Base64.stringify(source);
+  encodedSource = encodedSource.replace(/=+$/, '');
+  encodedSource = encodedSource.replace(/\+/g, '-');
+  encodedSource = encodedSource.replace(/\//g, '_');
+  return encodedSource;
+};
+
+const generateRefreshToken = () => {
+  return SHA256(CryptoJS.lib.WordArray.random(256)).toString();
+};
+
+const createJWT = (sessionToken, oauthKey, oauthTTL) => {
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT',
+  };
+  const stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));
+  const encodedHeader = base64url(stringifiedHeader);
+  const currentTime = new Date();
+  const timestamp = Math.floor(currentTime.getTime() / 1000);
+  const expiration = timestamp + oauthTTL;
+  const data = {
+    sub: sessionToken,
+    iat: timestamp,
+    exp: expiration,
+  };
+  const stringifiedData = CryptoJS.enc.Utf8.parse(JSON.stringify(data));
+  const encodedData = base64url(stringifiedData);
+  const token = encodedHeader + '.' + encodedData;
+
+  let signature = CryptoJS.HmacSHA256(token, oauthKey);
+  signature = base64url(signature);
+  currentTime.setSeconds(currentTime.getSeconds() + oauthTTL);
+
+  return {
+    accessToken: token + '.' + signature,
+    expires_in: { __type: 'Date', iso: currentTime.toISOString() },
+  };
+};
+
+const validJWT = (token, secret) => {
+  try {
+    return jwt.verify(token, secret);
+  } catch (err) {
+    return false;
+  }
+};
+
+const decodeJWT = token => {
+  return jwt.decode(token);
+};
 
 // Whether this auth could possibly modify the given user id.
 // It still could be forbidden via ACLs even if this returns true.
@@ -63,6 +119,13 @@ const getAuthForSessionToken = async function ({
 }) {
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
+    if (config.oauth20 === true) {
+      if (validJWT(sessionToken, config.oauthKey) === false) {
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      }
+      const decoded = decodeJWT(sessionToken);
+      sessionToken = decoded.sub;
+    }
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
@@ -321,6 +384,10 @@ const createSession = function (
     sessionData.installationId = installationId;
   }
 
+  if (config.oauth20 === true) {
+    sessionData.refreshToken = generateRefreshToken();
+  }
+
   Object.assign(sessionData, additionalSessionData);
   // We need to import RestWrite at this point for the cyclic dependency it has to it
   const RestWrite = require('./RestWrite');
@@ -339,5 +406,9 @@ module.exports = {
   readOnly,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
+  generateRefreshToken,
   createSession,
+  createJWT,
+  validJWT,
+  decodeJWT,
 };
