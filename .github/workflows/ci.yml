@@ -132,8 +132,8 @@ jobs:
         include:
           - name: PostgreSQL 11, PostGIS 3.0
             POSTGRES_IMAGE: postgis/postgis:11-3.0
-          - name: PostgreSQL 12, PostGIS 3.1
-            POSTGRES_IMAGE: postgis/postgis:12-3.1
+          - name: PostgreSQL 11, PostGIS 3.1
+            POSTGRES_IMAGE: postgis/postgis:11-3.1
           - name: PostgreSQL 12, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:12-3.1
           - name: PostgreSQL 13, PostGIS 3.1
