@@ -112,27 +112,27 @@ Before you start make sure you have installed:
 #### Node.js
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Patch Version | End-of-Life Date | Compatibility      |
-|------------|----------------------|------------------|--------------------|
-| Node.js 12 | 12.22.1              | April 2022       | ✅ Fully compatible |
-| Node.js 14 | 14.16.1              | April 2023       | ✅ Fully compatible |
-| Node.js 15 | 15.14.0              | June 2021        | ✅ Fully compatible |
+| Version    | Latest Version | End-of-Life Date | Compatibility      |
+|------------|----------------|------------------|--------------------|
+| Node.js 12 | 12.22.1        | April 2022       | ✅ Fully compatible |
+| Node.js 14 | 14.16.1        | April 2023       | ✅ Fully compatible |
+| Node.js 15 | 15.14.0        | June 2021        | ✅ Fully compatible |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
-|-------------|----------------------|------------------|--------------------|
-| MongoDB 4.0 | 4.0.23               | January 2022     | ✅ Fully compatible |
-| MongoDB 4.2 | 4.2.13               | TBD              | ✅ Fully compatible |
-| MongoDB 4.4 | 4.4.4                | TBD              | ✅ Fully compatible |
+| Version     | Latest Version | End-of-Life Date | Compatibility      |
+|-------------|----------------|------------------|--------------------|
+| MongoDB 4.0 | 4.0.23         | January 2022     | ✅ Fully compatible |
+| MongoDB 4.2 | 4.2.13         | TBD              | ✅ Fully compatible |
+| MongoDB 4.4 | 4.4.4          | TBD              | ✅ Fully compatible |
   
 #### PostgreSQL
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
 
 | Version     | PostGIS Version | End-of-Life Date | Parse Server Support End | Compatibility      |
 |-------------|-----------------|------------------|--------------------------|--------------------|
-| Postgres 11 | 3.0             | November 2023    | April 2022               | ✅ Fully compatible |
+| Postgres 11 | 3.0, 3.1        | November 2023    | April 2022               | ✅ Fully compatible |
 | Postgres 12 | 3.1             | November 2024    | April 2023               | ✅ Fully compatible |
 | Postgres 13 | 3.1             | November 2025    | April 2024               | ✅ Fully compatible |
 
