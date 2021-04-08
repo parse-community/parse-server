@@ -7,8 +7,7 @@ on:
     branches:
       - '**'
 env:
-  COVERAGE_OPTION: ./node_modules/.bin/nyc
-  NODE_VERSION: 14.16.0
+  NODE_VERSION: 14.16.1
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-ci:
@@ -76,42 +75,42 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Mongo 4.4, ReplicaSet, WiredTiger
+          - name: MongoDB 4.4, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.4.4
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
-          - name: Mongo 4.2, ReplicaSet, WiredTiger
+            NODE_VERSION: 14.16.1
+          - name: MongoDB 4.2, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.2.13
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
-          - name: Mongo 4.0, ReplicaSet, WiredTiger
+            NODE_VERSION: 14.16.1
+          - name: MongoDB 4.0, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.0.23
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
-          - name: Mongo 4.0, Standalone, MMAPv1
+            NODE_VERSION: 14.16.1
+          - name: MongoDB 4.0, Standalone, MMAPv1
             MONGODB_VERSION: 4.0.23
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
-            NODE_VERSION: 14.16.0
+            NODE_VERSION: 14.16.1
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 4.4.4
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
+            NODE_VERSION: 14.16.1
           - name: Node 12
             MONGODB_VERSION: 4.4.4
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 12.22.0
+            NODE_VERSION: 12.22.1
           - name: Node 15
             MONGODB_VERSION: 4.4.4
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 15.13.0
+            NODE_VERSION: 15.14.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -151,15 +150,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Postgres 10, Postgis 3.1
-            POSTGRES_IMAGE: postgis/postgis:10-3.1
-          - name: Postgres 11, Postgis 3.1
+          - name: PostgreSQL 11, PostGIS 3.0
+            POSTGRES_IMAGE: postgis/postgis:11-3.0
+          - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
-          - name: Postgres 12, Postgis 3.1
+          - name: PostgreSQL 12, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:12-3.1
-          - name: Postgres 12, Postgis 3.0
-            POSTGRES_IMAGE: postgis/postgis:12-3.0
-          - name: Postgres 13, Postgis 3.1
+          - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
       fail-fast: false
     name: ${{ matrix.name }}
