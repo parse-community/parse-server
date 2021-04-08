@@ -61,8 +61,8 @@ class CheckGroupServerConfig extends CheckGroup {
         },
       }),
       new Check({
-        title: 'Public Users on signup',
-        warning: 'Users will be publicly readable on signup.',
+        title: 'Users are created without public access',
+        warning: 'Users are created with public read access.',
         solution: "Change Parse Server configuration to 'enforcePrivateUsers: true'.",
         check: () => {
           if (!config.enforcePrivateUsers) {
