@@ -156,8 +156,7 @@ module.exports.ParseServerOptions = {
   },
   enforcePrivateUsers: {
     env: 'PARSE_SERVER_ENFORCE_PRIVATE_USERS',
-    help:
-      'Is true if Parse Server should set public read and write access on new Parse.Users to false',
+    help: 'Set to true if new users should be created without public read and write access.',
     action: parsers.booleanParser,
     default: false,
   },
