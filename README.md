@@ -18,7 +18,7 @@
     <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
     <a href="https://snyk.io/test/github/parse-community/parse-server"><img alt="Snyk badge" src="https://snyk.io/test/github/parse-community/parse-server/badge.svg"></a>
     <a href="https://nodejs.org/"><img alt="Node.js 12,14,15" src="https://img.shields.io/badge/nodejs-12,_14,_15-green.svg?logo=node.js&style=flat"></a>
-    <a href="https://www.mongodb.com/"><img alt="MongoDB 3.6,4.0,4.2,4.4" src="https://img.shields.io/badge/mongodb-3.6,_4.0,_4.2,_4.4-green.svg?logo=mongodb&style=flat"></a>
+    <a href="https://www.mongodb.com/"><img alt="MongoDB 4.0,4.2,4.4" src="https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4-green.svg?logo=mongodb&style=flat"></a>
    <a href="https://www.postgresql.org"> <img alt="PostgreSQL 10,11,12,13" src="https://img.shields.io/badge/postgresql-10,_11,_12,_13-green.svg?logo=postgresql&style=flat"></a>
 </p>
 
@@ -123,7 +123,6 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 
 | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
 |-------------|----------------------|------------------|--------------------|
-| MongoDB 3.6 | 3.6.23               | April 2021       | ✅ Fully compatible |
 | MongoDB 4.0 | 4.0.23               | January 2022     | ✅ Fully compatible |
 | MongoDB 4.2 | 4.2.13               | TBD              | ✅ Fully compatible |
 | MongoDB 4.4 | 4.4.4                | TBD              | ✅ Fully compatible |
