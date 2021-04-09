@@ -82,9 +82,11 @@ jobs:
   check-lock-file-version:
     name: NPM Lock File Version
     timeout-minutes: 5
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: mansona/npm-lockfile-version@v1
+      - name: Check NPM lock file version
+        uses: mansona/npm-lockfile-version@v1
         with:
           version: 1
   check-mongo:
