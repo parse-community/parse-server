@@ -1,6 +1,6 @@
 /**
  * @interface ParseServerOptions
- * @property {AccountLockoutOptions} accountLockout account lockout policy for failed login attempts
+ * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
@@ -20,11 +20,11 @@
  * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database
  * @property {DatabaseOptions} databaseOptions Options to pass to the database client
  * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postgres.
- * @property {Boolean} directAccess Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
+ * @property {Boolean} directAccess Set to `true` if Parse requests within the same Node.js environment as Parse Server should be routed to Parse Server directly instead of via the HTTP interface. Default is `false`.<br><br>If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.<br><br>⚠️ In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.
  * @property {String} dotNetKey Key for Unity and .Net SDK
  * @property {Adapter<MailAdapter>} emailAdapter Adapter module for email sending
- * @property {Boolean} emailVerifyTokenReuseIfValid an existing email verify token should be reused when resend verification email is requested
- * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration, in seconds
+ * @property {Boolean} emailVerifyTokenReuseIfValid Set to `true` if a email verification token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.
+ * @property {Number} emailVerifyTokenValidityDuration Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.<br>Requires option `verifyUserEmails: true`.
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
  * @property {String} encryptionKey Key for encrypting your files
@@ -54,11 +54,11 @@
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {PagesOptions} pages The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
- * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
+ * @property {PasswordPolicyOptions} passwordPolicy The password policy for enforcing password related rules.
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
- * @property {Boolean} preventLoginWithUnverifiedEmail Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false
+ * @property {Boolean} preventLoginWithUnverifiedEmail Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.
  * @property {ProtectedFields} protectedFields Protected fields that should be treated with extra security when fetching details.
  * @property {String} publicServerURL Public URL to your parse server with http:// or https://.
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
@@ -75,7 +75,7 @@
  * @property {Boolean} startLiveQueryServer Starts the liveQuery server
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
- * @property {Boolean} verifyUserEmails Enable (or disable) user email validation, defaults to false
+ * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
  */
 
@@ -166,20 +166,21 @@
 
 /**
  * @interface AccountLockoutOptions
- * @property {Number} duration number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
- * @property {Number} threshold number of failed sign-in attempts that will cause a user account to be locked
- * @property {Boolean} unlockOnPasswordReset Is true if the account lock should be removed after a successful password reset.
+ * @property {Number} duration Set the duration in minutes that a locked-out account remains locked out before automatically becoming unlocked.<br><br>Valid values are greater than `0` and less than `100000`.
+ * @property {Number} threshold Set the number of failed sign-in attempts that will cause a user account to be locked. If the account is locked. The account will unlock after the duration set in the `duration` option has passed and no further login attempts have been made.<br><br>Valid values are greater than `0` and less than `1000`.
+ * @property {Boolean} unlockOnPasswordReset Set to `true`  if the account should be unlocked after a successful password reset.<br><br>Default is `false`.<br>Requires options `duration` and `threshold` to be set.
  */
 
 /**
  * @interface PasswordPolicyOptions
- * @property {Boolean} doNotAllowUsername disallow username in passwords
- * @property {Number} maxPasswordAge days for password expiry
- * @property {Number} maxPasswordHistory setting to prevent reuse of previous n passwords
- * @property {Boolean} resetTokenReuseIfValid resend token if it's still valid
- * @property {Number} resetTokenValidityDuration time for token to expire
- * @property {Function} validatorCallback a callback function to be invoked to validate the password
- * @property {String} validatorPattern a RegExp object or a regex string representing the pattern to enforce
+ * @property {Boolean} doNotAllowUsername Set to `true` to disallow the username as part of the password.<br><br>Default is `false`.
+ * @property {Number} maxPasswordAge Set the number of days after which a password expires. Login attempts fail if the user does not reset the password before expiration.
+ * @property {Number} maxPasswordHistory Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.<br><br>Valid values are >= `0` and <= `20`.<br>Default is `0`.
+ * @property {Boolean} resetTokenReuseIfValid Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.
+ * @property {Number} resetTokenValidityDuration Set the validity duration of the password reset token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.
+ * @property {String} validationError Set the error message to be sent.<br><br>Default is `Password does not meet the Password Policy requirements.`
+ * @property {Function} validatorCallback Set a callback function to validate a password to be accepted.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.
+ * @property {String} validatorPattern Set the regular expression validation pattern a password must match to be accepted.<br><br>If used in combination with `validatorCallback`, the password must pass both to be accepted.
  */
 
 /**
