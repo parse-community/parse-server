@@ -2,6 +2,7 @@ import ClassesRouter from './ClassesRouter';
 import Parse from 'parse/node';
 import rest from '../rest';
 import Auth from '../Auth';
+import RestWrite from '../RestWrite';
 
 export class SessionsRouter extends ClassesRouter {
   className() {
@@ -41,7 +42,7 @@ export class SessionsRouter extends ClassesRouter {
     if (!user) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid session');
     }
-    const { sessionData, createSession } = Auth.createSession(config, {
+    const { sessionData, createSession } = RestWrite.createSession(config, {
       userId: user.id,
       createdWith: {
         action: 'upgrade',

@@ -119,7 +119,7 @@ function ParseServerRESTController(applicationId, router) {
             applicationId: applicationId,
             sessionToken: options.sessionToken,
             installationId: options.installationId,
-            context: options.context || {}, // Add context
+            context: options.context || {},
           },
           query,
         };
@@ -155,6 +155,7 @@ function ParseServerRESTController(applicationId, router) {
   return {
     request: handleRequest,
     ajax: RESTController.ajax,
+    handleError: RESTController.handleError,
   };
 }
 

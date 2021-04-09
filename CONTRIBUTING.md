@@ -11,6 +11,8 @@
   - [Please Do's](#please-dos)
   - [Test against Postgres](#test-against-postgres)
     - [Postgres with Docker](#postgres-with-docker)
+- [Breaking Changes](#breaking-changes)
+  - [Deprecation Policy](#deprecation-policy)
 - [Feature Considerations](#feature-considerations)
   - [Security Checks](#security-checks)
     - [Add Security Check](#add-security-check)
@@ -58,7 +60,7 @@ Most importantly, with every contribution you improve your skills so that future
 
 ### Recommended Tools
 
-* [vscode](https://code.visualstudio.com), the popular IDE.
+* [Visual Studio Code](https://code.visualstudio.com), the popular IDE.
 * [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
 ### Setting up your local machine
@@ -163,6 +165,31 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-dbs.sh
 ```
 
 Note that the script above will ONLY be executed during initialization of the container with no data in the database, see the official [Postgres image](https://hub.docker.com/_/postgres) for details. If you want to use the script to run again be sure there is no data in the /var/lib/postgresql/data of the container.
+
+## Breaking Changes
+
+Breaking changes should be avoided whenever possible. For a breaking change to be accepted, the benefits of the change have to clearly outweigh the costs of developers having to adapt their deployments. If a breaking change is only cosmetic it will likely be rejected and preferred to become obsolete organically during the course of further development, unless it is required as part of a larger change. Breaking changes should follow the [Deprecation Policy](#deprecation-policy).
+
+Please consider that Parse Server is just one component in a stack that requires attention. A breaking change requires resources and effort to adapt an environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
+- "upgrade fatigue" where developers run old versions of Parse Server because they cannot always attend to every update that contains a breaking change
+- less secure Parse Server deployments that run on old versions which is contrary to the security evangelism Parse Server intends to facilitate for developers
+- less feedback and slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
+
+### Deprecation Policy
+
+If you change or remove an existing feature that would lead to a breaking change, use the following deprecation pattern:
+  - Make the new feature or change optional, if necessary with a new Parse Server option parameter.
+  - Use a default value that falls back to existing behavior.
+  - Add a deprecation definition in `Deprecator/Deprecations.js` that will output a deprecation warning log message on Parse Server launch, for example:
+    > DeprecationWarning: The Parse Server option 'example' will be removed in a future release.
+  
+Deprecations become breaking changes after notifying developers through deprecation warnings for at least one entire previous major release. For example:
+  - `4.5.0` is the current version
+  - `4.6.0` adds a new optional feature and a deprecation warning for the existing feature
+  - `5.0.0` marks the beginning of logging the deprecation warning for one entire major release
+  - `6.0.0` makes the breaking change by removing the deprecation warning and making the new feature replace the existing feature
+
+Developer feedback during the deprecation period may further postpone the introduction of a breaking change.
 
 ## Feature Considerations
 ### Security Checks
