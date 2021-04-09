@@ -391,7 +391,9 @@ describe('server', () => {
   });
 
   it('exposes correct adapters', done => {
-    expect(ParseServer.S3Adapter).toThrow();
+    expect(ParseServer.S3Adapter).toThrow(
+      'S3Adapter is not provided by parse-server anymore; please install @parse/s3-files-adapter'
+    );
     expect(ParseServer.GCSAdapter).toThrow(
       'GCSAdapter is not provided by parse-server anymore; please install @parse/gcs-files-adapter'
     );
