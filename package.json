@@ -95,7 +95,7 @@
     "lint-staged": "10.2.3",
     "madge": "4.0.2",
     "mock-mail-adapter": "file:spec/support/MockMailAdapter",
-    "mongodb-runner": "4.8.1",
+    "mongodb-runner": "4.8.3",
     "mongodb-version-list": "1.0.0",
     "node-fetch": "2.6.1",
     "nyc": "15.1.0",
