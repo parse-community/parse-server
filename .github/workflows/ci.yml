@@ -71,6 +71,14 @@ jobs:
        - name: Install dependencies
          run: npm ci
        - run: npm run madge:circular
+  check-docker:
+    name: Docker Build
+    timeout-minutes: 5
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build docker image
+        uses: docker/build-push-action@v2
   check-mongo:
     strategy:
       matrix:
