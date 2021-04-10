@@ -91,13 +91,14 @@
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
     "madge": "4.0.2",
-    "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
+    "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
     "mongodb-runner": "4.8.1",
     "mongodb-version-list": "1.0.0",
     "node-fetch": "2.6.1",
     "nyc": "15.1.0",
     "prettier": "2.0.5",
+    "typescript": "4.2.4",
     "yaml": "1.10.0"
   },
   "scripts": {
@@ -124,7 +125,9 @@
     "prettier": "prettier --write '{src,spec}/{**/*,*}.js'",
     "prepare": "npm run build",
     "postinstall": "node -p 'require(\"./postinstall.js\")()'",
-    "madge:circular": "node_modules/.bin/madge ./src --circular"
+    "madge:circular": "node_modules/.bin/madge ./src --circular",
+    "pretypes": "npm run build",
+    "types": "npx typescript"
   },
   "engines": {
     "node": ">= 8"
@@ -155,5 +158,6 @@
       "eslint --fix --cache",
       "git add"
     ]
-  }
+  },
+  "types": "./types/index.d.ts"
 }
