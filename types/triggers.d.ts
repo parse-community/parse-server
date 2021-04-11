@@ -1,0 +1,72 @@
+export var __esModule: boolean;
+export function addFunction(functionName: any, handler: any, validationHandler: any, applicationId: any): void;
+export function addJob(jobName: any, handler: any, applicationId: any): void;
+export function addTrigger(type: any, className: any, handler: any, applicationId: any, validationHandler: any): void;
+export function addFileTrigger(type: any, handler: any, applicationId: any, validationHandler: any): void;
+export function addConnectTrigger(type: any, handler: any, applicationId: any, validationHandler: any): void;
+export function addLiveQueryEventHandler(handler: any, applicationId: any): void;
+export function removeFunction(functionName: any, applicationId: any): void;
+export function removeTrigger(type: any, className: any, applicationId: any): void;
+export function _unregisterAll(): void;
+export function getTrigger(className: any, triggerType: any, applicationId: any): any;
+export function runTrigger(trigger: any, name: any, request: any, auth: any): Promise<any>;
+export function getFileTrigger(type: any, applicationId: any): any;
+export function triggerExists(className: any, type: any, applicationId: any): boolean;
+export function getFunction(functionName: any, applicationId: any): any;
+export function getFunctionNames(applicationId: any): any[];
+export function getJob(jobName: any, applicationId: any): any;
+export function getJobs(applicationId: any): any;
+export function getValidator(functionName: any, applicationId: any): any;
+export function getRequestObject(triggerType: any, auth: any, parseObject: any, originalParseObject: any, config: any, context: any): {
+    triggerName: any;
+    object: any;
+    master: boolean;
+    log: any;
+    headers: any;
+    ip: any;
+};
+export function getRequestQueryObject(triggerType: any, auth: any, query: any, count: any, config: any, context: any, isGet: any): {
+    triggerName: any;
+    query: any;
+    master: boolean;
+    count: any;
+    log: any;
+    isGet: any;
+    headers: any;
+    ip: any;
+    context: any;
+};
+export function getResponseObject(request: any, resolve: any, reject: any): {
+    success: (response: any) => any;
+    error: (error: any) => void;
+};
+export function maybeRunAfterFindTrigger(triggerType: any, auth: any, className: any, objects: any, config: any, query: any, context: any): Promise<any>;
+export function maybeRunQueryTrigger(triggerType: any, className: any, restWhere: any, restOptions: any, config: any, auth: any, context: any, isGet: any): Promise<{
+    restWhere: any;
+    restOptions: any;
+}>;
+export function resolveError(message: any, defaultOpts: any): any;
+export function maybeRunValidator(request: any, functionName: any, auth: any): Promise<any>;
+export function maybeRunTrigger(triggerType: any, auth: any, parseObject: any, originalParseObject: any, config: any, context: any): Promise<any>;
+export function inflate(data: any, restObject: any): any;
+export function runLiveQueryEventHandlers(data: any, applicationId?: any): void;
+export function getRequestFileObject(triggerType: any, auth: any, fileObject: any, config: any): any;
+export function maybeRunFileTrigger(triggerType: any, fileObject: any, config: any, auth: any): Promise<any>;
+export namespace Types {
+    const beforeLogin: string;
+    const afterLogin: string;
+    const afterLogout: string;
+    const beforeSave: string;
+    const afterSave: string;
+    const beforeDelete: string;
+    const afterDelete: string;
+    const beforeFind: string;
+    const afterFind: string;
+    const beforeSaveFile: string;
+    const afterSaveFile: string;
+    const beforeDeleteFile: string;
+    const afterDeleteFile: string;
+    const beforeConnect: string;
+    const beforeSubscribe: string;
+    const afterEvent: string;
+}
