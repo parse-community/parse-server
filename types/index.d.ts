@@ -26,8 +26,6 @@
 // Minimum TypeScript Version: 3.5
 
 /// <reference types="node" />
-/// <reference path="node.d.ts" />
-/// <reference path="react-native.d.ts" />
 
 import { EventEmitter } from 'events';
 
