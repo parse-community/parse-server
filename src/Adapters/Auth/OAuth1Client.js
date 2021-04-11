@@ -40,8 +40,8 @@ class OAuth {
       }
       httpRequest.end();
     });
-  };
-  
+  }
+
   buildRequest(method, path, params, body) {
     if (path.indexOf('/') != 0) {
       path = '/' + path;
@@ -49,35 +49,40 @@ class OAuth {
     if (params && Object.keys(params).length > 0) {
       path += '?' + OAuth.buildParameterString(params);
     }
-  
+
     var request = {
       host: this.host,
       path: path,
       method: method.toUpperCase(),
     };
-  
+
     var oauth_params = this.oauth_params || {};
     oauth_params.oauth_consumer_key = this.consumer_key;
     if (this.auth_token) {
       oauth_params['oauth_token'] = this.auth_token;
     }
-  
-    request = OAuth.signRequest(request, oauth_params, this.consumer_secret, this.auth_token_secret);
-  
+
+    request = OAuth.signRequest(
+      request,
+      oauth_params,
+      this.consumer_secret,
+      this.auth_token_secret
+    );
+
     if (body && Object.keys(body).length > 0) {
       request.body = OAuth.buildParameterString(body);
     }
     return request;
-  };
-  
+  }
+
   get(path, params) {
     return this.send('GET', path, params);
-  };
-  
+  }
+
   post(path, params, body) {
     return this.send('POST', path, params, body);
-  };
-  
+  }
+
   /*
     Proper string %escape encoding
   */
@@ -102,9 +107,9 @@ class OAuth {
     //        returns 2: 'http%3A%2F%2Fkevin.vanzonneveld.net%2F'
     //        example 3: rawurlencode('http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a');
     //        returns 3: 'http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a'
-  
+
     str = (str + '').toString();
-  
+
     // Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
     // PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
     return encodeURIComponent(str)
@@ -113,25 +118,26 @@ class OAuth {
       .replace(/\(/g, '%28')
       .replace(/\)/g, '%29')
       .replace(/\*/g, '%2A');
-  };
-  
+  }
+
   /*
     Generate a nonce
   */
   static nonce() {
     var text = '';
     var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  
-    for (var i = 0; i < 30; i++) text += possible.charAt(Math.floor(Math.random() * possible.length));
-  
+
+    for (var i = 0; i < 30; i++)
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+
     return text;
-  };
-  
+  }
+
   static buildParameterString(obj) {
     // Sort keys and encode values
     if (obj) {
       var keys = Object.keys(obj).sort();
-  
+
       // Map key=value, join them by &
       return keys
         .map(function (key) {
@@ -139,28 +145,27 @@ class OAuth {
         })
         .join('&');
     }
-  
+
     return '';
-  };
-  
+  }
+
   /*
     Build the signature string from the object
   */
   static buildSignatureString(method, url, parameters) {
     return [method.toUpperCase(), OAuth.encode(url), OAuth.encode(parameters)].join('&');
-  };
-  
+  }
+
   /*
     Retuns encoded HMAC-SHA1 from key and text
   */
   static signature(text, key) {
-    crypto = require('crypto');
     return OAuth.encode(crypto.createHmac('sha1', key).update(text).digest('base64'));
-  };
-  
+  }
+
   static signRequest(request, oauth_parameters, consumer_secret, auth_token_secret) {
     oauth_parameters = oauth_parameters || {};
-  
+
     // Set default values
     if (!oauth_parameters.oauth_nonce) {
       oauth_parameters.oauth_nonce = OAuth.nonce();
@@ -174,7 +179,7 @@ class OAuth {
     if (!oauth_parameters.oauth_version) {
       oauth_parameters.oauth_version = OAuth.version;
     }
-  
+
     if (!auth_token_secret) {
       auth_token_secret = '';
     }
@@ -182,7 +187,7 @@ class OAuth {
     if (!request.method) {
       request.method = 'GET';
     }
-  
+
     // Collect  all the parameters in one signatureParameters object
     var signatureParams = {};
     var parametersToMerge = [request.params, request.body, oauth_parameters];
@@ -192,25 +197,25 @@ class OAuth {
         signatureParams[k] = parameters[k];
       }
     }
-  
+
     // Create a string based on the parameters
     var parameterString = OAuth.buildParameterString(signatureParams);
-  
+
     // Build the signature string
     var url = 'https://' + request.host + '' + request.path;
-  
+
     var signatureString = OAuth.buildSignatureString(request.method, url, parameterString);
     // Hash the signature string
     var signatureKey = [OAuth.encode(consumer_secret), OAuth.encode(auth_token_secret)].join('&');
-  
+
     var signature = OAuth.signature(signatureString, signatureKey);
-  
+
     // Set the signature in the params
     oauth_parameters.oauth_signature = signature;
     if (!request.headers) {
       request.headers = {};
     }
-  
+
     // Set the authorization header
     var authHeader = Object.keys(oauth_parameters)
       .sort()
@@ -219,13 +224,13 @@ class OAuth {
         return key + '="' + value + '"';
       })
       .join(', ');
-  
+
     request.headers.Authorization = 'OAuth ' + authHeader;
-  
+
     // Set the content type header
     request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
     return request;
-  };
+  }
 }
 
 module.exports = OAuth;
