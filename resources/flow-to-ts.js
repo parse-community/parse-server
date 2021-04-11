@@ -11,7 +11,10 @@ const files = glob.sync("src/**/*.js", {
 });
 
 files.forEach(file => {
-  console.log(`Processing: ${file}`)
+  const outFile = `./tmp-ts/${file.replace('.js', '.ts')}`
+  const outPath = path.dirname(outFile)
+
+  console.log(`Processing: ${file} -> ${outFile}`)
 
   const flowCode = fs.readFileSync(file, "utf-8");
 
@@ -34,11 +37,10 @@ files.forEach(file => {
     prettier: true,
   })
 
-  const outFile = `./tmp-ts/${file.replace('.js', '.ts')}`
-  const outPath = path.dirname(outFile)
+
   if(!fs.existsSync(outPath)){
     fs.mkdirSync(outPath , {recursive:true})
   }
 
-  fs.writeFileSync(outFile, typescriptCode, (err) => {})
+  fs.writeFileSync(outFile, typescriptCode)
 });
