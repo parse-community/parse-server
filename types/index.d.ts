@@ -1030,6 +1030,25 @@ declare global {
         }
         const User: UserConstructor;
 
+        type LogLevels = 'error' | 'warn' | 'info' | 'debug' | 'verbose' |'silly';
+        interface LoggerInterface {
+
+            log(level : LogLevels, args : any) : void
+
+            info(args : any): LoggerInterface
+
+            error(args : any): LoggerInterface
+
+            warn(args : any): LoggerInterface
+
+            verbose(args : any): LoggerInterface
+
+            debug(args : any): LoggerInterface
+
+            silly(args : any): LoggerInterface
+        }
+
+
         /**
          * A Parse.Schema object is for handling schema data from Parse.
          * All the schemas methods require MasterKey.
@@ -1292,6 +1311,10 @@ declare global {
             interface JobRequest<T extends Params = Params> {
                 params: T;
                 message: (response: any) => void;
+                log: LoggerInterface,
+                headers?: any;
+                ip: string;
+                jobName : string,
             }
 
             interface Params {
@@ -1307,6 +1330,7 @@ declare global {
 
             interface ValidatorField {
                 type?: any;
+                required?: boolean;
                 constant?: boolean;
                 default?: any;
                 options?: any[]|Function;
