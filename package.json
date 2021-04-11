@@ -135,6 +135,7 @@
   "optionalDependencies": {
     "@node-rs/bcrypt": "1.1.0"
   },
+  "types": "types/index.d.ts",
   "collective": {
     "type": "opencollective",
     "url": "https://opencollective.com/parse-server",
