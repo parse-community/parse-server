@@ -106,7 +106,8 @@ export class AggregateRouter extends ClassesRouter {
       stage[stageName]._id = stage[stageName].objectId;
       delete stage[stageName].objectId;
     }
-    return { [`$${stageName}`]: stage[stageName] };
+    const key = stageName[0] === '$' ? stageName : `$${stageName}`;
+    return { [key]: stage[stageName] };
   }
 
   mountRoutes() {
