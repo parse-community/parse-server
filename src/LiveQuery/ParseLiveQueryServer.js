@@ -298,7 +298,6 @@ class ParseLiveQueryServer {
             } else {
               return null;
             }
-            message.event = type;
             res = {
               event: type,
               sessionToken: client.sessionToken,
@@ -334,8 +333,7 @@ class ParseLiveQueryServer {
               originalParseObject = res.original.toJSON();
               originalParseObject.className = res.original.className || className;
             }
-            const functionName =
-              'push' + message.event.charAt(0).toUpperCase() + message.event.slice(1);
+            const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
               client[functionName](requestId, currentParseObject, originalParseObject);
             }
