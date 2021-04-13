@@ -9,15 +9,7 @@ const queryHashValue = 'hash';
 const testUserId = 'userId';
 const testClassName = 'TestObject';
 
-const ASYNC_TEST_WAIT_TIME = 100;
-
-function resolveAfter(result, msTimeout) {
-  return new Promise(res => {
-    setTimeout(() => {
-      res(result);
-    }, msTimeout);
-  });
-}
+const timeout = () => jasmine.timeout(100);
 
 describe('ParseLiveQueryServer', function () {
   beforeEach(function (done) {
@@ -760,10 +752,10 @@ describe('ParseLiveQueryServer', function () {
 
     // Make sure we send command to client, since _matchesACL is async, we have to
     // wait and check
-    setTimeout(function () {
-      expect(client.pushDelete).toHaveBeenCalled();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushDelete).toHaveBeenCalled();
+    done();
   });
 
   it('has no subscription and can handle object save command', async () => {
@@ -795,14 +787,14 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we do not send command to client
-    setTimeout(function () {
-      expect(client.pushCreate).not.toHaveBeenCalled();
-      expect(client.pushEnter).not.toHaveBeenCalled();
-      expect(client.pushUpdate).not.toHaveBeenCalled();
-      expect(client.pushDelete).not.toHaveBeenCalled();
-      expect(client.pushLeave).not.toHaveBeenCalled();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushCreate).not.toHaveBeenCalled();
+    expect(client.pushEnter).not.toHaveBeenCalled();
+    expect(client.pushUpdate).not.toHaveBeenCalled();
+    expect(client.pushDelete).not.toHaveBeenCalled();
+    expect(client.pushLeave).not.toHaveBeenCalled();
+    done();
   });
 
   it('can handle object enter command which matches some subscriptions', async done => {
@@ -832,14 +824,14 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we send enter command to client
-    setTimeout(function () {
-      expect(client.pushCreate).not.toHaveBeenCalled();
-      expect(client.pushEnter).toHaveBeenCalled();
-      expect(client.pushUpdate).not.toHaveBeenCalled();
-      expect(client.pushDelete).not.toHaveBeenCalled();
-      expect(client.pushLeave).not.toHaveBeenCalled();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushCreate).not.toHaveBeenCalled();
+    expect(client.pushEnter).toHaveBeenCalled();
+    expect(client.pushUpdate).not.toHaveBeenCalled();
+    expect(client.pushDelete).not.toHaveBeenCalled();
+    expect(client.pushLeave).not.toHaveBeenCalled();
+    done();
   });
 
   it('can handle object update command which matches some subscriptions', async done => {
@@ -865,14 +857,14 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we send update command to client
-    setTimeout(function () {
-      expect(client.pushCreate).not.toHaveBeenCalled();
-      expect(client.pushEnter).not.toHaveBeenCalled();
-      expect(client.pushUpdate).toHaveBeenCalled();
-      expect(client.pushDelete).not.toHaveBeenCalled();
-      expect(client.pushLeave).not.toHaveBeenCalled();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushCreate).not.toHaveBeenCalled();
+    expect(client.pushEnter).not.toHaveBeenCalled();
+    expect(client.pushUpdate).toHaveBeenCalled();
+    expect(client.pushDelete).not.toHaveBeenCalled();
+    expect(client.pushLeave).not.toHaveBeenCalled();
+    done();
   });
 
   it('can handle object leave command which matches some subscriptions', async done => {
@@ -902,22 +894,22 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we send leave command to client
-    setTimeout(function () {
-      expect(client.pushCreate).not.toHaveBeenCalled();
-      expect(client.pushEnter).not.toHaveBeenCalled();
-      expect(client.pushUpdate).not.toHaveBeenCalled();
-      expect(client.pushDelete).not.toHaveBeenCalled();
-      expect(client.pushLeave).toHaveBeenCalled();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushCreate).not.toHaveBeenCalled();
+    expect(client.pushEnter).not.toHaveBeenCalled();
+    expect(client.pushUpdate).not.toHaveBeenCalled();
+    expect(client.pushDelete).not.toHaveBeenCalled();
+    expect(client.pushLeave).toHaveBeenCalled();
+    done();
   });
 
-  it('can handle object multiple commands which matches some subscriptions', async done => {
+  it('sends correct events for object with multiple subscriptions', async done => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', () => {
       // Simulate delay due to trigger, auth, etc.
-      return resolveAfter(null, 10);
+      return jasmine.timeout(10);
     });
 
     // Make mock request message
@@ -954,29 +946,29 @@ describe('ParseLiveQueryServer', function () {
     };
     parseLiveQueryServer._matchesACL = function () {
       // Simulate call
-      return resolveAfter(true, 10);
+      return jasmine.timeout(10).then(() => true);
     };
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we send leave and enter command to client
-    setTimeout(function () {
-      expect(client.pushCreate).not.toHaveBeenCalled();
-      expect(client.pushEnter).toHaveBeenCalledTimes(1);
-      expect(client.pushEnter).toHaveBeenCalledWith(
-        requestId3,
-        { key: 'value', className: 'TestObject' },
-        { key: 'originalValue', className: 'TestObject' }
-      );
-      expect(client.pushUpdate).not.toHaveBeenCalled();
-      expect(client.pushDelete).not.toHaveBeenCalled();
-      expect(client.pushLeave).toHaveBeenCalledTimes(1);
-      expect(client.pushLeave).toHaveBeenCalledWith(
-        requestId2,
-        { key: 'value', className: 'TestObject' },
-        { key: 'originalValue', className: 'TestObject' }
-      );
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushCreate).not.toHaveBeenCalled();
+    expect(client.pushEnter).toHaveBeenCalledTimes(1);
+    expect(client.pushEnter).toHaveBeenCalledWith(
+      requestId3,
+      { key: 'value', className: 'TestObject' },
+      { key: 'originalValue', className: 'TestObject' }
+    );
+    expect(client.pushUpdate).not.toHaveBeenCalled();
+    expect(client.pushDelete).not.toHaveBeenCalled();
+    expect(client.pushLeave).toHaveBeenCalledTimes(1);
+    expect(client.pushLeave).toHaveBeenCalledWith(
+      requestId2,
+      { key: 'value', className: 'TestObject' },
+      { key: 'originalValue', className: 'TestObject' }
+    );
+    done();
   });
 
   it('can handle update command with original object', async done => {
@@ -1013,15 +1005,15 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we send update command to client
-    setTimeout(function () {
-      expect(client.pushUpdate).toHaveBeenCalled();
-      const args = parseWebSocket.send.calls.mostRecent().args;
-      const toSend = JSON.parse(args[0]);
+    await timeout();
 
-      expect(toSend.object).toBeDefined();
-      expect(toSend.original).toBeDefined();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    expect(client.pushUpdate).toHaveBeenCalled();
+    const args = parseWebSocket.send.calls.mostRecent().args;
+    const toSend = JSON.parse(args[0]);
+
+    expect(toSend.object).toBeDefined();
+    expect(toSend.original).toBeDefined();
+    done();
   });
 
   it('can handle object create command which matches some subscriptions', async done => {
@@ -1047,14 +1039,14 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we send create command to client
-    setTimeout(function () {
-      expect(client.pushCreate).toHaveBeenCalled();
-      expect(client.pushEnter).not.toHaveBeenCalled();
-      expect(client.pushUpdate).not.toHaveBeenCalled();
-      expect(client.pushDelete).not.toHaveBeenCalled();
-      expect(client.pushLeave).not.toHaveBeenCalled();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushCreate).toHaveBeenCalled();
+    expect(client.pushEnter).not.toHaveBeenCalled();
+    expect(client.pushUpdate).not.toHaveBeenCalled();
+    expect(client.pushDelete).not.toHaveBeenCalled();
+    expect(client.pushLeave).not.toHaveBeenCalled();
+    done();
   });
 
   it('can handle create command with fields', async done => {
@@ -1097,14 +1089,14 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
 
     // Make sure we send create command to client
-    setTimeout(function () {
-      expect(client.pushCreate).toHaveBeenCalled();
-      const args = parseWebSocket.send.calls.mostRecent().args;
-      const toSend = JSON.parse(args[0]);
-      expect(toSend.object).toBeDefined();
-      expect(toSend.original).toBeUndefined();
-      done();
-    }, ASYNC_TEST_WAIT_TIME);
+    await timeout();
+
+    expect(client.pushCreate).toHaveBeenCalled();
+    const args = parseWebSocket.send.calls.mostRecent().args;
+    const toSend = JSON.parse(args[0]);
+    expect(toSend.object).toBeDefined();
+    expect(toSend.original).toBeUndefined();
+    done();
   });
 
   it('can match subscription for null or undefined parse object', function () {

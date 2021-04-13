@@ -515,3 +515,5 @@ jasmine.restoreLibrary = function (library, name) {
   }
   require(library)[name] = libraryCache[library][name];
 };
+
+jasmine.timeout = t => new Promise(resolve => setTimeout(resolve, t));
