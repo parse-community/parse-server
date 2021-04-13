@@ -25,6 +25,7 @@ const {
   GraphQLEnumType,
   GraphQLInputObjectType,
   GraphQLSchema,
+  GraphQLList,
 } = require('graphql');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
@@ -10199,7 +10200,7 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  describe('Custom API', () => {
+  fdescribe('Custom API', () => {
     describe('GraphQL Schema Based', () => {
       let httpServer;
       const headers = {
@@ -10386,6 +10387,19 @@ describe('ParseGraphQLServer', () => {
                       return obj.toJSON();
                     },
                   },
+                  customQueryWithAutoTypeReturnList: {
+                    type: new GraphQLList(SomeClassType),
+                    args: {
+                      id: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: async (p, { id }) => {
+                      const obj = new Parse.Object('SomeClass');
+                      obj.id = id;
+                      await obj.fetch();
+                      console.log(obj.toJSON());
+                      return [obj.toJSON(), obj.toJSON(), obj.toJSON()];
+                    },
+                  },
                 },
               }),
               types: [
@@ -10461,6 +10475,33 @@ describe('ParseGraphQLServer', () => {
         expect(result.data.customQueryWithAutoTypeReturn.name).toEqual('aname');
         expect(result.data.customQueryWithAutoTypeReturn.nameUpperCase).toEqual('ANAME');
         expect(result.data.customQueryWithAutoTypeReturn.type).toEqual('robot');
+      });
+
+      it('can resolve a custom query with auto type list return', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
+        await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { id: obj.id },
+          query: gql`
+            query CustomQuery($id: String!) {
+              customQueryWithAutoTypeReturnList(id: $id) {
+                id
+                objectId
+                nameUpperCase
+                name
+                type
+              }
+            }
+          `,
+        });
+        result.data.customQueryWithAutoTypeReturnList.forEach(rObj => {
+          expect(rObj.objectId).toBeDefined();
+          expect(rObj.objectId).toEqual(obj.id);
+          expect(rObj.name).toEqual('aname');
+          expect(rObj.nameUpperCase).toEqual('ANAME');
+          expect(rObj.type).toEqual('robot');
+        });
       });
 
       it('can resolve a custom extend type', async () => {
