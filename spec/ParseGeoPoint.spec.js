@@ -554,7 +554,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.data.code).toEqual(1);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_VALUE);
         done();
       });
   });
@@ -588,7 +588,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INCORRECT_TYPE);
         done();
       });
   });
@@ -622,7 +622,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_VALUE);
         done();
       });
   });
@@ -660,7 +660,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.data.code).toEqual(1);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_VALUE);
         done();
       });
   });
@@ -698,7 +698,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.data.code).toEqual(1);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_VALUE);
         done();
       });
   });
@@ -732,7 +732,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.data.code).toEqual(107);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_VALUE);
         done();
       });
   });

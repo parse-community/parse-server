@@ -752,6 +752,15 @@ function relativeTimeToDate(text, now = new Date()) {
   }
 }
 
+// Throws an INVALID_VALUE Parse error if the given lat-long is out of bounds.
+function validateGeoPoint(latitude, longitude) {
+  try {
+    Parse.GeoPoint._validate(latitude, longitude);
+  } catch (e) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, e.message);
+  }
+}
+
 // Transforms a query constraint from REST API format to Mongo format.
 // A constraint is something with fields like $lt.
 // If it is not a valid constraint but it could be a valid something
@@ -812,7 +821,7 @@ function transformConstraint(constraint, field, count = false) {
 
           log.info('Error while parsing relative date', parserResult);
           throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+            Parse.Error.INVALID_VALUE,
             `bad $relativeTime (${key}) value. ${parserResult.info}`
           );
         }
@@ -978,26 +987,26 @@ function transformConstraint(constraint, field, count = false) {
           } else if (polygon instanceof Array) {
             if (polygon.length < 3) {
               throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
+                Parse.Error.INVALID_VALUE,
                 'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
               );
             }
             points = polygon;
           } else {
             throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
-              "bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint's"
+              Parse.Error.INCORRECT_TYPE,
+              "bad $geoWithin type; $polygon should be Polygon object or Array of Parse.GeoPoint's"
             );
           }
           points = points.map(point => {
             if (point instanceof Array && point.length === 2) {
-              Parse.GeoPoint._validate(point[1], point[0]);
+              validateGeoPoint(point[1], point[0]);
               return point;
             }
             if (!GeoPointCoder.isValidJSON(point)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+              throw new Parse.Error(Parse.Error.INVALID_VALUE, 'bad $geoWithin value');
             } else {
-              Parse.GeoPoint._validate(point.latitude, point.longitude);
+              validateGeoPoint(point.latitude, point.longitude);
             }
             return [point.longitude, point.latitude];
           });
@@ -1017,11 +1026,11 @@ function transformConstraint(constraint, field, count = false) {
             point = new Parse.GeoPoint(point[1], point[0]);
           } else if (!GeoPointCoder.isValidJSON(point)) {
             throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+              Parse.Error.INVALID_VALUE,
               'bad $geoWithin value; $centerSphere geo point invalid'
             );
           }
-          Parse.GeoPoint._validate(point.latitude, point.longitude);
+          validateGeoPoint(point.latitude, point.longitude);
           // Get distance and validate
           const distance = centerSphere[1];
           if (isNaN(distance) || distance < 0) {
@@ -1040,11 +1049,11 @@ function transformConstraint(constraint, field, count = false) {
         const point = constraint[key]['$point'];
         if (!GeoPointCoder.isValidJSON(point)) {
           throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+            Parse.Error.INVALID_VALUE,
             'bad $geoIntersect value; $point should be GeoPoint'
           );
         } else {
-          Parse.GeoPoint._validate(point.latitude, point.longitude);
+          validateGeoPoint(point.latitude, point.longitude);
         }
         answer[key] = {
           $geometry: {
@@ -1477,7 +1486,7 @@ var PolygonCoder = {
       if (!GeoPointCoder.isValidDatabaseObject(point)) {
         return false;
       }
-      Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
+      validateGeoPoint(parseFloat(point[1]), parseFloat(point[0]));
     }
     return true;
   },
@@ -1504,7 +1513,7 @@ var PolygonCoder = {
     });
     if (unique.length < 3) {
       throw new Parse.Error(
-        Parse.Error.INTERNAL_SERVER_ERROR,
+        Parse.Error.INVALID_VALUE,
         'GeoJSON: Loop must have at least 3 different vertices'
       );
     }

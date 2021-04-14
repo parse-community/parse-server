@@ -156,7 +156,10 @@ describe('Parse.Polygon testing', () => {
         const query = new Parse.Query(TestObject);
         return query.get(obj.id);
       })
-      .then(done.fail, () => done());
+      .then(done.fail, e => {
+        expect(e.code).toBe(Parse.Error.INVALID_VALUE);
+        done();
+      });
   });
 
   it('polygon three points minimum', done => {
@@ -164,7 +167,10 @@ describe('Parse.Polygon testing', () => {
     const obj = new TestObject();
     // use raw so we test the server validates properly
     obj.set('polygon', { __type: 'Polygon', coordinates: coords });
-    obj.save().then(done.fail, () => done());
+    obj.save().then(done.fail, e => {
+      expect(e.code).toBe(Parse.Error.INVALID_VALUE);
+      done();
+    });
   });
 
   it('polygon three different points minimum', done => {
@@ -175,7 +181,10 @@ describe('Parse.Polygon testing', () => {
     ];
     const obj = new TestObject();
     obj.set('polygon', new Parse.Polygon(coords));
-    obj.save().then(done.fail, () => done());
+    obj.save().then(done.fail, e => {
+      expect(e.code).toBe(Parse.Error.INVALID_VALUE);
+      done();
+    });
   });
 
   it('polygon counterclockwise', done => {
@@ -384,10 +393,15 @@ describe('Parse.Polygon testing', () => {
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
-        .then(done.fail, () => done());
+        .then(done.fail, e => {
+          e = JSON.parse(e.text);
+          expect(e.code).toBe(Parse.Error.INVALID_VALUE);
+          done();
+        });
     });
 
     it('polygonContain invalid geoPoint', done => {
@@ -416,10 +430,15 @@ describe('Parse.Polygon testing', () => {
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
-        .then(done.fail, () => done());
+        .then(done.fail, e => {
+          e = JSON.parse(e.text);
+          expect(e.code).toBe(Parse.Error.INVALID_VALUE);
+          done();
+        });
     });
   });
 });
@@ -532,6 +551,9 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
     ];
     const obj = new TestObject();
     obj.set('polygon', new Parse.Polygon(coords));
-    obj.save().then(done.fail, () => done());
+    obj.save().then(done.fail, e => {
+      expect(e.code).toBe(Parse.Error.INVALID_VALUE);
+      done();
+    });
   });
 });

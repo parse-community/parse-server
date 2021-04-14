@@ -249,6 +249,15 @@ const joinTablesForSchema = schema => {
   return list;
 };
 
+// Throws an INVALID_VALUE Parse error if the given lat-long is out of bounds.
+function validateGeoPoint(latitude, longitude) {
+  try {
+    Parse.GeoPoint._validate(latitude, longitude);
+  } catch (e) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, e.message);
+  }
+}
+
 interface WhereClause {
   pattern: string;
   values: Array<any>;
@@ -525,7 +534,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     if (fieldValue.$containedBy) {
       const arr = fieldValue.$containedBy;
       if (!(arr instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
+        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, `bad $containedBy: should be an array`);
       }
 
       patterns.push(`$${index}:name <@ $${index + 1}::jsonb`);
@@ -537,19 +546,19 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       const search = fieldValue.$text.$search;
       let language = 'english';
       if (typeof search !== 'object') {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $search, should be object`);
+        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, `bad $text: $search, should be object`);
       }
       if (!search.$term || typeof search.$term !== 'string') {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $term, should be string`);
       }
       if (search.$language && typeof search.$language !== 'string') {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $language, should be string`);
+        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, `bad $text: $language, should be string`);
       } else if (search.$language) {
         language = search.$language;
       }
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
+          Parse.Error.INCORRECT_TYPE,
           `bad $text: $caseSensitive, should be boolean`
         );
       } else if (search.$caseSensitive) {
@@ -560,7 +569,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
+          Parse.Error.INCORRECT_TYPE,
           `bad $text: $diacriticSensitive, should be boolean`
         );
       } else if (search.$diacriticSensitive === false) {
@@ -620,11 +629,11 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         point = new Parse.GeoPoint(point[1], point[0]);
       } else if (!GeoPointCoder.isValidJSON(point)) {
         throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
+          Parse.Error.INVALID_VALUE,
           'bad $geoWithin value; $centerSphere geo point invalid'
         );
       }
-      Parse.GeoPoint._validate(point.latitude, point.longitude);
+      validateGeoPoint(point.latitude, point.longitude);
       // Get distance and validate
       const distance = centerSphere[1];
       if (isNaN(distance) || distance < 0) {
@@ -657,7 +666,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       } else if (polygon instanceof Array) {
         if (polygon.length < 3) {
           throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+            Parse.Error.INVALID_VALUE,
             'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
           );
         }
@@ -671,13 +680,13 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       points = points
         .map(point => {
           if (point instanceof Array && point.length === 2) {
-            Parse.GeoPoint._validate(point[1], point[0]);
+            validateGeoPoint(point[1], point[0]);
             return `(${point[0]}, ${point[1]})`;
           }
           if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+            throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'bad $geoWithin type');
           } else {
-            Parse.GeoPoint._validate(point.latitude, point.longitude);
+            validateGeoPoint(point.latitude, point.longitude);
           }
           return `(${point.longitude}, ${point.latitude})`;
         })
@@ -691,11 +700,11 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       const point = fieldValue.$geoIntersects.$point;
       if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
         throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $geoIntersect value; $point should be GeoPoint'
+          Parse.Error.INCORRECT_TYPE,
+          'bad $geoIntersect type; $point should be GeoPoint'
         );
       } else {
-        Parse.GeoPoint._validate(point.latitude, point.longitude);
+        validateGeoPoint(point.latitude, point.longitude);
       }
       patterns.push(`$${index}:name::polygon @> $${index + 1}::point`);
       values.push(fieldName, `(${point.longitude}, ${point.latitude})`);
@@ -2427,7 +2436,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
 function convertPolygonToSQL(polygon) {
   if (polygon.length < 3) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, `Polygon must have at least 3 values`);
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, `Polygon must have at least 3 values`);
   }
   if (
     polygon[0][0] !== polygon[polygon.length - 1][0] ||
@@ -2454,7 +2463,7 @@ function convertPolygonToSQL(polygon) {
   }
   const points = polygon
     .map(point => {
-      Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
+      validateGeoPoint(parseFloat(point[1]), parseFloat(point[0]));
       return `(${point[1]}, ${point[0]})`;
     })
     .join(', ');
