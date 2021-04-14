@@ -9,6 +9,7 @@ import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
+import RestWrite from '../RestWrite';
 import { logger } from '../../lib/Adapters/Logger/WinstonLogger';
 
 export class UsersRouter extends ClassesRouter {
@@ -240,7 +241,7 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
-    const { sessionData, createSession } = Auth.createSession(req.config, {
+    const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId: user.objectId,
       createdWith: {
         action: 'login',

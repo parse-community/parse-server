@@ -16,12 +16,13 @@ class Deprecator {
     // Scan for deprecations
     for (const deprecation of Deprecator._getDeprecations()) {
       // Get deprecation properties
+      const solution = deprecation.solution;
       const optionKey = deprecation.optionKey;
       const changeNewDefault = deprecation.changeNewDefault;
 
       // If default will change, only throw a warning if option is not set
       if (changeNewDefault != null && options[optionKey] == null) {
-        Deprecator._log({ optionKey, changeNewDefault });
+        Deprecator._log({ optionKey, changeNewDefault, solution });
       }
     }
   }
