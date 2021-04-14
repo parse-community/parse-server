@@ -183,16 +183,17 @@ class ParseGraphQLSchema {
       schemaDirectives.load(this);
 
       if (typeof this.graphQLCustomTypeDefs.getTypeMap === 'function') {
-        const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs.getTypeMap();
+        // In following code we use underscore attr to avoid js var un ref
+        const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs._typeMap;
         const findAndReplaceLastType = (parent, key) => {
           if (parent[key].name) {
             if (
-              this.graphQLAutoSchema.getType(parent[key].name) &&
-              this.graphQLAutoSchema.getType(parent[key].name) !== parent[key]
+              this.graphQLAutoSchema._typeMap[parent[key].name] &&
+              this.graphQLAutoSchema._typeMap[parent[key].name] !== parent[key]
             ) {
               // To avoid unresolved field on overloaded schema
               // replace the final type with the auto schema one
-              parent[key] = this.graphQLAutoSchema.getType(parent[key].name);
+              parent[key] = this.graphQLAutoSchema._typeMap[parent[key].name];
             }
           } else {
             if (parent[key].ofType) {
@@ -200,6 +201,9 @@ class ParseGraphQLSchema {
             }
           }
         };
+        // Add non shared types from custom schema to auto schema
+        // note: some non shared types can use some shared types
+        // so this code need to be ran before the shared types addition
         Object.values(customGraphQLSchemaTypeMap).forEach(customGraphQLSchemaType => {
           if (
             !customGraphQLSchemaType ||
@@ -208,13 +212,16 @@ class ParseGraphQLSchema {
           ) {
             return;
           }
-          const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
+          const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
             customGraphQLSchemaType.name
-          );
+          ];
           if (!autoGraphQLSchemaType) {
             this.graphQLAutoSchema._typeMap[customGraphQLSchemaType.name] = customGraphQLSchemaType;
           }
         });
+        // Handle shared types
+        // We pass through each type and ensure that all sub field types are replaced
+        // with a
         Object.values(customGraphQLSchemaTypeMap).forEach(customGraphQLSchemaType => {
           if (
             !customGraphQLSchemaType ||
@@ -223,24 +230,18 @@ class ParseGraphQLSchema {
           ) {
             return;
           }
-          const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
+          const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
             customGraphQLSchemaType.name
-          );
+          ];
 
           if (autoGraphQLSchemaType && typeof customGraphQLSchemaType.getFields === 'function') {
-            Object.values(customGraphQLSchemaType.getFields()).forEach(field => {
+            Object.values(customGraphQLSchemaType._fields).forEach(field => {
               findAndReplaceLastType(field, 'type');
+              autoGraphQLSchemaType._fields[field.name] = field;
             });
-            autoGraphQLSchemaType._fields = {
-              ...autoGraphQLSchemaType.getFields(),
-              ...customGraphQLSchemaType.getFields(),
-            };
           }
         });
-        this.graphQLSchema = stitchSchemas({
-          schemas: [this.graphQLSchemaDirectivesDefinitions, this.graphQLAutoSchema],
-          mergeDirectives: true,
-        });
+        this.graphQLSchema = this.graphQLAutoSchema;
       } else if (typeof this.graphQLCustomTypeDefs === 'function') {
         this.graphQLSchema = await this.graphQLCustomTypeDefs({
           directivesDefinitionsSchema: this.graphQLSchemaDirectivesDefinitions,
