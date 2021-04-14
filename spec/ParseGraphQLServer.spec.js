@@ -10200,7 +10200,7 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  fdescribe('Custom API', () => {
+  describe('Custom API', () => {
     describe('GraphQL Schema Based', () => {
       let httpServer;
       const headers = {
@@ -10396,7 +10396,6 @@ describe('ParseGraphQLServer', () => {
                       const obj = new Parse.Object('SomeClass');
                       obj.id = id;
                       await obj.fetch();
-                      console.log(obj.toJSON());
                       return [obj.toJSON(), obj.toJSON(), obj.toJSON()];
                     },
                   },
