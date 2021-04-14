@@ -24,6 +24,27 @@ const headers = {
 };
 
 describe_only_db('mongo')('miscellaneous', () => {
+  beforeEach(async () => {
+    await TestUtils.destroyAllDataPermanently(false);
+  });
+
+  it('invalid geometry on spatially indexed field fails', async () => {
+    const testSchema = new Parse.Schema('geojson_test');
+    testSchema.addObject('geometry');
+    testSchema.addIndex('geospatial_index', {
+      geometry: '2dsphere',
+    });
+    await testSchema.save();
+
+    const obj = new Parse.Object('geojson_test');
+    obj.set('geometry', { foo: 'bar' });
+    try {
+      await obj.save();
+      fail('Invalid geometry did not fail');
+    } catch (e) {
+      expect(e.code).toEqual(Parse.Error.INVALID_VALUE);
+    }
+  });
   it('db contains document after successful save', async () => {
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
