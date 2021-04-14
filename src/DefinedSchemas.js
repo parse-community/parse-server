@@ -249,7 +249,8 @@ export class DefinedSchemas {
     if (!localSchema.classLevelPermissions && !cloudSchema) {
       logger.warn(`classLevelPermissions not provided for ${localSchema.className}.`);
     }
-    const clp = localSchema.classLevelPermissions || {};
+    // Use spread to avoid read only issue (encountered by Moumouls using directAccess)
+    const clp = { ...localSchema.classLevelPermissions } || {};
     const cloudCLP = (cloudSchema && cloudSchema.classLevelPermissions) || {};
     // Try to inject default CLPs
     const CLPKeys = ['find', 'count', 'get', 'create', 'update', 'delete', 'addField'];
