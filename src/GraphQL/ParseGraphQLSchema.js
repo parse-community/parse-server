@@ -204,43 +204,55 @@ class ParseGraphQLSchema {
         // Add non shared types from custom schema to auto schema
         // note: some non shared types can use some shared types
         // so this code need to be ran before the shared types addition
-        Object.values(customGraphQLSchemaTypeMap).forEach(customGraphQLSchemaType => {
-          if (
-            !customGraphQLSchemaType ||
-            !customGraphQLSchemaType.name ||
-            customGraphQLSchemaType.name.startsWith('__')
-          ) {
-            return;
-          }
-          const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
-            customGraphQLSchemaType.name
-          ];
-          if (!autoGraphQLSchemaType) {
-            this.graphQLAutoSchema._typeMap[customGraphQLSchemaType.name] = customGraphQLSchemaType;
-          }
-        });
+        // we use sort to ensure schema consistency over restarts
+        Object.keys(customGraphQLSchemaTypeMap)
+          .sort()
+          .forEach(customGraphQLSchemaTypeKey => {
+            const customGraphQLSchemaType = customGraphQLSchemaTypeMap[customGraphQLSchemaTypeKey];
+            if (
+              !customGraphQLSchemaType ||
+              !customGraphQLSchemaType.name ||
+              customGraphQLSchemaType.name.startsWith('__')
+            ) {
+              return;
+            }
+            const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
+              customGraphQLSchemaType.name
+            ];
+            if (!autoGraphQLSchemaType) {
+              this.graphQLAutoSchema._typeMap[
+                customGraphQLSchemaType.name
+              ] = customGraphQLSchemaType;
+            }
+          });
         // Handle shared types
         // We pass through each type and ensure that all sub field types are replaced
-        // with a
-        Object.values(customGraphQLSchemaTypeMap).forEach(customGraphQLSchemaType => {
-          if (
-            !customGraphQLSchemaType ||
-            !customGraphQLSchemaType.name ||
-            customGraphQLSchemaType.name.startsWith('__')
-          ) {
-            return;
-          }
-          const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
-            customGraphQLSchemaType.name
-          ];
+        // we use sort to ensure schema consistency over restarts
+        Object.keys(customGraphQLSchemaTypeMap)
+          .sort()
+          .forEach(customGraphQLSchemaTypeKey => {
+            const customGraphQLSchemaType = customGraphQLSchemaTypeMap[customGraphQLSchemaTypeKey];
+            if (
+              !customGraphQLSchemaType ||
+              !customGraphQLSchemaType.name ||
+              customGraphQLSchemaType.name.startsWith('__')
+            ) {
+              return;
+            }
+            const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
+              customGraphQLSchemaType.name
+            ];
 
-          if (autoGraphQLSchemaType && typeof customGraphQLSchemaType.getFields === 'function') {
-            Object.values(customGraphQLSchemaType._fields).forEach(field => {
-              findAndReplaceLastType(field, 'type');
-              autoGraphQLSchemaType._fields[field.name] = field;
-            });
-          }
-        });
+            if (autoGraphQLSchemaType && typeof customGraphQLSchemaType.getFields === 'function') {
+              Object.keys(customGraphQLSchemaType._fields)
+                .sort()
+                .forEach(fieldKey => {
+                  const field = customGraphQLSchemaType._fields[fieldKey];
+                  findAndReplaceLastType(field, 'type');
+                  autoGraphQLSchemaType._fields[field.name] = field;
+                });
+            }
+          });
         this.graphQLSchema = this.graphQLAutoSchema;
       } else if (typeof this.graphQLCustomTypeDefs === 'function') {
         this.graphQLSchema = await this.graphQLCustomTypeDefs({
@@ -259,37 +271,41 @@ class ParseGraphQLSchema {
         });
       }
 
-      const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
-      Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
-        const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
-        if (
-          typeof graphQLSchemaType.getFields === 'function' &&
-          this.graphQLCustomTypeDefs.definitions
-        ) {
-          const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
-            definition => definition.name.value === graphQLSchemaTypeName
-          );
-          if (graphQLCustomTypeDef) {
-            const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
-            Object.keys(graphQLSchemaTypeFieldMap).forEach(graphQLSchemaTypeFieldName => {
-              const graphQLSchemaTypeField = graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
-              if (!graphQLSchemaTypeField.astNode) {
-                const astNode = graphQLCustomTypeDef.fields.find(
-                  field => field.name.value === graphQLSchemaTypeFieldName
-                );
-                if (astNode) {
-                  graphQLSchemaTypeField.astNode = astNode;
+      // Only merge directive when string schema provided
+      if (typeof this.graphQLCustomTypeDefs === 'string') {
+        const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
+        Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
+          const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
+          if (
+            typeof graphQLSchemaType.getFields === 'function' &&
+            this.graphQLCustomTypeDefs.definitions
+          ) {
+            const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
+              definition => definition.name.value === graphQLSchemaTypeName
+            );
+            if (graphQLCustomTypeDef) {
+              const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
+              Object.keys(graphQLSchemaTypeFieldMap).forEach(graphQLSchemaTypeFieldName => {
+                const graphQLSchemaTypeField =
+                  graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
+                if (!graphQLSchemaTypeField.astNode) {
+                  const astNode = graphQLCustomTypeDef.fields.find(
+                    field => field.name.value === graphQLSchemaTypeFieldName
+                  );
+                  if (astNode) {
+                    graphQLSchemaTypeField.astNode = astNode;
+                  }
                 }
-              }
-            });
+              });
+            }
           }
-        }
-      });
+        });
 
-      SchemaDirectiveVisitor.visitSchemaDirectives(
-        this.graphQLSchema,
-        this.graphQLSchemaDirectives
-      );
+        SchemaDirectiveVisitor.visitSchemaDirectives(
+          this.graphQLSchema,
+          this.graphQLSchemaDirectives
+        );
+      }
     } else {
       this.graphQLSchema = this.graphQLAutoSchema;
     }

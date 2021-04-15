@@ -10414,6 +10414,20 @@ describe('ParseGraphQLServer', () => {
                     type: { type: TypeEnum },
                   },
                 }),
+                // Enhanced where input with a extended enum
+                new GraphQLInputObjectType({
+                  name: 'SomeClassWhereInput',
+                  fields: {
+                    type: {
+                      type: new GraphQLInputObjectType({
+                        name: 'TypeEnumWhereInput',
+                        fields: {
+                          equalTo: { type: TypeEnum },
+                        },
+                      }),
+                    },
+                  },
+                }),
                 SomeClassType,
               ],
             }),
@@ -10501,6 +10515,36 @@ describe('ParseGraphQLServer', () => {
           expect(rObj.nameUpperCase).toEqual('ANAME');
           expect(rObj.type).toEqual('robot');
         });
+      });
+
+      it('can resolve a stacked query with same where variables on overloaded where input', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
+        await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { where: { type: { equalTo: 'robot' } } },
+          query: gql`
+            query someQuery($where: SomeClassWhereInput!) {
+              q1: someClasses(where: $where) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+              q2: someClasses(where: $where) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          `,
+        });
+        expect(result.data.q1.edges.length).toEqual(1);
+        expect(result.data.q2.edges.length).toEqual(1);
+        expect(result.data.q1.edges[0].node.id).toEqual(result.data.q2.edges[0].node.id);
       });
 
       it('can resolve a custom extend type', async () => {
