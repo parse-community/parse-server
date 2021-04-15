@@ -8,7 +8,7 @@ var parsers = require('./parsers');
 module.exports.ParseServerOptions = {
   accountLockout: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT',
-    help: 'account lockout policy for failed login attempts',
+    help: 'The account lockout policy for failed login attempts.',
     action: parsers.objectParser,
   },
   allowClientClassCreation: {
@@ -110,9 +110,9 @@ module.exports.ParseServerOptions = {
     default: 'mongodb://localhost:27017/parse',
   },
   directAccess: {
-    env: 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS',
+    env: 'PARSE_SERVER_DIRECT_ACCESS',
     help:
-      'Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.',
+      'Set to `true` if Parse requests within the same Node.js environment as Parse Server should be routed to Parse Server directly instead of via the HTTP interface. Default is `false`.<br><br>If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.<br><br>\u26A0\uFE0F In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -128,13 +128,14 @@ module.exports.ParseServerOptions = {
   emailVerifyTokenReuseIfValid: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
     help:
-      'an existing email verify token should be reused when resend verification email is requested',
+      'Set to `true` if a email verification token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.booleanParser,
     default: false,
   },
   emailVerifyTokenValidityDuration: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION',
-    help: 'Email verification token validity duration, in seconds',
+    help:
+      'Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.numberParser('emailVerifyTokenValidityDuration'),
   },
   enableAnonymousUsers: {
@@ -291,7 +292,7 @@ module.exports.ParseServerOptions = {
   },
   passwordPolicy: {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
-    help: 'Password policy for enforcing password related rules',
+    help: 'The password policy for enforcing password related rules.',
     action: parsers.objectParser,
   },
   playgroundPath: {
@@ -314,7 +315,7 @@ module.exports.ParseServerOptions = {
   preventLoginWithUnverifiedEmail: {
     env: 'PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL',
     help:
-      'Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false',
+      'Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -407,7 +408,8 @@ module.exports.ParseServerOptions = {
   },
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
-    help: 'Enable (or disable) user email validation, defaults to false',
+    help:
+      'Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -704,17 +706,19 @@ module.exports.AccountLockoutOptions = {
   duration: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_DURATION',
     help:
-      'number of minutes that a locked-out account remains locked out before automatically becoming unlocked.',
+      'Set the duration in minutes that a locked-out account remains locked out before automatically becoming unlocked.<br><br>Valid values are greater than `0` and less than `100000`.',
     action: parsers.numberParser('duration'),
   },
   threshold: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_THRESHOLD',
-    help: 'number of failed sign-in attempts that will cause a user account to be locked',
+    help:
+      'Set the number of failed sign-in attempts that will cause a user account to be locked. If the account is locked. The account will unlock after the duration set in the `duration` option has passed and no further login attempts have been made.<br><br>Valid values are greater than `0` and less than `1000`.',
     action: parsers.numberParser('threshold'),
   },
   unlockOnPasswordReset: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_UNLOCK_ON_PASSWORD_RESET',
-    help: 'Is true if the account lock should be removed after a successful password reset.',
+    help:
+      'Set to `true`  if the account should be unlocked after a successful password reset.<br><br>Default is `false`.<br>Requires options `duration` and `threshold` to be set.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -722,36 +726,50 @@ module.exports.AccountLockoutOptions = {
 module.exports.PasswordPolicyOptions = {
   doNotAllowUsername: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_DO_NOT_ALLOW_USERNAME',
-    help: 'disallow username in passwords',
+    help:
+      'Set to `true` to disallow the username as part of the password.<br><br>Default is `false`.',
     action: parsers.booleanParser,
+    default: false,
   },
   maxPasswordAge: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_MAX_PASSWORD_AGE',
-    help: 'days for password expiry',
+    help:
+      'Set the number of days after which a password expires. Login attempts fail if the user does not reset the password before expiration.',
     action: parsers.numberParser('maxPasswordAge'),
   },
   maxPasswordHistory: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_MAX_PASSWORD_HISTORY',
-    help: 'setting to prevent reuse of previous n passwords',
+    help:
+      'Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.<br><br>Valid values are >= `0` and <= `20`.<br>Default is `0`.',
     action: parsers.numberParser('maxPasswordHistory'),
   },
   resetTokenReuseIfValid: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID',
-    help: "resend token if it's still valid",
+    help:
+      'Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.',
     action: parsers.booleanParser,
+    default: false,
   },
   resetTokenValidityDuration: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION',
-    help: 'time for token to expire',
+    help:
+      'Set the validity duration of the password reset token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.',
     action: parsers.numberParser('resetTokenValidityDuration'),
+  },
+  validationError: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATION_ERROR',
+    help:
+      'Set the error message to be sent.<br><br>Default is `Password does not meet the Password Policy requirements.`',
   },
   validatorCallback: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_CALLBACK',
-    help: 'a callback function to be invoked to validate the password',
+    help:
+      'Set a callback function to validate a password to be accepted.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.',
   },
   validatorPattern: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_PATTERN',
-    help: 'a RegExp object or a regex string representing the pattern to enforce',
+    help:
+      'Set the regular expression validation pattern a password must match to be accepted.<br><br>If used in combination with `validatorCallback`, the password must pass both to be accepted.',
   },
 };
 module.exports.FileUploadOptions = {
