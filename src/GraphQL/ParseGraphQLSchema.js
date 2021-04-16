@@ -187,7 +187,10 @@ class ParseGraphQLSchema {
         const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs._typeMap;
         const findAndReplaceLastType = (parent, key) => {
           if (parent[key].name) {
-            if (this.graphQLAutoSchema._typeMap[parent[key].name]) {
+            if (
+              this.graphQLAutoSchema._typeMap[parent[key].name] &&
+              this.graphQLAutoSchema._typeMap[parent[key].name] !== parent[key]
+            ) {
               // To avoid unresolved field on overloaded schema
               // replace the final type with the auto schema one
               parent[key] = this.graphQLAutoSchema._typeMap[parent[key].name];

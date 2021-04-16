@@ -40,7 +40,7 @@ function handleError(e) {
   }
 }
 
-fdescribe('ParseGraphQLServer', () => {
+describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
 
