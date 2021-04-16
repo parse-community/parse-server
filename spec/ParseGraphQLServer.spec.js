@@ -10330,7 +10330,7 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  describe('Custom API', () => {
+  fdescribe('Custom API', () => {
     describe('GraphQL Schema Based', () => {
       let httpServer;
       const headers = {
