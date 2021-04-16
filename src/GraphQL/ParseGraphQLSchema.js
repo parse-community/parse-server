@@ -244,8 +244,7 @@ class ParseGraphQLSchema {
               Object.keys(customGraphQLSchemaType._fields)
                 .sort()
                 .forEach(fieldKey => {
-                  // Break ref to isolate the field
-                  const field = { ...customGraphQLSchemaType._fields[fieldKey] };
+                  const field = customGraphQLSchemaType._fields[fieldKey];
                   findAndReplaceLastType(field, 'type');
                   autoGraphQLSchemaType._fields[field.name] = field;
                 });

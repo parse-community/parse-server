@@ -40,7 +40,7 @@ function handleError(e) {
   }
 }
 
-describe('ParseGraphQLServer', () => {
+fdescribe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
 
@@ -10200,7 +10200,7 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  fdescribe('Custom API', () => {
+  describe('Custom API', () => {
     describe('GraphQL Schema Based', () => {
       let httpServer;
       const headers = {
@@ -10342,6 +10342,18 @@ describe('ParseGraphQLServer', () => {
             robot: { value: 'robot' },
           },
         });
+        const TypeEnumWhereInput = new GraphQLInputObjectType({
+          name: 'TypeEnumWhereInput',
+          fields: {
+            equalTo: { type: TypeEnum },
+          },
+        });
+        const SomeClass2WhereInput = new GraphQLInputObjectType({
+          name: 'SomeClass2WhereInput',
+          fields: {
+            type: { type: TypeEnumWhereInput },
+          },
+        });
         const SomeClassType = new GraphQLObjectType({
             name: 'SomeClass',
             fields: {
@@ -10419,16 +10431,12 @@ describe('ParseGraphQLServer', () => {
                   name: 'SomeClassWhereInput',
                   fields: {
                     type: {
-                      type: new GraphQLInputObjectType({
-                        name: 'TypeEnumWhereInput',
-                        fields: {
-                          equalTo: { type: TypeEnum },
-                        },
-                      }),
+                      type: TypeEnumWhereInput,
                     },
                   },
                 }),
                 SomeClassType,
+                SomeClass2WhereInput,
               ],
             }),
           });
@@ -10518,11 +10526,13 @@ describe('ParseGraphQLServer', () => {
       });
 
       it('can resolve a stacked query with same where variables on overloaded where input', async () => {
+        const objPointer = new Parse.Object('SomeClass2');
+        await objPointer.save({ name: 'aname', type: 'robot' });
         const obj = new Parse.Object('SomeClass');
-        await obj.save({ name: 'aname', type: 'robot' });
+        await obj.save({ name: 'aname', type: 'robot', pointer: objPointer });
         await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
         const result = await apolloClient.query({
-          variables: { where: { type: { equalTo: 'robot' } } },
+          variables: { where: { OR: [{ pointer: { have: { objectId: { exists: true } } } }] } },
           query: gql`
             query someQuery($where: SomeClassWhereInput!) {
               q1: someClasses(where: $where) {
