@@ -187,10 +187,7 @@ class ParseGraphQLSchema {
         const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs._typeMap;
         const findAndReplaceLastType = (parent, key) => {
           if (parent[key].name) {
-            if (
-              this.graphQLAutoSchema._typeMap[parent[key].name] &&
-              this.graphQLAutoSchema._typeMap[parent[key].name] !== parent[key]
-            ) {
+            if (this.graphQLAutoSchema._typeMap[parent[key].name]) {
               // To avoid unresolved field on overloaded schema
               // replace the final type with the auto schema one
               parent[key] = this.graphQLAutoSchema._typeMap[parent[key].name];
@@ -247,7 +244,8 @@ class ParseGraphQLSchema {
               Object.keys(customGraphQLSchemaType._fields)
                 .sort()
                 .forEach(fieldKey => {
-                  const field = customGraphQLSchemaType._fields[fieldKey];
+                  // Break ref to isolate the field
+                  const field = { ...customGraphQLSchemaType._fields[fieldKey] };
                   findAndReplaceLastType(field, 'type');
                   autoGraphQLSchemaType._fields[field.name] = field;
                 });
@@ -272,40 +270,37 @@ class ParseGraphQLSchema {
       }
 
       // Only merge directive when string schema provided
-      if (typeof this.graphQLCustomTypeDefs === 'string') {
-        const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
-        Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
-          const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
-          if (
-            typeof graphQLSchemaType.getFields === 'function' &&
-            this.graphQLCustomTypeDefs.definitions
-          ) {
-            const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
-              definition => definition.name.value === graphQLSchemaTypeName
-            );
-            if (graphQLCustomTypeDef) {
-              const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
-              Object.keys(graphQLSchemaTypeFieldMap).forEach(graphQLSchemaTypeFieldName => {
-                const graphQLSchemaTypeField =
-                  graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
-                if (!graphQLSchemaTypeField.astNode) {
-                  const astNode = graphQLCustomTypeDef.fields.find(
-                    field => field.name.value === graphQLSchemaTypeFieldName
-                  );
-                  if (astNode) {
-                    graphQLSchemaTypeField.astNode = astNode;
-                  }
+      const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
+      Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
+        const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
+        if (
+          typeof graphQLSchemaType.getFields === 'function' &&
+          this.graphQLCustomTypeDefs.definitions
+        ) {
+          const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
+            definition => definition.name.value === graphQLSchemaTypeName
+          );
+          if (graphQLCustomTypeDef) {
+            const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
+            Object.keys(graphQLSchemaTypeFieldMap).forEach(graphQLSchemaTypeFieldName => {
+              const graphQLSchemaTypeField = graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
+              if (!graphQLSchemaTypeField.astNode) {
+                const astNode = graphQLCustomTypeDef.fields.find(
+                  field => field.name.value === graphQLSchemaTypeFieldName
+                );
+                if (astNode) {
+                  graphQLSchemaTypeField.astNode = astNode;
                 }
-              });
-            }
+              }
+            });
           }
-        });
+        }
+      });
 
-        SchemaDirectiveVisitor.visitSchemaDirectives(
-          this.graphQLSchema,
-          this.graphQLSchemaDirectives
-        );
-      }
+      SchemaDirectiveVisitor.visitSchemaDirectives(
+        this.graphQLSchema,
+        this.graphQLSchemaDirectives
+      );
     } else {
       this.graphQLSchema = this.graphQLAutoSchema;
     }
