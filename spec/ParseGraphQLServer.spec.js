@@ -10472,6 +10472,18 @@ describe('ParseGraphQLServer', () => {
             robot: { value: 'robot' },
           },
         });
+        const TypeEnumWhereInput = new GraphQLInputObjectType({
+          name: 'TypeEnumWhereInput',
+          fields: {
+            equalTo: { type: TypeEnum },
+          },
+        });
+        const SomeClass2WhereInput = new GraphQLInputObjectType({
+          name: 'SomeClass2WhereInput',
+          fields: {
+            type: { type: TypeEnumWhereInput },
+          },
+        });
         const SomeClassType = new GraphQLObjectType({
             name: 'SomeClass',
             fields: {
@@ -10544,7 +10556,17 @@ describe('ParseGraphQLServer', () => {
                     type: { type: TypeEnum },
                   },
                 }),
+                // Enhanced where input with a extended enum
+                new GraphQLInputObjectType({
+                  name: 'SomeClassWhereInput',
+                  fields: {
+                    type: {
+                      type: TypeEnumWhereInput,
+                    },
+                  },
+                }),
                 SomeClassType,
+                SomeClass2WhereInput,
               ],
             }),
           });
@@ -10631,6 +10653,38 @@ describe('ParseGraphQLServer', () => {
           expect(rObj.nameUpperCase).toEqual('ANAME');
           expect(rObj.type).toEqual('robot');
         });
+      });
+
+      it('can resolve a stacked query with same where variables on overloaded where input', async () => {
+        const objPointer = new Parse.Object('SomeClass2');
+        await objPointer.save({ name: 'aname', type: 'robot' });
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot', pointer: objPointer });
+        await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { where: { OR: [{ pointer: { have: { objectId: { exists: true } } } }] } },
+          query: gql`
+            query someQuery($where: SomeClassWhereInput!) {
+              q1: someClasses(where: $where) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+              q2: someClasses(where: $where) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          `,
+        });
+        expect(result.data.q1.edges.length).toEqual(1);
+        expect(result.data.q2.edges.length).toEqual(1);
+        expect(result.data.q1.edges[0].node.id).toEqual(result.data.q2.edges[0].node.id);
       });
 
       it('can resolve a custom extend type', async () => {
