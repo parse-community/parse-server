@@ -135,16 +135,16 @@ class Utils {
    * {
    *   a: [true, false],
    *   b: [1, 2],
-   *   c: ["x"]
+   *   c: ['x']
    * }
    * ```
    * permutates to:
    * ```
    * [
-   *   { a: true, b: 1, c: x },
-   *   { a: true, b: 2, c: x },
-   *   { a: false, b: 1, c: x },
-   *   { a: false, b: 2, c: x }
+   *   { a: true, b: 1, c: 'x' },
+   *   { a: true, b: 2, c: 'x' },
+   *   { a: false, b: 1, c: 'x' },
+   *   { a: false, b: 2, c: 'x' }
    * ]
    * ```
    * @param {Object} object The object to permutate.
