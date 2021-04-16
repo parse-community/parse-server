@@ -4031,4 +4031,30 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
     const user = await query.get('1234ABCDEF', { useMasterKey: true });
     expect(user.get('authData')).toEqual({ custom: { id: 'linkedID' } });
   });
+
+  describe('issue #6641', () => {
+    fit('succes to login when masterkey and instalationId is provided and when password is not provided', done => {
+      const user = new Parse.User();
+      user
+        .save({
+          username: 'yolo',
+          password: 'yolopass',
+          email: 'yo@lo.com',
+        })
+        .then(async savedUser => {
+          const installationId = '123456789';
+          const query = new Parse.Query(Parse.User);
+          const result = await query.get(savedUser.id, {
+            useMasterKey: true,
+            installationId: installationId,
+          });
+          return await result.logIn({ useMasterKey: true, installationId: installationId });
+        })
+        .then(() => done())
+        .catch(() => {
+          fail();
+          done();
+        });
+    });
+  });
 });
