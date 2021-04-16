@@ -355,6 +355,57 @@ describe('cloud validator', () => {
       });
   });
 
+  it('set params not-required options', done => {
+    Parse.Cloud.define(
+      'hello',
+      () => {
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: String,
+            required: false,
+            options: s => {
+              return s.length >= 4 && s.length <= 50;
+            },
+          },
+        },
+      }
+    );
+    Parse.Cloud.run('hello', {})
+      .then(() => {
+        done();
+      })
+      .catch(() => {
+        fail('function should not have failed.');
+      });
+  });
+
+  it('set params not-required no-options', done => {
+    Parse.Cloud.define(
+      'hello',
+      () => {
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: String,
+            required: false,
+          },
+        },
+      }
+    );
+    Parse.Cloud.run('hello', {})
+      .then(() => {
+        done();
+      })
+      .catch(() => {
+        fail('function should not have failed.');
+      });
+  });
+
   it('set params option', done => {
     Parse.Cloud.define(
       'hello',
