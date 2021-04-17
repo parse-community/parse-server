@@ -724,7 +724,7 @@ async function builtInTriggerValidator(options, request, auth) {
         if (opt.required) {
           requiredParam(key);
         }
-        const optional = opt.type && opt.required === false && !opt.default && val === undefined;
+        const optional = !opt.required && val === undefined;
         if (!optional) {
           if (opt.type) {
             const type = getType(opt.type);
