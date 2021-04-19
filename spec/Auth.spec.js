@@ -242,7 +242,7 @@ describe('Auth', () => {
     });
   });
 
-  fit('succes to login when masterkey and instalationId is provided and when password is not provided', async done => {
+  fit('succes to login when masterkey and instalationId is provided and when password is not provided', async () => {
     const user = new Parse.User();
     const savedUser = await user.save({
       username: 'yolo',
@@ -261,11 +261,9 @@ describe('Auth', () => {
     } catch (error) {
       fail(error.message);
     }
-
-    done();
   });
 
-  fit('succes to get session token when masterkey and instalationId is provided', async done => {
+  fit('succes to get session token when masterkey and instalationId is provided', async () => {
     const user = new Parse.User();
     user.set('username', 'yolo');
     user.set('password', 'yolopass');
@@ -284,11 +282,7 @@ describe('Auth', () => {
       installationId: installationId,
     });
 
-    const userSession = await result.getSessionToken({
-      useMasterKey: true,
-      installationId: installationId,
-    });
+    const userSession = result.getSessionToken();
     expect(userSession).toEqual(session);
-    done();
   });
 });
