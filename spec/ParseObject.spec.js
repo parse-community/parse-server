@@ -2055,7 +2055,7 @@ describe('Parse.Object testing', () => {
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
   });
-  
+
   it('should run wildcard trigger for every class', async () => {
     Parse.Cloud.beforeSave('*', req => {
       req.object.set("newField",true);
