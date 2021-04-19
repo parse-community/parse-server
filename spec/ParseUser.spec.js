@@ -4056,5 +4056,32 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
           done();
         });
     });
+
+    fit('succes to get session token when masterkey and instalationId is provided', async done => {
+      const user = new Parse.User();
+      user.set('username', 'yolo');
+      user.set('password', 'yolopass');
+      user.set('email', 'yo@lo.com');
+      const savedUser = await user.signUp();
+
+      const installationId = '123456789';
+      const querySession = new Parse.Query(Parse.Session);
+      const session = await querySession.first();
+
+      expect(session).not.toBe(undefined);
+
+      const userQuery = new Parse.Query(Parse.User);
+      const result = await userQuery.get(savedUser.id, {
+        useMasterKey: true,
+        installationId: installationId,
+      });
+
+      const userSession = await result.getSessionToken({
+        useMasterKey: true,
+        installationId: installationId,
+      });
+      expect(userSession).toEqual(session);
+      done();
+    });
   });
 });
