@@ -24,18 +24,30 @@ const headers = {
 };
 
 describe_only_db('mongo')('miscellaneous', () => {
-  beforeEach(async () => {
-    await TestUtils.destroyAllDataPermanently(false);
+  it('db contains document after successful save', async () => {
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save();
+    const config = Config.get(defaultConfiguration.appId);
+    const results = await config.database.adapter.find('TestObject', { fields: {} }, {}, {});
+    expect(results.length).toEqual(1);
+    expect(results[0]['foo']).toEqual('bar');
   });
+});
 
-  it('invalid geometry on spatially indexed field fails', async () => {
+describe_only_db('mongo')('spatial index', () => {
+  beforeAll(async () => {
+    await TestUtils.destroyAllDataPermanently(false);
+    // Create a schema with a spatial index
     const testSchema = new Parse.Schema('geojson_test');
     testSchema.addObject('geometry');
     testSchema.addIndex('geospatial_index', {
       geometry: '2dsphere',
     });
     await testSchema.save();
+  });
 
+  it('invalid geometry fails (#7331)', async () => {
     const obj = new Parse.Object('geojson_test');
     obj.set('geometry', { foo: 'bar' });
     try {
@@ -45,14 +57,11 @@ describe_only_db('mongo')('miscellaneous', () => {
       expect(e.code).toEqual(Parse.Error.INVALID_VALUE);
     }
   });
-  it('db contains document after successful save', async () => {
-    const obj = new Parse.Object('TestObject');
-    obj.set('foo', 'bar');
+
+  it('valid geometry succeeds', async () => {
+    const obj = new Parse.Object('geojson_test');
+    obj.set('geometry', { type: 'Point', coordinates: [-73.97, 40.77] });
     await obj.save();
-    const config = Config.get(defaultConfiguration.appId);
-    const results = await config.database.adapter.find('TestObject', { fields: {} }, {}, {});
-    expect(results.length).toEqual(1);
-    expect(results[0]['foo']).toEqual('bar');
   });
 });
 
