@@ -114,3 +114,41 @@ describe('Server Url Checks', () => {
     });
   });
 });
+
+describe('Server Shutdown', () => {
+  let quitSpy;
+
+  beforeEach(() => {
+    // Mock redis
+    quitSpy = jasmine.createSpy('quit'); // Called when connection is closed
+    const createClient = jasmine.createSpy('createClient').and.returnValue({
+      quit: quitSpy,
+    });
+    jasmine.mockLibrary('redis', 'createClient', createClient);
+  });
+
+  it('should disconnect from Redis', done => {
+    const parseServer = ParseServer.start({
+      appId: 'someAppId',
+      masterKey: 'someMasterKey',
+      databaseURI: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+      liveQuery: {
+        redisURL: 'redis://127.0.0.1:6379', // Fake connection. URL is irrelevant
+      },
+      serverStartComplete: () => {
+        parseServer.server.close();
+        parseServer
+          .handleShutdown()
+          .then(() => {
+            expect(quitSpy).toHaveBeenCalled();
+            done();
+          })
+          .catch(() => done.fail('shutdown handler failed'));
+      },
+    });
+  });
+
+  afterEach(function () {
+    jasmine.restoreLibrary('redis', 'createClient');
+  });
+});
