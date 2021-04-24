@@ -686,7 +686,6 @@ describe('ParseLiveQuery', function () {
       },
     };
     for (const key in calls) {
-      console.log(key);
       spyOn(calls, key).and.callThrough();
     }
     Parse.Cloud.beforeConnect(calls.beforeConnect);
