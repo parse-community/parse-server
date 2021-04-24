@@ -93,7 +93,7 @@ describe('OAuth', function () {
       consumer_key: 'XXXXXXXXXXXXXXXXXXXXXXXXX',
       consumer_secret: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
     };
-    const path = '/1.1/help/configuration.json';
+    const path = '/1.1/oauth/request_token';
     const params = { lang: 'en' };
     const oauthClient = new OAuth(options);
     oauthClient.get(path, params).then(function (data) {
