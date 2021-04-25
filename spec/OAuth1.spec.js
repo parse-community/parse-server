@@ -87,13 +87,13 @@ describe('OAuth', function () {
     done();
   }
 
-  it('Should fail a GET request', done => {
+  it('GET request should fail with invalid credentials', done => {
     const options = {
       host: 'api.twitter.com',
-      consumer_key: 'XXXXXXXXXXXXXXXXXXXXXXXXX',
-      consumer_secret: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      consumer_key: 'invalid_consumer_key',
+      consumer_secret: 'invalid_consumer_secret',
     };
-    const path = '/1.1/oauth/request_token';
+    const path = '/1.1/account/settings.json';
     const params = { lang: 'en' };
     const oauthClient = new OAuth(options);
     oauthClient.get(path, params).then(function (data) {
@@ -101,11 +101,11 @@ describe('OAuth', function () {
     });
   });
 
-  it('Should fail a POST request', done => {
+  it('POST request should fail with invalid credentials', done => {
     const options = {
       host: 'api.twitter.com',
-      consumer_key: 'XXXXXXXXXXXXXXXXXXXXXXXXX',
-      consumer_secret: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      consumer_key: 'invalid_consumer_key',
+      consumer_secret: 'invalid_consumer_secret',
     };
     const body = {
       lang: 'en',
