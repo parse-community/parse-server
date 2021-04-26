@@ -874,12 +874,14 @@ export default class SchemaController {
         return (
           deletePromise // Delete Everything
             .then(() => this.reloadData({ clearCache: true })) // Reload our Schema, so we have all the new values
-            .then(() => {
-              const promises = insertedFields.map(fieldName => {
+            .then(async () => {
+              const results = [];
+              for (let i = 0; i < insertedFields.length; i += 1) {
+                const fieldName = insertedFields[i];
                 const type = submittedFields[fieldName];
-                return this.enforceFieldExists(className, fieldName, type);
-              });
-              return Promise.all(promises);
+                results.push(await this.enforceFieldExists(className, fieldName, type));
+              }
+              return results;
             })
             .then(results => {
               enforceFields = results.filter(result => !!result);
