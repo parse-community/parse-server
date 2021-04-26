@@ -127,25 +127,31 @@ describe('Server Shutdown', () => {
     jasmine.mockLibrary('redis', 'createClient', createClient);
   });
 
-  it('should disconnect from Redis', done => {
-    const parseServer = ParseServer.start({
-      appId: 'someAppId',
-      masterKey: 'someMasterKey',
-      databaseURI: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+  it('should disconnect from Redis', async () => {
+    const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+    const databaseAdapter =
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+        ? new PostgresStorageAdapter({
+          uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
+          collectionPrefix: 'test_',
+        })
+        : new MongoStorageAdapter({
+          uri: mongoURI,
+          collectionPrefix: 'test_',
+        });
+
+    const server = await reconfigureServer({
+      databaseAdapter,
       liveQuery: {
         redisURL: 'redis://127.0.0.1:6379', // Fake connection. URL is irrelevant
       },
-      serverStartComplete: () => {
-        parseServer.server.close();
-        parseServer
-          .handleShutdown()
-          .then(() => {
-            expect(quitSpy).toHaveBeenCalled();
-            done();
-          })
-          .catch(() => done.fail('shutdown handler failed'));
-      },
     });
+
+    await server.handleShutdown();
+    await reconfigureServer();
+
+    expect(quitSpy).toHaveBeenCalled();
   });
 
   afterEach(function () {
