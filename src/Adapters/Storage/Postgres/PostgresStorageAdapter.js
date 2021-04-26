@@ -1075,50 +1075,48 @@ export class PostgresStorageAdapter implements StorageAdapter {
   async addFieldIfNotExists(className: string, fieldName: string, type: any, conn: any) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists');
-    conn = conn || this._client;
+    const t = (conn && conn.t ? conn.t : conn) || this._client;
     const self = this;
-    await conn.tx('add-field-if-not-exists', async t => {
-      if (type.type !== 'Relation') {
-        try {
-          await t.none(
-            'ALTER TABLE $<className:name> ADD COLUMN IF NOT EXISTS $<fieldName:name> $<postgresType:raw>',
-            {
-              className,
-              fieldName,
-              postgresType: parseTypeToPostgresType(type),
-            }
-          );
-        } catch (error) {
-          if (error.code === PostgresRelationDoesNotExistError) {
-            return self.createClass(className, { fields: { [fieldName]: type } }, t);
+    if (type.type !== 'Relation') {
+      try {
+        await t.none(
+          'ALTER TABLE $<className:name> ADD COLUMN IF NOT EXISTS $<fieldName:name> $<postgresType:raw>',
+          {
+            className,
+            fieldName,
+            postgresType: parseTypeToPostgresType(type),
           }
-          if (error.code !== PostgresDuplicateColumnError) {
-            throw error;
-          }
-          // Column already exists, created by other request. Carry on to see if it's the right type.
+        );
+      } catch (error) {
+        if (error.code === PostgresRelationDoesNotExistError) {
+          return self.createClass(className, { fields: { [fieldName]: type } }, t);
         }
-      } else {
-        await t.none(
-          'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
-          { joinTable: `_Join:${fieldName}:${className}` }
-        );
+        if (error.code !== PostgresDuplicateColumnError) {
+          throw error;
+        }
+        // Column already exists, created by other request. Carry on to see if it's the right type.
       }
-
-      const result = await t.any(
-        'SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null',
-        { className, fieldName }
+    } else {
+      await t.none(
+        'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
+        { joinTable: `_Join:${fieldName}:${className}` }
       );
+    }
 
-      if (result[0]) {
-        throw 'Attempted to add a field that already exists';
-      } else {
-        const path = `{fields,${fieldName}}`;
-        await t.none(
-          'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
-          { path, type, className }
-        );
-      }
-    });
+    const result = await t.any(
+      'SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null',
+      { className, fieldName }
+    );
+
+    if (result[0]) {
+      throw 'Attempted to add a field that already exists';
+    } else {
+      const path = `{fields,${fieldName}}`;
+      await t.none(
+        'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
+        { path, type, className }
+      );
+    }
     this._notifySchemaChange();
   }
 

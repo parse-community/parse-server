@@ -1058,7 +1058,12 @@ export default class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  enforceFieldExists(className: string, fieldName: string, type: string | SchemaField) {
+  enforceFieldExists(
+    className: string,
+    fieldName: string,
+    type: string | SchemaField,
+    transactionalSession: ?any
+  ) {
     if (fieldName.indexOf('.') > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
       fieldName = fieldName.split('.')[0];
@@ -1106,7 +1111,7 @@ export default class SchemaController {
     }
 
     return this._dbAdapter
-      .addFieldIfNotExists(className, fieldName, type)
+      .addFieldIfNotExists(className, fieldName, type, transactionalSession)
       .catch(error => {
         if (error.code == Parse.Error.INCORRECT_TYPE) {
           // Make sure that we throw errors when it is appropriate to do so.
@@ -1214,7 +1219,7 @@ export default class SchemaController {
   // Validates an object provided in REST format.
   // Returns a promise that resolves to the new schema if this object is
   // valid.
-  async validateObject(className: string, object: any, query: any) {
+  async validateObject(className: string, object: any, query: any, transactionalSession: ?any) {
     let geocount = 0;
     const schema = await this.enforceClassExists(className);
     const results = [];
@@ -1244,7 +1249,9 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      results.push(await schema.enforceFieldExists(className, fieldName, expected));
+      results.push(
+        await schema.enforceFieldExists(className, fieldName, expected, transactionalSession)
+      );
     }
     const enforceFields = results.filter(result => !!result);
 
