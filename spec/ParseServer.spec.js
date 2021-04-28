@@ -4,6 +4,9 @@ const express = require('express');
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
   .default;
+const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
+  .GridFSBucketAdapter;
+const FSAdapter = require('@parse/fs-files-adapter');
 const ParseServer = require('../lib/ParseServer').default;
 const path = require('path');
 const { spawn } = require('child_process');
@@ -117,6 +120,8 @@ describe('Server Url Checks', () => {
 
 describe('Server Shutdown', () => {
   let quitSpy;
+  let databaseAdapter;
+  let filesAdapter;
 
   beforeEach(() => {
     // Mock redis
@@ -125,31 +130,35 @@ describe('Server Shutdown', () => {
       quit: quitSpy,
     });
     jasmine.mockLibrary('redis', 'createClient', createClient);
+
+    const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+
+    const isPostgres = process.env.PARSE_SERVER_TEST_DB === 'postgres';
+    databaseAdapter = isPostgres
+      ? new PostgresStorageAdapter({
+        uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
+        collectionPrefix: 'shutdown_',
+      })
+      : new MongoStorageAdapter({
+        uri: mongoURI,
+        collectionPrefix: 'shutdown_',
+      });
+    filesAdapter = isPostgres ? new FSAdapter() : new GridFSBucketAdapter(mongoURI);
   });
 
   it('should disconnect from Redis', async () => {
-    const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-    const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
-    const databaseAdapter =
-      process.env.PARSE_SERVER_TEST_DB === 'postgres'
-        ? new PostgresStorageAdapter({
-          uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
-          collectionPrefix: 'test_',
-        })
-        : new MongoStorageAdapter({
-          uri: mongoURI,
-          collectionPrefix: 'test_',
-        });
-
-    const server = await reconfigureServer({
+    const server = new ParseServer({
+      appId: 'test',
+      masterKey: 'test',
       databaseAdapter,
+      filesAdapter,
       liveQuery: {
         redisURL: 'redis://127.0.0.1:6379', // Fake connection. URL is irrelevant
       },
     });
 
     await server.handleShutdown();
-    await reconfigureServer();
 
     expect(quitSpy).toHaveBeenCalled();
   });
