@@ -807,8 +807,9 @@ export default class SchemaController {
           className,
         })
       );
+      // TODO: Remove by updating schema cache directly
+      await this.reloadData({ clearCache: true });
       const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
-      SchemaCache.set(className, parseSchema);
       return parseSchema;
     } catch (error) {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
@@ -934,7 +935,6 @@ export default class SchemaController {
     return (
       // The schema update succeeded. Reload the schema
       this.addClassIfNotExists(className)
-        .then(() => this.reloadData())
         .catch(() => {
           // The schema update failed. This can be okay - it might
           // have failed because there's a race condition and a different
@@ -1125,13 +1125,6 @@ export default class SchemaController {
         return Promise.resolve();
       })
       .then(() => {
-        const cached = SchemaCache.get(className);
-        if (cached) {
-          if (cached && !cached.fields[fieldName]) {
-            cached.fields[fieldName] = type;
-            SchemaCache.set(className, cached);
-          }
-        }
         return {
           className,
           fieldName,
@@ -1258,7 +1251,8 @@ export default class SchemaController {
     const enforceFields = results.filter(result => !!result);
 
     if (enforceFields.length !== 0) {
-      await this.reloadData();
+      // TODO: Remove by updating schema cache directly
+      await this.reloadData({ clearCache: true });
     }
     this.ensureFields(enforceFields);
 
