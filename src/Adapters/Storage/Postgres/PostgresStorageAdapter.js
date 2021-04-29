@@ -1064,9 +1064,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       );
       const newColumns = Object.keys(schema.fields)
         .filter(item => columns.indexOf(item) === -1)
-        .map(fieldName =>
-          self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t)
-        );
+        .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName]));
 
       await t.batch(newColumns);
     });
