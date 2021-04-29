@@ -1072,12 +1072,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
   }
 
-  async addFieldIfNotExists(className: string, fieldName: string, type: any, conn: any) {
+  async addFieldIfNotExists(className: string, fieldName: string, type: any) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists');
-    conn = conn || this._client;
     const self = this;
-    await conn.tx('add-field-if-not-exists', async t => {
+    await this._client.tx('add-field-if-not-exists', async t => {
       if (type.type !== 'Relation') {
         try {
           await t.none(
