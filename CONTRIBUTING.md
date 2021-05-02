@@ -290,7 +290,7 @@ Parse Server follows [semantic versioning](https://semver.org) with a flavor of 
 
 Syntax: `[major]`**.**`[minor]`**.**`[patch]`**-**`[pre-release-label]`
 
-- The `major` version increments every year and may include changes that are *not* backwards compatible.
+- The `major` version increments with the first release of every year and may include changes that are *not* backwards compatible.
 - The `minor` version increments during the year and may include new features or improvements of existing features that are backwards compatible.
 - The `patch` version increments during the year and may include bug fixes that are backwards compatible.
 - The `pre-release-label` is optional for pre-release versions such as:
@@ -299,7 +299,7 @@ Syntax: `[major]`**.**`[minor]`**.**`[patch]`**-**`[pre-release-label]`
   - `-rc0` (unlikely to contain bugs, no change in features until release)
 
 Exceptions:
-- The `major` version may increment during the year in the unlikely event that a breaking change is so urgent that it cannot wait for the next yearly release. This should be as rare as the planetary alignment of Jupiter and Saturn.
+- The `major` version may increment during the year in the unlikely event that a breaking change is so urgent that it cannot wait for the next yearly release. An example would be a vulnerability fix that leads to an unavoidable breaking change.
 - Bug fixes of security vulnerabilities are `patch` releases, unless they cause a breaking change, then they are `major` releases.
 
 ## Code of Conduct
