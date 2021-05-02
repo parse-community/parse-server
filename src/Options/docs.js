@@ -173,7 +173,6 @@
 
 /**
  * @interface PasswordPolicyOptions
-<<<<<<< HEAD
  * @property {Boolean} doNotAllowUsername Set to `true` to disallow the username as part of the password.<br><br>Default is `false`.
  * @property {Number} maxPasswordAge Set the number of days after which a password expires. Login attempts fail if the user does not reset the password before expiration.
  * @property {Number} maxPasswordHistory Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.<br><br>Valid values are >= `0` and <= `20`.<br>Default is `0`.
@@ -182,15 +181,6 @@
  * @property {String} validationError Set the error message to be sent.<br><br>Default is `Password does not meet the Password Policy requirements.`
  * @property {Function} validatorCallback Set a callback function to validate a password to be accepted.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.
  * @property {String} validatorPattern Set the regular expression validation pattern a password must match to be accepted.<br><br>If used in combination with `validatorCallback`, the password must pass both to be accepted.
-=======
- * @property {Boolean} doNotAllowUsername disallow username in passwords
- * @property {Number} maxPasswordAge days for password expiry
- * @property {Number} maxPasswordHistory setting to prevent reuse of previous n passwords
- * @property {Boolean} resetTokenReuseIfValid Is true if the password reset token should be reused if it has not expired; requires `resetTokenValidityDuration` to be set. Default is `false`.
- * @property {Number} resetTokenValidityDuration The time duration in seconds after which a password reset token expires and becomes invalid. Default is indefinite (never expires).
- * @property {Function} validatorCallback a callback function to be invoked to validate the password
- * @property {String} validatorPattern a RegExp object or a regex string representing the pattern to enforce
->>>>>>> improved resetTokenReuseIfValid docs
  */
 
 /**
