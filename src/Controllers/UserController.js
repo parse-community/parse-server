@@ -144,7 +144,7 @@ export class UserController extends AdaptableController {
 
       const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
 
-      console.log('sendVerificationEmail: config: ' + JSON.stringify(this.config.appHomePageURL));
+      console.log('sendVerificationEmail: config: ' + JSON.stringify(this.config));
 
       const options = {
         appName: this.config.appName,
@@ -289,7 +289,7 @@ export class UserController extends AdaptableController {
 
     const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
 
-    console.log('sendPasswordResetEmail: config: ' + JSON.stringify(this.config.appHomePageURL));
+    console.log('sendPasswordResetEmail: config: ' + JSON.stringify(this.config));
 
     const options = {
       appName: this.config.appName,
