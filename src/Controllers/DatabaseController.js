@@ -484,7 +484,7 @@ class DatabaseController {
         return this.canAddField(schema, className, object, aclGroup, runOptions);
       })
       .then(() => {
-        return schema.validateObject(className, object, query, this._transactionalSession);
+        return schema.validateObject(className, object, query);
       });
   }
 

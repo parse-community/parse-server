@@ -1096,43 +1096,26 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
       } else {
         await t.none(
-          'ALTER TABLE $<className:name> ADD COLUMN IF NOT EXISTS $<fieldName:name> $<postgresType:raw>',
-          {
-            className,
-            fieldName,
-            postgresType: parseTypeToPostgresType(type),
-          }
+          'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
+          { joinTable: `_Join:${fieldName}:${className}` }
         );
-      } catch (error) {
-        if (error.code === PostgresRelationDoesNotExistError) {
-          return self.createClass(className, { fields: { [fieldName]: type } }, t);
-        }
-        if (error.code !== PostgresDuplicateColumnError) {
-          throw error;
-        }
-        // Column already exists, created by other request. Carry on to see if it's the right type.
       }
-    } else {
-      await t.none(
-        'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
-        { joinTable: `_Join:${fieldName}:${className}` }
-      );
-    }
 
-    const result = await t.any(
-      'SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null',
-      { className, fieldName }
-    );
-
-    if (result[0]) {
-      throw 'Attempted to add a field that already exists';
-    } else {
-      const path = `{fields,${fieldName}}`;
-      await t.none(
-        'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
-        { path, type, className }
+      const result = await t.any(
+        'SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null',
+        { className, fieldName }
       );
-    }
+
+      if (result[0]) {
+        throw 'Attempted to add a field that already exists';
+      } else {
+        const path = `{fields,${fieldName}}`;
+        await t.none(
+          'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
+          { path, type, className }
+        );
+      }
+    });
     this._notifySchemaChange();
   }
 
