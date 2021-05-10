@@ -1056,7 +1056,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     const self = this;
 
-    await conn.tx('schema-upgrade', async t => {
+    await conn.task('schema-upgrade', async t => {
       const columns = await t.map(
         'SELECT column_name FROM information_schema.columns WHERE table_name = $<className>',
         { className },
@@ -1064,21 +1064,37 @@ export class PostgresStorageAdapter implements StorageAdapter {
       );
       const newColumns = Object.keys(schema.fields)
         .filter(item => columns.indexOf(item) === -1)
-        .map(fieldName =>
-          self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t)
-        );
+        .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName]));
 
       await t.batch(newColumns);
     });
   }
 
-  async addFieldIfNotExists(className: string, fieldName: string, type: any, conn: any) {
+  async addFieldIfNotExists(className: string, fieldName: string, type: any) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists');
-    const t = (conn && conn.t ? conn.t : conn) || this._client;
     const self = this;
-    if (type.type !== 'Relation') {
-      try {
+    await this._client.tx('add-field-if-not-exists', async t => {
+      if (type.type !== 'Relation') {
+        try {
+          await t.none(
+            'ALTER TABLE $<className:name> ADD COLUMN IF NOT EXISTS $<fieldName:name> $<postgresType:raw>',
+            {
+              className,
+              fieldName,
+              postgresType: parseTypeToPostgresType(type),
+            }
+          );
+        } catch (error) {
+          if (error.code === PostgresRelationDoesNotExistError) {
+            return self.createClass(className, { fields: { [fieldName]: type } }, t);
+          }
+          if (error.code !== PostgresDuplicateColumnError) {
+            throw error;
+          }
+          // Column already exists, created by other request. Carry on to see if it's the right type.
+        }
+      } else {
         await t.none(
           'ALTER TABLE $<className:name> ADD COLUMN IF NOT EXISTS $<fieldName:name> $<postgresType:raw>',
           {
