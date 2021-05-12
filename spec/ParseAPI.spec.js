@@ -691,6 +691,32 @@ describe('miscellaneous', function () {
       );
   });
 
+  it('test afterSave with deeply nested keys (#7384)', async () => {
+    let triggerTime = 0;
+    Parse.Cloud.afterSave('GameScore', function (req) {
+      const object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+      if (triggerTime == 0) {
+        // Create
+        expect(object.get('a')).toEqual({ b: { c: 0 } });
+      } else if (triggerTime == 1) {
+        // Update
+        expect(object.get('a')).toEqual({ b: { c: 1 } });
+      } else {
+        throw new Error();
+      }
+      triggerTime++;
+    });
+
+    const obj = new Parse.Object('GameScore');
+    obj.set('a', { b: { c: 0 } });
+    await obj.save();
+    obj.set('a.b.c', 1);
+    await obj.save();
+    // Make sure the checking has been triggered
+    expect(triggerTime).toBe(2);
+  });
+
   it('test afterSave get original object on update', function (done) {
     let triggerTime = 0;
     // Register a mock beforeSave hook
