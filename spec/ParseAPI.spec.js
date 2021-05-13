@@ -698,10 +698,10 @@ describe('miscellaneous', function () {
       expect(object instanceof Parse.Object).toBeTruthy();
       if (triggerTime == 0) {
         // Create
-        expect(object.get('a')).toEqual({ b: { c: 0 } });
+        expect(object.get('a')).toEqual({ b: { c: 0 }, d: 0 });
       } else if (triggerTime == 1) {
         // Update
-        expect(object.get('a')).toEqual({ b: { c: 1 } });
+        expect(object.get('a')).toEqual({ b: { c: 1 }, d: 2 });
       } else {
         throw new Error();
       }
@@ -709,9 +709,10 @@ describe('miscellaneous', function () {
     });
 
     const obj = new Parse.Object('GameScore');
-    obj.set('a', { b: { c: 0 } });
+    obj.set('a', { b: { c: 0 }, d: 0 });
     await obj.save();
     obj.set('a.b.c', 1);
+    obj.set('a.d', 2);
     await obj.save();
     // Make sure the checking has been triggered
     expect(triggerTime).toBe(2);
