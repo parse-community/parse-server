@@ -132,6 +132,15 @@ class ParseGraphQLSchema {
 
     this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(
       ([parseClass, parseClassConfig]) => {
+        // Some times schema return the _auth_data_ field
+        // it will lead to unstable graphql generation order
+        if (parseClass.className === '_User') {
+          Object.keys(parseClass.fields).forEach(fieldName => {
+            if (fieldName.startsWith('_auth_data_')) {
+              delete parseClass.fields[fieldName];
+            }
+          });
+        }
         parseClassTypes.load(this, parseClass, parseClassConfig);
         parseClassQueries.load(this, parseClass, parseClassConfig);
         parseClassMutations.load(this, parseClass, parseClassConfig);
