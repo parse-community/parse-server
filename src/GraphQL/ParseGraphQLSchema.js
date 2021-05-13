@@ -141,6 +141,17 @@ class ParseGraphQLSchema {
             }
           });
         }
+
+        // Fields order inside the schema seems to not be consistent across
+        // restart so we need to ensure an alphabetical order
+        // also it's better for the playground documentation
+        const orderedFields = {};
+        Object.keys(parseClass.fields)
+          .sort()
+          .forEach(fieldName => {
+            orderedFields[fieldName] = parseClass.fields[fieldName];
+          });
+        parseClass.fields = orderedFields;
         parseClassTypes.load(this, parseClass, parseClassConfig);
         parseClassQueries.load(this, parseClass, parseClassConfig);
         parseClassMutations.load(this, parseClass, parseClassConfig);
