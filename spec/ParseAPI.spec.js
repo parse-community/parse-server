@@ -711,7 +711,6 @@ describe('miscellaneous', function () {
         expect(object.get('e')).toEqual(300);
       } else if (triggerTime == 4) {
         // Update, unset on a.c.d
-        console.log(JSON.serialize(object.get('a')));
         expect(object.get('a')).toEqual({ b: 100, c: {} });
         expect(object.get('e')).toEqual(300);
       } else if (triggerTime == 5) {
