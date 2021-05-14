@@ -32,11 +32,13 @@ describe('WinstonLogger', () => {
   it('should disable files logs', done => {
     reconfigureServer({
       logsFolder: null,
-    }).then(() => {
-      const transports = logging.logger.transports;
-      expect(transports.length).toBe(1);
-      done();
-    });
+    })
+      .then(() => {
+        const transports = logging.logger.transports;
+        expect(transports.length).toBe(1);
+        return reconfigureServer();
+      })
+      .then(done);
   });
 
   it('should have a timestamp', done => {

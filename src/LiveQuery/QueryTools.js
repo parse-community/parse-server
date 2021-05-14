@@ -165,6 +165,22 @@ function matchesKeyConstraints(object, key, constraints) {
     }
     return false;
   }
+  if (key === '$and') {
+    for (i = 0; i < constraints.length; i++) {
+      if (!matchesQuery(object, constraints[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (key === '$nor') {
+    for (i = 0; i < constraints.length; i++) {
+      if (matchesQuery(object, constraints[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
   if (key === '$relatedTo') {
     // Bail! We can't handle relational queries locally
     return false;
@@ -306,6 +322,24 @@ function matchesKeyConstraints(object, key, constraints) {
           object[key].longitude > southWest.longitude &&
           object[key].longitude < northEast.longitude
         );
+      case '$containedBy': {
+        for (const value of object[key]) {
+          if (!contains(compareTo, value)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      case '$geoWithin': {
+        const points = compareTo.$polygon.map(geoPoint => [geoPoint.latitude, geoPoint.longitude]);
+        const polygon = new Parse.Polygon(points);
+        return polygon.containsPoint(object[key]);
+      }
+      case '$geoIntersects': {
+        const polygon = new Parse.Polygon(object[key].coordinates);
+        const point = new Parse.GeoPoint(compareTo.$point);
+        return polygon.containsPoint(point);
+      }
       case '$options':
         // Not a query type, but a way to add options to $regex. Ignore and
         // avoid the default

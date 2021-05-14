@@ -1,17 +1,69 @@
-# Contributing to Parse Server
+# Contributing to Parse Server <!-- omit in toc -->
 
-We really want Parse to be yours, to see it grow and thrive in the open source community.
+## Table of Contents <!-- omit in toc -->
+- [Contributing](#contributing)
+- [Why Contributing?](#why-contributing)
+- [Environment Setup](#environment-setup)
+  - [Recommended Tools](#recommended-tools)
+  - [Setting up your local machine](#setting-up-your-local-machine)
+  - [Good to Know](#good-to-know)
+  - [Troubleshooting](#troubleshooting)
+  - [Please Do's](#please-dos)
+  - [Test against Postgres](#test-against-postgres)
+    - [Postgres with Docker](#postgres-with-docker)
+- [Breaking Changes](#breaking-changes)
+  - [Deprecation Policy](#deprecation-policy)
+- [Feature Considerations](#feature-considerations)
+  - [Security Checks](#security-checks)
+    - [Add Security Check](#add-security-check)
+    - [Wording Guideline](#wording-guideline)
+  - [Parse Error](#parse-error)
+  - [Parse Server Configuration](#parse-server-configuration)
+- [Code of Conduct](#code-of-conduct)
 
-If you are not familiar with Pull Requests and want to know more about them, you can visit the [Creating a pull request](https://help.github.com/articles/creating-a-pull-request/) article. It contains detailed informations about the process.
+## Contributing
 
-## Setting up the project for debugging and contributing:
+Before you start to code, please open a [new issue](https://github.com/parse-community/parse-server/issues/new/choose) to describe your idea, or search for and continue the discussion in an [existing issue](https://github.com/parse-community/parse-server/issues).
 
-### Recommended setup:
+> ⚠️ Please do not post a security vulnerability on GitHub or in the Parse Community Forum. Instead, follow the [Parse Community Security Policy](https://github.com/parse-community/parse-server/security/policy).
 
-* [vscode](https://code.visualstudio.com), the popular IDE.
+Please completely fill out any templates to provide essential information about your new feature or the bug you discovered.
+
+Together we will plan out the best conceptual approach for your contribution, so that your and our time is invested in the best possible approach. The discussion often reveals how to leverage existing features of Parse Server to reach your goal with even less effort and in a more sustainable way.
+
+When you are ready to code, you can find more information about opening a pull request in the [GitHub docs](https://help.github.com/articles/creating-a-pull-request/).
+
+Whether this is your first contribution or you are already an experienced contributor, the Parse Community has your back – don't hesitate to ask for help!
+
+## Why Contributing?
+
+Buy cheap, buy twice. What? No, this is not the Economics 101 class, but the same is true for contributing.
+
+There are two ways of writing a feature or fixing a bug. Sometimes the quick solution is to just write a Cloud Code function that does what you want. Contributing by making the change directly in Parse Server may take a bit longer, but it actually saves you much more time in the long run.
+
+Consider the benefits you get:
+
+- #### 🚀 Higher efficiency
+  Your code is examined for efficiency and interoperability with existing features by the community.
+- #### 🛡 Stronger security
+  Your code is scrutinized for bugs and vulnerabilities and automated checks help to identify security issues that may arise in the future.
+- #### 🧬 Continuous improvement
+  If your feature is used by others it is likely to be continuously improved and extended by the community.
+- #### 💝 Giving back
+  You give back to the community that contributed to make the Parse Platform become what it is today and for future developers to come.
+- #### 🧑‍🎓 Improving yourself
+  You learn to better understand the inner workings of Parse Server, which will help you to write more efficient and resilient code for your own application.
+
+Most importantly, with every contribution you improve your skills so that future contributions take even less time and you get all the benefits above for free — easy choice, right?
+
+## Environment Setup
+
+### Recommended Tools
+
+* [Visual Studio Code](https://code.visualstudio.com), the popular IDE.
 * [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
-### Setting up you local machine:
+### Setting up your local machine
 
 * [Fork](https://github.com/parse-community/parse-server) this project and clone the fork on your local machine:
 
@@ -27,13 +79,23 @@ $ npm run watch # run babel watching for local file changes
 
 Once you have babel running in watch mode, you can start making changes to parse-server.
 
-### Good to know:
+### Good to Know
 
-* The `lib/` folder is not commited, so never make changes in there.
+* The `lib/` folder is not committed, so never make changes in there.
 * Always make changes to files in the `src/` folder.
 * All the tests should point to sources in the `lib/` folder.
+* The `lib/` folder is produced by `babel` using either the `npm run build`, `npm run watch`, or the `npm run prepare` step.
+* The `npm run prepare` step is automatically invoked when your package depends on forked parse-server installed via git for example using `npm install --save git+https://github.com/[username]/parse-server#[branch/commit]`.
+* The tests are run against a single server instance. You can change the server configurations using `await reconfigureServer({ ... some configuration })` found in `spec/helper.js`.
+* The tests are ran at random.
+* Caches and Configurations are reset after every test.
+* Users are logged out after every test.
+* Cloud Code hooks are removed after every test.
+* Database is deleted after every test (indexes are not removed for speed)
+* Tests are located in the `spec` folder
+* For better test reporting enable `PARSE_SERVER_LOG_LEVEL=debug`
 
-### Troubleshooting:
+### Troubleshooting
 
 *Question*: I modify the code in the src folder but it doesn't seem to have any effect.<br/>
 *Answer*: Check that `npm run watch` is running
@@ -42,7 +104,10 @@ Once you have babel running in watch mode, you can start making changes to parse
 *Answer*: The easiest way is to install [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer), it will let you run selectively tests and debug them.
 
 *Question*: How do I deploy my forked version on my servers?<br/>
-*Answer*: In your `package.json`, update the `parse-server` dependency to `https://github.com/MY_USERNAME/parse-server#MY_FEATURE`. Run `npm install`, commit the changes and deploy to your servers.
+*Answer*: In your `package.json`, update the `parse-server` dependency to `https://github.com/[username]/parse-server#[branch/commit]`. Run `npm install`, commit the changes and deploy to your servers.
+
+*Question*: How do I deploy my forked version using docker?<br/>
+*Answer*: In your `package.json`, update the `parse-server` dependency to `https://github.com/[username]/parse-server#[branch/commit]`. Make sure the `npm install` step in your `Dockerfile` is running under non-privileged user for the ``npm run prepare`` step to work correctly. For official node images from hub.docker.com that non-privileged user is `node` with `/home/node` working directory.
 
 
 ### Please Do's
@@ -53,12 +118,14 @@ Once you have babel running in watch mode, you can start making changes to parse
 * Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
+* Mocks belong in the `spec/support` folder.
+* Please consider if any changes to the [docs](http://docs.parseplatform.org) are needed or add additional sections in the case of an enhancement or feature.
 
-### Run your tests against Postgres (optional)
+### Test against Postgres
 
 If your pull request introduces a change that may affect the storage or retrieval of objects, you may want to make sure it plays nice with Postgres.
 
-* Run the tests against the postgres database with `PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly`. You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/.travis.yml#L43) or use [`Docker`](#run-a-parse-postgres-with-docker).
+* Run the tests against the postgres database with `PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly`. You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) or use [`Docker`](#run-a-parse-postgres-with-docker).
 * The Postgres adapter has a special debugger that traces all the sql commands. You can enable it with setting the environment variable `PARSE_SERVER_LOG_LEVEL=debug`
 * If your feature is intended to only work with MongoDB, you should disable PostgreSQL-specific tests with:
 
@@ -71,12 +138,17 @@ If your pull request introduces a change that may affect the storage or retrieva
   - `it_only_db('postgres')` // will make a test that only runs on postgres
   - `it_exclude_dbs(['mongo'])` // will make a test that runs against all DB's but mongo
 
-#### Run Postgres setup for Parse with Docker
+* If your feature is intended to work with MongoDB and PostgreSQL, you can include or exclude tests more granularly with:
+
+  - `it_only_mongodb_version('>=4.4')` // will test with any version of Postgres but only with version >=4.4 of MongoDB; accepts semver notation to specify a version range
+  - `it_exclude_mongodb_version('<4.4')` // will test with any version of Postgres and MongoDB, excluding version <4.4 of MongoDB; accepts semver notation to specify a version range
+
+#### Postgres with Docker
 
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
 ```
-docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:11-3.0-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
+docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:11-3.0-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION pgcrypto; CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
 ```
 To stop the Postgres instance:
 
@@ -94,11 +166,30 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-dbs.sh
 
 Note that the script above will ONLY be executed during initialization of the container with no data in the database, see the official [Postgres image](https://hub.docker.com/_/postgres) for details. If you want to use the script to run again be sure there is no data in the /var/lib/postgresql/data of the container.
 
-### Generate Parse Server Config Definition
+## Breaking Changes
 
-If you want to make changes to [Parse Server Configuration][config] add the desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs].
+Breaking changes should be avoided whenever possible. For a breaking change to be accepted, the benefits of the change have to clearly outweigh the costs of developers having to adapt their deployments. If a breaking change is only cosmetic it will likely be rejected and preferred to become obsolete organically during the course of further development, unless it is required as part of a larger change. Breaking changes should follow the [Deprecation Policy](#deprecation-policy).
 
-To view docs run `npm run docs` and check the `/out` directory.
+Please consider that Parse Server is just one component in a stack that requires attention. A breaking change requires resources and effort to adapt an environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
+- "upgrade fatigue" where developers run old versions of Parse Server because they cannot always attend to every update that contains a breaking change
+- less secure Parse Server deployments that run on old versions which is contrary to the security evangelism Parse Server intends to facilitate for developers
+- less feedback and slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
+
+### Deprecation Policy
+
+If you change or remove an existing feature that would lead to a breaking change, use the following deprecation pattern:
+  - Make the new feature or change optional, if necessary with a new Parse Server option parameter.
+  - Use a default value that falls back to existing behavior.
+  - Add a deprecation definition in `Deprecator/Deprecations.js` that will output a deprecation warning log message on Parse Server launch, for example:
+    > DeprecationWarning: The Parse Server option 'example' will be removed in a future release.
+  
+Deprecations become breaking changes after notifying developers through deprecation warnings for at least one entire previous major release. For example:
+  - `4.5.0` is the current version
+  - `4.6.0` adds a new optional feature and a deprecation warning for the existing feature
+  - `5.0.0` marks the beginning of logging the deprecation warning for one entire major release
+  - `6.0.0` makes the breaking change by removing the deprecation warning and making the new feature replace the existing feature
+
+Developer feedback during the deprecation period may further postpone the introduction of a breaking change.
 
 ## Feature Considerations
 ### Security Checks
@@ -109,7 +200,86 @@ A security check needs to be added for every new feature or enhancement that all
 
 For example, allowing public read and write to a class may be useful to simplify development but should be disallowed in a production environment.
 
-Security checks are added in [SecurityChecks.js](https://github.com/parse-community/parse-server/blob/master/src/SecurityChecks.js).
+Security checks are added in [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups).
+
+#### Add Security Check
+Adding a new security check for your feature is easy and fast:
+1. Look into [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups) whether there is an existing `CheckGroup[Category].js` file for the category of check to add. For example, a check regarding the database connection is added to `CheckGroupDatabase.js`.
+2. If you did not find a file, duplicate an existing file and replace the category name in `setName()` and the checks in `setChecks()`:
+    ```js
+    class CheckGroupNewCategory extends CheckGroup {
+      setName() {
+        return 'House';
+      }
+      setChecks() {
+        return [
+          new Check({
+            title: 'Door locked',
+            warning: 'Anyone can enter your house.',
+            solution: 'Lock the door.',
+            check: () => {    
+              return;     // Example of a passing check
+            }
+          }),
+          new Check({
+            title: 'Camera online',
+            warning: 'Security camera is offline.',
+            solution: 'Check the camera.',
+            check: async () => {  
+              throw 1;     // Example of a failing check
+            }
+          }),
+        ];
+      }
+    }
+    ```
+
+3. If you added a new file in the previous step, reference the file in [CheckGroups.js](https://github.com/parse-community/parse-server/blob/master/src/Security/CheckGroups/CheckGroups.js), which is the collector of all security checks:
+    ```
+    export { default as CheckGroupNewCategory } from './CheckGroupNewCategory';
+    ```
+4. Add a test that covers the new check to [SecurityCheckGroups.js](https://github.com/parse-community/parse-server/blob/master/spec/SecurityCheckGroups.js) for the cases of success and failure.
+
+#### Wording Guideline
+Consider the following when adding a new security check:
+- *Group.name*: The category name; ends without period as this is a headline.
+- *Check.title*: Is the positive hypothesis that should be checked, for example "Door locked" instead of "Door unlocked"; ends without period as this is a title.
+- *Check.warning*: The warning if the test fails; ends with period as this is a description.
+- *Check.solution*: The recommended solution if the test fails; ends with period as this is an instruction.
+- The wordings must not contain any sensitive information such as keys, as the security report may be exposed in logs.
+- The wordings should be concise and not contain verbose explanations, for example "Door locked" instead of "Door has been locked securely".
+- Do not use pronouns such as "you" or "your" because log files can have various readers with different roles. Do not use pronouns such as "I" or "me" because although we love it dearly, Parse Server is not a human.
+
+### Parse Error
+
+Introducing new Parse Errors requires the following steps:
+
+1. Research whether an existing Parse Error already covers the error scenario. Keep in mind that reusing an already existing Parse Error does not allow to distinguish between scenarios in which the same error is thrown, so it may be necessary to add a new and more specific Parse Error, even though a more general Parse Error already exists.
+⚠️ Currently (as of Dec. 2020), there are inconsistencies between the Parse Errors documented in the Parse Guides, coded in the Parse JS SDK and coded in Parse Server, therefore research regarding the availability of error codes has to be conducted in all of these sources.
+1. Add the new Parse Error to [/src/ParseError.js](https://github.com/parse-community/Parse-SDK-JS/blob/master/src/ParseError.js) in the Parse JavaScript SDK. This is the primary reference for Parse Errors for the Parse JavaScript SDK and Parse Server.
+1. Create a pull request for the Parse JavaScript SDK including the new Parse Errors. The PR needs to be merged and a new Parse JS SDK version needs to be released.
+1. Change the Parse JS SDK dependency in [package.json](https://github.com/parse-community/parse-server/blob/master/package.json) of Parse Server to the newly released Parse JS SDK version, so that the new Parse Error is recognized by Parse Server.
+1. When throwing the new Parse Error in code, do not hard-code the error code but instead reference the error code from the Parse Error. For example:
+    ```javascript
+    throw new Parse.Error(Parse.Error.EXAMPLE_ERROR_CODE, 'Example error message.');
+    ```
+1. Choose a descriptive error message that provdes more details about the specific error scenario. Different error messages may be used for the same error code. For example:
+    ```javascript
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'The file could not be saved because it exceeded the maximum allowed file size.');
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'The file could not be saved because the file format was incorrect.');
+    ```
+1. Add the new Parse Error to the [docs](https://github.com/parse-community/docs/blob/gh-pages/_includes/common/errors.md).
+
+### Parse Server Configuration
+
+Introducing new [Parse Server configuration][config] parameters requires the following steps:
+
+1. Add parameters definitions in [/src/Options/index.js][config-index].
+1. If a nested configuration object has been added, add the environment variable option prefix to `getENVPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js).
+1. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
+1. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
+1. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
+1. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
 ## Code of Conduct
 

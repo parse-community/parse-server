@@ -8,7 +8,9 @@ const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapte
 
 const loggerController = new LoggerController(new WinstonLoggerAdapter());
 
-describe('LogsRouter', () => {
+describe_only(() => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
+})('LogsRouter', () => {
   it('can check valid master key of request', done => {
     // Make mock request
     const request = {
