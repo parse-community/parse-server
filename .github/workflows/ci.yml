@@ -5,9 +5,9 @@ on:
       - master
   pull_request:
     branches:
-      - '**'
+      - "**"
 env:
-  NODE_VERSION: 14.16.1
+  NODE_VERSION: 14.17.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-ci:
@@ -32,45 +32,45 @@ jobs:
       - name: CI Self-Check
         run: npm run ci:check
   check-lint:
-     name: Lint
-     timeout-minutes: 15
-     runs-on: ubuntu-18.04
-     steps:
-       - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v1
-         with:
-           node-version: ${{ matrix.node-version }}
-       - name: Cache Node.js modules
-         uses: actions/cache@v2
-         with:
-           path: ~/.npm
-           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-           restore-keys: |
-             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-       - name: Install dependencies
-         run: npm ci
-       - run: npm run lint
+    name: Lint
+    timeout-minutes: 15
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run lint
   check-circular:
-     name: Circular Dependencies
-     timeout-minutes: 5
-     runs-on: ubuntu-18.04
-     steps:
-       - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v1
-         with:
-           node-version: ${{ matrix.node-version }}
-       - name: Cache Node.js modules
-         uses: actions/cache@v2
-         with:
-           path: ~/.npm
-           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-           restore-keys: |
-             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-       - name: Install dependencies
-         run: npm ci
-       - run: npm run madge:circular
+    name: Circular Dependencies
+    timeout-minutes: 5
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run madge:circular
   check-docker:
     name: Docker Build
     timeout-minutes: 5
@@ -94,12 +94,12 @@ jobs:
       matrix:
         include:
           - name: MongoDB 4.4, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.4.4
+            MONGODB_VERSION: 4.4.6
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.16.1
           - name: MongoDB 4.2, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.2.13
+            MONGODB_VERSION: 4.2.14
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.16.1
@@ -115,17 +115,17 @@ jobs:
             NODE_VERSION: 14.16.1
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 4.4.4
+            MONGODB_VERSION: 4.4.6
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.16.1
           - name: Node 12
-            MONGODB_VERSION: 4.4.4
+            MONGODB_VERSION: 4.4.6
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 12.22.1
           - name: Node 15
-            MONGODB_VERSION: 4.4.4
+            MONGODB_VERSION: 4.4.6
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 15.14.0
@@ -137,8 +137,8 @@ jobs:
       redis:
         image: redis
         ports:
-            - 6379:6379
-    env:      
+          - 6379:6379
+    env:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
