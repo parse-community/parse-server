@@ -88,7 +88,6 @@ function createSchema(req) {
 
   // handle options.
   const options = getOptionParamsFromRequest(req) || req.body.options;
-  console.log(options);
   if (options && typeof options === 'object') {
     requestSchema = handleSchemaOptions(options, requestSchema);
   }
