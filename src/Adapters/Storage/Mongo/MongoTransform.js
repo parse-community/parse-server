@@ -99,7 +99,10 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 
   if (
     (parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') ||
-    (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')
+    (!key.includes('.') &&
+      !parseFormatSchema.fields[key] &&
+      restValue &&
+      restValue.__type == 'Pointer') // Do not use the _p_ prefix for pointers inside nested documents
   ) {
     key = '_p_' + key;
   }
@@ -305,7 +308,10 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
     schema && schema.fields[key] && schema.fields[key].type === 'Pointer';
 
   const field = schema && schema.fields[key];
-  if (expectedTypeIsPointer || (!schema && value && value.__type === 'Pointer')) {
+  if (
+    expectedTypeIsPointer ||
+    (!schema && !key.includes('.') && value && value.__type === 'Pointer')
+  ) {
     key = '_p_' + key;
   }
 
@@ -326,8 +332,11 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   }
 
   // Handle atomic values
-  if (transformTopLevelAtom(value) !== CannotTransform) {
-    return { key, value: transformTopLevelAtom(value) };
+  var transformRes = key.includes('.')
+    ? transformInteriorAtom(value)
+    : transformTopLevelAtom(value);
+  if (transformRes !== CannotTransform) {
+    return { key, value: transformRes };
   } else {
     throw new Parse.Error(
       Parse.Error.INVALID_JSON,
