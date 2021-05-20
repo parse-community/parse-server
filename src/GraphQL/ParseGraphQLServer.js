@@ -4,12 +4,17 @@ import { graphqlUploadExpress } from 'graphql-upload';
 import { getGraphQLParameters, processRequest } from 'graphql-helix';
 import { envelop, useExtendContext, useMaskedErrors } from '@envelop/core';
 import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
-import { SubscriptionServer } from 'subscriptions-transport-ws-envelop';
+import { Server as WSServer } from 'ws';
 import { handleParseErrors, handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+import {
+  handleGraphQLWS,
+  handleLegacySubscriptionsTransportWS,
+  handleWebSocketUpgrade,
+} from './parseGraphQLWebSocket';
 
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
@@ -45,11 +50,9 @@ class ParseGraphQLServer {
     });
   }
 
-  async _getGraphQLOptions() {
+  async _getGraphQLSchema() {
     try {
-      return {
-        schema: await this.parseGraphQLSchema.load(),
-      };
+      return await this.parseGraphQLSchema.load();
     } catch (e) {
       this.log.error(e.stack || (typeof e.toString === 'function' && e.toString()) || e);
       throw e;
@@ -84,7 +87,7 @@ class ParseGraphQLServer {
 
     // Extract the GraphQL parameters from the request
     const { operationName, query, variables } = getGraphQLParameters(request);
-    const { schema } = await this._getGraphQLOptions();
+    const schema = await this._getGraphQLSchema();
 
     // Validate and execute the query
     const result = await processRequest({
@@ -197,32 +200,58 @@ class ParseGraphQLServer {
     );
   }
 
-  createSubscriptions(server) {
-    const { validate, parse, execute, subscribe, contextFactory } = this.getEnveloped();
+  createSubscriptions(server, config) {
+    // config.mode should be either "all", "graphql-transport-ws" or "legacy-graphql-ws"
+    const mode = config?.mode ?? 'all';
 
-    SubscriptionServer.create(
-      {
-        validate,
-        parse,
-        execute,
-        subscribe,
-        onOperation: async (_message, params, webSocket) => {
-          const { schema } = await this._getGraphQLOptions();
-          const request = {
-            info: webSocket.upgradeReq.info,
-            config: webSocket.upgradeReq.config,
-            auth: webSocket.upgradeReq.auth,
-          };
-          return Object.assign({}, params, { schema, context: await contextFactory({ request }) });
+    const path =
+      this.config.subscriptionsPath ||
+      requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!');
+
+    const GRAPHQL_TRANSPORT_WS_PROTOCOL = 'graphql-transport-ws';
+    const GRAPHQL_WS = 'graphql-ws';
+
+    let wsTuple;
+
+    if (mode === 'graphql-transport-ws') {
+      const wsServer = new WSServer({ noServer: true });
+      handleGraphQLWS(wsServer, this.getEnveloped.bind(this), this._getGraphQLSchema.bind(this));
+      wsTuple = ['graphql-transport-ws', wsServer];
+    } else if (mode === 'legacy-graphql-ws') {
+      const wsServer = new WSServer({ noServer: true });
+      handleLegacySubscriptionsTransportWS(
+        wsServer,
+        this.getEnveloped.bind(this),
+        this._getGraphQLSchema.bind(this)
+      );
+      wsTuple = ['legacy-graphql-ws', wsServer];
+    } else if (mode === 'all') {
+      const wsServer = new WSServer({ noServer: true });
+      handleGraphQLWS(wsServer, this.getEnveloped.bind(this), this._getGraphQLSchema);
+      const wsServerLegacy = new WSServer({ noServer: true });
+      handleLegacySubscriptionsTransportWS(
+        wsServerLegacy,
+        this.getEnveloped.bind(this),
+        this._getGraphQLSchema.bind(this)
+      );
+
+      wsTuple = [
+        'all',
+        protocol => {
+          const protocols = Array.isArray(protocol)
+            ? protocol
+            : protocol?.split(',').map(p => p.trim());
+          return protocols?.includes(GRAPHQL_WS) &&
+            !protocols.includes(GRAPHQL_TRANSPORT_WS_PROTOCOL)
+            ? wsServerLegacy
+            : wsServer;
         },
-      },
-      {
-        server,
-        path:
-          this.config.subscriptionsPath ||
-          requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!'),
-      }
-    );
+      ];
+    } else {
+      throw new Error(`Invalid subscription mode provided '${mode}'.`);
+    }
+
+    handleWebSocketUpgrade(server, path, wsTuple);
   }
 
   setGraphQLConfig(graphQLConfig: ParseGraphQLConfig): Promise {
