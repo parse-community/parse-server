@@ -2,10 +2,9 @@ import corsMiddleware from 'cors';
 import bodyParser from 'body-parser';
 import { graphqlUploadExpress } from 'graphql-upload';
 import { getGraphQLParameters, processRequest } from 'graphql-helix';
-import { envelop, useMaskedErrors } from '@envelop/core';
+import { envelop, useExtendContext, useMaskedErrors } from '@envelop/core';
 import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
-import { execute, subscribe } from 'graphql';
-import { SubscriptionServer } from 'subscriptions-transport-ws';
+import { SubscriptionServer } from 'subscriptions-transport-ws-envelop';
 import { handleParseErrors, handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
@@ -32,19 +31,24 @@ class ParseGraphQLServer {
       appId: this.parseServer.config.appId,
     });
     this.getEnveloped = envelop({
-      plugins: [useMaskedErrors(), ...this.config.envelopPlugins],
+      plugins: [
+        useMaskedErrors(),
+        useExtendContext(context => {
+          return {
+            info: context.request.info,
+            config: context.request.config,
+            auth: context.request.auth,
+          };
+        }),
+        ...(this.config.envelopPlugins || []),
+      ],
     });
   }
 
-  async _getGraphQLOptions(req) {
+  async _getGraphQLOptions() {
     try {
       return {
         schema: await this.parseGraphQLSchema.load(),
-        contextFactory: () => ({
-          info: req.info,
-          config: req.config,
-          auth: req.auth,
-        }),
       };
     } catch (e) {
       this.log.error(e.stack || (typeof e.toString === 'function' && e.toString()) || e);
@@ -71,12 +75,16 @@ class ParseGraphQLServer {
       headers: req.headers,
       method: req.method,
       query: req.query,
+      info: req.info,
+      config: req.config,
+      auth: req.auth,
     };
 
-    const { execute, subscribe, validate, parse } = this.getEnveloped();
+    const { execute, subscribe, validate, parse, contextFactory } = this.getEnveloped();
 
     // Extract the GraphQL parameters from the request
     const { operationName, query, variables } = getGraphQLParameters(request);
+    const { schema } = await this._getGraphQLOptions();
 
     // Validate and execute the query
     const result = await processRequest({
@@ -88,7 +96,8 @@ class ParseGraphQLServer {
       query,
       variables,
       request,
-      ...(await this._getGraphQLOptions(req)),
+      schema,
+      contextFactory,
     });
 
     if (result.type === 'RESPONSE') {
@@ -189,12 +198,23 @@ class ParseGraphQLServer {
   }
 
   createSubscriptions(server) {
+    const { validate, parse, execute, subscribe, contextFactory } = this.getEnveloped();
+
     SubscriptionServer.create(
       {
+        validate,
+        parse,
         execute,
         subscribe,
-        onOperation: async (_message, params, webSocket) =>
-          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
+        onOperation: async (_message, params, webSocket) => {
+          const { schema } = await this._getGraphQLOptions();
+          const request = {
+            info: webSocket.upgradeReq.info,
+            config: webSocket.upgradeReq.config,
+            auth: webSocket.upgradeReq.auth,
+          };
+          return Object.assign({}, params, { schema, context: await contextFactory({ request }) });
+        },
       },
       {
         server,
