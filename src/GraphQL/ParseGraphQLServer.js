@@ -35,7 +35,7 @@ class ParseGraphQLServer {
       graphQLCustomTypeDefs: this.config.graphQLCustomTypeDefs,
       appId: this.parseServer.config.appId,
     });
-    this.getEnveloped = envelop({
+    this._getEnveloped = envelop({
       plugins: [
         useMaskedErrors(),
         useExtendContext(context => {
@@ -48,6 +48,21 @@ class ParseGraphQLServer {
         ...(this.config.envelopPlugins || []),
       ],
     });
+  }
+
+  async _getGraphQLOptions(req) {
+    const schema = await this._getGraphQLSchema();
+    const { contextFactory } = this._getEnveloped();
+    return {
+      schema,
+      context: await contextFactory({
+        request: {
+          info: req.info,
+          config: req.config,
+          auth: req.auth,
+        },
+      }),
+    };
   }
 
   async _getGraphQLSchema() {
@@ -83,7 +98,7 @@ class ParseGraphQLServer {
       auth: req.auth,
     };
 
-    const { execute, subscribe, validate, parse, contextFactory } = this.getEnveloped();
+    const { execute, subscribe, validate, parse, contextFactory } = this._getEnveloped();
 
     // Extract the GraphQL parameters from the request
     const { operationName, query, variables } = getGraphQLParameters(request);
@@ -215,23 +230,23 @@ class ParseGraphQLServer {
 
     if (mode === 'graphql-transport-ws') {
       const wsServer = new WSServer({ noServer: true });
-      handleGraphQLWS(wsServer, this.getEnveloped.bind(this), this._getGraphQLSchema.bind(this));
+      handleGraphQLWS(wsServer, this._getEnveloped.bind(this), this._getGraphQLSchema.bind(this));
       wsTuple = ['graphql-transport-ws', wsServer];
     } else if (mode === 'legacy-graphql-ws') {
       const wsServer = new WSServer({ noServer: true });
       handleLegacySubscriptionsTransportWS(
         wsServer,
-        this.getEnveloped.bind(this),
+        this._getEnveloped.bind(this),
         this._getGraphQLSchema.bind(this)
       );
       wsTuple = ['legacy-graphql-ws', wsServer];
     } else if (mode === 'all') {
       const wsServer = new WSServer({ noServer: true });
-      handleGraphQLWS(wsServer, this.getEnveloped.bind(this), this._getGraphQLSchema);
+      handleGraphQLWS(wsServer, this._getEnveloped.bind(this), this._getGraphQLSchema);
       const wsServerLegacy = new WSServer({ noServer: true });
       handleLegacySubscriptionsTransportWS(
         wsServerLegacy,
-        this.getEnveloped.bind(this),
+        this._getEnveloped.bind(this),
         this._getGraphQLSchema.bind(this)
       );
 
