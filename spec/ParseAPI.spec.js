@@ -646,7 +646,7 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('pointer reassign on nested fields is working properly', async () => {
+  it_only_db('mongo')('pointer reassign on nested fields is working properly (#7391)', async () => {
     const obj = new Parse.Object('GameScore'); // This object will include nested pointers
     const ptr1 = new Parse.Object('GameScore');
     await ptr1.save(); // Obtain a unique id

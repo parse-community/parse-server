@@ -332,7 +332,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   }
 
   // Handle atomic values
-  var transformRes = key.includes('.')
+  const transformRes = key.includes('.')
     ? transformInteriorAtom(value)
     : transformTopLevelAtom(value);
   if (transformRes !== CannotTransform) {
