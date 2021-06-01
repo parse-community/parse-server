@@ -3137,7 +3137,7 @@ describe('Parse.Query testing', () => {
     const obj = new TestObject({ foo: 'baz', bar: 1, qux: 2 });
     await obj.save();
     obj._clearServerData();
-    var query1 = new Parse.Query(TestObject);
+    const query1 = new Parse.Query(TestObject);
     query1.select('foo');
     const result1 = await query1.first();
     ok(result1.id, 'expected object id to be set');
@@ -3154,7 +3154,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result2.get('qux'), 2);
 
     obj._clearServerData();
-    var query2 = new Parse.Query(TestObject);
+    const query2 = new Parse.Query(TestObject);
     query2.select();
     const result3 = await query2.first();
     ok(result3.id, 'expected object id to be set');
@@ -3166,7 +3166,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result3.get('qux'), undefined, "expected 'qux' field to be unset");
 
     obj._clearServerData();
-    var query3 = new Parse.Query(TestObject);
+    const query3 = new Parse.Query(TestObject);
     query3.select([]);
     const result4 = await query3.first();
     ok(result4.id, 'expected object id to be set');
@@ -3178,7 +3178,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result4.get('qux'), undefined, "expected 'qux' field to be unset");
 
     obj._clearServerData();
-    var query4 = new Parse.Query(TestObject);
+    const query4 = new Parse.Query(TestObject);
     query4.select(['foo']);
     const result5 = await query4.first();
     ok(result5.id, 'expected object id to be set');
@@ -3190,7 +3190,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result5.get('qux'), undefined, "expected 'qux' field to be unset");
 
     obj._clearServerData();
-    var query5 = new Parse.Query(TestObject);
+    const query5 = new Parse.Query(TestObject);
     query5.select(['foo', 'bar']);
     const result6 = await query5.first();
     ok(result6.id, 'expected object id to be set');
@@ -3198,9 +3198,9 @@ describe('Parse.Query testing', () => {
     strictEqual(result6.get('foo'), 'baz');
     strictEqual(result6.get('bar'), 1);
     strictEqual(result6.get('qux'), undefined, "expected 'qux' field to be unset");
-      
+
     obj._clearServerData();
-    var query6 = new Parse.Query(TestObject);
+    const query6 = new Parse.Query(TestObject);
     query6.select(['foo', 'bar', 'qux']);
     const result7 = await query6.first();
     ok(result7.id, 'expected object id to be set');
@@ -3210,7 +3210,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result7.get('qux'), 2);
 
     obj._clearServerData();
-    var query7 = new Parse.Query(TestObject);
+    const query7 = new Parse.Query(TestObject);
     query7.select('foo', 'bar');
     const result8 = await query7.first();
     ok(result8.id, 'expected object id to be set');
@@ -3220,7 +3220,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result8.get('qux'), undefined, "expected 'qux' field to be unset");
 
     obj._clearServerData();
-    var query8 = new Parse.Query(TestObject);
+    const query8 = new Parse.Query(TestObject);
     query8.select('foo', 'bar', 'qux');
     const result9 = await query8.first();
     ok(result9.id, 'expected object id to be set');
@@ -3366,7 +3366,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result1.get('foo'), undefined, "expected 'bar' field to be unset");
     strictEqual(result1.get('bar'), 1);
     strictEqual(result1.get('qux'), 2);
-    
+
     const result2 = await result1.fetch();
     strictEqual(result2.get('foo'), 'baz');
     strictEqual(result2.get('bar'), 1);
@@ -3407,7 +3407,7 @@ describe('Parse.Query testing', () => {
     strictEqual(result5.get('foo'), undefined, "expected 'bar' field to be unset");
     strictEqual(result5.get('bar'), 1);
     strictEqual(result5.get('qux'), 2);
-    
+
     obj._clearServerData();
     const query5 = new Parse.Query(TestObject);
     query5.exclude(['foo', 'bar']);
@@ -4265,12 +4265,12 @@ describe('Parse.Query testing', () => {
     BarBaz.set('key', 'value');
     BarBaz.set('otherKey', 'value');
     await BarBaz.save();
-    
+
     Foobar.set('foo', 'bar');
     Foobar.set('fizz', 'buzz');
     Foobar.set('barBaz', BarBaz);
     const savedFoobar = await Foobar.save();
-    
+
     const foobarQuery = new Parse.Query('Foobar');
     foobarQuery.exclude(['foo', 'barBaz.otherKey']);
     const foobarObj = await foobarQuery.get(savedFoobar.id);
@@ -4281,7 +4281,7 @@ describe('Parse.Query testing', () => {
       equal(foobarObj.get('barBaz').get('otherKey'), undefined);
     } else {
       fail('barBaz should be set');
-    } 
+    }
   });
 
   it('exclude nested keys 2 level', async () => {
@@ -4292,7 +4292,7 @@ describe('Parse.Query testing', () => {
     Bazoo.set('some', 'thing');
     Bazoo.set('otherSome', 'value');
     await Bazoo.save();
-    
+
     BarBaz.set('key', 'value');
     BarBaz.set('otherKey', 'value');
     BarBaz.set('bazoo', Bazoo);
@@ -4315,7 +4315,7 @@ describe('Parse.Query testing', () => {
       equal(foobarObj.get('barBaz').get('bazoo').get('otherSome'), undefined);
     } else {
       fail('barBaz should be set');
-    } 
+    }
   });
 
   it('include with *', async () => {
