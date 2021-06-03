@@ -713,6 +713,57 @@ describe('miscellaneous', function () {
       );
   });
 
+  it('test afterSave with deeply nested keys (#7384)', async () => {
+    let triggerTime = 0;
+    Parse.Cloud.afterSave('GameScore', function (req) {
+      const object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+      triggerTime++;
+      if (triggerTime == 1) {
+        // Create
+        expect(object.get('a')).toEqual({ b: 0, c: { d: 1 } });
+        expect(object.get('e')).toEqual(2);
+      } else if (triggerTime == 2) {
+        // Update, increment
+        expect(object.get('a')).toEqual({ b: 10, c: { d: 12 } });
+        expect(object.get('e')).toEqual(14);
+      } else if (triggerTime == 3) {
+        // Update, set
+        expect(object.get('a')).toEqual({ b: 100, c: { d: 200 } });
+        expect(object.get('e')).toEqual(300);
+      } else if (triggerTime == 4) {
+        // Update, unset on a.c.d
+        expect(object.get('a')).toEqual({ b: 100, c: {} });
+        expect(object.get('e')).toEqual(300);
+      } else if (triggerTime == 5) {
+        // Update, unset on a.b
+        expect(object.get('a')).toEqual({ c: {} });
+        expect(object.get('e')).toEqual(300);
+      } else {
+        throw new Error();
+      }
+    });
+
+    const obj = new Parse.Object('GameScore');
+    obj.set('a', { b: 0, c: { d: 1 } });
+    obj.set('e', 2);
+    await obj.save();
+    obj.increment('a.b', 10);
+    obj.increment('a.c.d', 11);
+    obj.increment('e', 12);
+    await obj.save();
+    obj.set('a.b', 100);
+    obj.set('a.c.d', 200);
+    obj.set('e', 300);
+    await obj.save();
+    obj.unset('a.c.d');
+    await obj.save();
+    obj.unset('a.b');
+    await obj.save();
+    // Make sure the checking has been triggered
+    expect(triggerTime).toBe(5);
+  });
+
   it('test afterSave get original object on update', function (done) {
     let triggerTime = 0;
     // Register a mock beforeSave hook

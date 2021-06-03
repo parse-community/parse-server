@@ -1589,19 +1589,7 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
   const updatedObject = triggers.inflate(extraData, this.originalData);
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf('.') > 0) {
-      if (typeof data[key].__op === 'string') {
-        updatedObject.set(key, data[key]);
-      } else {
-        // subdocument key with dot notation { 'x.y': v } => { 'x': { 'y' : v } })
-        const splittedKey = key.split('.');
-        const parentProp = splittedKey[0];
-        let parentVal = updatedObject.get(parentProp);
-        if (typeof parentVal !== 'object') {
-          parentVal = {};
-        }
-        parentVal[splittedKey[1]] = data[key];
-        updatedObject.set(parentProp, parentVal);
-      }
+      updatedObject.set(key, data[key]);
       delete data[key];
     }
     return data;
