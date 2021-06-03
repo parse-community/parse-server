@@ -68,7 +68,7 @@ function RestQuery(
   // For example, passing an arg of include=foo.bar,foo.baz could lead to
   // this.include = [['foo'], ['foo', 'baz'], ['foo', 'bar']]
   this.include = [];
-  var keysForInclude = [];
+  let keysForInclude = '';
 
   // If we have keys, we probably want to force some includes (n-1 level)
   // See issue: https://github.com/parse-community/parse-server/issues/3185
@@ -76,6 +76,8 @@ function RestQuery(
     keysForInclude = restOptions.keys;
   }
 
+  // If we have keys, we probably want to force some includes (n-1 level)
+  // in order to exclude specific keys.
   if (Object.prototype.hasOwnProperty.call(restOptions, 'excludeKeys')) {
     keysForInclude += ',' + restOptions.excludeKeys;
   }
