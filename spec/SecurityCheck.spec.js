@@ -1,5 +1,6 @@
 'use strict';
 
+const _ = require('lodash');
 const Utils = require('../lib/Utils');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
@@ -330,12 +331,9 @@ describe('Security Check', () => {
       const checkGroups = [Group];
       const runner = new CheckRunner({ checkGroups, enableCheckLog: true });
       const report = await runner.run();
-      console.log(JSON.stringify(report));
-      expect(report).toBeDefined();
-      expect(report.report).toBeDefined();
-      expect(report.report.groups).toBeDefined();
-      expect(report.report.groups.length).toBe(1);
-      const titles = report.report.groups.flatMap(group => group.checks.map(check => check.title));
+      const titles = _.flatMap(report.report.groups, group =>
+        group.checks.map(check => check.title)
+      );
       expect(titles.length).toBe(2);
 
       for (const title of titles) {
