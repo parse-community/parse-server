@@ -14,6 +14,7 @@ export const Types = {
   afterFind: 'afterFind',
   beforeConnect: 'beforeConnect',
   beforeSubscribe: 'beforeSubscribe',
+  beforeUnsubscribe: 'beforeUnsubscribe',
   afterEvent: 'afterEvent',
 };
 
