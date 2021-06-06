@@ -170,12 +170,16 @@ jobs:
         include:
           - name: PostgreSQL 11, PostGIS 3.0
             POSTGRES_IMAGE: postgis/postgis:11-3.0
+            NODE_VERSION: 14.17.0
           - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
+            NODE_VERSION: 14.17.0
           - name: PostgreSQL 12, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:12-3.1
+            NODE_VERSION: 14.17.0
           - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
+            NODE_VERSION: 14.17.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -199,12 +203,13 @@ jobs:
     env:
       PARSE_SERVER_TEST_DB: postgres
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
+      NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js 10
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
         uses: actions/setup-node@v1
         with:
-          node-version: 10
+          node-version: ${{ matrix.NODE_VERSION }}
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
