@@ -254,7 +254,7 @@ function matchesKeyConstraints(object, key, constraints) {
         break;
       case '$all':
         for (i = 0; i < compareTo.length; i++) {
-          if (object[key].indexOf(compareTo[i]) < 0) {
+          if (object[key] && object[key].indexOf(compareTo[i]) < 0) {
             return false;
           }
         }
