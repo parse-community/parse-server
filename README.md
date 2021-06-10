@@ -123,7 +123,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 
 | Version     | Latest Version | End-of-Life Date | Compatibility      |
 |-------------|----------------|------------------|--------------------|
-| MongoDB 4.0 | 4.0.23         | January 2022     | ✅ Fully compatible |
+| MongoDB 4.0 | 4.0.25         | January 2022     | ✅ Fully compatible |
 | MongoDB 4.2 | 4.2.14         | TBD              | ✅ Fully compatible |
 | MongoDB 4.4 | 4.4.6          | TBD              | ✅ Fully compatible |
   
