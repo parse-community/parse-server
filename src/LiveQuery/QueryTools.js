@@ -253,8 +253,11 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       case '$all':
+        if (!object[key]) {
+          return false;
+        }
         for (i = 0; i < compareTo.length; i++) {
-          if (object[key] && object[key].indexOf(compareTo[i]) < 0) {
+          if (object[key].indexOf(compareTo[i]) < 0) {
             return false;
           }
         }
