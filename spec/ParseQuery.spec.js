@@ -4318,7 +4318,7 @@ describe('Parse.Query testing', () => {
     }
   });
 
-  it('deeply nested Pointers (issue #7413)', async function (done) {
+  it_only_db('mongo')('deeply nested Pointers (issue #7413)', async function (done) {
     const parent = new Parse.Object('Parent');
     const child1 = new Parse.Object('Child');
     const child2 = new Parse.Object('Child');
