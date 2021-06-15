@@ -90,28 +90,12 @@ export class CLPHelper {
 }
 
 export function makeSchema(className: ClassNameType, schema: JSONSchema): JSONSchema {
+  // This function solve two things:
+  // 1. It provide auto-completion to the users who are implementing schemas
+  // 2. It allow forward-compatible point in order to allow future changes to the internal structure of JSONSchema without affecting all the users
+
   return {
     className,
-    fields: {
-      ...schema.fields,
-    },
-    indexes: {
-      ...schema.indexes,
-    },
-    classLevelPermissions: {
-      find: {},
-      count: {},
-      get: {},
-      update: {},
-      create: {},
-      delete: {},
-      addField: {},
-      protectedFields: {
-        // '*': [
-        //     'symbol',
-        // ],
-      },
-      ...schema.classLevelPermissions,
-    },
+    ...schema,
   };
 }
