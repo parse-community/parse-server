@@ -10,7 +10,7 @@ import * as Migrations from './Migrations';
 
 export class DefinedSchemas {
   config: ParseServerOptions;
-  migrationOptions: Migrations.MigrationsOptions;
+  migrationsOptions: Migrations.MigrationsOptions;
   localSchemas: Migrations.JSONSchema[];
   retries: number;
   maxRetries: number;
