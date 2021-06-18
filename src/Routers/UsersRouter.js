@@ -436,14 +436,9 @@ export class UsersRouter extends ClassesRouter {
       },
       err => {
         if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
-          // Return success so that this endpoint can't
-          // be used to enumerate valid emails
-          return Promise.resolve({
-            response: {},
-          });
-        } else {
-          throw err;
+          err.message = `A user with the email ${email} does not exist.`;
         }
+        throw err;
       }
     );
   }

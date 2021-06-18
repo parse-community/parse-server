@@ -1082,4 +1082,22 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         done();
       });
   });
+
+  it('should throw on an invalid reset password', async () => {
+    await reconfigureServer({
+      appName: 'coolapp',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+    await expectAsync(Parse.User.requestPasswordReset('test@example.com')).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'A user with the email test@example.com does not exist.'
+      )
+    );
+  });
 });
