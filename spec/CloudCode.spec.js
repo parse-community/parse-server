@@ -2546,7 +2546,7 @@ describe('afterFind hooks', () => {
         foo: 'bar',
       },
     });
-    const result = await req;
+    await req;
     expect(calledBefore).toBe(true);
     expect(calledAfter).toBe(true);
   });

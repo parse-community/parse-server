@@ -24,7 +24,6 @@ const getMountForRequest = function (req) {
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
-
   var info = {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
@@ -35,7 +34,7 @@ export function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
     clientVersion: req.get('X-Parse-Client-Version'),
-    context: {},
+    context: req.get('X-Parse-Context') == null ? {} : JSON.parse(req.get('X-Parse-Context')),
   };
 
   var basicAuth = httpAuth(req);
