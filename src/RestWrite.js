@@ -509,6 +509,11 @@ RestWrite.prototype.handleAuthData = function (authData) {
             response: userResult,
             location: this.location(),
           };
+
+          // Set the query object so the afterSave hook gets called properly with the
+          // "original" attribute.
+          this.query = { objectId: userResult.objectId };
+
           // Run beforeLogin hook before storing any updates
           // to authData on the db; changes to userResult
           // will be ignored.
