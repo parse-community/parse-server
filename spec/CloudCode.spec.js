@@ -2519,6 +2519,38 @@ describe('afterFind hooks', () => {
       });
   });
 
+  it('should expose context in beforeSave/afterSave via header', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
+      expect(req.context.otherKey).toBe(1);
+      expect(req.context.key).toBe('value');
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
+      expect(req.context.otherKey).toBe(1);
+      expect(req.context.key).toBe('value');
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Context': '{"key":"value","otherKey":1}',
+      },
+      body: {
+        foo: 'bar',
+      },
+    });
+    const result = await req;
+    expect(calledBefore).toBe(true);
+    expect(calledAfter).toBe(true);
+  });
+
   it('should expose context in before and afterSave', async () => {
     let calledBefore = false;
     let calledAfter = false;
