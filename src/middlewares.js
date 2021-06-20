@@ -34,7 +34,7 @@ export function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
     clientVersion: req.get('X-Parse-Client-Version'),
-    context: req.get('X-Parse-Context') == null ? {} : JSON.parse(req.get('X-Parse-Context')),
+    context: req.get('X-Parse-Cloud-Context') == null ? {} : JSON.parse(req.get('X-Parse-Cloud-Context')),
   };
 
   var basicAuth = httpAuth(req);

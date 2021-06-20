@@ -2540,7 +2540,7 @@ describe('afterFind hooks', () => {
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
-        'X-Parse-Context': '{"key":"value","otherKey":1}',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
       },
       body: {
         foo: 'bar',
