@@ -163,7 +163,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       },
     });
     response = await request(options);
-    explain = response.data.results;
+    explain = response.data.results[0];
     expect(explain.queryPlanner.winningPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
