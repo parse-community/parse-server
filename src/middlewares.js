@@ -24,6 +24,7 @@ const getMountForRequest = function (req) {
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
+
   var info = {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
