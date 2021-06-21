@@ -467,11 +467,11 @@ export function promiseEnsureIdempotency(req) {
 }
 
 function invalidRequest(req, res) {
-  res.status(403);
+  res.status(400);
   res.end('{"error":"unauthorized"}');
 }
 
 function malformedContext(req, res) {
-  res.status(500);
+  res.status(400);
   res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
 }
