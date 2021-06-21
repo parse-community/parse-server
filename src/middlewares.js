@@ -29,6 +29,9 @@ export function handleParseHeaders(req, res, next) {
   if (req.get('X-Parse-Cloud-Context') != null) {
     try {
       context = JSON.parse(req.get('X-Parse-Cloud-Context'));
+      if (typeof context !== 'object') {
+        throw 'Context is not an object';
+      }
     } catch (e) {
       return malformedContext(req, res);
     }
@@ -119,6 +122,9 @@ export function handleParseHeaders(req, res, next) {
         } else {
           try {
             info.context = JSON.parse(req.body._context);
+            if (typeof info.context !== 'object') {
+              throw 'Context is not an object';
+            }
           } catch (e) {
             return malformedContext(req, res);
           }
