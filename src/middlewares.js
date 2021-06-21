@@ -24,6 +24,7 @@ const getMountForRequest = function (req) {
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
+
   let context = {};
   if (req.get('X-Parse-Cloud-Context') != null) {
     try {
