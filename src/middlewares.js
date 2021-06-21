@@ -467,7 +467,7 @@ export function promiseEnsureIdempotency(req) {
 }
 
 function invalidRequest(req, res) {
-  res.status(400);
+  res.status(403);
   res.end('{"error":"unauthorized"}');
 }
 
