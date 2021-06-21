@@ -24,7 +24,14 @@ const getMountForRequest = function (req) {
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
-
+  let context = {};
+  if (req.get('X-Parse-Cloud-Context') != null) {
+    try {
+      context = JSON.parse(req.get('X-Parse-Cloud-Context'));
+    } catch (e) {
+      return malformedContext(req, res);
+    }
+  }
   var info = {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
@@ -35,7 +42,7 @@ export function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
     clientVersion: req.get('X-Parse-Client-Version'),
-    context: req.get('X-Parse-Cloud-Context') == null ? {} : JSON.parse(req.get('X-Parse-Cloud-Context')),
+    context: context,
   };
 
   var basicAuth = httpAuth(req);
@@ -105,8 +112,16 @@ export function handleParseHeaders(req, res, next) {
         info.masterKey = req.body._MasterKey;
         delete req.body._MasterKey;
       }
-      if (req.body._context && req.body._context instanceof Object) {
-        info.context = req.body._context;
+      if (req.body._context) {
+        if (req.body._context instanceof Object) {
+          info.context = req.body._context;
+        } else {
+          try {
+            info.context = JSON.parse(req.body._context);
+          } catch (e) {
+            return malformedContext(req, res);
+          }
+        }
         delete req.body._context;
       }
       if (req.body._ContentType) {
@@ -453,4 +468,9 @@ export function promiseEnsureIdempotency(req) {
 function invalidRequest(req, res) {
   res.status(403);
   res.end('{"error":"unauthorized"}');
+}
+
+function malformedContext(req, res) {
+  res.status(500);
+  res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
 }
