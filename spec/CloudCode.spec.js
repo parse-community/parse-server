@@ -2616,6 +2616,39 @@ describe('afterFind hooks', () => {
     expect(calledAfter).toBe(true);
   });
 
+  it('should throw error if context body is malformed', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', () => {
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', () => {
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
+      },
+      body: {
+        foo: 'bar',
+        _ApplicationId: 'test',
+        _context: 'key',
+      },
+    });
+    try {
+      await req;
+      fail('Should have thrown error');
+    } catch (e) {
+      expect(e).toBeDefined();
+      expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
+    }
+    expect(calledBefore).toBe(false);
+    expect(calledAfter).toBe(false);
+  });
+
   it('should expose context in before and afterSave', async () => {
     let calledBefore = false;
     let calledAfter = false;
@@ -2919,47 +2952,6 @@ describe('afterLogin hook', () => {
     const obj = new TestObject();
     obj.set('_context', { hello: 'world' });
     await obj.save(null, { context: { a: 'a' } });
-  });
-
-  xit('should throw error if _context option is malformed', async () => {
-    let calledBefore = false;
-    let calledAfter = false;
-    Parse.Cloud.beforeSave('TestObject', () => {
-      calledBefore = true;
-    });
-    Parse.Cloud.afterSave('TestObject', () => {
-      calledAfter = true;
-    });
-    const obj = new TestObject();
-    try {
-      await obj.save(null, { context: "{ a: 'a' }" });
-      fail('Should have thrown error');
-    } catch (e) {
-      expect(e).toBeDefined();
-    }
-    expect(calledBefore).toBe(false);
-    expect(calledAfter).toBe(false);
-  });
-
-  xit('should throw error if _context body is malformed', async () => {
-    let calledBefore = false;
-    let calledAfter = false;
-    Parse.Cloud.beforeSave('TestObject', () => {
-      calledBefore = true;
-    });
-    Parse.Cloud.afterSave('TestObject', () => {
-      calledAfter = true;
-    });
-    const obj = new TestObject();
-    try {
-      obj.set('_context', "{ a: 'a' }");
-      await obj.save();
-      fail('Should have thrown error');
-    } catch (e) {
-      expect(e).toBeDefined();
-    }
-    expect(calledBefore).toBe(false);
-    expect(calledAfter).toBe(false);
   });
 
   it('should have access to context when saving a new object', async () => {
