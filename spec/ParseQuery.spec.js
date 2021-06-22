@@ -5214,8 +5214,8 @@ describe('Parse.Query testing', () => {
     const query = new Parse.Query('_User');
     query.equalTo('objectId', user.id);
     query.explain();
-    //Verify
     const results = await query.find();
+    // Validate
     expect(results[0].executionStats).not.toBeUndefined();
   });
 });
