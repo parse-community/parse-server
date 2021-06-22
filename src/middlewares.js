@@ -29,7 +29,7 @@ export function handleParseHeaders(req, res, next) {
   if (req.get('X-Parse-Cloud-Context') != null) {
     try {
       context = JSON.parse(req.get('X-Parse-Cloud-Context'));
-      if (typeof context !== 'object') {
+      if (Object.prototype.toString.call(context) !== '[object Object]') {
         throw 'Context is not an object';
       }
     } catch (e) {
@@ -122,7 +122,7 @@ export function handleParseHeaders(req, res, next) {
         } else {
           try {
             info.context = JSON.parse(req.body._context);
-            if (typeof info.context !== 'object') {
+            if (Object.prototype.toString.call(info.context) !== '[object Object]') {
               throw 'Context is not an object';
             }
           } catch (e) {
