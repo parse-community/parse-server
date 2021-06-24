@@ -41,7 +41,7 @@
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
     "jwks-rsa": "1.12.3",
-    "ldapjs": "2.2.4",
+    "ldapjs": "2.3.0",
     "lodash": "4.17.21",
     "lru-cache": "5.1.1",
     "mime": "2.5.2",
