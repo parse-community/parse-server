@@ -348,8 +348,7 @@ export function handleParseErrors(err, req, res, next) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
-    let httpStatus,
-      message = err.message;
+    let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
       case Parse.Error.INTERNAL_SERVER_ERROR:
@@ -361,15 +360,8 @@ export function handleParseErrors(err, req, res, next) {
       default:
         httpStatus = 400;
     }
-    // capitalize the message if the error code isn't missing field field
-    if (err.code !== 142) {
-      message = message
-        .split('')
-        .map((e, i) => (i === 0 ? e.toUpperCase() : e))
-        .join('');
-    }
     res.status(httpStatus);
-    res.json({ code: err.code, error: message });
+    res.json({ code: err.code, error: err.message });
     log.error('Parse error: ', err);
   } else if (err.status && err.message) {
     res.status(err.status);
