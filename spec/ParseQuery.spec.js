@@ -1137,6 +1137,23 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('multiple notEqualTo queries', function (done) {
+    const makeBoxedNumber = function (i) {
+      return new BoxedNumber({ number: i });
+    };
+    Parse.Object.saveAll([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber)).then(function () {
+      const query = new Parse.Query(BoxedNumber);
+      query.notEqualTo('number', 1);
+      query.notEqualTo('number', 2);
+      query.notEqualTo('number', 3);
+      query.notEqualTo('number', 4);
+      query.find().then(function (results) {
+        equal(results.length, 5);
+        done();
+      });
+    });
+  });
+
   it('notEqualTo zero queries', done => {
     const makeBoxedNumber = i => {
       return new BoxedNumber({ number: i });
