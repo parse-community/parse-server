@@ -130,6 +130,23 @@ class Utils {
 
   /**
    * Creates an object with all permutations of the original keys.
+   * For example, this definition:
+   * ```
+   * {
+   *   a: [true, false],
+   *   b: [1, 2],
+   *   c: ['x']
+   * }
+   * ```
+   * permutates to:
+   * ```
+   * [
+   *   { a: true, b: 1, c: 'x' },
+   *   { a: true, b: 2, c: 'x' },
+   *   { a: false, b: 1, c: 'x' },
+   *   { a: false, b: 2, c: 'x' }
+   * ]
+   * ```
    * @param {Object} object The object to permutate.
    * @param {Integer} [index=0] The current key index.
    * @param {Object} [current={}] The current result entry being composed.
@@ -145,7 +162,7 @@ class Utils {
       const nextIndex = index + 1;
 
       if (nextIndex < keys.length) {
-        this.getObjectKeyPermutations(object, nextIndex, current, results);
+        Utils.getObjectKeyPermutations(object, nextIndex, current, results);
       } else {
         const result = Object.assign({}, current);
         results.push(result);
@@ -178,7 +195,7 @@ class Utils {
       const type = types[key];
       const isOptional = !!type.o;
       const param = params[key];
-      if (!(isOptional && param == null) && (!type.v(param))) {
+      if (!(isOptional && param == null) && !type.v(param)) {
         throw `Invalid parameter ${key} must be of type ${type.t} but is ${typeof param}`;
       }
     }

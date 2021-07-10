@@ -32,6 +32,28 @@ export class UsersRouter extends ClassesRouter {
   }
 
   /**
+   * After retrieving a user directly from the database, we need to remove the
+   * password from the object (for security), and fix an issue some SDKs have
+   * with null values
+   */
+  _sanitizeAuthData(user) {
+    delete user.password;
+
+    // Sometimes the authData still has null on that keys
+    // https://github.com/parse-community/parse-server/issues/935
+    if (user.authData) {
+      Object.keys(user.authData).forEach(provider => {
+        if (user.authData[provider] === null) {
+          delete user.authData[provider];
+        }
+      });
+      if (Object.keys(user.authData).length == 0) {
+        delete user.authData;
+      }
+    }
+  }
+
+  /**
    * Validates a password request in login and verifyPassword
    * @param {Object} req The request
    * @returns {Object} User object
@@ -117,20 +139,7 @@ export class UsersRouter extends ClassesRouter {
             throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
           }
 
-          delete user.password;
-
-          // Sometimes the authData still has null on that keys
-          // https://github.com/parse-community/parse-server/issues/935
-          if (user.authData) {
-            Object.keys(user.authData).forEach(provider => {
-              if (user.authData[provider] === null) {
-                delete user.authData[provider];
-              }
-            });
-            if (Object.keys(user.authData).length == 0) {
-              delete user.authData;
-            }
-          }
+          this._sanitizeAuthData(user);
 
           return resolve(user);
         })
@@ -240,6 +249,57 @@ export class UsersRouter extends ClassesRouter {
       null,
       req.config
     );
+
+    return { response: user };
+  }
+
+  /**
+   * This allows master-key clients to create user sessions without access to
+   * user credentials. This enables systems that can authenticate access another
+   * way (API key, app administrators) to act on a user's behalf.
+   *
+   * We create a new session rather than looking for an existing session; we
+   * want this to work in situations where the user is logged out on all
+   * devices, since this can be used by automated systems acting on the user's
+   * behalf.
+   *
+   * For the moment, we're omitting event hooks and lockout checks, since
+   * immediate use cases suggest /loginAs could be used for semantically
+   * different reasons from /login
+   */
+  async handleLogInAs(req) {
+    if (!req.auth.isMaster) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
+    }
+
+    const userId = req.body.userId || req.query.userId;
+    if (!userId) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_VALUE,
+        'userId must not be empty, null, or undefined'
+      );
+    }
+
+    const queryResults = await req.config.database.find('_User', { objectId: userId });
+    const user = queryResults[0];
+    if (!user) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'user not found');
+    }
+
+    this._sanitizeAuthData(user);
+
+    const { sessionData, createSession } = RestWrite.createSession(req.config, {
+      userId,
+      createdWith: {
+        action: 'login',
+        authProvider: 'masterkey',
+      },
+      installationId: req.info.installationId,
+    });
+
+    user.sessionToken = sessionData.sessionToken;
+
+    await createSession();
 
     return { response: user };
   }
@@ -417,6 +477,9 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('POST', '/login', req => {
       return this.handleLogIn(req);
+    });
+    this.route('POST', '/loginAs', req => {
+      return this.handleLogInAs(req);
     });
     this.route('POST', '/logout', req => {
       return this.handleLogOut(req);
