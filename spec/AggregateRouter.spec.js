@@ -95,11 +95,11 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
-  it("support stage name not starting with '$'", () => {
+  it("support group stage using '_id'", () => {
     const body = {
-      match: { someKey: 'whatever' },
+      group: { _id: {} },
     };
-    const expected = [{ $match: { someKey: 'whatever' } }];
+    const expected = [{ $group: { _id: {} } }];
     const result = AggregateRouter.getPipeline(body);
     expect(result).toEqual(expected);
   });
