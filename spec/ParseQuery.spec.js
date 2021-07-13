@@ -4330,23 +4330,19 @@ describe('Parse.Query testing', () => {
     ]);
     await parent.save();
 
-    // equalTo
     const resultsEq = await new Parse.Query('Parent').equalTo('children.child', child1).find();
     expect(resultsEq.length).toBe(1);
 
-    // direct subDocument equalTo
     const resultsSubDocument = await new Parse.Query('Parent')
       .equalTo('subDocument.child', child1)
       .find();
     expect(resultsSubDocument.length).toBe(1);
 
-    // subDocument in
     const resultsSubDocumentIn = await new Parse.Query('Parent')
       .containedIn('subDocument.child', [child1])
       .find();
     expect(resultsSubDocumentIn.length).toBe(1);
 
-    // containedIn
     const results = await new Parse.Query('Parent').containedIn('children.child', [child1]).find();
     expect(results.length).toBe(1);
     done();

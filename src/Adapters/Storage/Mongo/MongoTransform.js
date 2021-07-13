@@ -771,7 +771,6 @@ function transformConstraint(constraint, restKey, field, count = false) {
     return CannotTransform;
   }
 
-  // transformer
   const inArray = field && field.type && field.type === 'Array';
   const inSubDocument = restKey.includes('.');
   const transformFunction =
