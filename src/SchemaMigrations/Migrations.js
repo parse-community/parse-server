@@ -20,15 +20,7 @@ export interface FieldType {
   targetClass?: string;
 }
 
-export type CLPType =
-  | '*'
-  | ('find' | 'count' | 'get' | 'update' | 'create' | 'delete') /*| 'addField'*/[];
 type ClassNameType = '_User' | '_Role' | string;
-
-export interface CLPInterface {
-  requiresAuthentication?: boolean;
-  '*'?: boolean;
-}
 
 export interface ProtectedFieldsInterface {
   [key: string]: string[];
@@ -49,43 +41,47 @@ export interface MigrationsOptions {
   recreateModifiedFields: ?boolean;
 }
 
+export type CLPOperation =
+  | 'find'
+  | 'count'
+  | 'get'
+  | 'update'
+  | 'create'
+  | 'delete' /*| 'addField'*/;
+// @Typescript 4.1+ // type CLPPermission = 'requiresAuthentication' | '*' |  `user:${string}` | `role:${string}`
+
+type CLPValue = { [key: string]: boolean };
+type CLPData = { [key: string]: CLPOperation[] };
+type CLPInterface = { [key: string]: CLPValue };
+
 export interface JSONSchema {
   className: ClassNameType;
   fields?: { [key: string]: FieldType };
   indexes?: IndexesInterface;
   classLevelPermissions?: {
-    find?: CLPInterface,
-    count?: CLPInterface,
-    get?: CLPInterface,
-    update?: CLPInterface,
-    create?: CLPInterface,
-    delete?: CLPInterface,
-    addField?: CLPInterface,
+    find?: CLPValue,
+    count?: CLPValue,
+    get?: CLPValue,
+    update?: CLPValue,
+    create?: CLPValue,
+    delete?: CLPValue,
+    addField?: CLPValue,
     protectedFields?: ProtectedFieldsInterface,
   };
 }
 
-function CLP(ops: CLPType, value: CLPInterface): CLPInterface {
-  const v: CLPInterface = {};
+export class CLP {
+  static allow(perms: CLPData): CLPInterface {
+    const out = {};
 
-  if (ops === '*') {
-    ops = ['find', 'count', 'get', 'update', 'create', 'delete'];
-  }
+    for (const [perm, ops] of Object.entries(perms)) {
+      for (const op of ops) {
+        out[op] = out[op] || {};
+        out[op][perm] = true;
+      }
+    }
 
-  ops.forEach(op => {
-    v[op] = value;
-  });
-
-  return v;
-}
-
-export class CLPHelper {
-  static requiresAuthentication(ops: CLPType): CLPInterface {
-    return CLP(ops, { requiresAuthentication: true });
-  }
-
-  static requiresAnonymous(ops: CLPType): CLPInterface {
-    return CLP(ops, { '*': true });
+    return out;
   }
 }
 

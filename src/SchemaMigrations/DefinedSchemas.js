@@ -21,6 +21,10 @@ export class DefinedSchemas {
     this.migrationsOptions = migrationsOptions;
 
     if (migrationsOptions && migrationsOptions.schemas) {
+      if (!Array.isArray(migrationsOptions.schemas)) {
+        throw `"migrations.schemas" must be an array of schemas`;
+      }
+
       this.localSchemas = migrationsOptions.schemas;
     }
 
@@ -63,6 +67,7 @@ export class DefinedSchemas {
   async execute() {
     let timeout = null;
     try {
+      logger.info('Running Migrations');
       // Set up a time out in production
       // if we fail to get schema
       // pm2 or K8s and many other process managers will try to restart the process
@@ -82,9 +87,11 @@ export class DefinedSchemas {
 
       this.checkForMissingSchemas();
       await this.enforceCLPForNonProvidedClass();
+
+      logger.info('Running Migrations Completed');
     } catch (e) {
       if (timeout) clearTimeout(timeout);
-      if (this.retries < this.maxRetries) {
+      if (!e && this.retries < this.maxRetries) {
         this.retries++;
         // first retry 1sec, 2sec, 3sec total 6sec retry sequence
         // retry will only happen in case of deploying multi parse server instance
@@ -93,8 +100,11 @@ export class DefinedSchemas {
         await this.wait(1000 * this.retries);
         await this.execute();
       } else {
-        logger.error(e);
-        if (process.env.NODE_ENV === 'production') process.exit(1);
+        if (e) {
+          logger.error(`Failed to run migrations ${e}`);
+        }
+
+        if (this.migrationsOptions.strict) process.exit(1);
       }
     }
   }
@@ -110,7 +120,16 @@ export class DefinedSchemas {
       c => !localSchemas.includes(c) && !systemClasses.includes(c)
     );
 
-    if (missingSchemas.length) {
+    if (new Set(localSchemas).size !== localSchemas.length) {
+      logger.error(
+        `The list of schemas provided contains duplicated "className"  "${localSchemas.join(
+          '","'
+        )}"`
+      );
+      process.exit(1);
+    }
+
+    if (this.migrationsOptions.strict && missingSchemas.length) {
       logger.warn(
         `The following schemas are currently present in the database, but not explicitly defined in a schema: "${missingSchemas.join(
           '", "'
@@ -159,7 +178,7 @@ export class DefinedSchemas {
       try {
         await this.saveSchema(localSchema);
       } catch (e) {
-        logger.error(`Error while saving Schema for type ${cloudSchema.className}: ${e}`);
+        logger.error(`Error while saving Schema for type ${localSchema.className}: ${e}`);
         throw e;
       }
     }
@@ -340,14 +359,6 @@ export class DefinedSchemas {
     }
     // Use spread to avoid read only issue (encountered by Moumouls using directAccess)
     const clp = { ...localSchema.classLevelPermissions } || {};
-    const cloudCLP = (cloudSchema && cloudSchema.classLevelPermissions) || {};
-    // Try to inject default CLPs
-    const CLPKeys = ['find', 'count', 'get', 'create', 'update', 'delete', 'addField'];
-    CLPKeys.forEach(key => {
-      if (!clp[key]) {
-        clp[key] = cloudCLP[key] || { '*': false };
-      }
-    });
     // To avoid inconsistency we need to remove all rights on addField
     clp.addField = {};
     newLocalSchema.setCLP(clp);
