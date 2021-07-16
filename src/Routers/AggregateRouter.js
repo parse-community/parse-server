@@ -3,6 +3,7 @@ import rest from '../rest';
 import * as middleware from '../middlewares';
 import Parse from 'parse/node';
 import UsersRouter from './UsersRouter';
+import Deprecator from '../Deprecator/Deprecator';
 
 export class AggregateRouter extends ClassesRouter {
   handleFind(req) {
@@ -92,7 +93,10 @@ export class AggregateRouter extends ClassesRouter {
   static transformStage(stageName, stage) {
     if (stageName === 'group') {
       if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
-        // TODO: show deprecation warning for `objectId`
+        Deprecator.logRuntimeDeprecation({
+          usage: 'The use of objectId in aggregation stage $group',
+          solution: 'Use _id instead.',
+        });
         stage[stageName]._id = stage[stageName].objectId;
         delete stage[stageName].objectId;
       }
@@ -104,7 +108,12 @@ export class AggregateRouter extends ClassesRouter {
       }
     }
 
-    // TODO: show deprecation warning for missing `$`
+    if (stageName[0] !== '$') {
+      Deprecator.logRuntimeDeprecation({
+        usage: "Using aggregation stages without a leading '$'",
+        solution: `Try $${stageName} instead.`,
+      });
+    }
     const key = stageName[0] === '$' ? stageName : `$${stageName}`;
     return { [key]: stage[stageName] };
   }
