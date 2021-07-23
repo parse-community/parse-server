@@ -97,7 +97,7 @@ describe('OAuth', function () {
       consumer_key: 'invalid_consumer_key',
       consumer_secret: 'invalid_consumer_secret',
     };
-    const path = '/1.1/account/settings.json';
+    const path = '/1.1/favorites/list.json';
     const params = { lang: 'en' };
     const oauthClient = new OAuth(options);
     oauthClient.get(path, params).then(function (data) {
