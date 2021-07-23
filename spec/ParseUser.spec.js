@@ -793,7 +793,7 @@ describe('Parse.User testing', () => {
 
     user.set('username', 'test');
     await user.save();
-    equal(Object.keys(user.attributes).length, 6);
+    equal(Object.keys(user.attributes).length, 5);
     ok(user.attributes['username']);
     ok(user.attributes['email']);
     await user.destroy();
