@@ -18,7 +18,7 @@
     <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
     <a href="https://snyk.io/test/github/parse-community/parse-server"><img alt="Snyk badge" src="https://snyk.io/test/github/parse-community/parse-server/badge.svg"></a>
     <a href="https://nodejs.org/"><img alt="Node.js 12,14,15" src="https://img.shields.io/badge/nodejs-12,_14,_15-green.svg?logo=node.js&style=flat"></a>
-    <a href="https://www.mongodb.com/"><img alt="MongoDB 4.0,4.2,4.4" src="https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4-green.svg?logo=mongodb&style=flat"></a>
+    <a href="https://www.mongodb.com/"><img alt="MongoDB 4.0,4.2,4.4,5.0" src="https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat"></a>
    <a href="https://www.postgresql.org"> <img alt="PostgreSQL 11,12,13" src="https://img.shields.io/badge/postgresql-11,_12,_13-green.svg?logo=postgresql&style=flat"></a>
 </p>
 
