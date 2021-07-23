@@ -38,8 +38,7 @@ async function checkMongoDbVersions() {
       '~4.3.0', // Development release according to MongoDB support
       '~4.7.0', // Development release according to MongoDB support
 
-      '4.4.5', // Temporarily disabled because not yet available for download via mongodb-runner
-      '4.0.24', // Temporarily disabled because not yet available for download via mongodb-runner
+      '4.0.26', // Temporarily disabled because not yet available for download via mongodb-runner
     ],
   }).check();
 }
