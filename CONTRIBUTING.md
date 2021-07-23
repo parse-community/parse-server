@@ -182,7 +182,9 @@ If you change or remove an existing feature that would lead to a breaking change
   - Use a default value that falls back to existing behavior.
   - Add a deprecation definition in `Deprecator/Deprecations.js` that will output a deprecation warning log message on Parse Server launch, for example:
     > DeprecationWarning: The Parse Server option 'example' will be removed in a future release.
-  
+
+For deprecations that can only be determined ad-hoc during runtime, for example Parse Query syntax deprecations, use the `Deprecator.logRuntimeDeprecation()` method.
+
 Deprecations become breaking changes after notifying developers through deprecation warnings for at least one entire previous major release. For example:
   - `4.5.0` is the current version
   - `4.6.0` adds a new optional feature and a deprecation warning for the existing feature
