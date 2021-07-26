@@ -88,7 +88,7 @@ async function verifyIdToken({id_token: token, id}, {clientId}) {
     );
   }
 
-  if (jwtClaims.sub !== id) {
+  if (typeof id != "undefined" && jwtClaims.sub !== id) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
   }
 
