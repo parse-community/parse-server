@@ -26,7 +26,7 @@ function getGoogleKeyByKeyId(keyId) {
           data += chunk.toString('utf8');
         });
         res.on('end', () => {
-          const {keys} = JSON.parse(data);
+          const { keys } = JSON.parse(data);
           const pems = keys.reduce(
             (pems, { n: modulus, e: exposant, kid }) =>
               Object.assign(pems, {
@@ -53,7 +53,7 @@ function getGoogleKeyByKeyId(keyId) {
 }
 
 function getHeaderFromToken(token) {
-  const decodedToken = jwt.decode(token, {complete: true});
+  const decodedToken = jwt.decode(token, { complete: true });
 
   if (!decodedToken) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `provided token does not decode as JWT`);
@@ -62,7 +62,7 @@ function getHeaderFromToken(token) {
   return decodedToken.header;
 }
 
-async function verifyIdToken({id_token: token, id}, {clientId}) {
+async function verifyIdToken({ id_token: token, id }, { clientId }) {
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
@@ -88,7 +88,7 @@ async function verifyIdToken({id_token: token, id}, {clientId}) {
     );
   }
 
-  if (typeof id != "undefined" && jwtClaims.sub !== id) {
+  if (typeof id != 'undefined' && jwtClaims.sub !== id) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
   }
 
@@ -103,30 +103,35 @@ async function verifyIdToken({id_token: token, id}, {clientId}) {
 }
 
 // Old way to validate an auth_token, only used for development purpose
-function validateAuthToken({id,access_token}) {
+function validateAuthToken({ id, access_token }) {
   return googleRequest('tokeninfo?access_token=' + access_token).then(response => {
     if (response && (response.sub == id || response.user_id == id)) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND, 'Google auth is invalid for this user.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Google auth is invalid for this user.');
   });
 }
 
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData({id, id_token, access_token}, options) {
+function validateAuthData({ id, id_token, access_token }, options) {
+  if (!id_token && !access_token) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `id_token or access_token is missing for this user.`
+    );
+  }
   // Returns a promise that fulfills if this user id is valid.
   if (id_token) {
-    return verifyIdToken({id, id_token}, options);
+    return verifyIdToken({ id, id_token }, options);
   } else {
-    return validateAuthToken({id, access_token}).then(
+    return validateAuthToken({ id, access_token }).then(
       () => {
         // Validation with auth token worked
         return;
       },
       () => {
         // Try with the id_token param
-        return verifyIdToken({id, id_token: access_token}, options);
+        return verifyIdToken({ id, id_token: access_token }, options);
       }
     );
   }
@@ -139,9 +144,8 @@ function validateAppId() {
 
 module.exports = {
   validateAppId: validateAppId,
-  validateAuthData: validateAuthData
+  validateAuthData: validateAuthData,
 };
-
 
 // Helpers functions to convert the RSA certs to PEM (from jwks-rsa)
 function rsaPublicKeyToPEM(modulusB64, exponentB64) {
