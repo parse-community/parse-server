@@ -115,10 +115,10 @@ function validateAuthToken({ id, access_token }) {
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData({ id, id_token, access_token }, options) {
   if (!id_token && !access_token) {
-    throw new Parse.Error(
+    return Promise.reject(new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       `id_token or access_token is missing for this user.`
-    );
+    ));
   }
   // Returns a promise that fulfills if this user id is valid.
   if (id_token) {
