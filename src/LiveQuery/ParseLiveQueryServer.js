@@ -170,8 +170,10 @@ class ParseLiveQueryServer {
             };
             const trigger = getTrigger(className, 'afterEvent', Parse.applicationId);
             if (trigger) {
-              const auth = await this.getAuthForSessionToken(res.sessionToken);
-              res.user = auth.user;
+              const auth = await this.getAuthFromClient(client, requestId);
+              if (auth && auth.user) {
+                res.user = auth.user;
+              }
               if (res.object) {
                 res.object = Parse.Object.fromJSON(res.object);
               }
@@ -317,8 +319,10 @@ class ParseLiveQueryServer {
               if (res.original) {
                 res.original = Parse.Object.fromJSON(res.original);
               }
-              const auth = await this.getAuthForSessionToken(res.sessionToken);
-              res.user = auth.user;
+              const auth = await this.getAuthFromClient(client, requestId);
+              if (auth && auth.user) {
+                res.user = auth.user;
+              }
               await runTrigger(trigger, `afterEvent.${className}`, res, auth);
             }
             if (!res.sendEvent) {
@@ -579,6 +583,24 @@ class ParseLiveQueryServer {
       });
   }
 
+  async getAuthFromClient(client: any, requestId: number, sessionToken: string) {
+    const getSessionFromClient = () => {
+      const subscriptionInfo = client.getSubscriptionInfo(requestId);
+      if (typeof subscriptionInfo === 'undefined') {
+        return client.sessionToken;
+      }
+      return subscriptionInfo.sessionToken || client.sessionToken;
+    };
+    if (!sessionToken) {
+      sessionToken = getSessionFromClient();
+    }
+    if (!sessionToken) {
+      return;
+    }
+    const { auth } = await this.getAuthForSessionToken(sessionToken);
+    return auth;
+  }
+
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
     if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
@@ -631,8 +653,10 @@ class ParseLiveQueryServer {
       };
       const trigger = getTrigger('@Connect', 'beforeConnect', Parse.applicationId);
       if (trigger) {
-        const auth = await this.getAuthForSessionToken(req.sessionToken);
-        req.user = auth.user;
+        const auth = await this.getAuthFromClient(client, request.requestId, req.sessionToken);
+        if (auth && auth.user) {
+          req.user = auth.user;
+        }
         await runTrigger(trigger, `beforeConnect.@Connect`, req, auth);
       }
       parseWebsocket.clientId = clientId;
@@ -690,8 +714,10 @@ class ParseLiveQueryServer {
     try {
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
-        const auth = await this.getAuthForSessionToken(request.sessionToken);
-        request.user = auth.user;
+        const auth = await this.getAuthFromClient(client, request.requestId, request.sessionToken);
+        if (auth && auth.user) {
+          request.user = auth.user;
+        }
 
         const parseQuery = new Parse.Query(className);
         parseQuery.withJSON(request.query);
