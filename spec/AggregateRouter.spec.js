@@ -1,6 +1,7 @@
 const AggregateRouter = require('../lib/Routers/AggregateRouter').AggregateRouter;
 
 describe('AggregateRouter', () => {
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Array', () => {
     const body = [
       {
@@ -12,6 +13,7 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Object', () => {
     const body = {
       group: { objectId: {} },
@@ -21,6 +23,7 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Pipeline Operator (Array)', () => {
     const body = {
       pipeline: [
@@ -34,6 +37,7 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Pipeline Operator (Object)', () => {
     const body = {
       pipeline: {
@@ -45,6 +49,7 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline fails multiple keys in Array stage ', () => {
     const body = [
       {
@@ -59,6 +64,7 @@ describe('AggregateRouter', () => {
     }
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline fails multiple keys in Pipeline Operator Array stage ', () => {
     const body = {
       pipeline: [
@@ -75,6 +81,7 @@ describe('AggregateRouter', () => {
     }
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get search pipeline from Pipeline Operator (Array)', () => {
     const body = {
       pipeline: {
@@ -86,7 +93,7 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
-  it("support stage name starting with '$'", () => {
+  it('support stage name starting with `$`', () => {
     const body = {
       $match: { someKey: 'whatever' },
     };
@@ -95,7 +102,7 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
-  it("support nested stage names starting with '$'", () => {
+  it('support nested stage names starting with `$`', () => {
     const body = [
       {
         lookup: {
@@ -136,7 +143,7 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
-  it("support the use of '_id' in stages", () => {
+  it('support the use of `_id` in stages', () => {
     const body = [
       { match: { _id: 'randomId' } },
       { sort: { _id: -1 } },
