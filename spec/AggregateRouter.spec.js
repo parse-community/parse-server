@@ -95,11 +95,62 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
-  it("support group stage using '_id'", () => {
-    const body = {
-      group: { _id: {} },
-    };
-    const expected = [{ $group: { _id: {} } }];
+  it("support nested stage names starting with '$'", () => {
+    const body = [
+      {
+        lookup: {
+          from: 'ACollection',
+          let: { id: '_id' },
+          as: 'results',
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$_id', '$$id'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    ];
+    const expected = [
+      {
+        $lookup: {
+          from: 'ACollection',
+          let: { id: '_id' },
+          as: 'results',
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$_id', '$$id'],
+                },
+              },
+            },
+          ],
+        },
+      },
+    ];
+    const result = AggregateRouter.getPipeline(body);
+    expect(result).toEqual(expected);
+  });
+
+  it("support the use of '_id' in stages", () => {
+    const body = [
+      { match: { _id: 'randomId' } },
+      { sort: { _id: -1 } },
+      { addFields: { _id: 1 } },
+      { group: { _id: {} } },
+      { project: { _id: 0 } },
+    ];
+    const expected = [
+      { $match: { _id: 'randomId' } },
+      { $sort: { _id: -1 } },
+      { $addFields: { _id: 1 } },
+      { $group: { _id: {} } },
+      { $project: { _id: 0 } },
+    ];
     const result = AggregateRouter.getPipeline(body);
     expect(result).toEqual(expected);
   });
