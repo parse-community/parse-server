@@ -313,6 +313,16 @@ describe('matchesQuery', function () {
     expect(matchesQuery(player, orQuery)).toBe(true);
   });
 
+  it('does not match $all query when value is missing', () => {
+    const player = {
+      id: new Id('Player', 'P1'),
+      name: 'Player 1',
+      score: 12,
+    };
+    const q = { missing: { $all: [1, 2, 3] } };
+    expect(matchesQuery(player, q)).toBe(false);
+  });
+
   it('matches an $and query', () => {
     const player = {
       id: new Id('Player', 'P1'),
