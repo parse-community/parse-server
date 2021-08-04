@@ -645,6 +645,69 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  it('LiveQuery with ACL', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['Chat'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
+
+    const calls = {
+      beforeConnect(req) {
+        expect(req.event).toBe('connect');
+        expect(req.clients).toBe(0);
+        expect(req.subscriptions).toBe(0);
+        expect(req.useMasterKey).toBe(false);
+        expect(req.installationId).toBeDefined();
+        expect(req.client).toBeDefined();
+      },
+      beforeSubscribe(req) {
+        expect(req.op).toBe('subscribe');
+        expect(req.requestId).toBe(1);
+        expect(req.query).toBeDefined();
+        expect(req.user).toBeDefined();
+      },
+      afterLiveQueryEvent(req) {
+        expect(req.user).toBeDefined();
+        expect(req.object.get('foo')).toBe('bar');
+      },
+      create(object) {
+        expect(object.get('foo')).toBe('bar');
+      },
+      delete(object) {
+        expect(object.get('foo')).toBe('bar');
+      },
+    };
+    for (const key in calls) {
+      spyOn(calls, key).and.callThrough();
+    }
+    Parse.Cloud.beforeConnect(calls.beforeConnect);
+    Parse.Cloud.beforeSubscribe('Chat', calls.beforeSubscribe);
+    Parse.Cloud.afterLiveQueryEvent('Chat', calls.afterLiveQueryEvent);
+
+    const chatQuery = new Parse.Query('Chat');
+    const subscription = await chatQuery.subscribe();
+    subscription.on('create', calls.create);
+    subscription.on('delete', calls.delete);
+    const object = new Parse.Object('Chat');
+    const acl = new Parse.ACL(user);
+    object.setACL(acl);
+    object.set({ foo: 'bar' });
+    await object.save();
+    await object.destroy();
+    await new Promise(resolve => setTimeout(resolve, 200));
+    for (const key in calls) {
+      expect(calls[key]).toHaveBeenCalled();
+    }
+  });
+
   it('handle invalid websocket payload length', async done => {
     await reconfigureServer({
       liveQuery: {
