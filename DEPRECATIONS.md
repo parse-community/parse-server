@@ -4,7 +4,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 
 | Feature | Issue | Deprecation [ℹ️][i_deprecation] | Planned Removal [ℹ️][i_removal] | Status [ℹ️][i_status] | Notes |
 |---------|----|------------------|----------------------|----------|-------|
-| Native syntax in MongoDB aggregation pipeline | [#7338](https://github.com/parse-community/parse-server/issues/7338) | 5.0.0 (2022) | 6.0.0 (2023) | deprecated | - |
+(none)
 
 
 [i_deprecation]: ## "The version and date of the deprecation."
