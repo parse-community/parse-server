@@ -36,7 +36,12 @@ function getOneSchema(req) {
 }
 
 const checkIfDefinedSchemasIsUsed = req => {
-  if (req.config && req.config.schemas) {
+  if (
+    req.config &&
+    req.config.migrations &&
+    req.config.migrations.schemas &&
+    req.config.migrations.schemas.length
+  ) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
       'cannot perform this operation when schemas options is used.'
@@ -69,7 +74,7 @@ export const internalUpdateSchema = async (className, body, config) => {
   };
 };
 
-function createSchema(req) {
+async function createSchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
@@ -88,7 +93,7 @@ function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return internalCreateSchema(className, req.body, req.config);
+  return await internalCreateSchema(className, req.body, req.config);
 }
 
 function modifySchema(req) {
