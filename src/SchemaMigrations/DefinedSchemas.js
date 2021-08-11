@@ -1,5 +1,4 @@
-1; // @flow
-// import Parse from 'parse/node';
+// @flow
 const Parse = require('parse/node');
 import { logger } from '../logger';
 import Config from '../Config';
@@ -68,6 +67,9 @@ export class DefinedSchemas {
     let timeout = null;
     try {
       logger.info('Running Migrations');
+      if (this.migrationsOptions && this.migrationsOptions.beforeSchemasMigration) {
+        await Promise.resolve(this.migrationsOptions.beforeSchemasMigration());
+      }
       // Set up a time out in production
       // if we fail to get schema
       // pm2 or K8s and many other process managers will try to restart the process

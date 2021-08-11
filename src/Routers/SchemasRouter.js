@@ -44,7 +44,7 @@ const checkIfDefinedSchemasIsUsed = req => {
   ) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
-      'cannot perform this operation when schemas options is used.'
+      'Cannot perform this operation when schemas options is used.'
     );
   }
 };

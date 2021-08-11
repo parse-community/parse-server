@@ -545,13 +545,13 @@ fdescribe('DefinedSchemas', () => {
     try {
       await new Parse.Schema('Test').save();
     } catch (e) {
-      expect(e.message).toContain('cannot perform this operation when schemas options is used.');
+      expect(e.message).toContain('Cannot perform this operation when schemas options is used.');
     }
 
     try {
       await new Parse.Schema('_User').update();
     } catch (e) {
-      expect(e.message).toContain('cannot perform this operation when schemas options is used.');
+      expect(e.message).toContain('Cannot perform this operation when schemas options is used.');
     }
   });
   it('should only enable delete class endpoint since', async () => {

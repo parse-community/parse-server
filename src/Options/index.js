@@ -242,8 +242,6 @@ export interface ParseServerOptions {
   playgroundPath: ?string;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
-  /* Callback when server has started and before running schemas migration operations if schemas key provided */
-  beforeSchemasMigration: ?() => void | Promise<void>;
   /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema */
   migrations: ?MigrationsOptions;
   /* Callback when server has closed */
