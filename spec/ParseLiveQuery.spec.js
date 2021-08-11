@@ -807,13 +807,19 @@ describe('ParseLiveQuery', function () {
       verbose: false,
       silent: true,
     });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
 
-    Parse.Cloud.beforeSubscribe(TestObject, request => {
-      expect(request.requestId).toBe(1);
+    Parse.Cloud.beforeSubscribe(TestObject, req => {
+      expect(req.requestId).toBe(1);
+      expect(req.user).toBeDefined();
     });
 
-    Parse.Cloud.beforeUnsubscribe(TestObject, request => {
-      expect(request.requestId).toBe(1);
+    Parse.Cloud.beforeUnsubscribe(TestObject, req => {
+      expect(req.requestId).toBe(1);
+      expect(req.user).toBeDefined();
       done();
     });
 
