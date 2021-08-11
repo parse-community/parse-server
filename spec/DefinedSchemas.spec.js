@@ -10,7 +10,7 @@ const cleanUpIndexes = schema => {
   }
 };
 
-fdescribe('DefinedSchemas', () => {
+describe('DefinedSchemas', () => {
   let config;
   beforeEach(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000000;
