@@ -22,9 +22,39 @@ class Deprecator {
 
       // If default will change, only throw a warning if option is not set
       if (changeNewDefault != null && options[optionKey] == null) {
-        Deprecator._log({ optionKey, changeNewDefault, solution });
+        Deprecator._logOption({ optionKey, changeNewDefault, solution });
       }
     }
+  }
+
+  /**
+   * Logs a deprecation warning for a parameter that can only be determined dynamically
+   * during runtime.
+   *
+   * Note: Do not use this to log deprecations of Parse Server options, but add such
+   * deprecations to `Deprecations.js` instead. See the contribution docs for more
+   * details.
+   *
+   * For consistency, the deprecation warning is composed of the following parts:
+   *
+   * > DeprecationWarning: `usage` is deprecated and will be removed in a future version.
+   * `solution`.
+   *
+   * - `usage`: The deprecated usage.
+   * - `solution`: The instruction to resolve this deprecation warning.
+   *
+   * For example:
+   * > DeprecationWarning: `Prefixing field names with dollar sign ($) in aggregation query`
+   * is deprecated and will be removed in a future version. `Reference field names without
+   * dollar sign prefix.`
+   *
+   * @param {Object} options The deprecation options.
+   * @param {String} options.usage The usage that is deprecated.
+   * @param {String} [options.solution] The instruction to resolve this deprecation warning.
+   * Optional. It is recommended to add an instruction for the convenience of the developer.
+   */
+  static logRuntimeDeprecation(options) {
+    Deprecator._logGeneric(options);
   }
 
   /**
@@ -36,7 +66,23 @@ class Deprecator {
   }
 
   /**
+   * Logs a generic deprecation warning.
+   *
+   * @param {Object} options The deprecation options.
+   * @param {String} options.usage The usage that is deprecated.
+   * @param {String} [options.solution] The instruction to resolve this deprecation warning.
+   * Optional. It is recommended to add an instruction for the convenience of the developer.
+   */
+  static _logGeneric({ usage, solution }) {
+    // Compose message
+    let output = `DeprecationWarning: ${usage} is deprecated and will be removed in a future version.`;
+    output += solution ? ` ${solution}` : '';
+    logger.warn(output);
+  }
+
+  /**
    * Logs a deprecation warning for a Parse Server option.
+   *
    * @param {String} optionKey The option key incl. its path, e.g. `security.enableCheck`.
    * @param {String} envKey The environment key, e.g. `PARSE_SERVER_SECURITY`.
    * @param {String} changeNewKey Set the new key name if the current key will be replaced,
@@ -48,7 +94,7 @@ class Deprecator {
    * automatically added to the message. It should only contain the instruction on how
    * to resolve this warning.
    */
-  static _log({ optionKey, envKey, changeNewKey, changeNewDefault, solution }) {
+  static _logOption({ optionKey, envKey, changeNewKey, changeNewDefault, solution }) {
     const type = optionKey ? 'option' : 'environment key';
     const key = optionKey ? optionKey : envKey;
     const keyAction =
