@@ -11,7 +11,8 @@ export type FieldValueType =
   | 'GeoPoint'
   | 'Polygon'
   | 'Array'
-  | 'Object';
+  | 'Object'
+  | 'ACL';
 
 export interface FieldType {
   type: FieldValueType;
