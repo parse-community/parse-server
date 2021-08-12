@@ -36,12 +36,7 @@ function getOneSchema(req) {
 }
 
 const checkIfDefinedSchemasIsUsed = req => {
-  if (
-    req.config &&
-    req.config.migrations &&
-    req.config.migrations.schemas &&
-    req.config.migrations.schemas.length
-  ) {
+  if (req.config && req.config.migrations && req.config.migrations.lockSchemas === true) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
       'Cannot perform this operation when schemas options is used.'

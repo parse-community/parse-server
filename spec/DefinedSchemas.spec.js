@@ -530,26 +530,30 @@ describe('DefinedSchemas', () => {
     expect(schema.className).toEqual('Test');
   });
 
-  it('should disable class PUT/POST endpoint when schemas provided to avoid dual source of truth', async () => {
+  it('should disable class PUT/POST endpoint when lockSchemas provided to avoid dual source of truth', async () => {
     await reconfigureServer({
-      migrations: { schemas: [{ className: '_User' }, { className: 'Test' }] },
+      migrations: {
+        lockSchemas: true,
+        schemas: [{ className: '_User' }, { className: 'Test' }],
+      },
     });
-    await reconfigureServer({ migrations: { schemas: [{ className: '_User' }] } });
 
     const schema = await new Parse.Schema('Test').get();
     expect(schema.className).toEqual('Test');
 
     const schemas = await Parse.Schema.all();
-    expect(schemas.length).toEqual(4);
+    expect(schemas.length).toEqual(3);
 
     try {
-      await new Parse.Schema('Test').save();
+      await new Parse.Schema('TheNewTest').save();
+      fail('TheNewTest.save() should have failed');
     } catch (e) {
       expect(e.message).toContain('Cannot perform this operation when schemas options is used.');
     }
 
     try {
       await new Parse.Schema('_User').update();
+      fail('_User.update() should have failed');
     } catch (e) {
       expect(e.message).toContain('Cannot perform this operation when schemas options is used.');
     }

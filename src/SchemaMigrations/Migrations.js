@@ -39,6 +39,7 @@ export interface MigrationsOptions {
   strict: ?boolean;
   deleteExtraFields: ?boolean;
   recreateModifiedFields: ?boolean;
+  lockSchemas: ?boolean;
   /* Callback when server has started and before running schemas migration operations if schemas key provided */
   beforeSchemasMigration: ?() => void | Promise<void>;
 }
