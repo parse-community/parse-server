@@ -14,17 +14,17 @@ export class DefinedSchemas {
   retries: number;
   maxRetries: number;
 
-  constructor(migrationsOptions: Migrations.MigrationsOptions[], config: ParseServerOptions) {
+  constructor(migrationsOptions: Migrations.MigrationsOptions, config: ParseServerOptions) {
     this.localSchemas = [];
     this.config = Config.get(config.appId);
     this.migrationsOptions = migrationsOptions;
 
-    if (migrationsOptions && migrationsOptions.schemas) {
-      if (!Array.isArray(migrationsOptions.schemas)) {
-        throw `"migrations.schemas" must be an array of schemas`;
+    if (migrationsOptions && migrationsOptions.definitions) {
+      if (!Array.isArray(migrationsOptions.definitions)) {
+        throw `"schema.definitions" must be an array of schemas`;
       }
 
-      this.localSchemas = migrationsOptions.schemas;
+      this.localSchemas = migrationsOptions.definitions;
     }
 
     this.retries = 0;
@@ -67,8 +67,8 @@ export class DefinedSchemas {
     let timeout = null;
     try {
       logger.info('Running Migrations');
-      if (this.migrationsOptions && this.migrationsOptions.beforeSchemasMigration) {
-        await Promise.resolve(this.migrationsOptions.beforeSchemasMigration());
+      if (this.migrationsOptions && this.migrationsOptions.beforeSchemaMigration) {
+        await Promise.resolve(this.migrationsOptions.beforeSchemaMigration());
       }
       // Set up a time out in production
       // if we fail to get schema

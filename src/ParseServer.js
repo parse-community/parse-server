@@ -69,7 +69,7 @@ class ParseServer {
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
       serverStartComplete,
-      migrations,
+      schema,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -87,8 +87,8 @@ class ParseServer {
       .performInitialization()
       .then(() => hooksController.load())
       .then(async () => {
-        if (migrations) {
-          await new DefinedSchemas(migrations, this.config).execute();
+        if (schema) {
+          await new DefinedSchemas(schema, this.config).execute();
         }
         if (serverStartComplete) {
           serverStartComplete();

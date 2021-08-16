@@ -243,7 +243,7 @@ export interface ParseServerOptions {
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
   /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema */
-  migrations: ?MigrationsOptions;
+  schema: ?MigrationsOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
   /* The security options to identify and report weak security settings.

@@ -36,13 +36,13 @@ export interface IndexesInterface {
 }
 
 export interface MigrationsOptions {
-  schemas: JSONSchema[];
+  definitions: JSONSchema[];
   strict: ?boolean;
   deleteExtraFields: ?boolean;
   recreateModifiedFields: ?boolean;
   lockSchemas: ?boolean;
   /* Callback when server has started and before running schemas migration operations if schemas key provided */
-  beforeSchemasMigration: ?() => void | Promise<void>;
+  beforeSchemaMigration: ?() => void | Promise<void>;
 }
 
 export type CLPOperation = 'find' | 'count' | 'get' | 'update' | 'create' | 'delete';

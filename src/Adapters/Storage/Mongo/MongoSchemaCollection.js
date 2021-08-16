@@ -275,7 +275,7 @@ class MongoSchemaCollection {
       });
   }
 
-  async updateFieldOptions(className: string, fieldName: string, fieldType: string) {
+  async updateFieldOptions(className: string, fieldName: string, fieldType: any) {
     // eslint-disable-next-line no-unused-vars
     const { type, targetClass, ...fieldOptions } = fieldType;
     await this.upsertSchema(
