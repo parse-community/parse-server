@@ -605,7 +605,7 @@ describe('DefinedSchemas', () => {
 
     expect(logger.error).toHaveBeenCalledWith(`Failed to run migrations: ${error.toString()}`);
   });
-  xit('should perform migration in parallel without failing', async () => {
+  it('should perform migration in parallel without failing', async () => {
     const server = await reconfigureServer();
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callThrough();
@@ -632,7 +632,7 @@ describe('DefinedSchemas', () => {
     ]);
 
     const testSchema = (await Parse.Schema.all()).find(
-      ({ className }) => className === migrationOptions.schema[0].className
+      ({ className }) => className === migrationOptions.definitions[0].className
     );
 
     expect(testSchema.indexes.aField).toEqual({ aField: 1 });

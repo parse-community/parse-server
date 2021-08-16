@@ -92,9 +92,18 @@ export class DefinedSchemas {
 
       logger.info('Running Migrations Completed');
     } catch (e) {
-      logger.error(`Failed to run migrations: ${e}`);
-
-      if (this.migrationsOptions.strict) process.exit(1);
+      if (timeout) clearTimeout(timeout);
+      if (this.retries < this.maxRetries) {
+        this.retries++;
+        // first retry 1sec, 2sec, 3sec total 6sec retry sequence
+        // retry will only happen in case of deploying multi parse server instance
+        // at the same time. Modern systems like k8 avoid this by doing rolling updates
+        await this.wait(1000 * this.retries);
+        await this.execute();
+      } else {
+        logger.error(`Failed to run migrations: ${e}`);
+        if (process.env.NODE_ENV === 'production') process.exit(1);
+      }
     }
   }
 
@@ -160,15 +169,13 @@ export class DefinedSchemas {
       try {
         await this.updateSchema(localSchema, cloudSchema);
       } catch (e) {
-        logger.error(`Error during update of schema for type ${cloudSchema.className}: ${e}`);
-        throw e;
+        throw `Error during update of schema for type ${cloudSchema.className}: ${e}`;
       }
     } else {
       try {
         await this.saveSchema(localSchema);
       } catch (e) {
-        logger.error(`Error while saving Schema for type ${localSchema.className}: ${e}`);
-        throw e;
+        throw `Error while saving Schema for type ${localSchema.className}: ${e}`;
       }
     }
   }
