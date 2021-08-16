@@ -42,7 +42,8 @@ export interface MigrationsOptions {
   recreateModifiedFields: ?boolean;
   lockSchemas: ?boolean;
   /* Callback when server has started and before running schemas migration operations if schemas key provided */
-  beforeSchemaMigration: ?() => void | Promise<void>;
+  beforeMigration: ?() => void | Promise<void>;
+  afterMigration: ?() => void | Promise<void>;
 }
 
 export type CLPOperation = 'find' | 'count' | 'get' | 'update' | 'create' | 'delete';

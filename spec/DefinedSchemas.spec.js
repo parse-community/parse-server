@@ -573,12 +573,12 @@ describe('DefinedSchemas', () => {
     schemas = await Parse.Schema.all();
     expect(schemas.length).toEqual(3);
   });
-  it('should run beforeSchemaMigration before execution of DefinedSchemas', async () => {
+  it('should run beforeMigration before execution of DefinedSchemas', async () => {
     let before = false;
     const server = await reconfigureServer({
       schema: {
         definitions: [{ className: '_User' }, { className: 'Test' }],
-        beforeSchemaMigration: async () => {
+        beforeMigration: async () => {
           expect(before).toEqual(false);
           before = true;
         },
@@ -588,6 +588,22 @@ describe('DefinedSchemas', () => {
     expect(before).toEqual(true);
     expect(server).toBeDefined();
   });
+  it('should run afterMigration after execution of DefinedSchemas', async () => {
+    let before = false;
+    const server = await reconfigureServer({
+      schema: {
+        definitions: [{ className: '_User' }, { className: 'Test' }],
+        afterMigration: async () => {
+          expect(before).toEqual(false);
+          before = true;
+        },
+      },
+    });
+    before = true;
+    expect(before).toEqual(true);
+    expect(server).toBeDefined();
+  });
+
   it('should use logger in case of error', async () => {
     const server = await reconfigureServer({ schema: { definitions: [{ className: '_User' }] } });
     const error = new Error('A test error');

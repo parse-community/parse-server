@@ -64,12 +64,28 @@ export class DefinedSchemas {
   }
 
   async execute() {
-    let timeout = null;
     try {
       logger.info('Running Migrations');
-      if (this.migrationsOptions && this.migrationsOptions.beforeSchemaMigration) {
-        await Promise.resolve(this.migrationsOptions.beforeSchemaMigration());
+      if (this.migrationsOptions && this.migrationsOptions.beforeMigration) {
+        await Promise.resolve(this.migrationsOptions.beforeMigration());
       }
+
+      await this.executeMigrations();
+
+      if (this.migrationsOptions && this.migrationsOptions.afterMigration) {
+        await Promise.resolve(this.migrationsOptions.afterMigration());
+      }
+
+      logger.info('Running Migrations Completed');
+    } catch (e) {
+      logger.error(`Failed to run migrations: ${e}`);
+      if (process.env.NODE_ENV === 'production') process.exit(1);
+    }
+  }
+
+  async executeMigrations() {
+    let timeout = null;
+    try {
       // Set up a time out in production
       // if we fail to get schema
       // pm2 or K8s and many other process managers will try to restart the process
@@ -89,8 +105,6 @@ export class DefinedSchemas {
 
       this.checkForMissingSchemas();
       await this.enforceCLPForNonProvidedClass();
-
-      logger.info('Running Migrations Completed');
     } catch (e) {
       if (timeout) clearTimeout(timeout);
       if (this.retries < this.maxRetries) {
@@ -99,7 +113,7 @@ export class DefinedSchemas {
         // retry will only happen in case of deploying multi parse server instance
         // at the same time. Modern systems like k8 avoid this by doing rolling updates
         await this.wait(1000 * this.retries);
-        await this.execute();
+        await this.executeMigrations();
       } else {
         logger.error(`Failed to run migrations: ${e}`);
         if (process.env.NODE_ENV === 'production') process.exit(1);
