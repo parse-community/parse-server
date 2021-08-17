@@ -4097,35 +4097,31 @@ describe('login as other user', () => {
 
   it('rejects creating a session for another user with invalid parameters', async done => {
     const invalidUserIds = [undefined, null, ''];
-    await Promise.all(
-      invalidUserIds.map(async invalidUserId => {
-        try {
-          await request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/loginAs',
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-REST-API-Key': 'rest',
-              'X-Parse-Master-Key': 'test',
-            },
-            body: {
-              userId: invalidUserId,
-            },
-          });
+    for (const invalidUserId of invalidUserIds) {
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/loginAs',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'X-Parse-Master-Key': 'test',
+          },
+          body: {
+            userId: invalidUserId,
+          },
+        });
 
-          fail('Request should fail without a valid user ID');
-          done();
-        } catch (err) {
-          expect(err.data.code).toBe(Parse.Error.INVALID_VALUE);
-          expect(err.data.error).toBe('userId must not be empty, null, or undefined');
-        }
-
-        const sessionsQuery = new Parse.Query(Parse.Session);
-        const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
-        expect(sessionsAfterRequest.length).toBe(0);
-      })
-    );
-
+        fail('Request should fail without a valid user ID');
+        done();
+      } catch (err) {
+        expect(err.data.code).toBe(Parse.Error.INVALID_VALUE);
+        expect(err.data.error).toBe('userId must not be empty, null, or undefined');
+      }
+      const sessionsQuery = new Parse.Query(Parse.Session);
+      const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+      expect(sessionsAfterRequest.length).toBe(0);
+    }
     done();
   });
 
