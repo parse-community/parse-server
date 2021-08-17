@@ -143,7 +143,7 @@ function RestQuery(
         var fields = restOptions.order.split(',');
         this.findOptions.sort = fields.reduce((sortMap, field) => {
           field = field.trim();
-          if (field === '$score') {
+          if (field === '$score' || field === '-$score') {
             sortMap.score = { $meta: 'textScore' };
           } else if (field[0] == '-') {
             sortMap[field.slice(1)] = -1;
@@ -866,7 +866,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
           return set;
         }
       }
-      if (i == (keyPath.length - 1)) {
+      if (i == keyPath.length - 1) {
         set.add(keyPath[i]);
       }
       return set;

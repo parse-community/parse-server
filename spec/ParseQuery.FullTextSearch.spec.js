@@ -120,6 +120,15 @@ describe('Parse.Query Full Text Search testing', () => {
       }, done.fail);
   });
 
+  it('fulltext descending by $score', async () => {
+    await fullTextHelper();
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'coffee');
+    query.descending('$score');
+    const objects = await query.find();
+    expect(objects.length).toBe(3);
+  });
+
   it('fullTextSearch: $language', done => {
     fullTextHelper()
       .then(() => {
