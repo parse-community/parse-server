@@ -4032,3 +4032,131 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
     expect(user.get('authData')).toEqual({ custom: { id: 'linkedID' } });
   });
 });
+
+describe('login as other user', () => {
+  it('allows creating a session for another user with the master key', async done => {
+    await Parse.User.signUp('some_user', 'some_password');
+    const userId = Parse.User.current().id;
+    await Parse.User.logOut();
+
+    try {
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/loginAs',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
+        },
+        body: {
+          userId,
+        },
+      });
+
+      expect(response.data.sessionToken).toBeDefined();
+    } catch (err) {
+      fail(`no request should fail: ${JSON.stringify(err)}`);
+      done();
+    }
+
+    const sessionsQuery = new Parse.Query(Parse.Session);
+    const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+    expect(sessionsAfterRequest.length).toBe(1);
+
+    done();
+  });
+
+  it('rejects creating a session for another user if the user does not exist', async done => {
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/loginAs',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
+        },
+        body: {
+          userId: 'bogus-user',
+        },
+      });
+
+      fail('Request should fail without a valid user ID');
+      done();
+    } catch (err) {
+      expect(err.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(err.data.error).toBe('user not found');
+    }
+
+    const sessionsQuery = new Parse.Query(Parse.Session);
+    const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+    expect(sessionsAfterRequest.length).toBe(0);
+
+    done();
+  });
+
+  it('rejects creating a session for another user with invalid parameters', async done => {
+    const invalidUserIds = [undefined, null, ''];
+
+    for (const invalidUserId of invalidUserIds) {
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/loginAs',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'X-Parse-Master-Key': 'test',
+          },
+          body: {
+            userId: invalidUserId,
+          },
+        });
+
+        fail('Request should fail without a valid user ID');
+        done();
+      } catch (err) {
+        expect(err.data.code).toBe(Parse.Error.INVALID_VALUE);
+        expect(err.data.error).toBe('userId must not be empty, null, or undefined');
+      }
+
+      const sessionsQuery = new Parse.Query(Parse.Session);
+      const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+      expect(sessionsAfterRequest.length).toBe(0);
+    }
+
+    done();
+  });
+
+  it('rejects creating a session for another user without the master key', async done => {
+    await Parse.User.signUp('some_user', 'some_password');
+    const userId = Parse.User.current().id;
+    await Parse.User.logOut();
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/loginAs',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: {
+          userId,
+        },
+      });
+
+      fail('Request should fail without the master key');
+      done();
+    } catch (err) {
+      expect(err.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(err.data.error).toBe('master key is required');
+    }
+
+    const sessionsQuery = new Parse.Query(Parse.Session);
+    const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+    expect(sessionsAfterRequest.length).toBe(0);
+
+    done();
+  });
+});

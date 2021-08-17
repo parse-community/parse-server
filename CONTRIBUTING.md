@@ -182,14 +182,16 @@ If you change or remove an existing feature that would lead to a breaking change
   - Use a default value that falls back to existing behavior.
   - Add a deprecation definition in `Deprecator/Deprecations.js` that will output a deprecation warning log message on Parse Server launch, for example:
     > DeprecationWarning: The Parse Server option 'example' will be removed in a future release.
-  
+
+For deprecations that can only be determined ad-hoc during runtime, for example Parse Query syntax deprecations, use the `Deprecator.logRuntimeDeprecation()` method.
+
 Deprecations become breaking changes after notifying developers through deprecation warnings for at least one entire previous major release. For example:
   - `4.5.0` is the current version
   - `4.6.0` adds a new optional feature and a deprecation warning for the existing feature
   - `5.0.0` marks the beginning of logging the deprecation warning for one entire major release
   - `6.0.0` makes the breaking change by removing the deprecation warning and making the new feature replace the existing feature
 
-Developer feedback during the deprecation period may further postpone the introduction of a breaking change.
+Developer feedback during the deprecation period may further postpone the introduction of a breaking change. The [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) gives an overview of deprecations and planned breaking changes.
 
 ## Feature Considerations
 ### Security Checks
@@ -275,11 +277,16 @@ Introducing new Parse Errors requires the following steps:
 Introducing new [Parse Server configuration][config] parameters requires the following steps:
 
 1. Add parameters definitions in [/src/Options/index.js][config-index].
-1. If a nested configuration object has been added, add the environment variable option prefix to `getENVPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js).
-1. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
-1. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
-1. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
-1. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
+2. If the new parameter does not have one single value but is a parameter group (an object containing multiple sub-parameters):
+   - add the environment variable prefix for the parameter group to `nestedOptionEnvPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js)
+   - add the parameter group type to `nestedOptionTypes` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js)
+  
+    For example, take a look at the existing Parse Server `security` parameter. It is a parameter group, because it has multiple sub-parameter such as `checkGroups`. Its interface is defined in [index.js][config-index] as `export interface SecurityOptions`. Therefore, the value to add to `nestedOptionTypes` would be `SecurityOptions`, the value to add to `nestedOptionEnvPrefix` would be `PARSE_SERVER_SECURITY_`.
+
+3. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
+4. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
+5. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
+6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
 ## Code of Conduct
 

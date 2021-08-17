@@ -87,13 +87,17 @@ describe('OAuth', function () {
     done();
   }
 
-  it('Should fail a GET request', done => {
+  it('GET request for a resource that requires OAuth should fail with invalid credentials', done => {
+    /*
+      This endpoint has been chosen to make a request to an endpoint that requires OAuth which fails due to missing authentication.
+      Any other endpoint from the Twitter API that requires OAuth can be used instead in case the currently used endpoint deprecates.
+    */
     const options = {
       host: 'api.twitter.com',
-      consumer_key: 'XXXXXXXXXXXXXXXXXXXXXXXXX',
-      consumer_secret: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      consumer_key: 'invalid_consumer_key',
+      consumer_secret: 'invalid_consumer_secret',
     };
-    const path = '/1.1/help/configuration.json';
+    const path = '/1.1/favorites/list.json';
     const params = { lang: 'en' };
     const oauthClient = new OAuth(options);
     oauthClient.get(path, params).then(function (data) {
@@ -101,11 +105,15 @@ describe('OAuth', function () {
     });
   });
 
-  it('Should fail a POST request', done => {
+  it('POST request for a resource that requires OAuth should fail with invalid credentials', done => {
+    /*
+      This endpoint has been chosen to make a request to an endpoint that requires OAuth which fails due to missing authentication.
+      Any other endpoint from the Twitter API that requires OAuth can be used instead in case the currently used endpoint deprecates.
+    */
     const options = {
       host: 'api.twitter.com',
-      consumer_key: 'XXXXXXXXXXXXXXXXXXXXXXXXX',
-      consumer_secret: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      consumer_key: 'invalid_consumer_key',
+      consumer_secret: 'invalid_consumer_secret',
     };
     const body = {
       lang: 'en',
