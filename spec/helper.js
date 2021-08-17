@@ -104,6 +104,8 @@ const defaultConfiguration = {
     enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
   },
+  liveQuery: { classNames: ["_Session"] },
+   startLiveQueryServer: true,
   push: {
     android: {
       senderId: 'yolo',
