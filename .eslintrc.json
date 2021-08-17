@@ -24,11 +24,11 @@
         "space-infix-ops": "error",
         "no-useless-escape": "off",
         "require-atomic-updates": "off",
-        "no-unreachable": "warn",
+        "no-unreachable": "error",
         "no-var": "error",
         "no-await-in-loop": "error",
         "eqeqeq": "error",
         "no-empty": "error",
-        "prefer-template": "warn"
+        "prefer-template": "error"
     }
 }

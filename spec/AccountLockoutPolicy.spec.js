@@ -368,7 +368,6 @@ describe('lockout with password reset option', () => {
     sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
   }
 
-  /* eslint-disable no-await-in-loop */
   it('accepts valid unlockOnPasswordReset option', async () => {
     const values = [true, false];
     for (const value of values) {
@@ -383,7 +382,6 @@ describe('lockout with password reset option', () => {
       await expectAsync(setup({ unlockOnPasswordReset: value })).toBeRejected();
     }
   });
-  /* eslint-enable no-await-in-loop */
 
   it('uses default value if unlockOnPasswordReset is not set', async () => {
     await expectAsync(setup({ unlockOnPasswordReset: undefined })).toBeResolved();

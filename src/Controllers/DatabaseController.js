@@ -17,7 +17,6 @@ import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
-import { isNull } from '../Utils';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -343,7 +342,8 @@ const transformAuthData = (className, object, schema) => {
     Object.keys(object.authData).forEach(provider => {
       const providerData = object.authData[provider];
       const fieldName = `_auth_data_${provider}`;
-      if (isNull(providerData)) {
+      /* eslint-disable-next-line eqeqeq */
+      if (providerData == null) {
         object[fieldName] = {
           __op: 'Delete',
         };
@@ -431,7 +431,8 @@ class DatabaseController {
   loadSchema(
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<SchemaController.SchemaController> {
-    if (!isNull(this.schemaPromise)) {
+    /* eslint-disable-next-line eqeqeq */
+    if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
     this.schemaPromise = SchemaController.load(this.adapter, options);
@@ -455,7 +456,8 @@ class DatabaseController {
   redirectClassNameForKey(className: string, key: string): Promise<?string> {
     return this.loadSchema().then(schema => {
       const t = schema.getExpectedType(className, key);
-      if (!isNull(t) && typeof t !== 'string' && t.type === 'Relation') {
+      /* eslint-disable-next-line eqeqeq */
+      if (t != null && typeof t !== 'string' && t.type === 'Relation') {
         return t.targetClass;
       }
       return className;

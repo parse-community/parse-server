@@ -1053,7 +1053,6 @@ describe('Parse.File testing', () => {
       const keys = ['enableForPublic', 'enableForAnonymousUser', 'enableForAuthenticatedUser'];
       const invalidValues = [[], {}, 1, 'string', null];
       const validValues = [undefined, true, false];
-      /* eslint-disable no-await-in-loop */
       for (const config of invalidConfigs) {
         await expectAsync(reconfigureServer(config)).toBeRejectedWith(
           'fileUpload must be an object value.'
@@ -1072,7 +1071,6 @@ describe('Parse.File testing', () => {
           await expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeResolved();
         }
       }
-      /* eslint-enable no-await-in-loop */
     });
   });
 });

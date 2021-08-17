@@ -1545,7 +1545,6 @@ describe('Cloud Code', () => {
     const obj = new AfterSaveTestClass();
     obj.save().then(done, done.fail);
   });
-  /* eslint-disable no-await-in-loop */
   describe('cloud jobs', () => {
     it('should define a job', done => {
       expect(() => {
@@ -1754,7 +1753,7 @@ describe('Cloud Code', () => {
     }
   });
 });
-/* eslint-enable no-await-in-loop */
+
 describe('cloud functions', () => {
   it('Should have request ip', done => {
     Parse.Cloud.define('myFunction', req => {

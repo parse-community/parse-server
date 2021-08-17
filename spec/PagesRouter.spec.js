@@ -310,11 +310,9 @@ describe('Pages Router', () => {
           { customRoutes: 'a' },
           { customRoutes: {} },
         ];
-        /* eslint-disable no-await-in-loop */
         for (const option of options) {
           await expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected();
         }
-        /* eslint-enable no-await-in-loop */
       });
     });
 

@@ -33,10 +33,8 @@ const pushCompleted = async pushId => {
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
-    /* eslint-disable no-await-in-loop */
     await sleep(100);
     result = await query.first({ useMasterKey: true });
-    /* eslint-enable no-await-in-loop */
   }
 };
 
