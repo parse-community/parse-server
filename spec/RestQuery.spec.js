@@ -207,14 +207,12 @@ describe('rest query', () => {
 
         const p0 = request({
           headers: headers,
-          url:
-            'http://localhost:8378/1/classes/TestParameterEncode?' +
-            querystring
-              .stringify({
-                where: '{"foo":{"$ne": "baz"}}',
-                limit: 1,
-              })
-              .replace('=', '%3D'),
+          url: `http://localhost:8378/1/classes/TestParameterEncode?${querystring
+            .stringify({
+              where: '{"foo":{"$ne": "baz"}}',
+              limit: 1,
+            })
+            .replace('=', '%3D')}`,
         }).then(fail, response => {
           const error = response.data;
           expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
@@ -222,13 +220,11 @@ describe('rest query', () => {
 
         const p1 = request({
           headers: headers,
-          url:
-            'http://localhost:8378/1/classes/TestParameterEncode?' +
-            querystring
-              .stringify({
-                limit: 1,
-              })
-              .replace('=', '%3D'),
+          url: `http://localhost:8378/1/classes/TestParameterEncode?${querystring
+            .stringify({
+              limit: 1,
+            })
+            .replace('=', '%3D')}`,
         }).then(fail, response => {
           const error = response.data;
           expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
@@ -320,7 +316,7 @@ describe('RestQuery.each', () => {
   });
   it('should run each', async () => {
     const objects = [];
-    while (objects.length != 10) {
+    while (objects.length !== 10) {
       objects.push(new Parse.Object('Object', { value: objects.length }));
     }
     const config = Config.get('test');

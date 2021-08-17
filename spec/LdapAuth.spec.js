@@ -49,7 +49,7 @@ describe('Ldap Auth', () => {
       url: `ldaps://localhost:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
-        ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
+        ca: fs.readFileSync(`${__dirname}/support/cert/cert.pem`),
         rejectUnauthorized: true,
       },
     };
@@ -64,7 +64,7 @@ describe('Ldap Auth', () => {
       url: `ldaps://localhost:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
-        ca: fs.readFileSync(__dirname + '/support/cert/anothercert.pem'),
+        ca: fs.readFileSync(`${__dirname}/support/cert/anothercert.pem`),
         rejectUnauthorized: true,
       },
     };
@@ -84,7 +84,7 @@ describe('Ldap Auth', () => {
       url: `ldaps://localhost:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
-        ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
+        ca: fs.readFileSync(`${__dirname}/support/cert/cert.pem`),
         rejectUnauthorized: true,
       },
     };

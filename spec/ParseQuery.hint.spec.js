@@ -146,7 +146,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     const object = new TestObject();
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         explain: true,
       },
@@ -156,7 +156,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.inputStage.stage).toBe('COLLSCAN');
 
     options = Object.assign({}, masterKeyOptions, {
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         explain: true,
         hint: '_id_',
@@ -171,7 +171,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
-      url: Parse.serverURL + '/aggregate/TestObject',
+      url: `${Parse.serverURL}/aggregate/TestObject`,
       qs: {
         explain: true,
         group: JSON.stringify({ objectId: '$foo' }),
@@ -182,7 +182,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.stage).toBe('COLLSCAN');
 
     options = Object.assign({}, masterKeyOptions, {
-      url: Parse.serverURL + '/aggregate/TestObject',
+      url: `${Parse.serverURL}/aggregate/TestObject`,
       qs: {
         explain: true,
         hint: '_id_',
@@ -198,7 +198,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
-      url: Parse.serverURL + '/aggregate/TestObject',
+      url: `${Parse.serverURL}/aggregate/TestObject`,
       qs: {
         explain: true,
         group: JSON.stringify({ objectId: '$foo' }),
@@ -211,7 +211,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.inputStage.inputStage).toBeUndefined();
 
     options = Object.assign({}, masterKeyOptions, {
-      url: Parse.serverURL + '/aggregate/TestObject',
+      url: `${Parse.serverURL}/aggregate/TestObject`,
       qs: {
         explain: true,
         hint: '_id_',

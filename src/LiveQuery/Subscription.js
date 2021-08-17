@@ -39,7 +39,7 @@ class Subscription {
     }
     requestIds.splice(index, 1);
     // Delete client reference if it has no subscription
-    if (requestIds.length == 0) {
+    if (requestIds.length === 0) {
       this.clientRequestIds.delete(clientId);
     }
   }

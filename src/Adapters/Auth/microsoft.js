@@ -1,11 +1,11 @@
 // Helper functions for accessing the microsoft graph API.
-var Parse = require('parse/node').Parse;
+const Parse = require('parse/node').Parse;
 const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills if this user mail is valid.
 function validateAuthData(authData) {
   return request('me', authData.access_token).then(response => {
-    if (response && response.id && response.id == authData.id) {
+    if (response && response.id && response.id === authData.id) {
       return;
     }
     throw new Parse.Error(
@@ -24,9 +24,9 @@ function validateAppId() {
 function request(path, access_token) {
   return httpsRequest.get({
     host: 'graph.microsoft.com',
-    path: '/v1.0/' + path,
+    path: `/v1.0/${path}`,
     headers: {
-      Authorization: 'Bearer ' + access_token,
+      Authorization: `Bearer ${access_token}`,
     },
   });
 }

@@ -3,7 +3,7 @@ module.exports = {
     return Promise.resolve();
   },
   validateAuthData: function (authData) {
-    if (authData.token == 'my-token') {
+    if (authData.token === 'my-token') {
       return Promise.resolve();
     }
     return Promise.reject();

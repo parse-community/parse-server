@@ -69,8 +69,8 @@ class ParseLiveQueryServer {
 
     // Initialize subscriber
     this.subscriber = ParsePubSub.createSubscriber(config);
-    this.subscriber.subscribe(Parse.applicationId + 'afterSave');
-    this.subscriber.subscribe(Parse.applicationId + 'afterDelete');
+    this.subscriber.subscribe(`${Parse.applicationId}afterSave`);
+    this.subscriber.subscribe(`${Parse.applicationId}afterDelete`);
     // Register message handler for subscriber. When publisher get messages, it will publish message
     // to the subscribers and the handler will be called.
     this.subscriber.on('message', (channel, messageStr) => {
@@ -83,9 +83,9 @@ class ParseLiveQueryServer {
         return;
       }
       this._inflateParseObject(message);
-      if (channel === Parse.applicationId + 'afterSave') {
+      if (channel === `${Parse.applicationId}afterSave`) {
         this._onAfterSave(message);
-      } else if (channel === Parse.applicationId + 'afterDelete') {
+      } else if (channel === `${Parse.applicationId}afterDelete`) {
         this._onAfterDelete(message);
       } else {
         logger.error('Get message %s from unknown channel %j', message, channel);
@@ -117,7 +117,7 @@ class ParseLiveQueryServer {
   // Message is the JSON object from publisher after inflated. Message.currentParseObject is the ParseObject after changes.
   // Message.originalParseObject is the original ParseObject.
   async _onAfterDelete(message: any): void {
-    logger.verbose(Parse.applicationId + 'afterDelete is triggered');
+    logger.verbose(`${Parse.applicationId}afterDelete is triggered`);
 
     let deletedParseObject = message.currentParseObject.toJSON();
     const classLevelPermissions = message.classLevelPermissions;
@@ -127,7 +127,7 @@ class ParseLiveQueryServer {
 
     const classSubscriptions = this.subscriptions.get(className);
     if (typeof classSubscriptions === 'undefined') {
-      logger.debug('Can not find subscriptions under this class ' + className);
+      logger.debug(`Can not find subscriptions under this class ${className}`);
       return;
     }
 
@@ -196,8 +196,9 @@ class ParseLiveQueryServer {
               requestId
             );
             logger.error(
-              `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
-                JSON.stringify(error)
+              `Failed running afterLiveQueryEvent on class ${className} for event ${
+                res.event
+              } with session ${res.sessionToken} with:\n Error: ${JSON.stringify(error)}`
             );
           }
         });
@@ -208,7 +209,7 @@ class ParseLiveQueryServer {
   // Message is the JSON object from publisher after inflated. Message.currentParseObject is the ParseObject after changes.
   // Message.originalParseObject is the original ParseObject.
   async _onAfterSave(message: any): void {
-    logger.verbose(Parse.applicationId + 'afterSave is triggered');
+    logger.verbose(`${Parse.applicationId}afterSave is triggered`);
 
     let originalParseObject = null;
     if (message.originalParseObject) {
@@ -222,7 +223,7 @@ class ParseLiveQueryServer {
 
     const classSubscriptions = this.subscriptions.get(className);
     if (typeof classSubscriptions === 'undefined') {
-      logger.debug('Can not find subscriptions under this class ' + className);
+      logger.debug(`Can not find subscriptions under this class ${className}`);
       return;
     }
     for (const subscription of classSubscriptions.values()) {
@@ -337,7 +338,7 @@ class ParseLiveQueryServer {
               originalParseObject = res.original.toJSON();
               originalParseObject.className = res.original.className || className;
             }
-            const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
+            const functionName = `push${res.event.charAt(0).toUpperCase()}${res.event.slice(1)}`;
             if (client[functionName]) {
               client[functionName](requestId, currentParseObject, originalParseObject);
             }
@@ -350,8 +351,9 @@ class ParseLiveQueryServer {
               requestId
             );
             logger.error(
-              `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
-                JSON.stringify(error)
+              `Failed running afterLiveQueryEvent on class ${className} for event ${
+                res.event
+              } with session ${res.sessionToken} with:\n Error: ${JSON.stringify(error)}`
             );
           }
         });
@@ -535,7 +537,7 @@ class ParseLiveQueryServer {
 
   _getCLPOperation(query: any) {
     return typeof query === 'object' &&
-      Object.keys(query).length == 1 &&
+      Object.keys(query).length === 1 &&
       typeof query.objectId === 'string'
       ? 'get'
       : 'find';
@@ -667,14 +669,15 @@ class ParseLiveQueryServer {
     } catch (error) {
       Client.pushError(parseWebsocket, error.code || 141, error.message || error, false);
       logger.error(
-        `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
-          JSON.stringify(error)
+        `Failed running beforeConnect for session ${
+          request.sessionToken
+        } with:\n Error: ${JSON.stringify(error)}`
       );
     }
   }
 
   _hasMasterKey(request: any, validKeyPairs: any): boolean {
-    if (!validKeyPairs || validKeyPairs.size == 0 || !validKeyPairs.has('masterKey')) {
+    if (!validKeyPairs || validKeyPairs.size === 0 || !validKeyPairs.has('masterKey')) {
       return false;
     }
     if (!request || !Object.prototype.hasOwnProperty.call(request, 'masterKey')) {
@@ -684,7 +687,7 @@ class ParseLiveQueryServer {
   }
 
   _validateKeys(request: any, validKeyPairs: any): boolean {
-    if (!validKeyPairs || validKeyPairs.size == 0) {
+    if (!validKeyPairs || validKeyPairs.size === 0) {
       return true;
     }
     let isValid = false;
@@ -781,8 +784,9 @@ class ParseLiveQueryServer {
     } catch (e) {
       Client.pushError(parseWebsocket, e.code || 141, e.message || e, false, request.requestId);
       logger.error(
-        `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
-          JSON.stringify(e)
+        `Failed running beforeSubscribe on ${className} for session ${
+          request.sessionToken
+        } with:\n Error: ${JSON.stringify(e)}`
       );
     }
   }
@@ -811,11 +815,9 @@ class ParseLiveQueryServer {
       Client.pushError(
         parseWebsocket,
         2,
-        'Cannot find client with clientId ' +
-          parseWebsocket.clientId +
-          '. Make sure you connect to live query server before unsubscribing.'
+        `Cannot find client with clientId ${parseWebsocket.clientId}. Make sure you connect to live query server before unsubscribing.`
       );
-      logger.error('Can not find this client ' + parseWebsocket.clientId);
+      logger.error(`Can not find this client ${parseWebsocket.clientId}`);
       return;
     }
 
@@ -824,17 +826,10 @@ class ParseLiveQueryServer {
       Client.pushError(
         parseWebsocket,
         2,
-        'Cannot find subscription with clientId ' +
-          parseWebsocket.clientId +
-          ' subscriptionId ' +
-          requestId +
-          '. Make sure you subscribe to live query server before unsubscribing.'
+        `Cannot find subscription with clientId ${parseWebsocket.clientId} subscriptionId ${requestId}. Make sure you subscribe to live query server before unsubscribing.`
       );
       logger.error(
-        'Can not find subscription with clientId ' +
-          parseWebsocket.clientId +
-          ' subscriptionId ' +
-          requestId
+        `Can not find subscription with clientId ${parseWebsocket.clientId} subscriptionId ${requestId}`
       );
       return;
     }

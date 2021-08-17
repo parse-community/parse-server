@@ -7,14 +7,14 @@ export function isPushIncrementing(body) {
   }
 
   const badge = body.data.badge;
-  if (typeof badge == 'string' && badge.toLowerCase() == 'increment') {
+  if (typeof badge === 'string' && badge.toLowerCase() === 'increment') {
     return true;
   }
 
   return (
-    typeof badge == 'object' &&
-    typeof badge.__op == 'string' &&
-    badge.__op.toLowerCase() == 'increment' &&
+    typeof badge === 'object' &&
+    typeof badge.__op === 'string' &&
+    badge.__op.toLowerCase() === 'increment' &&
     Number(badge.amount)
   );
 }
@@ -30,7 +30,7 @@ export function getLocalesFromPush(body) {
     ...new Set(
       Object.keys(data).reduce((memo, key) => {
         localizableKeys.forEach(localizableKey => {
-          if (key.indexOf(`${localizableKey}-`) == 0) {
+          if (key.indexOf(`${localizableKey}-`) === 0) {
             memo.push(key.slice(localizableKey.length + 1));
           }
         });
@@ -61,7 +61,7 @@ export function stripLocalesFromBody(body) {
   }
   Object.keys(body.data).forEach(key => {
     localizableKeys.forEach(localizableKey => {
-      if (key.indexOf(`${localizableKey}-`) == 0) {
+      if (key.indexOf(`${localizableKey}-`) === 0) {
         delete body.data[key];
       }
     });
@@ -109,19 +109,19 @@ export function groupByLocaleIdentifier(installations, locales = []) {
  * @param {Array} validPushTypes An array of valid push types(string)
  */
 export function validatePushType(where = {}, validPushTypes = []) {
-  var deviceTypeField = where.deviceType || {};
-  var deviceTypes = [];
+  const deviceTypeField = where.deviceType || {};
+  const deviceTypes = [];
   if (typeof deviceTypeField === 'string') {
     deviceTypes.push(deviceTypeField);
   } else if (Array.isArray(deviceTypeField['$in'])) {
     deviceTypes.concat(deviceTypeField['$in']);
   }
-  for (var i = 0; i < deviceTypes.length; i++) {
-    var deviceType = deviceTypes[i];
+  for (let i = 0; i < deviceTypes.length; i++) {
+    const deviceType = deviceTypes[i];
     if (validPushTypes.indexOf(deviceType) < 0) {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
-        deviceType + ' is not supported push type.'
+        `${deviceType} is not supported push type.`
       );
     }
   }

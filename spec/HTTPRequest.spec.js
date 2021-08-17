@@ -6,7 +6,7 @@ const httpRequest = require('../lib/cloud-code/httpRequest'),
   express = require('express');
 
 const port = 13371;
-const httpRequestServer = 'http://localhost:' + port;
+const httpRequestServer = `http://localhost:${port}`;
 
 function startServer(done) {
   const app = express();
@@ -53,7 +53,7 @@ describe('httpRequest', () => {
 
   it('should do /hello', done => {
     httpRequest({
-      url: httpRequestServer + '/hello',
+      url: `${httpRequestServer}/hello`,
     }).then(function (httpResponse) {
       expect(httpResponse.status).toBe(200);
       expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
@@ -65,7 +65,7 @@ describe('httpRequest', () => {
 
   it('should do not follow redirects by default', done => {
     httpRequest({
-      url: httpRequestServer + '/301',
+      url: `${httpRequestServer}/301`,
     }).then(function (httpResponse) {
       expect(httpResponse.status).toBe(301);
       done();
@@ -74,7 +74,7 @@ describe('httpRequest', () => {
 
   it('should follow redirects when set', done => {
     httpRequest({
-      url: httpRequestServer + '/301',
+      url: `${httpRequestServer}/301`,
       followRedirects: true,
     }).then(function (httpResponse) {
       expect(httpResponse.status).toBe(200);
@@ -88,7 +88,7 @@ describe('httpRequest', () => {
   it('should fail on 404', done => {
     let calls = 0;
     httpRequest({
-      url: httpRequestServer + '/404',
+      url: `${httpRequestServer}/404`,
     }).then(
       function () {
         calls++;
@@ -110,7 +110,7 @@ describe('httpRequest', () => {
   it('should post on echo', done => {
     httpRequest({
       method: 'POST',
-      url: httpRequestServer + '/echo',
+      url: `${httpRequestServer}/echo`,
       body: {
         foo: 'bar',
       },
@@ -180,7 +180,7 @@ describe('httpRequest', () => {
 
   it('should params object to query string', done => {
     httpRequest({
-      url: httpRequestServer + '/qs',
+      url: `${httpRequestServer}/qs`,
       params: {
         foo: 'bar',
       },
@@ -199,7 +199,7 @@ describe('httpRequest', () => {
 
   it('should params string to query string', done => {
     httpRequest({
-      url: httpRequestServer + '/qs',
+      url: `${httpRequestServer}/qs`,
       params: 'foo=bar&foo2=bar2',
     }).then(
       function (httpResponse) {
@@ -278,13 +278,13 @@ describe('httpRequest', () => {
       foundText,
       foundBody = false;
     for (const key in encoded) {
-      if (key == 'data') {
+      if (key === 'data') {
         foundData = true;
       }
-      if (key == 'text') {
+      if (key === 'text') {
         foundText = true;
       }
-      if (key == 'body') {
+      if (key === 'body') {
         foundBody = true;
       }
     }

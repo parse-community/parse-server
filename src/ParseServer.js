@@ -1,6 +1,6 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
-var batch = require('./batch'),
+const batch = require('./batch'),
   bodyParser = require('body-parser'),
   express = require('express'),
   middlewares = require('./middlewares'),
@@ -150,7 +150,7 @@ class ParseServer {
     const { maxUploadSize = '20mb', appId, directAccess, pages } = options;
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
-    var api = express();
+    const api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
     // File handling needs to be before default middlewares are applied
@@ -253,7 +253,7 @@ class ParseServer {
     const app = express();
     if (options.middleware) {
       let middleware;
-      if (typeof options.middleware == 'string') {
+      if (typeof options.middleware === 'string') {
         middleware = require(path.resolve(process.cwd(), options.middleware));
       } else {
         middleware = options.middleware; // use as-is let express fail
@@ -332,7 +332,7 @@ class ParseServer {
     options: ParseServerOptions
   ) {
     if (!httpServer || (config && config.port)) {
-      var app = express();
+      const app = express();
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
     }
@@ -343,7 +343,7 @@ class ParseServer {
     // perform a health check on the serverURL value
     if (Parse.serverURL) {
       const request = require('./request');
-      request({ url: Parse.serverURL.replace(/\/$/, '') + '/health' })
+      request({ url: `${Parse.serverURL.replace(/\/$/, '')}/health` })
         .catch(response => response)
         .then(response => {
           const json = response.data || null;
@@ -449,7 +449,7 @@ function configureListeners(parseServer) {
   /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
     This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
   server.on('connection', socket => {
-    const socketId = socket.remoteAddress + ':' + socket.remotePort;
+    const socketId = `${socket.remoteAddress}:${socket.remotePort}`;
     sockets[socketId] = socket;
     socket.on('close', () => {
       delete sockets[socketId];

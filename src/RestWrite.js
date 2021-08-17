@@ -2,18 +2,19 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
-var SchemaController = require('./Controllers/SchemaController');
-var deepcopy = require('deepcopy');
+const SchemaController = require('./Controllers/SchemaController');
+const deepcopy = require('deepcopy');
 
 const Auth = require('./Auth');
-var cryptoUtils = require('./cryptoUtils');
-var passwordCrypto = require('./password');
-var Parse = require('parse/node');
-var triggers = require('./triggers');
-var ClientSDK = require('./ClientSDK');
+const cryptoUtils = require('./cryptoUtils');
+const passwordCrypto = require('./password');
+const Parse = require('parse/node');
+const triggers = require('./triggers');
+const ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
+import { isNull } from './Utils';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -178,7 +179,7 @@ RestWrite.prototype.validateClientClassCreation = function () {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            `${'This user is not allowed to access ' + 'non-existent class: '}${this.className}`
           );
         }
       });
@@ -212,7 +213,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
   }
 
   // Cloud code gets a bit of extra data for its objects
-  var extraData = { className: this.className };
+  const extraData = { className: this.className };
   if (this.query && this.query.objectId) {
     extraData.objectId = this.query.objectId;
   }
@@ -397,13 +398,13 @@ RestWrite.prototype.validateAuthData = function () {
     );
   }
 
-  var authData = this.data.authData;
-  var providers = Object.keys(authData);
+  const authData = this.data.authData;
+  const providers = Object.keys(authData);
   if (providers.length > 0) {
     const canHandleAuthData = providers.reduce((canHandle, provider) => {
-      var providerAuthData = authData[provider];
-      var hasToken = providerAuthData && providerAuthData.id;
-      return canHandle && (hasToken || providerAuthData == null);
+      const providerAuthData = authData[provider];
+      const hasToken = providerAuthData && providerAuthData.id;
+      return canHandle && (hasToken || isNull(providerAuthData));
     }, true);
     if (canHandleAuthData) {
       return this.handleAuthData(authData);
@@ -475,7 +476,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
   return this.findUsersWithAuthData(authData).then(async r => {
     results = this.filteredObjectsByACL(r);
 
-    if (results.length == 1) {
+    if (results.length === 1) {
       this.storage['authProvider'] = Object.keys(authData).join(',');
 
       const userResult = results[0];
@@ -568,7 +569,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
 
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function () {
-  var promise = Promise.resolve();
+  let promise = Promise.resolve();
 
   if (this.className !== '_User') {
     return promise;
@@ -761,7 +762,7 @@ RestWrite.prototype._validatePasswordRequirements = function () {
     } else {
       // retrieve the User object using objectId during password reset
       return this.config.database.find('_User', { objectId: this.objectId() }).then(results => {
-        if (results.length != 1) {
+        if (results.length !== 1) {
           throw undefined;
         }
         if (this.data.password.indexOf(results[0].username) >= 0)
@@ -785,7 +786,7 @@ RestWrite.prototype._validatePasswordHistory = function () {
         { keys: ['_password_history', '_hashed_password'] }
       )
       .then(results => {
-        if (results.length != 1) {
+        if (results.length !== 1) {
           throw undefined;
         }
         const user = results[0];
@@ -877,7 +878,7 @@ RestWrite.createSession = function (
   config,
   { userId, createdWith, installationId, additionalSessionData }
 ) {
-  const token = 'r:' + cryptoUtils.newToken();
+  const token = `r:${cryptoUtils.newToken()}`;
   const expiresAt = config.generateSessionExpiresAt();
   const sessionData = {
     sessionToken: token,
@@ -922,7 +923,7 @@ RestWrite.prototype.deleteEmailResetTokenIfNeeded = function () {
 
 RestWrite.prototype.destroyDuplicatedSessions = function () {
   // Only for _Session, and at creation time
-  if (this.className != '_Session' || this.query) {
+  if (this.className !== '_Session' || this.query) {
     return;
   }
   // Destroy the sessions in 'Background'
@@ -948,7 +949,7 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
 // Handles any followup logic
 RestWrite.prototype.handleFollowup = function () {
   if (this.storage && this.storage['clearSessions'] && this.config.revokeSessionOnPasswordReset) {
-    var sessionQuery = {
+    const sessionQuery = {
       user: {
         __type: 'Pointer',
         className: '_User',
@@ -991,7 +992,7 @@ RestWrite.prototype.handleSession = function () {
   }
 
   if (this.query) {
-    if (this.data.user && !this.auth.isMaster && this.data.user.objectId != this.auth.user.id) {
+    if (this.data.user && !this.auth.isMaster && this.data.user.objectId !== this.auth.user.id) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     } else if (this.data.installationId) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
@@ -1002,7 +1003,7 @@ RestWrite.prototype.handleSession = function () {
 
   if (!this.query && !this.auth.isMaster) {
     const additionalSessionData = {};
-    for (var key in this.data) {
+    for (const key in this.data) {
       if (key === 'objectId' || key === 'user') {
         continue;
       }
@@ -1055,7 +1056,7 @@ RestWrite.prototype.handleInstallation = function () {
 
   // If the device token is 64 characters long, we assume it is for iOS
   // and lowercase it.
-  if (this.data.deviceToken && this.data.deviceToken.length == 64) {
+  if (this.data.deviceToken && this.data.deviceToken.length === 64) {
     this.data.deviceToken = this.data.deviceToken.toLowerCase();
   }
 
@@ -1080,12 +1081,12 @@ RestWrite.prototype.handleInstallation = function () {
     return;
   }
 
-  var promise = Promise.resolve();
+  let promise = Promise.resolve();
 
-  var idMatch; // Will be a match on either objectId or installationId
-  var objectIdMatch;
-  var installationIdMatch;
-  var deviceTokenMatches = [];
+  let idMatch; // Will be a match on either objectId or installationId
+  let objectIdMatch;
+  let installationIdMatch;
+  const deviceTokenMatches = [];
 
   // Instead of issuing 3 reads, let's do it with one OR.
   const orQueries = [];
@@ -1103,7 +1104,7 @@ RestWrite.prototype.handleInstallation = function () {
     orQueries.push({ deviceToken: this.data.deviceToken });
   }
 
-  if (orQueries.length == 0) {
+  if (orQueries.length === 0) {
     return;
   }
 
@@ -1119,13 +1120,13 @@ RestWrite.prototype.handleInstallation = function () {
     })
     .then(results => {
       results.forEach(result => {
-        if (this.query && this.query.objectId && result.objectId == this.query.objectId) {
+        if (this.query && this.query.objectId && result.objectId === this.query.objectId) {
           objectIdMatch = result;
         }
-        if (result.installationId == installationId) {
+        if (result.installationId === installationId) {
           installationIdMatch = result;
         }
-        if (result.deviceToken == this.data.deviceToken) {
+        if (result.deviceToken === this.data.deviceToken) {
           deviceTokenMatches.push(result);
         }
       });
@@ -1177,7 +1178,7 @@ RestWrite.prototype.handleInstallation = function () {
         if (!deviceTokenMatches.length) {
           return;
         } else if (
-          deviceTokenMatches.length == 1 &&
+          deviceTokenMatches.length === 1 &&
           (!deviceTokenMatches[0]['installationId'] || !installationId)
         ) {
           // Single match on device token but none on installationId, and either
@@ -1196,7 +1197,7 @@ RestWrite.prototype.handleInstallation = function () {
           // an installation ID. Try cleaning out old installations that match
           // the deviceToken, and return nil to signal that a new object should
           // be created.
-          var delQuery = {
+          const delQuery = {
             deviceToken: this.data.deviceToken,
             installationId: {
               $ne: installationId,
@@ -1206,7 +1207,7 @@ RestWrite.prototype.handleInstallation = function () {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
           this.config.database.destroy('_Installation', delQuery).catch(err => {
-            if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+            if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
               // no deletions were made. Can be ignored.
               return;
             }
@@ -1216,7 +1217,7 @@ RestWrite.prototype.handleInstallation = function () {
           return;
         }
       } else {
-        if (deviceTokenMatches.length == 1 && !deviceTokenMatches[0]['installationId']) {
+        if (deviceTokenMatches.length === 1 && !deviceTokenMatches[0]['installationId']) {
           // Exactly one device token match and it doesn't have an installation
           // ID. This is the one case where we want to merge with the existing
           // object.
@@ -1227,7 +1228,7 @@ RestWrite.prototype.handleInstallation = function () {
               return deviceTokenMatches[0]['objectId'];
             })
             .catch(err => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+              if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
                 // no deletions were made. Can be ignored
                 return;
               }
@@ -1235,7 +1236,7 @@ RestWrite.prototype.handleInstallation = function () {
               throw err;
             });
         } else {
-          if (this.data.deviceToken && idMatch.deviceToken != this.data.deviceToken) {
+          if (this.data.deviceToken && idMatch.deviceToken !== this.data.deviceToken) {
             // We're setting the device token on an existing installation, so
             // we should try cleaning out old installations that match this
             // device token.
@@ -1251,7 +1252,7 @@ RestWrite.prototype.handleInstallation = function () {
             } else if (
               idMatch.objectId &&
               this.data.objectId &&
-              idMatch.objectId == this.data.objectId
+              idMatch.objectId === this.data.objectId
             ) {
               // we passed an objectId, preserve that instalation
               delQuery['objectId'] = {
@@ -1265,7 +1266,7 @@ RestWrite.prototype.handleInstallation = function () {
               delQuery['appIdentifier'] = this.data.appIdentifier;
             }
             this.config.database.destroy('_Installation', delQuery).catch(err => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+              if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
                 // no deletions were made. Can be ignored.
                 return;
               }
@@ -1358,7 +1359,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
           { keys: ['_password_history', '_hashed_password'] }
         )
         .then(results => {
-          if (results.length != 1) {
+          if (results.length !== 1) {
             throw undefined;
           }
           const user = results[0];
@@ -1401,7 +1402,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
   } else {
     // Set the default ACL and password timestamp for the new _User
     if (this.className === '_User') {
-      var ACL = this.data.ACL;
+      let ACL = this.data.ACL;
       // default public r/w ACL
       if (!ACL) {
         ACL = {};
@@ -1512,7 +1513,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     return Promise.resolve();
   }
 
-  var extraData = { className: this.className };
+  const extraData = { className: this.className };
   if (this.query && this.query.objectId) {
     extraData.objectId = this.query.objectId;
   }
@@ -1561,7 +1562,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
 
 // A helper to figure out what location this operation happens at.
 RestWrite.prototype.location = function () {
-  var middle = this.className === '_User' ? '/users/' : '/classes/' + this.className + '/';
+  const middle = this.className === '_User' ? '/users/' : `/classes/${this.className}/`;
   const mount = this.config.mount || this.config.serverURL;
   return mount + middle + this.data.objectId;
 };
@@ -1620,7 +1621,7 @@ RestWrite.prototype.cleanUserAuthData = function () {
           delete user.authData[provider];
         }
       });
-      if (Object.keys(user.authData).length == 0) {
+      if (Object.keys(user.authData).length === 0) {
         delete user.authData;
       }
     }
@@ -1642,7 +1643,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {
       delete response[fieldName];
-      if (clientSupportsDelete && dataValue.__op == 'Delete') {
+      if (clientSupportsDelete && dataValue.__op === 'Delete') {
         response[fieldName] = dataValue;
       }
     }

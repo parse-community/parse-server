@@ -21,7 +21,7 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
       return adapter(options);
     } catch (e) {
       if (e.name === 'TypeError') {
-        var Adapter = adapter;
+        const Adapter = adapter;
         return new Adapter(options);
       } else {
         throw e;

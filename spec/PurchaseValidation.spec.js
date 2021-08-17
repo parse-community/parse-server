@@ -51,7 +51,7 @@ describe('test validate_receipt endpoint', () => {
       },
     });
     const body = httpResponse.data;
-    if (typeof body != 'object') {
+    if (typeof body !== 'object') {
       fail('Body is not an object');
     } else {
       expect(body.__type).toEqual('File');
@@ -121,7 +121,7 @@ describe('test validate_receipt endpoint', () => {
       },
     }).catch(error => error);
     const body = response.data;
-    if (typeof body != 'object') {
+    if (typeof body !== 'object') {
       fail('Body is not an object');
     } else {
       expect(body.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
@@ -147,7 +147,7 @@ describe('test validate_receipt endpoint', () => {
       },
     });
     const body = response.data;
-    if (typeof body != 'object') {
+    if (typeof body !== 'object') {
       fail('Body is not an object');
     } else {
       expect(body.status).toBe(21002);

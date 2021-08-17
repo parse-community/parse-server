@@ -12,11 +12,11 @@ class ParseCloudCodePublisher {
   }
 
   onCloudCodeAfterSave(request: any): void {
-    this._onCloudCodeMessage(Parse.applicationId + 'afterSave', request);
+    this._onCloudCodeMessage(`${Parse.applicationId}afterSave`, request);
   }
 
   onCloudCodeAfterDelete(request: any): void {
-    this._onCloudCodeMessage(Parse.applicationId + 'afterDelete', request);
+    this._onCloudCodeMessage(`${Parse.applicationId}afterDelete`, request);
   }
 
   // Request is the request object from cloud code functions. request.object is a ParseObject.

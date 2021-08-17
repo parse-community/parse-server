@@ -86,7 +86,7 @@ export class HooksController {
   }
 
   saveHook(hook) {
-    var query;
+    let query;
     if (hook.functionName && hook.url) {
       query = { functionName: hook.functionName };
     } else if (hook.triggerName && hook.className && hook.url) {
@@ -102,7 +102,7 @@ export class HooksController {
   }
 
   addHookToTriggers(hook) {
-    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
+    const wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
     wrappedFunction.url = hook.url;
     if (hook.className) {
       triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId);
@@ -117,7 +117,7 @@ export class HooksController {
   }
 
   createOrUpdateHook(aHook) {
-    var hook;
+    let hook;
     if (aHook && aHook.functionName && aHook.url) {
       hook = {};
       hook.functionName = aHook.functionName;
@@ -187,7 +187,7 @@ export class HooksController {
 function wrapToHTTPRequest(hook, key) {
   return req => {
     const jsonBody = {};
-    for (var i in req) {
+    for (const i in req) {
       jsonBody[i] = req[i];
     }
     if (req.object) {

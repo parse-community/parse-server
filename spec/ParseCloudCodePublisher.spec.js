@@ -34,7 +34,7 @@ describe('ParseCloudCodePublisher', function () {
     publisher.onCloudCodeAfterSave(request);
 
     expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(
-      Parse.applicationId + 'afterSave',
+      `${Parse.applicationId}afterSave`,
       request
     );
   });
@@ -46,7 +46,7 @@ describe('ParseCloudCodePublisher', function () {
     publisher.onCloudCodeAfterDelete(request);
 
     expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(
-      Parse.applicationId + 'afterDelete',
+      `${Parse.applicationId}afterDelete`,
       request
     );
   });

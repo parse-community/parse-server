@@ -1,4 +1,4 @@
-var toString = Object.prototype.toString;
+const toString = Object.prototype.toString;
 
 /**
  * Determines whether two objects represent the same primitive, special Parse
@@ -25,7 +25,7 @@ function equalObjects(a, b) {
       if (a.length !== b.length) {
         return false;
       }
-      for (var i = 0; i < a.length; i++) {
+      for (let i = 0; i < a.length; i++) {
         if (!equalObjects(a[i], b[i])) {
           return false;
         }
@@ -37,7 +37,7 @@ function equalObjects(a, b) {
   if (Object.keys(a).length !== Object.keys(b).length) {
     return false;
   }
-  for (var key in a) {
+  for (const key in a) {
     if (!equalObjects(a[key], b[key])) {
       return false;
     }

@@ -16,7 +16,7 @@ describe('Enable express error handler', () => {
     try {
       await request({
         method: 'PUT',
-        url: defaultConfiguration.serverURL + '/classes/AnyClass/nonExistingId',
+        url: `${defaultConfiguration.serverURL}/classes/AnyClass/nonExistingId`,
         headers: {
           'X-Parse-Application-Id': defaultConfiguration.appId,
           'X-Parse-Master-Key': defaultConfiguration.masterKey,

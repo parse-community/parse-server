@@ -1,5 +1,6 @@
 import logger from '../logger';
 import Deprecations from './Deprecations';
+import { isNull } from '../Utils';
 
 /**
  * The deprecator class.
@@ -21,7 +22,7 @@ class Deprecator {
       const changeNewDefault = deprecation.changeNewDefault;
 
       // If default will change, only throw a warning if option is not set
-      if (changeNewDefault != null && options[optionKey] == null) {
+      if (!isNull(changeNewDefault) && isNull(options[optionKey])) {
         Deprecator._logOption({ optionKey, changeNewDefault, solution });
       }
     }
@@ -97,12 +98,11 @@ class Deprecator {
   static _logOption({ optionKey, envKey, changeNewKey, changeNewDefault, solution }) {
     const type = optionKey ? 'option' : 'environment key';
     const key = optionKey ? optionKey : envKey;
-    const keyAction =
-      changeNewKey == null
-        ? undefined
-        : changeNewKey.length > 0
-          ? `renamed to '${changeNewKey}'`
-          : `removed`;
+    const keyAction = isNull(changeNewKey)
+      ? undefined
+      : changeNewKey.length > 0
+        ? `renamed to '${changeNewKey}'`
+        : `removed`;
 
     // Compose message
     let output = `DeprecationWarning: The Parse Server ${type} '${key}' `;

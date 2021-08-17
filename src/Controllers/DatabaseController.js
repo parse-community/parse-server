@@ -17,6 +17,7 @@ import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import { isNull } from '../Utils';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -171,7 +172,7 @@ const filterSensitiveData = (
 
       // if at least one pointer-permission affected the current user
       // intersect vs protectedFields from previous stage (@see addProtectedFields)
-      // Sets theory (intersections): A x (B x C) == (A x B) x C
+      // Sets theory (intersections): A x (B x C) === (A x B) x C
       if (overrideProtectedFields && protectedFields) {
         newProtectedFields.push(protectedFields);
       }
@@ -342,7 +343,7 @@ const transformAuthData = (className, object, schema) => {
     Object.keys(object.authData).forEach(provider => {
       const providerData = object.authData[provider];
       const fieldName = `_auth_data_${provider}`;
-      if (providerData == null) {
+      if (isNull(providerData)) {
         object[fieldName] = {
           __op: 'Delete',
         };
@@ -420,7 +421,7 @@ class DatabaseController {
   validateClassName(className: string): Promise<void> {
     if (!SchemaController.classNameIsValid(className)) {
       return Promise.reject(
-        new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className)
+        new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `invalid className: ${className}`)
       );
     }
     return Promise.resolve();
@@ -430,7 +431,7 @@ class DatabaseController {
   loadSchema(
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<SchemaController.SchemaController> {
-    if (this.schemaPromise != null) {
+    if (!isNull(this.schemaPromise)) {
       return this.schemaPromise;
     }
     this.schemaPromise = SchemaController.load(this.adapter, options);
@@ -453,8 +454,8 @@ class DatabaseController {
   // TODO: make this not in the DatabaseController interface
   redirectClassNameForKey(className: string, key: string): Promise<?string> {
     return this.loadSchema().then(schema => {
-      var t = schema.getExpectedType(className, key);
-      if (t != null && typeof t !== 'string' && t.type === 'Relation') {
+      const t = schema.getExpectedType(className, key);
+      if (!isNull(t) && typeof t !== 'string' && t.type === 'Relation') {
         return t.targetClass;
       }
       return className;
@@ -474,7 +475,7 @@ class DatabaseController {
     let schema;
     const acl = runOptions.acl;
     const isMaster = acl === undefined;
-    var aclGroup: string[] = acl || [];
+    const aclGroup: string[] = acl || [];
     return this.loadSchema()
       .then(s => {
         schema = s;
@@ -501,9 +502,9 @@ class DatabaseController {
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
     update = deepcopy(update);
-    var relationUpdates = [];
-    var isMaster = acl === undefined;
-    var aclGroup = acl || [];
+    let relationUpdates = [];
+    const isMaster = acl === undefined;
+    const aclGroup = acl || [];
 
     return this.loadSchemaIfNeeded(validSchemaController).then(schemaController => {
       return (isMaster
@@ -652,26 +653,26 @@ class DatabaseController {
   // Returns a list of all relation updates to perform
   // This mutates update.
   collectRelationUpdates(className: string, objectId: ?string, update: any) {
-    var ops = [];
-    var deleteMe = [];
+    const ops = [];
+    const deleteMe = [];
     objectId = update.objectId || objectId;
 
-    var process = (op, key) => {
+    const process = (op, key) => {
       if (!op) {
         return;
       }
-      if (op.__op == 'AddRelation') {
+      if (op.__op === 'AddRelation') {
         ops.push({ key, op });
         deleteMe.push(key);
       }
 
-      if (op.__op == 'RemoveRelation') {
+      if (op.__op === 'RemoveRelation') {
         ops.push({ key, op });
         deleteMe.push(key);
       }
 
-      if (op.__op == 'Batch') {
-        for (var x of op.ops) {
+      if (op.__op === 'Batch') {
+        for (const x of op.ops) {
           process(x, key);
         }
       }
@@ -689,19 +690,19 @@ class DatabaseController {
   // Processes relation-updating operations from a REST-format update.
   // Returns a promise that resolves when all updates have been performed
   handleRelationUpdates(className: string, objectId: string, update: any, ops: any) {
-    var pending = [];
+    const pending = [];
     objectId = update.objectId || objectId;
     ops.forEach(({ key, op }) => {
       if (!op) {
         return;
       }
-      if (op.__op == 'AddRelation') {
+      if (op.__op === 'AddRelation') {
         for (const object of op.objects) {
           pending.push(this.addRelation(key, className, objectId, object.objectId));
         }
       }
 
-      if (op.__op == 'RemoveRelation') {
+      if (op.__op === 'RemoveRelation') {
         for (const object of op.objects) {
           pending.push(this.removeRelation(key, className, objectId, object.objectId));
         }
@@ -731,7 +732,7 @@ class DatabaseController {
   // Returns a promise that resolves successfully iff the remove was
   // successful.
   removeRelation(key: string, fromClassName: string, fromId: string, toId: string) {
-    var doc = {
+    const doc = {
       relatedId: toId,
       owningId: fromId,
     };
@@ -744,7 +745,7 @@ class DatabaseController {
       )
       .catch(error => {
         // We don't care if they try to delete a non-existent relation.
-        if (error.code == Parse.Error.OBJECT_NOT_FOUND) {
+        if (error.code === Parse.Error.OBJECT_NOT_FOUND) {
           return;
         }
         throw error;
@@ -834,8 +835,8 @@ class DatabaseController {
     object.createdAt = { iso: object.createdAt, __type: 'Date' };
     object.updatedAt = { iso: object.updatedAt, __type: 'Date' };
 
-    var isMaster = acl === undefined;
-    var aclGroup = acl || [];
+    const isMaster = acl === undefined;
+    const aclGroup = acl || [];
     const relationUpdates = this.collectRelationUpdates(className, null, object);
 
     return this.validateClassName(className)
@@ -983,7 +984,7 @@ class DatabaseController {
         (query[key]['$in'] ||
           query[key]['$ne'] ||
           query[key]['$nin'] ||
-          query[key].__type == 'Pointer')
+          query[key].__type === 'Pointer')
       ) {
         // Build the list of queries
         queries = Object.keys(query[key]).map(constraintKey => {
@@ -991,12 +992,12 @@ class DatabaseController {
           let isNegation = false;
           if (constraintKey === 'objectId') {
             relatedIds = [query[key].objectId];
-          } else if (constraintKey == '$in') {
+          } else if (constraintKey === '$in') {
             relatedIds = query[key]['$in'].map(r => r.objectId);
-          } else if (constraintKey == '$nin') {
+          } else if (constraintKey === '$nin') {
             isNegation = true;
             relatedIds = query[key]['$nin'].map(r => r.objectId);
-          } else if (constraintKey == '$ne') {
+          } else if (constraintKey === '$ne') {
             isNegation = true;
             relatedIds = [query[key]['$ne'].objectId];
           } else {
@@ -1050,7 +1051,7 @@ class DatabaseController {
       );
     }
 
-    var relatedTo = query['$relatedTo'];
+    const relatedTo = query['$relatedTo'];
     if (relatedTo) {
       return this.relatedIds(
         relatedTo.object.className,
@@ -1166,7 +1167,8 @@ class DatabaseController {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
     op =
-      op || (typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
+      op ||
+      (typeof query.objectId === 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
     // Count operation if counting
     op = count === true ? 'count' : op;
 
@@ -1467,7 +1469,7 @@ class DatabaseController {
     const perms = schema.getClassLevelPermissions(className);
 
     const userACL = aclGroup.filter(acl => {
-      return acl.indexOf('role:') != 0 && acl != '*';
+      return acl.indexOf('role:') !== 0 && acl !== '*';
     });
 
     const groupKey =
@@ -1491,7 +1493,7 @@ class DatabaseController {
       // the ACL should have exactly 1 user
       // No user set return undefined
       // If the length is > 1, that means we didn't de-dupe users correctly
-      if (userACL.length != 1) {
+      if (userACL.length !== 1) {
         return;
       }
       const userId = userACL[0];

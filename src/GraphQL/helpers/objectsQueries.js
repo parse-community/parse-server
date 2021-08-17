@@ -80,7 +80,7 @@ const getObject = async (
     info.context
   );
 
-  if (!response.results || response.results.length == 0) {
+  if (!response.results || response.results.length === 0) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
   }
 

@@ -492,7 +492,7 @@ describe('Parse.Query testing', () => {
 
     const makeDates = function (stringArray) {
       return stringArray.map(function (dateStr) {
-        return parseDate(dateStr + 'T00:00:00Z');
+        return parseDate(`${dateStr}T00:00:00Z`);
       });
     };
 
@@ -573,7 +573,7 @@ describe('Parse.Query testing', () => {
       equal(objectList.length, results.length);
 
       return request({
-        url: Parse.serverURL + '/classes/Object',
+        url: `${Parse.serverURL}/classes/Object`,
         qs: {
           where: JSON.stringify({
             strings: {
@@ -593,7 +593,7 @@ describe('Parse.Query testing', () => {
           arrayContains(results.results, object);
 
           return request({
-            url: Parse.serverURL + '/classes/Object',
+            url: `${Parse.serverURL}/classes/Object`,
             qs: {
               where: JSON.stringify({
                 strings: {
@@ -615,7 +615,7 @@ describe('Parse.Query testing', () => {
           arrayContains(results.results, object3);
 
           return request({
-            url: Parse.serverURL + '/classes/Object',
+            url: `${Parse.serverURL}/classes/Object`,
             qs: {
               where: JSON.stringify({
                 strings: {
@@ -649,7 +649,7 @@ describe('Parse.Query testing', () => {
         equal(object.isNew(), false);
 
         return request({
-          url: Parse.serverURL + '/classes/Object',
+          url: `${Parse.serverURL}/classes/Object`,
           qs: {
             where: JSON.stringify({
               strings: {
@@ -684,7 +684,7 @@ describe('Parse.Query testing', () => {
         equal(object.isNew(), false);
 
         return request({
-          url: Parse.serverURL + '/classes/Object',
+          url: `${Parse.serverURL}/classes/Object`,
           qs: {
             where: JSON.stringify({
               strings: {
@@ -719,7 +719,7 @@ describe('Parse.Query testing', () => {
         equal(object.isNew(), false);
 
         return request({
-          url: Parse.serverURL + '/classes/Object',
+          url: `${Parse.serverURL}/classes/Object`,
           qs: {
             where: JSON.stringify({
               strings: {
@@ -759,7 +759,7 @@ describe('Parse.Query testing', () => {
         equal(objectList.length, results.length);
 
         return request({
-          url: Parse.serverURL + '/classes/Object',
+          url: `${Parse.serverURL}/classes/Object`,
           qs: {
             where: JSON.stringify({
               strings: {
@@ -794,7 +794,7 @@ describe('Parse.Query testing', () => {
         equal(object.isNew(), false);
 
         return request({
-          url: Parse.serverURL + '/classes/Object',
+          url: `${Parse.serverURL}/classes/Object`,
           qs: {
             where: JSON.stringify({
               strings: {
@@ -849,7 +849,7 @@ describe('Parse.Query testing', () => {
 
         // Return all Parent where all parent.objects are contained in objects
         return request({
-          url: Parse.serverURL + '/classes/Parent',
+          url: `${Parse.serverURL}/classes/Parent`,
           qs: {
             where: JSON.stringify({
               objects: {
@@ -886,7 +886,7 @@ describe('Parse.Query testing', () => {
     const obj3 = new TestObject({ numbers: [1, 2, 3, 4] });
     Parse.Object.saveAll([obj1, obj2, obj3])
       .then(() => {
-        return request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options));
+        return request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options));
       })
       .then(response => {
         const results = response.data;
@@ -908,7 +908,7 @@ describe('Parse.Query testing', () => {
     const obj3 = new TestObject({ numbers: [1, 2, 3, 4] });
     Parse.Object.saveAll([obj1, obj2, obj3])
       .then(() => {
-        return request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options));
+        return request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options));
       })
       .then(response => {
         const results = response.data;
@@ -927,7 +927,7 @@ describe('Parse.Query testing', () => {
     obj
       .save()
       .then(() => {
-        return request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options));
+        return request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options));
       })
       .then(done.fail)
       .catch(response => {
@@ -1215,7 +1215,7 @@ describe('Parse.Query testing', () => {
     const obj1 = new TestObject({ field: false });
     const obj2 = new TestObject({ field: true });
     Parse.Object.saveAll([obj1, obj2]).then(() => {
-      request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options)).then(
+      request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options)).then(
         resp => {
           equal(resp.data.results.length, 1);
           done();
@@ -1233,7 +1233,7 @@ describe('Parse.Query testing', () => {
     const obj1 = new TestObject({ field: false });
     const obj2 = new TestObject({ field: null });
     Parse.Object.saveAll([obj1, obj2]).then(() => {
-      return request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options)).then(
+      return request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options)).then(
         resp => {
           equal(resp.data.results.length, 1);
           done();
@@ -1319,7 +1319,7 @@ describe('Parse.Query testing', () => {
       query.containedIn('objectId', [list[2].id, list[3].id, list[0].id, 'NONSENSE']);
       query.ascending('number');
       query.find().then(function (results) {
-        if (results.length != 3) {
+        if (results.length !== 3) {
           fail('expected 3 results');
         } else {
           equal(results[0].get('number'), 0);
@@ -1339,7 +1339,7 @@ describe('Parse.Query testing', () => {
       const query = new Parse.Query(BoxedNumber);
       query.equalTo('objectId', list[4].id);
       query.find().then(function (results) {
-        if (results.length != 1) {
+        if (results.length !== 1) {
           fail('expected 1 result');
           done();
         } else {
@@ -1927,7 +1927,7 @@ describe('Parse.Query testing', () => {
   function makeTimeObject(start, i) {
     const time = new Date();
     time.setSeconds(start.getSeconds() + i);
-    const item = new TestObject({ name: 'item' + i, time: time });
+    const item = new TestObject({ name: `item${i}`, time: time });
     return item.save();
   }
 
@@ -2079,9 +2079,9 @@ describe('Parse.Query testing', () => {
 
   it('contains', function (done) {
     Parse.Object.saveAll([
-      new TestObject({ myString: 'zax' + someAscii + 'qub' }),
-      new TestObject({ myString: 'start' + someAscii }),
-      new TestObject({ myString: someAscii + 'end' }),
+      new TestObject({ myString: `zax${someAscii}qub` }),
+      new TestObject({ myString: `start${someAscii}` }),
+      new TestObject({ myString: `${someAscii}end` }),
       new TestObject({ myString: someAscii }),
     ]).then(function () {
       const query = new Parse.Query(TestObject);
@@ -2114,9 +2114,9 @@ describe('Parse.Query testing', () => {
 
   it('startsWith', function (done) {
     Parse.Object.saveAll([
-      new TestObject({ myString: 'zax' + someAscii + 'qub' }),
-      new TestObject({ myString: 'start' + someAscii }),
-      new TestObject({ myString: someAscii + 'end' }),
+      new TestObject({ myString: `zax${someAscii}qub` }),
+      new TestObject({ myString: `start${someAscii}` }),
+      new TestObject({ myString: `${someAscii}end` }),
       new TestObject({ myString: someAscii }),
     ]).then(function () {
       const query = new Parse.Query(TestObject);
@@ -2130,9 +2130,9 @@ describe('Parse.Query testing', () => {
 
   it('endsWith', function (done) {
     Parse.Object.saveAll([
-      new TestObject({ myString: 'zax' + someAscii + 'qub' }),
-      new TestObject({ myString: 'start' + someAscii }),
-      new TestObject({ myString: someAscii + 'end' }),
+      new TestObject({ myString: `zax${someAscii}qub` }),
+      new TestObject({ myString: `start${someAscii}` }),
+      new TestObject({ myString: `${someAscii}end` }),
       new TestObject({ myString: someAscii }),
     ]).then(function () {
       const query = new Parse.Query(TestObject);
@@ -2372,7 +2372,7 @@ describe('Parse.Query testing', () => {
   it('properly includes array', done => {
     const objects = [];
     let total = 0;
-    while (objects.length != 5) {
+    while (objects.length !== 5) {
       const object = new Parse.Object('AnObject');
       object.set('key', objects.length);
       total += objects.length;
@@ -2411,13 +2411,13 @@ describe('Parse.Query testing', () => {
   it('properly includes array of mixed objects', done => {
     const objects = [];
     let total = 0;
-    while (objects.length != 5) {
+    while (objects.length !== 5) {
       const object = new Parse.Object('AnObject');
       object.set('key', objects.length);
       total += objects.length;
       objects.push(object);
     }
-    while (objects.length != 10) {
+    while (objects.length !== 10) {
       const object = new Parse.Object('AnotherObject');
       object.set('key', objects.length);
       total += objects.length;
@@ -2457,12 +2457,12 @@ describe('Parse.Query testing', () => {
   it('properly nested array of mixed objects with bad ids', done => {
     const objects = [];
     let total = 0;
-    while (objects.length != 5) {
+    while (objects.length !== 5) {
       const object = new Parse.Object('AnObject');
       object.set('key', objects.length);
       objects.push(object);
     }
-    while (objects.length != 10) {
+    while (objects.length !== 10) {
       const object = new Parse.Object('AnotherObject');
       object.set('key', objects.length);
       objects.push(object);
@@ -2471,7 +2471,7 @@ describe('Parse.Query testing', () => {
       .then(() => {
         const object = new Parse.Object('AContainer');
         for (let i = 0; i < objects.length; i++) {
-          if (i % 2 == 0) {
+          if (i % 2 === 0) {
             objects[i].id = 'randomThing';
           } else {
             total += objects[i].get('key');
@@ -2684,7 +2684,7 @@ describe('Parse.Query testing', () => {
 
     Parse.Object.saveAll(objects)
       .then(() => {
-        return request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options));
+        return request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options));
       })
       .then(response => {
         const results = response.data;
@@ -2706,7 +2706,7 @@ describe('Parse.Query testing', () => {
     obj
       .save()
       .then(() => {
-        return request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options));
+        return request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options));
       })
       .then(done.fail)
       .catch(response => {
@@ -2725,7 +2725,7 @@ describe('Parse.Query testing', () => {
     obj
       .save()
       .then(() => {
-        return request(Object.assign({ url: Parse.serverURL + '/classes/TestObject' }, options));
+        return request(Object.assign({ url: `${Parse.serverURL}/classes/TestObject` }, options));
       })
       .then(done.fail)
       .catch(response => {
@@ -2987,7 +2987,7 @@ describe('Parse.Query testing', () => {
         .then(function () {
           equal(seen.length, COUNT);
           for (let i = 0; i < COUNT; i++) {
-            equal(seen[i], 1, 'Should have seen object number ' + i);
+            equal(seen[i], 1, `Should have seen object number ${i}`);
           }
           done();
         }, done.fail);
@@ -3029,7 +3029,7 @@ describe('Parse.Query testing', () => {
       .then(function () {
         equal(seen.length, COUNT);
         for (let i = 0; i < COUNT; i++) {
-          equal(seen[i], 1, 'Should have seen object number ' + i);
+          equal(seen[i], 1, `Should have seen object number ${i}`);
         }
         done();
       });
@@ -3235,7 +3235,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: 'hello',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3247,7 +3247,7 @@ describe('Parse.Query testing', () => {
     expect(response.data.results[0].hello).toBe('world');
 
     const response2 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: ['foo', 'hello'],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3259,7 +3259,7 @@ describe('Parse.Query testing', () => {
     expect(response2.data.results[0].hello).toBe('world');
 
     const response3 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: ['foo', 'bar', 'hello'],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3271,7 +3271,7 @@ describe('Parse.Query testing', () => {
     expect(response3.data.results[0].hello).toBe('world');
 
     const response4 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: [''],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3286,7 +3286,7 @@ describe('Parse.Query testing', () => {
     expect(response4.data.results[0].hello).toBeUndefined();
 
     const response5 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: [],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3306,7 +3306,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: '',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3321,7 +3321,7 @@ describe('Parse.Query testing', () => {
     expect(response.data.results[0].hello).toBeUndefined();
 
     const response2 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: '["foo", "hello"]',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3336,7 +3336,7 @@ describe('Parse.Query testing', () => {
     expect(response2.data.results[0].hello).toBe('world');
 
     const response3 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: '["foo", "bar", "hello"]',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3464,7 +3464,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: ['foo'],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3478,7 +3478,7 @@ describe('Parse.Query testing', () => {
     expect(response.data.results[0].hello).toBe('world');
 
     const response2 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: ['foo', 'hello'],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3492,7 +3492,7 @@ describe('Parse.Query testing', () => {
     expect(response2.data.results[0].hello).toBeUndefined();
 
     const response3 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: [],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3506,7 +3506,7 @@ describe('Parse.Query testing', () => {
     expect(response3.data.results[0].hello).toBe('world');
 
     const response4 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: [''],
         where: JSON.stringify({ objectId: obj.id }),
@@ -3525,7 +3525,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: 'foo',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3539,7 +3539,7 @@ describe('Parse.Query testing', () => {
     expect(response.data.results[0].hello).toBe('world');
 
     const response2 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: '',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3553,7 +3553,7 @@ describe('Parse.Query testing', () => {
     expect(response2.data.results[0].hello).toBe('world');
 
     const response3 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: '["hello"]',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3567,7 +3567,7 @@ describe('Parse.Query testing', () => {
     expect(response3.data.results[0].hello).toBeUndefined();
 
     const response4 = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         excludeKeys: '["foo", "hello"]',
         where: JSON.stringify({ objectId: obj.id }),
@@ -3586,7 +3586,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: 'foo',
         excludeKeys: 'foo',
@@ -3603,7 +3603,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         keys: 'foo,hello',
         excludeKeys: 'foo',
@@ -3622,7 +3622,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         include: 'child',
         excludeKeys: 'child',
@@ -3645,7 +3645,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         include: 'child1,child2',
         excludeKeys: 'child1',
@@ -3669,7 +3669,7 @@ describe('Parse.Query testing', () => {
     await obj.save();
 
     const response = await request({
-      url: Parse.serverURL + '/classes/TestObject',
+      url: `${Parse.serverURL}/classes/TestObject`,
       qs: {
         includeAll: true,
         excludeKeys: 'child1',
@@ -4008,7 +4008,7 @@ describe('Parse.Query testing', () => {
 
   it('should find objects with array of pointers', done => {
     const objects = [];
-    while (objects.length != 5) {
+    while (objects.length !== 5) {
       const object = new Parse.Object('ContainedObject');
       object.set('index', objects.length);
       objects.push(object);
@@ -4068,7 +4068,7 @@ describe('Parse.Query testing', () => {
           .find()
           .then(results => {
             expect(results.length).toEqual(1);
-            if (results.length == 1) {
+            if (results.length === 1) {
               expect(results[0].objectId).toEqual(q1.objectId);
             }
             done();
@@ -4331,7 +4331,7 @@ describe('Parse.Query testing', () => {
       },
     });
     const resp = await request(
-      Object.assign({ url: Parse.serverURL + '/classes/Container' }, options)
+      Object.assign({ url: `${Parse.serverURL}/classes/Container` }, options)
     );
     const result = resp.data.results[0];
     equal(result.child1.foo, 'bar');
@@ -4355,7 +4355,7 @@ describe('Parse.Query testing', () => {
       },
     });
     const resp = await request(
-      Object.assign({ url: Parse.serverURL + '/classes/Container' }, options)
+      Object.assign({ url: `${Parse.serverURL}/classes/Container` }, options)
     );
     const result = resp.data.results[0];
     equal(result.child1.foo, 'bar');
@@ -4379,7 +4379,7 @@ describe('Parse.Query testing', () => {
       },
     });
     const resp = await request(
-      Object.assign({ url: Parse.serverURL + '/classes/Container' }, options)
+      Object.assign({ url: `${Parse.serverURL}/classes/Container` }, options)
     );
     const result = resp.data.results[0];
     equal(result.child1.foo, 'bar');
@@ -4403,7 +4403,7 @@ describe('Parse.Query testing', () => {
       },
     });
     const resp = await request(
-      Object.assign({ url: Parse.serverURL + '/classes/Container' }, options)
+      Object.assign({ url: `${Parse.serverURL}/classes/Container` }, options)
     );
     const result = resp.data.results[0];
     equal(result.child1.foo, 'bar');
@@ -4427,7 +4427,7 @@ describe('Parse.Query testing', () => {
             includeAll: true,
           },
         });
-        return request(Object.assign({ url: Parse.serverURL + '/classes/Container' }, options));
+        return request(Object.assign({ url: `${Parse.serverURL}/classes/Container` }, options));
       })
       .then(resp => {
         const result = resp.data.results[0];
@@ -4554,7 +4554,7 @@ describe('Parse.Query testing', () => {
       .then(savedFoobar => {
         const options = Object.assign(
           {
-            url: Parse.serverURL + '/classes/Foobar',
+            url: `${Parse.serverURL}/classes/Foobar`,
           },
           masterKeyOptions,
           {
@@ -4627,7 +4627,7 @@ describe('Parse.Query testing', () => {
 
   it('properly handles nested ors', function (done) {
     const objects = [];
-    while (objects.length != 4) {
+    while (objects.length !== 4) {
       const obj = new Parse.Object('Object');
       obj.set('x', objects.length);
       objects.push(obj);
@@ -4675,7 +4675,7 @@ describe('Parse.Query testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Game',
+          url: `${Parse.serverURL}/classes/Game`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,

@@ -403,7 +403,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
             requests: [
               {
                 method: 'PUT',
-                path: '/1/classes/MyObject/' + myObject.id,
+                path: `/1/classes/MyObject/${myObject.id}`,
                 body: { myAttribute: 'myValue' },
               },
             ],
@@ -434,7 +434,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
             requests: [
               {
                 method: 'PUT',
-                path: '/1/classes/MyObject/' + myObject.id,
+                path: `/1/classes/MyObject/${myObject.id}`,
                 body: { myAttribute: 'myValue' },
               },
             ],
@@ -465,7 +465,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
             requests: [
               {
                 method: 'PUT',
-                path: '/1/classes/MyObject/' + myObject.id,
+                path: `/1/classes/MyObject/${myObject.id}`,
                 body: { myAttribute: 'myValue' },
               },
             ],
@@ -490,7 +490,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         await request({
           method: 'PUT',
           headers: headers,
-          url: 'http://localhost:8378/1/classes/MyObject/' + myObject.id,
+          url: `http://localhost:8378/1/classes/MyObject/${myObject.id}`,
           body: { myAttribute: 'myValue' },
         });
 

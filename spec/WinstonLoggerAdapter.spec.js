@@ -18,7 +18,7 @@ describe_only(() => {
         order: 'desc',
       },
       results => {
-        if (results.length == 0) {
+        if (results.length === 0) {
           fail('The adapter should return non-empty results');
         } else {
           const log = results.find(x => x.message === 'testing info logs with 1234');
@@ -100,7 +100,7 @@ describe_only(() => {
         level: 'error',
       },
       results => {
-        if (results.length == 0) {
+        if (results.length === 0) {
           fail('The adapter should return non-empty results');
           done();
         } else {

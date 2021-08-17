@@ -1,6 +1,6 @@
-var equalObjects = require('./equalObjects');
-var Id = require('./Id');
-var Parse = require('parse/node');
+const equalObjects = require('./equalObjects');
+const Id = require('./Id');
+const Parse = require('parse/node');
 
 /**
  * Query Hashes are deterministic hashes for Parse Queries.
@@ -16,8 +16,8 @@ function flattenOrQueries(where) {
   if (!Object.prototype.hasOwnProperty.call(where, '$or')) {
     return where;
   }
-  var accum = [];
-  for (var i = 0; i < where.$or.length; i++) {
+  let accum = [];
+  for (let i = 0; i < where.$or.length; i++) {
     accum = accum.concat(where.$or[i]);
   }
   return accum;
@@ -29,22 +29,22 @@ function flattenOrQueries(where) {
 function stringify(object): string {
   if (typeof object !== 'object' || object === null) {
     if (typeof object === 'string') {
-      return '"' + object.replace(/\|/g, '%|') + '"';
+      return `"${object.replace(/\|/g, '%|')}"`;
     }
-    return object + '';
+    return `${object}`;
   }
   if (Array.isArray(object)) {
-    var copy = object.map(stringify);
+    const copy = object.map(stringify);
     copy.sort();
-    return '[' + copy.join(',') + ']';
+    return `[${copy.join(',')}]`;
   }
-  var sections = [];
-  var keys = Object.keys(object);
+  const sections = [];
+  const keys = Object.keys(object);
   keys.sort();
-  for (var k = 0; k < keys.length; k++) {
-    sections.push(stringify(keys[k]) + ':' + stringify(object[keys[k]]));
+  for (let k = 0; k < keys.length; k++) {
+    sections.push(`${stringify(keys[k])}:${stringify(object[keys[k]])}`);
   }
-  return '{' + sections.join(',') + '}';
+  return `{${sections.join(',')}}`;
 }
 
 /**
@@ -58,17 +58,17 @@ function queryHash(query) {
       where: query._where,
     };
   }
-  var where = flattenOrQueries(query.where || {});
-  var columns = [];
-  var values = [];
-  var i;
+  const where = flattenOrQueries(query.where || {});
+  let columns = [];
+  const values = [];
+  let i;
   if (Array.isArray(where)) {
-    var uniqueColumns = {};
+    const uniqueColumns = {};
     for (i = 0; i < where.length; i++) {
-      var subValues = {};
-      var keys = Object.keys(where[i]);
+      const subValues = {};
+      const keys = Object.keys(where[i]);
       keys.sort();
-      for (var j = 0; j < keys.length; j++) {
+      for (let j = 0; j < keys.length; j++) {
         subValues[keys[j]] = where[i][keys[j]];
         uniqueColumns[keys[j]] = true;
       }
@@ -84,9 +84,9 @@ function queryHash(query) {
     }
   }
 
-  var sections = [columns.join(','), stringify(values)];
+  const sections = [columns.join(','), stringify(values)];
 
-  return query.className + ':' + sections.join('|');
+  return `${query.className}:${sections.join('|')}`;
 }
 
 /**
@@ -115,13 +115,13 @@ function contains(haystack: Array, needle: any): boolean {
  */
 function matchesQuery(object: any, query: any): boolean {
   if (query instanceof Parse.Query) {
-    var className = object.id instanceof Id ? object.id.className : object.className;
+    const className = object.id instanceof Id ? object.id.className : object.className;
     if (className !== query.className) {
       return false;
     }
     return matchesQuery(object, query._where);
   }
-  for (var field in query) {
+  for (const field in query) {
     if (!matchesKeyConstraints(object, field, query[field])) {
       return false;
     }
@@ -131,7 +131,7 @@ function matchesQuery(object: any, query: any): boolean {
 
 function equalObjectsGeneric(obj, compareTo, eqlFn) {
   if (Array.isArray(obj)) {
-    for (var i = 0; i < obj.length; i++) {
+    for (let i = 0; i < obj.length; i++) {
       if (eqlFn(obj[i], compareTo)) {
         return true;
       }
@@ -151,12 +151,12 @@ function matchesKeyConstraints(object, key, constraints) {
   }
   if (key.indexOf('.') >= 0) {
     // Key references a subobject
-    var keyComponents = key.split('.');
-    var subObjectKey = keyComponents[0];
-    var keyRemainder = keyComponents.slice(1).join('.');
+    const keyComponents = key.split('.');
+    const subObjectKey = keyComponents[0];
+    const keyRemainder = keyComponents.slice(1).join('.');
     return matchesKeyConstraints(object[subObjectKey] || {}, keyRemainder, constraints);
   }
-  var i;
+  let i;
   if (key === '$or') {
     for (i = 0; i < constraints.length; i++) {
       if (matchesQuery(object, constraints[i])) {
@@ -186,7 +186,7 @@ function matchesKeyConstraints(object, key, constraints) {
     return false;
   }
   // Decode Date JSON value
-  if (object[key] && object[key].__type == 'Date') {
+  if (object[key] && object[key].__type === 'Date') {
     object[key] = new Date(object[key].iso);
   }
   // Equality (or Array contains) cases
@@ -196,7 +196,7 @@ function matchesKeyConstraints(object, key, constraints) {
     }
     return object[key] === constraints;
   }
-  var compareTo;
+  let compareTo;
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
       return equalObjectsGeneric(object[key], constraints, function (obj, ptr) {
@@ -211,7 +211,7 @@ function matchesKeyConstraints(object, key, constraints) {
     return equalObjectsGeneric(object[key], Parse._decode(key, constraints), equalObjects);
   }
   // More complex cases
-  for (var condition in constraints) {
+  for (const condition in constraints) {
     compareTo = constraints[condition];
     if (compareTo.__type) {
       compareTo = Parse._decode(key, compareTo);
@@ -275,14 +275,14 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       }
-      case '$regex':
+      case '$regex': {
         if (typeof compareTo === 'object') {
           return compareTo.test(object[key]);
         }
         // JS doesn't support perl-style escaping
-        var expString = '';
-        var escapeEnd = -2;
-        var escapeStart = compareTo.indexOf('\\Q');
+        let expString = '';
+        let escapeEnd = -2;
+        let escapeStart = compareTo.indexOf('\\Q');
         while (escapeStart > -1) {
           // Add the unescaped portion
           expString += compareTo.substring(escapeEnd + 2, escapeStart);
@@ -297,24 +297,26 @@ function matchesKeyConstraints(object, key, constraints) {
           escapeStart = compareTo.indexOf('\\Q', escapeEnd);
         }
         expString += compareTo.substring(Math.max(escapeStart, escapeEnd + 2));
-        var exp = new RegExp(expString, constraints.$options || '');
+        const exp = new RegExp(expString, constraints.$options || '');
         if (!exp.test(object[key])) {
           return false;
         }
         break;
-      case '$nearSphere':
+      }
+      case '$nearSphere': {
         if (!compareTo || !object[key]) {
           return false;
         }
-        var distance = compareTo.radiansTo(object[key]);
-        var max = constraints.$maxDistance || Infinity;
+        const distance = compareTo.radiansTo(object[key]);
+        const max = constraints.$maxDistance || Infinity;
         return distance <= max;
-      case '$within':
+      }
+      case '$within': {
         if (!compareTo || !object[key]) {
           return false;
         }
-        var southWest = compareTo.$box[0];
-        var northEast = compareTo.$box[1];
+        const southWest = compareTo.$box[0];
+        const northEast = compareTo.$box[1];
         if (southWest.latitude > northEast.latitude || southWest.longitude > northEast.longitude) {
           // Invalid box, crosses the date line
           return false;
@@ -325,6 +327,7 @@ function matchesKeyConstraints(object, key, constraints) {
           object[key].longitude > southWest.longitude &&
           object[key].longitude < northEast.longitude
         );
+      }
       case '$containedBy': {
         for (const value of object[key]) {
           if (!contains(compareTo, value)) {
@@ -362,7 +365,7 @@ function matchesKeyConstraints(object, key, constraints) {
   return true;
 }
 
-var QueryTools = {
+const QueryTools = {
   queryHash: queryHash,
   matchesQuery: matchesQuery,
 };

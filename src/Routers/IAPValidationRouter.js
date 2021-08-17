@@ -20,7 +20,7 @@ const APP_STORE_ERRORS = {
 
 function appStoreError(status) {
   status = parseInt(status);
-  var errorString = APP_STORE_ERRORS[status] || 'unknown error.';
+  const errorString = APP_STORE_ERRORS[status] || 'unknown error.';
   return { status: status, error: errorString };
 }
 
@@ -56,12 +56,12 @@ function getFileForProductIdentifier(productIdentifier, req) {
     )
     .then(function (result) {
       const products = result.results;
-      if (!products || products.length != 1) {
+      if (!products || products.length !== 1) {
         // Error not found or too many
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
       }
 
-      var download = products[0].download;
+      const download = products[0].download;
       return Promise.resolve({ response: download });
     });
 }
@@ -78,13 +78,13 @@ export class IAPValidationRouter extends PromiseRouter {
 
     // Transform the object if there
     // otherwise assume it's in Base64 already
-    if (typeof receipt == 'object') {
-      if (receipt['__type'] == 'Bytes') {
+    if (typeof receipt === 'object') {
+      if (receipt['__type'] === 'Bytes') {
         receipt = receipt.base64;
       }
     }
 
-    if (process.env.TESTING == '1' && req.body.bypassAppStoreValidation) {
+    if (`${process.env.TESTING}` === '1' && req.body.bypassAppStoreValidation) {
       return getFileForProductIdentifier(productIdentifier, req);
     }
 
@@ -101,7 +101,7 @@ export class IAPValidationRouter extends PromiseRouter {
         return successCallback();
       },
       error => {
-        if (error.status == 21007) {
+        if (error.status === 21007) {
           return validateWithAppStore(IAP_SANDBOX_URL, receipt).then(
             () => {
               return successCallback();

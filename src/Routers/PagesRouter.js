@@ -274,7 +274,7 @@ export class PagesRouter extends PromiseRouter {
       ? true
       : responseType !== undefined
         ? responseType
-        : req.method == 'POST';
+        : req.method === 'POST';
 
     // Include default parameters
     const defaultParams = this.getDefaultParams(config);
@@ -608,8 +608,8 @@ export class PagesRouter extends PromiseRouter {
   composePageUrl(file, publicServerUrl, locale) {
     let url = publicServerUrl;
     url += url.endsWith('/') ? '' : '/';
-    url += this.pagesEndpoint + '/';
-    url += locale === undefined ? '' : locale + '/';
+    url += `${this.pagesEndpoint}/`;
+    url += locale === undefined ? '' : `${locale}/`;
     url += file;
     return url;
   }

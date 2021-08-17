@@ -1,5 +1,6 @@
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
+import { isNull } from './Utils';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -121,13 +122,13 @@ const getAuthForSessionToken = async function ({
   });
 };
 
-var getAuthForLegacySessionToken = function ({ config, sessionToken, installationId }) {
-  var restOptions = {
+const getAuthForLegacySessionToken = function ({ config, sessionToken, installationId }) {
+  const restOptions = {
     limit: 1,
   };
-  var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
+  const query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
   return query.execute().then(response => {
-    var results = response.results;
+    const results = response.results;
     if (results.length !== 1) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
@@ -184,7 +185,7 @@ Auth.prototype.getRolesForUser = async function () {
 Auth.prototype._loadRoles = async function () {
   if (this.cacheController) {
     const cachedRoles = await this.cacheController.role.get(this.user.id);
-    if (cachedRoles != null) {
+    if (!isNull(cachedRoles)) {
       this.fetchedRoles = true;
       this.userRoles = cachedRoles;
       return cachedRoles;
@@ -214,7 +215,7 @@ Auth.prototype._loadRoles = async function () {
   // run the recursive finding
   const roleNames = await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
   this.userRoles = roleNames.map(r => {
-    return 'role:' + r;
+    return `role:${r}`;
   });
   this.fetchedRoles = true;
   this.rolePromise = null;
@@ -269,7 +270,7 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
   });
 
   // all roles are accounted for, return the names
-  if (ins.length == 0) {
+  if (ins.length === 0) {
     return Promise.resolve([...new Set(names)]);
   }
 

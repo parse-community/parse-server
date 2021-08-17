@@ -10,6 +10,7 @@
  * `$ node resources/buildConfigDefinitions.js`
  */
 const parsers = require('../src/Options/parsers');
+import {isNull} from '../src/Utils'
 
 /** The types of nested options. */
 const nestedOptionTypes = [
@@ -109,7 +110,7 @@ function processProperty(property, iface) {
   }
   let type = property.value.type;
   let isRequired = true;
-  if (type == 'NullableTypeAnnotation') {
+  if (type === 'NullableTypeAnnotation') {
     isRequired = false;
     type = property.value.typeAnnotation.type;
   }
@@ -147,10 +148,10 @@ function mapperFor(elt, t) {
     return wrap(t.identifier('booleanParser'));
   } else if (t.isGenericTypeAnnotation(elt)) {
     const type = elt.typeAnnotation.id.name;
-    if (type == 'Adapter') {
+    if (type === 'Adapter') {
       return wrap(t.identifier('moduleOrObjectParser'));
     }
-    if (type == 'NumberOrBoolean') {
+    if (type === 'NumberOrBoolean') {
       return wrap(t.identifier('numberOrBooleanParser'));
     }
     return wrap(t.identifier('objectParser'));
@@ -160,7 +161,7 @@ function mapperFor(elt, t) {
 function parseDefaultValue(elt, value, t) {
   let literalValue;
   if (t.isStringTypeAnnotation(elt)) {
-    if (value == '""' || value == "''") {
+    if (value === '""' || value === "''") {
       literalValue = t.stringLiteral('');
     } else {
       literalValue = t.stringLiteral(value);
@@ -170,7 +171,7 @@ function parseDefaultValue(elt, value, t) {
   } else if (t.isArrayTypeAnnotation(elt)) {
     const array = parsers.objectParser(value);
     literalValue = t.arrayExpression(array.map((value) => {
-      if (typeof value == 'string') {
+      if (typeof value === 'string') {
         return t.stringLiteral(value);
       } else {
         throw new Error('Unable to parse array');
@@ -182,7 +183,7 @@ function parseDefaultValue(elt, value, t) {
     literalValue = t.booleanLiteral(parsers.booleanParser(value));
   } else if (t.isGenericTypeAnnotation(elt)) {
     const type = elt.typeAnnotation.id.name;
-    if (type == 'NumberOrBoolean') {
+    if (type === 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
 
@@ -193,7 +194,7 @@ function parseDefaultValue(elt, value, t) {
       });
       literalValue = t.objectExpression(props);
     }
-    if (type == 'ProtectedFields') {
+    if (type === 'ProtectedFields') {
       const prop = t.objectProperty(
         t.stringLiteral('_User'), t.objectPattern([
           t.objectProperty(t.stringLiteral('*'), t.arrayExpression([t.stringLiteral('email')]))
@@ -254,7 +255,7 @@ function inject(t, list) {
     const obj = t.objectExpression(props);
     return t.objectProperty(t.stringLiteral(elt.name), obj);
   }).filter((elt) => {
-    return elt != undefined;
+    return !isNull(elt);
   });
   return { results, comments };
 }
@@ -278,7 +279,7 @@ const plugin = function (babel) {
       },
       ExportDeclaration: function(path) {
         // Export declaration on an interface
-        if (path.node && path.node.declaration && path.node.declaration.type == 'InterfaceDeclaration') {
+        if (path.node && path.node.declaration && path.node.declaration.type === 'InterfaceDeclaration') {
           const { results, comments } = inject(t, doInterface(path.node.declaration));
           const id = path.node.declaration.id.name;
           const exports = t.memberExpression(moduleExports, t.identifier(id));
@@ -300,5 +301,5 @@ Do not edit manually, but update Options/index.js
 
 const babel = require("@babel/core");
 const res = babel.transformFileSync('./src/Options/index.js', { plugins: [ plugin, '@babel/transform-flow-strip-types' ], babelrc: false, auxiliaryCommentBefore, sourceMaps: false });
-require('fs').writeFileSync('./src/Options/Definitions.js', res.code + '\n');
+require('fs').writeFileSync('./src/Options/Definitions.js', `${res.code  }\n`);
 require('fs').writeFileSync('./src/Options/docs.js', docs);

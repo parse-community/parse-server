@@ -3,6 +3,7 @@ import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
 import { promiseEnsureIdempotency } from '../middlewares';
+import { isNull } from '../Utils';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
@@ -57,13 +58,13 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
 
-    if (body.keys != null) {
+    if (!isNull(body.keys)) {
       options.keys = String(body.keys);
     }
-    if (body.include != null) {
+    if (!isNull(body.include)) {
       options.include = String(body.include);
     }
-    if (body.excludeKeys != null) {
+    if (!isNull(body.excludeKeys)) {
       options.excludeKeys = String(body.excludeKeys);
     }
     if (typeof body.readPreference === 'string') {
@@ -86,7 +87,7 @@ export class ClassesRouter extends PromiseRouter {
         req.info.clientSDK
       )
       .then(response => {
-        if (!response.results || response.results.length == 0) {
+        if (!response.results || response.results.length === 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
 
@@ -95,7 +96,7 @@ export class ClassesRouter extends PromiseRouter {
 
           const user = response.results[0];
 
-          if (req.auth.user && user.objectId == req.auth.user.id) {
+          if (req.auth.user && user.objectId === req.auth.user.id) {
             // Force the session token
             response.results[0].sessionToken = req.info.sessionToken;
           }
@@ -187,13 +188,13 @@ export class ClassesRouter extends PromiseRouter {
     if (body.count) {
       options.count = true;
     }
-    if (body.keys != null) {
+    if (!isNull(body.keys)) {
       options.keys = String(body.keys);
     }
-    if (body.excludeKeys != null) {
+    if (!isNull(body.excludeKeys)) {
       options.excludeKeys = String(body.excludeKeys);
     }
-    if (body.include != null) {
+    if (!isNull(body.include)) {
       options.include = String(body.include);
     }
     if (body.includeAll) {

@@ -12,11 +12,11 @@ import { inspect } from 'util';
 const Layer = require('express/lib/router/layer');
 
 function validateParameter(key, value) {
-  if (key == 'className') {
+  if (key === 'className') {
     if (value.match(/_?[A-Za-z][A-Za-z_0-9]*/)) {
       return value;
     }
-  } else if (key == 'objectId') {
+  } else if (key === 'objectId') {
     if (value.match(/[A-Za-z0-9]+/)) {
       return value;
     }
@@ -47,7 +47,7 @@ export default class PromiseRouter {
 
   // Merge the routes into this one
   merge(router) {
-    for (var route of router.routes) {
+    for (const route of router.routes) {
       this.routes.push(route);
     }
   }
@@ -60,7 +60,7 @@ export default class PromiseRouter {
       case 'DELETE':
         break;
       default:
-        throw 'cannot route method: ' + method;
+        throw `cannot route method: ${method}`;
     }
 
     let handler = handlers[0];
@@ -88,8 +88,8 @@ export default class PromiseRouter {
   //   params: any :-params that got parsed from the path
   // Returns undefined if there is no match.
   match(method, path) {
-    for (var route of this.routes) {
-      if (route.method != method) {
+    for (const route of this.routes) {
+      if (route.method !== method) {
         continue;
       }
       const layer = route.layer || new Layer(route.path, null, route.handler);
@@ -119,9 +119,9 @@ export default class PromiseRouter {
   }
 
   tryRouteRequest(method, path, request) {
-    var match = this.match(method, path);
+    const match = this.match(method, path);
     if (!match) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot route ' + method + ' ' + path);
+      throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot route ${method} ${path}`);
     }
     request.params = match.params;
     return new Promise((resolve, reject) => {
@@ -157,7 +157,7 @@ function makeExpressHandler(appId, promiseHandler) {
 
             log.logResponse({ method, url, result });
 
-            var status = result.status || 200;
+            const status = result.status || 200;
             res.status(status);
 
             if (result.headers) {
@@ -176,7 +176,7 @@ function makeExpressHandler(appId, promiseHandler) {
               // Override the default expressjs response
               // as it double encodes %encoded chars in URL
               if (!result.response) {
-                res.send('Found. Redirecting to ' + result.location);
+                res.send(`Found. Redirecting to ${result.location}`);
                 return;
               }
             }

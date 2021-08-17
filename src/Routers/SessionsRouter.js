@@ -25,7 +25,7 @@ export class SessionsRouter extends ClassesRouter {
         req.info.context
       )
       .then(response => {
-        if (!response.results || response.results.length == 0) {
+        if (!response.results || response.results.length === 0) {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
         }
         return {

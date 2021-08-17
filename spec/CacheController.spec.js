@@ -28,7 +28,7 @@ describe('CacheController', function () {
   });
 
   ['role', 'user'].forEach(cacheName => {
-    it('should prefix ' + cacheName + ' cache', () => {
+    it(`should prefix ${cacheName} cache`, () => {
       const cache = new CacheController(FakeCacheAdapter, FakeAppID)[cacheName];
 
       cache.put(KEY, 'world');

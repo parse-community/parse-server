@@ -129,7 +129,7 @@ describe('Pointer Permissions', () => {
           res => {
             expect(res.length).toBe(2);
             res.forEach(result => {
-              if (result.id == obj.id) {
+              if (result.id === obj.id) {
                 expect(result.get('hello')).toBe('world');
               } else {
                 expect(result.id).toBe(obj2.id);
@@ -1128,7 +1128,7 @@ describe('Pointer Permissions', () => {
         const res = await q.find();
         expect(res.length).toBe(2);
         res.forEach(result => {
-          if (result.id == obj.id) {
+          if (result.id === obj.id) {
             expect(result.get('hello')).toBe('world');
           } else {
             expect(result.id).toBe(obj2.id);
@@ -1189,17 +1189,18 @@ describe('Pointer Permissions', () => {
         expect(err.code).toBe(101);
         expect(err.message).toBe('Object not found.');
       }
-
-      for (const owner of ['user1', 'user2']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          const q = new Parse.Query('AnObject');
-          result = await q.find();
-          expect(result.length).toBe(1);
-        } catch (err) {
-          done.fail('should not fail');
-        }
-      }
+      await Promise.all(
+        ['user1', 'user2'].map(async owner => {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            const q = new Parse.Query('AnObject');
+            result = await q.find();
+            expect(result.length).toBe(1);
+          } catch (err) {
+            done.fail('should not fail');
+          }
+        })
+      );
       done();
     });
 
@@ -1234,17 +1235,19 @@ describe('Pointer Permissions', () => {
       const schema = await config.database.loadSchema();
       await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
 
-      for (const owner of ['user1', 'user2']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          const q = new Parse.Query('AnObject');
-          q.equalTo('owners', user3);
-          const result = await q.find();
-          expect(result.length).toBe(0);
-        } catch (err) {
-          done.fail('should not fail');
-        }
-      }
+      await Promise.all(
+        ['user1', 'user2'].map(async owner => {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            const q = new Parse.Query('AnObject');
+            q.equalTo('owners', user3);
+            const result = await q.find();
+            expect(result.length).toBe(0);
+          } catch (err) {
+            done.fail('should not fail');
+          }
+        })
+      );
       done();
     });
 
@@ -1279,17 +1282,19 @@ describe('Pointer Permissions', () => {
       const schema = await config.database.loadSchema();
       await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
 
-      for (const owner of ['user1', 'user2']) {
-        try {
-          await Parse.User.logIn(owner, 'password');
-          // Since querying for arrays is not supported this should throw an error
-          const q = new Parse.Query('AnObject');
-          q.equalTo('owners', [user3]);
-          await q.find();
-          done.fail('should fail');
-          // eslint-disable-next-line no-empty
-        } catch (error) {}
-      }
+      await Promise.all(
+        ['user1', 'user2'].map(async owner => {
+          try {
+            await Parse.User.logIn(owner, 'password');
+            // Since querying for arrays is not supported this should throw an error
+            const q = new Parse.Query('AnObject');
+            q.equalTo('owners', [user3]);
+            await q.find();
+            done.fail('should fail');
+            // eslint-disable-next-line no-empty
+          } catch (error) {}
+        })
+      );
       done();
     });
 
@@ -1319,16 +1324,18 @@ describe('Pointer Permissions', () => {
         }
       );
 
-      for (const owner of ['user1', 'user2']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          obj.set('owners', [user, user2]);
-          await obj.save();
-          done.fail('should not succeed');
-        } catch (err) {
-          expect(err.code).toBe(119);
-        }
-      }
+      await Promise.all(
+        ['user1', 'user2'].map(async owner => {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            obj.set('owners', [user, user2]);
+            await obj.save();
+            done.fail('should not succeed');
+          } catch (err) {
+            expect(err.code).toBe(119);
+          }
+        })
+      );
       done();
     });
 
@@ -1584,15 +1591,17 @@ describe('Pointer Permissions', () => {
       // Lock the update, and let only owners write
       await schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owners'] });
 
-      for (const owner of ['user2', 'user3']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          await obj.save({ key: 'value' });
-          done.fail('Should not succeed saving');
-        } catch (err) {
-          expect(err.code).toBe(101);
-        }
-      }
+      await Promise.all(
+        ['user2', 'user3'].map(async owner => {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            await obj.save({ key: 'value' });
+            done.fail('Should not succeed saving');
+          } catch (err) {
+            expect(err.code).toBe(101);
+          }
+        })
+      );
       done();
     });
 
@@ -1634,15 +1643,17 @@ describe('Pointer Permissions', () => {
       // Lock the update, and let only owners write
       await schema.updateClass('AnObject', {}, { update: {}, writeUserFields: ['owners'] });
 
-      for (const owner of ['user2', 'user3']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          const objectAgain = await obj.save({ key: 'value' });
-          expect(objectAgain.get('key')).toBe('value');
-        } catch (err) {
-          done.fail('Should not fail saving');
-        }
-      }
+      await Promise.all(
+        ['user2', 'user3'].map(async owner => {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            const objectAgain = await obj.save({ key: 'value' });
+            expect(objectAgain.get('key')).toBe('value');
+          } catch (err) {
+            done.fail('Should not fail saving');
+          }
+        })
+      );
       done();
     });
 
@@ -1748,15 +1759,17 @@ describe('Pointer Permissions', () => {
         }
       );
 
-      for (const owner of ['user2', 'user3']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          const objectAgain = await obj.fetch();
-          expect(objectAgain.id).toBe(obj.id);
-        } catch (err) {
-          done.fail('Should not fail fetching');
-        }
-      }
+      await Promise.all(
+        ['user2', 'user3'].map(async owner => {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            const objectAgain = await obj.fetch();
+            expect(objectAgain.id).toBe(obj.id);
+          } catch (err) {
+            done.fail('Should not fail fetching');
+          }
+        })
+      );
       done();
     });
 
@@ -1805,15 +1818,17 @@ describe('Pointer Permissions', () => {
         }
       );
 
-      for (const owner of ['user2', 'user3']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          await obj.fetch();
-          done.fail('Should not succeed fetching');
-        } catch (err) {
-          expect(err.code).toBe(101);
-        }
-      }
+      await Promise.all(
+        ['user2', 'user3'].map(async owner => {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            await obj.fetch();
+            done.fail('Should not succeed fetching');
+          } catch (err) {
+            expect(err.code).toBe(101);
+          }
+        })
+      );
       done();
     });
 
@@ -1978,8 +1993,8 @@ describe('Pointer Permissions', () => {
     const actionUpdate = obj => obj.save({ revision: 2 });
     const actionDelete = obj => obj.destroy();
     const actionAddFieldOnCreate = () =>
-      new Parse.Object(className, { ['extra' + Date.now()]: 'field' }).save();
-    const actionAddFieldOnUpdate = obj => obj.save({ ['another' + Date.now()]: 'field' });
+      new Parse.Object(className, { [`extra${Date.now()}`]: 'field' }).save();
+    const actionAddFieldOnUpdate = obj => obj.save({ [`another${Date.now()}`]: 'field' });
 
     const OBJECT_NOT_FOUND = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
     const PERMISSION_DENIED = jasmine.stringMatching('Permission denied');

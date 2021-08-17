@@ -9,7 +9,7 @@ based on the parameters passed
  */
 
 // _adapter is private, use Symbol
-var _adapter = Symbol();
+const _adapter = Symbol();
 
 export class AdaptableController {
   constructor(adapter, appId, options) {
@@ -37,7 +37,7 @@ export class AdaptableController {
 
   static validateAdapter(adapter, self, ExpectedType) {
     if (!adapter) {
-      throw new Error(this.constructor.name + ' requires an adapter');
+      throw new Error(`${this.constructor.name} requires an adapter`);
     }
 
     const Type = ExpectedType || self.expectedAdapterType();

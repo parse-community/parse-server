@@ -161,10 +161,10 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     const emailAdapter = {
       sendMail: function (options) {
         expect(options.to).toBe('testSendSimpleAdapter@parse.com');
-        if (calls == 0) {
+        if (calls === 0) {
           expect(options.subject).toEqual('Please verify your e-mail for My Cool App');
           expect(options.text.match(/verify_email/)).not.toBe(null);
-        } else if (calls == 1) {
+        } else if (calls === 1) {
           expect(options.subject).toEqual('Password Reset for My Cool App');
           expect(options.text.match(/request_password_reset/)).not.toBe(null);
         }

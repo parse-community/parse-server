@@ -1,7 +1,7 @@
 'use strict';
 
 // Helper functions for accessing the google API.
-var Parse = require('parse/node').Parse;
+const Parse = require('parse/node').Parse;
 
 const https = require('https');
 const jwt = require('jsonwebtoken');
@@ -35,7 +35,7 @@ function getGoogleKeyByKeyId(keyId) {
           );
 
           if (res.headers['cache-control']) {
-            var expire = res.headers['cache-control'].match(/max-age=([0-9]+)/);
+            const expire = res.headers['cache-control'].match(/max-age=([0-9]+)/);
 
             if (expire) {
               cache = Object.assign({}, pems, {
@@ -127,15 +127,9 @@ function rsaPublicKeyToPEM(modulusB64, exponentB64) {
 
   const encodedModlen = encodeLengthHex(modlen);
   const encodedExplen = encodeLengthHex(explen);
-  const encodedPubkey =
-    '30' +
-    encodeLengthHex(modlen + explen + encodedModlen.length / 2 + encodedExplen.length / 2 + 2) +
-    '02' +
-    encodedModlen +
-    modulusHex +
-    '02' +
-    encodedExplen +
-    exponentHex;
+  const encodedPubkey = `30${encodeLengthHex(
+    modlen + explen + encodedModlen.length / 2 + encodedExplen.length / 2 + 2
+  )}02${encodedModlen}${modulusHex}02${encodedExplen}${exponentHex}`;
 
   const der = new Buffer(encodedPubkey, 'hex').toString('base64');
 

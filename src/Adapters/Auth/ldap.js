@@ -35,7 +35,7 @@ function validateAuthData(authData, options) {
           default:
             error = new Parse.Error(
               Parse.Error.OBJECT_NOT_FOUND,
-              'LDAP: Somthing went wrong (' + ldapError.code + ')'
+              `LDAP: Somthing went wrong (${ldapError.code})`
             );
         }
         reject(error);

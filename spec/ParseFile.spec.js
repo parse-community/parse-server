@@ -110,7 +110,7 @@ describe('Parse.File testing', () => {
               'X-Parse-REST-API-Key': 'rest',
               'X-Parse-Master-Key': 'test',
             },
-            url: 'http://localhost:8378/1/files/' + b.name,
+            url: `http://localhost:8378/1/files/${b.name}`,
           }).then(response => {
             expect(response.status).toEqual(200);
             request({
@@ -149,7 +149,7 @@ describe('Parse.File testing', () => {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/files/' + b.name,
+          url: `http://localhost:8378/1/files/${b.name}`,
         }).then(fail, response => {
           const del_b = response.data;
           expect(response.status).toEqual(403);
@@ -162,7 +162,7 @@ describe('Parse.File testing', () => {
               'X-Parse-REST-API-Key': 'rest',
               'X-Parse-Master-Key': 'tryagain',
             },
-            url: 'http://localhost:8378/1/files/' + b.name,
+            url: `http://localhost:8378/1/files/${b.name}`,
           }).then(fail, response => {
             const del_b2 = response.data;
             expect(response.status).toEqual(403);
@@ -446,7 +446,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/' + fileName,
+        url: `http://localhost:8378/1/files/${fileName}`,
         body: 'will fail',
       }).then(fail, response => {
         const b = response.data;
@@ -1053,24 +1053,30 @@ describe('Parse.File testing', () => {
       const keys = ['enableForPublic', 'enableForAnonymousUser', 'enableForAuthenticatedUser'];
       const invalidValues = [[], {}, 1, 'string', null];
       const validValues = [undefined, true, false];
-      for (const config of invalidConfigs) {
-        await expectAsync(reconfigureServer(config)).toBeRejectedWith(
-          'fileUpload must be an object value.'
-        );
-      }
-      for (const config of validConfigs) {
-        await expectAsync(reconfigureServer(config)).toBeResolved();
-      }
-      for (const key of keys) {
-        for (const value of invalidValues) {
-          await expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeRejectedWith(
-            `fileUpload.${key} must be a boolean value.`
-          );
-        }
-        for (const value of validValues) {
-          await expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeResolved();
-        }
-      }
+      const promises = [];
+      promises.push(
+        ...invalidConfigs.map(config =>
+          expectAsync(reconfigureServer(config)).toBeRejectedWith(
+            'fileUpload must be an object value.'
+          )
+        )
+      );
+      promises.push(
+        ...validConfigs.map(config => expectAsync(reconfigureServer(config)).toBeResolved())
+      );
+      promises.push(
+        keys.map(key => [
+          ...invalidValues.map(value =>
+            expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeRejectedWith(
+              `fileUpload.${key} must be a boolean value.`
+            )
+          ),
+          ...validValues.map(value =>
+            expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeResolved()
+          ),
+        ])
+      );
+      await Promise.all(promises);
     });
   });
 });

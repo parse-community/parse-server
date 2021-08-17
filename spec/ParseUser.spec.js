@@ -739,15 +739,15 @@ describe('Parse.User testing', () => {
     // Make a list of users.
     const userList = range(USERS).map(function (i) {
       const user = new Parse.User();
-      user.set('password', 'user_num_' + i);
-      user.set('email', 'user_num_' + i + '@example.com');
-      user.set('username', 'xinglblog_num_' + i);
+      user.set('password', `user_num_${i}`);
+      user.set('email', `user_num_${i}@example.com`);
+      user.set('username', `xinglblog_num_${i}`);
       return user;
     });
 
     signUpAll(userList, async function (users) {
       // Make a list of messages.
-      if (!users || users.length != USERS) {
+      if (!users || users.length !== USERS) {
         fail('signupAll failed');
         done();
         return;
@@ -1774,7 +1774,7 @@ describe('Parse.User testing', () => {
     Parse.User.logOut().then(() => {
       request({
         method: 'POST',
-        url: Parse.serverURL + '/classes/_User',
+        url: `${Parse.serverURL}/classes/_User`,
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
@@ -1786,7 +1786,7 @@ describe('Parse.User testing', () => {
         // make sure the location header is properly set
         expect(userId).not.toBeUndefined();
         expect(body.objectId).toEqual(userId);
-        expect(response.headers.location).toEqual(Parse.serverURL + '/users/' + userId);
+        expect(response.headers.location).toEqual(`${Parse.serverURL}/users/${userId}`);
         done();
       });
     });
@@ -1860,7 +1860,7 @@ describe('Parse.User testing', () => {
         defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
         return request({
           method: 'PUT',
-          url: Parse.serverURL + '/users/' + Parse.User.current().id,
+          url: `${Parse.serverURL}/users/${Parse.User.current().id}`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
@@ -2454,7 +2454,7 @@ describe('Parse.User testing', () => {
               'X-Parse-Session-Token': user.getSessionToken(),
               'X-Parse-REST-API-Key': 'rest',
             },
-            url: 'http://localhost:8378/1/sessions/' + b.objectId,
+            url: `http://localhost:8378/1/sessions/${b.objectId}`,
             body: JSON.stringify({ foo: 'bar' }),
           }).then(() => {
             done();
@@ -2486,7 +2486,7 @@ describe('Parse.User testing', () => {
               'X-Parse-REST-API-Key': 'rest',
               'Content-Type': 'application/json',
             },
-            url: 'http://localhost:8378/1/sessions/' + b.objectId,
+            url: `http://localhost:8378/1/sessions/${b.objectId}`,
             body: JSON.stringify({ foo: 'bar' }),
           }).then(fail, response => {
             const b = response.data;
@@ -2497,7 +2497,7 @@ describe('Parse.User testing', () => {
                 'X-Parse-Application-Id': 'test',
                 'X-Parse-REST-API-Key': 'rest',
               },
-              url: 'http://localhost:8378/1/sessions/' + b.objectId,
+              url: `http://localhost:8378/1/sessions/${b.objectId}`,
               body: JSON.stringify({ foo: 'bar' }),
             }).then(fail, response => {
               const b = response.data;
@@ -2569,7 +2569,7 @@ describe('Parse.User testing', () => {
               'X-Parse-Session-Token': user.getSessionToken(),
               'X-Parse-REST-API-Key': 'rest',
             },
-            url: 'http://localhost:8378/1/sessions/' + objId,
+            url: `http://localhost:8378/1/sessions/${objId}`,
           }).then(() => {
             request({
               headers: {
@@ -2615,7 +2615,7 @@ describe('Parse.User testing', () => {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'rest',
             },
-            url: 'http://localhost:8378/1/sessions/' + objId,
+            url: `http://localhost:8378/1/sessions/${objId}`,
           }).then(fail, response => {
             const b = response.data;
             expect(b.code).toEqual(209);
@@ -2866,7 +2866,7 @@ describe('Parse.User testing', () => {
         // Simulate registration
         return request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/classes/_User/' + user.objectId,
+          url: `http://localhost:8378/1/classes/_User/${user.objectId}`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Session-Token': user.sessionToken,
@@ -2905,7 +2905,7 @@ describe('Parse.User testing', () => {
         });
       })
       .catch(err => {
-        fail('no request should fail: ' + JSON.stringify(err));
+        fail(`no request should fail: ${JSON.stringify(err)}`);
         done();
       });
   });
@@ -2947,7 +2947,7 @@ describe('Parse.User testing', () => {
         const user = response.data;
         return request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/classes/_User/' + user.objectId,
+          url: `http://localhost:8378/1/classes/_User/${user.objectId}`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Session-Token': user.sessionToken,
@@ -2970,7 +2970,7 @@ describe('Parse.User testing', () => {
       })
       .catch(err => {
         jfail(err);
-        fail('no request should fail: ' + JSON.stringify(err));
+        fail(`no request should fail: ${JSON.stringify(err)}`);
         done();
       });
   });
@@ -3011,7 +3011,7 @@ describe('Parse.User testing', () => {
       },
     })
       .then(res => {
-        fail('no request should succeed: ' + JSON.stringify(res));
+        fail(`no request should succeed: ${JSON.stringify(res)}`);
         done();
       })
       .catch(err => {
@@ -3093,7 +3093,7 @@ describe('Parse.User testing', () => {
         token = body.results[0].sessionToken;
         return request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/classes/_Session/' + id,
+          url: `http://localhost:8378/1/classes/_Session/${id}`,
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
@@ -3381,7 +3381,7 @@ describe('Parse.User testing', () => {
       .then(() =>
         request({
           method: 'GET',
-          url: 'http://localhost:8378/1/users/' + Parse.User.current().id,
+          url: `http://localhost:8378/1/users/${Parse.User.current().id}`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -4097,33 +4097,34 @@ describe('login as other user', () => {
 
   it('rejects creating a session for another user with invalid parameters', async done => {
     const invalidUserIds = [undefined, null, ''];
+    await Promise.all(
+      invalidUserIds.map(async invalidUserId => {
+        try {
+          await request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/loginAs',
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-REST-API-Key': 'rest',
+              'X-Parse-Master-Key': 'test',
+            },
+            body: {
+              userId: invalidUserId,
+            },
+          });
 
-    for (const invalidUserId of invalidUserIds) {
-      try {
-        await request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/loginAs',
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-REST-API-Key': 'rest',
-            'X-Parse-Master-Key': 'test',
-          },
-          body: {
-            userId: invalidUserId,
-          },
-        });
+          fail('Request should fail without a valid user ID');
+          done();
+        } catch (err) {
+          expect(err.data.code).toBe(Parse.Error.INVALID_VALUE);
+          expect(err.data.error).toBe('userId must not be empty, null, or undefined');
+        }
 
-        fail('Request should fail without a valid user ID');
-        done();
-      } catch (err) {
-        expect(err.data.code).toBe(Parse.Error.INVALID_VALUE);
-        expect(err.data.error).toBe('userId must not be empty, null, or undefined');
-      }
-
-      const sessionsQuery = new Parse.Query(Parse.Session);
-      const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
-      expect(sessionsAfterRequest.length).toBe(0);
-    }
+        const sessionsQuery = new Parse.Query(Parse.Session);
+        const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+        expect(sessionsAfterRequest.length).toBe(0);
+      })
+    );
 
     done();
   });

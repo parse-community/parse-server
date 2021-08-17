@@ -26,9 +26,7 @@ const isAccountLockoutError = function (username, password, duration, waitTime) 
         .catch(err => {
           if (
             err.message ===
-            'Your account is locked due to multiple failed login attempts. Please try again after ' +
-              duration +
-              ' minute(s)'
+            `Your account is locked due to multiple failed login attempts. Please try again after ${duration} minute(s)`
           ) {
             resolve();
           } else {
@@ -62,7 +60,7 @@ describe('Account Lockout Policy: ', () => {
       })
       .then(() => done())
       .catch(err => {
-        fail('allow unlimited failed login attempts failed: ' + JSON.stringify(err));
+        fail(`allow unlimited failed login attempts failed: ${JSON.stringify(err)}`);
         done();
       });
   });
@@ -88,7 +86,7 @@ describe('Account Lockout Policy: ', () => {
         ) {
           done();
         } else {
-          fail('set duration to an invalid number test failed: ' + JSON.stringify(err));
+          fail(`set duration to an invalid number test failed: ${JSON.stringify(err)}`);
           done();
         }
       });
@@ -115,7 +113,7 @@ describe('Account Lockout Policy: ', () => {
         ) {
           done();
         } else {
-          fail('set threshold to an invalid number test failed: ' + JSON.stringify(err));
+          fail(`set threshold to an invalid number test failed: ${JSON.stringify(err)}`);
           done();
         }
       });
@@ -142,7 +140,7 @@ describe('Account Lockout Policy: ', () => {
         ) {
           done();
         } else {
-          fail('threshold value < 1 is invalid test failed: ' + JSON.stringify(err));
+          fail(`threshold value < 1 is invalid test failed: ${JSON.stringify(err)}`);
           done();
         }
       });
@@ -169,7 +167,7 @@ describe('Account Lockout Policy: ', () => {
         ) {
           done();
         } else {
-          fail('threshold value > 999 is invalid test failed: ' + JSON.stringify(err));
+          fail(`threshold value > 999 is invalid test failed: ${JSON.stringify(err)}`);
           done();
         }
       });
@@ -196,7 +194,7 @@ describe('Account Lockout Policy: ', () => {
         ) {
           done();
         } else {
-          fail('duration value < 1 is invalid test failed: ' + JSON.stringify(err));
+          fail(`duration value < 1 is invalid test failed: ${JSON.stringify(err)}`);
           done();
         }
       });
@@ -223,7 +221,7 @@ describe('Account Lockout Policy: ', () => {
         ) {
           done();
         } else {
-          fail('duration value > 99999 is invalid test failed: ' + JSON.stringify(err));
+          fail(`duration value > 99999 is invalid test failed: ${JSON.stringify(err)}`);
           done();
         }
       });
@@ -257,7 +255,7 @@ describe('Account Lockout Policy: ', () => {
         done();
       })
       .catch(err => {
-        fail('lock account after failed login attempts test failed: ' + JSON.stringify(err));
+        fail(`lock account after failed login attempts test failed: ${JSON.stringify(err)}`);
         done();
       });
   });
@@ -294,7 +292,7 @@ describe('Account Lockout Policy: ', () => {
         done();
       })
       .catch(err => {
-        fail('account should be locked for duration mins test failed: ' + JSON.stringify(err));
+        fail(`account should be locked for duration mins test failed: ${JSON.stringify(err)}`);
         done();
       });
   });
@@ -335,8 +333,9 @@ describe('Account Lockout Policy: ', () => {
       })
       .catch(err => {
         fail(
-          'allow login for locked account after accountPolicy.duration minutes test failed: ' +
-            JSON.stringify(err)
+          `allow login for locked account after accountPolicy.duration minutes test failed: ${JSON.stringify(
+            err
+          )}`
         );
         done();
       });
@@ -371,18 +370,16 @@ describe('lockout with password reset option', () => {
 
   it('accepts valid unlockOnPasswordReset option', async () => {
     const values = [true, false];
-
-    for (const value of values) {
-      await expectAsync(setup({ unlockOnPasswordReset: value })).toBeResolved();
-    }
+    await Promise.all(
+      values.map(value => expectAsync(setup({ unlockOnPasswordReset: value })).toBeResolved())
+    );
   });
 
   it('rejects invalid unlockOnPasswordReset option', async () => {
     const values = ['a', 0, {}, [], null];
-
-    for (const value of values) {
-      await expectAsync(setup({ unlockOnPasswordReset: value })).toBeRejected();
-    }
+    await Promise.all(
+      values.map(value => expectAsync(setup({ unlockOnPasswordReset: value })).toBeRejected())
+    );
   });
 
   it('uses default value if unlockOnPasswordReset is not set', async () => {

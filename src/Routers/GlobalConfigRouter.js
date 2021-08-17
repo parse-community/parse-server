@@ -8,7 +8,7 @@ export class GlobalConfigRouter extends PromiseRouter {
     return req.config.database
       .find('_GlobalConfig', { objectId: '1' }, { limit: 1 })
       .then(results => {
-        if (results.length != 1) {
+        if (results.length !== 1) {
           // If there is no config in the database - return empty config.
           return { response: { params: {} } };
         }

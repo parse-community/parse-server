@@ -10,9 +10,9 @@ jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
 
 global.on_db = (db, callback, elseCallback) => {
-  if (process.env.PARSE_SERVER_TEST_DB == db) {
+  if (process.env.PARSE_SERVER_TEST_DB === db) {
     return callback();
-  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db === 'mongo') {
     return callback();
   }
   if (elseCallback) {
@@ -85,7 +85,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
 // Default server configuration for tests.
 const defaultConfiguration = {
   filesAdapter,
-  serverURL: 'http://localhost:' + port + '/1',
+  serverURL: `http://localhost:${port}/1`,
   databaseAdapter,
   appId: 'test',
   javascriptKey: 'test',
@@ -187,7 +187,7 @@ const reconfigureServer = (changedConfiguration = {}) => {
 
 // Set up a Parse client to talk to our test API server
 const Parse = require('parse/node');
-Parse.serverURL = 'http://localhost:' + port + '/1';
+Parse.serverURL = `http://localhost:${port}/1`;
 
 beforeAll(async () => {
   try {
@@ -200,7 +200,7 @@ beforeAll(async () => {
   await reconfigureServer();
 
   Parse.initialize('test', 'test', 'test');
-  Parse.serverURL = 'http://localhost:' + port + '/1';
+  Parse.serverURL = `http://localhost:${port}/1`;
 });
 
 afterEach(function (done) {
@@ -301,7 +301,7 @@ function notEqual(a, b, message) {
 
 // Because node doesn't have Parse._.contains
 function arrayContains(arr, item) {
-  return -1 != arr.indexOf(item);
+  return -1 !== arr.indexOf(item);
 }
 
 // Normalizes a JSON object.
@@ -310,11 +310,11 @@ function normalize(obj) {
     return JSON.stringify(obj);
   }
   if (obj instanceof Array) {
-    return '[' + obj.map(normalize).join(', ') + ']';
+    return `[${obj.map(normalize).join(', ')}]`;
   }
   let answer = '{';
   for (const key of Object.keys(obj).sort()) {
-    answer += key + ': ';
+    answer += `${key}: `;
     answer += normalize(obj[key]);
     answer += ', ';
   }
@@ -383,7 +383,7 @@ function mockShortLivedAuth() {
     accessToken = validAccessToken;
   };
   auth.validateAuthData = function (authData) {
-    if (authData.access_token == accessToken) {
+    if (authData.access_token === accessToken) {
       return Promise.resolve();
     } else {
       return Promise.reject('Invalid access token');
@@ -429,7 +429,7 @@ global.it_exclude_dbs = excluded => {
 global.it_only_db = db => {
   if (
     process.env.PARSE_SERVER_TEST_DB === db ||
-    (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
+    (!process.env.PARSE_SERVER_TEST_DB && db === 'mongo')
   ) {
     return it;
   } else {
@@ -482,9 +482,9 @@ global.fit_exclude_dbs = excluded => {
 };
 
 global.describe_only_db = db => {
-  if (process.env.PARSE_SERVER_TEST_DB == db) {
+  if (process.env.PARSE_SERVER_TEST_DB === db) {
     return describe;
-  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db === 'mongo') {
     return describe;
   } else {
     return xdescribe;
@@ -511,7 +511,7 @@ jasmine.mockLibrary = function (library, name, mock) {
 
 jasmine.restoreLibrary = function (library, name) {
   if (!libraryCache[library] || !libraryCache[library][name]) {
-    throw 'Can not find library ' + library + ' ' + name;
+    throw `Can not find library ${library} ${name}`;
   }
   require(library)[name] = libraryCache[library][name];
 };

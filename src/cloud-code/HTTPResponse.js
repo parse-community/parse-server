@@ -14,11 +14,11 @@ export default class HTTPResponse {
     this.headers = response.headers || {};
     this.cookies = this.headers['set-cookie'];
 
-    if (typeof body == 'string') {
+    if (typeof body === 'string') {
       _text = body;
     } else if (Buffer.isBuffer(body)) {
       this.buffer = body;
-    } else if (typeof body == 'object') {
+    } else if (typeof body === 'object') {
       _data = body;
     }
 

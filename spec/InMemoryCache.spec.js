@@ -8,7 +8,7 @@ describe('InMemoryCache', function () {
     ttl: NaN,
   };
   const KEY = 'hello';
-  const KEY_2 = KEY + '_2';
+  const KEY_2 = `${KEY}_2`;
 
   const VALUE = 'world';
 

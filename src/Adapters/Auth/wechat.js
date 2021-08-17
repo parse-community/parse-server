@@ -1,12 +1,12 @@
 // Helper functions for accessing the WeChat Graph API.
 const httpsRequest = require('./httpsRequest');
-var Parse = require('parse/node').Parse;
+const Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return graphRequest('auth?access_token=' + authData.access_token + '&openid=' + authData.id).then(
+  return graphRequest(`auth?access_token=${authData.access_token}&openid=${authData.id}`).then(
     function (data) {
-      if (data.errcode == 0) {
+      if (data.errcode === 0) {
         return;
       }
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'wechat auth is invalid for this user.');
@@ -21,7 +21,7 @@ function validateAppId() {
 
 // A promisey wrapper for WeChat graph requests.
 function graphRequest(path) {
-  return httpsRequest.get('https://api.weixin.qq.com/sns/' + path);
+  return httpsRequest.get(`https://api.weixin.qq.com/sns/${path}`);
 }
 
 module.exports = {

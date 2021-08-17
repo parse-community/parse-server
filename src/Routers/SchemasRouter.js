@@ -1,6 +1,6 @@
 // schemas.js
 
-var Parse = require('parse/node').Parse,
+const Parse = require('parse/node').Parse,
   SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter from '../PromiseRouter';
@@ -43,7 +43,7 @@ function createSchema(req) {
     );
   }
   if (req.params.className && req.body.className) {
-    if (req.params.className != req.body.className) {
+    if (req.params.className !== req.body.className) {
       return classNameMismatchResponse(req.body.className, req.params.className);
     }
   }
@@ -73,7 +73,7 @@ function modifySchema(req) {
       "read-only masterKey isn't allowed to update a schema."
     );
   }
-  if (req.body.className && req.body.className != req.params.className) {
+  if (req.body.className && req.body.className !== req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
 

@@ -11,7 +11,7 @@ Command.prototype.loadDefinitions = function (definitions) {
   _definitions = definitions;
 
   Object.keys(definitions).reduce((program, opt) => {
-    if (typeof definitions[opt] == 'object') {
+    if (typeof definitions[opt] === 'object') {
       const additionalOptions = definitions[opt];
       if (additionalOptions.required === true) {
         return program.option(
@@ -32,7 +32,7 @@ Command.prototype.loadDefinitions = function (definitions) {
 
   _reverseDefinitions = Object.keys(definitions).reduce((object, key) => {
     let value = definitions[key];
-    if (typeof value == 'object') {
+    if (typeof value === 'object') {
       value = value.env;
     }
     if (value) {

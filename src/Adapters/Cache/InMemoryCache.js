@@ -1,5 +1,5 @@
 const DEFAULT_CACHE_TTL = 5 * 1000;
-
+import { isNull } from '../../Utils';
 export class InMemoryCache {
   constructor({ ttl = DEFAULT_CACHE_TTL }) {
     this.ttl = ttl;
@@ -8,7 +8,7 @@ export class InMemoryCache {
 
   get(key) {
     const record = this.cache[key];
-    if (record == null) {
+    if (isNull(record)) {
       return null;
     }
 
@@ -27,7 +27,7 @@ export class InMemoryCache {
       ttl = NaN;
     }
 
-    var record = {
+    const record = {
       value: value,
       expire: ttl + Date.now(),
     };
@@ -42,8 +42,8 @@ export class InMemoryCache {
   }
 
   del(key) {
-    var record = this.cache[key];
-    if (record == null) {
+    const record = this.cache[key];
+    if (isNull(record)) {
       return;
     }
 

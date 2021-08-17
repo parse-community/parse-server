@@ -18,6 +18,7 @@ import Parse from 'parse/node';
 import _ from 'lodash';
 import defaults from '../../../defaults';
 import logger from '../../../logger';
+import { isNull } from '../../../Utils';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -37,7 +38,7 @@ const storageAdapterAllCollections = mongoAdapter => {
         }
         // TODO: If you have one app with a collection prefix that happens to be a prefix of another
         // apps prefix, this will go very very badly. We should fix that somehow.
-        return collection.collectionName.indexOf(mongoAdapter._collectionPrefix) == 0;
+        return collection.collectionName.indexOf(mongoAdapter._collectionPrefix) === 0;
       });
     });
 };
@@ -360,7 +361,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         .then(collection => collection.drop())
         .catch(error => {
           // 'ns not found' means collection was already gone. Ignore deletion attempt.
-          if (error.message == 'ns not found') {
+          if (error.message === 'ns not found') {
             return;
           }
           throw error;
@@ -737,7 +738,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.distinct(transformField, transformWhere(className, query, schema))
       )
       .then(objects => {
-        objects = objects.filter(obj => obj != null);
+        objects = objects.filter(obj => !isNull(obj));
         return objects.map(object => {
           if (isPointerField) {
             return transformPointerString(schema, fieldName, object);
@@ -796,8 +797,7 @@ export class MongoStorageAdapter implements StorageAdapter {
               result._id = result._id.split('$')[1];
             }
             if (
-              result._id == null ||
-              result._id == undefined ||
+              isNull(result._id) ||
               (['object', 'string'].includes(typeof result._id) && _.isEmpty(result._id))
             ) {
               result._id = null;
@@ -913,9 +913,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       const field = pipeline.substring(1);
       if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
         return `$_p_${field}`;
-      } else if (field == 'createdAt') {
+      } else if (field === 'createdAt') {
         return '$_created_at';
-      } else if (field == 'updatedAt') {
+      } else if (field === 'updatedAt') {
         return '$_updated_at';
       }
     }

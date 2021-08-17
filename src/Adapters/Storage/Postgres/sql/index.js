@@ -1,7 +1,7 @@
 'use strict';
 
-var QueryFile = require('pg-promise').QueryFile;
-var path = require('path');
+const QueryFile = require('pg-promise').QueryFile;
+const path = require('path');
 
 module.exports = {
   array: {
@@ -20,9 +20,9 @@ module.exports = {
 ///////////////////////////////////////////////
 // Helper for linking to external query files;
 function sql(file) {
-  var fullPath = path.join(__dirname, file); // generating full path;
+  const fullPath = path.join(__dirname, file); // generating full path;
 
-  var qf = new QueryFile(fullPath, { minify: true });
+  const qf = new QueryFile(fullPath, { minify: true });
 
   if (qf.error) {
     throw qf.error;

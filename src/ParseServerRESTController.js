@@ -44,7 +44,7 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     if (path[0] !== '/') {
-      path = '/' + path;
+      path = `/${path}`;
     }
 
     if (path === '/batch') {
@@ -139,8 +139,8 @@ function ParseServerRESTController(applicationId, router) {
             err => {
               if (
                 err instanceof Parse.Error &&
-                err.code == Parse.Error.INVALID_JSON &&
-                err.message == `cannot route ${method} ${path}`
+                err.code === Parse.Error.INVALID_JSON &&
+                err.message === `cannot route ${method} ${path}`
               ) {
                 RESTController.request.apply(null, args).then(resolve, reject);
               } else {

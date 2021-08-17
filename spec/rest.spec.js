@@ -682,7 +682,7 @@ describe('rest create', () => {
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: `http://localhost:8378/1/sessions/${sessionId}`,
               body: {
                 installationId: 'yolo',
               },
@@ -694,7 +694,7 @@ describe('rest create', () => {
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: `http://localhost:8378/1/sessions/${sessionId}`,
               body: {
                 sessionToken: 'yolo',
               },
@@ -711,7 +711,7 @@ describe('rest create', () => {
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: `http://localhost:8378/1/sessions/${sessionId}`,
               body: {
                 user: Parse._encode(user),
               },
@@ -725,7 +725,7 @@ describe('rest create', () => {
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: `http://localhost:8378/1/sessions/${sessionId}`,
               body: {
                 user: Parse._encode(user),
               },

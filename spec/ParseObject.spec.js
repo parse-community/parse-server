@@ -41,7 +41,7 @@ describe('Parse.Object testing', () => {
         done();
       },
       function (objectAgain, error) {
-        ok(null, 'Error ' + error.code + ': ' + error.message);
+        ok(null, `Error ${error.code}: ${error.message}`);
         done();
       }
     );
@@ -360,19 +360,19 @@ describe('Parse.Object testing', () => {
                   done();
                 },
                 function (simpleAgain, error) {
-                  ok(false, 'Error ' + error.code + ': ' + error.message);
+                  ok(false, `Error ${error.code}: ${error.message}`);
                   done();
                 }
               );
             },
             function (simple, error) {
-              ok(false, 'Error ' + error.code + ': ' + error.message);
+              ok(false, `Error ${error.code}: ${error.message}`);
               done();
             }
           );
         },
         function (simple, error) {
-          ok(false, 'Error ' + error.code + ': ' + error.message);
+          ok(false, `Error ${error.code}: ${error.message}`);
           done();
         }
       );
@@ -399,13 +399,13 @@ describe('Parse.Object testing', () => {
             done();
           },
           function (simpleAgain, error) {
-            ok(false, 'Error ' + error.code + ': ' + error.message);
+            ok(false, `Error ${error.code}: ${error.message}`);
             done();
           }
         );
       },
       function (simple, error) {
-        ok(false, 'Error ' + error.code + ': ' + error.message);
+        ok(false, `Error ${error.code}: ${error.message}`);
         done();
       }
     );
@@ -437,19 +437,19 @@ describe('Parse.Object testing', () => {
                   done();
                 },
                 function (simpleAgain, error) {
-                  ok(false, 'Error ' + error.code + ': ' + error.message);
+                  ok(false, `Error ${error.code}: ${error.message}`);
                   done();
                 }
               );
             },
             function (simple, error) {
-              ok(false, 'Error ' + error.code + ': ' + error.message);
+              ok(false, `Error ${error.code}: ${error.message}`);
               done();
             }
           );
         },
         function (simple, error) {
-          ok(false, 'Error ' + error.code + ': ' + error.message);
+          ok(false, `Error ${error.code}: ${error.message}`);
           done();
         }
       );
@@ -487,19 +487,19 @@ describe('Parse.Object testing', () => {
                 done();
               },
               function (error) {
-                ok(false, 'Error ' + error.code + ': ' + error.message);
+                ok(false, `Error ${error.code}: ${error.message}`);
                 done();
               }
             );
           },
           function (error) {
-            ok(false, 'Error ' + error.code + ': ' + error.message);
+            ok(false, `Error ${error.code}: ${error.message}`);
             done();
           }
         );
       },
       function (error) {
-        ok(false, 'Error ' + error.code + ': ' + error.message);
+        ok(false, `Error ${error.code}: ${error.message}`);
         done();
       }
     );
@@ -592,7 +592,7 @@ describe('Parse.Object testing', () => {
           let found = 0;
           for (const thing in target) {
             for (const st in stuff) {
-              if (st == thing) {
+              if (st === thing) {
                 found++;
               }
             }
@@ -1771,7 +1771,7 @@ describe('Parse.Object testing', () => {
     for (let i = 0; i < 5; i++) {
       const proc = iter => {
         const child = new Parse.Object('Child');
-        child.set('name', 'testname' + i);
+        child.set('name', `testname${i}`);
         dict[iter] = child;
       };
       proc(i);

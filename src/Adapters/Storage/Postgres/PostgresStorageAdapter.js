@@ -7,6 +7,7 @@ import _ from 'lodash';
 // @flow-disable-next
 import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
+import { isNull } from '../../../Utils';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -17,7 +18,7 @@ const PostgresUniqueIndexViolationError = '23505';
 const logger = require('../../../logger');
 
 const debug = function (...args: any) {
-  args = ['PG: ' + arguments[0]].concat(args.slice(1, args.length));
+  args = [`PG: ${arguments[0]}`].concat(args.slice(1, args.length));
   const log = logger.getLogger();
   log.debug.apply(log, args);
 };
@@ -202,7 +203,7 @@ const transformDotField = fieldName => {
   }
   const components = transformDotFieldToComponents(fieldName);
   let name = components.slice(0, components.length - 1).join('->');
-  name += '->>' + components[components.length - 1];
+  name += `->>${components[components.length - 1]}`;
   return name;
 };
 
@@ -220,9 +221,9 @@ const transformAggregateField = fieldName => {
 };
 
 const validateKeys = object => {
-  if (typeof object == 'object') {
+  if (typeof object === 'object') {
     for (const key in object) {
-      if (typeof object[key] == 'object') {
+      if (typeof object[key] === 'object') {
         validateKeys(object[key]);
       }
 
@@ -431,7 +432,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       }
       index = index + 1 + inPatterns.length;
     } else if (isInOrNin) {
-      var createConstraint = (baseArray, notIn) => {
+      const createConstraint = (baseArray, notIn) => {
         const not = notIn ? ' NOT ' : '';
         if (baseArray.length > 0) {
           if (isArrayField) {
@@ -446,7 +447,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
-              if (listElem != null) {
+              if (!isNull(listElem)) {
                 values.push(listElem);
                 inPatterns.push(`$${index + 1 + listIndex}`);
               }
@@ -490,13 +491,13 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         if (!isAllValuesRegexOrNone(fieldValue.$all)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            'All $all values must be of regex type or none: ' + fieldValue.$all
+            `All $all values must be of regex type or none: ${fieldValue.$all}`
           );
         }
 
         for (let i = 0; i < fieldValue.$all.length; i += 1) {
           const value = processRegexPattern(fieldValue.$all[i].$regex);
-          fieldValue.$all[i] = value.substring(1) + '%';
+          fieldValue.$all[i] = `${value.substring(1)}%`;
         }
         patterns.push(`array_contains_all_regex($${index}:name, $${index + 1}::jsonb)`);
       } else {
@@ -826,9 +827,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
   //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
   createExplainableQuery(query: string, analyze: boolean = false) {
     if (analyze) {
-      return 'EXPLAIN (ANALYZE, FORMAT JSON) ' + query;
+      return `EXPLAIN (ANALYZE, FORMAT JSON) ${query}`;
     } else {
-      return 'EXPLAIN (FORMAT JSON) ' + query;
+      return `EXPLAIN (FORMAT JSON) ${query}`;
     }
   }
 
@@ -1131,7 +1132,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     ];
     const response = await this._client
       .tx(t => t.none(this._pgp.helpers.concat(operations)))
-      .then(() => className.indexOf('_Join:') != 0); // resolves with false when _Join table
+      .then(() => className.indexOf('_Join:') !== 0); // resolves with false when _Join table
 
     this._notifySchemaChange();
     return response;
@@ -1273,9 +1274,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (object[fieldName] === null) {
         return;
       }
-      var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
-        var provider = authDataMatch[1];
+        const provider = authDataMatch[1];
         object['authData'] = object['authData'] || {};
         object['authData'][provider] = object[fieldName];
         delete object[fieldName];
@@ -1496,7 +1497,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     for (const fieldName in update) {
       const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
-        var provider = authDataMatch[1];
+        const provider = authDataMatch[1];
         const value = update[fieldName];
         delete update[fieldName];
         update['authData'] = update['authData'] || {};
@@ -1513,7 +1514,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         updatePatterns.push(`$${index}:name = NULL`);
         values.push(fieldName);
         index += 1;
-      } else if (fieldName == 'authData') {
+      } else if (fieldName === 'authData') {
         // This recursively sets the json_object
         // Only 1 level deep
         const generate = (jsonb: string, key: string, value: any) => {
@@ -1636,14 +1637,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
         let incrementPatterns = '';
         if (keysToIncrement.length > 0) {
-          incrementPatterns =
-            ' || ' +
-            keysToIncrement
-              .map(c => {
-                const amount = fieldValue[c].amount;
-                return `CONCAT('{"${c}":', COALESCE($${index}:name->>'${c}','0')::int + ${amount}, '}')::jsonb`;
-              })
-              .join(' || ');
+          incrementPatterns = ` || ${keysToIncrement
+            .map(c => {
+              const amount = fieldValue[c].amount;
+              return `CONCAT('{"${c}":', COALESCE($${index}:name->>'${c}','0')::int + ${amount}, '}')::jsonb`;
+            })
+            .join(' || ')}`;
           // Strip the keys
           keysToIncrement.forEach(key => {
             delete fieldValue[key];
@@ -1664,7 +1663,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           .map(k => k.split('.')[1]);
 
         const deletePatterns = keysToDelete.reduce((p: string, c: string, i: number) => {
-          return p + ` - '$${index + 1 + i}:value'`;
+          return `${p} - '$${index + 1 + i}:value'`;
         }, '');
         // Override Object
         let updateObject = "'{}'::jsonb";
@@ -1983,7 +1982,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     return this._client
       .one(qs, values, a => {
-        if (a.approximate_row_count != null) {
+        if (!isNull(a.approximate_row_count)) {
           return +a.approximate_row_count;
         } else {
           return +a.count;
@@ -2394,8 +2393,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
-    const indexNameOptions: Object =
-      indexName != null ? { name: indexName } : { name: defaultIndexName };
+    const indexNameOptions: Object = !isNull(indexName)
+      ? { name: indexName }
+      : { name: defaultIndexName };
     const constraintPatterns = caseInsensitive
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
@@ -2480,10 +2480,10 @@ function removeWhiteSpace(regex) {
 function processRegexPattern(s) {
   if (s && s.startsWith('^')) {
     // regex for startsWith
-    return '^' + literalizeRegexPart(s.slice(1));
+    return `^${literalizeRegexPart(s.slice(1))}`;
   } else if (s && s.endsWith('$')) {
     // regex for endsWith
-    return literalizeRegexPart(s.slice(0, s.length - 1)) + '$';
+    return `${literalizeRegexPart(s.slice(0, s.length - 1))}$`;
   }
 
   // regex for contains
@@ -2570,9 +2570,9 @@ function literalizeRegexPart(s: string) {
     .replace(/^'([^'])/, `''$1`);
 }
 
-var GeoPointCoder = {
+const GeoPointCoder = {
   isValidJSON(value) {
-    return typeof value === 'object' && value !== null && value.__type === 'GeoPoint';
+    return typeof value === 'object' && !isNull(value) && value.__type === 'GeoPoint';
   },
 };
 

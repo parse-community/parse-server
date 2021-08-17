@@ -14,7 +14,7 @@ import logger from '../logger';
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
-    const badge = installation.badge + '';
+    const badge = `${installation.badge}`;
     map[badge] = map[badge] || [];
     map[badge].push(installation);
     return map;
@@ -49,7 +49,7 @@ export class PushWorker {
     delete query.where;
     pushStatus = pushStatusHandler(config, pushStatus.objectId);
     return rest.find(config, auth, '_Installation', where, query).then(({ results }) => {
-      if (results.length == 0) {
+      if (results.length === 0) {
         return;
       }
       return this.sendToAdapter(body, results, pushStatus, config, UTCOffset);

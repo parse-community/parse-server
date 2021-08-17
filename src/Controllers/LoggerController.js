@@ -46,10 +46,10 @@ export class LoggerController extends AdaptableController {
     for (const key in query) {
       if (key !== 'password') {
         // normal value
-        sanitizedQuery += key + '=' + query[key] + '&';
+        sanitizedQuery += `${key}=${query[key]}&`;
       } else {
         // password value, redact it
-        sanitizedQuery += key + '=' + '********' + '&';
+        sanitizedQuery += `${key}=` + `********` + `&`;
       }
     }
 

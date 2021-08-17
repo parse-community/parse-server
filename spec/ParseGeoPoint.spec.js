@@ -48,7 +48,7 @@ describe('Parse.GeoPoint testing', () => {
     obj.set('name', 'Zhoul');
     await obj.save();
     Parse.Cloud.httpRequest({
-      url: 'http://localhost:8378/1/classes/TestObject/' + obj.id,
+      url: `http://localhost:8378/1/classes/TestObject/${obj.id}`,
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test',
@@ -379,7 +379,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -418,7 +418,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -461,7 +461,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -498,7 +498,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -540,7 +540,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -574,7 +574,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -608,7 +608,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -646,7 +646,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -684,7 +684,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -718,7 +718,7 @@ describe('Parse.GeoPoint testing', () => {
         };
         return request({
           method: 'POST',
-          url: Parse.serverURL + '/classes/Polygon',
+          url: `${Parse.serverURL}/classes/Polygon`,
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,

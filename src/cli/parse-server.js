@@ -81,23 +81,15 @@ runner({
     }
 
     function printSuccessMessage() {
-      console.log('[' + process.pid + '] parse-server running on ' + options.serverURL);
+      console.log(`[${process.pid}] parse-server running on ${options.serverURL}`);
       if (options.mountGraphQL) {
         console.log(
-          '[' +
-            process.pid +
-            '] GraphQL running on http://localhost:' +
-            options.port +
-            options.graphQLPath
+          `[${process.pid}] GraphQL running on http://localhost:${options.port}${options.graphQLPath}`
         );
       }
       if (options.mountPlayground) {
         console.log(
-          '[' +
-            process.pid +
-            '] Playground running on http://localhost:' +
-            options.port +
-            options.playgroundPath
+          `[${process.pid}] Playground running on http://localhost:${options.port}${options.playgroundPath}`
         );
       }
     }

@@ -7,8 +7,8 @@ import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
 
-var RestQuery = require('../RestQuery');
-var Auth = require('../Auth');
+const RestQuery = require('../RestQuery');
+const Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
   constructor(adapter, appId, options = {}) {
@@ -70,7 +70,7 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const masterAuth = Auth.master(this.config);
-    var findUserForEmailVerification = new RestQuery(
+    const findUserForEmailVerification = new RestQuery(
       this.config,
       Auth.master(this.config),
       '_User',
@@ -97,13 +97,13 @@ export class UserController extends AdaptableController {
         { limit: 1 }
       )
       .then(results => {
-        if (results.length != 1) {
+        if (results.length !== 1) {
           throw 'Failed to reset password: username / email / token is invalid';
         }
 
         if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
           let expiresDate = results[0]._perishable_token_expires_at;
-          if (expiresDate && expiresDate.__type == 'Date') {
+          if (expiresDate && expiresDate.__type === 'Date') {
             expiresDate = new Date(expiresDate.iso);
           }
           if (expiresDate < new Date()) throw 'The password reset link has expired';
@@ -116,7 +116,7 @@ export class UserController extends AdaptableController {
     if (user.username && user.email) {
       return Promise.resolve(user);
     }
-    var where = {};
+    const where = {};
     if (user.username) {
       where.username = user.username;
     }
@@ -124,9 +124,9 @@ export class UserController extends AdaptableController {
       where.email = user.email;
     }
 
-    var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
+    const query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
     return query.execute().then(function (result) {
-      if (result.results.length != 1) {
+      if (result.results.length !== 1) {
         throw undefined;
       }
       return result.results[0];
@@ -230,9 +230,9 @@ export class UserController extends AdaptableController {
         },
         { limit: 1 }
       );
-      if (results.length == 1) {
+      if (results.length === 1) {
         let expiresDate = results[0]._perishable_token_expires_at;
-        if (expiresDate && expiresDate.__type == 'Date') {
+        if (expiresDate && expiresDate.__type === 'Date') {
           expiresDate = new Date(expiresDate.iso);
         }
         if (expiresDate > new Date()) {
@@ -281,32 +281,25 @@ export class UserController extends AdaptableController {
 
   defaultVerificationEmail({ link, user, appName }) {
     const text =
-      'Hi,\n\n' +
-      'You are being asked to confirm the e-mail address ' +
-      user.get('email') +
-      ' with ' +
-      appName +
-      '\n\n' +
-      '' +
-      'Click here to confirm it:\n' +
-      link;
+      `${'Hi,\n\n' + 'You are being asked to confirm the e-mail address '}${user.get(
+        'email'
+      )} with ${appName}\n\n` +
+      `` +
+      `Click here to confirm it:\n${link}`;
     const to = user.get('email');
-    const subject = 'Please verify your e-mail for ' + appName;
+    const subject = `Please verify your e-mail for ${appName}`;
     return { text, to, subject };
   }
 
   defaultResetPasswordEmail({ link, user, appName }) {
     const text =
-      'Hi,\n\n' +
-      'You requested to reset your password for ' +
-      appName +
-      (user.get('username') ? " (your username is '" + user.get('username') + "')" : '') +
-      '.\n\n' +
-      '' +
-      'Click here to reset it:\n' +
-      link;
+      `${'Hi,\n\n' + 'You requested to reset your password for '}${appName}${
+        user.get('username') ? ` (your username is '${user.get('username')}')` : ''
+      }.\n\n` +
+      `` +
+      `Click here to reset it:\n${link}`;
     const to = user.get('email') || user.get('username');
-    const subject = 'Password Reset for ' + appName;
+    const subject = `Password Reset for ${appName}`;
     return { text, to, subject };
   }
 }

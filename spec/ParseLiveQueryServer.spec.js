@@ -174,7 +174,7 @@ describe('ParseLiveQueryServer', function () {
       return new Promise((resolve, reject) => {
         op(
           {
-            url: Parse.serverURL + '/schemas/' + className,
+            url: `${Parse.serverURL}/schemas/${className}`,
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Master-Key': Parse.masterKey,
@@ -1882,7 +1882,7 @@ describe('LiveQueryController', () => {
       return new Promise((resolve, reject) => {
         op(
           {
-            url: Parse.serverURL + '/schemas/' + className,
+            url: `${Parse.serverURL}/schemas/${className}`,
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Master-Key': Parse.masterKey,

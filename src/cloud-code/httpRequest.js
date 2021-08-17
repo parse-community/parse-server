@@ -3,6 +3,7 @@ import querystring from 'querystring';
 import log from '../logger';
 import { http, https } from 'follow-redirects';
 import { parse } from 'url';
+import { isNull } from '../Utils';
 
 const clients = {
   'http:': http,
@@ -34,11 +35,11 @@ const encodeBody = function ({ body, headers = {} }) {
   if (typeof body !== 'object') {
     return { body, headers };
   }
-  var contentTypeKeys = Object.keys(headers).filter(key => {
-    return key.match(/content-type/i) != null;
+  const contentTypeKeys = Object.keys(headers).filter(key => {
+    return !isNull(key.match(/content-type/i));
   });
 
-  if (contentTypeKeys.length == 0) {
+  if (contentTypeKeys.length === 0) {
     // no content type
     //  As per https://parse.com/docs/cloudcode/guide#cloud-code-advanced-sending-a-post-request the default encoding is supposedly x-www-form-urlencoded
 
@@ -50,7 +51,7 @@ const encodeBody = function ({ body, headers = {} }) {
       log.error('Parse.Cloud.httpRequest', 'multiple content-type headers are set.');
     }
     // There maybe many, we'll just take the 1st one
-    var contentType = contentTypeKeys[0];
+    const contentType = contentTypeKeys[0];
     if (headers[contentType].match(/application\/json/i)) {
       body = JSON.stringify(body);
     } else if (headers[contentType].match(/application\/x-www-form-urlencoded/i)) {

@@ -112,7 +112,7 @@ describe('middlewares', () => {
 
   BodyKeys.forEach(infoKey => {
     const bodyKey = BodyParams[infoKey];
-    const keyValue = 'Fake' + bodyKey;
+    const keyValue = `Fake${bodyKey}`;
     // javascriptKey is the only one that gets defaulted,
     const otherKeys = BodyKeys.filter(
       otherKey => otherKey !== infoKey && otherKey !== 'javascriptKey'

@@ -39,10 +39,10 @@ const httpsRequest = require('./httpsRequest');
 const arraysEqual = (_arr1, _arr2) => {
   if (!Array.isArray(_arr1) || !Array.isArray(_arr2) || _arr1.length !== _arr2.length) return false;
 
-  var arr1 = _arr1.concat().sort();
-  var arr2 = _arr2.concat().sort();
+  const arr1 = _arr1.concat().sort();
+  const arr2 = _arr2.concat().sort();
 
-  for (var i = 0; i < arr1.length; i++) {
+  for (let i = 0; i < arr1.length; i++) {
     if (arr1[i] !== arr2[i]) return false;
   }
 
@@ -61,13 +61,13 @@ const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } =
       host: config['auth-server-url'],
       path: `/realms/${config['realm']}/protocol/openid-connect/userinfo`,
       headers: {
-        Authorization: 'Bearer ' + access_token,
+        Authorization: `Bearer ${access_token}`,
       },
     });
     if (
       response &&
       response.data &&
-      response.data.sub == id &&
+      response.data.sub === id &&
       arraysEqual(response.data.roles, roles) &&
       arraysEqual(response.data.groups, groups)
     ) {

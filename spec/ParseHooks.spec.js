@@ -9,7 +9,7 @@ const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 
 const port = 34567;
-const hookServerURL = 'http://localhost:' + port;
+const hookServerURL = `http://localhost:${port}`;
 
 describe('Hooks', () => {
   let server;
@@ -173,7 +173,7 @@ describe('Hooks', () => {
   it('should fail to register hooks without Master Key', done => {
     request({
       method: 'POST',
-      url: Parse.serverURL + '/hooks/functions',
+      url: `${Parse.serverURL}/hooks/functions`,
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
       },
@@ -345,7 +345,7 @@ describe('Hooks', () => {
   it('should fail trying to create a malformed function (REST)', done => {
     request({
       method: 'POST',
-      url: Parse.serverURL + '/hooks/functions',
+      url: `${Parse.serverURL}/hooks/functions`,
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
@@ -363,9 +363,9 @@ describe('Hooks', () => {
     const promises = [];
     for (let i = 0; i < 5; i++) {
       promises.push(
-        Parse.Hooks.createTrigger('MyClass' + i, 'beforeSave', 'http://url.com/beforeSave/' + i)
+        Parse.Hooks.createTrigger(`MyClass${i}`, 'beforeSave', `http://url.com/beforeSave/${i}`)
       );
-      promises.push(Parse.Hooks.createFunction('AFunction' + i, 'http://url.com/function' + i));
+      promises.push(Parse.Hooks.createFunction(`AFunction${i}`, `http://url.com/function${i}`));
     }
 
     Promise.all(promises)
@@ -373,12 +373,12 @@ describe('Hooks', () => {
         function () {
           for (let i = 0; i < 5; i++) {
             // Delete everything from memory, as the server just started
-            triggers.removeTrigger('beforeSave', 'MyClass' + i, Parse.applicationId);
-            triggers.removeFunction('AFunction' + i, Parse.applicationId);
+            triggers.removeTrigger('beforeSave', `MyClass${i}`, Parse.applicationId);
+            triggers.removeFunction(`AFunction${i}`, Parse.applicationId);
             expect(
-              triggers.getTrigger('MyClass' + i, 'beforeSave', Parse.applicationId)
+              triggers.getTrigger(`MyClass${i}`, 'beforeSave', Parse.applicationId)
             ).toBeUndefined();
-            expect(triggers.getFunction('AFunction' + i, Parse.applicationId)).toBeUndefined();
+            expect(triggers.getFunction(`AFunction${i}`, Parse.applicationId)).toBeUndefined();
           }
           const hooksController = new HooksController(
             Parse.applicationId,
@@ -396,9 +396,9 @@ describe('Hooks', () => {
         function () {
           for (let i = 0; i < 5; i++) {
             expect(
-              triggers.getTrigger('MyClass' + i, 'beforeSave', Parse.applicationId)
+              triggers.getTrigger(`MyClass${i}`, 'beforeSave', Parse.applicationId)
             ).not.toBeUndefined();
-            expect(triggers.getFunction('AFunction' + i, Parse.applicationId)).not.toBeUndefined();
+            expect(triggers.getFunction(`AFunction${i}`, Parse.applicationId)).not.toBeUndefined();
           }
           done();
         },
@@ -415,7 +415,7 @@ describe('Hooks', () => {
       res.json({ success: 'OK!' });
     });
 
-    Parse.Hooks.createFunction('SOME_TEST_FUNCTION', hookServerURL + '/SomeFunction')
+    Parse.Hooks.createFunction('SOME_TEST_FUNCTION', `${hookServerURL}/SomeFunction`)
       .then(
         function () {
           return Parse.Cloud.run('SOME_TEST_FUNCTION');
@@ -444,7 +444,7 @@ describe('Hooks', () => {
       res.json({ error: { code: 1337, error: 'hacking that one!' } });
     });
     // The function is deleted as the DB is dropped between calls
-    Parse.Hooks.createFunction('SOME_TEST_FUNCTION', hookServerURL + '/SomeFunctionError')
+    Parse.Hooks.createFunction('SOME_TEST_FUNCTION', `${hookServerURL}/SomeFunctionError`)
       .then(
         function () {
           return Parse.Cloud.run('SOME_TEST_FUNCTION');
@@ -482,7 +482,7 @@ describe('Hooks', () => {
       }
     });
 
-    Parse.Hooks.createFunction('SOME_TEST_FUNCTION', hookServerURL + '/ExpectingKey')
+    Parse.Hooks.createFunction('SOME_TEST_FUNCTION', `${hookServerURL}/ExpectingKey`)
       .then(
         function () {
           return Parse.Cloud.run('SOME_TEST_FUNCTION');
@@ -516,7 +516,7 @@ describe('Hooks', () => {
         }
       });
 
-      Parse.Hooks.createFunction('SOME_TEST_FUNCTION', hookServerURL + '/ExpectingKeyAlso')
+      Parse.Hooks.createFunction('SOME_TEST_FUNCTION', `${hookServerURL}/ExpectingKeyAlso`)
         .then(
           function () {
             return Parse.Cloud.run('SOME_TEST_FUNCTION');
@@ -556,7 +556,7 @@ describe('Hooks', () => {
       res.json({ success: object });
     });
     // The function is deleted as the DB is dropped between calls
-    Parse.Hooks.createTrigger('SomeRandomObject', 'beforeSave', hookServerURL + '/BeforeSaveSome')
+    Parse.Hooks.createTrigger('SomeRandomObject', 'beforeSave', `${hookServerURL}/BeforeSaveSome`)
       .then(function () {
         const obj = new Parse.Object('SomeRandomObject');
         return obj.save();
@@ -582,7 +582,7 @@ describe('Hooks', () => {
       object.set('hello', 'world');
       res.json({ success: object });
     });
-    Parse.Hooks.createTrigger('SomeRandomObject2', 'beforeSave', hookServerURL + '/BeforeSaveSome2')
+    Parse.Hooks.createTrigger('SomeRandomObject2', 'beforeSave', `${hookServerURL}/BeforeSaveSome2`)
       .then(function () {
         const obj = new Parse.Object('SomeRandomObject2');
         return obj.save();
@@ -613,7 +613,7 @@ describe('Hooks', () => {
       });
     });
     // The function is deleted as the DB is dropped between calls
-    Parse.Hooks.createTrigger('SomeRandomObject', 'afterSave', hookServerURL + '/AfterSaveSome')
+    Parse.Hooks.createTrigger('SomeRandomObject', 'afterSave', `${hookServerURL}/AfterSaveSome`)
       .then(function () {
         const obj = new Parse.Object('SomeRandomObject');
         return obj.save();

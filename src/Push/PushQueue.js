@@ -38,7 +38,7 @@ export class PushQueue {
         });
       })
       .then(({ results, count }) => {
-        if (!results || count == 0) {
+        if (!results || count === 0) {
           return pushStatus.complete();
         }
         pushStatus.setRunning(Math.ceil(count / limit));

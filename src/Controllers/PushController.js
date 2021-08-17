@@ -41,12 +41,12 @@ export class PushController {
     if (body.data && body.data.badge) {
       const badge = body.data.badge;
       let restUpdate = {};
-      if (typeof badge == 'string' && badge.toLowerCase() === 'increment') {
+      if (typeof badge === 'string' && badge.toLowerCase() === 'increment') {
         restUpdate = { badge: { __op: 'Increment', amount: 1 } };
       } else if (
-        typeof badge == 'object' &&
-        typeof badge.__op == 'string' &&
-        badge.__op.toLowerCase() == 'increment' &&
+        typeof badge === 'object' &&
+        typeof badge.__op === 'string' &&
+        badge.__op.toLowerCase() === 'increment' &&
         Number(badge.amount)
       ) {
         restUpdate = { badge: { __op: 'Increment', amount: badge.amount } };
@@ -88,7 +88,7 @@ export class PushController {
         if (body.audience_id) {
           const audienceId = body.audience_id;
 
-          var updateAudience = {
+          const updateAudience = {
             lastUsed: { __type: 'Date', iso: new Date().toISOString() },
             timesUsed: { __op: 'Increment', amount: 1 },
           };
@@ -126,12 +126,12 @@ export class PushController {
    * @returns {Number|undefined} The expiration time if it exists in the request
    */
   static getExpirationTime(body = {}) {
-    var hasExpirationTime = Object.prototype.hasOwnProperty.call(body, 'expiration_time');
+    const hasExpirationTime = Object.prototype.hasOwnProperty.call(body, 'expiration_time');
     if (!hasExpirationTime) {
       return;
     }
-    var expirationTimeParam = body['expiration_time'];
-    var expirationTime;
+    const expirationTimeParam = body['expiration_time'];
+    let expirationTime;
     if (typeof expirationTimeParam === 'number') {
       expirationTime = new Date(expirationTimeParam * 1000);
     } else if (typeof expirationTimeParam === 'string') {
@@ -139,14 +139,14 @@ export class PushController {
     } else {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
-        body['expiration_time'] + ' is not valid time.'
+        `${body['expiration_time']} is not valid time.`
       );
     }
     // Check expirationTime is valid or not, if it is not valid, expirationTime is NaN
     if (!isFinite(expirationTime)) {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
-        body['expiration_time'] + ' is not valid time.'
+        `${body['expiration_time']} is not valid time.`
       );
     }
     return expirationTime.valueOf();
@@ -158,7 +158,7 @@ export class PushController {
       return;
     }
 
-    var expirationIntervalParam = body['expiration_interval'];
+    const expirationIntervalParam = body['expiration_interval'];
     if (typeof expirationIntervalParam !== 'number' || expirationIntervalParam <= 0) {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
@@ -174,13 +174,13 @@ export class PushController {
    * @returns {Number|undefined} The push time if it exists in the request
    */
   static getPushTime(body = {}) {
-    var hasPushTime = Object.prototype.hasOwnProperty.call(body, 'push_time');
+    const hasPushTime = Object.prototype.hasOwnProperty.call(body, 'push_time');
     if (!hasPushTime) {
       return;
     }
-    var pushTimeParam = body['push_time'];
-    var date;
-    var isLocalTime = true;
+    const pushTimeParam = body['push_time'];
+    let date;
+    let isLocalTime = true;
 
     if (typeof pushTimeParam === 'number') {
       date = new Date(pushTimeParam * 1000);
@@ -190,14 +190,14 @@ export class PushController {
     } else {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
-        body['push_time'] + ' is not valid time.'
+        `${body['push_time']} is not valid time.`
       );
     }
     // Check pushTime is valid or not, if it is not valid, pushTime is NaN
     if (!isFinite(date)) {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
-        body['push_time'] + ' is not valid time.'
+        `${body['push_time']} is not valid time.`
       );
     }
 

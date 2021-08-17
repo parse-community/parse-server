@@ -445,7 +445,7 @@ describe('Parse.Relation testing', () => {
           done();
         },
         function (err) {
-          ok(false, 'unexpected error: ' + JSON.stringify(err));
+          ok(false, `unexpected error: ${JSON.stringify(err)}`);
           done();
         }
       );
@@ -487,7 +487,7 @@ describe('Parse.Relation testing', () => {
           done();
         },
         function (err) {
-          ok(false, 'unexpected error: ' + JSON.stringify(err));
+          ok(false, `unexpected error: ${JSON.stringify(err)}`);
           done();
         }
       );
@@ -522,11 +522,11 @@ describe('Parse.Relation testing', () => {
     const owners = [];
     const allObjects = [];
     // Build 10 Objects and 10 owners
-    while (objects.length != 10) {
+    while (objects.length !== 10) {
       const object = new Parse.Object('AnObject');
       object.set({
         index: objects.length,
-        even: objects.length % 2 == 0,
+        even: objects.length % 2 === 0,
       });
       objects.push(object);
       const owner = new Parse.Object('AnOwner');

@@ -340,7 +340,7 @@ describe('ParseLiveQuery', function () {
         done();
       }, 2000);
 
-      if (current.get('foo') != original.get('foo')) {
+      if (current.get('foo') !== original.get('foo')) {
         req.sendEvent = false;
       }
     });

@@ -1,12 +1,12 @@
 // Helper functions for accessing the weibo Graph API.
-var httpsRequest = require('./httpsRequest');
-var Parse = require('parse/node').Parse;
-var querystring = require('querystring');
+const httpsRequest = require('./httpsRequest');
+const Parse = require('parse/node').Parse;
+const querystring = require('querystring');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
   return graphRequest(authData.access_token).then(function (data) {
-    if (data && data.uid == authData.id) {
+    if (data && data.uid === authData.id) {
       return;
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'weibo auth is invalid for this user.');
@@ -20,10 +20,10 @@ function validateAppId() {
 
 // A promisey wrapper for weibo graph requests.
 function graphRequest(access_token) {
-  var postData = querystring.stringify({
+  const postData = querystring.stringify({
     access_token: access_token,
   });
-  var options = {
+  const options = {
     hostname: 'api.weibo.com',
     path: '/oauth2/get_token_info',
     method: 'POST',

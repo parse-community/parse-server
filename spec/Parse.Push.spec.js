@@ -9,8 +9,10 @@ const pushCompleted = async pushId => {
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
+    /* eslint-disable no-await-in-loop */
     await sleep(100);
     result = await query.first({ useMasterKey: true });
+    /* eslint-enable no-await-in-loop */
   }
 };
 
@@ -34,8 +36,8 @@ const provideInstallations = function (num) {
   while (installations.length !== num) {
     // add Android installations
     const installation = new Parse.Object('_Installation');
-    installation.set('installationId', 'installation_' + installations.length);
-    installation.set('deviceToken', 'device_token_' + installations.length);
+    installation.set('installationId', `installation_${installations.length}`);
+    installation.set('deviceToken', `device_token_${installations.length}`);
     installation.set('deviceType', 'android');
     installations.push(installation);
   }
@@ -65,7 +67,7 @@ const setup = function () {
       const promises = installations.map(installation => {
         sendToInstallationSpy(installation);
 
-        if (installation.deviceType == 'ios') {
+        if (installation.deviceType === 'ios') {
           expect(installation.badge).toEqual(badge);
           expect(installation.originalBadge + 1).toEqual(installation.badge);
         } else {
@@ -94,10 +96,10 @@ const setup = function () {
   })
     .then(() => {
       const installations = [];
-      while (installations.length != 10) {
+      while (installations.length !== 10) {
         const installation = new Parse.Object('_Installation');
-        installation.set('installationId', 'installation_' + installations.length);
-        installation.set('deviceToken', 'device_token_' + installations.length);
+        installation.set('installationId', `installation_${installations.length}`);
+        installation.set('deviceToken', `device_token_${installations.length}`);
         installation.set('badge', installations.length);
         installation.set('originalBadge', installations.length);
         installation.set('deviceType', 'ios');
@@ -243,8 +245,8 @@ describe('Parse.Push', () => {
 
     // add 1 iOS installation which we will omit & add later on
     const iOSInstallation = new Parse.Object('_Installation');
-    iOSInstallation.set('installationId', 'installation_' + installations.length);
-    iOSInstallation.set('deviceToken', 'device_token_' + installations.length);
+    iOSInstallation.set('installationId', `installation_${installations.length}`);
+    iOSInstallation.set('deviceToken', `device_token_${installations.length}`);
     iOSInstallation.set('deviceType', 'ios');
     installations.push(iOSInstallation);
 
@@ -313,8 +315,8 @@ describe('Parse.Push', () => {
     const iOSInstallations = [];
     while (iOSInstallations.length !== devices / 100) {
       const iOSInstallation = new Parse.Object('_Installation');
-      iOSInstallation.set('installationId', 'installation_' + installations.length);
-      iOSInstallation.set('deviceToken', 'device_token_' + installations.length);
+      iOSInstallation.set('installationId', `installation_${installations.length}`);
+      iOSInstallation.set('deviceToken', `device_token_${installations.length}`);
       iOSInstallation.set('deviceType', 'ios');
       installations.push(iOSInstallation);
       iOSInstallations.push(iOSInstallation);

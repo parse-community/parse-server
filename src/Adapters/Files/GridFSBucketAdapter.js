@@ -134,8 +134,8 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   async rotateEncryptionKey(options = {}) {
-    var fileNames = [];
-    var oldKeyFileAdapter = {};
+    let fileNames = [];
+    let oldKeyFileAdapter = {};
     const bucket = await this._getBucket();
     if (options.oldKey !== undefined) {
       oldKeyFileAdapter = new GridFSBucketAdapter(
@@ -155,10 +155,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
       });
     }
     return new Promise(resolve => {
-      var fileNamesNotRotated = fileNames;
-      var fileNamesRotated = [];
-      var fileNameTotal = fileNames.length;
-      var fileNameIndex = 0;
+      let fileNamesNotRotated = fileNames;
+      const fileNamesRotated = [];
+      const fileNameTotal = fileNames.length;
+      let fileNameIndex = 0;
       fileNames.forEach(fileName => {
         oldKeyFileAdapter
           .getFileData(fileName)
@@ -171,7 +171,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
                   return value !== fileName;
                 });
                 fileNameIndex += 1;
-                if (fileNameIndex == fileNameTotal) {
+                if (fileNameIndex === fileNameTotal) {
                   resolve({
                     rotated: fileNamesRotated,
                     notRotated: fileNamesNotRotated,
@@ -180,7 +180,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
               })
               .catch(() => {
                 fileNameIndex += 1;
-                if (fileNameIndex == fileNameTotal) {
+                if (fileNameIndex === fileNameTotal) {
                   resolve({
                     rotated: fileNamesRotated,
                     notRotated: fileNamesNotRotated,
@@ -190,7 +190,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
           })
           .catch(() => {
             fileNameIndex += 1;
-            if (fileNameIndex == fileNameTotal) {
+            if (fileNameIndex === fileNameTotal) {
               resolve({
                 rotated: fileNamesRotated,
                 notRotated: fileNamesNotRotated,
@@ -202,7 +202,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
-    return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+    return `${config.mount}/files/${config.applicationId}/${encodeURIComponent(filename)}`;
   }
 
   async getMetadata(filename) {
@@ -234,7 +234,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     res.writeHead(206, {
       'Accept-Ranges': 'bytes',
       'Content-Length': end - start + 1,
-      'Content-Range': 'bytes ' + start + '-' + end + '/' + files[0].length,
+      'Content-Range': `bytes ${start}-${end}/${files[0].length}`,
       'Content-Type': contentType,
     });
     const stream = bucket.openDownloadStreamByName(filename);

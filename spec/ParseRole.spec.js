@@ -35,7 +35,7 @@ function testLoadRoles(config, done) {
       roles => {
         expect(roles.length).toEqual(3);
         rolesNames.forEach(name => {
-          expect(roles.indexOf('role:' + name)).not.toBe(-1);
+          expect(roles.indexOf(`role:${name}`)).not.toBe(-1);
         });
         done();
       },
@@ -179,7 +179,7 @@ describe('Parse Role testing', () => {
         expect(roles.length).toEqual(4);
 
         allRoles.forEach(function (name) {
-          expect(roles.indexOf('role:' + name)).not.toBe(-1);
+          expect(roles.indexOf(`role:${name}`)).not.toBe(-1);
         });
 
         // 1 Query for the initial setup
@@ -290,16 +290,16 @@ describe('Parse Role testing', () => {
         results.forEach(result => {
           const id = result.id;
           const roleNames = result.roleNames;
-          if (id == admin.id) {
+          if (id === admin.id) {
             expect(roleNames.length).toBe(2);
             expect(roleNames.indexOf('Moderator')).not.toBe(-1);
             expect(roleNames.indexOf('ContentManager')).not.toBe(-1);
-          } else if (id == moderator.id) {
+          } else if (id === moderator.id) {
             expect(roleNames.length).toBe(1);
             expect(roleNames.indexOf('ContentManager')).toBe(0);
-          } else if (id == contentManager.id) {
+          } else if (id === contentManager.id) {
             expect(roleNames.length).toBe(0);
-          } else if (id == superModerator.id) {
+          } else if (id === superModerator.id) {
             expect(roleNames.length).toBe(3);
             expect(roleNames.indexOf('Moderator')).not.toBe(-1);
             expect(roleNames.indexOf('ContentManager')).not.toBe(-1);

@@ -1616,7 +1616,7 @@ describe('schemas', () => {
         expect(typeof response.data.objectId).toEqual('string');
         request({
           method: 'DELETE',
-          url: 'http://localhost:8378/1/classes/NewClassForDelete/' + response.data.objectId,
+          url: `http://localhost:8378/1/classes/NewClassForDelete/${response.data.objectId}`,
           headers: restKeyHeaders,
           json: true,
         }).then(() => {
@@ -1972,7 +1972,7 @@ describe('schemas', () => {
 
   function setPermissionsOnClass(className, permissions, doPut) {
     return request({
-      url: 'http://localhost:8378/1/schemas/' + className,
+      url: `http://localhost:8378/1/schemas/${className}`,
       method: doPut ? 'PUT' : 'POST',
       headers: masterKeyHeaders,
       json: true,

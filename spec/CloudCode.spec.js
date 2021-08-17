@@ -21,7 +21,7 @@ const mockAdapter = {
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
     reconfigureServer({
-      cloud: __dirname + '/cloud/cloudCodeRelativeFile.js',
+      cloud: `${__dirname}/cloud/cloudCodeRelativeFile.js`,
     }).then(() => {
       Parse.Cloud.run('cloudCodeInFile', {}).then(result => {
         expect(result).toEqual('It is possible to define cloud code in a file.');
@@ -990,10 +990,10 @@ describe('Cloud Code', () => {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         // Create
         expect(object.get('foo')).toEqual('bar');
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         // Update
         expect(object.dirtyKeys()).toEqual(['foo']);
         expect(object.dirty('foo')).toBeTruthy();
@@ -1239,8 +1239,8 @@ describe('Cloud Code', () => {
       )
       .then(() =>
         Promise.all([
-          cacheAdapter.get('test:user:' + session1),
-          cacheAdapter.get('test:user:' + session2),
+          cacheAdapter.get(`test:user:${session1}`),
+          cacheAdapter.get(`test:user:${session2}`),
         ])
       )
       .then(cachedVals => {
@@ -1545,7 +1545,7 @@ describe('Cloud Code', () => {
     const obj = new AfterSaveTestClass();
     obj.save().then(done, done.fail);
   });
-
+  /* eslint-disable no-await-in-loop */
   describe('cloud jobs', () => {
     it('should define a job', done => {
       expect(() => {
@@ -1754,7 +1754,7 @@ describe('Cloud Code', () => {
     }
   });
 });
-
+/* eslint-enable no-await-in-loop */
 describe('cloud functions', () => {
   it('Should have request ip', done => {
     Parse.Cloud.define('myFunction', req => {
@@ -2051,7 +2051,7 @@ describe('beforeFind hooks', () => {
 
     const count = 20;
     const objects = [];
-    while (objects.length != count) {
+    while (objects.length !== count) {
       const object = new Parse.Object('MyObject');
       object.set('score', Math.floor(Math.random() * 100));
       objects.push(object);
@@ -2086,7 +2086,7 @@ describe('beforeFind hooks', () => {
     obj.save().then(function () {
       request({
         method: 'GET',
-        url: 'http://localhost:8378/1/classes/MyObject/' + obj.id,
+        url: `http://localhost:8378/1/classes/MyObject/${obj.id}`,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',

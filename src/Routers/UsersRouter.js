@@ -21,7 +21,7 @@ export class UsersRouter extends ClassesRouter {
    * @param {Object} obj An object.
    */
   static removeHiddenProperties(obj) {
-    for (var key in obj) {
+    for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         // Regexp comes from Parse.Object.prototype.validate
         if (key !== '__type' && !/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
@@ -47,7 +47,7 @@ export class UsersRouter extends ClassesRouter {
           delete user.authData[provider];
         }
       });
-      if (Object.keys(user.authData).length == 0) {
+      if (Object.keys(user.authData).length === 0) {
         delete user.authData;
       }
     }
@@ -128,7 +128,7 @@ export class UsersRouter extends ClassesRouter {
           // A locked out user won't be able to login
           // To lock a user out, just set the ACL to `masterKey` only  ({}).
           // Empty ACL is OK
-          if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
+          if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length === 0) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
           if (
@@ -165,7 +165,7 @@ export class UsersRouter extends ClassesRouter {
         req.info.context
       )
       .then(response => {
-        if (!response.results || response.results.length == 0 || !response.results[0].user) {
+        if (!response.results || response.results.length === 0 || !response.results[0].user) {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
         } else {
           const user = response.results[0].user;
@@ -198,7 +198,7 @@ export class UsersRouter extends ClassesRouter {
         );
       } else {
         // check whether the password has expired
-        if (changedAt.__type == 'Date') {
+        if (changedAt.__type === 'Date') {
           changedAt = new Date(changedAt.iso);
         }
         // Calculate the expiry time.

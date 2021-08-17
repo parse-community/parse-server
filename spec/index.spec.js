@@ -38,7 +38,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization: 'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
+          Authorization: `Basic ${Buffer.from('test:' + 'test').toString('base64')}`,
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -52,7 +52,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization: 'Basic ' + Buffer.from('test:javascript-key=' + 'test').toString('base64'),
+          Authorization: `Basic ${Buffer.from('test:javascript-key=' + 'test').toString('base64')}`,
         },
       }).then(response => {
         expect(response.status).toEqual(200);

@@ -84,7 +84,7 @@ export class GridStoreAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
-    return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+    return `${config.mount}/files/${config.applicationId}/${encodeURIComponent(filename)}`;
   }
 
   async handleFileStream(filename: string, req, res, contentType) {
@@ -139,7 +139,7 @@ function handleRangeRequest(stream, req, res, contentType) {
   const contentLength = end - start + 1;
 
   res.writeHead(206, {
-    'Content-Range': 'bytes ' + start + '-' + end + '/' + stream.length,
+    'Content-Range': `bytes ${start}-${end}/${stream.length}`,
     'Accept-Ranges': 'bytes',
     'Content-Length': contentLength,
     'Content-Type': contentType,

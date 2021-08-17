@@ -72,7 +72,7 @@ describe('miscellaneous', function () {
     let numCreated = 0;
     const p1 = request({
       method: 'POST',
-      url: Parse.serverURL + '/users',
+      url: `${Parse.serverURL}/users`,
       body: {
         password: 'asdf',
         username: 'u1',
@@ -92,7 +92,7 @@ describe('miscellaneous', function () {
 
     const p2 = request({
       method: 'POST',
-      url: Parse.serverURL + '/users',
+      url: `${Parse.serverURL}/users`,
       body: {
         password: 'otherpassword',
         username: 'u1',
@@ -120,7 +120,7 @@ describe('miscellaneous', function () {
     let numCreated = 0;
     const p1 = request({
       method: 'POST',
-      url: Parse.serverURL + '/users',
+      url: `${Parse.serverURL}/users`,
       body: {
         password: 'asdf',
         username: 'u1',
@@ -139,7 +139,7 @@ describe('miscellaneous', function () {
     );
 
     const p2 = request({
-      url: Parse.serverURL + '/users',
+      url: `${Parse.serverURL}/users`,
       method: 'POST',
       body: {
         password: 'asdf',
@@ -365,7 +365,7 @@ describe('miscellaneous', function () {
   it('query without limit get default 100 records', function (done) {
     const objects = [];
     for (let i = 0; i < 150; i++) {
-      objects.push(new TestObject({ name: 'name' + i }));
+      objects.push(new TestObject({ name: `name${i}` }));
     }
     Parse.Object.saveAll(objects)
       .then(() => {
@@ -443,14 +443,14 @@ describe('miscellaneous', function () {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         // Create
         expect(object.get('foo')).toEqual('bar');
         // No objectId/createdAt/updatedAt
         expect(object.id).toBeUndefined();
         expect(object.createdAt).toBeUndefined();
         expect(object.updatedAt).toBeUndefined();
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         // Update
         expect(object.get('foo')).toEqual('baz');
         expect(object.id).not.toBeUndefined();
@@ -517,7 +517,7 @@ describe('miscellaneous', function () {
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
       const originalObject = req.original;
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         // No id/createdAt/updatedAt
         expect(object.id).toBeUndefined();
         expect(object.createdAt).toBeUndefined();
@@ -526,7 +526,7 @@ describe('miscellaneous', function () {
         expect(object.get('foo')).toEqual('bar');
         // Check the originalObject is undefined
         expect(originalObject).toBeUndefined();
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         // Update
         expect(object.id).not.toBeUndefined();
         expect(object.createdAt).not.toBeUndefined();
@@ -678,10 +678,10 @@ describe('miscellaneous', function () {
       expect(object.createdAt).not.toBeUndefined();
       expect(object.updatedAt).not.toBeUndefined();
       expect(object.get('fooAgain')).toEqual('barAgain');
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         // Create
         expect(object.get('foo')).toEqual('bar');
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         // Update
         expect(object.get('foo')).toEqual('baz');
       } else {
@@ -725,12 +725,12 @@ describe('miscellaneous', function () {
       expect(object.createdAt).not.toBeUndefined();
       expect(object.updatedAt).not.toBeUndefined();
       const originalObject = req.original;
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         // Create
         expect(object.get('foo')).toEqual('bar');
         // Check the originalObject is undefined
         expect(originalObject).toBeUndefined();
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         // Update
         expect(object.get('foo')).toEqual('baz');
         // Check the originalObject
@@ -775,9 +775,9 @@ describe('miscellaneous', function () {
     Parse.Cloud.afterSave('GameScore', function (req) {
       const object = req.object;
       const originalObject = req.original;
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         // Create
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         // Update
         expect(object.get('foo')).toEqual('baz');
         // Make sure we get the full originalObject
@@ -828,10 +828,10 @@ describe('miscellaneous', function () {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       const originalObject = req.original;
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         // Create
         expect(object.get('yolo')).toEqual(1);
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         // Update
         expect(object.get('yolo')).toEqual(2);
         // Check the originalObject
@@ -868,11 +868,11 @@ describe('miscellaneous', function () {
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', function (req) {
       const object = req.object;
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeTruthy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeFalsy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
@@ -912,11 +912,11 @@ describe('miscellaneous', function () {
     // Register a mock beforeSave hook
     Parse.Cloud.afterSave('GameScore', function (req) {
       const object = req.object;
-      if (triggerTime == 0) {
+      if (triggerTime === 0) {
         const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeTruthy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
-      } else if (triggerTime == 1) {
+      } else if (triggerTime === 1) {
         const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeFalsy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
@@ -965,7 +965,7 @@ describe('miscellaneous', function () {
         request({
           method: 'PUT',
           headers: headers,
-          url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
+          url: `http://localhost:8378/1/classes/GameScore/${obj.id}`,
           body: JSON.stringify({
             a: 'b',
             c: { __op: 'Increment', amount: 2 },
@@ -1116,7 +1116,7 @@ describe('miscellaneous', function () {
       request({
         method: 'DELETE',
         headers: headers,
-        url: 'http://localhost:8378/1/classes/GameScore/' + response.data.objectId,
+        url: `http://localhost:8378/1/classes/GameScore/${response.data.objectId}`,
       }).then(() => {
         expect(triggerTime).toEqual(2);
         done();
@@ -1395,7 +1395,7 @@ describe('miscellaneous', function () {
             amount: amount,
           },
         },
-        url: 'http://localhost:8378/1/classes/AnObject/' + object.id,
+        url: `http://localhost:8378/1/classes/AnObject/${object.id}`,
         method: 'PUT',
       });
       return request(options).then(res => res.data);

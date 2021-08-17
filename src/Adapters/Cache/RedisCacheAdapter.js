@@ -6,7 +6,7 @@ const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
 const FLUSH_DB_KEY = '__flush_db__';
 
 function debug(...args: any) {
-  const message = ['RedisCacheAdapter: ' + arguments[0]].concat(args.slice(1, args.length));
+  const message = [`RedisCacheAdapter: ${arguments[0]}`].concat(args.slice(1, args.length));
   logger.debug.apply(logger, message);
 }
 

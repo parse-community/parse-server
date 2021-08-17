@@ -13,6 +13,7 @@ import {
   SecurityOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
+import { isNull } from './Utils';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -33,7 +34,7 @@ export class Config {
     const config = new Config();
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
-      if (key == 'databaseController') {
+      if (key === 'databaseController') {
         config.database = new DatabaseController(cacheInfo.databaseController.adapter);
       } else {
         config[key] = cacheInfo[key];
@@ -334,7 +335,7 @@ export class Config {
 
   static validateFileUploadOptions(fileUpload) {
     try {
-      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
+      if (isNull(fileUpload) || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
         throw 'fileUpload must be an object value.';
       }
     } catch (e) {
@@ -369,7 +370,7 @@ export class Config {
   }
 
   get mount() {
-    var mount = this._mount;
+    let mount = this._mount;
     if (this.publicServerURL) {
       mount = this.publicServerURL;
     }
@@ -416,7 +417,7 @@ export class Config {
     if (!this.verifyUserEmails || !this.emailVerifyTokenValidityDuration) {
       return undefined;
     }
-    var now = new Date();
+    const now = new Date();
     return new Date(now.getTime() + this.emailVerifyTokenValidityDuration * 1000);
   }
 
@@ -432,7 +433,7 @@ export class Config {
     if (!this.expireInactiveSessions) {
       return undefined;
     }
-    var now = new Date();
+    const now = new Date();
     return new Date(now.getTime() + this.sessionLength * 1000);
   }
 

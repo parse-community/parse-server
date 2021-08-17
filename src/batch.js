@@ -27,13 +27,13 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 
   const makeRoutablePath = function (requestPath) {
     // The routablePath is the path minus the api prefix
-    if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot route batch path ' + requestPath);
+    if (requestPath.slice(0, apiPrefix.length) !== apiPrefix) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot route batch path ${requestPath}`);
     }
     return path.posix.join('/', requestPath.slice(apiPrefix.length));
   };
 
-  if (serverURL && publicServerURL && serverURL.path != publicServerURL.path) {
+  if (serverURL && publicServerURL && serverURL.path !== publicServerURL.path) {
     const localPath = serverURL.path;
     const publicPath = publicServerURL.path;
 

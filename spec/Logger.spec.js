@@ -84,7 +84,7 @@ describe('WinstonLogger', () => {
         expect(process.stdout.write).toHaveBeenCalled();
         const firstLog = process.stdout.write.calls.first().args[0];
         expect(firstLog).toEqual(
-          JSON.stringify({ key: 'value', level: 'info', message: 'hi' }) + '\n'
+          `${JSON.stringify({ key: 'value', level: 'info', message: 'hi' })}\n`
         );
         return reconfigureServer({
           jsonLogs: false,

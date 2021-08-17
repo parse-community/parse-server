@@ -60,7 +60,7 @@ function getAppleCertificate(publicKeyUrl) {
         res.on('end', () => {
           const cert = convertX509CertToPEM(data);
           if (res.headers['cache-control']) {
-            var expire = res.headers['cache-control'].match(/max-age=([0-9]+)/);
+            const expire = res.headers['cache-control'].match(/max-age=([0-9]+)/);
             if (expire) {
               cache[publicKeyUrl] = cert;
               // we'll expire the cache entry later, as per max-age

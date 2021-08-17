@@ -29,10 +29,10 @@ describe('PushWorker', () => {
           },
         });
         const installations = [];
-        while (installations.length != 10) {
+        while (installations.length !== 10) {
           const installation = new Parse.Object('_Installation');
-          installation.set('installationId', 'installation_' + installations.length);
-          installation.set('deviceToken', 'device_token_' + installations.length);
+          installation.set('installationId', `installation_${installations.length}`);
+          installation.set('deviceToken', `device_token_${installations.length}`);
           installation.set('badge', 1);
           installation.set('deviceType', 'ios');
           installations.push(installation);

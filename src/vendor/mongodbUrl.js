@@ -69,7 +69,7 @@ const querystring = require('querystring');
 function urlParse(url, parseQueryString, slashesDenoteHost) {
   if (url instanceof Url) return url;
 
-  var u = new Url();
+  const u = new Url();
   u.parse(url, parseQueryString, slashesDenoteHost);
   return u;
 }
@@ -77,19 +77,19 @@ function urlParse(url, parseQueryString, slashesDenoteHost) {
 /* istanbul ignore next: improve coverage */
 Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
   if (typeof url !== 'string') {
-    throw new TypeError('Parameter "url" must be a string, not ' + typeof url);
+    throw new TypeError(`Parameter "url" must be a string, not ${typeof url}`);
   }
 
   // Copy chrome, IE, opera backslash-handling behavior.
   // Back slashes before the query string get converted to forward slashes
   // See: https://code.google.com/p/chromium/issues/detail?id=25916
-  var hasHash = false;
-  var start = -1;
-  var end = -1;
-  var rest = '';
-  var lastPos = 0;
-  var i = 0;
-  for (var inWs = false, split = false; i < url.length; ++i) {
+  let hasHash = false;
+  let start = -1;
+  let end = -1;
+  let rest = '';
+  let lastPos = 0;
+  let i = 0;
+  for (let inWs = false, split = false; i < url.length; ++i) {
     const code = url.charCodeAt(i);
 
     // Find first and last non-whitespace characters for trimming
@@ -178,10 +178,11 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     }
   }
 
-  var proto = protocolPattern.exec(rest);
+  let proto = protocolPattern.exec(rest);
+  let lowerProto = '';
   if (proto) {
     proto = proto[0];
-    var lowerProto = proto.toLowerCase();
+    lowerProto = proto.toLowerCase();
     this.protocol = lowerProto;
     rest = rest.slice(proto.length);
   }
@@ -190,8 +191,9 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
   // user@server is *always* interpreted as a hostname, and url
   // resolution will treat //foo/bar as host=foo,path=bar because that's
   // how the browser resolves relative URLs.
+  let slashes;
   if (slashesDenoteHost || proto || /^\/\/[^@\/]+@[^@\/]+/.test(rest)) {
-    var slashes = rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47; /*/*/
+    const slashes = rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47; /*/*/
     if (slashes && !(proto && hostlessProtocol[proto])) {
       rest = rest.slice(2);
       this.slashes = true;
@@ -214,9 +216,9 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     // v0.12 TODO(isaacs): This is not quite how Chrome does things.
     // Review our test case against browsers more comprehensively.
 
-    var hostEnd = -1;
-    var atSign = -1;
-    var nonHost = -1;
+    let hostEnd = -1;
+    let atSign = -1;
+    let nonHost = -1;
     for (i = 0; i < rest.length; ++i) {
       switch (rest.charCodeAt(i)) {
         case 9: // '\t'
@@ -274,11 +276,11 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     // so even if it's empty, it has to be present.
     if (typeof this.hostname !== 'string') this.hostname = '';
 
-    var hostname = this.hostname;
+    const hostname = this.hostname;
 
     // if hostname begins with [ and ends with ]
     // assume that it's an IPv6 address.
-    var ipv6Hostname =
+    const ipv6Hostname =
       hostname.charCodeAt(0) === 91 /*[*/ && hostname.charCodeAt(hostname.length - 1) === 93; /*]*/
 
     // validate a little.
@@ -298,8 +300,8 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
       this.hostname = punycode.toASCII(this.hostname);
     }
 
-    var p = this.port ? ':' + this.port : '';
-    var h = this.hostname || '';
+    const p = this.port ? `:${this.port}` : '';
+    const h = this.hostname || '';
     this.host = h + p;
 
     // strip [ and ] from the hostname
@@ -307,7 +309,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     if (ipv6Hostname) {
       this.hostname = this.hostname.slice(1, -1);
       if (rest[0] !== '/') {
-        rest = '/' + rest;
+        rest = `/${rest}`;
       }
     }
   }
@@ -322,8 +324,8 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     if (result !== undefined) rest = result;
   }
 
-  var questionIdx = -1;
-  var hashIdx = -1;
+  let questionIdx = -1;
+  let hashIdx = -1;
   for (i = 0; i < rest.length; ++i) {
     const code = rest.charCodeAt(i);
     if (code === 35 /*#*/) {
@@ -352,7 +354,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     this.query = {};
   }
 
-  var firstIdx =
+  const firstIdx =
     questionIdx !== -1 && (hashIdx === -1 || questionIdx < hashIdx) ? questionIdx : hashIdx;
   if (firstIdx === -1) {
     if (rest.length > 0) this.pathname = rest;
@@ -377,14 +379,14 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
 
 /* istanbul ignore next: improve coverage */
 function validateHostname(self, rest, hostname) {
-  for (var i = 0, lastPos; i <= hostname.length; ++i) {
-    var code;
+  for (let i = 0, lastPos; i <= hostname.length; ++i) {
+    let code;
     if (i < hostname.length) code = hostname.charCodeAt(i);
     if (code === 46 /*.*/ || i === hostname.length) {
       if (i - lastPos > 0) {
         if (i - lastPos > 63) {
           self.hostname = hostname.slice(0, lastPos + 63);
-          return '/' + hostname.slice(lastPos + 63) + rest;
+          return `/${hostname.slice(lastPos + 63)}${rest}`;
         }
       }
       lastPos = i + 1;
@@ -406,16 +408,16 @@ function validateHostname(self, rest, hostname) {
     }
     // Invalid host character
     self.hostname = hostname.slice(0, i);
-    if (i < hostname.length) return '/' + hostname.slice(i) + rest;
+    if (i < hostname.length) return `/${hostname.slice(i)}${rest}`;
     break;
   }
 }
 
 /* istanbul ignore next: improve coverage */
 function autoEscapeStr(rest) {
-  var newRest = '';
-  var lastPos = 0;
-  for (var i = 0; i < rest.length; ++i) {
+  let newRest = '';
+  let lastPos = 0;
+  for (let i = 0; i < rest.length; ++i) {
     // Automatically escape all delimiters and unwise characters from RFC 2396
     // Also escape single quotes in case of an XSS attack
     switch (rest.charCodeAt(i)) {
@@ -506,7 +508,7 @@ function urlFormat(obj) {
   if (typeof obj === 'string') obj = urlParse(obj);
   else if (typeof obj !== 'object' || obj === null)
     throw new TypeError(
-      'Parameter "urlObj" must be an object, not ' + obj === null ? 'null' : typeof obj
+      `Parameter "urlObj" must be an object, not ${obj}` === null ? 'null' : typeof obj
     );
   else if (!(obj instanceof Url)) return Url.prototype.format.call(obj);
 
@@ -515,37 +517,37 @@ function urlFormat(obj) {
 
 /* istanbul ignore next: improve coverage */
 Url.prototype.format = function () {
-  var auth = this.auth || '';
+  let auth = this.auth || '';
   if (auth) {
     auth = encodeAuth(auth);
     auth += '@';
   }
 
-  var protocol = this.protocol || '';
-  var pathname = this.pathname || '';
-  var hash = this.hash || '';
-  var host = false;
-  var query = '';
+  let protocol = this.protocol || '';
+  let pathname = this.pathname || '';
+  let hash = this.hash || '';
+  let host = false;
+  let query = '';
 
   if (this.host) {
     host = auth + this.host;
   } else if (this.hostname) {
-    host = auth + (this.hostname.indexOf(':') === -1 ? this.hostname : '[' + this.hostname + ']');
+    host = auth + (this.hostname.indexOf(':') === -1 ? this.hostname : `[${this.hostname}]`);
     if (this.port) {
-      host += ':' + this.port;
+      host += `:${this.port}`;
     }
   }
 
   if (this.query !== null && typeof this.query === 'object')
     query = querystring.stringify(this.query);
 
-  var search = this.search || (query && '?' + query) || '';
+  let search = this.search || (query && `?${query}`) || '';
 
   if (protocol && protocol.charCodeAt(protocol.length - 1) !== 58 /*:*/) protocol += ':';
 
-  var newPathname = '';
-  var lastPos = 0;
-  for (var i = 0; i < pathname.length; ++i) {
+  let newPathname = '';
+  let lastPos = 0;
+  for (let i = 0; i < pathname.length; ++i) {
     switch (pathname.charCodeAt(i)) {
       case 35: // '#'
         if (i - lastPos > 0) newPathname += pathname.slice(lastPos, i);
@@ -567,16 +569,16 @@ Url.prototype.format = function () {
   // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
   // unless they had them to begin with.
   if (this.slashes || ((!protocol || slashedProtocol[protocol]) && host !== false)) {
-    host = '//' + (host || '');
-    if (pathname && pathname.charCodeAt(0) !== 47 /*/*/) pathname = '/' + pathname;
+    host = `//${host || ''}`;
+    if (pathname && pathname.charCodeAt(0) !== 47 /*/*/) pathname = `/${pathname}`;
   } else if (!host) {
     host = '';
   }
 
   search = search.replace('#', '%23');
 
-  if (hash && hash.charCodeAt(0) !== 35 /*#*/) hash = '#' + hash;
-  if (search && search.charCodeAt(0) !== 63 /*?*/) search = '?' + search;
+  if (hash && hash.charCodeAt(0) !== 35 /*#*/) hash = `#${hash}`;
+  if (search && search.charCodeAt(0) !== 63 /*?*/) search = `?${search}`;
 
   return protocol + host + pathname + search + hash;
 };
@@ -600,15 +602,15 @@ function urlResolveObject(source, relative) {
 /* istanbul ignore next: improve coverage */
 Url.prototype.resolveObject = function (relative) {
   if (typeof relative === 'string') {
-    var rel = new Url();
+    const rel = new Url();
     rel.parse(relative, false, true);
     relative = rel;
   }
 
-  var result = new Url();
-  var tkeys = Object.keys(this);
-  for (var tk = 0; tk < tkeys.length; tk++) {
-    var tkey = tkeys[tk];
+  const result = new Url();
+  const tkeys = Object.keys(this);
+  for (let tk = 0; tk < tkeys.length; tk++) {
+    const tkey = tkeys[tk];
     result[tkey] = this[tkey];
   }
 
@@ -625,9 +627,9 @@ Url.prototype.resolveObject = function (relative) {
   // hrefs like //foo/bar always cut to the protocol.
   if (relative.slashes && !relative.protocol) {
     // take everything except the protocol from relative
-    var rkeys = Object.keys(relative);
-    for (var rk = 0; rk < rkeys.length; rk++) {
-      var rkey = rkeys[rk];
+    const rkeys = Object.keys(relative);
+    for (let rk = 0; rk < rkeys.length; rk++) {
+      const rkey = rkeys[rk];
       if (rkey !== 'protocol') result[rkey] = relative[rkey];
     }
 
@@ -650,9 +652,9 @@ Url.prototype.resolveObject = function (relative) {
     // because that's known to be hostless.
     // anything else is assumed to be absolute.
     if (!slashedProtocol[relative.protocol]) {
-      var keys = Object.keys(relative);
-      for (var v = 0; v < keys.length; v++) {
-        var k = keys[v];
+      const keys = Object.keys(relative);
+      for (let v = 0; v < keys.length; v++) {
+        const k = keys[v];
         result[k] = relative[k];
       }
       result.href = result.format();
@@ -683,8 +685,8 @@ Url.prototype.resolveObject = function (relative) {
     result.port = relative.port;
     // to support http.request
     if (result.pathname || result.search) {
-      var p = result.pathname || '';
-      var s = result.search || '';
+      const p = result.pathname || '';
+      const s = result.search || '';
       result.path = p + s;
     }
     result.slashes = result.slashes || relative.slashes;
@@ -692,13 +694,13 @@ Url.prototype.resolveObject = function (relative) {
     return result;
   }
 
-  var isSourceAbs = result.pathname && result.pathname.charAt(0) === '/';
-  var isRelAbs = relative.host || (relative.pathname && relative.pathname.charAt(0) === '/');
-  var mustEndAbs = isRelAbs || isSourceAbs || (result.host && relative.pathname);
-  var removeAllDots = mustEndAbs;
-  var srcPath = (result.pathname && result.pathname.split('/')) || [];
-  var relPath = (relative.pathname && relative.pathname.split('/')) || [];
-  var psychotic = result.protocol && !slashedProtocol[result.protocol];
+  const isSourceAbs = result.pathname && result.pathname.charAt(0) === '/';
+  const isRelAbs = relative.host || (relative.pathname && relative.pathname.charAt(0) === '/');
+  let mustEndAbs = isRelAbs || isSourceAbs || (result.host && relative.pathname);
+  const removeAllDots = mustEndAbs;
+  let srcPath = (result.pathname && result.pathname.split('/')) || [];
+  const relPath = (relative.pathname && relative.pathname.split('/')) || [];
+  const psychotic = result.protocol && !slashedProtocol[result.protocol];
 
   // if the url is a non-slashed url, then relative
   // links like ../.. should be able
@@ -774,7 +776,7 @@ Url.prototype.resolveObject = function (relative) {
     result.pathname = null;
     //to support http.request
     if (result.search) {
-      result.path = '/' + result.search;
+      result.path = `/${result.search}`;
     } else {
       result.path = null;
     }
@@ -785,15 +787,15 @@ Url.prototype.resolveObject = function (relative) {
   // if a url ENDs in . or .., then it must get a trailing slash.
   // however, if it ends in anything else non-slashy,
   // then it must NOT get a trailing slash.
-  var last = srcPath.slice(-1)[0];
-  var hasTrailingSlash =
+  let last = srcPath.slice(-1)[0];
+  const hasTrailingSlash =
     ((result.host || relative.host || srcPath.length > 1) && (last === '.' || last === '..')) ||
     last === '';
 
   // strip single dots, resolve double dots to parent dir
   // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = srcPath.length; i >= 0; i--) {
+  let up = 0;
+  for (let i = srcPath.length; i >= 0; i--) {
     last = srcPath[i];
     if (last === '.') {
       spliceOne(srcPath, i);
@@ -821,7 +823,7 @@ Url.prototype.resolveObject = function (relative) {
     srcPath.push('');
   }
 
-  var isAbsolute = srcPath[0] === '' || (srcPath[0] && srcPath[0].charAt(0) === '/');
+  const isAbsolute = srcPath[0] === '' || (srcPath[0] && srcPath[0].charAt(0) === '/');
 
   // put the host back
   if (psychotic) {
@@ -865,8 +867,8 @@ Url.prototype.resolveObject = function (relative) {
 
 /* istanbul ignore next: improve coverage */
 Url.prototype.parseHost = function () {
-  var host = this.host;
-  var port = portPattern.exec(host);
+  let host = this.host;
+  let port = portPattern.exec(host);
   if (port) {
     port = port[0];
     if (port !== ':') {
@@ -880,20 +882,20 @@ Url.prototype.parseHost = function () {
 // About 1.5x faster than the two-arg version of Array#splice().
 /* istanbul ignore next: improve coverage */
 function spliceOne(list, index) {
-  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1) list[i] = list[k];
+  for (let i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1) list[i] = list[k];
   list.pop();
 }
 
-var hexTable = new Array(256);
-for (var i = 0; i < 256; ++i)
-  hexTable[i] = '%' + ((i < 16 ? '0' : '') + i.toString(16)).toUpperCase();
+const hexTable = new Array(256);
+for (let i = 0; i < 256; ++i)
+  hexTable[i] = `%${((i < 16 ? '0' : '') + i.toString(16)).toUpperCase()}`;
 /* istanbul ignore next: improve coverage */
 function encodeAuth(str) {
   // faster encodeURIComponent alternative for encoding auth uri components
-  var out = '';
-  var lastPos = 0;
-  for (var i = 0; i < str.length; ++i) {
-    var c = str.charCodeAt(i);
+  let out = '';
+  let lastPos = 0;
+  for (let i = 0; i < str.length; ++i) {
+    let c = str.charCodeAt(i);
 
     // These characters do not need escaping:
     // ! - . _ ~
@@ -939,7 +941,7 @@ function encodeAuth(str) {
     }
     // Surrogate pair
     ++i;
-    var c2;
+    let c2;
     if (i < str.length) c2 = str.charCodeAt(i) & 0x3ff;
     else c2 = 0;
     c = 0x10000 + (((c & 0x3ff) << 10) | c2);

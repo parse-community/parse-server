@@ -1,6 +1,6 @@
 // FunctionsRouter.js
 
-var Parse = require('parse/node').Parse,
+const Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
@@ -14,9 +14,9 @@ function parseObject(obj) {
     return obj.map(item => {
       return parseObject(item);
     });
-  } else if (obj && obj.__type == 'Date') {
+  } else if (obj && obj.__type === 'Date') {
     return Object.assign(new Date(obj.iso), obj);
-  } else if (obj && obj.__type == 'File') {
+  } else if (obj && obj.__type === 'File') {
     return Parse.File.fromJSON(obj);
   } else if (obj && typeof obj === 'object') {
     return parseParams(obj);
@@ -156,8 +156,9 @@ export class FunctionsRouter extends PromiseRouter {
         error => {
           try {
             logger.error(
-              `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
-                JSON.stringify(error),
+              `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ${JSON.stringify(
+                error
+              )}`,
               {
                 functionName,
                 error,

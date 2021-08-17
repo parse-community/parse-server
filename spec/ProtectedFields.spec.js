@@ -797,17 +797,22 @@ describe('ProtectedFields', function () {
 
     it('should not allow protecting default fields', async () => {
       const defaultFields = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
-      for (const field of defaultFields) {
-        await expectAsync(
-          updateCLP({
-            protectedFields: {
-              '*': [field],
-            },
-          })
-        ).toBeRejectedWith(
-          new Parse.Error(Parse.Error.INVALID_JSON, `Default field '${field}' can not be protected`)
-        );
-      }
+      await Promise.all(
+        defaultFields.map(field =>
+          expectAsync(
+            updateCLP({
+              protectedFields: {
+                '*': [field],
+              },
+            })
+          ).toBeRejectedWith(
+            new Parse.Error(
+              Parse.Error.INVALID_JSON,
+              `Default field '${field}' can not be protected`
+            )
+          )
+        )
+      );
     });
   });
 

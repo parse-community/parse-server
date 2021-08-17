@@ -61,7 +61,7 @@ const getUserFromSessionToken = async (context, queryInfo, keysPrefix, userId) =
     info.clientVersion,
     info.context
   );
-  if (!response.results || response.results.length == 0) {
+  if (!response.results || response.results.length === 0) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
   } else {
     const user = response.results[0];

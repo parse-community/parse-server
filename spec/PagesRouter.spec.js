@@ -37,10 +37,12 @@ describe('Pages Router', () => {
         'http://localhost:8378/1/apps/password_reset_success.html',
         'http://localhost:8378/1/apps/custom_json.html',
       ];
-      for (const url of urls) {
-        const response = await request({ url }).catch(e => e);
-        expect(response.status).toBe(200);
-      }
+      await Promise.all(
+        urls.map(async url => {
+          const response = await request({ url }).catch(e => e);
+          expect(response.status).toBe(200);
+        })
+      );
     });
 
     it('can load file from custom pages path', async () => {
@@ -73,10 +75,12 @@ describe('Pages Router', () => {
         'http://localhost:8378/1/apps/choose_password?appId=test',
         'http://localhost:8378/1/apps/test/request_password_reset',
       ];
-      for (const url of urls) {
-        const response = await request({ url }).catch(e => e);
-        expect(response.status).toBe(404);
-      }
+      await Promise.all(
+        urls.map(async url => {
+          const response = await request({ url }).catch(e => e);
+          expect(response.status).toBe(404);
+        })
+      );
     });
 
     it('responds with 403 access denied with invalid appId', async () => {
@@ -87,10 +91,12 @@ describe('Pages Router', () => {
         { url: 'http://localhost:8378/1/apps/invalid/request_password_reset', method: 'POST' },
         { url: 'http://localhost:8378/1/apps/invalid/resend_verification_email', method: 'POST' },
       ];
-      for (const req of reqs) {
-        const response = await request(req).catch(e => e);
-        expect(response.status).toBe(403);
-      }
+      await Promise.all(
+        reqs.map(async req => {
+          const response = await request(req).catch(e => e);
+          expect(response.status).toBe(403);
+        })
+      );
     });
   });
 
@@ -304,9 +310,11 @@ describe('Pages Router', () => {
           { customRoutes: 'a' },
           { customRoutes: {} },
         ];
-        for (const option of options) {
-          await expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected();
-        }
+        await Promise.all(
+          options.map(option =>
+            expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected()
+          )
+        );
       });
     });
 
@@ -614,12 +622,14 @@ describe('Pages Router', () => {
           passwordResetLinkInvalid: 'http://invalid-link.example.com',
         };
 
-        for (const method of ['GET', 'POST']) {
-          req.method = method;
-          await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
-          expect(pageResponse).not.toHaveBeenCalled();
-          expect(redirectResponse).toHaveBeenCalled();
-        }
+        await Promise.all(
+          ['GET', 'POST'].map(async method => {
+            req.method = method;
+            await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
+            expect(pageResponse).not.toHaveBeenCalled();
+            expect(redirectResponse).toHaveBeenCalled();
+          })
+        );
       });
 
       it('responds to POST request with redirect response', async () => {

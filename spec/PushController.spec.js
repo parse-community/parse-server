@@ -18,7 +18,7 @@ const successfulTransmissions = function (body, installations) {
 const successfulIOS = function (body, installations) {
   const promises = installations.map(device => {
     return Promise.resolve({
-      transmitted: device.deviceType == 'ios',
+      transmitted: device.deviceType === 'ios',
       device: device,
     });
   });
@@ -33,8 +33,10 @@ const pushCompleted = async pushId => {
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
+    /* eslint-disable no-await-in-loop */
     await sleep(100);
     result = await query.first({ useMasterKey: true });
+    /* eslint-enable no-await-in-loop */
   }
 };
 
@@ -191,20 +193,20 @@ describe('PushController', () => {
       },
     };
     const installations = [];
-    while (installations.length != 10) {
+    while (installations.length !== 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
 
-    while (installations.length != 15) {
+    while (installations.length !== 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'android');
@@ -256,20 +258,20 @@ describe('PushController', () => {
       },
     };
     const installations = [];
-    while (installations.length != 10) {
+    while (installations.length !== 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
 
-    while (installations.length != 15) {
+    while (installations.length !== 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'android');
@@ -319,10 +321,10 @@ describe('PushController', () => {
       },
     };
     const installations = [];
-    while (installations.length != 10) {
+    while (installations.length !== 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -360,10 +362,10 @@ describe('PushController', () => {
       },
     };
     const installations = [];
-    while (installations.length != 10) {
+    while (installations.length !== 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -415,20 +417,20 @@ describe('PushController', () => {
     const spy = spyOn(pushStatusAfterSave, 'handler').and.callThrough();
     Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
     const installations = [];
-    while (installations.length != 10) {
+    while (installations.length !== 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
 
-    while (installations.length != 15) {
+    while (installations.length !== 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('deviceType', 'android');
       installations.push(installation);
     }
@@ -613,6 +615,7 @@ describe('PushController', () => {
       const query = new Parse.Query('_PushStatus');
       let results = await query.find({ useMasterKey: true });
       while (results.length === 0) {
+        // eslint-disable-next-line
         results = await query.find({ useMasterKey: true });
       }
       expect(results.length).toBe(1);
@@ -651,10 +654,10 @@ describe('PushController', () => {
       push: { adapter: pushAdapter },
     });
     const installations = [];
-    while (installations.length != 5) {
+    while (installations.length !== 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -696,10 +699,10 @@ describe('PushController', () => {
       push: { adapter: pushAdapter },
     });
     const installations = [];
-    while (installations.length != 5) {
+    while (installations.length !== 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -790,10 +793,10 @@ describe('PushController', () => {
     };
 
     const installations = [];
-    while (installations.length != 10) {
+    while (installations.length !== 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -857,10 +860,10 @@ describe('PushController', () => {
       push_time: new Date().getTime() / 1000,
     };
     const installations = [];
-    while (installations.length != 10) {
+    while (installations.length !== 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -920,18 +923,18 @@ describe('PushController', () => {
       push_time: new Date().getTime() / 1000,
     };
     const installations = [];
-    while (installations.length != 5) {
+    while (installations.length !== 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-    while (installations.length != 15) {
+    while (installations.length !== 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -979,9 +982,9 @@ describe('PushController', () => {
       push_time: new Date().getTime() / 1000,
     };
     const installations = [];
-    while (installations.length != 5) {
+    while (installations.length !== 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -1022,10 +1025,10 @@ describe('PushController', () => {
       deviceType: 'ios',
     };
     const installations = [];
-    while (installations.length != 5) {
+    while (installations.length !== 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -1079,10 +1082,10 @@ describe('PushController', () => {
       deviceType: 'ios',
     };
     const installations = [];
-    while (installations.length != 5) {
+    while (installations.length !== 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set('installationId', 'installation_' + installations.length);
-      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('installationId', `installation_${installations.length}`);
+      installation.set('deviceToken', `device_token_${installations.length}`);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');

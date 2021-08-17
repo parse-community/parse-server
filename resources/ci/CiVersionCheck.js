@@ -144,9 +144,9 @@ class CiVersionCheck {
     // ];
 
     // Determine operator for range comparison
-    const operator = versionComponent == CiVersionCheck.versionComponents.major
+    const operator = versionComponent === CiVersionCheck.versionComponents.major
       ? '>='
-      : versionComponent == CiVersionCheck.versionComponents.minor
+      : versionComponent === CiVersionCheck.versionComponents.minor
         ? '^'
         : '~'
 
@@ -187,9 +187,9 @@ class CiVersionCheck {
    */
   getNewerVersion(versions, version, versionComponent) {
     // Determine operator for range comparison
-    const operator = versionComponent == CiVersionCheck.versionComponents.major
+    const operator = versionComponent === CiVersionCheck.versionComponents.major
       ? '>='
-      : versionComponent == CiVersionCheck.versionComponents.minor
+      : versionComponent === CiVersionCheck.versionComponents.minor
         ? '^'
         : '~'
     const latest = semver.maxSatisfying(versions, `${operator}${version}`);

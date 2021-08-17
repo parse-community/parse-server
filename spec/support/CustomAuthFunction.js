@@ -4,7 +4,7 @@ module.exports = function (validAuthData) {
       return Promise.resolve();
     },
     validateAuthData: function (authData) {
-      if (authData.token == validAuthData.token) {
+      if (authData.token === validAuthData.token) {
         return Promise.resolve();
       }
       return Promise.reject();

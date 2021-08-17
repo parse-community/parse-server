@@ -250,7 +250,7 @@ describe('Parse.Polygon testing', () => {
           };
           return request({
             method: 'POST',
-            url: Parse.serverURL + '/classes/TestObject',
+            url: `${Parse.serverURL}/classes/TestObject`,
             body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
@@ -302,7 +302,7 @@ describe('Parse.Polygon testing', () => {
           };
           return request({
             method: 'POST',
-            url: Parse.serverURL + '/classes/TestObject',
+            url: `${Parse.serverURL}/classes/TestObject`,
             body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
@@ -343,7 +343,7 @@ describe('Parse.Polygon testing', () => {
           };
           return request({
             method: 'POST',
-            url: Parse.serverURL + '/classes/TestObject',
+            url: `${Parse.serverURL}/classes/TestObject`,
             body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
@@ -379,7 +379,7 @@ describe('Parse.Polygon testing', () => {
           };
           return request({
             method: 'POST',
-            url: Parse.serverURL + '/classes/TestObject',
+            url: `${Parse.serverURL}/classes/TestObject`,
             body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
@@ -411,7 +411,7 @@ describe('Parse.Polygon testing', () => {
           };
           return request({
             method: 'POST',
-            url: Parse.serverURL + '/classes/TestObject',
+            url: `${Parse.serverURL}/classes/TestObject`,
             body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,

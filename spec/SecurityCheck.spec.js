@@ -16,7 +16,7 @@ describe('Security Check', () => {
   let checkFail;
   let config;
   const publicServerURL = 'http://localhost:8378/1';
-  const securityUrl = publicServerURL + '/security';
+  const securityUrl = `${publicServerURL}/security`;
 
   async function reconfigureServerWithSecurityConfig(security) {
     config.security = security;
@@ -104,9 +104,11 @@ describe('Security Check', () => {
         { enableCheckLog: {} },
         { enableCheckLog: [] },
       ];
-      for (const option of options) {
-        await expectAsync(reconfigureServerWithSecurityConfig(option)).toBeRejected();
-      }
+      await Promise.all(
+        options.map(option =>
+          expectAsync(reconfigureServerWithSecurityConfig(option)).toBeRejected()
+        )
+      );
     });
   });
 
@@ -125,10 +127,11 @@ describe('Security Check', () => {
         { enableCheck: false },
         {},
       ];
-      for (const config of configs) {
+      const checkConfig = async config => {
         await reconfigureServerWithSecurityConfig(config);
         expect(runnerSpy).not.toHaveBeenCalled();
-      }
+      };
+      await Promise.all(configs.map(config => checkConfig(config)));
     });
   });
 
@@ -198,9 +201,9 @@ describe('Security Check', () => {
         solution: 'string',
         check: () => {},
       });
-      expect(check._checkState == CheckState.none);
+      expect(check._checkState === CheckState.none);
       check.run();
-      expect(check._checkState == CheckState.success);
+      expect(check._checkState === CheckState.success);
     });
 
     it('sets correct states for check fail', async () => {
@@ -213,9 +216,9 @@ describe('Security Check', () => {
           throw 'error';
         },
       });
-      expect(check._checkState == CheckState.none);
+      expect(check._checkState === CheckState.none);
       check.run();
-      expect(check._checkState == CheckState.fail);
+      expect(check._checkState === CheckState.fail);
     });
   });
 

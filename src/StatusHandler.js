@@ -20,8 +20,8 @@ const incrementOp = function (object = {}, key, amount = 1) {
 };
 
 export function flatten(array) {
-  var flattened = [];
-  for (var i = 0; i < array.length; i++) {
+  let flattened = [];
+  for (let i = 0; i < array.length; i++) {
     if (Array.isArray(array[i])) {
       flattened = flattened.concat(flatten(array[i]));
     } else {

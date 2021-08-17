@@ -3,7 +3,7 @@
 // Helper functions for accessing the vkontakte API.
 
 const httpsRequest = require('./httpsRequest');
-var Parse = require('parse/node').Parse;
+const Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, params) {
@@ -11,13 +11,13 @@ function validateAuthData(authData, params) {
     if (response && response.access_token) {
       return request(
         'api.vk.com',
-        'method/users.get?access_token=' + authData.access_token + '&v=' + params.apiVersion
+        `method/users.get?access_token=${authData.access_token}&v=${params.apiVersion}`
       ).then(function (response) {
         if (
           response &&
           response.response &&
           response.response.length &&
-          response.response[0].id == authData.id
+          response.response[0].id === authData.id
         ) {
           return;
         }
@@ -49,13 +49,7 @@ function vkOAuth2Request(params) {
   }).then(function () {
     return request(
       'oauth.vk.com',
-      'access_token?client_id=' +
-        params.appIds +
-        '&client_secret=' +
-        params.appSecret +
-        '&v=' +
-        params.apiVersion +
-        '&grant_type=client_credentials'
+      `access_token?client_id=${params.appIds}&client_secret=${params.appSecret}&v=${params.apiVersion}&grant_type=client_credentials`
     );
   });
 }
@@ -67,7 +61,7 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(host, path) {
-  return httpsRequest.get('https://' + host + '/' + path);
+  return httpsRequest.get(`https://${host}/${path}`);
 }
 
 module.exports = {

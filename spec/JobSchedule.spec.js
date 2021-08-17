@@ -47,20 +47,20 @@ describe('JobSchedule', () => {
 
   it('should reject access when not using masterKey (/jobs)', done => {
     request(
-      Object.assign({ url: Parse.serverURL + '/cloud_code/jobs' }, defaultOptions)
+      Object.assign({ url: `${Parse.serverURL}/cloud_code/jobs` }, defaultOptions)
     ).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (/jobs/data)', done => {
     request(
-      Object.assign({ url: Parse.serverURL + '/cloud_code/jobs/data' }, defaultOptions)
+      Object.assign({ url: `${Parse.serverURL}/cloud_code/jobs/data` }, defaultOptions)
     ).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (PUT /jobs/id)', done => {
     request(
       Object.assign(
-        { method: 'PUT', url: Parse.serverURL + '/cloud_code/jobs/jobId' },
+        { method: 'PUT', url: `${Parse.serverURL}/cloud_code/jobs/jobId` },
         defaultOptions
       )
     ).then(done.fail, () => done());
@@ -69,14 +69,14 @@ describe('JobSchedule', () => {
   it('should reject access when not using masterKey (DELETE /jobs/id)', done => {
     request(
       Object.assign(
-        { method: 'DELETE', url: Parse.serverURL + '/cloud_code/jobs/jobId' },
+        { method: 'DELETE', url: `${Parse.serverURL}/cloud_code/jobs/jobId` },
         defaultOptions
       )
     ).then(done.fail, () => done());
   });
 
   it('should allow access when using masterKey (GET /jobs)', done => {
-    request(Object.assign({ url: Parse.serverURL + '/cloud_code/jobs' }, masterKeyOptions)).then(
+    request(Object.assign({ url: `${Parse.serverURL}/cloud_code/jobs` }, masterKeyOptions)).then(
       done,
       done.fail
     );
@@ -86,7 +86,7 @@ describe('JobSchedule', () => {
     Parse.Cloud.job('job', () => {});
     const options = Object.assign({}, masterKeyOptions, {
       method: 'POST',
-      url: Parse.serverURL + '/cloud_code/jobs',
+      url: `${Parse.serverURL}/cloud_code/jobs`,
       body: {
         job_schedule: {
           jobName: 'job',
@@ -99,7 +99,7 @@ describe('JobSchedule', () => {
       })
       .then(() => {
         return request(
-          Object.assign({ url: Parse.serverURL + '/cloud_code/jobs' }, masterKeyOptions)
+          Object.assign({ url: `${Parse.serverURL}/cloud_code/jobs` }, masterKeyOptions)
         );
       })
       .then(res => {
@@ -111,7 +111,7 @@ describe('JobSchedule', () => {
 
   it('should fail creating a job with an invalid name', done => {
     const options = Object.assign({}, masterKeyOptions, {
-      url: Parse.serverURL + '/cloud_code/jobs',
+      url: `${Parse.serverURL}/cloud_code/jobs`,
       method: 'POST',
       body: {
         job_schedule: {
@@ -129,7 +129,7 @@ describe('JobSchedule', () => {
     Parse.Cloud.job('job2', () => {});
     const options = Object.assign({}, masterKeyOptions, {
       method: 'POST',
-      url: Parse.serverURL + '/cloud_code/jobs',
+      url: `${Parse.serverURL}/cloud_code/jobs`,
       body: {
         job_schedule: {
           jobName: 'job1',
@@ -141,7 +141,7 @@ describe('JobSchedule', () => {
         expect(res.data.objectId).not.toBeUndefined();
         return request(
           Object.assign(options, {
-            url: Parse.serverURL + '/cloud_code/jobs/' + res.data.objectId,
+            url: `${Parse.serverURL}/cloud_code/jobs/${res.data.objectId}`,
             method: 'PUT',
             body: {
               job_schedule: {
@@ -154,7 +154,7 @@ describe('JobSchedule', () => {
       .then(() => {
         return request(
           Object.assign({}, masterKeyOptions, {
-            url: Parse.serverURL + '/cloud_code/jobs',
+            url: `${Parse.serverURL}/cloud_code/jobs`,
           })
         );
       })
@@ -170,7 +170,7 @@ describe('JobSchedule', () => {
     Parse.Cloud.job('job1', () => {});
     const options = Object.assign({}, masterKeyOptions, {
       method: 'POST',
-      url: Parse.serverURL + '/cloud_code/jobs',
+      url: `${Parse.serverURL}/cloud_code/jobs`,
       body: {
         job_schedule: {
           jobName: 'job1',
@@ -183,7 +183,7 @@ describe('JobSchedule', () => {
         return request(
           Object.assign(options, {
             method: 'PUT',
-            url: Parse.serverURL + '/cloud_code/jobs/' + res.data.objectId,
+            url: `${Parse.serverURL}/cloud_code/jobs/${res.data.objectId}`,
             body: {
               job_schedule: {
                 jobName: 'job2',
@@ -200,7 +200,7 @@ describe('JobSchedule', () => {
     Parse.Cloud.job('job', () => {});
     const options = Object.assign({}, masterKeyOptions, {
       method: 'POST',
-      url: Parse.serverURL + '/cloud_code/jobs',
+      url: `${Parse.serverURL}/cloud_code/jobs`,
       body: {
         job_schedule: {
           jobName: 'job',
@@ -214,7 +214,7 @@ describe('JobSchedule', () => {
           Object.assign(
             {
               method: 'DELETE',
-              url: Parse.serverURL + '/cloud_code/jobs/' + res.data.objectId,
+              url: `${Parse.serverURL}/cloud_code/jobs/${res.data.objectId}`,
             },
             masterKeyOptions
           )
@@ -224,7 +224,7 @@ describe('JobSchedule', () => {
         return request(
           Object.assign(
             {
-              url: Parse.serverURL + '/cloud_code/jobs',
+              url: `${Parse.serverURL}/cloud_code/jobs`,
             },
             masterKeyOptions
           )
@@ -242,7 +242,7 @@ describe('JobSchedule', () => {
     Parse.Cloud.job('job2', () => {});
     const options = Object.assign({}, masterKeyOptions, {
       method: 'POST',
-      url: Parse.serverURL + '/cloud_code/jobs',
+      url: `${Parse.serverURL}/cloud_code/jobs`,
       body: {
         job_schedule: {
           jobName: 'job1',
@@ -256,7 +256,7 @@ describe('JobSchedule', () => {
       })
       .then(() => {
         return request(
-          Object.assign({ url: Parse.serverURL + '/cloud_code/jobs/data' }, masterKeyOptions)
+          Object.assign({ url: `${Parse.serverURL}/cloud_code/jobs/data` }, masterKeyOptions)
         );
       })
       .then(response => {

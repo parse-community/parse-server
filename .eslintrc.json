@@ -23,6 +23,12 @@
         "prefer-const": "error",
         "space-infix-ops": "error",
         "no-useless-escape": "off",
-        "require-atomic-updates": "off"
+        "require-atomic-updates": "off",
+        "no-unreachable": "warn",
+        "no-var": "error",
+        "no-await-in-loop": "error",
+        "eqeqeq": "error",
+        "no-empty": "error",
+        "prefer-template": "warn"
     }
 }

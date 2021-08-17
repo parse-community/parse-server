@@ -7,11 +7,11 @@
 // routes. That's useful for the routes that do really similar
 // things.
 
-var Parse = require('parse/node').Parse;
+const Parse = require('parse/node').Parse;
 
-var RestQuery = require('./RestQuery');
-var RestWrite = require('./RestWrite');
-var triggers = require('./triggers');
+const RestQuery = require('./RestQuery');
+const RestWrite = require('./RestWrite');
+const triggers = require('./triggers');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -55,7 +55,7 @@ function find(config, auth, className, restWhere, restOptions, clientSDK, contex
 
 // get is just like find but only queries an objectId.
 const get = (config, auth, className, objectId, restOptions, clientSDK, context) => {
-  var restWhere = { objectId };
+  let restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
   return triggers
     .maybeRunQueryTrigger(
@@ -104,7 +104,7 @@ function del(config, auth, className, objectId, context) {
     .then(() => {
       const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
       const hasLiveQuery = checkLiveQuery(className, config);
-      if (hasTriggers || hasLiveQuery || className == '_Session') {
+      if (hasTriggers || hasLiveQuery || className === '_Session') {
         return new RestQuery(config, auth, className, { objectId })
           .execute({ op: 'delete' })
           .then(response => {
@@ -116,7 +116,7 @@ function del(config, auth, className, objectId, context) {
                   throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
                 }
               }
-              var cacheAdapter = config.cacheController;
+              const cacheAdapter = config.cacheController;
               cacheAdapter.user.del(firstResult.sessionToken);
               inflatedObject = Parse.Object.fromJSON(firstResult);
               return triggers.maybeRunTrigger(
@@ -182,7 +182,7 @@ function del(config, auth, className, objectId, context) {
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject, clientSDK, context) {
   enforceRoleSecurity('create', className, auth);
-  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context);
+  const write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context);
   return write.execute();
 }
 
@@ -214,7 +214,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
       return Promise.resolve({});
     })
     .then(({ results }) => {
-      var originalRestObject;
+      let originalRestObject;
       if (results && results.length) {
         originalRestObject = results[0];
       }

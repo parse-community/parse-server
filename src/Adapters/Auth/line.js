@@ -1,5 +1,5 @@
 // Helper functions for accessing the line API.
-var Parse = require('parse/node').Parse;
+const Parse = require('parse/node').Parse;
 const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills if this user id is valid.
@@ -19,12 +19,12 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(path, access_token) {
-  var options = {
+  const options = {
     host: 'api.line.me',
-    path: '/v2/' + path,
+    path: `/v2/${path}`,
     method: 'GET',
     headers: {
-      Authorization: 'Bearer ' + access_token,
+      Authorization: `Bearer ${access_token}`,
     },
   };
   return httpsRequest.get(options);

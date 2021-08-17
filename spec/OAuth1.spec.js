@@ -67,7 +67,7 @@ describe('OAuth', function () {
     const req = oauthClient.buildRequest(method, path, { query: 'param' });
 
     jequal(req.host, options.host);
-    jequal(req.path, '/' + path + '?query=param');
+    jequal(req.path, `/${path}?query=param`);
     jequal(req.method, 'GET');
     jequal(req.headers['Content-Type'], 'application/x-www-form-urlencoded');
     jequal(

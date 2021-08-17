@@ -4,7 +4,7 @@ const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapte
 const fs = require('fs');
 const Config = require('../lib/Config');
 
-const loremFile = __dirname + '/support/lorem.txt';
+const loremFile = `${__dirname}/support/lorem.txt`;
 
 describe('Cloud Code Logger', () => {
   let user;
@@ -98,10 +98,10 @@ describe('Cloud Code Logger', () => {
       expect(cloudTriggerMessage[2].user).toBe(user.id);
       expect(errorMessage[0]).toBe('error');
       expect(errorMessage[3].error).toBe('there was an error');
-      expect(errorMessage[1] + ' ' + errorMessage[2]).toBe('beforeSave MyObject error log');
+      expect(`${errorMessage[1]} ${errorMessage[2]}`).toBe('beforeSave MyObject error log');
       expect(infoMessage[0]).toBe('info');
       expect(infoMessage[3].info).toBe('some log');
-      expect(infoMessage[1] + ' ' + infoMessage[2]).toBe('beforeSave MyObject info log');
+      expect(`${infoMessage[1]} ${infoMessage[2]}`).toBe('beforeSave MyObject info log');
       done();
     });
   });

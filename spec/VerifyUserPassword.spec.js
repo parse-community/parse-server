@@ -6,7 +6,7 @@ const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptio
 const verifyPassword = function (login, password, isEmail = false) {
   const body = !isEmail ? { username: login, password } : { email: login, password };
   return request({
-    url: Parse.serverURL + '/verifyPassword',
+    url: `${Parse.serverURL}/verifyPassword`,
     headers: {
       'X-Parse-Application-Id': Parse.applicationId,
       'X-Parse-REST-API-Key': 'rest',
@@ -25,9 +25,7 @@ const isAccountLockoutError = function (username, password, duration, waitTime) 
         .catch(err => {
           if (
             err.message ===
-            'Your account is locked due to multiple failed login attempts. Please try again after ' +
-              duration +
-              ' minute(s)'
+            `Your account is locked due to multiple failed login attempts. Please try again after ${duration} minute(s)`
           ) {
             resolve();
           } else {
@@ -62,7 +60,7 @@ describe('Verify User Password', () => {
       .then(() => {
         expect(user.getACL().getPublicReadAccess()).toBe(false);
         return request({
-          url: Parse.serverURL + '/verifyPassword',
+          url: `${Parse.serverURL}/verifyPassword`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -93,7 +91,7 @@ describe('Verify User Password', () => {
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + '/verifyPassword',
+          url: `${Parse.serverURL}/verifyPassword`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -124,7 +122,7 @@ describe('Verify User Password', () => {
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + '/verifyPassword',
+          url: `${Parse.serverURL}/verifyPassword`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -403,7 +401,7 @@ describe('Verify User Password', () => {
         done();
       })
       .catch(err => {
-        fail('lock account after failed login attempts test failed: ' + JSON.stringify(err));
+        fail(`lock account after failed login attempts test failed: ${JSON.stringify(err)}`);
         done();
       });
   });
@@ -417,7 +415,7 @@ describe('Verify User Password', () => {
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + '/verifyPassword',
+          url: `${Parse.serverURL}/verifyPassword`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -495,7 +493,7 @@ describe('Verify User Password', () => {
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + '/verifyPassword',
+          url: `${Parse.serverURL}/verifyPassword`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -526,7 +524,7 @@ describe('Verify User Password', () => {
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + '/verifyPassword',
+          url: `${Parse.serverURL}/verifyPassword`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',

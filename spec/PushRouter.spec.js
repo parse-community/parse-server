@@ -70,7 +70,7 @@ describe('PushRouter', () => {
   it('sends a push through REST', done => {
     request({
       method: 'POST',
-      url: Parse.serverURL + '/push',
+      url: `${Parse.serverURL}/push`,
       body: {
         channels: {
           $in: ['Giants', 'Mets'],

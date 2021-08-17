@@ -11,7 +11,7 @@ const httpsRequest = require('./httpsRequest');
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData) {
   return request('auth/userinfo', authData.access_token).then(data => {
-    if (data && data.sub == authData.id) {
+    if (data && data.sub === authData.id) {
       return;
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'PhantAuth auth is invalid for this user.');
@@ -27,9 +27,9 @@ function validateAppId() {
 function request(path, access_token) {
   return httpsRequest.get({
     host: 'phantauth.net',
-    path: '/' + path,
+    path: `/${path}`,
     headers: {
-      Authorization: 'bearer ' + access_token,
+      Authorization: `bearer ${access_token}`,
       'User-Agent': 'parse-server',
     },
   });

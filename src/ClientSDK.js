@@ -1,4 +1,4 @@
-var semver = require('semver');
+const semver = require('semver');
 
 function compatible(compatibleSDK) {
   return function (clientSDK) {

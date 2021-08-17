@@ -7,11 +7,11 @@ class Id {
     this.objectId = objectId;
   }
   toString(): string {
-    return this.className + ':' + this.objectId;
+    return `${this.className}:${this.objectId}`;
   }
 
   static fromString(str: string) {
-    var split = str.split(':');
+    const split = str.split(':');
     if (split.length !== 2) {
       throw new TypeError('Cannot create Id object from this string');
     }

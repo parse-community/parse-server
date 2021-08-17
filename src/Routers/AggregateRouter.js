@@ -83,7 +83,7 @@ export class AggregateRouter extends ClassesRouter {
 
     return pipeline.map(stage => {
       const keys = Object.keys(stage);
-      if (keys.length != 1) {
+      if (keys.length !== 1) {
         throw new Error(`Pipeline stages should only have one key found ${keys.join(', ')}`);
       }
       return AggregateRouter.transformStage(keys[0], stage);

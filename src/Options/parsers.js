@@ -24,7 +24,7 @@ function numberOrBoolParser(key) {
 }
 
 function objectParser(opt) {
-  if (typeof opt == 'object') {
+  if (typeof opt === 'object') {
     return opt;
   }
   return JSON.parse(opt);
@@ -41,7 +41,7 @@ function arrayParser(opt) {
 }
 
 function moduleOrObjectParser(opt) {
-  if (typeof opt == 'object') {
+  if (typeof opt === 'object') {
     return opt;
   }
   try {
@@ -53,6 +53,7 @@ function moduleOrObjectParser(opt) {
 }
 
 function booleanParser(opt) {
+  // eslint-disable-next-line
   if (opt == true || opt == 'true' || opt == '1') {
     return true;
   }
@@ -60,6 +61,7 @@ function booleanParser(opt) {
 }
 
 function nullParser(opt) {
+  // eslint-disable-next-line
   if (opt == 'null') {
     return null;
   }

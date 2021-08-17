@@ -168,7 +168,7 @@ describe('Auth', () => {
       const roles = [];
       for (let i = 0; i < rolesNumber; i++) {
         const acl = new Parse.ACL();
-        const role = new Parse.Role('roleloadtest' + i, acl);
+        const role = new Parse.Role(`roleloadtest${i}`, acl);
         role.getUsers().add([user]);
         roles.push(role);
       }
@@ -192,7 +192,7 @@ describe('Auth', () => {
       const roles = [];
       for (let i = 0; i < rolesNumber; i++) {
         const acl = new Parse.ACL();
-        const role = new Parse.Role('roleloadtest' + i, acl);
+        const role = new Parse.Role(`roleloadtest${i}`, acl);
         role.getUsers().add([user]);
         roles.push(role);
       }
@@ -226,8 +226,8 @@ describe('Auth', () => {
       for (let i = 0; i < rolesNumber; i += 1) {
         const acl = new Parse.ACL();
         const acl2 = new Parse.ACL();
-        const role = new Parse.Role('roleloadtest' + i, acl);
-        const role2 = new Parse.Role('role2loadtest' + i, acl2);
+        const role = new Parse.Role(`roleloadtest${i}`, acl);
+        const role2 = new Parse.Role(`role2loadtest${i}`, acl2);
         role.getUsers().add([user]);
         role2.getUsers().add([user2]);
         roles.push(role);

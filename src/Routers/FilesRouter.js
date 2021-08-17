@@ -35,7 +35,7 @@ const addFileDataIfNeeded = async file => {
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
-    var router = express.Router();
+    const router = express.Router();
     router.get('/files/:appId/:filename', this.getHandler);
     router.get('/files/:appId/metadata/:filename', this.metadataHandler);
 

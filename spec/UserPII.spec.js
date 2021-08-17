@@ -490,7 +490,7 @@ describe('Personally Identifiable Information', () => {
           useMasterKey: true,
         });
 
-        const managementRole = new Parse.Role('managementOf_user' + user.id, new Parse.ACL(user));
+        const managementRole = new Parse.Role(`managementOf_user${user.id}`, new Parse.ACL(user));
         managementRole.getRoles().add(adminRole);
         await managementRole.save(null, { useMasterKey: true });
 
@@ -942,7 +942,7 @@ describe('Personally Identifiable Information', () => {
           useMasterKey: true,
         });
 
-        const managementRole = new Parse.Role('managementOf_user' + user.id, new Parse.ACL(user));
+        const managementRole = new Parse.Role(`managementOf_user${user.id}`, new Parse.ACL(user));
         managementRole.getRoles().add(adminRole);
         await managementRole.save(null, { useMasterKey: true });
 

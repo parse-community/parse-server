@@ -332,7 +332,7 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(2);
-        if (results[0]['_id'] == firstObject._id) {
+        if (results[0]['_id'] === firstObject._id) {
           secondObject = results[1];
         } else {
           secondObject = results[0];
@@ -1093,7 +1093,7 @@ describe('Installations', () => {
         };
         return request({
           headers: headers,
-          url: 'http://localhost:8378/1/installations/' + createResult.response.objectId,
+          url: `http://localhost:8378/1/installations/${createResult.response.objectId}`,
         }).then(response => {
           const body = response.data;
           expect(body.objectId).toEqual(createResult.response.objectId);

@@ -21,13 +21,13 @@ export class FilesController extends AdaptableController {
     const hasExtension = extname.length > 0;
 
     if (!hasExtension && contentType && mime.getExtension(contentType)) {
-      filename = filename + '.' + mime.getExtension(contentType);
+      filename = `${filename}.${mime.getExtension(contentType)}`;
     } else if (hasExtension && !contentType) {
       contentType = mime.getType(filename);
     }
 
     if (!this.options.preserveFileName) {
-      filename = randomHexString(32) + '_' + filename;
+      filename = `${randomHexString(32)}_${filename}`;
     }
 
     const location = this.adapter.getFileLocation(config, filename);
@@ -77,11 +77,13 @@ export class FilesController extends AdaptableController {
           fileObject['url'] = this.adapter.getFileLocation(config, filename);
         } else {
           if (filename.indexOf('tfss-') === 0) {
-            fileObject['url'] =
-              'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+            fileObject['url'] = `http://files.parsetfss.com/${config.fileKey}/${encodeURIComponent(
+              filename
+            )}`;
           } else if (legacyFilesRegex.test(filename)) {
-            fileObject['url'] =
-              'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+            fileObject['url'] = `http://files.parse.com/${config.fileKey}/${encodeURIComponent(
+              filename
+            )}`;
           } else {
             fileObject['url'] = this.adapter.getFileLocation(config, filename);
           }

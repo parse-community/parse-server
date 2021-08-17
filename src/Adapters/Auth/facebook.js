@@ -23,9 +23,9 @@ function getAppSecretPath(authData, options = {}) {
 
 function validateGraphToken(authData, options) {
   return graphRequest(
-    'me?fields=id&access_token=' + authData.access_token + getAppSecretPath(authData, options)
+    `me?fields=id&access_token=${authData.access_token}${getAppSecretPath(authData, options)}`
   ).then(data => {
-    if ((data && data.id == authData.id) || (process.env.TESTING && authData.id === 'test')) {
+    if ((data && data.id === authData.id) || (process.env.TESTING && authData.id === 'test')) {
       return;
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
@@ -33,7 +33,7 @@ function validateGraphToken(authData, options) {
 }
 
 function validateGraphAppId(appIds, authData, options) {
-  var access_token = authData.access_token;
+  const access_token = authData.access_token;
   if (process.env.TESTING && access_token === 'test') {
     return Promise.resolve();
   }
@@ -41,9 +41,9 @@ function validateGraphAppId(appIds, authData, options) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is not configured.');
   }
   return graphRequest(
-    'app?access_token=' + access_token + getAppSecretPath(authData, options)
+    `app?access_token=${access_token}${getAppSecretPath(authData, options)}`
   ).then(data => {
-    if (data && appIds.indexOf(data.id) != -1) {
+    if (data && appIds.indexOf(data.id) !== -1) {
       return;
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
@@ -141,7 +141,7 @@ function validateAppId(appIds, authData, options) {
 
 // A promisey wrapper for FB graph requests.
 function graphRequest(path) {
-  return httpsRequest.get('https://graph.facebook.com/' + path);
+  return httpsRequest.get(`https://graph.facebook.com/${path}`);
 }
 
 module.exports = {

@@ -16,7 +16,7 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handleGetFunctions(req) {
-    var hooksController = req.config.hooksController;
+    const hooksController = req.config.hooksController;
     if (req.params.functionName) {
       return hooksController.getFunction(req.params.functionName).then(foundFunction => {
         if (!foundFunction) {
@@ -37,7 +37,7 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handleGetTriggers(req) {
-    var hooksController = req.config.hooksController;
+    const hooksController = req.config.hooksController;
     if (req.params.className && req.params.triggerName) {
       return hooksController
         .getTrigger(req.params.className, req.params.triggerName)
@@ -53,7 +53,7 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handleDelete(req) {
-    var hooksController = req.config.hooksController;
+    const hooksController = req.config.hooksController;
     if (req.params.functionName) {
       return hooksController.deleteFunction(req.params.functionName).then(() => ({ response: {} }));
     } else if (req.params.className && req.params.triggerName) {
@@ -65,7 +65,7 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handleUpdate(req) {
-    var hook;
+    let hook;
     if (req.params.functionName && req.body.url) {
       hook = {};
       hook.functionName = req.params.functionName;
@@ -82,8 +82,8 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handlePut(req) {
-    var body = req.body;
-    if (body.__op == 'Delete') {
+    const body = req.body;
+    if (body.__op === 'Delete') {
       return this.handleDelete(req);
     } else {
       return this.handleUpdate(req);

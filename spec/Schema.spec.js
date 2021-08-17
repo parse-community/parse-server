@@ -323,7 +323,7 @@ describe('SchemaController', () => {
         done();
       })
       .catch(error => {
-        fail('Error creating class: ' + JSON.stringify(error));
+        fail(`Error creating class: ${JSON.stringify(error)}`);
       });
   });
 
@@ -410,7 +410,7 @@ describe('SchemaController', () => {
         .catch(error => {
           console.trace(error);
           done();
-          fail('Error creating class: ' + JSON.stringify(error));
+          fail(`Error creating class: ${JSON.stringify(error)}`);
         });
     });
   });
@@ -438,7 +438,7 @@ describe('SchemaController', () => {
         .catch(error => {
           console.trace(error);
           done();
-          fail('Error creating class: ' + JSON.stringify(error));
+          fail(`Error creating class: ${JSON.stringify(error)}`);
         });
     });
   });
@@ -1318,7 +1318,7 @@ describe('SchemaController', () => {
       Object.keys(schemaData).forEach(className => {
         const schema = schemaData[className];
         // Hooks has className...
-        if (className != '_Hooks') {
+        if (className !== '_Hooks') {
           expect(Object.prototype.hasOwnProperty.call(schema, 'className')).toBe(false);
         }
         expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(false);

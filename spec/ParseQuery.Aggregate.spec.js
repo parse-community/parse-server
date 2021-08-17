@@ -89,7 +89,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: {}, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
+    get(`${Parse.serverURL}/aggregate/TestObject`, options).catch(error => {
       expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
       done();
     });
@@ -101,7 +101,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: '$name' }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
@@ -123,7 +123,7 @@ describe('Parse.Query Aggregate testing', () => {
         },
       },
     });
-    const resp = await get(Parse.serverURL + '/aggregate/TestObject', options);
+    const resp = await get(`${Parse.serverURL}/aggregate/TestObject`, options);
     expect(resp.results.length).toBe(3);
     expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')).toBe(true);
@@ -285,7 +285,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: '$score' }, // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
@@ -505,7 +505,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: '$score' } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -522,7 +522,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: 1 } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -539,7 +539,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, minScore: { $min: '$score' } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -556,7 +556,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, maxScore: { $max: '$score' } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -573,7 +573,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, avgScore: { $avg: '$score' } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -589,7 +589,7 @@ describe('Parse.Query Aggregate testing', () => {
         limit: 2,
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         done();
@@ -603,7 +603,7 @@ describe('Parse.Query Aggregate testing', () => {
         sort: { name: 1 },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(4);
         expect(resp.results[0].name).toBe('bar');
@@ -621,7 +621,7 @@ describe('Parse.Query Aggregate testing', () => {
         sort: { name: -1 },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(4);
         expect(resp.results[0].name).toBe('foo');
@@ -639,7 +639,7 @@ describe('Parse.Query Aggregate testing', () => {
         skip: 2,
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         done();
@@ -674,7 +674,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 15 } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(20);
@@ -689,7 +689,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 5, $lt: 15 } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results[0].score).toBe(10);
@@ -706,7 +706,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 5, $lt: 15 }, views: { $gt: 850, $lt: 1000 } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(10);
@@ -722,7 +722,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 5, $lt: 15 }, views: 900 },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(10);
@@ -740,7 +740,7 @@ describe('Parse.Query Aggregate testing', () => {
         },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         // Match score { $gt: 15, $lt: 25 }
@@ -954,7 +954,7 @@ describe('Parse.Query Aggregate testing', () => {
         project: { name: 1 },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         resp.results.forEach(result => {
           expect(result.objectId).not.toBe(undefined);
@@ -974,7 +974,7 @@ describe('Parse.Query Aggregate testing', () => {
         project: { name: 1, score: 1, sender: 1 },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         resp.results.forEach(result => {
           expect(result.objectId).not.toBe(undefined);
@@ -1019,7 +1019,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: '$score', score: { $sum: '$score' } },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         resp.results.forEach(result => {
@@ -1047,7 +1047,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: '$score' } },
       },
     });
-    get(Parse.serverURL + '/aggregate/UnknownClass', options)
+    get(`${Parse.serverURL}/aggregate/UnknownClass`, options)
       .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
@@ -1062,7 +1062,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: '$unknownfield' } },
       },
     });
-    get(Parse.serverURL + '/aggregate/UnknownClass', options)
+    get(`${Parse.serverURL}/aggregate/UnknownClass`, options)
       .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
@@ -1074,7 +1074,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'score' },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         expect(resp.results.includes(10)).toBe(true);
@@ -1093,7 +1093,7 @@ describe('Parse.Query Aggregate testing', () => {
         },
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results[0]).toBe(10);
         done();
@@ -1108,7 +1108,7 @@ describe('Parse.Query Aggregate testing', () => {
         where: JSON.stringify({ name: 'bar' }),
       },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results[0]).toBe(10);
         done();
@@ -1120,7 +1120,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'sender.group' },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         expect(resp.results.includes('A')).toBe(true);
@@ -1153,7 +1153,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'unknown' },
     });
-    get(Parse.serverURL + '/aggregate/UnknownClass', options)
+    get(`${Parse.serverURL}/aggregate/UnknownClass`, options)
       .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
@@ -1169,7 +1169,7 @@ describe('Parse.Query Aggregate testing', () => {
     obj
       .save()
       .then(() => {
-        return get(Parse.serverURL + '/aggregate/TestObject', options);
+        return get(`${Parse.serverURL}/aggregate/TestObject`, options);
       })
       .then(resp => {
         expect(resp.results.length).toBe(0);
@@ -1182,7 +1182,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'size' },
     });
-    get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(`${Parse.serverURL}/aggregate/TestObject`, options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results.includes('S')).toBe(true);
@@ -1242,7 +1242,7 @@ describe('Parse.Query Aggregate testing', () => {
         return user2.signUp();
       })
       .then(() => {
-        return get(Parse.serverURL + '/aggregate/_User', options);
+        return get(`${Parse.serverURL}/aggregate/_User`, options);
       })
       .then(resp => {
         expect(resp.results.length).toEqual(1);
@@ -1273,7 +1273,7 @@ describe('Parse.Query Aggregate testing', () => {
     user
       .signUp()
       .then(function () {
-        return get(Parse.serverURL + '/aggregate/_User', options);
+        return get(`${Parse.serverURL}/aggregate/_User`, options);
       })
       .then(function (resp) {
         expect(resp.results.length).toBe(1);
@@ -1346,7 +1346,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
     Parse.Object.saveAll([pointer1, pointer2, pointer3, obj1, obj2, obj3])
       .then(() => {
-        return get(Parse.serverURL + '/aggregate/TestObject', options);
+        return get(`${Parse.serverURL}/aggregate/TestObject`, options);
       })
       .then(resp => {
         expect(resp.results.length).toEqual(1);

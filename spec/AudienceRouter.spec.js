@@ -346,7 +346,7 @@ describe('AudiencesRouter', () => {
               expect(rows[0]['_last_used']).toEqual(now);
               Parse._request(
                 'GET',
-                'push_audiences/' + audience.objectId,
+                `push_audiences/${audience.objectId}`,
                 {},
                 { useMasterKey: true }
               )

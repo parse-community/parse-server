@@ -34,7 +34,7 @@ export default class MongoCollection {
       explain,
     }).catch(error => {
       // Check for "no geoindex" error
-      if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
+      if (error.code !== 17007 && !error.message.match(/unable to find index for .geoNear/)) {
         throw error;
       }
       // Figure out what key needs an index
@@ -43,7 +43,7 @@ export default class MongoCollection {
         throw error;
       }
 
-      var index = {};
+      const index = {};
       index[key] = '2d';
       return (
         this._mongoCollection

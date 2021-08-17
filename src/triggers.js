@@ -1,6 +1,7 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
+import { isNull } from './Utils';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -47,7 +48,7 @@ const baseStore = function () {
 };
 
 function validateClassNameForTriggers(className, type) {
-  if (type == Types.beforeSave && className === '_PushStatus') {
+  if (type === Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
     // allowing beforeSave would mess up the objects big time
     // TODO: Allow proper documented way of using nested increment ops
@@ -184,7 +185,7 @@ export function getFileTrigger(type, applicationId) {
 }
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
-  return getTrigger(className, type, applicationId) != undefined;
+  return !isNull(getTrigger(className, type, applicationId));
 }
 
 export function getFunction(functionName, applicationId) {
@@ -217,7 +218,7 @@ export function getJob(jobName, applicationId) {
 }
 
 export function getJobs(applicationId) {
-  var manager = _triggerStore[applicationId];
+  const manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs;
   }
@@ -277,7 +278,7 @@ export function getRequestObject(
 export function getRequestQueryObject(triggerType, auth, query, count, config, context, isGet) {
   isGet = !!isGet;
 
-  var request = {
+  const request = {
     triggerName: triggerType,
     query,
     master: false,
@@ -657,7 +658,7 @@ async function builtInTriggerValidator(options, request, auth) {
   }
   const requiredParam = key => {
     const value = params[key];
-    if (value == null) {
+    if (isNull(value)) {
       throw `Validation failed. Please specify data for ${key}.`;
     }
   };
@@ -667,7 +668,7 @@ async function builtInTriggerValidator(options, request, auth) {
     if (typeof opts === 'function') {
       try {
         const result = await opts(val);
-        if (!result && result != null) {
+        if (!result && !isNull(result)) {
           throw opt.error || `Validation failed. Invalid value for ${key}.`;
         }
       } catch (e) {
@@ -707,7 +708,7 @@ async function builtInTriggerValidator(options, request, auth) {
         requiredParam(opt);
       }
       if (typeof opt === 'object') {
-        if (opt.default != null && val == null) {
+        if (!isNull(opt.default) && isNull(val)) {
           val = opt.default;
           params[key] = val;
           if (request.object) {
@@ -717,7 +718,7 @@ async function builtInTriggerValidator(options, request, auth) {
         if (opt.constant && request.object) {
           if (request.original) {
             request.object.set(key, request.original.get(key));
-          } else if (opt.default != null) {
+          } else if (!isNull(opt.default)) {
             request.object.set(key, opt.default);
           }
         }
@@ -780,7 +781,7 @@ async function builtInTriggerValidator(options, request, auth) {
         throw 'Please login to make this request.';
       }
 
-      if (reqUser.get(key) == null) {
+      if (isNull(reqUser.get(key))) {
         throw `Validation failed. Please set data for ${key} on your account.`;
       }
     }
@@ -813,9 +814,9 @@ export function maybeRunTrigger(
     return Promise.resolve({});
   }
   return new Promise(function (resolve, reject) {
-    var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
+    const trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
-    var request = getRequestObject(
+    const request = getRequestObject(
       triggerType,
       auth,
       parseObject,
@@ -823,7 +824,7 @@ export function maybeRunTrigger(
       config,
       context
     );
-    var { success, error } = getResponseObject(
+    const { success, error } = getResponseObject(
       request,
       object => {
         logTriggerSuccessBeforeHook(
@@ -899,8 +900,8 @@ export function maybeRunTrigger(
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object
 export function inflate(data, restObject) {
-  var copy = typeof data == 'object' ? data : { className: data };
-  for (var key in restObject) {
+  const copy = typeof data === 'object' ? data : { className: data };
+  for (const key in restObject) {
     copy[key] = restObject[key];
   }
   return Parse.Object.fromJSON(copy);

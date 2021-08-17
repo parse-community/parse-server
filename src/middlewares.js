@@ -6,6 +6,7 @@ import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
 import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
+import { isNull } from './Utils';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -13,7 +14,7 @@ export const DEFAULT_ALLOWED_HEADERS =
 const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
   const mountPath = req.originalUrl.slice(0, mountPathLength);
-  return req.protocol + '://' + req.get('host') + mountPath;
+  return `${req.protocol}://${req.get('host')}${mountPath}`;
 };
 
 // Checks that the request is authorized for this app and checks user
@@ -23,10 +24,10 @@ const getMountForRequest = function (req) {
 // req.config - the Config for this app
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
-  var mount = getMountForRequest(req);
+  const mount = getMountForRequest(req);
 
   let context = {};
-  if (req.get('X-Parse-Cloud-Context') != null) {
+  if (!isNull(req.get('X-Parse-Cloud-Context'))) {
     try {
       context = JSON.parse(req.get('X-Parse-Cloud-Context'));
       if (Object.prototype.toString.call(context) !== '[object Object]') {
@@ -36,7 +37,7 @@ export function handleParseHeaders(req, res, next) {
       return malformedContext(req, res);
     }
   }
-  var info = {
+  const info = {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
     masterKey: req.get('X-Parse-Master-Key'),
@@ -49,10 +50,10 @@ export function handleParseHeaders(req, res, next) {
     context: context,
   };
 
-  var basicAuth = httpAuth(req);
+  const basicAuth = httpAuth(req);
 
   if (basicAuth) {
-    var basicAuthAppId = basicAuth.appId;
+    const basicAuthAppId = basicAuth.appId;
     if (AppCache.get(basicAuthAppId)) {
       info.appId = basicAuthAppId;
       info.masterKey = basicAuth.masterKey || info.masterKey;
@@ -66,7 +67,7 @@ export function handleParseHeaders(req, res, next) {
     delete req.body._noBody;
   }
 
-  var fileViaJSON = false;
+  let fileViaJSON = false;
 
   if (!info.appId || !AppCache.get(info.appId)) {
     // See if we can find the app id on the body.
@@ -151,7 +152,7 @@ export function handleParseHeaders(req, res, next) {
   if (fileViaJSON) {
     req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
-    var base64 = req.body.base64;
+    const base64 = req.body.base64;
     req.body = Buffer.from(base64, 'base64');
   }
 
@@ -172,7 +173,7 @@ export function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  var isMaster = info.masterKey === req.config.masterKey;
+  const isMaster = info.masterKey === req.config.masterKey;
 
   if (isMaster) {
     req.auth = new auth.Auth({
@@ -184,9 +185,9 @@ export function handleParseHeaders(req, res, next) {
     return;
   }
 
-  var isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
+  const isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
   if (
-    typeof req.config.readOnlyMasterKey != 'undefined' &&
+    typeof req.config.readOnlyMasterKey !== 'undefined' &&
     req.config.readOnlyMasterKey &&
     isReadOnlyMaster
   ) {
@@ -214,7 +215,7 @@ export function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  if (req.url == '/login') {
+  if (req.url === '/login') {
     delete info.sessionToken;
   }
 
@@ -245,7 +246,7 @@ export function handleParseHeaders(req, res, next) {
       if (
         info.sessionToken &&
         req.url === '/upgradeToRevocableSession' &&
-        info.sessionToken.indexOf('r:') != 0
+        info.sessionToken.indexOf('r:') !== 0
       ) {
         return auth.getAuthForLegacySessionToken({
           config: req.config,
@@ -300,26 +301,26 @@ function getClientIp(req) {
 function httpAuth(req) {
   if (!(req.req || req).headers.authorization) return;
 
-  var header = (req.req || req).headers.authorization;
-  var appId, masterKey, javascriptKey;
+  const header = (req.req || req).headers.authorization;
+  let appId, masterKey, javascriptKey;
 
   // parse header
-  var authPrefix = 'basic ';
+  const authPrefix = 'basic ';
 
-  var match = header.toLowerCase().indexOf(authPrefix);
+  const match = header.toLowerCase().indexOf(authPrefix);
 
-  if (match == 0) {
-    var encodedAuth = header.substring(authPrefix.length, header.length);
-    var credentials = decodeBase64(encodedAuth).split(':');
+  if (match === 0) {
+    const encodedAuth = header.substring(authPrefix.length, header.length);
+    const credentials = decodeBase64(encodedAuth).split(':');
 
-    if (credentials.length == 2) {
+    if (credentials.length === 2) {
       appId = credentials[0];
-      var key = credentials[1];
+      const key = credentials[1];
 
-      var jsKeyPrefix = 'javascript-key=';
+      const jsKeyPrefix = 'javascript-key=';
 
-      var matchKey = key.indexOf(jsKeyPrefix);
-      if (matchKey == 0) {
+      const matchKey = key.indexOf(jsKeyPrefix);
+      if (matchKey === 0) {
         javascriptKey = key.substring(jsKeyPrefix.length, key.length);
       } else {
         masterKey = key;
@@ -347,7 +348,7 @@ export function allowCrossDomain(appId) {
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
     // intercept OPTIONS method
-    if ('OPTIONS' == req.method) {
+    if ('OPTIONS' === req.method) {
       res.sendStatus(200);
     } else {
       next();
@@ -448,7 +449,7 @@ export function promiseEnsureIdempotency(req) {
   let match = false;
   for (const path of paths) {
     // Assume one wants a path to always match from the beginning to prevent any mistakes
-    const regex = new RegExp(path.charAt(0) === '^' ? path : '^' + path);
+    const regex = new RegExp(path.charAt(0) === '^' ? path : `^${path}`);
     if (reqPath.match(regex)) {
       match = true;
       break;
@@ -465,7 +466,7 @@ export function promiseEnsureIdempotency(req) {
       expire: Parse._encode(expiryDate),
     })
     .catch(e => {
-      if (e.code == Parse.Error.DUPLICATE_VALUE) {
+      if (e.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.DUPLICATE_REQUEST, 'Duplicate request');
       }
       throw e;

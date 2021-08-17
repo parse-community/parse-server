@@ -1,5 +1,6 @@
 import MongoCollection from './MongoCollection';
 import Parse from 'parse/node';
+import { isNull } from '../../../Utils';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -41,8 +42,8 @@ function mongoFieldToParseSchemaField(type) {
 
 const nonFieldSchemaKeys = ['_id', '_metadata', '_client_permissions'];
 function mongoSchemaFieldsToParseSchemaFields(schema) {
-  var fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
-  var response = fieldNames.reduce((obj, fieldName) => {
+  const fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
+  const response = fieldNames.reduce((obj, fieldName) => {
     obj[fieldName] = mongoFieldToParseSchemaField(schema[fieldName]);
     if (
       schema._metadata &&
@@ -212,7 +213,7 @@ class MongoSchemaCollection {
       .then(
         schema => {
           // If a field with this name already exists, it will be handled elsewhere.
-          if (schema.fields[fieldName] != undefined) {
+          if (!isNull(schema.fields[fieldName])) {
             return;
           }
           // The schema exists. Check for existing GeoPoints.

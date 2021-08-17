@@ -42,8 +42,8 @@ describe('AuthenticationProviders', function () {
     'microsoft',
     'keycloak',
   ].map(function (providerName) {
-    it('Should validate structure of ' + providerName, done => {
-      const provider = require('../lib/Adapters/Auth/' + providerName);
+    it(`Should validate structure of ${providerName}`, done => {
+      const provider = require(`../lib/Adapters/Auth/${providerName}`);
       jequal(typeof provider.validateAuthData, 'function');
       jequal(typeof provider.validateAppId, 'function');
       const validateAuthDataPromise = provider.validateAuthData({}, {});
@@ -82,7 +82,7 @@ describe('AuthenticationProviders', function () {
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'request').and.callFake(() => {
         return Promise.resolve(responses[providerName] || { id: 'userId' });
       });
-      const provider = require('../lib/Adapters/Auth/' + providerName);
+      const provider = require(`../lib/Adapters/Auth/${providerName}`);
       let params = {};
       if (providerName === 'vkontakte') {
         params = {
@@ -324,7 +324,7 @@ describe('AuthenticationProviders', function () {
         return Promise.resolve();
       },
       validateAuthData: function (authData) {
-        if (authData.id == validAuthData.id && authData.token == validAuthData.token) {
+        if (authData.id === validAuthData.id && authData.token === validAuthData.token) {
           return Promise.resolve();
         }
         return Promise.reject();

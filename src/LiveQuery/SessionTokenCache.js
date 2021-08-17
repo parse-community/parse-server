@@ -3,7 +3,7 @@ import LRU from 'lru-cache';
 import logger from '../logger';
 
 function userForSessionToken(sessionToken) {
-  var q = new Parse.Query('_Session');
+  const q = new Parse.Query('_Session');
   q.equalTo('sessionToken', sessionToken);
   return q.first({ useMasterKey: true }).then(function (session) {
     if (!session) {

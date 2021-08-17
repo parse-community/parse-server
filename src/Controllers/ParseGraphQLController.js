@@ -43,7 +43,7 @@ class ParseGraphQLController {
     );
 
     let graphQLConfig;
-    if (results.length != 1) {
+    if (results.length !== 1) {
       // If there is no config in the database - return empty config.
       return {};
     } else {

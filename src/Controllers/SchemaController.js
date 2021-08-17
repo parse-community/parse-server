@@ -29,6 +29,7 @@ import type {
   SchemaField,
   LoadSchemaOptions,
 } from './types';
+import { isNull } from '../Utils';
 
 const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -268,7 +269,7 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
     return;
   }
   for (const operationKey in perms) {
-    if (CLPValidKeys.indexOf(operationKey) == -1) {
+    if (CLPValidKeys.indexOf(operationKey) === -1) {
       throw new Parse.Error(
         Parse.Error.INVALID_JSON,
         `${operationKey} is not a valid operation for class level permissions`
@@ -404,8 +405,8 @@ function validatePointerPermission(fieldName: string, fields: Object, operation:
   if (
     !(
       fields[fieldName] &&
-      ((fields[fieldName].type == 'Pointer' && fields[fieldName].targetClass == '_User') ||
-        fields[fieldName].type == 'Array')
+      ((fields[fieldName].type === 'Pointer' && fields[fieldName].targetClass === '_User') ||
+        fields[fieldName].type === 'Array')
     )
   ) {
     throw new Parse.Error(
@@ -455,11 +456,7 @@ function fieldNameIsValidForClass(fieldName: string, className: string): boolean
 }
 
 function invalidClassNameMessage(className: string): string {
-  return (
-    'Invalid classname: ' +
-    className +
-    ', classnames can only have alphanumeric characters and _, and must start with an alpha character '
-  );
+  return `Invalid classname: ${className}, classnames can only have alphanumeric characters and _, and must start with an alpha character `;
 }
 
 const invalidJsonError = new Parse.Error(Parse.Error.INVALID_JSON, 'invalid JSON');
@@ -788,7 +785,7 @@ export default class SchemaController {
     classLevelPermissions: any,
     indexes: any = {}
   ): Promise<void | Schema> {
-    var validationError = this.validateNewClass(className, fields, classLevelPermissions);
+    const validationError = this.validateNewClass(className, fields, classLevelPermissions);
     if (validationError) {
       if (validationError instanceof Parse.Error) {
         return Promise.reject(validationError);
@@ -979,13 +976,13 @@ export default class SchemaController {
         if (!fieldNameIsValid(fieldName, className)) {
           return {
             code: Parse.Error.INVALID_KEY_NAME,
-            error: 'invalid field name: ' + fieldName,
+            error: `invalid field name: ${fieldName}`,
           };
         }
         if (!fieldNameIsValidForClass(fieldName, className)) {
           return {
             code: 136,
-            error: 'field ' + fieldName + ' cannot be added',
+            error: `field ${fieldName} cannot be added`,
           };
         }
         const fieldType = fields[fieldName];
@@ -1030,12 +1027,7 @@ export default class SchemaController {
     if (geoPoints.length > 1) {
       return {
         code: Parse.Error.INCORRECT_TYPE,
-        error:
-          'currently, only one GeoPoint field may exist in an object. Adding ' +
-          geoPoints[1] +
-          ' when ' +
-          geoPoints[0] +
-          ' already exists.',
+        error: `currently, only one GeoPoint field may exist in an object. Adding ${geoPoints[1]} when ${geoPoints[0]} already exists.`,
       };
     }
     validateCLP(classLevelPermissions, fields, this.userIdRegEx);
@@ -1108,7 +1100,7 @@ export default class SchemaController {
     return this._dbAdapter
       .addFieldIfNotExists(className, fieldName, type)
       .catch(error => {
-        if (error.code == Parse.Error.INCORRECT_TYPE) {
+        if (error.code === Parse.Error.INCORRECT_TYPE) {
           // Make sure that we throw errors when it is appropriate to do so.
           throw error;
         }
@@ -1255,7 +1247,7 @@ export default class SchemaController {
   // Validates that all the properties are set for the object
   validateRequiredColumns(className: string, object: any, query: any) {
     const columns = requiredColumns[className];
-    if (!columns || columns.length == 0) {
+    if (!columns || columns.length === 0) {
       return Promise.resolve(this);
     }
 
@@ -1263,7 +1255,7 @@ export default class SchemaController {
       if (query && query.objectId) {
         if (object[column] && typeof object[column] === 'object') {
           // Trying to delete a required column
-          return object[column].__op == 'Delete';
+          return object[column].__op === 'Delete';
         }
         // Not trying to do anything there
         return false;
@@ -1272,7 +1264,7 @@ export default class SchemaController {
     });
 
     if (missingColumns.length > 0) {
-      throw new Parse.Error(Parse.Error.INCORRECT_TYPE, missingColumns[0] + ' is required.');
+      throw new Parse.Error(Parse.Error.INCORRECT_TYPE, `${missingColumns[0]} is required.`);
     }
     return Promise.resolve(this);
   }
@@ -1325,12 +1317,12 @@ export default class SchemaController {
     // make sure we have an aclGroup
     if (perms['requiresAuthentication']) {
       // If aclGroup has * (public)
-      if (!aclGroup || aclGroup.length == 0) {
+      if (!aclGroup || aclGroup.length === 0) {
         throw new Parse.Error(
           Parse.Error.OBJECT_NOT_FOUND,
           'Permission denied, user needs to be authenticated.'
         );
-      } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
+      } else if (aclGroup.indexOf('*') > -1 && aclGroup.length === 1) {
         throw new Parse.Error(
           Parse.Error.OBJECT_NOT_FOUND,
           'Permission denied, user needs to be authenticated.'
@@ -1347,7 +1339,7 @@ export default class SchemaController {
       ['get', 'find', 'count'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
 
     // Reject create when write lockdown
-    if (permissionField == 'writeUserFields' && operation == 'create') {
+    if (permissionField === 'writeUserFields' && operation === 'create') {
       throw new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
         `Permission denied for action ${operation} on class ${className}.`
@@ -1489,7 +1481,7 @@ function getType(obj: any): ?(SchemaField | string) {
     case 'symbol':
     case 'undefined':
     default:
-      throw 'bad obj: ' + obj;
+      throw `bad obj: ${obj}`;
   }
 }
 
@@ -1529,7 +1521,7 @@ function getObjectType(obj): ?(SchemaField | string) {
         }
         break;
       case 'GeoPoint':
-        if (obj.latitude != null && obj.longitude != null) {
+        if (!isNull(obj.latitude) && !isNull(obj.longitude)) {
           return 'GeoPoint';
         }
         break;
@@ -1544,7 +1536,7 @@ function getObjectType(obj): ?(SchemaField | string) {
         }
         break;
     }
-    throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'This is not a valid ' + obj.__type);
+    throw new Parse.Error(Parse.Error.INCORRECT_TYPE, `This is not a valid ${obj.__type}`);
   }
   if (obj['$ne']) {
     return getObjectType(obj['$ne']);
@@ -1568,7 +1560,7 @@ function getObjectType(obj): ?(SchemaField | string) {
       case 'Batch':
         return getObjectType(obj.ops[0]);
       default:
-        throw 'unexpected op: ' + obj.__op;
+        throw `unexpected op: ${obj.__op}`;
     }
   }
   return 'Object';
