@@ -310,11 +310,11 @@ describe('Pages Router', () => {
           { customRoutes: 'a' },
           { customRoutes: {} },
         ];
-        await Promise.all(
-          options.map(option =>
-            expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected()
-          )
-        );
+        /* eslint-disable no-await-in-loop */
+        for (const option of options) {
+          await expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected();
+        }
+        /* eslint-enable no-await-in-loop */
       });
     });
 

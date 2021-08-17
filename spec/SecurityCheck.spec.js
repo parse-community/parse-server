@@ -127,11 +127,12 @@ describe('Security Check', () => {
         { enableCheck: false },
         {},
       ];
-      const checkConfig = async config => {
+      /* eslint-disable no-await-in-loop */
+      for (const config of configs) {
         await reconfigureServerWithSecurityConfig(config);
         expect(runnerSpy).not.toHaveBeenCalled();
-      };
-      await Promise.all(configs.map(config => checkConfig(config)));
+      }
+      /* eslint-enable no-await-in-loop */
     });
   });
 

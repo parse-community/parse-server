@@ -368,19 +368,22 @@ describe('lockout with password reset option', () => {
     sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
   }
 
+  /* eslint-disable no-await-in-loop */
   it('accepts valid unlockOnPasswordReset option', async () => {
     const values = [true, false];
-    await Promise.all(
-      values.map(value => expectAsync(setup({ unlockOnPasswordReset: value })).toBeResolved())
-    );
+    for (const value of values) {
+      await expectAsync(setup({ unlockOnPasswordReset: value })).toBeResolved();
+    }
   });
 
   it('rejects invalid unlockOnPasswordReset option', async () => {
     const values = ['a', 0, {}, [], null];
-    await Promise.all(
-      values.map(value => expectAsync(setup({ unlockOnPasswordReset: value })).toBeRejected())
-    );
+
+    for (const value of values) {
+      await expectAsync(setup({ unlockOnPasswordReset: value })).toBeRejected();
+    }
   });
+  /* eslint-enable no-await-in-loop */
 
   it('uses default value if unlockOnPasswordReset is not set', async () => {
     await expectAsync(setup({ unlockOnPasswordReset: undefined })).toBeResolved();
