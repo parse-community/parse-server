@@ -52,7 +52,7 @@ const fullTextHelper = () => {
   });
 };
 
-fdescribe('Parse.Query Full Text Search testing', () => {
+describe('Parse.Query Full Text Search testing', () => {
   it('fullTextSearch: $search', done => {
     fullTextHelper()
       .then(() => {
