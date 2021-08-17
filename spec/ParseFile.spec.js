@@ -1065,7 +1065,7 @@ describe('Parse.File testing', () => {
         ...validConfigs.map(config => expectAsync(reconfigureServer(config)).toBeResolved())
       );
       promises.push(
-        keys.map(key => [
+        ...keys.map(key => [
           ...invalidValues.map(value =>
             expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeRejectedWith(
               `fileUpload.${key} must be a boolean value.`
