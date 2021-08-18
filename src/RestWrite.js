@@ -861,7 +861,7 @@ RestWrite.prototype.createSessionToken = async function () {
     this.storage['authProvider'] = Object.keys(this.data.authData).join(',');
   }
 
-  const { sessionData, createSession } = RestWrite.createSession(this.config, {
+  const { sessionData, createSession } = Auth.createSession(this.config, {
     userId: this.objectId(),
     createdWith: {
       action: this.storage['authProvider'] ? 'login' : 'signup',
