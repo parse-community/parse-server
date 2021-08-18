@@ -80,6 +80,9 @@ describe('FilesController', () => {
     expect(typeof error).toBe('object');
     expect(error.message.indexOf('biscuit')).toBe(13);
     expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+    mockAdapter.validateFilename = () => {
+      return null;
+    };
     done();
   });
 

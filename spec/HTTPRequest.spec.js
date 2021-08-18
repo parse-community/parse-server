@@ -39,8 +39,12 @@ function startServer(done) {
 
 describe('httpRequest', () => {
   let server;
-  beforeAll(done => {
-    server = startServer(done);
+  beforeEach(done => {
+    if (!server) {
+      server = startServer(done);
+    } else {
+      done();
+    }
   });
 
   afterAll(done => {

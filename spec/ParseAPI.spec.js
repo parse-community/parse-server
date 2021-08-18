@@ -24,31 +24,14 @@ const headers = {
 };
 
 describe_only_db('mongo')('miscellaneous', () => {
-  it('test rest_create_app', function (done) {
-    let appId;
-    Parse._request('POST', 'rest_create_app')
-      .then(res => {
-        expect(typeof res.application_id).toEqual('string');
-        expect(res.master_key).toEqual('master');
-        appId = res.application_id;
-        Parse.initialize(appId, 'unused');
-        const obj = new Parse.Object('TestObject');
-        obj.set('foo', 'bar');
-        return obj.save();
-      })
-      .then(() => {
-        const config = Config.get(appId);
-        return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
-      })
-      .then(results => {
-        expect(results.length).toEqual(1);
-        expect(results[0]['foo']).toEqual('bar');
-        done();
-      })
-      .catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
+  it('db contains document after successful save', async () => {
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save();
+    const config = Config.get(defaultConfiguration.appId);
+    const results = await config.database.adapter.find('TestObject', { fields: {} }, {}, {});
+    expect(results.length).toEqual(1);
+    expect(results[0]['foo']).toEqual('bar');
   });
 });
 
@@ -84,6 +67,7 @@ describe('miscellaneous', function () {
   });
 
   it('fail to create a duplicate username', async () => {
+    await reconfigureServer();
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({
@@ -131,6 +115,7 @@ describe('miscellaneous', function () {
   });
 
   it('ensure that email is uniquely indexed', async () => {
+    await reconfigureServer();
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({
@@ -187,6 +172,7 @@ describe('miscellaneous', function () {
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
+      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
       .then(() => config.database.adapter.createClass('_User', userSchema))
       .then(() =>
         config.database.adapter
@@ -227,6 +213,7 @@ describe('miscellaneous', function () {
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
+      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
       .then(() => config.database.adapter.createClass('_User', userSchema))
       .then(() =>
         config.database.adapter.createObject('_User', userSchema, {
@@ -261,7 +248,8 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', async done => {
+    await reconfigureServer();
     const config = Config.get('test');
     config.database.adapter
       .addFieldIfNotExists('_User', 'randomField', { type: 'String' })
@@ -656,6 +644,28 @@ describe('miscellaneous', function () {
         expect(obj.get('point').id).toEqual(pointId);
         done();
       });
+  });
+
+  it_only_db('mongo')('pointer reassign on nested fields is working properly (#7391)', async () => {
+    const obj = new Parse.Object('GameScore'); // This object will include nested pointers
+    const ptr1 = new Parse.Object('GameScore');
+    await ptr1.save(); // Obtain a unique id
+    const ptr2 = new Parse.Object('GameScore');
+    await ptr2.save(); // Obtain a unique id
+    obj.set('data', { ptr: ptr1 });
+    await obj.save();
+
+    obj.set('data.ptr', ptr2);
+    await obj.save();
+
+    const obj2 = await new Parse.Query('GameScore').get(obj.id);
+    expect(obj2.get('data').ptr.id).toBe(ptr2.id);
+
+    const query = new Parse.Query('GameScore');
+    query.equalTo('data.ptr', ptr2);
+    const res = await query.find();
+    expect(res.length).toBe(1);
+    expect(res[0].get('data').ptr.id).toBe(ptr2.id);
   });
 
   it('test afterSave get full object on create and update', function (done) {

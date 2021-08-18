@@ -94,6 +94,28 @@ export class FilesRouter {
 
   async createHandler(req, res, next) {
     const config = req.config;
+    const user = req.auth.user;
+    const isMaster = req.auth.isMaster;
+    const isLinked = user && Parse.AnonymousUtils.isLinked(user);
+    if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
+      next(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+      );
+      return;
+    }
+    if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
+      );
+      return;
+    }
+    if (!isMaster && !config.fileUpload.enableForPublic && !user) {
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
+      return;
+    }
     const filesController = config.filesController;
     const { filename } = req.params;
     const contentType = req.get('Content-type');
@@ -144,16 +166,22 @@ export class FilesRouter {
         // update fileSize
         const bufferData = Buffer.from(fileObject.file._data, 'base64');
         fileObject.fileSize = Buffer.byteLength(bufferData);
+        // prepare file options
+        const fileOptions = {
+          metadata: fileObject.file._metadata,
+        };
+        // some s3-compatible providers (DigitalOcean, Linode) do not accept tags
+        // so we do not include the tags option if it is empty.
+        const fileTags =
+          Object.keys(fileObject.file._tags).length > 0 ? { tags: fileObject.file._tags } : {};
+        Object.assign(fileOptions, fileTags);
         // save file
         const createFileResult = await filesController.createFile(
           config,
           fileObject.file._name,
           bufferData,
           fileObject.file._source.type,
-          {
-            tags: fileObject.file._tags,
-            metadata: fileObject.file._metadata,
-          }
+          fileOptions
         );
         // update file with new data
         fileObject.file._name = createFileResult.name;

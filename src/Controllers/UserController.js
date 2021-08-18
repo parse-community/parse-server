@@ -4,6 +4,8 @@ import AdaptableController from './AdaptableController';
 import MailAdapter from '../Adapters/Email/MailAdapter';
 import rest from '../rest';
 import Parse from 'parse/node';
+import AccountLockout from '../AccountLockout';
+import Config from '../Config';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -11,6 +13,10 @@ var Auth = require('../Auth');
 export class UserController extends AdaptableController {
   constructor(adapter, appId, options = {}) {
     super(adapter, appId, options);
+  }
+
+  get config() {
+    return Config.get(this.appId);
   }
 
   validateAdapter(adapter) {
@@ -258,7 +264,11 @@ export class UserController extends AdaptableController {
 
   updatePassword(username, token, password) {
     return this.checkResetTokenValidity(username, token)
-      .then(user => updateUserPassword(user.objectId, password, this.config))
+      .then(user => updateUserPassword(user, password, this.config))
+      .then(user => {
+        const accountLockoutPolicy = new AccountLockout(user, this.config);
+        return accountLockoutPolicy.unlockAccount();
+      })
       .catch(error => {
         if (error && error.message) {
           // in case of Parse.Error, fail with the error message only
@@ -302,16 +312,18 @@ export class UserController extends AdaptableController {
 }
 
 // Mark this private
-function updateUserPassword(userId, password, config) {
-  return rest.update(
-    config,
-    Auth.master(config),
-    '_User',
-    { objectId: userId },
-    {
-      password: password,
-    }
-  );
+function updateUserPassword(user, password, config) {
+  return rest
+    .update(
+      config,
+      Auth.master(config),
+      '_User',
+      { objectId: user.objectId },
+      {
+        password: password,
+      }
+    )
+    .then(() => user);
 }
 
 function buildEmailLink(destination, username, token, config) {

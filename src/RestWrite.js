@@ -861,7 +861,7 @@ RestWrite.prototype.createSessionToken = async function () {
     this.storage['authProvider'] = Object.keys(this.data.authData).join(',');
   }
 
-  const { sessionData, createSession } = Auth.createSession(this.config, {
+  const { sessionData, createSession } = RestWrite.createSession(this.config, {
     userId: this.objectId(),
     createdWith: {
       action: this.storage['authProvider'] ? 'login' : 'signup',
@@ -875,6 +875,37 @@ RestWrite.prototype.createSessionToken = async function () {
   }
 
   return createSession();
+};
+
+RestWrite.createSession = function (
+  config,
+  { userId, createdWith, installationId, additionalSessionData }
+) {
+  const token = 'r:' + cryptoUtils.newToken();
+  const expiresAt = config.generateSessionExpiresAt();
+  const sessionData = {
+    sessionToken: token,
+    user: {
+      __type: 'Pointer',
+      className: '_User',
+      objectId: userId,
+    },
+    createdWith,
+    restricted: false,
+    expiresAt: Parse._encode(expiresAt),
+  };
+
+  if (installationId) {
+    sessionData.installationId = installationId;
+  }
+
+  Object.assign(sessionData, additionalSessionData);
+
+  return {
+    sessionData,
+    createSession: () =>
+      new RestWrite(config, Auth.master(config), '_Session', null, sessionData).execute(),
+  };
 };
 
 // Delete email reset tokens if user is changing password or email.
@@ -982,7 +1013,7 @@ RestWrite.prototype.handleSession = function () {
       additionalSessionData[key] = this.data[key];
     }
 
-    const { sessionData, createSession } = Auth.createSession(this.config, {
+    const { sessionData, createSession } = RestWrite.createSession(this.config, {
       userId: this.auth.user.id,
       createdWith: {
         action: 'create',
@@ -1262,7 +1293,7 @@ RestWrite.prototype.handleInstallation = function () {
   return promise;
 };
 
-// If we short-circuted the object response - then we need to make sure we expand all the files,
+// If we short-circuited the object response - then we need to make sure we expand all the files,
 // since this might not have a query, meaning it won't return the full result back.
 // TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
 RestWrite.prototype.expandFilesForExistingObjects = function () {

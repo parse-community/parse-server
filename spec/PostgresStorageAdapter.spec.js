@@ -19,13 +19,16 @@ const dropTable = (client, className) => {
 
 describe_only_db('postgres')('PostgresStorageAdapter', () => {
   let adapter;
-  beforeEach(() => {
+  beforeEach(async () => {
     const config = Config.get('test');
     adapter = config.database.adapter;
-    return adapter.deleteAllClasses();
   });
 
-  it('schemaUpgrade, upgrade the database schema when schema changes', done => {
+  it('schemaUpgrade, upgrade the database schema when schema changes', async done => {
+    await adapter.deleteAllClasses();
+    const config = Config.get('test');
+    config.schemaCache.clear();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
     const client = adapter._client;
     const className = '_PushStatus';
     const schema = {
@@ -49,11 +52,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         return adapter.schemaUpgrade(className, schema);
       })
       .then(() => getColumns(client, className))
-      .then(columns => {
+      .then(async columns => {
         expect(columns).toContain('pushTime');
         expect(columns).toContain('source');
         expect(columns).toContain('query');
         expect(columns).toContain('expiration_interval');
+        await reconfigureServer();
         done();
       })
       .catch(error => done.fail(error));
@@ -152,6 +156,10 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         objectId: { type: 'String' },
         username: { type: 'String' },
         email: { type: 'String' },
+        emailVerified: { type: 'Boolean' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        authData: { type: 'Object' },
       },
     };
     const client = adapter._client;
@@ -165,90 +173,88 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     ]);
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
     const originalQuery = 'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)';
     const analyzedExplainQuery = adapter.createExplainableQuery(originalQuery, true);
-    await client
-      .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
-      .then(explained => {
-        const preIndexPlan = explained;
+    const preIndexPlan = await client.one(analyzedExplainQuery, [
+      tableName,
+      'objectId',
+      caseInsensitiveData,
+    ]);
+    preIndexPlan['QUERY PLAN'].forEach(element => {
+      //Make sure search returned with only 1 result
+      expect(element.Plan['Actual Rows']).toBe(1);
+      expect(element.Plan['Node Type']).toBe('Seq Scan');
+    });
+    const indexName = 'test_case_insensitive_column';
+    await adapter.ensureIndex(tableName, schema, ['objectId'], indexName, true);
 
-        preIndexPlan['QUERY PLAN'].forEach(element => {
-          //Make sure search returned with only 1 result
-          expect(element.Plan['Actual Rows']).toBe(1);
-          expect(element.Plan['Node Type']).toBe('Seq Scan');
-        });
-        const indexName = 'test_case_insensitive_column';
+    const postIndexPlan = await client.one(analyzedExplainQuery, [
+      tableName,
+      'objectId',
+      caseInsensitiveData,
+    ]);
+    postIndexPlan['QUERY PLAN'].forEach(element => {
+      //Make sure search returned with only 1 result
+      expect(element.Plan['Actual Rows']).toBe(1);
+      //Should not be a sequential scan
+      expect(element.Plan['Node Type']).not.toContain('Seq Scan');
 
-        adapter.ensureIndex(tableName, schema, ['objectId'], indexName, true).then(() => {
-          client
-            .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
-            .then(explained => {
-              const postIndexPlan = explained;
-
-              postIndexPlan['QUERY PLAN'].forEach(element => {
-                //Make sure search returned with only 1 result
-                expect(element.Plan['Actual Rows']).toBe(1);
-                //Should not be a sequential scan
-                expect(element.Plan['Node Type']).not.toContain('Seq Scan');
-
-                //Should be using the index created for this
-                element.Plan.Plans.forEach(innerElement => {
-                  expect(innerElement['Index Name']).toBe(indexName);
-                });
-              });
-
-              //These are the same query so should be the same size
-              for (let i = 0; i < preIndexPlan['QUERY PLAN'].length; i++) {
-                //Sequential should take more time to execute than indexed
-                expect(preIndexPlan['QUERY PLAN'][i]['Execution Time']).toBeGreaterThan(
-                  postIndexPlan['QUERY PLAN'][i]['Execution Time']
-                );
-              }
-
-              //Test explaining without analyzing
-              const basicExplainQuery = adapter.createExplainableQuery(originalQuery);
-              client
-                .one(basicExplainQuery, [tableName, 'objectId', caseInsensitiveData])
-                .then(explained => {
-                  explained['QUERY PLAN'].forEach(element => {
-                    //Check that basic query plans isn't a sequential scan
-                    expect(element.Plan['Node Type']).not.toContain('Seq Scan');
-
-                    //Basic query plans shouldn't have an execution time
-                    expect(element['Execution Time']).toBeUndefined();
-                  });
-                });
-            });
-        });
-      })
-      .catch(error => {
-        // Query on non existing table, don't crash
-        if (error.code !== '42P01') {
-          throw error;
-        }
-        return [];
+      //Should be using the index created for this
+      element.Plan.Plans.forEach(innerElement => {
+        expect(innerElement['Index Name']).toBe(indexName);
       });
+    });
+
+    //These are the same query so should be the same size
+    for (let i = 0; i < preIndexPlan['QUERY PLAN'].length; i++) {
+      //Sequential should take more time to execute than indexed
+      expect(preIndexPlan['QUERY PLAN'][i]['Execution Time']).toBeGreaterThan(
+        postIndexPlan['QUERY PLAN'][i]['Execution Time']
+      );
+    }
+    //Test explaining without analyzing
+    const basicExplainQuery = adapter.createExplainableQuery(originalQuery);
+    const explained = await client.one(basicExplainQuery, [
+      tableName,
+      'objectId',
+      caseInsensitiveData,
+    ]);
+    explained['QUERY PLAN'].forEach(element => {
+      //Check that basic query plans isn't a sequential scan
+      expect(element.Plan['Node Type']).not.toContain('Seq Scan');
+
+      //Basic query plans shouldn't have an execution time
+      expect(element['Execution Time']).toBeUndefined();
+    });
+    await dropTable(client, tableName);
   });
 
   it('should use index for caseInsensitive query', async () => {
-    const tableName = '_User';
-    const user = new Parse.User();
-    user.set('username', 'Bugs');
-    user.set('password', 'Bunny');
-    await user.signUp();
+    await adapter.deleteAllClasses();
+    const config = Config.get('test');
+    config.schemaCache.clear();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
+
     const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
+    const tableName = '_User';
+
+    const user = new Parse.User();
+    user.set('username', 'Elmer');
+    user.set('password', 'Fudd');
+    await user.signUp();
 
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
-    const caseInsensitiveData = 'bugs';
+    const caseInsensitiveData = 'elmer';
     const fieldToSearch = 'username';
     //Check using find method for Parse
     const preIndexPlan = await database.find(
@@ -289,12 +295,19 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query using default indexname', async () => {
+    await adapter.deleteAllClasses();
+    const config = Config.get('test');
+    config.schemaCache.clear();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
+
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
     const tableName = '_User';
     const user = new Parse.User();
-    user.set('username', 'Bugs');
-    user.set('password', 'Bunny');
+    user.set('username', 'Tweety');
+    user.set('password', 'Bird');
     await user.signUp();
-    const database = Config.get(Parse.applicationId).database;
+
     const fieldToSearch = 'username';
     //Create index before data is inserted
     const schema = await new Parse.Schema('_User').get();
@@ -303,11 +316,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
 
-    const caseInsensitiveData = 'buGs';
+    const caseInsensitiveData = 'tweeTy';
     //Check using find method for Parse
     const indexPlan = await database.find(
       tableName,
@@ -345,11 +358,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [firstTableName, 'objectId', uniqueField]
     );
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [secondTableName, 'objectId', uniqueField]
     );
 
@@ -376,6 +389,45 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         expect(innerElement.Plan['Index Name']).toContain(uniqueField);
       });
     });
+  });
+
+  it('should watch _SCHEMA changes', async () => {
+    const enableSchemaHooks = true;
+    await reconfigureServer({
+      databaseAdapter: undefined,
+      databaseURI,
+      collectionPrefix: '',
+      databaseOptions: {
+        enableSchemaHooks,
+      },
+    });
+    const { database } = Config.get(Parse.applicationId);
+    const { adapter } = database;
+    expect(adapter.enableSchemaHooks).toBe(enableSchemaHooks);
+    spyOn(adapter, '_onchange');
+    enableSchemaHooks;
+
+    const otherInstance = new PostgresStorageAdapter({
+      uri: databaseURI,
+      collectionPrefix: '',
+      databaseOptions: { enableSchemaHooks },
+    });
+    expect(otherInstance.enableSchemaHooks).toBe(enableSchemaHooks);
+    otherInstance._listenToSchema();
+
+    await otherInstance.createClass('Stuff', {
+      className: 'Stuff',
+      fields: {
+        objectId: { type: 'String' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        _rperm: { type: 'Array' },
+        _wperm: { type: 'Array' },
+      },
+      classLevelPermissions: undefined,
+    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    expect(adapter._onchange).toHaveBeenCalled();
   });
 });
 
