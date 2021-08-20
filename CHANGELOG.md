@@ -2,18 +2,19 @@
 
 Jump directly to a version:
 
-| 4.x                                |
-|------------------------------------|
-| [**4.5.2 (latest release)**](#452) |
-| [4.5.1](#451)                      |
-| [4.5.0](#450)                      |
-| [4.4.0](#440)                      |
-| [4.3.0](#430)                      |
-| [4.2.0](#420)                      |
-| [4.1.0](#410)                      |
-| [4.0.2](#402)                      |
-| [4.0.1](#401)                      |
-| [4.0.0](#400)                      |
+| 4.x                                  |
+|--------------------------------------|
+| [**4.10.0 (latest release)**](#4100) |
+| [4.5.2](#452)                        |
+| [4.5.1](#451)                        |
+| [4.5.0](#450)                        |
+| [4.4.0](#440)                        |
+| [4.3.0](#430)                        |
+| [4.2.0](#420)                        |
+| [4.1.0](#410)                        |
+| [4.0.2](#402)                        |
+| [4.0.1](#401)                        |
+| [4.0.0](#400)                        |
 
 <details>
 <summary>Previous Versions</summary>
@@ -90,7 +91,7 @@ Jump directly to a version:
 ___
 
 ## Unreleased (Master Branch)
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.2...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.0...master)
 ### Breaking Changes
 - Improved schema caching through database real-time hooks. Reduces DB queries, decreases Parse Query execution time and fixes a potential schema memory leak. If multiple Parse Server instances connect to the same DB (for example behind a load balancer), set the [Parse Server Option](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) `databaseOptions.enableSchemaHooks: true` to enable this feature and keep the schema in sync across all instances. Failing to do so will cause a schema change to not propagate to other instances and re-syncing will only happen when these instances restart. The options `enableSingleSchemaCache` and `schemaCacheTTL` have been removed. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required. (Diamond Lewis, SebC) [#7214](https://github.com/parse-community/parse-server/issues/7214)
 - Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) (dblythy, Manuel Trezza) [#7071](https://github.com/parse-community/parse-server/pull/7071)
@@ -141,6 +142,22 @@ ___
 - Fix LiveQuery server crash when using $all query operator on a missing object key (Jason Posthuma) [#7421](https://github.com/parse-community/parse-server/pull/7421)
 - Added runtime deprecation warnings (Manuel Trezza) [#7451](https://github.com/parse-community/parse-server/pull/7451)
 - Add ability to pass context of an object via a header, X-Parse-Cloud-Context, for Cloud Code triggers. The header addition allows client SDK's to add context without injecting _context in the body of JSON objects (Corey Baker) [#7437](https://github.com/parse-community/parse-server/pull/7437)
+
+## 4.10.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.2...4.10.0)
+
+*Versions >4.5.2 and <4.10.0 are skipped.*
+
+> ⚠️ A security incident caused a number of incorrect version tags to be pushed to the Parse Server repository. These version tags linked to a personal fork of a contributor who had write access to the repository. The code to which these tags linked has not been reviewed or approved by Parse Platform. Even though no releases were published with these incorrect versions, it was possible to define a Parse Server dependency that pointed to these version tags, for example if you defined this dependency: 
+> ```js
+> "parse-server": "git@github.com:parse-community/parse-server.git#4.9.3"
+> ```
+> 
+> We have since deleted the incorrect version tags, but they may still show up if your personal fork on GitHub or locally. We do not know when these tags have been pushed to the Parse Server repository, but we first became aware of this issue on July 21, 2021. We are not aware of any malicious code or concerns related to privacy, security or legality (e.g. proprietary code). However, it has been reported that some functionality does not work as expected and the introduction of security vulnerabilities cannot be ruled out.
+>
+> You may be also affected if you used the Bitnami image for Parse Server. Bitnami picked up the incorrect version tag `4.9.3` and published a new Bitnami image for Parse Server. 
+> 
+>**If you are using any of the affected versions, we urgently recommend to upgrade to version `4.10.0`.**
 
 ## 4.5.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...4.5.2)
