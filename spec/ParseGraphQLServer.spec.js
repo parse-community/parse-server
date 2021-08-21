@@ -10219,6 +10219,7 @@ describe('ParseGraphQLServer', () => {
               userEcho(user: CreateUserFieldsInput!): User! @resolve
               hello3: String! @mock(with: "Hello world!")
               hello4: User! @mock(with: { username: "somefolk" })
+              arrayOfSuperCar: [SuperCar] @resolve(to: "arrayOfSuperCar")
             }
           `,
         });
@@ -10258,6 +10259,75 @@ describe('ParseGraphQLServer', () => {
         });
 
         expect(result.data.hello).toEqual('Hello world!');
+      });
+
+      it('can resolve a custom query, that returns an array', async () => {
+        Parse.Cloud.define('helloArray', async () => {
+          return ['Hello', 'world!'];
+        });
+
+        const result = await apolloClient.query({
+          query: gql`
+            query HelloArray {
+              helloArray
+            }
+          `,
+        });
+
+        expect(result.data.helloArray).toEqual(['Hello', 'world!']);
+      });
+
+      fit('can resolve a custom query, that returns an array', async () => {
+        const schemaController = await parseServer.config.databaseController.loadSchema();
+
+        await schemaController.addClassIfNotExists('SuperCar', {
+          engine: { type: 'String' },
+          doors: { type: 'Number' },
+          price: { type: 'String' },
+          mileage: { type: 'Number' },
+          gears: { type: 'Array' },
+        });
+
+        await new Parse.Object('SuperCar').save({
+          engine: 'petrol',
+          doors: 3,
+          price: '£7500',
+          mileage: 0,
+          gears: ['1', '2', '3', '4'],
+        });
+
+        await new Parse.Object('SuperCar').save({
+          engine: 'petrol',
+          doors: 3,
+          price: '£7500',
+          mileage: 10000,
+          gears: ['1', '2', '3', '4', '5'],
+        });
+
+        await Promise.all([
+          parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
+          parseGraphQLServer.parseGraphQLSchema.schemaCache.clear(),
+        ]);
+
+        Parse.Cloud.define('arrayOfSuperCar', async () => {
+          const superCars = await new Parse.Query('SuperCar').find({ useMasterKey: true });
+          return superCars;
+        });
+        const result = await apolloClient.query({
+          query: gql`
+            query FindSuperCar {
+              arrayOfSuperCar {
+                objectId
+                gears {
+                  ... on Element {
+                    value
+                  }
+                }
+              }
+            }
+          `,
+        });
+        expect(result.data.superCars.gears[2].value).toEqual('3');
       });
 
       it('can resolve a custom query using function name set by "to" argument', async () => {
