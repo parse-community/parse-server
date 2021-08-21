@@ -1,7 +1,12 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.1...master)
+
+### 4.10.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.0...4.10.1)
+
+- Updated to Parse 3.3.0 and other security fixes (Manuel Trezza) [#7508](https://github.com/parse-community/parse-server/pull/7508)
 
 ### 4.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.2...4.10.0)
