@@ -24,7 +24,7 @@
     "@graphql-tools/stitch": "6.2.4",
     "@graphql-tools/utils": "6.2.4",
     "@parse/fs-files-adapter": "1.2.0",
-    "@parse/push-adapter": "3.4.1",
+    "@parse/push-adapter": "3.4.0",
     "@parse/s3-files-adapter": "1.6.2",
     "@parse/simple-mailgun-adapter": "1.1.0",
     "apollo-server-express": "2.19.0",
@@ -41,12 +41,12 @@
     "graphql-upload": "11.0.0",
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
-    "jwks-rsa": "1.12.3",
+    "jwks-rsa": "1.11.0",
     "ldapjs": "2.2.2",
     "lodash": "4.17.21",
     "lru-cache": "5.1.1",
     "mime": "2.4.6",
-    "mongodb": "3.6.11",
+    "mongodb": "3.6.3",
     "parse": "3.3.0",
     "pg-promise": "10.8.1",
     "pluralize": "8.0.0",
@@ -57,7 +57,7 @@
     "uuid": "8.3.1",
     "winston": "3.3.3",
     "winston-daily-rotate-file": "4.5.0",
-    "ws": "7.5.3"
+    "ws": "7.4.0"
   },
   "devDependencies": {
     "@babel/cli": "7.14.8",
