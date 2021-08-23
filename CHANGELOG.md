@@ -1,16 +1,20 @@
-## Parse Server Changelog
+# Parse Server Changelog
 
-### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.1...master)
+# 4.10.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.1...4.10.2)
 
-### 4.10.1
+## Fixes
+- Move graphql-tag from devDependencies to dependencies (Antonio Davi Macedo Coelho de Castro) [#7183](https://github.com/parse-community/parse-server/pull/7183)
+
+# 4.10.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.0...4.10.1)
 
+## Security Fixes
 - Updated to Parse JS SDK 3.3.0 and other security fixes (Manuel Trezza) [#7508](https://github.com/parse-community/parse-server/pull/7508)
 
 > ⚠️ This includes a security fix of the Parse JS SDK where `logIn` will default to `POST` instead of `GET` method. This may require changes in your deployment before you upgrade to this release, see the Parse JS SDK 3.0.0 [release notes](https://github.com/parse-community/Parse-SDK-JS/releases/tag/3.0.0).
 
-### 4.10.0
+# 4.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.2...4.10.0)
 
 *Versions >4.5.2 and <4.10.0 are skipped.*
@@ -26,16 +30,16 @@
 > 
 >**If you are using any of the affected versions, we urgently recommend to upgrade to version `4.10.0`.**
 
-### 4.5.2
+# 4.5.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...4.5.2)
 
-### Security Fixes
+## Security Fixes
 - SECURITY FIX: Fixes incorrect session property `authProvider: password` of anonymous users. When signing up an anonymous user, the session field `createdWith` indicates incorrectly that the session has been created using username and password with `authProvider: password`, instead of an anonymous sign-up with `authProvider: anonymous`. This fixes the issue by setting the correct `authProvider: anonymous` for future sign-ups of anonymous users. This fix does not fix incorrect `authProvider: password` for existing sessions of anonymous users. Consider this if your app logic depends on the `authProvider` field. (Corey Baker) [GHSA-23r4-5mxp-c7g5](https://github.com/parse-community/parse-server/security/advisories/GHSA-23r4-5mxp-c7g5)
 
-### 4.5.1
+# 4.5.1
 *This version was published by mistake and was deprecated.*
 
-### 4.5.0
+# 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
 
 __BREAKING CHANGES:__
