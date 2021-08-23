@@ -1,6 +1,6 @@
 # Deprecation Plan <!-- omit in toc -->
 
-The following is a list of deprecations, according to the [Deprecation Policy](https://github.com/parse-community/parse-server/blob/master/CONTRIBUTING.md#deprecation-policy). After a feature becomes deprecated, and giving developers time to adapt to the change, the deprecated feature will eventually be removed, leading to a breaking change. Developer feedback during the deprecation period may postpone the introduction of the breaking change.
+The following is a list of deprecations, according to the [Deprecation Policy](https://github.com/parse-community/parse-server/blob/master/CONTRIBUTING.md#deprecation-policy). After a feature becomes deprecated, and giving developers time to adapt to the change, the deprecated feature will eventually be removed, leading to a breaking change. Developer feedback during the deprecation period may postpone or even revoke the introduction of the breaking change.
 
 | Change                                          | Issue                                                                | Deprecation [ℹ️][i_deprecation] | Planned Removal [ℹ️][i_removal] | Status [ℹ️][i_status] | Notes |
 |-------------------------------------------------|----------------------------------------------------------------------|---------------------------------|---------------------------------|-----------------------|-------|
