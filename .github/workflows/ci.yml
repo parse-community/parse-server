@@ -32,7 +32,7 @@ jobs:
       - name: CI Self-Check
         run: npm run ci:check
   check-changelog:
-    name: Changelog Entry
+    name: Changelog
     timeout-minutes: 5
     runs-on: ubuntu-18.04
     steps:
