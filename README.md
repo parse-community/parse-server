@@ -742,11 +742,7 @@ Logs are also viewable in Parse Dashboard.
 
 # Deprecations
 
-The following Parse Server options and APIs are deprecated and will change in future versions. The "Deprecation" version indicates from when an item has been deprecated with runtime warnings. The "End-of-Life" version indicates when the deprecation period has ended and the breaking change came into effect. In rare cases, deprecations may be revoked without any breaking change coming into effect.
-
-| Type   | Item           | Deprecation | End-of-Life | Details                                 |
-|--------|----------------|-------------|-------------|-----------------------------------------|
-| Option | `directAccess` | `5.0.0`     | tbd         | Default changes from `false` to `true`. |
+See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
 
 # Live Query
 
