@@ -31,6 +31,13 @@ jobs:
         run: npm ci
       - name: CI Self-Check
         run: npm run ci:check
+  check-changelog:
+    name: Changelog
+    timeout-minutes: 5
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dangoslen/changelog-enforcer@v2
   check-lint:
      name: Lint
      timeout-minutes: 15
