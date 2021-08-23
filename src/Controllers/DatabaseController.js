@@ -1042,12 +1042,14 @@ class DatabaseController {
   // Modifies query so that it no longer has $relatedTo
   // Returns a promise that resolves when query is mutated
   reduceRelationKeys(className: string, query: any, queryOptions: any): ?Promise<void> {
-    if (query['$or']) {
-      return Promise.all(
-        query['$or'].map(aQuery => {
-          return this.reduceRelationKeys(className, aQuery, queryOptions);
-        })
-      );
+    for (const op of ['$or', '$and', '$not']) {
+      if (query[op]) {
+        return Promise.all(
+          query[op].map(aQuery => {
+            return this.reduceRelationKeys(className, aQuery, queryOptions);
+          })
+        );
+      }
     }
 
     var relatedTo = query['$relatedTo'];

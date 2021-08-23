@@ -142,6 +142,7 @@ ___
 - Fix LiveQuery server crash when using $all query operator on a missing object key (Jason Posthuma) [#7421](https://github.com/parse-community/parse-server/pull/7421)
 - Added runtime deprecation warnings (Manuel Trezza) [#7451](https://github.com/parse-community/parse-server/pull/7451)
 - Add ability to pass context of an object via a header, X-Parse-Cloud-Context, for Cloud Code triggers. The header addition allows client SDK's to add context without injecting _context in the body of JSON objects (Corey Baker) [#7437](https://github.com/parse-community/parse-server/pull/7437)
+- Fix reduceRelationKeys and add support for $and and $not queries
 
 ## 4.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.2...4.10.0)
