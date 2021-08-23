@@ -6,7 +6,9 @@
 ### 4.10.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.0...4.10.1)
 
-- Updated to Parse 3.3.0 and other security fixes (Manuel Trezza) [#7508](https://github.com/parse-community/parse-server/pull/7508)
+- Updated to Parse JS SDK 3.3.0 and other security fixes (Manuel Trezza) [#7508](https://github.com/parse-community/parse-server/pull/7508)
+
+> ⚠️ This includes a security fix of the Parse JS SDK where `logIn` will default to `POST` instead of `GET` method. This may require changes in your deployment before you upgrade to this release, see the Parse JS SDK 3.0.0 [release notes](https://github.com/parse-community/Parse-SDK-JS/releases/tag/3.0.0).
 
 ### 4.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.2...4.10.0)
