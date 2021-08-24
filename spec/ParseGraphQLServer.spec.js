@@ -10262,22 +10262,6 @@ describe('ParseGraphQLServer', () => {
       });
 
       it('can resolve a custom query, that returns an array', async () => {
-        Parse.Cloud.define('helloArray', async () => {
-          return ['Hello', 'world!'];
-        });
-
-        const result = await apolloClient.query({
-          query: gql`
-            query HelloArray {
-              helloArray
-            }
-          `,
-        });
-
-        expect(result.data.helloArray).toEqual(['Hello', 'world!']);
-      });
-
-      fit('can resolve a custom query, that returns an array', async () => {
         const schemaController = await parseServer.config.databaseController.loadSchema();
 
         await schemaController.addClassIfNotExists('SuperCar', {
