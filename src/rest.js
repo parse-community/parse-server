@@ -12,6 +12,7 @@ var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
+import Deprecator from './Deprecator/Deprecator';
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -26,6 +27,12 @@ function checkLiveQuery(className, config) {
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions, clientSDK, context) {
   enforceRoleSecurity('find', className, auth);
+  if (restOptions && restOptions.explain && !auth.isMaster) {
+    //throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Cannot explain');
+    Deprecator.logRuntimeDeprecation({
+      usage: 'The use of explain queries by non-master users',
+    });
+  }
   return triggers
     .maybeRunQueryTrigger(
       triggers.Types.beforeFind,
@@ -57,6 +64,12 @@ function find(config, auth, className, restWhere, restOptions, clientSDK, contex
 const get = (config, auth, className, objectId, restOptions, clientSDK, context) => {
   var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
+  if (restOptions && restOptions.explain && !auth.isMaster) {
+    //throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Cannot explain');
+    Deprecator.logRuntimeDeprecation({
+      usage: 'The use of explain queries by non-master users',
+    });
+  }
   return triggers
     .maybeRunQueryTrigger(
       triggers.Types.beforeFind,
