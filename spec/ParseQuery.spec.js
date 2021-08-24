@@ -5218,4 +5218,56 @@ describe('Parse.Query testing', () => {
     // Validate
     expect(result.executionStats).not.toBeUndefined();
   });
+
+  it('users cannot user explain unless nonMasterExplain is set', async () => {
+    // Create an object
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+    // Explicitly allow non-master explain
+    await reconfigureServer({ nonMasterExplain: true });
+    // Query TestObject with explain.
+    let query = new Parse.Query('TestObject');
+    query.equalTo('objectId', obj.id);
+    query.explain();
+    let result = await query.find(); // Must not throw
+    // Explicitly disallow non-master explain
+    await reconfigureServer({ nonMasterExplain: false });
+    try {
+      await query.find();
+      fail('users can use explain even if nonMasterExplain is set to false');
+    } catch (e) {
+      equal(e.code, Parse.Error.OPERATION_FORBIDDEN);
+      equal(e.message, 'Cannot explain');
+    }
+    try {
+      await new Parse.Query('TestObject').explain().get(obj.id);
+      fail('users can use explain even if nonMasterExplain is set to false');
+    } catch (e) {
+      equal(e.code, Parse.Error.OPERATION_FORBIDDEN);
+      equal(e.message, 'Cannot explain');
+    }
+    // Non-explain queries should still work, of course
+    query = new Parse.Query('TestObject');
+    query.equalTo('objectId', obj.id);
+    result = await query.find();
+    equal(result.length, 1);
+    equal(result[0].id, obj.id);
+  });
+  it('the master key can use explain no matter nonMasterExplain', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+    const queryWithExplain = new Parse.Query('TestObject');
+    queryWithExplain.equalTo('objectId', obj.id);
+    queryWithExplain.explain();
+    const queryWoExplain = new Parse.Query('TestObject');
+    queryWoExplain.equalTo('objectId', obj.id);
+    // Explicitly disallow non-master explain
+    await reconfigureServer({ nonMasterExplain: false });
+    await queryWithExplain.find({ useMasterKey: true }); // Must not throw
+    await queryWoExplain.find({ useMasterKey: true }); // Must not throw
+    // Explicitly allow non-master explain
+    await reconfigureServer({ nonMasterExplain: true });
+    await queryWithExplain.find({ useMasterKey: true }); // Must not throw
+    await queryWoExplain.find({ useMasterKey: true }); // Must not throw
+  });
 });

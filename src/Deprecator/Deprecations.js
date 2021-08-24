@@ -22,4 +22,9 @@ module.exports = [
     solution:
       "Additionally, the environment variable 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS' will be deprecated and renamed to 'PARSE_SERVER_DIRECT_ACCESS' in a future version; it is currently possible to use either one.",
   },
+  {
+    optionKey: 'nonMasterExplain',
+    envKey: 'PARSE_SERVER_NON_MASTER_EXPLAIN',
+    changeNewDefault: 'false',
+  },
 ];

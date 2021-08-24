@@ -277,6 +277,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  nonMasterExplain: {
+    env: 'PARSE_SERVER_NON_MASTER_EXPLAIN',
+    help: 'Allow non-master users to use the `explain` query parameter.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   objectIdSize: {
     env: 'PARSE_SERVER_OBJECT_ID_SIZE',
     help: "Sets the number of characters in generated object id's, default 10",

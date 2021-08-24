@@ -209,6 +209,7 @@ export interface ParseServerOptions {
   cluster: ?NumberOrBoolean;
   /* middleware for express server, can be string or function */
   middleware: ?((() => void) | string);
+
   /* Starts the liveQuery server */
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
@@ -239,6 +240,9 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
+  /* Allow non-master users to use the `explain` query parameter.
+  :DEFAULT: true */
+  nonMasterExplain: ?boolean;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
