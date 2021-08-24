@@ -8323,6 +8323,50 @@ describe('ParseGraphQLServer', () => {
           expect(result.company.name).toEqual('imACompany2');
         });
 
+        it('should support removing pointer on update', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
+          await company.save();
+
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
+          await country.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+          const {
+            data: {
+              updateCountry: { country: result },
+            },
+          } = await apolloClient.mutate({
+            mutation: gql`
+              mutation Update($id: ID!, $fields: UpdateCountryFieldsInput) {
+                updateCountry(input: { id: $id, fields: $fields }) {
+                  country {
+                    id
+                    objectId
+                    company {
+                      id
+                      objectId
+                      name
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              id: country.id,
+              fields: {
+                company: { unlink: true },
+              },
+            },
+          });
+
+          expect(result.id).toBeDefined();
+          expect(result.company).toBeNull();
+        });
+
         it_only_db('mongo')('should support relation and nested relation on create', async () => {
           const company = new Parse.Object('Company');
           company.set('name', 'imACompany1');

@@ -224,6 +224,9 @@ const transformers = {
         objectId,
       };
     }
+    if (value.unlink) {
+      return null;
+    }
   },
 };
 

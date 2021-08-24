@@ -199,6 +199,10 @@ const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLCla
           description: `Link an existing object from ${graphQLClassName} class. You can use either the global or the object id.`,
           type: GraphQLID,
         },
+        unlink: {
+          description: `Unlink an existing object from ${graphQLClassName} class.`,
+          type: GraphQLBoolean,
+        },
       };
       if (isCreateEnabled) {
         fields['createAndLink'] = {
