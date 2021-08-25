@@ -1,0 +1,10 @@
+name: Issue Bot
+on: [issues]
+jobs:
+  issue-bot:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Inspect Issue
+      uses: parse-community/parse-issue-bot@main
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
