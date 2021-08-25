@@ -41,7 +41,7 @@ assignees: ''
 - [ ] 🤩 I submitted a PR with a fix and a test case.
 - [ ] 🧐 I submitted a PR with a failing test case.
 
-###  Environment
+### Environment
 <!-- Be specific with versions, don't use "latest" or semver ranges like "~x.y.z" or "^x.y.z". -->
 
 Server
