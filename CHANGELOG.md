@@ -144,6 +144,7 @@ ___
 - Added runtime deprecation warnings (Manuel Trezza) [#7451](https://github.com/parse-community/parse-server/pull/7451)
 - Add ability to pass context of an object via a header, X-Parse-Cloud-Context, for Cloud Code triggers. The header addition allows client SDK's to add context without injecting _context in the body of JSON objects (Corey Baker) [#7437](https://github.com/parse-community/parse-server/pull/7437)
 - Add CI check to add changelog entry (Manuel Trezza) [#7512](https://github.com/parse-community/parse-server/pull/7512)
+- Allow a pointer to be removed using GraphQL (Chris Bland) [#7517](https://github.com/parse-community/parse-server/issues/7517)
 
 ## 4.10.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.1...4.10.2)
