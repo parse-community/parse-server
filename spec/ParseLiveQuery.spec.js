@@ -53,7 +53,7 @@ describe('ParseLiveQuery', function () {
     done();
   });
 
-  fit('can query/find and return object with incorrect withinKilometers', async done => {
+  it('can query/find and return object with incorrect withinKilometers', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
