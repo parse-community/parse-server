@@ -1,5 +1,8 @@
 name: Issue Bot
-on: [issues]
+on:
+  issues:
+  pull_request:
+    types: [opened, reopened, edited]
 jobs:
   issue-bot:
     runs-on: ubuntu-latest
