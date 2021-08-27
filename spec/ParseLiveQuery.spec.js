@@ -31,6 +31,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  /*
   it('can query/find and return object with correct withinKilometers', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -52,7 +53,7 @@ describe('ParseLiveQuery', function () {
     done();
   });
 
-  it('can query/find and return object with incorrect withinKilometers', async done => {
+  fit('can query/find and return object with incorrect withinKilometers', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -126,6 +127,7 @@ describe('ParseLiveQuery', function () {
     object.set({ location: secondPoint });
     await object.save();
   });
+  */
 
   it('can subscribe to query and return object with withinKilometers with last parameter on update', async done => {
     await reconfigureServer({
@@ -188,6 +190,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  /*
   it('can subscribe to query and return object on enter with simple boolean', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -268,6 +271,7 @@ describe('ParseLiveQuery', function () {
     object.set({ isActive: true });
     await object.save();
   });
+  */
 
   it('access user on onLiveQueryEvent disconnect', async done => {
     await reconfigureServer({
