@@ -30,17 +30,6 @@ assignees: ''
 
 ### Expected Outcome
 <!-- What outcome, for example query result, did you expect? -->
-
-### Failing Test Case / Pull Request
-<!--
-    Check one of the following boxes [x] if you added a PR and add the link.
-    See the contribution guide for how add a test cases:
-    https://github.com/parse-community/parse-server/blob/master/CONTRIBUTING.md
--->
-
-- [ ] 🤩 I submitted a PR with a fix and a test case.
-- [ ] 🧐 I submitted a PR with a failing test case.
-
 ### Environment
 <!-- Be specific with versions, don't use "latest" or semver ranges like "~x.y.z" or "^x.y.z". -->
 
