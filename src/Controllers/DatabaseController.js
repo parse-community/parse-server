@@ -13,6 +13,9 @@ import deepcopy from 'deepcopy';
 import logger from '../logger';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
+import type { LoadSchemaOptions } from './types';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
 
 function addWriteACL(query, acl) {
@@ -230,9 +233,6 @@ const filterSensitiveData = (
   return object;
 };
 
-import type { LoadSchemaOptions } from './types';
-import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
-
 // Runs an update on the database.
 // Returns a promise for an object with the new values for field
 // modifications that don't know their results ahead of time, like
@@ -398,9 +398,8 @@ class DatabaseController {
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
 
-  constructor(adapter: StorageAdapter, schemaCache: any) {
+  constructor(adapter: StorageAdapter) {
     this.adapter = adapter;
-    this.schemaCache = schemaCache;
     // We don't want a mutable this.schema, because then you could have
     // one request that uses different schemas for different parts of
     // it. Instead, use loadSchema to get a schema.
@@ -434,7 +433,7 @@ class DatabaseController {
     if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
-    this.schemaPromise = SchemaController.load(this.adapter, this.schemaCache, options);
+    this.schemaPromise = SchemaController.load(this.adapter, options);
     this.schemaPromise.then(
       () => delete this.schemaPromise,
       () => delete this.schemaPromise
@@ -916,7 +915,8 @@ class DatabaseController {
    */
   deleteEverything(fast: boolean = false): Promise<any> {
     this.schemaPromise = null;
-    return Promise.all([this.adapter.deleteAllClasses(fast), this.schemaCache.clear()]);
+    SchemaCache.clear();
+    return this.adapter.deleteAllClasses(fast);
   }
 
   // Returns a promise for a list of related ids given an owning id.
@@ -1325,8 +1325,12 @@ class DatabaseController {
   }
 
   deleteSchema(className: string): Promise<void> {
+    let schemaController;
     return this.loadSchema({ clearCache: true })
-      .then(schemaController => schemaController.getOneSchema(className, true))
+      .then(s => {
+        schemaController = s;
+        return schemaController.getOneSchema(className, true);
+      })
       .catch(error => {
         if (error === undefined) {
           return { fields: {} };
@@ -1356,13 +1360,91 @@ class DatabaseController {
                   this.adapter.deleteClass(joinTableName(className, name))
                 )
               ).then(() => {
-                return;
+                SchemaCache.del(className);
+                return schemaController.reloadData();
               });
             } else {
               return Promise.resolve();
             }
           });
       });
+  }
+
+  // This helps to create intermediate objects for simpler comparison of
+  // key value pairs used in query objects. Each key value pair will represented
+  // in a similar way to json
+  objectToEntriesStrings(query: any): Array<string> {
+    return Object.entries(query).map(a => a.map(s => JSON.stringify(s)).join(':'));
+  }
+
+  // Naive logic reducer for OR operations meant to be used only for pointer permissions.
+  reduceOrOperation(query: { $or: Array<any> }): any {
+    if (!query.$or) {
+      return query;
+    }
+    const queries = query.$or.map(q => this.objectToEntriesStrings(q));
+    let repeat = false;
+    do {
+      repeat = false;
+      for (let i = 0; i < queries.length - 1; i++) {
+        for (let j = i + 1; j < queries.length; j++) {
+          const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+          const foundEntries = queries[shorter].reduce(
+            (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
+            0
+          );
+          const shorterEntries = queries[shorter].length;
+          if (foundEntries === shorterEntries) {
+            // If the shorter query is completely contained in the longer one, we can strike
+            // out the longer query.
+            query.$or.splice(longer, 1);
+            queries.splice(longer, 1);
+            repeat = true;
+            break;
+          }
+        }
+      }
+    } while (repeat);
+    if (query.$or.length === 1) {
+      query = { ...query, ...query.$or[0] };
+      delete query.$or;
+    }
+    return query;
+  }
+
+  // Naive logic reducer for AND operations meant to be used only for pointer permissions.
+  reduceAndOperation(query: { $and: Array<any> }): any {
+    if (!query.$and) {
+      return query;
+    }
+    const queries = query.$and.map(q => this.objectToEntriesStrings(q));
+    let repeat = false;
+    do {
+      repeat = false;
+      for (let i = 0; i < queries.length - 1; i++) {
+        for (let j = i + 1; j < queries.length; j++) {
+          const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+          const foundEntries = queries[shorter].reduce(
+            (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
+            0
+          );
+          const shorterEntries = queries[shorter].length;
+          if (foundEntries === shorterEntries) {
+            // If the shorter query is completely contained in the longer one, we can strike
+            // out the shorter query.
+            query.$and.splice(shorter, 1);
+            queries.splice(shorter, 1);
+            repeat = true;
+            break;
+          }
+        }
+      }
+    } while (repeat);
+    if (query.$and.length === 1) {
+      query = { ...query, ...query.$and[0] };
+      delete query.$and;
+    }
+    return query;
   }
 
   // Constraints query using CLP's pointer permissions (PP) if any.
@@ -1448,13 +1530,13 @@ class DatabaseController {
         }
         // if we already have a constraint on the key, use the $and
         if (Object.prototype.hasOwnProperty.call(query, key)) {
-          return { $and: [queryClause, query] };
+          return this.reduceAndOperation({ $and: [queryClause, query] });
         }
         // otherwise just add the constaint
         return Object.assign({}, query, queryClause);
       });
 
-      return queries.length === 1 ? queries[0] : { $or: queries };
+      return queries.length === 1 ? queries[0] : this.reduceOrOperation({ $or: queries });
     } else {
       return query;
     }
@@ -1589,7 +1671,10 @@ class DatabaseController {
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
   // have a Parse app without it having a _User collection.
-  performInitialization() {
+  async performInitialization() {
+    await this.adapter.performInitialization({
+      VolatileClassesSchemas: SchemaController.VolatileClassesSchemas,
+    });
     const requiredUserFields = {
       fields: {
         ...SchemaController.defaultColumns._Default,
@@ -1608,113 +1693,64 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
+    await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
+    if (this.adapter instanceof MongoStorageAdapter) {
+      await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
+    }
 
-    const userClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_User'));
-    const roleClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
-    const idempotencyClassPromise =
-      this.adapter instanceof MongoStorageAdapter
-        ? this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'))
-        : Promise.resolve();
+    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for usernames: ', error);
+      throw error;
+    });
 
-    const usernameUniqueness = userClassPromise
-      .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
       .catch(error => {
-        logger.warn('Unable to ensure uniqueness for usernames: ', error);
+        logger.warn('Unable to create case insensitive username index: ', error);
         throw error;
       });
-
-    const usernameCaseInsensitiveIndex = userClassPromise
-      .then(() =>
-        this.adapter.ensureIndex(
-          '_User',
-          requiredUserFields,
-          ['username'],
-          'case_insensitive_username',
-          true
-        )
-      )
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive username index: ', error);
         throw error;
       });
 
-    const emailUniqueness = userClassPromise
-      .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
-        throw error;
-      });
+    await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
+      throw error;
+    });
 
-    const emailCaseInsensitiveIndex = userClassPromise
-      .then(() =>
-        this.adapter.ensureIndex(
-          '_User',
-          requiredUserFields,
-          ['email'],
-          'case_insensitive_email',
-          true
-        )
-      )
+    await this.adapter
+      .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive email index: ', error);
         throw error;
       });
 
-    const roleUniqueness = roleClassPromise
-      .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for role name: ', error);
-        throw error;
-      });
-
-    const idempotencyRequestIdIndex =
-      this.adapter instanceof MongoStorageAdapter
-        ? idempotencyClassPromise
-          .then(() =>
-            this.adapter.ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
-          )
-          .catch(error => {
-            logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
-            throw error;
-          })
-        : Promise.resolve();
-
-    const idempotencyExpireIndex =
-      this.adapter instanceof MongoStorageAdapter
-        ? idempotencyClassPromise
-          .then(() =>
-            this.adapter.ensureIndex(
-              '_Idempotency',
-              requiredIdempotencyFields,
-              ['expire'],
-              'ttl',
-              false,
-              { ttl: 0 }
-            )
-          )
-          .catch(error => {
-            logger.warn('Unable to create TTL index for idempotency expire date: ', error);
-            throw error;
-          })
-        : Promise.resolve();
-
-    const indexPromise = this.adapter.updateSchemaWithIndexes();
-
-    // Create tables for volatile classes
-    const adapterInit = this.adapter.performInitialization({
-      VolatileClassesSchemas: SchemaController.VolatileClassesSchemas,
+    await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
+      logger.warn('Unable to ensure uniqueness for role name: ', error);
+      throw error;
     });
-    return Promise.all([
-      usernameUniqueness,
-      usernameCaseInsensitiveIndex,
-      emailUniqueness,
-      emailCaseInsensitiveIndex,
-      roleUniqueness,
-      idempotencyRequestIdIndex,
-      idempotencyExpireIndex,
-      adapterInit,
-      indexPromise,
-    ]);
+    if (this.adapter instanceof MongoStorageAdapter) {
+      await this.adapter
+        .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
+        .catch(error => {
+          logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
+          throw error;
+        });
+
+      await this.adapter
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
+          ttl: 0,
+        })
+        .catch(error => {
+          logger.warn('Unable to create TTL index for idempotency expire date: ', error);
+          throw error;
+        });
+    }
+    await this.adapter.updateSchemaWithIndexes();
   }
 
   static _validateQuery: any => void;

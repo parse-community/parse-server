@@ -1,12 +1,12 @@
 const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
 const FilesAdapter = require('@parse/fs-files-adapter').default;
-const S3Adapter = require('@parse/s3-files-adapter').default;
 const ParsePushAdapter = require('@parse/push-adapter').default;
+const MockFilesAdapter = require('mock-files-adapter');
 const Config = require('../lib/Config');
 
 describe('AdapterLoader', () => {
   it('should instantiate an adapter from string in object', done => {
-    const adapterPath = require('path').resolve('./spec/MockAdapter');
+    const adapterPath = require('path').resolve('./spec/support/MockAdapter');
 
     const adapter = loadAdapter({
       adapter: adapterPath,
@@ -23,7 +23,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should instantiate an adapter from string', done => {
-    const adapterPath = require('path').resolve('./spec/MockAdapter');
+    const adapterPath = require('path').resolve('./spec/support/MockAdapter');
     const adapter = loadAdapter(adapterPath);
 
     expect(adapter instanceof Object).toBe(true);
@@ -119,7 +119,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should load custom push adapter from string (#3544)', done => {
-    const adapterPath = require('path').resolve('./spec/MockPushAdapter');
+    const adapterPath = require('path').resolve('./spec/support/MockPushAdapter');
     const options = {
       ios: {
         bundleId: 'bundle.id',
@@ -142,12 +142,12 @@ describe('AdapterLoader', () => {
     }).not.toThrow();
   });
 
-  it('should load S3Adapter from direct passing', done => {
+  it('should load file adapter from direct passing', done => {
     spyOn(console, 'warn').and.callFake(() => {});
-    const s3Adapter = new S3Adapter('key', 'secret', 'bucket');
+    const mockFilesAdapter = new MockFilesAdapter('key', 'secret', 'bucket');
     expect(() => {
-      const adapter = loadAdapter(s3Adapter, FilesAdapter);
-      expect(adapter).toBe(s3Adapter);
+      const adapter = loadAdapter(mockFilesAdapter, FilesAdapter);
+      expect(adapter).toBe(mockFilesAdapter);
     }).not.toThrow();
     done();
   });

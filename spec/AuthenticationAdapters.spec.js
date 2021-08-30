@@ -5,7 +5,7 @@ const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
   gpgames: { playerId: 'userId' },
-  instagram: { data: { id: 'userId' } },
+  instagram: { id: 'userId' },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
   janraincapture: { stat: 'ok', result: 'userId' },
   line: { userId: 'userId' },
@@ -492,7 +492,15 @@ describe('instagram auth adapter', () => {
       'https://graph.instagram.com/me?fields=id&access_token=the_token'
     );
   });
-
+  it('response object without data child', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'userId' });
+    });
+    await instagram.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://graph.instagram.com/me?fields=id&access_token=the_token'
+    );
+  });
   it('should pass in api url', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
       return Promise.resolve({ data: { id: 'userId' } });
@@ -1746,5 +1754,389 @@ describe('microsoft graph auth adapter', () => {
       expect(err.message).toBe('Microsoft Graph auth is invalid for this user.');
       done();
     });
+  });
+});
+
+describe('facebook limited auth adapter', () => {
+  const facebook = require('../lib/Adapters/Auth/facebook');
+  const jwt = require('jsonwebtoken');
+  const util = require('util');
+
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as string) should throw error with missing id_token', async () => {
+    try {
+      await facebook.validateAuthData({}, { clientId: 'secret' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
+
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as array) should throw error with missing id_token', async () => {
+    try {
+      await facebook.validateAuthData({}, { clientId: ['secret'] });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
+
+  it('should not decode invalid id_token', async () => {
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('should throw error if public key used to encode token is not available', async () => {
+    const fakeDecodedToken = {
+      header: { kid: '789', alg: 'RS256' },
+    };
+    try {
+      spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
+      );
+    }
+  });
+
+  it('should use algorithm from key header to verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+  });
+
+  it('should not verify invalid id_token', async () => {
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt malformed');
+    }
+  });
+
+  it('(using client id as array) should not verify invalid id_token', async () => {
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('(using client id as string) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as array) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as array with multiple items) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret', 'secret 123'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as array) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: ['INSERT CLIENT ID HERE'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('should throw error with invalid user id', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'invalid user',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('should throw error with with invalid user id', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'invalid_client_id',
+      sub: 'a_different_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
   });
 });

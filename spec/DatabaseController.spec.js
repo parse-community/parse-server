@@ -236,6 +236,57 @@ describe('DatabaseController', function () {
       done();
     });
 
+    it('should not return a $or operation if the query involves one of the two fields also used as array/pointer permissions', done => {
+      const clp = buildCLP(['users', 'user']);
+      const query = { a: 'b', user: createUserPointer(USER_ID) };
+      schemaController.testPermissionsForClassName
+        .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
+        .and.returnValue(false);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'user')
+        .and.returnValue({ type: 'Pointer' });
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'users')
+        .and.returnValue({ type: 'Array' });
+      const output = databaseController.addPointerPermissions(
+        schemaController,
+        CLASS_NAME,
+        OPERATION,
+        query,
+        ACL_GROUP
+      );
+      expect(output).toEqual({ ...query, user: createUserPointer(USER_ID) });
+      done();
+    });
+
+    it('should not return a $or operation if the query involves one of the fields also used as array/pointer permissions', done => {
+      const clp = buildCLP(['user', 'users', 'userObject']);
+      const query = { a: 'b', user: createUserPointer(USER_ID) };
+      schemaController.testPermissionsForClassName
+        .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
+        .and.returnValue(false);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'user')
+        .and.returnValue({ type: 'Pointer' });
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'users')
+        .and.returnValue({ type: 'Array' });
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'userObject')
+        .and.returnValue({ type: 'Object' });
+      const output = databaseController.addPointerPermissions(
+        schemaController,
+        CLASS_NAME,
+        OPERATION,
+        query,
+        ACL_GROUP
+      );
+      expect(output).toEqual({ ...query, user: createUserPointer(USER_ID) });
+      done();
+    });
+
     it('should throw an error if for some unexpected reason the property specified in the CLP is neither a pointer nor an array', done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
@@ -262,6 +313,51 @@ describe('DatabaseController', function () {
         )
       );
 
+      done();
+    });
+  });
+
+  describe('reduceOperations', function () {
+    const databaseController = new DatabaseController();
+
+    it('objectToEntriesStrings', done => {
+      const output = databaseController.objectToEntriesStrings({ a: 1, b: 2, c: 3 });
+      expect(output).toEqual(['"a":1', '"b":2', '"c":3']);
+      done();
+    });
+
+    it('reduceOrOperation', done => {
+      expect(databaseController.reduceOrOperation({ a: 1 })).toEqual({ a: 1 });
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { b: 2 }] })).toEqual({
+        $or: [{ a: 1 }, { b: 2 }],
+      });
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 2 }] })).toEqual({
+        $or: [{ a: 1 }, { a: 2 }],
+      });
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 1 }] })).toEqual({ a: 1 });
+      expect(
+        databaseController.reduceOrOperation({ $or: [{ a: 1, b: 2, c: 3 }, { a: 1 }] })
+      ).toEqual({ a: 1 });
+      expect(
+        databaseController.reduceOrOperation({ $or: [{ b: 2 }, { a: 1, b: 2, c: 3 }] })
+      ).toEqual({ b: 2 });
+      done();
+    });
+
+    it('reduceAndOperation', done => {
+      expect(databaseController.reduceAndOperation({ a: 1 })).toEqual({ a: 1 });
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { b: 2 }] })).toEqual({
+        $and: [{ a: 1 }, { b: 2 }],
+      });
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 2 }] })).toEqual({
+        $and: [{ a: 1 }, { a: 2 }],
+      });
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 1 }] })).toEqual({
+        a: 1,
+      });
+      expect(
+        databaseController.reduceAndOperation({ $and: [{ a: 1, b: 2, c: 3 }, { b: 2 }] })
+      ).toEqual({ a: 1, b: 2, c: 3 });
       done();
     });
   });

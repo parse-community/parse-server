@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
 import { Command } from 'commander';
 import path from 'path';
+import Deprecator from '../../Deprecator/Deprecator';
+
 let _definitions;
 let _reverseDefinitions;
 let _defaults;
@@ -40,7 +42,7 @@ Command.prototype.loadDefinitions = function (definitions) {
   }, {});
 
   _defaults = Object.keys(definitions).reduce((defs, opt) => {
-    if (_definitions[opt].default) {
+    if (_definitions[opt].default !== undefined) {
       defs[opt] = _definitions[opt].default;
     }
     return defs;
@@ -119,6 +121,8 @@ Command.prototype.parse = function (args, env) {
   this.setValuesIfNeeded(envOptions);
   // Load from file to override
   this.setValuesIfNeeded(fromFile);
+  // Scan for deprecated Parse Server options
+  Deprecator.scanParseServerOptions(this);
   // Last set the defaults
   this.setValuesIfNeeded(_defaults);
 };
