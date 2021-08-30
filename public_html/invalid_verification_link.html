@@ -50,8 +50,15 @@
       var username = getUrlParameter("username");
       document.getElementById("usernameField").value = username;
 
+      var publicServerUrl = '';
+      var publicServerMatch = window.location.pathname.match(/^(\/.+)\/apps\/invalid_verification_link.html$/);
+
+      if (publicServerMatch && publicServerMatch.length === 2) {
+        publicServerUrl = publicServerMatch[1];
+      }
+
       var appId = getUrlParameter("appId");
-      document.getElementById("resendForm").action = '/apps/' + appId + '/resend_verification_email'
+      document.getElementById("resendForm").action = publicServerUrl + '/apps/' + appId + '/resend_verification_email'
     }
 
   </script>
