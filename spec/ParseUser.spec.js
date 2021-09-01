@@ -3859,7 +3859,7 @@ describe('Parse.User testing', () => {
       })
       .then(done.fail)
       .catch(err => {
-        expect(err.data.error).toEqual('password is required.');
+        expect(err.data.error).toEqual('Password is required.');
         done();
       });
   });

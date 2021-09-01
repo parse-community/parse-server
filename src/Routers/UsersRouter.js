@@ -76,7 +76,7 @@ export class UsersRouter extends ClassesRouter {
         throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
       }
       if (!password) {
-        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
+        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'Password is required.');
       }
       if (
         typeof password !== 'string' ||

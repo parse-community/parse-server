@@ -1258,7 +1258,7 @@ describe('schemas', () => {
       await obj.save();
       fail('should fail');
     } catch (e) {
-      expect(e.message).toEqual('foo2 is required');
+      expect(e.message).toEqual('A value for the foo2 is required to save/update the object.');
     }
   });
 

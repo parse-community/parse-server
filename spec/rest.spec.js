@@ -866,7 +866,7 @@ describe('read-only masterKey', () => {
     }).toThrow(
       new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        'Cannot perform a write operation when using readOnlyMasterKey'
+        'Cannot perform a write operation when using readOnlyMasterKey.'
       )
     );
   });
