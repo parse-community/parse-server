@@ -14,7 +14,7 @@ var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
-import { ErrorMessage } from './Constants/message';
+import { ErrorMessage } from './Errors/message';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.

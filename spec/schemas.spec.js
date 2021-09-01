@@ -5,6 +5,7 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
+const { ErrorMessage } = require('./Errors/message');
 
 let config;
 
@@ -1072,7 +1073,7 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual('newRequiredField is required');
+          expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('newRequiredField'));
         }
         obj.set('newRequiredField', 'some value');
         await obj.save();
@@ -1087,7 +1088,7 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual('newRequiredField is required');
+          expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('newRequiredField'));
         }
         obj.unset('newRequiredField');
         try {
@@ -1095,7 +1096,7 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual('newRequiredField is required');
+          expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('newRequiredField'));
         }
         obj.set('newRequiredField', 'some value2');
         await obj.save();
@@ -1110,7 +1111,9 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual('newRequiredFieldWithDefaultValue is required');
+          expect(e.message).toEqual(
+            ErrorMessage.FIELD_IS_REQUIRED('newRequiredFieldWithDefaultValue')
+          );
         }
         obj.set('newRequiredFieldWithDefaultValue', '');
         try {
@@ -1118,7 +1121,9 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual('newRequiredFieldWithDefaultValue is required');
+          expect(e.message).toEqual(
+            ErrorMessage.FIELD_IS_REQUIRED('newRequiredFieldWithDefaultValue')
+          );
         }
         obj.set('newRequiredFieldWithDefaultValue', 'some value2');
         obj.set('newNotRequiredField', '');
@@ -1229,7 +1234,7 @@ describe('schemas', () => {
       await obj.save();
       fail('should fail');
     } catch (e) {
-      expect(e.message).toEqual('foo2 is required');
+      expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('foo2'));
     }
 
     Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
