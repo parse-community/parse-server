@@ -255,11 +255,10 @@ export class UsersRouter extends ClassesRouter {
     } catch (error) {
       const response = await maybeRunTrigger(
         TriggerTypes.onLoginFailed,
-        null,
+        req.auth,
         Parse.User.fromJSON({ className: '_User' }),
         null,
-        req.config,
-        null
+        req.config
       );
       if (response) throw response;
       throw error;
