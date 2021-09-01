@@ -238,7 +238,8 @@ export function getRequestObject(
   parseObject,
   originalParseObject,
   config,
-  context
+  context,
+  reason
 ) {
   const request = {
     triggerName: triggerType,
@@ -247,6 +248,7 @@ export function getRequestObject(
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
+    reason: reason,
   };
 
   if (originalParseObject) {
@@ -811,7 +813,8 @@ export function maybeRunTrigger(
   parseObject,
   originalParseObject,
   config,
-  context
+  context,
+  reason
 ) {
   if (!parseObject) {
     return Promise.resolve({});
@@ -825,7 +828,8 @@ export function maybeRunTrigger(
       parseObject,
       originalParseObject,
       config,
-      context
+      context,
+      reason
     );
     var { success, error } = getResponseObject(
       request,

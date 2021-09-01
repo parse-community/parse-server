@@ -258,7 +258,9 @@ export class UsersRouter extends ClassesRouter {
         req.auth,
         Parse.User.fromJSON({ className: '_User' }),
         null,
-        req.config
+        req.config,
+        null,
+        error
       );
       if (response) throw response;
       throw error;
