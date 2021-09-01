@@ -3,6 +3,7 @@ import Parse from 'parse/node';
 import { logger } from './logger';
 
 export const Types = {
+  onLoginFailed: 'onLoginFailed',
   beforeLogin: 'beforeLogin',
   afterLogin: 'afterLogin',
   afterLogout: 'afterLogout',
@@ -67,6 +68,9 @@ function validateClassNameForTriggers(className, type) {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
     throw 'Only the afterLogout trigger is allowed for the _Session class.';
+  }
+  if (type === Types.onLoginFailed && className !== '_User') {
+    throw 'Only the _User class is allowed for the onLoginFailed trigger';
   }
   return className;
 }
