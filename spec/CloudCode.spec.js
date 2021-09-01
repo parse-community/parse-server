@@ -2766,7 +2766,7 @@ describe('onLoginFailed hook', () => {
         expect(request.object.get('error')).toBeDefined();
       });
       await Parse.User.signUp('tupac', 'shakur');
-      await Parse.User.logIn('tupac1', 'shakur2');
+      await Parse.User.logIn('ali', 'öksüz');
       expect(hit).toBe(1);
       done();
     } catch (err) {
