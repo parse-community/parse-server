@@ -253,14 +253,15 @@ export class UsersRouter extends ClassesRouter {
 
       return { response: user };
     } catch (error) {
+      const username = req.body.username || req.query.username;
+      const email = req.body.email || req.query.email;
       const response = await maybeRunTrigger(
         TriggerTypes.onLoginFailed,
         req.auth,
-        Parse.User.fromJSON({ className: '_User' }),
+        Parse.User.fromJSON({ className: '_User', username: username, email: email, error: error }),
         null,
         req.config,
-        null,
-        error
+        null
       );
       if (response) throw response;
       throw error;
