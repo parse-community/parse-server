@@ -326,7 +326,7 @@ ParseCloud.onLoginFailed = function (handler) {
     className = getClassName(handler);
     handler = arguments[1];
   }
-  triggers.addTrigger(triggers.Types.afterLogout, className, handler, Parse.applicationId);
+  triggers.addTrigger(triggers.Types.onLoginFailed, className, handler, Parse.applicationId);
 };
 
 /**
