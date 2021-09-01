@@ -5,7 +5,6 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
-const { ErrorMessage } = require('../src/Errors/message');
 
 let config;
 
@@ -1073,7 +1072,9 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('newRequiredField'));
+          expect(e.message).toEqual(
+            'A value for the newRequiredField is required to save/update the object.'
+          );
         }
         obj.set('newRequiredField', 'some value');
         await obj.save();
@@ -1088,7 +1089,9 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('newRequiredField'));
+          expect(e.message).toEqual(
+            'A value for the newRequiredField is required to save/update the object.'
+          );
         }
         obj.unset('newRequiredField');
         try {
@@ -1096,7 +1099,9 @@ describe('schemas', () => {
           fail('Should fail');
         } catch (e) {
           expect(e.code).toEqual(142);
-          expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('newRequiredField'));
+          expect(e.message).toEqual(
+            'A value for the newRequiredField is required to save/update the object.'
+          );
         }
         obj.set('newRequiredField', 'some value2');
         await obj.save();
@@ -1112,7 +1117,7 @@ describe('schemas', () => {
         } catch (e) {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual(
-            ErrorMessage.FIELD_IS_REQUIRED('newRequiredFieldWithDefaultValue')
+            'A value for the newRequiredFieldWithDefaultValue is required to save/update the object.'
           );
         }
         obj.set('newRequiredFieldWithDefaultValue', '');
@@ -1122,7 +1127,7 @@ describe('schemas', () => {
         } catch (e) {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual(
-            ErrorMessage.FIELD_IS_REQUIRED('newRequiredFieldWithDefaultValue')
+            'A value for the newRequiredFieldWithDefaultValue is required to save/update the object.'
           );
         }
         obj.set('newRequiredFieldWithDefaultValue', 'some value2');
@@ -1234,7 +1239,7 @@ describe('schemas', () => {
       await obj.save();
       fail('should fail');
     } catch (e) {
-      expect(e.message).toEqual(ErrorMessage.FIELD_IS_REQUIRED('foo2'));
+      expect(e.message).toEqual('A value for the foo2 is required to save/update the object.');
     }
 
     Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {

@@ -7,7 +7,6 @@ const Config = require('../lib/Config');
 const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const request = require('../lib/request');
-const { ErrorMessage } = require('../src/Errors/message');
 
 let config;
 let database;
@@ -1233,7 +1232,7 @@ describe('Installations', () => {
           },
           err => {
             expect(err.code).toBe(136);
-            expect(err.message).toBe(ErrorMessage.NO_OP('installationId'));
+            expect(err.message).toBe('The installationId can not be changed in this operation');
             done();
           }
         );

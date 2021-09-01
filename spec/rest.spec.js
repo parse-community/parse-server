@@ -6,7 +6,6 @@ const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const RestWrite = require('../lib/RestWrite');
 const request = require('../lib/request');
-const { ErrorMessage } = require('../src/Errors/message');
 
 let config;
 let database;
@@ -78,7 +77,7 @@ describe('rest create', () => {
       objectId: '',
     };
 
-    const err = ErrorMessage.MISSING_OBJECT_ID();
+    const err = 'objectId must not be empty, null or undefined.';
 
     expect(() => rest.create(config, auth.nobody(config), 'MyClass', objIdEmpty)).toThrowError(err);
 
