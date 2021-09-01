@@ -6,7 +6,7 @@ const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const RestWrite = require('../lib/RestWrite');
 const request = require('../lib/request');
-const { ErrorMessage } = require('./Errors/message');
+const { ErrorMessage } = require('../src/Errors/message');
 
 let config;
 let database;

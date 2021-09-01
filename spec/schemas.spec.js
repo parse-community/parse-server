@@ -5,7 +5,7 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
-const { ErrorMessage } = require('./Errors/message');
+const { ErrorMessage } = require('../src/Errors/message');
 
 let config;
 
