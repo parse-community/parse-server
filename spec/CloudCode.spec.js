@@ -2771,6 +2771,7 @@ describe('onLoginFailed hook', () => {
       done();
     } catch (err) {
       console.log('Error: ', err);
+      done();
     }
   });
 });
