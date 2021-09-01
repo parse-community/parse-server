@@ -2762,7 +2762,7 @@ describe('onLoginFailed hook', () => {
     let hit = 0;
     Parse.Cloud.onLoginFailed(request => {
       hit++;
-      expect(request.object.error).toBeDefined();
+      expect(request.object.get('error')).toBeDefined();
     });
     await Parse.User.signUp('tupac', 'shakur');
     await Parse.User.logIn('tupac1', 'shakur2');
