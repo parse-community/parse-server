@@ -2759,15 +2759,19 @@ describe('afterFind hooks', () => {
 
 describe('onLoginFailed hook', () => {
   it('should run onLoginFailed trigger after failed login attempt', async done => {
-    let hit = 0;
-    Parse.Cloud.onLoginFailed(request => {
-      hit++;
-      expect(request.object.get('error')).toBeDefined();
-    });
-    await Parse.User.signUp('tupac', 'shakur');
-    await Parse.User.logIn('tupac1', 'shakur2');
-    expect(hit).toBe(1);
-    done();
+    try {
+      let hit = 0;
+      Parse.Cloud.onLoginFailed(request => {
+        hit++;
+        expect(request.object.get('error')).toBeDefined();
+      });
+      await Parse.User.signUp('tupac', 'shakur');
+      await Parse.User.logIn('tupac1', 'shakur2');
+      expect(hit).toBe(1);
+      done();
+    } catch (err) {
+      console.log('Error: ', err);
+    }
   });
 });
 
