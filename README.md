@@ -76,6 +76,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
       - [Reserved Keys](#reserved-keys)
       - [Parameters](#parameters-1)
   - [Logging](#logging)
+- [Best Practice](#best-practice)
 - [Deprecations](#deprecations)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
@@ -739,6 +740,10 @@ Logs are also viewable in Parse Dashboard.
 **Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+# Best Practice
+
+See the [Best Practice](https://github.com/parse-community/parse-server/blob/master/BEST_PRACTICE.md) page for security considerations and common server and database optimizations.
 
 # Deprecations
 
