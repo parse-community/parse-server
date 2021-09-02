@@ -37,6 +37,54 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it_only_db('mongo')('gracefully handles invalid explain values', async () => {
+    // Note that anything that is not truthy (like 0) does not cause an exception, as they get swallowed up by ClassesRouter::optionsFromBody
+    const values = [1, 'yolo', { a: 1 }, [1, 2, 3]];
+    for (const value of values) {
+      try {
+        await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+          json: true,
+          headers: masterKeyHeaders,
+        });
+        fail('request did not throw');
+      } catch (e) {
+        // Expect that Parse Server did not crash
+        expect(e.code).not.toEqual('ECONNRESET');
+        // Expect that Parse Server validates the explain value and does not crash;
+        // see https://jira.mongodb.org/browse/NODE-3463
+        equal(e.data.code, Parse.Error.INVALID_QUERY);
+        equal(e.data.error, 'Invalid value for explain');
+      }
+      // get queries (of the form '/classes/:className/:objectId' cannot have the explain key, see ClassesRouter.js)
+      // so it is enough that we test find queries
+    }
+  });
+
+  it_only_db('mongo')('supports valid explain values', async () => {
+    const values = [
+      false,
+      true,
+      'queryPlanner',
+      'executionStats',
+      'allPlansExecution',
+      // 'queryPlannerExtended' is excluded as it only applies to MongoDB Data Lake which is currently not available in our CI environment
+    ];
+    for (const value of values) {
+      const response = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+        json: true,
+        headers: masterKeyHeaders,
+      });
+      expect(response.status).toBe(200);
+      if (value) {
+        expect(response.data.results.ok).toBe(1);
+      }
+    }
+  });
+
   it('searching for null', function (done) {
     const baz = new TestObject({ foo: null });
     const qux = new TestObject({ foo: 'qux' });
