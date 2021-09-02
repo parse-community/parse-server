@@ -2764,12 +2764,12 @@ describe('onLoginFailed hook', () => {
     let errorMessage;
     Parse.Cloud.onLoginFailed(request => {
       run++;
-      errorCode = request.object.get('error').code;
-      errorMessage = request.object.get('error').message;
-      expect(request.object.get('error')).toBeDefined();
-      expect(request.object.get('error').code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-      expect(request.object.get('error').message).toEqual('Invalid username/password.');
-      expect(request.object.get('username')).toEqual('tupac');
+      errorCode = request.error.code;
+      errorMessage = request.error.message;
+      expect(request.error).toBeDefined();
+      expect(request.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.error.message).toEqual('Invalid username/password.');
+      expect(request.username).toEqual('tupac');
     });
     await Parse.User.signUp('tupac', 'shakur');
     Parse.User.logIn('tupac', 'wrongpassword')
@@ -2786,10 +2786,10 @@ describe('onLoginFailed hook', () => {
   });
   it('should throw custom error code and message', async done => {
     Parse.Cloud.onLoginFailed(request => {
-      expect(request.object.get('error')).toBeDefined();
-      expect(request.object.get('error').code).toBe(101);
-      expect(request.object.get('error').message).toEqual('Invalid username/password.');
-      expect(request.object.get('username')).toEqual('tupac');
+      expect(request.error).toBeDefined();
+      expect(request.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.error.message).toEqual('Invalid username/password.');
+      expect(request.username).toEqual('tupac');
       throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'You should login with Google');
     });
     await Parse.User.signUp('tupac', 'shakur');
@@ -2804,12 +2804,51 @@ describe('onLoginFailed hook', () => {
         done();
       });
   });
+  it('should handle returning new custom error', async done => {
+    Parse.Cloud.onLoginFailed(request => {
+      expect(request.error).toBeDefined();
+      expect(request.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.error.message).toEqual('Invalid username/password.');
+      expect(request.username).toEqual('tupac');
+      return new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'You should login with Google');
+    });
+    await Parse.User.signUp('tupac', 'shakur');
+    Parse.User.logIn('tupac', 'wrongpassword')
+      .then(user => {
+        expect(user).toBeUndefined();
+        done();
+      })
+      .catch(err => {
+        expect(err.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+        expect(err.message).toEqual('You should login with Google');
+        done();
+      });
+  });
+  it('should work with async function', async done => {
+    Parse.Cloud.onLoginFailed(async request => {
+      expect(request.error).toBeDefined();
+      expect(request.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.error.message).toEqual('Invalid username/password.');
+      expect(request.username).toEqual('tupac');
+      throw 'You should login with Google!';
+    });
+    await Parse.User.signUp('tupac', 'shakur');
+    Parse.User.logIn('tupac', 'wrongpassword')
+      .then(user => {
+        expect(user).toBeUndefined();
+        done();
+      })
+      .catch(err => {
+        expect(err.message).toEqual('You should login with Google!');
+        done();
+      });
+  });
   it('should handle throwing just string', async done => {
     Parse.Cloud.onLoginFailed(request => {
-      expect(request.object.get('error')).toBeDefined();
-      expect(request.object.get('error').code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-      expect(request.object.get('error').message).toEqual('Invalid username/password.');
-      expect(request.object.get('username')).toEqual('tupac');
+      expect(request.error).toBeDefined();
+      expect(request.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.error.message).toEqual('Invalid username/password.');
+      expect(request.username).toEqual('tupac');
       throw 'You should login with Google!';
     });
     await Parse.User.signUp('tupac', 'shakur');
@@ -2839,8 +2878,8 @@ describe('onLoginFailed hook', () => {
 
   it('email and username must be available in request query', async done => {
     Parse.Cloud.onLoginFailed(request => {
-      expect(request.object.get('username')).toEqual('tupac');
-      expect(request.object.get('email')).toEqual('tupac@example.com');
+      expect(request.username).toEqual('tupac');
+      expect(request.email).toEqual('tupac@example.com');
     });
     await Parse.User.signUp('tupac', 'shakur');
     Parse.Cloud.httpRequest({
@@ -2860,8 +2899,8 @@ describe('onLoginFailed hook', () => {
   });
   it('email and username must be available in request body', async done => {
     Parse.Cloud.onLoginFailed(request => {
-      expect(request.object.get('username')).toEqual('tupac');
-      expect(request.object.get('email')).toEqual('tupac@example.com');
+      expect(request.username).toEqual('tupac');
+      expect(request.email).toEqual('tupac@example.com');
     });
     await Parse.User.signUp('tupac', 'shakur');
     Parse.Cloud.httpRequest({

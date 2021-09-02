@@ -916,6 +916,45 @@ export function runLiveQueryEventHandlers(data, applicationId = Parse.applicatio
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
 }
 
+export function getRequestLoginFail(error, username, email, auth, config) {
+  const request = {
+    error: error,
+    email: email,
+    username: username,
+    log: config.loggerController,
+    headers: config.headers,
+    ip: config.ip,
+  };
+
+  if (!auth) {
+    return request;
+  }
+  if (auth.isMaster) {
+    request['master'] = true;
+  }
+  if (auth.installationId) {
+    request['installationId'] = auth.installationId;
+  }
+  return request;
+}
+
+export async function maybeRunLoginFailTrigger(triggerType, config, auth, error, username, email) {
+  try {
+    const trigger = getTrigger('_User', triggerType, config.applicationId);
+    if (!trigger || typeof trigger !== 'function') {
+      return null;
+    }
+    const request = getRequestLoginFail(error, username, email, auth, config);
+    const response = trigger(request);
+    return await Promise.resolve(response);
+  } catch (error) {
+    if (typeof error !== 'object') {
+      return new Parse.Error(Parse.Error.SCRIPT_FAILED, error);
+    }
+    return error;
+  }
+}
+
 export function getRequestFileObject(triggerType, auth, fileObject, config) {
   const request = {
     ...fileObject,

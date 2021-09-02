@@ -7,7 +7,7 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
-import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
+import { maybeRunTrigger, maybeRunLoginFailTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 
@@ -255,12 +255,13 @@ export class UsersRouter extends ClassesRouter {
     } catch (error) {
       const username = req.body.username || req.query.username;
       const email = req.body.email || req.query.email;
-      const response = await maybeRunTrigger(
+      const response = await maybeRunLoginFailTrigger(
         TriggerTypes.onLoginFailed,
+        req.config,
         req.auth,
-        Parse.User.fromJSON({ className: '_User', username: username, email: email, error: error }),
-        null,
-        req.config
+        error,
+        username,
+        email
       );
       if (response && Object.keys(response).length > 0) {
         if (!response.code) response.code = error.code;
