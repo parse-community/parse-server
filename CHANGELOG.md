@@ -1,5 +1,10 @@
 # Parse Server Changelog
 
+# 4.10.3
+
+## Security Fixes
+- Validate `explain` query parameter to avoid a server crash due to MongoDB bug [NODE-3463](https://jira.mongodb.org/browse/NODE-3463) (Kartal Kaan Bozdogan) [GHSA-xqp8-w826-hh6x](https://github.com/parse-community/parse-server/security/advisories/GHSA-xqp8-w826-hh6x)
+
 # 4.10.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.1...4.10.2)
 
