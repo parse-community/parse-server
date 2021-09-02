@@ -2759,15 +2759,130 @@ describe('afterFind hooks', () => {
 
 describe('onLoginFailed hook', () => {
   it('should run onLoginFailed trigger after failed login attempt', async done => {
-    let hit = 0;
+    let run = 0;
+    let errorCode = -1;
+    let errorMessage;
     Parse.Cloud.onLoginFailed(request => {
-      hit++;
+      run++;
+      errorCode = request.object.get('error').code;
+      errorMessage = request.object.get('error').message;
       expect(request.object.get('error')).toBeDefined();
+      expect(request.object.get('error').code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.object.get('error').message).toEqual('Invalid username/password.');
+      expect(request.object.get('username')).toEqual('tupac');
     });
     await Parse.User.signUp('tupac', 'shakur');
-    await Parse.User.logIn('tupac', 'wrongpassword');
-    expect(hit).toBe(1);
+    Parse.User.logIn('tupac', 'wrongpassword')
+      .then(user => {
+        expect(user).toBeUndefined();
+        done();
+      })
+      .catch(err => {
+        expect(run).toBe(1);
+        expect(err.code).toBe(errorCode);
+        expect(err.message).toEqual(errorMessage);
+        done();
+      });
+  });
+  it('should throw custom error code and message', async done => {
+    Parse.Cloud.onLoginFailed(request => {
+      expect(request.object.get('error')).toBeDefined();
+      expect(request.object.get('error').code).toBe(101);
+      expect(request.object.get('error').message).toEqual('Invalid username/password.');
+      expect(request.object.get('username')).toEqual('tupac');
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'You should login with Google');
+    });
+    await Parse.User.signUp('tupac', 'shakur');
+    Parse.User.logIn('tupac', 'wrongpassword')
+      .then(user => {
+        expect(user).toBeUndefined();
+        done();
+      })
+      .catch(err => {
+        expect(err.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+        expect(err.message).toEqual('You should login with Google');
+        done();
+      });
+  });
+  it('should handle throwing just string', async done => {
+    Parse.Cloud.onLoginFailed(request => {
+      expect(request.object.get('error')).toBeDefined();
+      expect(request.object.get('error').code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.object.get('error').message).toEqual('Invalid username/password.');
+      expect(request.object.get('username')).toEqual('tupac');
+      throw 'You should login with Google!';
+    });
+    await Parse.User.signUp('tupac', 'shakur');
+    Parse.User.logIn('tupac', 'wrongpassword')
+      .then(user => {
+        expect(user).toBeUndefined();
+        done();
+      })
+      .catch(err => {
+        expect(err.message).toEqual('You should login with Google!');
+        done();
+      });
+  });
+
+  it('should not run onLoginFailed trigger after successful login', async done => {
+    let run = 0;
+    Parse.Cloud.onLoginFailed(() => {
+      run++;
+    });
+    await Parse.User.signUp('tupac', 'shakur');
+    const user = await Parse.User.logIn('tupac', 'shakur');
+    expect(run).toBe(0);
+    expect(user).toBeDefined();
+    expect(user.get('username')).toEqual('tupac');
     done();
+  });
+
+  it('email and username must be available in request query', async done => {
+    Parse.Cloud.onLoginFailed(request => {
+      expect(request.object.get('username')).toEqual('tupac');
+      expect(request.object.get('email')).toEqual('tupac@example.com');
+    });
+    await Parse.User.signUp('tupac', 'shakur');
+    Parse.Cloud.httpRequest({
+      url: `http://localhost:8378/1/login?username=tupac&email=tupac@example.com&password=wrongpassword`,
+      method: 'GET',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+      },
+    })
+      .then(user => {
+        expect(user).toBeUndefined();
+        done();
+      })
+      .catch(() => {
+        done();
+      });
+  });
+  it('email and username must be available in request body', async done => {
+    Parse.Cloud.onLoginFailed(request => {
+      expect(request.object.get('username')).toEqual('tupac');
+      expect(request.object.get('email')).toEqual('tupac@example.com');
+    });
+    await Parse.User.signUp('tupac', 'shakur');
+    Parse.Cloud.httpRequest({
+      url: `http://localhost:8378/1/login?username=tupac&email=tupac@example.com&password=wrongpassword`,
+      method: 'POST',
+      body: JSON.stringify({
+        username: 'tupac',
+        email: 'tupac@example.com',
+        password: 'wrongpassword',
+      }),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+      },
+    })
+      .then(user => {
+        expect(user).toBeUndefined();
+        done();
+      })
+      .catch(() => {
+        done();
+      });
   });
 });
 

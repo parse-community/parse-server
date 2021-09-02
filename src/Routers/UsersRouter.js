@@ -262,7 +262,11 @@ export class UsersRouter extends ClassesRouter {
         null,
         req.config
       );
-      if (response) throw response;
+      if (response && Object.keys(response).length > 0) {
+        if (!response.code) response.code = error.code;
+        if (!response.message) response.message = error.message;
+        throw response;
+      }
       throw error;
     }
   }
