@@ -1016,7 +1016,7 @@ class ParseLiveQueryServer {
       try {
         await runTrigger(trigger, `beforeUnsubscribe.${className}`, request, auth);
       } catch (error) {
-        Client.pushError(parseWebsocket, error.code || 141, error.message || error, false);
+        Client.pushError(parseWebsocket, error.code || Parse.Error.SCRIPT_FAILED, error.message || error, false);
         logger.error(
           `Failed running beforeUnsubscribe for session ${request.sessionToken} with:\n Error: ` +
             JSON.stringify(error)
