@@ -1013,7 +1013,15 @@ class ParseLiveQueryServer {
       request.useMasterKey = client.hasMasterKey;
       request.installationId = client.installationId;
 
-      await runTrigger(trigger, `beforeUnsubscribe.${className}`, request, auth);
+      try {
+        await runTrigger(trigger, `beforeUnsubscribe.${className}`, request, auth);
+      } catch (error) {
+        Client.pushError(parseWebsocket, error.code || 141, error.message || error, false);
+        logger.error(
+          `Failed running beforeUnsubscribe for session ${request.sessionToken} with:\n Error: ` +
+            JSON.stringify(error)
+        );
+      }
     }
 
     // Remove subscription from client

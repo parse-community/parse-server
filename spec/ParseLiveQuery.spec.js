@@ -820,6 +820,7 @@ describe('ParseLiveQuery', function () {
     Parse.Cloud.beforeUnsubscribe(TestObject, req => {
       expect(req.requestId).toBe(1);
       expect(req.user).toBeDefined();
+      expect(req.user.get('username')).toBe('username');
       done();
     });
 
