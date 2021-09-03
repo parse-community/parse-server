@@ -6,6 +6,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 |-------------------------------------------------|----------------------------------------------------------------------|---------------------------------|---------------------------------|-----------------------|-------|
 | Native MongoDB syntax in aggregation pipeline   | [#7338](https://github.com/parse-community/parse-server/issues/7338) | 5.0.0 (2022)                    | 6.0.0 (2023)                    | deprecated            | -     |
 | Config option `directAccess` defaults to `true` | [#6636](https://github.com/parse-community/parse-server/pull/6636)   | 5.0.0 (2022)                    | 6.0.0 (2023)                    | deprecated            | -     |
+| `explain` queries used by non-master users | [#7519](https://github.com/parse-community/parse-server/issues/7519)   | 5.0.0 (2022)                    | 6.0.0 (2023) | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_removal]: ## "The version and date of the planned removal."

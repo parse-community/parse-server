@@ -5266,4 +5266,36 @@ describe('Parse.Query testing', () => {
     // Validate
     expect(result.executionStats).not.toBeUndefined();
   });
+
+  xit('users cannot use explain queries', async () => {
+    // Create an object
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+    // Query TestObject with explain.
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', obj.id);
+    query.explain();
+    try {
+      await query.find();
+      fail('even non-master users can use explain');
+    } catch (e) {
+      equal(e.code, Parse.Error.OPERATION_FORBIDDEN);
+      equal(e.message, 'Cannot explain');
+    }
+    try {
+      await new Parse.Query('TestObject').explain().get(obj.id);
+      fail('even non-master users can use explain');
+    } catch (e) {
+      equal(e.code, Parse.Error.OPERATION_FORBIDDEN);
+      equal(e.message, 'Cannot explain');
+    }
+  }).pend('Disabled until non-master explains are disabled');
+  it('the master key can use explain queries', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', obj.id);
+    query.explain();
+    await query.find({ useMasterKey: true }); // Must not throw
+  });
 });
