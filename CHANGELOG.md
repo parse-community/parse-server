@@ -196,7 +196,6 @@ ___
 
 ## 4.5.1
 *This version was published by mistake and was deprecated.*
->>>>>>> master
 
 ## 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
