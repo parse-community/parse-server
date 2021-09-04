@@ -1015,7 +1015,7 @@ describe('miscellaneous', function () {
         done();
       },
       e => {
-        expect(e.code).toEqual(141);
+        expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
         expect(e.message).toEqual('noway');
         done();
       }

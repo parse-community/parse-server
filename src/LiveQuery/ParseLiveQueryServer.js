@@ -190,7 +190,7 @@ class ParseLiveQueryServer {
           } catch (error) {
             Client.pushError(
               client.parseWebSocket,
-              error.code || 141,
+              error.code || Parse.Error.SCRIPT_FAILED,
               error.message || error,
               false,
               requestId
@@ -344,7 +344,7 @@ class ParseLiveQueryServer {
           } catch (error) {
             Client.pushError(
               client.parseWebSocket,
-              error.code || 141,
+              error.code || Parse.Error.SCRIPT_FAILED,
               error.message || error,
               false,
               requestId
@@ -665,7 +665,12 @@ class ParseLiveQueryServer {
       client.pushConnect();
       runLiveQueryEventHandlers(req);
     } catch (error) {
-      Client.pushError(parseWebsocket, error.code || 141, error.message || error, false);
+      Client.pushError(
+        parseWebsocket,
+        error.code || Parse.Error.SCRIPT_FAILED,
+        error.message || error,
+        false
+      );
       logger.error(
         `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(error)
@@ -779,7 +784,13 @@ class ParseLiveQueryServer {
         installationId: client.installationId,
       });
     } catch (e) {
-      Client.pushError(parseWebsocket, e.code || 141, e.message || e, false, request.requestId);
+      Client.pushError(
+        parseWebsocket,
+        e.code || Parse.Error.SCRIPT_FAILED,
+        e.message || e,
+        false,
+        request.requestId
+      );
       logger.error(
         `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(e)

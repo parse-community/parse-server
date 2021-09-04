@@ -67,7 +67,7 @@ describe('Cloud Code', () => {
 
   it('is cleared cleared after the previous test', done => {
     Parse.Cloud.run('hello', {}).catch(error => {
-      expect(error.code).toEqual(141);
+      expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
       done();
     });
   });
@@ -101,7 +101,7 @@ describe('Cloud Code', () => {
     Parse.Cloud.run('cloudCodeWithError').then(
       () => done.fail('should not succeed'),
       e => {
-        expect(e).toEqual(new Parse.Error(141, 'foo is not defined'));
+        expect(e).toEqual(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'foo is not defined'));
         done();
       }
     );
@@ -115,7 +115,7 @@ describe('Cloud Code', () => {
     Parse.Cloud.run('cloudCodeWithError').then(
       () => done.fail('should not succeed'),
       e => {
-        expect(e.code).toEqual(141);
+        expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
         expect(e.message).toEqual('Script failed.');
         done();
       }
@@ -134,7 +134,7 @@ describe('Cloud Code', () => {
       const query = new Parse.Query('beforeFind');
       await query.first();
     } catch (e) {
-      expect(e.code).toBe(141);
+      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
       expect(e.message).toBe('throw beforeFind');
       done();
     }
@@ -2011,7 +2011,7 @@ describe('beforeFind hooks', () => {
         done();
       },
       err => {
-        expect(err.code).toBe(141);
+        expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
         expect(err.message).toEqual('Do not run that query');
         done();
       }
