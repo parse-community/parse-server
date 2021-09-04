@@ -184,8 +184,6 @@ ___
 > 
 > We have since deleted the incorrect version tags, but they may still show up if your personal fork on GitHub or locally. We do not know when these tags have been pushed to the Parse Server repository, but we first became aware of this issue on July 21, 2021. We are not aware of any malicious code or concerns related to privacy, security or legality (e.g. proprietary code). However, it has been reported that some functionality does not work as expected and the introduction of security vulnerabilities cannot be ruled out.
 >
-> You may be also affected if you used the Bitnami image for Parse Server. Bitnami picked up the incorrect version tag `4.9.3` and published a new Bitnami image for Parse Server. 
-> 
 > You may be also affected if you used the Bitnami image for Parse Server. Bitnami picked up the incorrect version tag `4.9.3` and published a new Bitnami image for Parse Server.
 >
 >**If you are using any of the affected versions, we urgently recommend to upgrade to version `4.10.0`.**
