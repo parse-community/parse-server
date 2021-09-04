@@ -459,7 +459,7 @@ describe('Cloud Code', () => {
       });
     } catch (e) {
       catched = true;
-      expect(e.code).toBe(101);
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
     expect(catched).toBe(true);
     expect(called).toBe(7);
@@ -471,7 +471,7 @@ describe('Cloud Code', () => {
       });
     } catch (e) {
       catched = true;
-      expect(e.code).toBe(101);
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
     expect(catched).toBe(true);
     expect(called).toBe(7);
@@ -483,7 +483,7 @@ describe('Cloud Code', () => {
       });
     } catch (e) {
       catched = true;
-      expect(e.code).toBe(101);
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
     expect(catched).toBe(true);
     expect(called).toBe(7);
@@ -1734,7 +1734,7 @@ describe('Cloud Code', () => {
 
     it('should set the failure message on the job error', async () => {
       Parse.Cloud.job('myJobError', () => {
-        throw new Parse.Error(101, 'Something went wrong');
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Something went wrong');
       });
       const job = await Parse.Cloud.startJob('myJobError');
       let jobStatus, status;

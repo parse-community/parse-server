@@ -428,7 +428,7 @@ describe('Parse Role testing', () => {
         },
         e => {
           if (e) {
-            expect(e.code).toEqual(101);
+            expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
           } else {
             fail('should return an error');
           }
