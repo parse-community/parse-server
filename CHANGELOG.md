@@ -150,6 +150,7 @@ ___
 - Add CI check to add changelog entry (Manuel Trezza) [#7512](https://github.com/parse-community/parse-server/pull/7512)
 - Refactor: uniform issue templates across repos (Manuel Trezza) [#7528](https://github.com/parse-community/parse-server/pull/7528)
 - ci: bump ci environment (Manuel Trezza) [#7539](https://github.com/parse-community/parse-server/pull/7539)
+- Allow setting descending sort to full text queries (dblythy) [#7496](https://github.com/parse-community/parse-server/pull/7496)
 
 ## 4.10.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.2...4.10.3)
@@ -185,6 +186,8 @@ ___
 >
 > You may be also affected if you used the Bitnami image for Parse Server. Bitnami picked up the incorrect version tag `4.9.3` and published a new Bitnami image for Parse Server. 
 > 
+> You may be also affected if you used the Bitnami image for Parse Server. Bitnami picked up the incorrect version tag `4.9.3` and published a new Bitnami image for Parse Server.
+>
 >**If you are using any of the affected versions, we urgently recommend to upgrade to version `4.10.0`.**
 
 ## 4.5.2
