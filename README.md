@@ -114,8 +114,8 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 | Version    | Latest Version | End-of-Life Date | Compatibility      |
 |------------|----------------|------------------|--------------------|
-| Node.js 12 | 12.22.5        | April 2022       | ✅ Fully compatible |
-| Node.js 14 | 14.17.5        | April 2023       | ✅ Fully compatible |
+| Node.js 12 | 12.22.6        | April 2022       | ✅ Fully compatible |
+| Node.js 14 | 14.17.6        | April 2023       | ✅ Fully compatible |
 | Node.js 15 | 15.14.0        | June 2021        | ✅ Fully compatible |
 
 #### MongoDB
@@ -742,11 +742,7 @@ Logs are also viewable in Parse Dashboard.
 
 # Deprecations
 
-The following Parse Server options and APIs are deprecated and will change in future versions. The "Deprecation" version indicates from when an item has been deprecated with runtime warnings. The "End-of-Life" version indicates when the deprecation period has ended and the breaking change came into effect. In rare cases, deprecations may be revoked without any breaking change coming into effect.
-
-| Type   | Item           | Deprecation | End-of-Life | Details                                 |
-|--------|----------------|-------------|-------------|-----------------------------------------|
-| Option | `directAccess` | `5.0.0`     | tbd         | Default changes from `false` to `true`. |
+See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
 
 # Live Query
 

@@ -191,7 +191,7 @@ Deprecations become breaking changes after notifying developers through deprecat
   - `5.0.0` marks the beginning of logging the deprecation warning for one entire major release
   - `6.0.0` makes the breaking change by removing the deprecation warning and making the new feature replace the existing feature
 
-Developer feedback during the deprecation period may further postpone the introduction of a breaking change. The [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) gives an overview of deprecations and planned breaking changes.
+See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
 
 ## Feature Considerations
 ### Security Checks

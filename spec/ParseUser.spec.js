@@ -2377,59 +2377,63 @@ describe('Parse.User testing', () => {
       });
   });
 
-  it('user get session from token on signup', done => {
-    Promise.resolve()
-      .then(() => {
-        return Parse.User.signUp('finn', 'human', { foo: 'bar' });
-      })
-      .then(user => {
-        request({
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Session-Token': user.getSessionToken(),
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          url: 'http://localhost:8378/1/sessions/me',
-        }).then(response => {
-          const b = response.data;
-          expect(typeof b.sessionToken).toEqual('string');
-          expect(typeof b.createdWith).toEqual('object');
-          expect(b.createdWith.action).toEqual('signup');
-          expect(typeof b.user).toEqual('object');
-          expect(b.user.objectId).toEqual(user.id);
-          done();
-        });
-      });
+  it('user get session from token on signup', async () => {
+    const user = await Parse.User.signUp('finn', 'human', { foo: 'bar' });
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      url: 'http://localhost:8378/1/sessions/me',
+    });
+    const data = response.data;
+    expect(typeof data.sessionToken).toEqual('string');
+    expect(typeof data.createdWith).toEqual('object');
+    expect(data.createdWith.action).toEqual('signup');
+    expect(data.createdWith.authProvider).toEqual('password');
+    expect(typeof data.user).toEqual('object');
+    expect(data.user.objectId).toEqual(user.id);
   });
 
-  it('user get session from token on login', done => {
-    Promise.resolve()
-      .then(() => {
-        return Parse.User.signUp('finn', 'human', { foo: 'bar' });
-      })
-      .then(() => {
-        return Parse.User.logOut().then(() => {
-          return Parse.User.logIn('finn', 'human');
-        });
-      })
-      .then(user => {
-        request({
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Session-Token': user.getSessionToken(),
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          url: 'http://localhost:8378/1/sessions/me',
-        }).then(response => {
-          const b = response.data;
-          expect(typeof b.sessionToken).toEqual('string');
-          expect(typeof b.createdWith).toEqual('object');
-          expect(b.createdWith.action).toEqual('login');
-          expect(typeof b.user).toEqual('object');
-          expect(b.user.objectId).toEqual(user.id);
-          done();
-        });
-      });
+  it('user get session from token on username/password login', async () => {
+    await Parse.User.signUp('finn', 'human', { foo: 'bar' });
+    await Parse.User.logOut();
+    const user = await Parse.User.logIn('finn', 'human');
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      url: 'http://localhost:8378/1/sessions/me',
+    });
+    const data = response.data;
+    expect(typeof data.sessionToken).toEqual('string');
+    expect(typeof data.createdWith).toEqual('object');
+    expect(data.createdWith.action).toEqual('login');
+    expect(data.createdWith.authProvider).toEqual('password');
+    expect(typeof data.user).toEqual('object');
+    expect(data.user.objectId).toEqual(user.id);
+  });
+
+  it('user get session from token on anonymous login', async () => {
+    const user = await Parse.AnonymousUtils.logIn();
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      url: 'http://localhost:8378/1/sessions/me',
+    });
+    const data = response.data;
+    expect(typeof data.sessionToken).toEqual('string');
+    expect(typeof data.createdWith).toEqual('object');
+    expect(data.createdWith.action).toEqual('login');
+    expect(data.createdWith.authProvider).toEqual('anonymous');
+    expect(typeof data.user).toEqual('object');
+    expect(data.user.objectId).toEqual(user.id);
   });
 
   it('user update session with other field', done => {
