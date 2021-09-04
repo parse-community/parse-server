@@ -122,31 +122,15 @@ describe('Parse.Query Full Text Search testing', () => {
 
   it('fulltext descending by $score', async () => {
     await fullTextHelper();
-    const where = {
-      subject: {
-        $text: {
-          $search: {
-            $term: 'coffee',
-          },
-        },
-      },
-    };
-    const order = '-$score';
-    const keys = '$score';
-    const { data } = await request({
-      method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
-      body: { where, order, keys, _method: 'GET' },
-      headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'test',
-        'Content-Type': 'application/json',
-      },
-    });
-    expect(data.results.length).toBe(3);
-    expect(data.results[0].score);
-    expect(data.results[1].score);
-    expect(data.results[2].score);
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'coffee');
+    query.descending('$score');
+    query.select('$score');
+    const results = await query.find();
+    expect(results.length).toBe(3);
+    expect(results[0].get('score'));
+    expect(results[1].get('score'));
+    expect(results[2].get('score'));
   });
 
   it('fullTextSearch: $language', done => {
