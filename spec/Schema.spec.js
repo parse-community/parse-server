@@ -892,7 +892,6 @@ describe('SchemaController', () => {
             objectId: { type: 'String' },
             updatedAt: { type: 'Date' },
             createdAt: { type: 'Date' },
-            restricted: { type: 'Boolean' },
             user: { type: 'Pointer', targetClass: '_User' },
             installationId: { type: 'String' },
             sessionToken: { type: 'String' },
