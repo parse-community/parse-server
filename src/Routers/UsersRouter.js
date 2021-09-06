@@ -7,7 +7,8 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
-import { maybeRunTrigger, maybeRunLoginFailTrigger, Types as TriggerTypes } from '../triggers';
+import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
+import { runLoginEvent, getLoginEventRequest, EventTypes } from '../events';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 
@@ -181,7 +182,14 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleLogIn(req) {
+    const credentials = {
+      username: req.body?.username || req.query?.username,
+      email: req.body?.email || req.query?.email,
+    };
+    const request = getLoginEventRequest(credentials, req.auth, req.config);
     try {
+      // run loginStarted event
+      await runLoginEvent(EventTypes.Login.loginStarted, request, req.config.applicationId);
       const user = await this._authenticateUserFromRequest(req);
 
       // handle password expiry policy
@@ -229,6 +237,10 @@ export class UsersRouter extends ClassesRouter {
         req.config
       );
 
+      // run userAuthenticated event
+      request.user = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
+      await runLoginEvent(EventTypes.Login.userAuthenticated, request, req.config.applicationId);
+
       const { sessionData, createSession } = RestWrite.createSession(req.config, {
         userId: user.objectId,
         createdWith: {
@@ -251,24 +263,27 @@ export class UsersRouter extends ClassesRouter {
         req.config
       );
 
+      // run loginFinished event
+      request.user = { ...req.auth, user: afterLoginUser };
+      await runLoginEvent(EventTypes.Login.loginFinished, request, req.config.applicationId);
+
       return { response: user };
     } catch (error) {
-      const username = req.body.username || req.query.username;
-      const email = req.body.email || req.query.email;
-      const response = await maybeRunLoginFailTrigger(
-        TriggerTypes.onLoginFailed,
-        req.config,
-        req.auth,
-        error,
-        username,
-        email
+      request.error = error;
+      const response = await runLoginEvent(
+        EventTypes.Login.loginFailed,
+        request,
+        req.config.applicationId
       );
+      if (typeof response === 'string') {
+        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, response);
+      }
       if (response && Object.keys(response).length > 0) {
         if (!response.code) response.code = error.code;
         if (!response.message) response.message = error.message;
         throw response;
       }
-      throw error;
+      throw request.error;
     }
   }
 

@@ -302,34 +302,6 @@ ParseCloud.afterLogout = function (handler) {
 };
 
 /**
- * Registers the after failed login attempt
- *
- * **Available only in Cloud Code only.**
- *
- * This function is triggered after failed login attempt,
- *
- * ```
- * Parse.Cloud.onLoginFailed((request) => {
- *   // Code here
- * });
- * ```
- *
- * @method onLoginFailed
- * @name Parse.Cloud.onLoginFailed
- * @param {Function} func The function to run after failed login attempt. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
- */
-ParseCloud.onLoginFailed = function (handler) {
-  let className = '_User';
-  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
-    // validation will occur downstream, this is to maintain internal
-    // code consistency with the other hook types.
-    className = getClassName(handler);
-    handler = arguments[1];
-  }
-  triggers.addTrigger(triggers.Types.onLoginFailed, className, handler, Parse.applicationId);
-};
-
-/**
  * Registers an after save function.
  *
  * **Available in Cloud Code only.**
@@ -752,6 +724,8 @@ ParseCloud.useMasterKey = () => {
 };
 
 ParseCloud.httpRequest = require('./httpRequest');
+
+ParseCloud.Event = require('./Parse.Cloud.Event');
 
 module.exports = ParseCloud;
 

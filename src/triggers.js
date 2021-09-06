@@ -3,7 +3,6 @@ import Parse from 'parse/node';
 import { logger } from './logger';
 
 export const Types = {
-  onLoginFailed: 'onLoginFailed',
   beforeLogin: 'beforeLogin',
   afterLogin: 'afterLogin',
   afterLogout: 'afterLogout',
@@ -68,9 +67,6 @@ function validateClassNameForTriggers(className, type) {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
     throw 'Only the afterLogout trigger is allowed for the _Session class.';
-  }
-  if (type === Types.onLoginFailed && className !== '_User') {
-    throw 'Only the _User class is allowed for the onLoginFailed trigger';
   }
   return className;
 }
@@ -914,45 +910,6 @@ export function runLiveQueryEventHandlers(data, applicationId = Parse.applicatio
     return;
   }
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
-}
-
-export function getRequestLoginFail(error, username, email, auth, config) {
-  const request = {
-    error: error,
-    email: email,
-    username: username,
-    log: config.loggerController,
-    headers: config.headers,
-    ip: config.ip,
-  };
-
-  if (!auth) {
-    return request;
-  }
-  if (auth.isMaster) {
-    request['master'] = true;
-  }
-  if (auth.installationId) {
-    request['installationId'] = auth.installationId;
-  }
-  return request;
-}
-
-export async function maybeRunLoginFailTrigger(triggerType, config, auth, error, username, email) {
-  try {
-    const trigger = getTrigger('_User', triggerType, config.applicationId);
-    if (!trigger || typeof trigger !== 'function') {
-      return null;
-    }
-    const request = getRequestLoginFail(error, username, email, auth, config);
-    const response = trigger(request);
-    return await Promise.resolve(response);
-  } catch (error) {
-    if (typeof error !== 'object') {
-      return new Parse.Error(Parse.Error.SCRIPT_FAILED, error);
-    }
-    return error;
-  }
 }
 
 export function getRequestFileObject(triggerType, auth, fileObject, config) {
