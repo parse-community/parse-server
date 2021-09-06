@@ -70,7 +70,6 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   },
   // The additional default columns for the _Session collection (in addition to DefaultCols)
   _Session: {
-    restricted: { type: 'Boolean' },
     user: { type: 'Pointer', targetClass: '_User' },
     installationId: { type: 'String' },
     sessionToken: { type: 'String' },
