@@ -839,6 +839,13 @@ module.exports.PasswordPolicyOptions = {
       'Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.<br><br>Valid values are >= `0` and <= `20`.<br>Default is `0`.',
     action: parsers.numberParser('maxPasswordHistory'),
   },
+  resetPasswordSuccessOnInvalidEmail: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_PASSWORD_SUCCESS_ON_INVALID_EMAIL',
+    help:
+      'Set to true if password resets should return success if the email is invalid<br><br>Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   resetTokenReuseIfValid: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID',
     help:

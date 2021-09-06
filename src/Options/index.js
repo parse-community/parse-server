@@ -496,6 +496,11 @@ export interface PasswordPolicyOptions {
   Default is `false`.
   :DEFAULT: false */
   resetTokenReuseIfValid: ?boolean;
+  /* Set to true if password resets should return success if the email is invalid
+  <br><br>
+  Default is `true`.
+  :DEFAULT: true */
+  resetPasswordSuccessOnInvalidEmail: ?boolean;
 }
 
 export interface FileUploadOptions {

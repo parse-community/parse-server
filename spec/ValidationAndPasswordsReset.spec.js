@@ -1083,7 +1083,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('should throw on an invalid reset password', async () => {
+  it('should throw on an invalid reset password with resetPasswordSuccessOnInvalidEmail', async () => {
     await reconfigureServer({
       appName: 'coolapp',
       publicServerURL: 'http://localhost:1337/1',
@@ -1092,6 +1092,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         apiKey: 'k',
         domain: 'd',
       }),
+      passwordPolicy: {
+        resetPasswordSuccessOnInvalidEmail: false,
+      },
     });
     await expectAsync(Parse.User.requestPasswordReset('test@example.com')).toBeRejectedWith(
       new Parse.Error(
