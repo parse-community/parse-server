@@ -12,7 +12,7 @@ export class LiveQueryController {
     } else if (config.classNames instanceof Array) {
       const classNames = config.classNames.map(name => {
         const _name = getClassName(name);
-        return new RegExp('^' + _name + '$');
+        return new RegExp(`^${_name}$`);
       });
       this.classNames = new Set(classNames);
     } else {
