@@ -2,7 +2,7 @@ name: docker
 
 on:
   schedule:
-    - cron: '19 17 * * *'
+    - cron: '19 17 * * *' # Nightly builds capture upstream updates to dependency images such as node.
   push:
     branches: [ master ]
     tags: [ '*.*.*' ]
