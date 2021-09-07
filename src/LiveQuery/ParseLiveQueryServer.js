@@ -711,10 +711,12 @@ class ParseLiveQueryServer {
     }
     const client = this.clients.get(parseWebsocket.clientId);
     const className = request.query.className;
+    let authCalled = false;
     try {
       const trigger = getTrigger(className, 'beforeSubscribe', Parse.applicationId);
       if (trigger) {
         const auth = await this.getAuthFromClient(client, request.requestId, request.sessionToken);
+        authCalled = true;
         if (auth && auth.user) {
           request.user = auth.user;
         }
@@ -731,6 +733,30 @@ class ParseLiveQueryServer {
         request.query = query;
       }
 
+      if (className === '_Session') {
+        if (!authCalled) {
+          const auth = await this.getAuthFromClient(
+            client,
+            request.requestId,
+            request.sessionToken
+          );
+          if (auth && auth.user) {
+            request.user = auth.user;
+          }
+        }
+        if (request.user) {
+          request.query.where.user = request.user.toPointer();
+        } else if (!request.master) {
+          Client.pushError(
+            parseWebsocket,
+            Parse.Error.INVALID_SESSION_TOKEN,
+            'Invalid session token',
+            false,
+            request.requestId
+          );
+          return;
+        }
+      }
       // Get subscription from subscriptions, create one if necessary
       const subscriptionHash = queryHash(request.query);
       // Add className to subscriptions if necessary

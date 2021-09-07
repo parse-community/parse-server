@@ -1589,11 +1589,22 @@ RestWrite.prototype.sanitizedData = function () {
 
 // Returns an updated copy of the object
 RestWrite.prototype.buildUpdatedObject = function (extraData) {
+  const className = Parse.Object.fromJSON(extraData);
+  const readOnlyAttributes = className.constructor.readOnlyAttributes
+    ? className.constructor.readOnlyAttributes()
+    : [];
+  if (!this.originalData) {
+    for (const attribute of readOnlyAttributes) {
+      extraData[attribute] = this.data[attribute];
+    }
+  }
   const updatedObject = triggers.inflate(extraData, this.originalData);
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf('.') > 0) {
       if (typeof data[key].__op === 'string') {
-        updatedObject.set(key, data[key]);
+        if (!readOnlyAttributes.includes(key)) {
+          updatedObject.set(key, data[key]);
+        }
       } else {
         // subdocument key with dot notation { 'x.y': v } => { 'x': { 'y' : v } })
         const splittedKey = key.split('.');
@@ -1610,7 +1621,11 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
     return data;
   }, deepcopy(this.data));
 
-  updatedObject.set(this.sanitizedData());
+  const sanitized = this.sanitizedData();
+  for (const attribute of readOnlyAttributes) {
+    delete sanitized[attribute];
+  }
+  updatedObject.set(sanitized);
   return updatedObject;
 };
 
