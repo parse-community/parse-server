@@ -793,7 +793,7 @@ describe('Parse.User testing', () => {
 
     user.set('username', 'test');
     await user.save();
-    equal(Object.keys(user.attributes).length, 6);
+    equal(Object.keys(user.attributes).length, 5);
     ok(user.attributes['username']);
     ok(user.attributes['email']);
     await user.destroy();
@@ -2377,59 +2377,63 @@ describe('Parse.User testing', () => {
       });
   });
 
-  it('user get session from token on signup', done => {
-    Promise.resolve()
-      .then(() => {
-        return Parse.User.signUp('finn', 'human', { foo: 'bar' });
-      })
-      .then(user => {
-        request({
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Session-Token': user.getSessionToken(),
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          url: 'http://localhost:8378/1/sessions/me',
-        }).then(response => {
-          const b = response.data;
-          expect(typeof b.sessionToken).toEqual('string');
-          expect(typeof b.createdWith).toEqual('object');
-          expect(b.createdWith.action).toEqual('signup');
-          expect(typeof b.user).toEqual('object');
-          expect(b.user.objectId).toEqual(user.id);
-          done();
-        });
-      });
+  it('user get session from token on signup', async () => {
+    const user = await Parse.User.signUp('finn', 'human', { foo: 'bar' });
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      url: 'http://localhost:8378/1/sessions/me',
+    });
+    const data = response.data;
+    expect(typeof data.sessionToken).toEqual('string');
+    expect(typeof data.createdWith).toEqual('object');
+    expect(data.createdWith.action).toEqual('signup');
+    expect(data.createdWith.authProvider).toEqual('password');
+    expect(typeof data.user).toEqual('object');
+    expect(data.user.objectId).toEqual(user.id);
   });
 
-  it('user get session from token on login', done => {
-    Promise.resolve()
-      .then(() => {
-        return Parse.User.signUp('finn', 'human', { foo: 'bar' });
-      })
-      .then(() => {
-        return Parse.User.logOut().then(() => {
-          return Parse.User.logIn('finn', 'human');
-        });
-      })
-      .then(user => {
-        request({
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Session-Token': user.getSessionToken(),
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          url: 'http://localhost:8378/1/sessions/me',
-        }).then(response => {
-          const b = response.data;
-          expect(typeof b.sessionToken).toEqual('string');
-          expect(typeof b.createdWith).toEqual('object');
-          expect(b.createdWith.action).toEqual('login');
-          expect(typeof b.user).toEqual('object');
-          expect(b.user.objectId).toEqual(user.id);
-          done();
-        });
-      });
+  it('user get session from token on username/password login', async () => {
+    await Parse.User.signUp('finn', 'human', { foo: 'bar' });
+    await Parse.User.logOut();
+    const user = await Parse.User.logIn('finn', 'human');
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      url: 'http://localhost:8378/1/sessions/me',
+    });
+    const data = response.data;
+    expect(typeof data.sessionToken).toEqual('string');
+    expect(typeof data.createdWith).toEqual('object');
+    expect(data.createdWith.action).toEqual('login');
+    expect(data.createdWith.authProvider).toEqual('password');
+    expect(typeof data.user).toEqual('object');
+    expect(data.user.objectId).toEqual(user.id);
+  });
+
+  it('user get session from token on anonymous login', async () => {
+    const user = await Parse.AnonymousUtils.logIn();
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      url: 'http://localhost:8378/1/sessions/me',
+    });
+    const data = response.data;
+    expect(typeof data.sessionToken).toEqual('string');
+    expect(typeof data.createdWith).toEqual('object');
+    expect(data.createdWith.action).toEqual('login');
+    expect(data.createdWith.authProvider).toEqual('anonymous');
+    expect(typeof data.user).toEqual('object');
+    expect(data.user.objectId).toEqual(user.id);
   });
 
   it('user update session with other field', done => {
@@ -4030,5 +4034,133 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
     const query = new Parse.Query(Parse.User);
     const user = await query.get('1234ABCDEF', { useMasterKey: true });
     expect(user.get('authData')).toEqual({ custom: { id: 'linkedID' } });
+  });
+});
+
+describe('login as other user', () => {
+  it('allows creating a session for another user with the master key', async done => {
+    await Parse.User.signUp('some_user', 'some_password');
+    const userId = Parse.User.current().id;
+    await Parse.User.logOut();
+
+    try {
+      const response = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/loginAs',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
+        },
+        body: {
+          userId,
+        },
+      });
+
+      expect(response.data.sessionToken).toBeDefined();
+    } catch (err) {
+      fail(`no request should fail: ${JSON.stringify(err)}`);
+      done();
+    }
+
+    const sessionsQuery = new Parse.Query(Parse.Session);
+    const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+    expect(sessionsAfterRequest.length).toBe(1);
+
+    done();
+  });
+
+  it('rejects creating a session for another user if the user does not exist', async done => {
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/loginAs',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
+        },
+        body: {
+          userId: 'bogus-user',
+        },
+      });
+
+      fail('Request should fail without a valid user ID');
+      done();
+    } catch (err) {
+      expect(err.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(err.data.error).toBe('user not found');
+    }
+
+    const sessionsQuery = new Parse.Query(Parse.Session);
+    const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+    expect(sessionsAfterRequest.length).toBe(0);
+
+    done();
+  });
+
+  it('rejects creating a session for another user with invalid parameters', async done => {
+    const invalidUserIds = [undefined, null, ''];
+
+    for (const invalidUserId of invalidUserIds) {
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/loginAs',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'X-Parse-Master-Key': 'test',
+          },
+          body: {
+            userId: invalidUserId,
+          },
+        });
+
+        fail('Request should fail without a valid user ID');
+        done();
+      } catch (err) {
+        expect(err.data.code).toBe(Parse.Error.INVALID_VALUE);
+        expect(err.data.error).toBe('userId must not be empty, null, or undefined');
+      }
+
+      const sessionsQuery = new Parse.Query(Parse.Session);
+      const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+      expect(sessionsAfterRequest.length).toBe(0);
+    }
+
+    done();
+  });
+
+  it('rejects creating a session for another user without the master key', async done => {
+    await Parse.User.signUp('some_user', 'some_password');
+    const userId = Parse.User.current().id;
+    await Parse.User.logOut();
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/loginAs',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: {
+          userId,
+        },
+      });
+
+      fail('Request should fail without the master key');
+      done();
+    } catch (err) {
+      expect(err.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(err.data.error).toBe('master key is required');
+    }
+
+    const sessionsQuery = new Parse.Query(Parse.Session);
+    const sessionsAfterRequest = await sessionsQuery.find({ useMasterKey: true });
+    expect(sessionsAfterRequest.length).toBe(0);
+
+    done();
   });
 });

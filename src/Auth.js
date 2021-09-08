@@ -1,4 +1,3 @@
-const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
 
@@ -299,39 +298,6 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
     });
 };
 
-const createSession = function (
-  config,
-  { userId, createdWith, installationId, additionalSessionData }
-) {
-  const token = 'r:' + cryptoUtils.newToken();
-  const expiresAt = config.generateSessionExpiresAt();
-  const sessionData = {
-    sessionToken: token,
-    user: {
-      __type: 'Pointer',
-      className: '_User',
-      objectId: userId,
-    },
-    createdWith,
-    restricted: false,
-    expiresAt: Parse._encode(expiresAt),
-  };
-
-  if (installationId) {
-    sessionData.installationId = installationId;
-  }
-
-  Object.assign(sessionData, additionalSessionData);
-  // We need to import RestWrite at this point for the cyclic dependency it has to it
-  const RestWrite = require('./RestWrite');
-
-  return {
-    sessionData,
-    createSession: () =>
-      new RestWrite(config, master(config), '_Session', null, sessionData).execute(),
-  };
-};
-
 module.exports = {
   Auth,
   master,
@@ -339,5 +305,4 @@ module.exports = {
   readOnly,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
-  createSession,
 };

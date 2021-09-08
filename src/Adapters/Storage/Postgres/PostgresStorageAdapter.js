@@ -1056,7 +1056,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     const self = this;
 
-    await conn.tx('schema-upgrade', async t => {
+    await conn.task('schema-upgrade', async t => {
       const columns = await t.map(
         'SELECT column_name FROM information_schema.columns WHERE table_name = $<className>',
         { className },
@@ -1064,20 +1064,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
       );
       const newColumns = Object.keys(schema.fields)
         .filter(item => columns.indexOf(item) === -1)
-        .map(fieldName =>
-          self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t)
-        );
+        .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName]));
 
       await t.batch(newColumns);
     });
   }
 
-  async addFieldIfNotExists(className: string, fieldName: string, type: any, conn: any) {
+  async addFieldIfNotExists(className: string, fieldName: string, type: any) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists');
-    conn = conn || this._client;
     const self = this;
-    await conn.tx('add-field-if-not-exists', async t => {
+    await this._client.tx('add-field-if-not-exists', async t => {
       if (type.type !== 'Relation') {
         try {
           await t.none(

@@ -646,6 +646,28 @@ describe('miscellaneous', function () {
       });
   });
 
+  it_only_db('mongo')('pointer reassign on nested fields is working properly (#7391)', async () => {
+    const obj = new Parse.Object('GameScore'); // This object will include nested pointers
+    const ptr1 = new Parse.Object('GameScore');
+    await ptr1.save(); // Obtain a unique id
+    const ptr2 = new Parse.Object('GameScore');
+    await ptr2.save(); // Obtain a unique id
+    obj.set('data', { ptr: ptr1 });
+    await obj.save();
+
+    obj.set('data.ptr', ptr2);
+    await obj.save();
+
+    const obj2 = await new Parse.Query('GameScore').get(obj.id);
+    expect(obj2.get('data').ptr.id).toBe(ptr2.id);
+
+    const query = new Parse.Query('GameScore');
+    query.equalTo('data.ptr', ptr2);
+    const res = await query.find();
+    expect(res.length).toBe(1);
+    expect(res[0].get('data').ptr.id).toBe(ptr2.id);
+  });
+
   it('test afterSave get full object on create and update', function (done) {
     let triggerTime = 0;
     // Register a mock beforeSave hook

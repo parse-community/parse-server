@@ -355,6 +355,117 @@ describe('cloud validator', () => {
       });
   });
 
+  it('set params not-required options data', done => {
+    Parse.Cloud.define(
+      'hello',
+      req => {
+        expect(req.params.data).toBe('abc');
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: String,
+            required: false,
+            options: s => {
+              return s.length >= 4 && s.length <= 50;
+            },
+            error: 'Validation failed. Expected length of data to be between 4 and 50.',
+          },
+        },
+      }
+    );
+    Parse.Cloud.run('hello', { data: 'abc' })
+      .then(() => {
+        fail('function should have failed.');
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+        expect(error.message).toEqual(
+          'Validation failed. Expected length of data to be between 4 and 50.'
+        );
+        done();
+      });
+  });
+
+  it('set params not-required type', done => {
+    Parse.Cloud.define(
+      'hello',
+      req => {
+        expect(req.params.data).toBe(null);
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: String,
+            required: false,
+          },
+        },
+      }
+    );
+    Parse.Cloud.run('hello', { data: null })
+      .then(() => {
+        fail('function should have failed.');
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+        expect(error.message).toEqual('Validation failed. Invalid type for data. Expected: string');
+        done();
+      });
+  });
+
+  it('set params not-required options', done => {
+    Parse.Cloud.define(
+      'hello',
+      () => {
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: String,
+            required: false,
+            options: s => {
+              return s.length >= 4 && s.length <= 50;
+            },
+          },
+        },
+      }
+    );
+    Parse.Cloud.run('hello', {})
+      .then(() => {
+        done();
+      })
+      .catch(() => {
+        fail('function should not have failed.');
+      });
+  });
+
+  it('set params not-required no-options', done => {
+    Parse.Cloud.define(
+      'hello',
+      () => {
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: String,
+            required: false,
+          },
+        },
+      }
+    );
+    Parse.Cloud.run('hello', {})
+      .then(() => {
+        done();
+      })
+      .catch(() => {
+        fail('function should not have failed.');
+      });
+  });
+
   it('set params option', done => {
     Parse.Cloud.define(
       'hello',

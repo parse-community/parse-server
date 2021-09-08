@@ -8,7 +8,18 @@
  * or set to an empty string if the current key will be removed without replacement.
  * - `changeNewDefault`: Set the new default value if the key's default value
  * will change in a future version.
+ * - `solution`: The instruction to resolve this deprecation warning. Optional. This
+ * instruction must not include the deprecation warning which is auto-generated.
+ * It should only contain additional instruction regarding the deprecation if
+ * necessary.
  *
- * If there are no deprecations this must return an empty array anyway.
+ * If there are no deprecations, this must return an empty array.
  */
-module.exports = [];
+module.exports = [
+  {
+    optionKey: 'directAccess',
+    changeNewDefault: 'true',
+    solution:
+      "Additionally, the environment variable 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS' will be deprecated and renamed to 'PARSE_SERVER_DIRECT_ACCESS' in a future version; it is currently possible to use either one.",
+  },
+];
