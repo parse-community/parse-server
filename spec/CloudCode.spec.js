@@ -2383,7 +2383,7 @@ describe('afterFind hooks', () => {
     });
   });
 
-  it('can set a pointer object in afterFind', async done => {
+  it('can set a pointer object in afterFind', async () => {
     const obj = new Parse.Object('MyObject');
     await obj.save();
     Parse.Cloud.afterFind('MyObject', async ({ objects }) => {
@@ -2391,15 +2391,32 @@ describe('afterFind hooks', () => {
       otherObject.set('foo', 'bar');
       await otherObject.save();
       objects[0].set('Pointer', otherObject);
+      objects[0].set('xyz', 'yolo');
       expect(objects[0].get('Pointer').get('foo')).toBe('bar');
       return objects;
     });
     const query = new Parse.Query('MyObject');
     query.equalTo('objectId', obj.id);
-    const [obj2] = await query.find();
+    const [obj2] = await query.first();
+    expect(obj2.get('xyz')).toBe('yolo');
     const pointer = obj2.get('Pointer');
     expect(pointer.get('foo')).toBe('bar');
-    done();
+  });
+
+  it('can return a unsaved object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    Parse.Cloud.afterFind('MyObject', async () => {
+      const otherObject = new Parse.Object('Test');
+      otherObject.set('foo', 'bar');
+      return [otherObject];
+    });
+    const query = new Parse.Query('MyObject');
+    const obj2 = await query.first();
+    expect(obj2.get('foo')).toEqual('bar');
+    expect(obj2.id).toBeUndefined();
+    await obj2.save();
+    expect(obj2.id).toBeDefined();
   });
 
   it('should have request headers', done => {

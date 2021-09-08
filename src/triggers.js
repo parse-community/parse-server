@@ -166,16 +166,15 @@ export function toJSONwithObjects(object, className) {
     return {};
   }
   const toJSON = object.toJSON();
-  for (const key of Object.keys(toJSON)) {
-    const val = toJSON[key];
-    if (!val || !val.__type || val.__type !== 'Pointer') {
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(object._getStateIdentifier());
+  for (const key in pending) {
+    const val = object.get(key);
+    if (!val || !val._toFullJSON) {
+      toJSON[key] = val;
       continue;
     }
-    const pointer = object.get(key);
-    const json = pointer.toJSON();
-    json.className = pointer.className;
-    json.__type = 'Object';
-    toJSON[key] = json;
+    toJSON[key] = val._toFullJSON();
   }
   if (className) {
     toJSON.className = className;
