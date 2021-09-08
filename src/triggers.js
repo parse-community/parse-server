@@ -465,12 +465,6 @@ export function maybeRunAfterFindTrigger(
         const response = trigger(request);
         if (response && typeof response.then === 'function') {
           return response.then(results => {
-            if (!results) {
-              throw new Parse.Error(
-                Parse.Error.SCRIPT_FAILED,
-                'AfterFind expect results to be returned in the promise'
-              );
-            }
             return results;
           });
         }

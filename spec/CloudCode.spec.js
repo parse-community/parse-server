@@ -2393,11 +2393,10 @@ describe('afterFind hooks', () => {
       objects[0].set('Pointer', otherObject);
       objects[0].set('xyz', 'yolo');
       expect(objects[0].get('Pointer').get('foo')).toBe('bar');
-      return objects;
     });
     const query = new Parse.Query('MyObject');
     query.equalTo('objectId', obj.id);
-    const [obj2] = await query.first();
+    const obj2 = await query.first();
     expect(obj2.get('xyz')).toBe('yolo');
     const pointer = obj2.get('Pointer');
     expect(pointer.get('foo')).toBe('bar');
