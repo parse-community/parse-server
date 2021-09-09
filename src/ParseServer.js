@@ -368,7 +368,7 @@ class ParseServer {
 }
 
 function addParseCloud() {
-  const ParseCloud = require('./cloud-code/Parse.Cloud');
+  const { ParseCloud } = require('./cloud-code/Parse.Cloud');
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
 }

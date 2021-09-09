@@ -2,7 +2,8 @@
 
 const { Parse } = require('parse/node');
 
-import { getJob, getFunction, maybeRunValidator, resolveError } from '../triggers.js';
+import { getJob, getFunction, resolveError } from '../triggers.js';
+import { maybeRunValidator } from './../cloud-code/Parse.Cloud.Validator.js';
 import PromiseRouter from '../PromiseRouter';
 import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
@@ -10,6 +11,9 @@ import _ from 'lodash';
 import { logger } from '../logger';
 
 function parseObject(obj) {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
   if (Array.isArray(obj)) {
     return obj.map(item => parseObject(item));
   }
