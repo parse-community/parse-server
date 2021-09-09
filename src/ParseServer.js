@@ -103,10 +103,14 @@ class ParseServer {
       if (typeof cloud === 'function') {
         cloud(Parse);
       } else if (typeof cloud === 'string') {
-        if (this.config.module) {
-          import(path.resolve(process.cwd(), cloud));
-        } else {
+        try {
           require(path.resolve(process.cwd(), cloud));
+        } catch (e) {
+          if (e.code === 'ERR_REQUIRE_ESM') {
+            import(path.resolve(process.cwd(), cloud));
+          } else {
+            throw e;
+          }
         }
       } else {
         throw "argument 'cloud' must either be a string or a function";
