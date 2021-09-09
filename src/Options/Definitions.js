@@ -260,6 +260,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MIDDLEWARE',
     help: 'middleware for express server, can be string or function',
   },
+  module: {
+    env: 'PARSE_SERVER_MODULE',
+    help: 'Whether cloud should load using `import` instead of `require`.',
+    action: parsers.booleanParser,
+  },
   mountGraphQL: {
     env: 'PARSE_SERVER_MOUNT_GRAPHQL',
     help: 'Mounts the GraphQL endpoint',

@@ -70,6 +70,8 @@ export interface ParseServerOptions {
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
   cloud: ?string;
+  /* Whether cloud should load using `import` instead of `require`. */
+  module: ?boolean;
   /* A collection prefix for the classes
   :DEFAULT: '' */
   collectionPrefix: ?string;

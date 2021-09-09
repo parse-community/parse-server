@@ -39,6 +39,21 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can throw with invalid cloud', async () => {
+    await expectAsync(reconfigureServer({ cloud: [] })).toBeRejectedWith(
+      "argument 'cloud' must either be a string or a function"
+    );
+  });
+
+  it('can use import for cloud files', async () => {
+    await reconfigureServer({
+      cloud: './spec/cloud/cloudCodeRelativeFile.js',
+      module: true,
+    });
+    const result = await Parse.Cloud.run('cloudCodeInFile', {});
+    expect(result).toBe('It is possible to define cloud code in a file.');
+  });
+
   it('can create functions', done => {
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';
