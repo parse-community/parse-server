@@ -1,6 +1,6 @@
 // FunctionsRouter.js
 
-var Parse = require('parse/node').Parse;
+const { Parse } = require('parse/node');
 
 import { getJob, getFunction, maybeRunValidator, resolveError } from '../triggers.js';
 import PromiseRouter from '../PromiseRouter';
