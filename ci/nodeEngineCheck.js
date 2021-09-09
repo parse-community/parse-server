@@ -46,7 +46,7 @@ class NodeEngineCheck {
       const dirents = await fs.readdir(basePath, { withFileTypes: true });
       const validFiles = dirents.filter(d => d.name.toLowerCase() == 'package.json').map(d => path.join(basePath, d.name));
       files.push(...validFiles);
-      
+
       // For each directory entry
       for (const dirent of dirents) {
         if (dirent.isDirectory()) {
@@ -80,7 +80,7 @@ class NodeEngineCheck {
       const contentString = await fs.readFile(file, 'utf-8');
       const contentJson = JSON.parse(contentString);
       const version = ((contentJson || {}).engines || {}).node;
-      
+
       // Add response
       response.push({
         file: file,
@@ -112,14 +112,14 @@ class NodeEngineCheck {
 
     // Sort by min version
     const sortedMinVersions = minVersions.sort((v1, v2) => semver.compare(v1.nodeMinVersion, v2.nodeMinVersion));
-    
+
     // Filter by higher versions
     const higherVersions = sortedMinVersions.filter(v => semver.gt(v.nodeMinVersion, baseVersion));
     // console.log(`getHigherVersions: ${JSON.stringify(higherVersions)}`);
     return higherVersions;
   }
 
-/**
+  /**
  * Returns the node version of the parent package.
  * @return {Object} The parent package info.
  */
@@ -153,7 +153,7 @@ async function check() {
 
   // Determine parent min version
   const parentMinVersion = semver.minVersion(parentVersion.nodeVersion);
-  
+
   // Get package.json files
   const files = await check.getPackageFiles();
   core.info(`Checking the minimum node version requirement of ${files.length} dependencies`);
@@ -170,13 +170,13 @@ async function check() {
   // If there are higher versions
   if (higherVersions.length > 0) {
     console.log(`\nThere are ${higherVersions.length} dependencies that require a higher node engine version than the parent package (${parentVersion.nodeVersion}):`);
-    
+
     // For each dependency
     for (const higherVersion of higherVersions) {
-      
+
       // Get package name
-      const package = higherVersion.file.split('node_modules/').pop().replace('/package.json', '');
-      console.log(`- ${package} requires at least node ${higherVersion.nodeMinVersion} (${higherVersion.nodeVersion})`);
+      const _package = higherVersion.file.split('node_modules/').pop().replace('/package.json', '');
+      console.log(`- ${_package} requires at least node ${higherVersion.nodeMinVersion} (${higherVersion.nodeVersion})`);
     }
     console.log('');
     core.setFailed(`❌ Upgrade the node engine version in package.json to at least '${highestVersion}' to satisfy the dependencies.`);
