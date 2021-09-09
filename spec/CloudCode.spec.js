@@ -39,12 +39,6 @@ describe('Cloud Code', () => {
     });
   });
 
-  it('can throw with invalid cloud', async () => {
-    await expectAsync(reconfigureServer({ cloud: [] })).toBeRejectedWith(
-      "argument 'cloud' must either be a string or a function"
-    );
-  });
-
   it('can load cloud code as a module', async () => {
     process.env.npm_package_type = 'module';
     await reconfigureServer({ cloud: './spec/cloud/cloudCodeModuleFile.js' });
