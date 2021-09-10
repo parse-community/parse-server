@@ -624,7 +624,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
       fail('should have thrown.');
     } catch (e) {
-      expect(e).toBe('emailVerifyTokenReuseIfValid must be a boolean value');
+      expect(e).toBe('emailVerifyTokenReuseIfValid must be a boolean value.');
     }
     try {
       await reconfigureServer({

@@ -426,40 +426,33 @@ describe('server', () => {
     });
   });
 
-  it('fails if the session length is not a number', done => {
-    reconfigureServer({ sessionLength: 'test' })
-      .then(done.fail)
-      .catch(error => {
-        expect(error).toEqual('Session length must be a valid number.');
-        done();
-      });
+  it('fails if the session length is not a number', async () => {
+    await expectAsync(reconfigureServer({ sessionLength: 'test' })).toBeRejectedWith(
+      'sessionLength must be a number value.'
+    );
   });
 
-  it('fails if the session length is less than or equal to 0', done => {
-    reconfigureServer({ sessionLength: '-33' })
-      .then(done.fail)
-      .catch(error => {
-        expect(error).toEqual('Session length must be a value greater than 0.');
-        return reconfigureServer({ sessionLength: '0' });
-      })
-      .catch(error => {
-        expect(error).toEqual('Session length must be a value greater than 0.');
-        done();
-      });
+  it('fails if the session length is less than or equal to 0', async () => {
+    await expectAsync(reconfigureServer({ sessionLength: '-33' })).toBeRejectedWith(
+      'sessionLength must be a number value.'
+    );
+    await expectAsync(reconfigureServer({ sessionLength: NaN })).toBeRejectedWith(
+      'sessionLength must be a valid number.'
+    );
+    await expectAsync(reconfigureServer({ sessionLength: 0 })).toBeRejectedWith(
+      'Session length must be a value greater than 0.'
+    );
   });
 
-  it('ignores the session length when expireInactiveSessions set to false', done => {
-    reconfigureServer({
-      sessionLength: '-33',
+  it('ignores the session length when expireInactiveSessions set to false', async () => {
+    await reconfigureServer({
+      sessionLength: -33,
       expireInactiveSessions: false,
-    })
-      .then(() =>
-        reconfigureServer({
-          sessionLength: '0',
-          expireInactiveSessions: false,
-        })
-      )
-      .then(done);
+    });
+    await reconfigureServer({
+      sessionLength: 0,
+      expireInactiveSessions: false,
+    });
   });
 
   it('fails if maxLimit is negative', done => {
@@ -555,5 +548,40 @@ describe('server', () => {
           .then(done);
       })
       .catch(done.fail);
+  });
+  it('default interface keys are set', async () => {
+    delete process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID;
+    delete process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION;
+    await reconfigureServer();
+    const config = Config.get('test');
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeDefined();
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeFalse();
+  });
+
+  it('can set subkeys via environment variables', async () => {
+    process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID = true;
+    process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION = 3000;
+    await reconfigureServer();
+    const config = Config.get('test');
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeDefined();
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeTrue();
+  });
+
+  it('can set throw on invalid type', async () => {
+    await expectAsync(
+      reconfigureServer({
+        revokeSessionOnPasswordReset: [],
+      })
+    ).toBeRejectedWith('revokeSessionOnPasswordReset must be a boolean value.');
+  });
+
+  it('can set throw on invalid subkeys', async () => {
+    await expectAsync(
+      reconfigureServer({
+        fileUpload: {
+          enableForAnonymousUser: [],
+        },
+      })
+    ).toBeRejectedWith('fileUpload.enableForAnonymousUser must be a boolean value.');
   });
 });

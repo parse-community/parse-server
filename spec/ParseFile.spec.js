@@ -5,6 +5,7 @@
 
 const { FilesController } = require('../lib/Controllers/FilesController');
 const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 const str = 'Hello World!';
 const data = [];
@@ -1042,13 +1043,18 @@ describe('Parse.File testing', () => {
     });
 
     it('rejects invalid fileUpload configuration', async () => {
-      const invalidConfigs = [
-        { fileUpload: undefined },
-        { fileUpload: null },
-        { fileUpload: [] },
-        { fileUpload: 1 },
-        { fileUpload: 'string' },
-      ];
+      const emptyConfigs = [{ fileUpload: undefined }, { fileUpload: null }];
+      for (const config of emptyConfigs) {
+        await reconfigureServer(config);
+        const { fileUpload } = Config.get('test');
+        expect(fileUpload).toBeDefined();
+        expect(fileUpload).toEqual({
+          enableForAnonymousUser: false,
+          enableForAuthenticatedUser: true,
+          enableForPublic: false,
+        });
+      }
+      const invalidConfigs = [{ fileUpload: [] }, { fileUpload: 1 }, { fileUpload: 'string' }];
       const validConfigs = [{ fileUpload: {} }];
       const keys = ['enableForPublic', 'enableForAnonymousUser', 'enableForAuthenticatedUser'];
       const invalidValues = [[], {}, 1, 'string', null];

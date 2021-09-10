@@ -219,7 +219,8 @@ export interface ParseServerOptions {
   idempotencyOptions: ?IdempotencyOptions;
   /* Options for file uploads
   :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
-  :DEFAULT: {} */
+  :DEFAULT: {}
+   */
   fileUpload: ?FileUploadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
@@ -466,7 +467,6 @@ export interface FileUploadOptions {
 }
 
 export interface DatabaseOptions {
-  /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
-  :DEFAULT: false */
+  /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required. */
   enableSchemaHooks: ?boolean;
 }

@@ -5,13 +5,8 @@
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
-import {
-  IdempotencyOptions,
-  FileUploadOptions,
-  AccountLockoutOptions,
-  PagesOptions,
-  SecurityOptions,
-} from './Options/Definitions';
+import Definitions from './Options/Definitions';
+const { ParseServerOptions, IdempotencyOptions, AccountLockoutOptions, PagesOptions } = Definitions;
 import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
@@ -22,6 +17,51 @@ function removeTrailingSlash(str) {
     str = str.substr(0, str.length - 1);
   }
   return str;
+}
+
+function validateTypes(serverOpts) {
+  const getType = fn => {
+    if (Array.isArray(fn)) {
+      return 'array';
+    }
+    if (fn === 'Any' || fn === 'function') {
+      return fn;
+    }
+    const type = typeof fn;
+    if (typeof fn === 'function') {
+      const match = fn && fn.toString().match(/^\s*function (\w+)/);
+      return (match ? match[1] : 'function').toLowerCase();
+    }
+    return type;
+  };
+
+  const checkKey = (setValue, path, action, original) => {
+    if (setValue === undefined || !action) {
+      return;
+    }
+    const requiredType = getType(original == null ? action(setValue) : original);
+    const thisType = getType(setValue);
+    if (requiredType !== thisType) {
+      throw `${path} must be a${
+        requiredType.charAt(0).match(/[aeiou]/i) ? 'n' : ''
+      } ${requiredType} value.`;
+    }
+    if (requiredType === 'number' && isNaN(setValue)) {
+      throw `${path} must be a valid number.`;
+    }
+  };
+  for (const key in ParseServerOptions) {
+    const definition = ParseServerOptions[key];
+    const setValue = serverOpts[key];
+    checkKey(setValue, key, definition.action, definition.default);
+    if (setValue && definition.group) {
+      const group = Definitions[definition.group];
+      for (const subkey in group) {
+        const subdefinition = group[subkey];
+        checkKey(setValue[subkey], `${key}.${subkey}`, subdefinition.action, subdefinition.default);
+      }
+    }
+  }
 }
 
 export class Config {
@@ -54,28 +94,27 @@ export class Config {
     return serverConfiguration;
   }
 
-  static validate({
-    verifyUserEmails,
-    userController,
-    appName,
-    publicServerURL,
-    revokeSessionOnPasswordReset,
-    expireInactiveSessions,
-    sessionLength,
-    maxLimit,
-    emailVerifyTokenValidityDuration,
-    accountLockout,
-    passwordPolicy,
-    masterKeyIps,
-    masterKey,
-    readOnlyMasterKey,
-    allowHeaders,
-    idempotencyOptions,
-    emailVerifyTokenReuseIfValid,
-    fileUpload,
-    pages,
-    security,
-  }) {
+  static validate(serverOpts) {
+    const {
+      verifyUserEmails,
+      userController,
+      appName,
+      publicServerURL,
+      expireInactiveSessions,
+      sessionLength,
+      maxLimit,
+      emailVerifyTokenValidityDuration,
+      accountLockout,
+      passwordPolicy,
+      masterKeyIps,
+      masterKey,
+      readOnlyMasterKey,
+      allowHeaders,
+      idempotencyOptions,
+      emailVerifyTokenReuseIfValid,
+      pages,
+    } = serverOpts;
+    validateTypes(serverOpts);
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
     }
@@ -93,11 +132,6 @@ export class Config {
 
     this.validateAccountLockoutPolicy(accountLockout);
     this.validatePasswordPolicy(passwordPolicy);
-    this.validateFileUploadOptions(fileUpload);
-
-    if (typeof revokeSessionOnPasswordReset !== 'boolean') {
-      throw 'revokeSessionOnPasswordReset must be a boolean value';
-    }
 
     if (publicServerURL) {
       if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
@@ -110,23 +144,6 @@ export class Config {
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
-    this.validateSecurityOptions(security);
-  }
-
-  static validateSecurityOptions(security) {
-    if (Object.prototype.toString.call(security) !== '[object Object]') {
-      throw 'Parse Server option security must be an object.';
-    }
-    if (security.enableCheck === undefined) {
-      security.enableCheck = SecurityOptions.enableCheck.default;
-    } else if (!isBoolean(security.enableCheck)) {
-      throw 'Parse Server option security.enableCheck must be a boolean.';
-    }
-    if (security.enableCheckLog === undefined) {
-      security.enableCheckLog = SecurityOptions.enableCheckLog.default;
-    } else if (!isBoolean(security.enableCheckLog)) {
-      throw 'Parse Server option security.enableCheckLog must be a boolean.';
-    }
   }
 
   static validatePagesOptions(pages) {
@@ -279,16 +296,6 @@ export class Config {
       ) {
         throw 'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20';
       }
-
-      if (
-        passwordPolicy.resetTokenReuseIfValid &&
-        typeof passwordPolicy.resetTokenReuseIfValid !== 'boolean'
-      ) {
-        throw 'resetTokenReuseIfValid must be a boolean value';
-      }
-      if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
-        throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
-      }
     }
   }
 
@@ -332,34 +339,6 @@ export class Config {
     }
   }
 
-  static validateFileUploadOptions(fileUpload) {
-    try {
-      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
-        throw 'fileUpload must be an object value.';
-      }
-    } catch (e) {
-      if (e instanceof ReferenceError) {
-        return;
-      }
-      throw e;
-    }
-    if (fileUpload.enableForAnonymousUser === undefined) {
-      fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
-    } else if (typeof fileUpload.enableForAnonymousUser !== 'boolean') {
-      throw 'fileUpload.enableForAnonymousUser must be a boolean value.';
-    }
-    if (fileUpload.enableForPublic === undefined) {
-      fileUpload.enableForPublic = FileUploadOptions.enableForPublic.default;
-    } else if (typeof fileUpload.enableForPublic !== 'boolean') {
-      throw 'fileUpload.enableForPublic must be a boolean value.';
-    }
-    if (fileUpload.enableForAuthenticatedUser === undefined) {
-      fileUpload.enableForAuthenticatedUser = FileUploadOptions.enableForAuthenticatedUser.default;
-    } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
-      throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
-    }
-  }
-
   static validateMasterKeyIps(masterKeyIps) {
     for (const ip of masterKeyIps) {
       if (!net.isIP(ip)) {
@@ -381,12 +360,8 @@ export class Config {
   }
 
   static validateSessionConfiguration(sessionLength, expireInactiveSessions) {
-    if (expireInactiveSessions) {
-      if (isNaN(sessionLength)) {
-        throw 'Session length must be a valid number.';
-      } else if (sessionLength <= 0) {
-        throw 'Session length must be a value greater than 0.';
-      }
+    if (expireInactiveSessions && sessionLength <= 0) {
+      throw 'Session length must be a value greater than 0.';
     }
   }
 
