@@ -564,32 +564,23 @@ describe('Cloud Code', () => {
     );
   });
 
-  it('test afterDelete ran and created an object', function (done) {
+  it('test afterDelete ran and created an object', async done => {
+    const obj = new Parse.Object('AfterDeleteTest');
+    const test = async () => {
+      const query = new Parse.Query('AfterDeleteProof');
+      query.equalTo('proof', obj.id);
+      const results = await query.find();
+      expect(results.length).toEqual(1);
+      done();
+    };
     Parse.Cloud.afterDelete('AfterDeleteTest', function (req) {
       const obj = new Parse.Object('AfterDeleteProof');
       obj.set('proof', req.object.id);
       obj.save().then(test);
     });
 
-    const obj = new Parse.Object('AfterDeleteTest');
-    obj.save().then(function () {
-      obj.destroy();
-    });
-
-    function test() {
-      const query = new Parse.Query('AfterDeleteProof');
-      query.equalTo('proof', obj.id);
-      query.find().then(
-        function (results) {
-          expect(results.length).toEqual(1);
-          done();
-        },
-        function (error) {
-          fail(error);
-          done();
-        }
-      );
-    }
+    await obj.save();
+    await obj.destroy();
   });
 
   it('test cloud function return types', function (done) {

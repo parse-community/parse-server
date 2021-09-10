@@ -10,6 +10,9 @@ import _ from 'lodash';
 import { logger } from '../logger';
 
 function parseObject(obj) {
+  if (!(obj ?? false)) {
+    return obj;
+  }
   if (Array.isArray(obj)) {
     return obj.map(item => parseObject(item));
   }
