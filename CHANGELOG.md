@@ -4,7 +4,8 @@ Jump directly to a version:
 
 | 4.x                                  |
 |--------------------------------------|
-| [**4.10.2 (latest release)**](#4102) |
+| [**4.10.3 (latest release)**](#4103) |
+| [4.10.2](#4102)                      |
 | [4.10.1](#4101)                      |
 | [4.10.0](#4100)                      |
 | [4.5.2](#452)                        |
@@ -93,7 +94,8 @@ Jump directly to a version:
 ___
 
 ## Unreleased (Master Branch)
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.2...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.3...master)
+
 ### Breaking Changes
 - Improved schema caching through database real-time hooks. Reduces DB queries, decreases Parse Query execution time and fixes a potential schema memory leak. If multiple Parse Server instances connect to the same DB (for example behind a load balancer), set the [Parse Server Option](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) `databaseOptions.enableSchemaHooks: true` to enable this feature and keep the schema in sync across all instances. Failing to do so will cause a schema change to not propagate to other instances and re-syncing will only happen when these instances restart. The options `enableSingleSchemaCache` and `schemaCacheTTL` have been removed. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required. (Diamond Lewis, SebC) [#7214](https://github.com/parse-community/parse-server/issues/7214)
 - Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) (dblythy, Manuel Trezza) [#7071](https://github.com/parse-community/parse-server/pull/7071)
@@ -101,6 +103,8 @@ ___
 - Remove support for MongoDB 3.6 which has reached its End-of-Life date and PostgreSQL 10 (Manuel Trezza) [#7315](https://github.com/parse-community/parse-server/pull/7315)
 - Remove support for Node 10 which has reached its End-of-Life date (Manuel Trezza) [#7314](https://github.com/parse-community/parse-server/pull/7314)
 - Remove S3 Files Adapter from Parse Server, instead install separately as `@parse/s3-files-adapter` (Manuel Trezza) [#7324](https://github.com/parse-community/parse-server/pull/7324)
+- Remove Session field `restricted`; the field was a code artifact from a feature that never existed in Open Source Parse Server; if you have been using this field for custom purposes, consider that for new Parse Server installations the field does not exist anymore in the schema, and for existing installations the field default value `false` will not be set anymore when creating a new session (Manuel Trezza) [#7543](https://github.com/parse-community/parse-server/pull/7543)
+
 ### Notable Changes
 - Added Parse Server Security Check to report weak security settings (Manuel Trezza, dblythy) [#7247](https://github.com/parse-community/parse-server/issues/7247)
 - EXPERIMENTAL: Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification (Manuel Trezza) [#7128](https://github.com/parse-community/parse-server/pull/7128)
@@ -108,7 +112,6 @@ ___
 - Added Deprecation Policy to govern the introduction of breaking changes in a phased pattern that is more predictable for developers (Manuel Trezza) [#7199](https://github.com/parse-community/parse-server/pull/7199)
 - Add REST API endpoint `/loginAs` to create session of any user with master key; allows to impersonate another user. (GormanFletcher) [#7406](https://github.com/parse-community/parse-server/pull/7406)
 - Add official support for MongoDB 5.0 (Manuel Trezza) [#7469](https://github.com/parse-community/parse-server/pull/7469)
-- Add issue bot (Manuel Trezza) [#7523](https://github.com/parse-community/parse-server/pull/7523)
 
 ### Other Changes
 - Support native mongodb syntax in aggregation pipelines (Raschid JF Rafeally) [#7339](https://github.com/parse-community/parse-server/pull/7339)
@@ -146,6 +149,15 @@ ___
 - Add ability to pass context of an object via a header, X-Parse-Cloud-Context, for Cloud Code triggers. The header addition allows client SDK's to add context without injecting _context in the body of JSON objects (Corey Baker) [#7437](https://github.com/parse-community/parse-server/pull/7437)
 - Add CI check to add changelog entry (Manuel Trezza) [#7512](https://github.com/parse-community/parse-server/pull/7512)
 - Refactor: uniform issue templates across repos (Manuel Trezza) [#7528](https://github.com/parse-community/parse-server/pull/7528)
+- ci: bump ci environment (Manuel Trezza) [#7539](https://github.com/parse-community/parse-server/pull/7539)
+- CI now pushes docker images to Docker Hub (Corey Baker) [#7548](https://github.com/parse-community/parse-server/pull/7548)
+- docs: Introduce deprecation ID for reference in comments and online search (Manuel Trezza) [#7562](https://github.com/parse-community/parse-server/pull/7562)
+
+## 4.10.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.2...4.10.3)
+
+### Security Fixes
+- Validate `explain` query parameter to avoid a server crash due to MongoDB bug [NODE-3463](https://jira.mongodb.org/browse/NODE-3463) (Kartal Kaan Bozdogan) [GHSA-xqp8-w826-hh6x](https://github.com/parse-community/parse-server/security/advisories/GHSA-xqp8-w826-hh6x)
 
 ## 4.10.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.1...4.10.2)

@@ -657,7 +657,7 @@ RestQuery.prototype.runFind = function (options = {}) {
   return this.config.database
     .find(this.className, this.restWhere, findOptions, this.auth)
     .then(results => {
-      if (this.className === '_User' && findOptions.explain !== true) {
+      if (this.className === '_User' && !findOptions.explain) {
         for (var result of results) {
           cleanResultAuthData(result);
         }
@@ -866,7 +866,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
           return set;
         }
       }
-      if (i == (keyPath.length - 1)) {
+      if (i == keyPath.length - 1) {
         set.add(keyPath[i]);
       }
       return set;
