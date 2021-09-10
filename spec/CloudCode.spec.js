@@ -1338,6 +1338,19 @@ describe('Cloud Code', () => {
         .catch(done.fail);
     });
 
+    it('run job should fail', async () => {
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/jobs/failedJob',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Master-Key': Parse.masterKey,
+          },
+        })
+      ).toBeRejected();
+    });
+
     it('should not run without master key', done => {
       expect(() => {
         Parse.Cloud.job('myJob', () => {});
