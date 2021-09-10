@@ -1408,6 +1408,42 @@ describe('Cloud Code', () => {
         .catch(done.fail);
     });
 
+    it('should run a job as body param', done => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
+          expect(req.functionName).toBeUndefined();
+          expect(req.jobName).toBe('myJob');
+          expect(typeof req.jobId).toBe('string');
+          expect(typeof req.message).toBe('function');
+          expect(typeof res).toBe('undefined');
+        });
+      }).not.toThrow();
+
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/jobs',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+        body: {
+          jobName: 'myJob',
+        },
+      })
+        .then(async response => {
+          const jobStatusId = response.headers['x-parse-job-status-id'];
+          const checkJobStatus = async () => {
+            const jobStatus = await getJobStatus(jobStatusId);
+            return jobStatus.get('finishedAt');
+          };
+          while (!(await checkJobStatus())) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        })
+        .then(done)
+        .catch(done.fail);
+    });
+
     it('should run with master key basic auth', done => {
       expect(() => {
         Parse.Cloud.job('myJob', (req, res) => {

@@ -16,10 +16,10 @@ function parseObject(obj) {
   if (Array.isArray(obj)) {
     return obj.map(item => parseObject(item));
   }
-  if (obj?.__type === 'Date') {
+  if (obj.__type === 'Date') {
     return Object.assign(new Date(obj.iso), obj);
   }
-  if (obj?.__type === 'File') {
+  if (obj.__type === 'File') {
     return Parse.File.fromJSON(obj);
   }
   if (typeof obj === 'object') {
