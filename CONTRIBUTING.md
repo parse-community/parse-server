@@ -19,6 +19,8 @@
     - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
+- [Commit Message](#commit-message)
+  - [Breaking Change](#breaking-change)
 - [Code of Conduct](#code-of-conduct)
 
 ## Contributing
@@ -287,6 +289,47 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 4. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
 5. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
 6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
+
+## Commit Message
+
+For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
+
+```
+<type>: <summary>
+```
+
+The _type_ is the category of change that is made, possible types are:
+- `feat` - add a new feature
+- `fix` - fix a bug
+- `refactor` - refactor code without impact on features or performance
+- `docs` - add or edit code comments, documentation, GitHub pages
+- `style` - edit code style
+- `build` - retry failing build and anything build process related
+- `perf` - performance optimization
+- `ci` - continuous integration
+- `test` - tests
+
+The _summary_ is a short change description in present tense, not capitalized, without period at the end.
+
+For example:
+
+```
+feat: add handle to door for easy opening
+```
+
+Currently, we are not making use of the commit _scope_, which would be written as `<type>(<scope>): <summary>`, that attributes a change to a specific part of the product.
+
+### Breaking Change
+
+If a pull request contains a braking change, the text of the pull request must contain the word `BREAKING CHANGE` capitalized as the _last, most bottom_ part of the text. It must be followed by an empty line, then a short description of the character of the breaking change, and ideally how the developer should address it.
+
+For example:
+
+```
+BREAKING CHANGE
+
+The door handle has be pulled up to open the door, not down. Adjust your habits accordingly by walking on your hands.
+```
 
 ## Code of Conduct
 
