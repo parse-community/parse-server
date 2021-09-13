@@ -7,6 +7,7 @@ import mime from 'mime';
 import logger from '../logger';
 const triggers = require('../triggers');
 const http = require('http');
+const contentDisposition = require('content-disposition');
 
 const downloadFileFromURI = uri => {
   return new Promise((res, rej) => {
@@ -82,6 +83,7 @@ export class FilesRouter {
           res.status(200);
           res.set('Content-Type', contentType);
           res.set('Content-Length', data.length);
+          res.set('Content-Disposition', contentDisposition(filename));
           res.end(data);
         })
         .catch(() => {
