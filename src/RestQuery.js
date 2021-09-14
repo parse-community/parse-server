@@ -866,7 +866,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
           return set;
         }
       }
-      if (i + 1 === keyPath.length) {
+      if (i == keyPath.length - 1) {
         set.add(keyPath[i]);
       }
       return set;
