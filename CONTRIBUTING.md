@@ -309,7 +309,11 @@ The _type_ is the category of change that is made, possible types are:
 - `ci` - continuous integration
 - `test` - tests
 
-The _summary_ is a short change description in present tense, not capitalized, without period at the end.
+The _summary_ is a short change description in present tense, not capitalized, without period at the end. This summary will also be used as the changelog entry.
+- It must be short and self-explanatory for a reader who does not see the details of the full pull request description
+- It must not contain abbreviations, e.g. instead of `LQ` write `LiveQuery`
+- It must use the correct product and feature names as referenced in the documentation, e.g. instead of `Cloud Validator` use `Cloud Function validation`
+- In case of a breaking change, the summary must not contain duplicate information that is also in the [BREAKING CHANGE](#breaking-change) chapter of the pull request description. It must not contain a note that it is a breaking change, as this will be automatically flagged as such if the pull request description contains the BREAKING CHANGE chapter.
 
 For example:
 
@@ -321,11 +325,15 @@ Currently, we are not making use of the commit _scope_, which would be written a
 
 ### Breaking Change
 
-If a pull request contains a braking change, the text of the pull request must contain the word `BREAKING CHANGE` capitalized as the _last, most bottom_ part of the text. It must be followed by an empty line, then a short description of the character of the breaking change, and ideally how the developer should address it.
+If a pull request contains a braking change, the description of the pull request must contain a special chapter at the bottom.
+
+The chapter consists of the phrase `BREAKING CHANGE`, capitalized, in a single line without any formatting. It must be followed by an empty line, then a short description of the breaking change, and ideally how the developer should address it. This chapter should contain more details focusing on the "breaking” aspect of the change, as it is intended to assist the developer in adapting their deployment. However, keep it concise, as it will also become part of the changelog entry.
 
 For example:
 
 ```
+Detailed pull request description...
+
 BREAKING CHANGE
 
 The door handle has be pulled up to open the door, not down. Adjust your habits accordingly by walking on your hands.
