@@ -90,7 +90,7 @@
     "jsdoc": "3.6.3",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
-    "madge": "4.0.2",
+    "madge": "5.0.1",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
     "mongodb-runner": "4.8.1",
@@ -101,7 +101,8 @@
     "yaml": "1.10.0"
   },
   "scripts": {
-    "ci:check": "node ./resources/ci/ciCheck.js",
+    "ci:check": "node ./ci/ciCheck.js",
+    "ci:checkNodeEngine": "node ./ci/nodeEngineCheck.js",
     "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
@@ -127,7 +128,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">= 8"
+    "node": ">=12.20.0"
   },
   "bin": {
     "parse-server": "bin/parse-server"
