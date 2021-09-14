@@ -38,6 +38,7 @@ describe('Cloud Code', () => {
   it('can create functions', async () => {
     Parse.Cloud.define('hello', () => 'Hello world!');
     await expectAsync(Parse.Cloud.run('hello')).toBeResolvedTo('Hello world!');
+  });
 
   it('can load cloud code as a module', async () => {
     process.env.npm_package_type = 'module';
