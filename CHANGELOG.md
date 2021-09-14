@@ -152,7 +152,7 @@ ___
 - ci: bump ci environment (Manuel Trezza) [#7539](https://github.com/parse-community/parse-server/pull/7539)
 - CI now pushes docker images to Docker Hub (Corey Baker) [#7548](https://github.com/parse-community/parse-server/pull/7548)
 - docs: Introduce deprecation ID for reference in comments and online search (Manuel Trezza) [#7562](https://github.com/parse-community/parse-server/pull/7562)
-- cleanup FunctionRouter.js (Daniel Blyth) [#7564](https://github.com/parse-community/parse-server/pull/7564)
+- refactor: simplify Cloud Code tests and FunctionsRouter (Daniel Blyth) [#7564](https://github.com/parse-community/parse-server/pull/7564)
 
 ## 4.10.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.2...4.10.3)
