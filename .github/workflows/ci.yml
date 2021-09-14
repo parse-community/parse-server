@@ -20,7 +20,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
