@@ -251,64 +251,20 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
       .catch(done.fail);
   });
 
-  it('fullTextSearch: $diacriticSensitive - false', done => {
-    fullTextHelper()
-      .then(() => {
-        const where = {
-          subject: {
-            $text: {
-              $search: {
-                $term: 'CAFÉ',
-                $diacriticSensitive: false,
-              },
-            },
-          },
-        };
-        return request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/classes/TestObject',
-          body: { where, _method: 'GET' },
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
-            'Content-Type': 'application/json',
-          },
-        });
-      })
-      .then(resp => {
-        expect(resp.data.results.length).toBe(2);
-        done();
-      }, done.fail);
+  it('fullTextSearch: $diacriticSensitive - false', async () => {
+    await fullTextHelper();
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'CAFÉ', { diacriticSensitive: false });
+    const resp = await query.find();
+    expect(resp.length).toBe(2);
   });
 
-  it('fullTextSearch: $caseSensitive', done => {
-    fullTextHelper()
-      .then(() => {
-        const where = {
-          subject: {
-            $text: {
-              $search: {
-                $term: 'Coffee',
-                $caseSensitive: true,
-              },
-            },
-          },
-        };
-        return request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/classes/TestObject',
-          body: { where, _method: 'GET' },
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
-            'Content-Type': 'application/json',
-          },
-        });
-      })
-      .then(resp => {
-        expect(resp.data.results.length).toBe(1);
-        done();
-      }, done.fail);
+  it('fullTextSearch: $caseSensitive', async () => {
+    await fullTextHelper();
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'Coffee', { caseSensitive: true });
+    const results = await query.find();
+    expect(results.length).toBe(1);
   });
 });
 
