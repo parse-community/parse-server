@@ -29,7 +29,7 @@ const fullTextHelper = async () => {
   );
 };
 
-describe('Parse.Query Full Text Search testing', () => {
+fdescribe('Parse.Query Full Text Search testing', () => {
   it('fullTextSearch: $search', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
@@ -64,7 +64,8 @@ describe('Parse.Query Full Text Search testing', () => {
     expect(first.get('score'));
     expect(second.get('score'));
     expect(third.get('score'));
-    expect(first.get('score') > second.get('score') > third.get('score')).toBeTrue();
+    expect(first.get('score') >= second.get('score')).toBeTrue();
+    expect(second.get('score') >= third.get('score')).toBeTrue();
   });
 
   it('fullTextSearch: $language', async () => {
