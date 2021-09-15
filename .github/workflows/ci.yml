@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
       - name: Cache Node.js modules
@@ -29,8 +29,10 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - name: CI Self-Check
+      - name: CI Environments Check
         run: npm run ci:check
+      - name: CI Node Engine Check
+        run: npm run ci:checkNodeEngine
   check-changelog:
     name: Changelog
     timeout-minutes: 5
@@ -45,7 +47,7 @@ jobs:
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v1
+         uses: actions/setup-node@v2
          with:
            node-version: ${{ matrix.node-version }}
        - name: Cache Node.js modules
@@ -65,7 +67,7 @@ jobs:
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v1
+         uses: actions/setup-node@v2
          with:
            node-version: ${{ matrix.node-version }}
        - name: Cache Node.js modules
@@ -111,17 +113,17 @@ jobs:
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.17.6
           - name: MongoDB 4.2, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.2.15
+            MONGODB_VERSION: 4.2.16
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.17.6
           - name: MongoDB 4.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.25
+            MONGODB_VERSION: 4.0.27
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.17.6
           - name: MongoDB 4.0, Standalone, MMAPv1
-            MONGODB_VERSION: 4.0.25
+            MONGODB_VERSION: 4.0.27
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
             NODE_VERSION: 14.17.6
@@ -159,7 +161,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.NODE_VERSION }}
       - name: Cache Node.js modules
@@ -219,7 +221,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.NODE_VERSION }}
       - name: Cache Node.js modules
