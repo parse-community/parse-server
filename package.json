@@ -90,7 +90,7 @@
     "jsdoc": "3.6.3",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
-    "madge": "4.0.2",
+    "madge": "5.0.1",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
     "mongodb-runner": "4.8.1",
@@ -101,7 +101,8 @@
     "yaml": "1.10.0"
   },
   "scripts": {
-    "ci:check": "node ./resources/ci/ciCheck.js",
+    "ci:check": "node ./ci/ciCheck.js",
+    "ci:checkNodeEngine": "node ./ci/nodeEngineCheck.js",
     "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
@@ -111,8 +112,8 @@
     "test:mongodb:runnerstart": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} mongodb-runner start",
     "test:mongodb:testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} TESTING=1 jasmine",
     "test:mongodb": "npm run test:mongodb:runnerstart --dbversion=$npm_config_dbversion && npm run test:mongodb:testonly --dbversion=$npm_config_dbversion",
-    "test:mongodb:4.0.25": "npm run test:mongodb --dbversion=4.0.25",
-    "test:mongodb:4.2.15": "npm run test:mongodb --dbversion=4.2.15",
+    "test:mongodb:4.0.27": "npm run test:mongodb --dbversion=4.0.27",
+    "test:mongodb:4.2.16": "npm run test:mongodb --dbversion=4.2.16",
     "test:mongodb:4.4.8": "npm run test:mongodb --dbversion=4.4.8",
     "posttest:mongodb": "mongodb-runner stop",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.4.8} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} mongodb-runner start",
@@ -127,7 +128,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">= 8"
+    "node": ">=12.20.0"
   },
   "bin": {
     "parse-server": "bin/parse-server"
