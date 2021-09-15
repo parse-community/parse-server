@@ -2057,7 +2057,7 @@ describe('Parse.Object testing', () => {
   });
 
   //https://github.com/parse-community/parse-server/issues/7575
-  fit('Nested date type attributes should be saved as $date in mongoDB irrespective of nesting level', async done => {
+  it('Nested date type attributes should be saved as $date in mongoDB irrespective of nesting level', async done => {
     const object = new Parse.Object('TestObjectDate');
     await object.save({
       prop1: 'test1',
