@@ -2055,4 +2055,35 @@ describe('Parse.Object testing', () => {
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
   });
+
+  //https://github.com/parse-community/parse-server/issues/7575
+  fit('Nested date type attributes should be saved as $date in mongoDB irrespective of nesting level', async done => {
+    const object = new Parse.Object('TestObjectDate');
+    await object.save({
+      prop1: 'test1',
+      prop2: {
+        nestedProp: {
+          date: new Date(),
+        },
+      },
+      prop3: {
+        date: new Date(),
+      },
+    });
+
+    const futureDate = new Date();
+    futureDate.setHours(new Date().getHours() + 1);
+
+    const queryLevel1 = new Parse.Query('TestObjectDate');
+    queryLevel1.lessThan('prop3.date', futureDate);
+    const resultsLevel1 = await queryLevel1.find();
+    expect(resultsLevel1.length).toBe(1);
+
+    const queryLevel2 = new Parse.Query('TestObjectDate');
+    queryLevel2.lessThan('prop2.nestedProp.date', futureDate);
+    const resultsLevel2 = await queryLevel2.find();
+    expect(resultsLevel2.length).toBe(1);
+
+    done();
+  });
 });
