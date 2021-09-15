@@ -29,7 +29,7 @@ const fullTextHelper = async () => {
   );
 };
 
-fdescribe('Parse.Query Full Text Search testing', () => {
+describe('Parse.Query Full Text Search testing', () => {
   it('fullTextSearch: $search', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
