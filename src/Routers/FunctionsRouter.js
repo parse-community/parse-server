@@ -1,7 +1,6 @@
 // FunctionsRouter.js
 
-const { Parse } = require('parse/node');
-
+import Parse from 'parse/node';
 import { getJob, getFunction, maybeRunValidator, resolveError } from '../triggers.js';
 import PromiseRouter from '../PromiseRouter';
 import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
@@ -45,13 +44,9 @@ export class FunctionsRouter extends PromiseRouter {
       '/jobs/:jobName',
       promiseEnsureIdempotency,
       promiseEnforceMasterKeyAccess,
-      function (req) {
-        return FunctionsRouter.handleCloudJob(req);
-      }
+      FunctionsRouter.handleCloudJob
     );
-    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function (req) {
-      return FunctionsRouter.handleCloudJob(req);
-    });
+    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, FunctionsRouter.handleCloudJob);
   }
 
   static async handleCloudJob(req) {
