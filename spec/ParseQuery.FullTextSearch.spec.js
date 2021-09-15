@@ -126,11 +126,14 @@ describe('Parse.Query Full Text Search testing', () => {
     query.fullText('subject', 'coffee');
     query.descending('$score');
     query.select('$score');
-    const results = await query.find();
-    expect(results.length).toBe(3);
-    expect(results[0].get('score'));
-    expect(results[1].get('score'));
-    expect(results[2].get('score'));
+    const [first, second, third] = await query.find();
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(third).toBeDefined();
+    expect(first.get('score'));
+    expect(second.get('score'));
+    expect(third.get('score'));
+    expect(first.get('score') > second.get('score') > third.get('score')).toBeTrue();
   });
 
   it('fullTextSearch: $language', done => {
