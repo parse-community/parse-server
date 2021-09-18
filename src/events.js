@@ -2,20 +2,26 @@
 import Parse from 'parse/node';
 
 export const EventTypes = {
-  Login: {
+  Auth: {
     loginStarted: 'loginStarted',
     userAuthenticated: 'userAuthenticated',
     loginFinished: 'loginFinished',
     loginFailed: 'loginFailed',
+    logoutStarted: 'logoutStarted',
+    logoutFinished: 'logoutFinished',
+    logoutFailed: 'logoutFailed',
   },
 };
 
-function validateClassNameForTriggers(className, eventType) {
+function validateClassNameForEvents(className, eventType) {
   if (
-    (eventType === EventTypes.Login.loginStarted ||
-      eventType === EventTypes.Login.userAuthenticated ||
-      eventType === EventTypes.Login.loginFinished ||
-      eventType === EventTypes.Login.loginFailed) &&
+    (eventType === EventTypes.Auth.loginStarted ||
+      eventType === EventTypes.Auth.userAuthenticated ||
+      eventType === EventTypes.Auth.loginFinished ||
+      eventType === EventTypes.Auth.loginFailed ||
+      eventType === EventTypes.Auth.logoutStarted ||
+      eventType === EventTypes.Auth.logoutFinished ||
+      eventType === EventTypes.Auth.logoutFailed) &&
     className !== '_User'
   ) {
     throw 'Login events can only be used with _User class!';
@@ -56,7 +62,7 @@ function get(className, eventType, applicationId) {
 }
 
 export function addEvent(className, eventType, applicationId, handler) {
-  validateClassNameForTriggers(className, eventType);
+  validateClassNameForEvents(className, eventType);
   applicationId = applicationId || Parse.applicationId;
   add(className, eventType, applicationId, handler);
 }
@@ -75,12 +81,10 @@ async function runEvent(className, eventType, request, applicationId) {
   try {
     applicationId = applicationId || Parse.applicationId;
     const event = get(className, eventType, applicationId);
-
     if (!event || typeof event !== 'function') {
       return null;
     }
-    const res = event(request);
-    return await Promise.resolve(res);
+    return await Promise.resolve(event(request));
   } catch (error) {
     if (typeof error === 'string') {
       throw new Parse.Error(Parse.Error.SCRIPT_FAILED, error);
@@ -89,12 +93,12 @@ async function runEvent(className, eventType, request, applicationId) {
   }
 }
 
-export async function runLoginEvent(eventType, request, applicationId) {
+export async function runAuthEvent(eventType, request, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   return await runEvent('_User', eventType, request, applicationId);
 }
 
-export function getLoginEventRequest(credentials, auth, config) {
+export function getAuthEventRequest(credentials, auth, config) {
   const request = {
     credentials: credentials,
     log: config.loggerController,
@@ -106,6 +110,9 @@ export function getLoginEventRequest(credentials, auth, config) {
   }
   if (auth.isMaster) {
     request.master = true;
+  }
+  if (auth.user) {
+    request.user = auth.user;
   }
   if (auth.installationId) {
     request.installationId = auth.installationId;

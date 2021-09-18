@@ -90,7 +90,7 @@ function validateValidator(validator) {
  * @description The Parse Cloud Code SDK.
  */
 
-var ParseCloud = {};
+var ParseCloud = { ...require('./Parse.Cloud.Event') };
 /**
  * Defines a Cloud Function.
  *
@@ -725,7 +725,7 @@ ParseCloud.useMasterKey = () => {
 
 ParseCloud.httpRequest = require('./httpRequest');
 
-ParseCloud.Event = require('./Parse.Cloud.Event');
+ParseCloud.Events = require('../events').EventTypes;
 
 module.exports = ParseCloud;
 

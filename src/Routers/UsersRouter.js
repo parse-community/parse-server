@@ -8,7 +8,7 @@ import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
-import { runLoginEvent, getLoginEventRequest, EventTypes } from '../events';
+import { runAuthEvent, getAuthEventRequest, EventTypes } from '../events';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 
@@ -186,10 +186,10 @@ export class UsersRouter extends ClassesRouter {
       username: req.body?.username || req.query?.username,
       email: req.body?.email || req.query?.email,
     };
-    const request = getLoginEventRequest(credentials, req.auth, req.config);
+    const request = getAuthEventRequest(credentials, req.auth, req.config);
     try {
       // run loginStarted event
-      await runLoginEvent(EventTypes.Login.loginStarted, request, req.config.applicationId);
+      await runAuthEvent(EventTypes.Auth.loginStarted, request, req.config.applicationId);
       const user = await this._authenticateUserFromRequest(req);
 
       // handle password expiry policy
@@ -239,7 +239,7 @@ export class UsersRouter extends ClassesRouter {
 
       // run userAuthenticated event
       request.user = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
-      await runLoginEvent(EventTypes.Login.userAuthenticated, request, req.config.applicationId);
+      await runAuthEvent(EventTypes.Auth.userAuthenticated, request, req.config.applicationId);
 
       const { sessionData, createSession } = RestWrite.createSession(req.config, {
         userId: user.objectId,
@@ -265,25 +265,23 @@ export class UsersRouter extends ClassesRouter {
 
       // run loginFinished event
       request.user = { ...req.auth, user: afterLoginUser };
-      await runLoginEvent(EventTypes.Login.loginFinished, request, req.config.applicationId);
+      runAuthEvent(EventTypes.Auth.loginFinished, request, req.config.applicationId);
 
       return { response: user };
     } catch (error) {
       request.error = error;
-      const response = await runLoginEvent(
-        EventTypes.Login.loginFailed,
+      const response = await runAuthEvent(
+        EventTypes.Auth.loginFailed,
         request,
         req.config.applicationId
       );
       if (typeof response === 'string') {
         throw new Parse.Error(Parse.Error.SCRIPT_FAILED, response);
       }
-      if (response && Object.keys(response).length > 0) {
-        if (!response.code) response.code = error.code;
-        if (!response.message) response.message = error.message;
+      if (response) {
         throw response;
       }
-      throw request.error;
+      throw error;
     }
   }
 
@@ -351,38 +349,57 @@ export class UsersRouter extends ClassesRouter {
       });
   }
 
-  handleLogOut(req) {
+  async handleLogOut(req) {
     const success = { response: {} };
-    if (req.info && req.info.sessionToken) {
-      return rest
-        .find(
-          req.config,
-          Auth.master(req.config),
-          '_Session',
-          { sessionToken: req.info.sessionToken },
-          undefined,
-          req.info.clientSDK,
-          req.info.context
-        )
-        .then(records => {
-          if (records.results && records.results.length) {
-            return rest
-              .del(
-                req.config,
-                Auth.master(req.config),
-                '_Session',
-                records.results[0].objectId,
-                req.info.context
-              )
-              .then(() => {
-                this._runAfterLogoutTrigger(req, records.results[0]);
-                return Promise.resolve(success);
-              });
-          }
-          return Promise.resolve(success);
-        });
+    // Event request
+    const request = getAuthEventRequest({}, req.auth, req.config);
+
+    try {
+      //Run logoutStarted event
+      await runAuthEvent(EventTypes.Auth.logoutStarted, request, req.config.applicationId);
+
+      if (!req.info || !req.info.sessionToken) {
+        return Promise.resolve(success);
+      }
+      const records = await rest.find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { sessionToken: req.info.sessionToken },
+        undefined,
+        req.info.clientSDK,
+        req.info.context
+      );
+      if (!records.results || !records.results.length) {
+        return Promise.resolve(success);
+      }
+      await rest.del(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        records.results[0].objectId,
+        req.info.context
+      );
+      //Run logoutFinished event
+      runAuthEvent(EventTypes.Auth.logoutFinished, request, req.config.applicationId);
+
+      this._runAfterLogoutTrigger(req, records.results[0]);
+      return Promise.resolve(success);
+    } catch (error) {
+      request.error = error;
+      const response = await runAuthEvent(
+        EventTypes.Auth.logoutFailed,
+        request,
+        req.config.applicationId
+      );
+      if (typeof response === 'string') {
+        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, response);
+      }
+      if (response) {
+        throw response;
+      }
+      throw error;
     }
-    return Promise.resolve(success);
   }
 
   _runAfterLogoutTrigger(req, session) {

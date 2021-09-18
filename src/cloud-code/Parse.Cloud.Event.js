@@ -1,7 +1,7 @@
 import { Parse } from 'parse/node';
 import * as events from '../events';
 
-const ParseCloudEvent = { ...events.EventTypes };
+const ParseCloudEvent = {};
 
 /**
  * Registers an event for specified event type.
@@ -9,17 +9,17 @@ const ParseCloudEvent = { ...events.EventTypes };
  * **Available on Cloud Code only.**
  *
  * ```
- * Parse.Cloud.Event.addLoginEvent(Parse.Cloud.Event.Login.loginStarted, (request) => {
+ * Parse.Cloud.Event.onAuthEvent(Parse.Cloud.Events.Login.loginStarted, (request) => {
  *   // code here
  * });
  * ```
  *
- * @method addLoginEvent
- * @name Parse.Cloud.Event.addLoginEvent
- * @param {String} arg1 Event type for registering the event.
+ * @method onAuthEvent
+ * @name Parse.Cloud.onAuthEvent
+ * @param {String} eventType Event type for registering the event.
  * @param {Function} handler Function to run when specified event happens.
  */
-ParseCloudEvent.addLoginEvent = function (eventType, handler) {
+ParseCloudEvent.onAuthEvent = function (eventType, handler) {
   if (typeof eventType !== 'string' || typeof handler !== 'function') {
     return;
   }
