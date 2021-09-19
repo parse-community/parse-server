@@ -2057,32 +2057,56 @@ describe('Parse.Object testing', () => {
   });
 
   //https://github.com/parse-community/parse-server/issues/7575
-  it('Nested date type attributes should be saved as $date in mongoDB irrespective of nesting level', async done => {
+  it('Should return results if queries constraints use nested date type attributes', async done => {
+    const now = new Date();
     const object = new Parse.Object('TestObjectDate');
-    await object.save({
+    const newObj = await object.save({
+      date: now,
       prop1: 'test1',
       prop2: {
         nestedProp: {
-          date: new Date(),
+          date: now,
         },
       },
       prop3: {
-        date: new Date(),
+        date: now,
       },
     });
 
     const futureDate = new Date();
-    futureDate.setHours(new Date().getHours() + 1);
+    futureDate.setHours(now.getHours() + 1);
 
-    const queryLevel1 = new Parse.Query('TestObjectDate');
-    queryLevel1.lessThan('prop3.date', futureDate);
-    const resultsLevel1 = await queryLevel1.find();
-    expect(resultsLevel1.length).toBe(1);
+    const pastDate = new Date();
+    pastDate.setHours(now.getHours() - 1);
 
-    const queryLevel2 = new Parse.Query('TestObjectDate');
-    queryLevel2.lessThan('prop2.nestedProp.date', futureDate);
-    const resultsLevel2 = await queryLevel2.find();
-    expect(resultsLevel2.length).toBe(1);
+    const q1 = new Parse.Query('TestObjectDate');
+    q1.lessThan('prop3.date', futureDate);
+    const r1 = await q1.find();
+    expect(r1.length).toBe(1);
+
+    const q2 = new Parse.Query('TestObjectDate');
+    q2.lessThan('prop2.nestedProp.date', futureDate);
+    const r2 = await q2.find();
+    expect(r2.length).toBe(1);
+
+    newObj.set('prop3.date1', now);
+    await newObj.save();
+
+    const q3 = new Parse.Query('TestObjectDate');
+    q3.equalTo('prop3.date1', now);
+    const r3 = await q3.find();
+    expect(r3.length).toBe(1);
+
+    const q4 = new Parse.Query('TestObjectDate');
+    q4.lessThan('prop3.date1', futureDate);
+    q4.greaterThan('prop3.date1', pastDate);
+    const r4 = await q4.find();
+    expect(r4.length).toBe(1);
+
+    const q5 = new Parse.Query('TestObjectDate');
+    q5.equalTo('date', now);
+    const r5 = await q5.find();
+    expect(r5.length).toBe(1);
 
     done();
   });
