@@ -316,7 +316,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   }
 
   // Handle query constraints
-  const transformedConstraint = transformConstraint(value, field, count);
+  const transformedConstraint = transformConstraint(value, field, count, key);
   if (transformedConstraint !== CannotTransform) {
     if (transformedConstraint.$text) {
       return { key: '$text', value: transformedConstraint.$text };
@@ -561,8 +561,6 @@ const transformInteriorAtom = atom => {
     };
   } else if (typeof atom === 'function' || typeof atom === 'symbol') {
     throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
-  } else if (DateCoder.isValidJSON(atom)) {
-    return DateCoder.JSONToDatabase(atom);
   } else if (BytesCoder.isValidJSON(atom)) {
     return BytesCoder.JSONToDatabase(atom);
   } else if (typeof atom === 'object' && atom && atom.$regex !== undefined) {
@@ -766,12 +764,15 @@ function relativeTimeToDate(text, now = new Date()) {
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, field, count = false) {
+function transformConstraint(constraint, field, count = false, restKey) {
   const inArray = field && field.type && field.type === 'Array';
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
-  const transformFunction = inArray ? transformInteriorAtom : transformTopLevelAtom;
+  // if key points to nested attribute, we don't want to transform types other than Bytes, so that we're consistent with
+  // how we're saving nested attributes
+  const transformFunction =
+    inArray || (restKey && restKey.includes('.')) ? transformInteriorAtom : transformTopLevelAtom;
   const transformer = atom => {
     const result = transformFunction(atom, field);
     if (result === CannotTransform) {
