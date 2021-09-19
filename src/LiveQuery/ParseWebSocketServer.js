@@ -11,7 +11,7 @@ export class ParseWebSocketServer {
     config.server = server;
     const wss = loadAdapter(config.wssAdapter, WSAdapter, config);
     wss.onListen = () => {
-      logger.info('Parse LiveQuery Server starts running');
+      logger.info('Parse LiveQuery Server started running');
     };
     wss.onConnection = ws => {
       ws.on('error', error => {
