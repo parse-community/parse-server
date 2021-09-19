@@ -1175,18 +1175,17 @@ describe('PushController', () => {
       ).toBe('2007-04-05T14:30:00.000Z', 'Timezone offset');
 
       const noTimezone = new Date('2017-09-06T17:14:01.048');
-      let expectedHour = 17 + noTimezone.getTimezoneOffset() / 60;
-      let day = '06';
-      if (expectedHour >= 24) {
-        expectedHour = expectedHour - 24;
-        day = '07';
-      }
+      const expectedHour = noTimezone.getUTCHours();
+      const expectedMinute = noTimezone.getUTCMinutes();
+      const day = noTimezone
+        .getUTCDate()
+        .toLocaleString('en-US', { minimumIntegerDigits: 2, useGrouping: false });
       expect(
         PushController.formatPushTime({
           date: noTimezone,
           isLocalTime: true,
         })
-      ).toBe(`2017-09-${day}T${expectedHour.toString().padStart(2, '0')}:14:01.048`, 'No timezone');
+      ).toBe(`2017-09-${day}T${expectedHour}:${expectedMinute}:01.048`, 'No timezone');
       expect(
         PushController.formatPushTime({
           date: new Date('2017-09-06'),
@@ -1208,12 +1207,12 @@ describe('PushController', () => {
         },
       };
       const pushTime = '2017-09-06T17:14:01.048';
-      let expectedHour = 17 + new Date(pushTime).getTimezoneOffset() / 60;
-      let day = '06';
-      if (expectedHour >= 24) {
-        expectedHour = expectedHour - 24;
-        day = '07';
-      }
+      const pushDate = new Date(pushTime);
+      const expectedHour = pushDate.getUTCHours();
+      const expectedMinute = pushDate.getUTCMinutes();
+      const day = pushDate
+        .getUTCDate()
+        .toLocaleString('en-US', { minimumIntegerDigits: 2, useGrouping: false });
       const payload = {
         data: {
           alert: 'Hello World!',
@@ -1230,7 +1229,7 @@ describe('PushController', () => {
       const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
       expect(pushStatus.get('status')).toBe('scheduled');
       expect(pushStatus.get('pushTime')).toBe(
-        `2017-09-${day}T${expectedHour.toString().padStart(2, '0')}:14:01.048`
+        `2017-09-${day}T${expectedHour}:${expectedMinute}:01.048`
       );
     });
   });
