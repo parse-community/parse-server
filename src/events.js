@@ -11,7 +11,13 @@ export const EventTypes = {
     logoutFinished: 'logoutFinished',
     logoutFailed: 'logoutFailed',
   },
+  File: {
+    fileReceivedByServer: 'fileReceivedByServer',
+    fileUploadedToStorage: 'fileUploadedToStorage',
+  },
 };
+
+export const fileClass = 'Parse_File';
 
 function validateClassNameForEvents(className, eventType) {
   if (
@@ -26,12 +32,27 @@ function validateClassNameForEvents(className, eventType) {
   ) {
     throw 'Login events can only be used with _User class!';
   }
+  if (
+    (eventType === EventTypes.File.fileReceivedByServer ||
+      eventType === EventTypes.File.fileUploadedToStorage) &&
+    className !== fileClass
+  ) {
+    throw 'File events can only be used with ' + fileClass + ' class!';
+  }
 }
 
 const _eventStore = {};
 
 function getEventStore() {
   return _eventStore;
+}
+
+export function resetEvents() {
+  const store = getEventStore();
+  const keys = Object.keys(store);
+  for (const key of keys) {
+    delete store[key];
+  }
 }
 
 function add(className, eventType, applicationId, handler) {
@@ -86,11 +107,13 @@ async function runEvent(className, eventType, request, applicationId) {
     }
     return await Promise.resolve(event(request));
   } catch (error) {
-    if (typeof error === 'string') {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, error);
-    }
-    throw error;
+    throw resolveError(error);
   }
+}
+
+export async function runFileEvent(eventType, request, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  return await runEvent(fileClass, eventType, request, applicationId);
 }
 
 export async function runAuthEvent(eventType, request, applicationId) {
@@ -118,4 +141,52 @@ export function getAuthEventRequest(credentials, auth, config) {
     request.installationId = auth.installationId;
   }
   return request;
+}
+
+export function getFileEventRequest(fileObject, auth, config) {
+  const request = {
+    ...fileObject,
+    log: config.loggerController,
+    headers: config.headers,
+    ip: config.ip,
+  };
+  if (!auth) {
+    return request;
+  }
+  if (auth.isMaster) {
+    request.master = true;
+  }
+  if (auth.user) {
+    request.user = auth.user;
+  }
+  if (auth.installationId) {
+    request.installationId = auth.installationId;
+  }
+  return request;
+}
+
+export function resolveError(message, defaultOpts) {
+  if (!defaultOpts) {
+    defaultOpts = {};
+  }
+  if (!message) {
+    return new Parse.Error(
+      defaultOpts.code || Parse.Error.SCRIPT_FAILED,
+      defaultOpts.message || 'Script failed.'
+    );
+  }
+  if (message instanceof Parse.Error) {
+    return message;
+  }
+
+  const code = defaultOpts.code || Parse.Error.SCRIPT_FAILED;
+  // If it's an error, mark it as a script failed
+  if (typeof message === 'string') {
+    return new Parse.Error(code, message);
+  }
+  const error = new Parse.Error(code, message.message || message);
+  if (message instanceof Error) {
+    error.stack = message.stack;
+  }
+  return error;
 }

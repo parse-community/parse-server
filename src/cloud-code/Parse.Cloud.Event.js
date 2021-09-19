@@ -3,6 +3,10 @@ import * as events from '../events';
 
 const ParseCloudEvent = {};
 
+ParseCloudEvent._removeAllEvents = function () {
+  events.resetEvents();
+};
+
 /**
  * Registers an event for specified event type.
  *

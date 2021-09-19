@@ -8,7 +8,7 @@ import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
-import { runAuthEvent, getAuthEventRequest, EventTypes } from '../events';
+import { runAuthEvent, getAuthEventRequest, EventTypes, resolveError } from '../events';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 
@@ -275,11 +275,8 @@ export class UsersRouter extends ClassesRouter {
         request,
         req.config.applicationId
       );
-      if (typeof response === 'string') {
-        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, response);
-      }
       if (response) {
-        throw response;
+        throw resolveError(error);
       }
       throw error;
     }
@@ -392,11 +389,8 @@ export class UsersRouter extends ClassesRouter {
         request,
         req.config.applicationId
       );
-      if (typeof response === 'string') {
-        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, response);
-      }
       if (response) {
-        throw response;
+        throw resolveError(error);
       }
       throw error;
     }

@@ -219,6 +219,7 @@ afterEach(function (done) {
     done();
   };
   Parse.Cloud._removeAllHooks();
+  Parse.Cloud._removeAllEvents();
   defaults.protectedFields = { _User: { '*': ['email'] } };
   databaseAdapter
     .getAllClasses()
