@@ -3,7 +3,7 @@
 Jump directly to a version:
 
 | 4.x                                  |
-|--------------------------------------|
+| ------------------------------------ |
 | [**4.10.3 (latest release)**](#4103) |
 | [4.10.2](#4102)                      |
 | [4.10.1](#4101)                      |
@@ -23,7 +23,7 @@ Jump directly to a version:
 <summary>Previous Versions</summary>
 
 | 3.x             | 2.x             |
-|-----------------|-----------------|
+| --------------- | --------------- |
 | [3.10.0](#3100) | [2.8.4](#284)   |
 | [3.9.0](#390)   | [2.8.3](#283)   |
 | [3.8.0](#380)   | [2.8.2](#282)   |
@@ -155,6 +155,7 @@ ___
 - Allow setting descending sort to full text queries (dblythy) [#7496](https://github.com/parse-community/parse-server/pull/7496)
 - Allow cloud string for ES modules (Daniel Blyth) [#7560](https://github.com/parse-community/parse-server/pull/7560)
 - docs: Introduce deprecation ID for reference in comments and online search (Manuel Trezza) [#7562](https://github.com/parse-community/parse-server/pull/7562)
+- Fix Queries return empty results if nested date attributes are used in constraints [#7582](https://github.com/parse-community/parse-server/pull/7582)
 
 ## 4.10.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.2...4.10.3)
