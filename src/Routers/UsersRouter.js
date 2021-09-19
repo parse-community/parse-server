@@ -276,7 +276,7 @@ export class UsersRouter extends ClassesRouter {
         req.config.applicationId
       );
       if (response) {
-        throw resolveError(error);
+        throw resolveError(response);
       }
       throw error;
     }
@@ -390,7 +390,7 @@ export class UsersRouter extends ClassesRouter {
         req.config.applicationId
       );
       if (response) {
-        throw resolveError(error);
+        throw resolveError(response);
       }
       throw error;
     }
