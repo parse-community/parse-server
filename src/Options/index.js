@@ -247,7 +247,6 @@ export interface ParseServerOptions {
   :DEFAULT: {} */
   security: ?SecurityOptions;
   /* Set to true if new users should be created without public read and write access.
-  :ENV: PARSE_SERVER_ENFORCE_PRIVATE_USERS
   :DEFAULT: false */
   enforcePrivateUsers: ?boolean;
 }
