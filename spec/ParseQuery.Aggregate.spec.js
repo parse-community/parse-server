@@ -23,28 +23,28 @@ const loadTestData = () => {
   const data1 = {
     score: 10,
     name: 'foo',
-    sender: { group: 'A' },
+    sender: { group: 'A' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
     views: 900,
     size: ['S', 'M'],
   };
   const data2 = {
     score: 10,
     name: 'foo',
-    sender: { group: 'A' },
+    sender: { group: 'A' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
     views: 800,
     size: ['M', 'L'],
   };
   const data3 = {
     score: 10,
     name: 'bar',
-    sender: { group: 'B' },
+    sender: { group: 'B' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
     views: 700,
     size: ['S'],
   };
   const data4 = {
     score: 20,
     name: 'dpl',
-    sender: { group: 'B' },
+    sender: { group: 'B' }, // TODO: change to `$group`. See [#7339](https://bit.ly/3incnWx)
     views: 700,
     size: ['S'],
   };
@@ -83,22 +83,10 @@ describe('Parse.Query Aggregate testing', () => {
     );
   });
 
-  it('invalid query group _id', done => {
+  it('invalid query group _id required', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null },
-      },
-    });
-    get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
-      expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
-      done();
-    });
-  });
-
-  it('invalid query group objectId required', done => {
-    const options = Object.assign({}, masterKeyOptions, {
-      body: {
-        group: {},
+        group: {}, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
@@ -110,7 +98,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group by field', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { objectId: '$name' },
+        group: { objectId: '$name' }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -131,7 +119,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         pipeline: {
-          group: { objectId: '$name' },
+          group: { objectId: '$name' }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
         },
       },
     });
@@ -149,7 +137,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj = new TestObject();
     const pipeline = [
       {
-        group: { objectId: {} },
+        group: { objectId: {} }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
       },
     ];
     obj
@@ -168,7 +156,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj = new TestObject();
     const pipeline = [
       {
-        group: { objectId: '' },
+        group: { objectId: '' }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
       },
     ];
     obj
@@ -187,7 +175,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj = new TestObject();
     const pipeline = [
       {
-        group: { objectId: [] },
+        group: { objectId: [] }, // TODO: write as `$group`. See [#7339](https://bit.ly/3incnWx)
       },
     ];
     obj
@@ -208,6 +196,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj3 = new TestObject();
     const pipeline = [
       {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: {
           objectId: {
             score: '$score',
@@ -234,6 +223,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj3 = new TestObject();
     const pipeline = [
       {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: {
           objectId: {
             day: { $dayOfMonth: '$_updated_at' },
@@ -264,6 +254,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj3 = new TestObject();
     const pipeline = [
       {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: {
           objectId: {
             day: { $dayOfMonth: '$updatedAt' },
@@ -291,7 +282,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group by number', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { objectId: '$score' },
+        group: { objectId: '$score' }, // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -313,6 +304,7 @@ describe('Parse.Query Aggregate testing', () => {
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
       {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: {
           objectId: null,
           total: { $sum: { $multiply: ['$quantity', '$price'] } },
@@ -372,7 +364,7 @@ describe('Parse.Query Aggregate testing', () => {
       },
       {
         project: {
-          objectId: 0,
+          objectId: 0, // TODO: change to `_id`. See [#7339](https://bit.ly/3incnWx)
           total: { $multiply: ['$quantity', '$price'] },
         },
       },
@@ -459,6 +451,7 @@ describe('Parse.Query Aggregate testing', () => {
       const obj3 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const pipeline = [
         {
+          // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
           group: {
             objectId: {
               day: { $dayOfMonth: '$dateField2019' },
@@ -508,6 +501,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group sum query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: null, total: { $sum: '$score' } },
       },
     });
@@ -524,6 +518,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group count query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: null, total: { $sum: 1 } },
       },
     });
@@ -540,6 +535,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group min query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: null, minScore: { $min: '$score' } },
       },
     });
@@ -556,6 +552,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group max query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: null, maxScore: { $max: '$score' } },
       },
     });
@@ -572,6 +569,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group avg query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: null, avgScore: { $avg: '$score' } },
       },
     });
@@ -1017,6 +1015,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         project: { score: 1 },
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: '$score', score: { $sum: '$score' } },
       },
     });
@@ -1044,6 +1043,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('class does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: null, total: { $sum: '$score' } },
       },
     });
@@ -1058,6 +1058,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('field does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
+        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
         group: { objectId: null, total: { $sum: '$unknownfield' } },
       },
     });

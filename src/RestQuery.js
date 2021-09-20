@@ -143,7 +143,7 @@ function RestQuery(
         var fields = restOptions.order.split(',');
         this.findOptions.sort = fields.reduce((sortMap, field) => {
           field = field.trim();
-          if (field === '$score') {
+          if (field === '$score' || field === '-$score') {
             sortMap.score = { $meta: 'textScore' };
           } else if (field[0] == '-') {
             sortMap[field.slice(1)] = -1;
@@ -657,7 +657,7 @@ RestQuery.prototype.runFind = function (options = {}) {
   return this.config.database
     .find(this.className, this.restWhere, findOptions, this.auth)
     .then(results => {
-      if (this.className === '_User' && findOptions.explain !== true) {
+      if (this.className === '_User' && !findOptions.explain) {
         for (var result of results) {
           cleanResultAuthData(result);
         }
@@ -866,7 +866,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
           return set;
         }
       }
-      if (i == (keyPath.length - 1)) {
+      if (i == keyPath.length - 1) {
         set.add(keyPath[i]);
       }
       return set;

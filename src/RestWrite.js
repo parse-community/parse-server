@@ -857,6 +857,10 @@ RestWrite.prototype.createSessionToken = async function () {
     return;
   }
 
+  if (this.storage['authProvider'] == null && this.data.authData) {
+    this.storage['authProvider'] = Object.keys(this.data.authData).join(',');
+  }
+
   const { sessionData, createSession } = RestWrite.createSession(this.config, {
     userId: this.objectId(),
     createdWith: {
@@ -887,7 +891,6 @@ RestWrite.createSession = function (
       objectId: userId,
     },
     createdWith,
-    restricted: false,
     expiresAt: Parse._encode(expiresAt),
   };
 
