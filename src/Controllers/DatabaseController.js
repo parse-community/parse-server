@@ -1705,6 +1705,13 @@ class DatabaseController {
     });
 
     await this.adapter
+      .ensureUniqueness('_DashboardUser', requiredUserFields, ['username'])
+      .catch(error => {
+        logger.warn('Unable to ensure uniqueness for usernames: ', error);
+        throw error;
+      });
+
+    await this.adapter
       .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
       .catch(error => {
         logger.warn('Unable to create case insensitive username index: ', error);

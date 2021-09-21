@@ -148,6 +148,13 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     reqId: { type: 'String' },
     expire: { type: 'Date' },
   },
+  _DashboardUser: {
+    objectId: { type: 'String' },
+    username: { type: 'String' },
+    password: { type: 'String' },
+    mfaOptions: { type: 'Object' },
+    features: { type: 'Object' },
+  },
 });
 
 const requiredColumns = Object.freeze({
@@ -168,6 +175,7 @@ const systemClasses = Object.freeze([
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
+  '_DashboardUser',
 ]);
 
 const volatileClasses = Object.freeze([
@@ -179,6 +187,7 @@ const volatileClasses = Object.freeze([
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
+  '_DashboardUser',
 ]);
 
 // Anything that start with role
@@ -648,6 +657,15 @@ const _IdempotencySchema = convertSchemaToAdapterSchema(
     classLevelPermissions: {},
   })
 );
+
+const _DashboardUser = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_DashboardUser',
+    fields: defaultColumns._DashboardUser,
+    classLevelPermissions: {},
+  })
+);
+
 const VolatileClassesSchemas = [
   _HooksSchema,
   _JobStatusSchema,
@@ -657,6 +675,7 @@ const VolatileClassesSchemas = [
   _GraphQLConfigSchema,
   _AudienceSchema,
   _IdempotencySchema,
+  _DashboardUser,
 ];
 
 const dbTypeMatchesObjectType = (dbType: SchemaField | string, objectType: SchemaField) => {
@@ -976,6 +995,7 @@ export default class SchemaController {
     for (const fieldName in fields) {
       if (existingFieldNames.indexOf(fieldName) < 0) {
         if (!fieldNameIsValid(fieldName, className)) {
+          console.log('invalid2');
           return {
             code: Parse.Error.INVALID_KEY_NAME,
             error: 'invalid field name: ' + fieldName,
@@ -1064,6 +1084,7 @@ export default class SchemaController {
       type = 'Object';
     }
     if (!fieldNameIsValid(fieldName, className)) {
+      console.log('invalid3');
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
 

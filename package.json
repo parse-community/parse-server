@@ -47,6 +47,7 @@
     "mime": "2.5.2",
     "mongodb": "3.6.11",
     "mustache": "4.2.0",
+    "otpauth": "7.0.6",
     "parse": "3.3.0",
     "pg-monitor": "1.4.1",
     "pg-promise": "10.11.0",

@@ -662,6 +662,12 @@ RestQuery.prototype.runFind = function (options = {}) {
           cleanResultAuthData(result);
         }
       }
+      if (this.className === '_DashboardUser') {
+        for (const result of results) {
+          delete result.password;
+          delete result.mfaOptions;
+        }
+      }
 
       this.config.filesController.expandFilesInObject(this.config, results);
 

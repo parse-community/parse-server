@@ -17,6 +17,7 @@ import PromiseRouter from './PromiseRouter';
 import requiredParameter from './requiredParameter';
 import { AnalyticsRouter } from './Routers/AnalyticsRouter';
 import { ClassesRouter } from './Routers/ClassesRouter';
+import { DashboardRouter } from './Routers/DashboardRouter';
 import { FeaturesRouter } from './Routers/FeaturesRouter';
 import { FilesRouter } from './Routers/FilesRouter';
 import { FunctionsRouter } from './Routers/FunctionsRouter';
@@ -235,6 +236,7 @@ class ParseServer {
       new AudiencesRouter(),
       new AggregateRouter(),
       new SecurityRouter(),
+      new DashboardRouter(),
     ];
 
     const routes = routers.reduce((memo, router) => {
