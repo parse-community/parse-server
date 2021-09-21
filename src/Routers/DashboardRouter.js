@@ -1,5 +1,4 @@
-// These methods handle the User-related routes.
-
+// These methods handle the Dashboard-related routes.
 import Parse from 'parse/node';
 import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
