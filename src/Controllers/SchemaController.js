@@ -995,7 +995,6 @@ export default class SchemaController {
     for (const fieldName in fields) {
       if (existingFieldNames.indexOf(fieldName) < 0) {
         if (!fieldNameIsValid(fieldName, className)) {
-          console.log('invalid2');
           return {
             code: Parse.Error.INVALID_KEY_NAME,
             error: 'invalid field name: ' + fieldName,
@@ -1084,7 +1083,6 @@ export default class SchemaController {
       type = 'Object';
     }
     if (!fieldNameIsValid(fieldName, className)) {
-      console.log('invalid3');
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
 
