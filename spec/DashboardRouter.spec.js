@@ -79,18 +79,18 @@ describe('Dashboard', () => {
       },
       followRedirects: false,
     }).catch(e => e);
-  fit('creating a user responds with 403 without masterKey', async () => {
+  it('creating a user responds with 403 without masterKey', async () => {
     const response = await signup();
     expect(response.status).toBe(403);
   });
 
-  fit('creating a user responds with masterKey', async () => {
+  it('creating a user responds with masterKey', async () => {
     const response = await signup(true);
     expect(response.status).toBe(201);
     expect(response.text).toContain('test@example.com');
   });
 
-  fit('cannot query dashboard user class', async () => {
+  it('cannot query dashboard user class', async () => {
     const response = await signup(true);
     expect(response.status).toBe(201);
     expect(response.text).toContain('test@example.com');
@@ -102,7 +102,7 @@ describe('Dashboard', () => {
     );
   });
 
-  fit('can query dashboard user class with masterKey', async () => {
+  it('can query dashboard user class with masterKey', async () => {
     const response = await signup(true);
     expect(response.status).toBe(201);
     expect(response.text).toContain('test@example.com');
@@ -112,7 +112,7 @@ describe('Dashboard', () => {
     expect(user.get('mfaOptions')).toBeUndefined();
   });
 
-  fit('dashboard can signup and then login', async () => {
+  it('dashboard can signup and then login', async () => {
     const response = await signup(true, true);
     expect(response.status).toBe(201);
     expect(response.text).toContain('test@example.com');
@@ -136,7 +136,7 @@ describe('Dashboard', () => {
     expect(user.features.schemas).toBeDefined();
   });
 
-  fit('dashboard can signup and then login without mfa', async () => {
+  it('dashboard can signup and then login without mfa', async () => {
     const response = await signup(true, false);
     expect(response.status).toBe(201);
     expect(response.text).toContain('test@example.com');
@@ -153,7 +153,7 @@ describe('Dashboard', () => {
     expect(user.features.schemas).toBeDefined();
   });
 
-  fit('dashboard can signup and rejects login with invalid password', async () => {
+  it('dashboard can signup and rejects login with invalid password', async () => {
     const response = await signup(true, false);
     expect(response.status).toBe(201);
     expect(response.text).toContain('test@example.com');
@@ -162,7 +162,7 @@ describe('Dashboard', () => {
     expect(loginResponse.text).toEqual(`{"code":101,"error":"Invalid username/password."}`);
   });
 
-  fit('dashboard can signup and rejects login with invalid mfa', async () => {
+  it('dashboard can signup and rejects login with invalid mfa', async () => {
     const response = await signup(true, true);
     expect(response.status).toBe(201);
     expect(response.text).toContain('test@example.com');
