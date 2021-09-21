@@ -1073,7 +1073,7 @@ describe('schemas', () => {
         } catch (e) {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual(
-            'A value for the newRequiredField is required to save/update the object.'
+            'A value for the newRequiredField is required to save/update the object'
           );
         }
         obj.set('newRequiredField', 'some value');
@@ -1090,7 +1090,7 @@ describe('schemas', () => {
         } catch (e) {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual(
-            'A value for the newRequiredField is required to save/update the object.'
+            'A value for the newRequiredField is required to save/update the object'
           );
         }
         obj.unset('newRequiredField');
@@ -1100,7 +1100,7 @@ describe('schemas', () => {
         } catch (e) {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual(
-            'A value for the newRequiredField is required to save/update the object.'
+            'A value for the newRequiredField is required to save/update the object'
           );
         }
         obj.set('newRequiredField', 'some value2');
@@ -1117,7 +1117,7 @@ describe('schemas', () => {
         } catch (e) {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual(
-            'A value for the newRequiredFieldWithDefaultValue is required to save/update the object.'
+            'A value for the newRequiredFieldWithDefaultValue is required to save/update the object'
           );
         }
         obj.set('newRequiredFieldWithDefaultValue', '');
@@ -1127,7 +1127,7 @@ describe('schemas', () => {
         } catch (e) {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual(
-            'A value for the newRequiredFieldWithDefaultValue is required to save/update the object.'
+            'A value for the newRequiredFieldWithDefaultValue is required to save/update the object'
           );
         }
         obj.set('newRequiredFieldWithDefaultValue', 'some value2');
@@ -1239,7 +1239,7 @@ describe('schemas', () => {
       await obj.save();
       fail('should fail');
     } catch (e) {
-      expect(e.message).toEqual('A value for the foo2 is required to save/update the object.');
+      expect(e.message).toEqual('A value for the foo2 is required to save/update the object');
     }
 
     Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
@@ -1258,7 +1258,7 @@ describe('schemas', () => {
       await obj.save();
       fail('should fail');
     } catch (e) {
-      expect(e.message).toEqual('A value for the foo2 is required to save/update the object.');
+      expect(e.message).toEqual('A value for the foo2 is required to save/update the object');
     }
   });
 

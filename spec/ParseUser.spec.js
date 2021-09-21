@@ -1218,7 +1218,7 @@ describe('Parse.User testing', () => {
       await user.save();
       fail();
     } catch (e) {
-      expect(e.message).toBe('This authentication method is unsupported.');
+      expect(e.message).toBe('This authentication method is unsupported');
     }
   });
 
@@ -2206,7 +2206,7 @@ describe('Parse.User testing', () => {
       user2.set('username', 'Test1');
       user2.set('password', 'test');
       await expectAsync(user2.signUp()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.')
+        new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username')
       );
     });
 
@@ -2220,7 +2220,7 @@ describe('Parse.User testing', () => {
       user2.setUsername('Test1');
       user2.setPassword('test');
       await expectAsync(user2.signUp()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.')
+        new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username')
       );
     });
 
@@ -2236,7 +2236,7 @@ describe('Parse.User testing', () => {
       user2.setPassword('test');
       user2.setEmail('Test@Example.Com');
       await expectAsync(user2.signUp()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.')
+        new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address')
       );
     });
 
@@ -2255,7 +2255,7 @@ describe('Parse.User testing', () => {
 
       user2.setEmail('Test@Example.Com');
       await expectAsync(user2.save()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.')
+        new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address')
       );
     });
 
@@ -2505,7 +2505,7 @@ describe('Parse.User testing', () => {
               body: JSON.stringify({ foo: 'bar' }),
             }).then(fail, response => {
               const b = response.data;
-              expect(b.error).toBe('Session token required.');
+              expect(b.error).toBe('Session token required');
               done();
             });
           });
@@ -3311,7 +3311,7 @@ describe('Parse.User testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.message).toBe("Clients aren't allowed to manually update email verification.");
+        expect(err.message).toBe("Clients aren't allowed to manually update email verification");
         done();
       });
   });

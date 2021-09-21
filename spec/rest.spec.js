@@ -77,7 +77,7 @@ describe('rest create', () => {
       objectId: '',
     };
 
-    const err = 'objectId must not be empty, null or undefined.';
+    const err = 'objectId must not be empty, null or undefined';
 
     expect(() => rest.create(config, auth.nobody(config), 'MyClass', objIdEmpty)).toThrowError(err);
 
@@ -361,7 +361,7 @@ describe('rest create', () => {
       },
       err => {
         expect(err.code).toEqual(Parse.Error.UNSUPPORTED_SERVICE);
-        expect(err.message).toEqual('This authentication method is unsupported.');
+        expect(err.message).toEqual('This authentication method is unsupported');
         NoAnnonConfig.authDataManager.setEnableAnonymousUsers(true);
         done();
       }
@@ -504,7 +504,7 @@ describe('rest create', () => {
     }).then(fail, response => {
       const b = response.data;
       expect(b.code).toEqual(105);
-      expect(b.error).toEqual('objectId is an invalid field name.');
+      expect(b.error).toEqual('objectId is an invalid field name');
       done();
     });
   });
@@ -526,7 +526,7 @@ describe('rest create', () => {
     }).then(fail, response => {
       const b = response.data;
       expect(b.code).toEqual(105);
-      expect(b.error).toEqual('id is an invalid field name.');
+      expect(b.error).toEqual('id is an invalid field name');
       done();
     });
   });
@@ -866,7 +866,7 @@ describe('read-only masterKey', () => {
     }).toThrow(
       new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        'Cannot perform a write operation when using readOnlyMasterKey.'
+        'Cannot perform a write operation when using readOnlyMasterKey'
       )
     );
   });

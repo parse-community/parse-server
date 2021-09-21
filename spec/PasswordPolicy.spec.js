@@ -833,7 +833,7 @@ describe('Password Policy: ', () => {
         })
         .catch(error => {
           expect(error.code).toEqual(142);
-          expect(error.message).toEqual('Password cannot contain your username.');
+          expect(error.message).toEqual('Password cannot contain your username');
           done();
         });
     });
@@ -1012,9 +1012,7 @@ describe('Password Policy: ', () => {
           });
         } catch (error) {
           expect(error.status).not.toBe(302);
-          expect(error.text).toEqual(
-            '{"code":-1,"error":"Password cannot contain your username."}'
-          );
+          expect(error.text).toEqual('{"code":-1,"error":"Password cannot contain your username"}');
         }
         await Parse.User.logIn('user1', 'r@nd0m');
         done();
@@ -1567,7 +1565,7 @@ describe('Password Policy: ', () => {
           done();
         })
         .catch(error => {
-          expect(error.message).toEqual('New password should not be the same as last 5 passwords.');
+          expect(error.message).toEqual('New password should not be the same as last 5 passwords');
           expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
           done();
         });
@@ -1617,7 +1615,7 @@ describe('Password Policy: ', () => {
           done();
         })
         .catch(error => {
-          expect(error.message).toEqual('New password should not be the same as last 5 passwords.');
+          expect(error.message).toEqual('New password should not be the same as last 5 passwords');
           expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
           done();
         });
