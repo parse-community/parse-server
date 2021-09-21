@@ -29,11 +29,10 @@ describe('Auth events', () => {
 
   it('only loginStarted and loginFailed event should run with failed login attempt', async done => {
     let hit = 0;
-    let errorCode;
-    let errorMessage;
     Parse.Cloud.onAuthEvent(Parse.Cloud.Events.Auth.loginStarted, request => {
       hit++;
       expect(request.credentials.username).toBeDefined();
+      expect(request.credentials.username).toEqual('tupac');
     });
     Parse.Cloud.onAuthEvent(Parse.Cloud.Events.Auth.userAuthenticated, () => {
       //this shouldn't run
@@ -46,16 +45,15 @@ describe('Auth events', () => {
     Parse.Cloud.onAuthEvent(Parse.Cloud.Events.Auth.loginFailed, request => {
       hit++;
       expect(request.error).toBeDefined();
-      errorCode = request.error.code;
-      errorMessage = request.error.message;
+      expect(request.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.error.message).toEqual('Invalid username/password.');
     });
     await Parse.User.signUp('tupac', 'shakur');
-    Parse.User.logIn('tupac', 'eminem').catch(err => {
-      expect(hit).toBe(2);
-      expect(err.code).toBe(errorCode);
-      expect(err.message).toEqual(errorMessage);
-      done();
-    });
+    await expectAsync(Parse.User.logIn('tupac', 'eminem')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.')
+    );
+    expect(hit).toBe(2);
+    done();
   });
 
   it('loginFailed event should modify error message', async done => {
@@ -72,17 +70,11 @@ describe('Auth events', () => {
       return request.error;
     });
     await Parse.User.signUp('tupac', 'shakur');
-    Parse.User.logIn('tupac', 'eminem')
-      .then(user => {
-        expect(user).toBeUndefined();
-        done();
-      })
-      .catch(err => {
-        expect(hit).toBe(2);
-        expect(err.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
-        expect(err.message).toEqual('Login with Google!');
-        done();
-      });
+    await expectAsync(Parse.User.logIn('tupac', 'eminem')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Login with Google!')
+    );
+    expect(hit).toBe(2);
+    done();
   });
 
   it('loginFailed event should throw different error message', async done => {
@@ -97,12 +89,11 @@ describe('Auth events', () => {
       throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Login with Google!');
     });
     await Parse.User.signUp('tupac', 'shakur');
-    Parse.User.logIn('tupac', 'eminem').catch(err => {
-      expect(hit).toBe(2);
-      expect(err.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
-      expect(err.message).toEqual('Login with Google!');
-      done();
-    });
+    await expectAsync(Parse.User.logIn('tupac', 'eminem')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Login with Google!')
+    );
+    expect(hit).toBe(2);
+    done();
   });
 
   it('loginFailed event should return different error message', async done => {
@@ -117,12 +108,11 @@ describe('Auth events', () => {
       return new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Login with Google!');
     });
     await Parse.User.signUp('tupac', 'shakur');
-    Parse.User.logIn('tupac', 'eminem').catch(err => {
-      expect(hit).toBe(2);
-      expect(err.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
-      expect(err.message).toEqual('Login with Google!');
-      done();
-    });
+    await expectAsync(Parse.User.logIn('tupac', 'eminem')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Login with Google!')
+    );
+    expect(hit).toBe(2);
+    done();
   });
   it('loginFailed event should handle throwing string', async done => {
     let hit = 0;
@@ -136,12 +126,11 @@ describe('Auth events', () => {
       throw 'Login with Google!';
     });
     await Parse.User.signUp('tupac', 'shakur');
-    Parse.User.logIn('tupac', 'eminem').catch(err => {
-      expect(hit).toBe(2);
-      expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(err.message).toEqual('Login with Google!');
-      done();
-    });
+    await expectAsync(Parse.User.logIn('tupac', 'eminem')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Login with Google!')
+    );
+    expect(hit).toBe(2);
+    done();
   });
   it('loginFailed event should handle returning string', async done => {
     let hit = 0;
@@ -155,12 +144,11 @@ describe('Auth events', () => {
       return 'Login with Google!';
     });
     await Parse.User.signUp('tupac', 'shakur');
-    Parse.User.logIn('tupac', 'eminem').catch(err => {
-      expect(hit).toBe(2);
-      expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(err.message).toEqual('Login with Google!');
-      done();
-    });
+    await expectAsync(Parse.User.logIn('tupac', 'eminem')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Login with Google!')
+    );
+    expect(hit).toBe(2);
+    done();
   });
 
   it('logoutStarted event should run', async done => {
@@ -188,12 +176,11 @@ describe('Auth events', () => {
 
     await Parse.User.signUp('tupac', 'shakur');
     await Parse.User.logIn('tupac', 'shakur');
-    Parse.User.logOut().catch(err => {
-      expect(hit).toBe(1);
-      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-      expect(err.message).toEqual('You cant logout!');
-      done();
-    });
+    await expectAsync(Parse.User.logOut()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'You cant logout!')
+    );
+    expect(hit).toBe(1);
+    done();
   });
 
   it('logoutFailed should be triggered if logout operation fails', async done => {
@@ -201,13 +188,18 @@ describe('Auth events', () => {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'You cant logout!');
     });
 
+    Parse.Cloud.onAuthEvent(Parse.Cloud.Events.Auth.logoutFailed, request => {
+      expect(request.error).toBeDefined();
+      expect(request.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(request.error.message).toEqual('You cant logout!');
+    });
+
     await Parse.User.signUp('tupac', 'shakur');
     await Parse.User.logIn('tupac', 'shakur');
-    Parse.User.logOut().catch(err => {
-      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-      expect(err.message).toEqual('You cant logout!');
-      done();
-    });
+    await expectAsync(Parse.User.logOut()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'You cant logout!')
+    );
+    done();
   });
 
   it('logoutFailed can modify error', async done => {
@@ -223,10 +215,21 @@ describe('Auth events', () => {
 
     await Parse.User.signUp('tupac', 'shakur');
     await Parse.User.logIn('tupac', 'shakur');
-    Parse.User.logOut().catch(err => {
-      expect(err.code).toBe(999);
-      expect(err.message).toEqual('New message. You still cant logout lmao!');
-      done();
+    await expectAsync(Parse.User.logOut()).toBeRejectedWith(
+      new Parse.Error(999, 'New message. You still cant logout lmao!')
+    );
+    done();
+  });
+  it('logoutFinished should be triggered on successful logout', async done => {
+    let hit = 0;
+    await Parse.User.signUp('tupac', 'shakur');
+    const user = await Parse.User.logIn('tupac', 'shakur');
+    Parse.Cloud.onAuthEvent(Parse.Cloud.Events.Auth.logoutFinished, request => {
+      hit++;
+      expect(request.user.id).toEqual(user.id);
     });
+    await Parse.User.logOut();
+    expect(hit).toBe(1);
+    done();
   });
 });
