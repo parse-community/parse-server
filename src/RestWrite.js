@@ -204,6 +204,12 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     return;
   }
 
+  for (const key in this.data) {
+    if (_.isEqual(this.data[key], (this.originalData ?? {})[key])) {
+      delete this.data[key];
+    }
+  }
+
   // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
   if (
     !triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)

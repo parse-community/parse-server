@@ -3147,6 +3147,46 @@ describe('afterLogin hook', () => {
     const query = new Parse.Query(TestObject);
     await query.find({ context: { a: 'a' } });
   });
+
+  it('unchanged keys are not marked as dirty', async () => {
+    Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+      if (!object.existed()) {
+        object.set('admin', true);
+        return object;
+      }
+      expect(obj.dirtyKeys()).toEqual([]);
+      expect(obj.dirty('admin')).toBeFalse();
+      if (object.dirty('admin')) {
+        throw 'you cannot modify admin';
+      }
+    });
+    const obj = new TestObject({ foo: 'bar' });
+    await obj.save();
+    expect(obj.get('admin')).toBeTrue();
+    const savedObj = await new Parse.Query(TestObject).first();
+    expect(savedObj.get('admin')).toBeTrue();
+    savedObj.set('admin', true);
+    await savedObj.save();
+  });
+
+  it('changed keys are marked as dirty', async () => {
+    Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+      if (!object.existed()) {
+        object.set('admin', false);
+        return object;
+      }
+      expect(object.dirtyKeys()).toEqual(['admin']);
+      expect(object.dirty('admin')).toBeTrue();
+    });
+    const obj = new TestObject({ foo: 'bar' });
+    await obj.save();
+    expect(obj.get('admin')).toBeFalse();
+    const savedObj = await new Parse.Query(TestObject).first();
+    expect(savedObj.get('admin')).toBeFalse();
+    expect(savedObj.id).toBe(obj.id);
+    savedObj.set('admin', true);
+    await savedObj.save();
+  });
 });
 
 describe('saveFile hooks', () => {
