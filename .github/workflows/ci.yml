@@ -108,7 +108,7 @@ jobs:
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.17.6
           - name: MongoDB 4.4, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.4.8
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.17.6
@@ -129,17 +129,17 @@ jobs:
             NODE_VERSION: 14.17.6
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 4.4.8
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.17.6
           - name: Node 12
-            MONGODB_VERSION: 4.4.8
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 12.22.6
           - name: Node 15
-            MONGODB_VERSION: 4.4.8
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 15.14.0
