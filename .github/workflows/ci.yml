@@ -103,7 +103,7 @@ jobs:
       matrix:
         include:
           - name: MongoDB 5.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 5.0.2
+            MONGODB_VERSION: 5.0.3
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.17.6
