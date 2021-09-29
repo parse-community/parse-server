@@ -586,7 +586,7 @@ describe('Cloud Code', () => {
   });
 
   // TODO: Fails on CI randomly as racing
-  xit('test afterSave ignoring promise, object not found', function (done) {
+  xit('test afterSave ignoring promise, object not found.', function (done) {
     Parse.Cloud.afterSave('AfterSaveTest2', function (req) {
       const obj = req.object;
       if (!obj.existed()) {

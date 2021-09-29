@@ -479,7 +479,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           // Duplicate value
           const err = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
+            'A duplicate value for a field with unique values was provided.'
           );
           err.underlyingError = error;
           if (error.message) {
@@ -564,7 +564,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         if (error.code === 11000) {
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
+            'A duplicate value for a field with unique values was provided.'
           );
         }
         throw error;

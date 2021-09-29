@@ -650,7 +650,7 @@ describe('ParseServerRESTController', () => {
       },
       err => {
         expect(err.code).toBe(Parse.Error.USERNAME_MISSING);
-        expect(err.message).toBe('Bad or missing username');
+        expect(err.message).toBe('Bad or missing username.');
         done();
       }
     );

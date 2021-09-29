@@ -335,7 +335,7 @@ RestQuery.prototype.validateClientClassCreation = function () {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            'This user is not allowed to access ' + 'non-existent class: ' + this.className + '.'
           );
         }
       });

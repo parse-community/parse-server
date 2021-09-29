@@ -4160,7 +4160,7 @@ describe('ParseGraphQLServer', () => {
                 .slice(0, 3)
                 .map(obj =>
                   expectAsync(getObject(obj.className, obj.id)).toBeRejectedWith(
-                    jasmine.stringMatching('Object not found')
+                    jasmine.stringMatching('Object not found.')
                   )
                 )
             );
@@ -4204,7 +4204,7 @@ describe('ParseGraphQLServer', () => {
               getObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user3.getSessionToken(),
               })
-            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
             await Promise.all(
               [object1, object3, object4].map(async obj =>
                 expect(
@@ -4222,7 +4222,7 @@ describe('ParseGraphQLServer', () => {
                   getObject(obj.className, obj.id, {
                     'X-Parse-Session-Token': user4.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'))
               )
             );
             expect(
@@ -4238,7 +4238,7 @@ describe('ParseGraphQLServer', () => {
                   getObject(obj.className, obj.id, {
                     'X-Parse-Session-Token': user5.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'))
               )
             );
             expect(
@@ -6008,7 +6008,7 @@ describe('ParseGraphQLServer', () => {
                   updateObject(obj.className, obj.id, {
                     someField: 'changedValue1',
                   })
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6094,7 +6094,7 @@ describe('ParseGraphQLServer', () => {
                 { someField: 'changedValue5' },
                 { 'X-Parse-Session-Token': user3.getSessionToken() }
               )
-            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
             await object2.fetch({ useMasterKey: true });
             expect(object2.get('someField')).toEqual(originalFieldValue);
             await Promise.all(
@@ -6107,7 +6107,7 @@ describe('ParseGraphQLServer', () => {
                     { someField: 'changedValue6' },
                     { 'X-Parse-Session-Token': user4.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6134,7 +6134,7 @@ describe('ParseGraphQLServer', () => {
                     { someField: 'changedValue7' },
                     { 'X-Parse-Session-Token': user5.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6206,7 +6206,7 @@ describe('ParseGraphQLServer', () => {
                   updateObject(obj.className, obj.id, {
                     someField: 'changedValue1',
                   })
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6302,7 +6302,7 @@ describe('ParseGraphQLServer', () => {
                 { someField: 'changedValue5' },
                 { 'X-Parse-Session-Token': user3.getSessionToken() }
               )
-            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
             await object2.fetch({ useMasterKey: true });
             expect(object2.get('someField')).toEqual(originalFieldValue);
             await Promise.all(
@@ -6315,7 +6315,7 @@ describe('ParseGraphQLServer', () => {
                     { someField: 'changedValue6' },
                     { 'X-Parse-Session-Token': user4.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6344,7 +6344,7 @@ describe('ParseGraphQLServer', () => {
                     { someField: 'changedValue7' },
                     { 'X-Parse-Session-Token': user5.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6418,7 +6418,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.deleteCustomer.customer.someField2).toEqual('someField2Value1');
 
             await expectAsync(obj.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
           });
 
@@ -6454,7 +6454,7 @@ describe('ParseGraphQLServer', () => {
               objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(deleteObject(obj.className, obj.id)).toBeRejectedWith(
-                  jasmine.stringMatching('Object not found')
+                  jasmine.stringMatching('Object not found.')
                 );
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
@@ -6467,7 +6467,7 @@ describe('ParseGraphQLServer', () => {
                   deleteObject(obj.className, obj.id, {
                     'X-Parse-Session-Token': user4.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6478,7 +6478,7 @@ describe('ParseGraphQLServer', () => {
               ]
             ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(object4.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
             expect(
               (
@@ -6488,7 +6488,7 @@ describe('ParseGraphQLServer', () => {
               ).data.delete[object1.className.charAt(0).toLowerCase() + object1.className.slice(1)]
             ).toEqual({ objectId: object1.id, __typename: 'GraphQLClass' });
             await expectAsync(object1.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
             expect(
               (
@@ -6498,7 +6498,7 @@ describe('ParseGraphQLServer', () => {
               ).data.delete[object2.className.charAt(0).toLowerCase() + object2.className.slice(1)]
             ).toEqual({ objectId: object2.id, __typename: 'GraphQLClass' });
             await expectAsync(object2.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
             expect(
               (
@@ -6508,7 +6508,7 @@ describe('ParseGraphQLServer', () => {
               ).data.delete[object3.className.charAt(0).toLowerCase() + object3.className.slice(1)]
             ).toEqual({ objectId: object3.id, __typename: 'GraphQLClass' });
             await expectAsync(object3.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
           });
 
@@ -6544,7 +6544,7 @@ describe('ParseGraphQLServer', () => {
               objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(deleteObject(obj.className, obj.id)).toBeRejectedWith(
-                  jasmine.stringMatching('Object not found')
+                  jasmine.stringMatching('Object not found.')
                 );
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
@@ -6557,7 +6557,7 @@ describe('ParseGraphQLServer', () => {
                   deleteObject(obj.className, obj.id, {
                     'X-Parse-Session-Token': user4.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found.'));
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual(originalFieldValue);
               })
@@ -6568,7 +6568,7 @@ describe('ParseGraphQLServer', () => {
               ][object4.className.charAt(0).toLowerCase() + object4.className.slice(1)].objectId
             ).toEqual(object4.id);
             await expectAsync(object4.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
             expect(
               (
@@ -6580,7 +6580,7 @@ describe('ParseGraphQLServer', () => {
               ].objectId
             ).toEqual(object1.id);
             await expectAsync(object1.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
             expect(
               (
@@ -6604,7 +6604,7 @@ describe('ParseGraphQLServer', () => {
               ].objectId
             ).toEqual(object3.id);
             await expectAsync(object3.fetch({ useMasterKey: true })).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
+              jasmine.stringMatching('Object not found.')
             );
           });
         });
