@@ -667,7 +667,7 @@ describe('ParseServerRESTController', () => {
       },
       err => {
         expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
-        expect(err.message).toBe('Password is required');
+        expect(err.message).toBe('Password is required.');
         done();
       }
     );
