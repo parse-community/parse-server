@@ -4010,6 +4010,9 @@ describe('Parse.User testing', () => {
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.close();
+    await new Promise(resolve => process.nextTick(resolve));
   });
 });
 
