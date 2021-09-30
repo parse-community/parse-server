@@ -3986,7 +3986,7 @@ describe('Parse.User testing', () => {
     const response = (obj, prev) => {
       expect(obj.get('authData')).toBeUndefined();
       expect(obj.authData).toBeUndefined();
-      expect(prev?.authData).toBeUndefined();
+      expect(prev && prev.authData).toBeUndefined();
       if (prev && prev.get) {
         expect(prev.get('authData')).toBeUndefined();
       }
