@@ -3966,6 +3966,51 @@ describe('Parse.User testing', () => {
       ok(model._isLinked('facebook'), 'User should be linked to facebook');
     });
   });
+
+  it('should strip out authdata in LiveQuery', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    await reconfigureServer({
+      liveQuery: { classNames: ['_User'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const query = new Parse.Query(Parse.User);
+    query.doesNotExist('foo');
+    const subscription = await query.subscribe();
+
+    const events = ['create', 'update', 'enter', 'leave', 'delete'];
+    const response = (obj, prev) => {
+      expect(obj.get('authData')).toBeUndefined();
+      expect(obj.authData).toBeUndefined();
+      expect(prev?.authData).toBeUndefined();
+      if (prev && prev.get) {
+        expect(prev.get('authData')).toBeUndefined();
+      }
+    };
+    const calls = {};
+    for (const key of events) {
+      calls[key] = response;
+      spyOn(calls, key).and.callThrough();
+      subscription.on(key, calls[key]);
+    }
+    const user = await Parse.User._logInWith('facebook');
+
+    user.set('foo', 'bar');
+    await user.save();
+    user.unset('foo');
+    await user.save();
+    user.set('yolo', 'bar');
+    await user.save();
+    await user.destroy();
+    await new Promise(resolve => process.nextTick(resolve));
+    for (const key of events) {
+      expect(calls[key]).toHaveBeenCalled();
+    }
+  });
 });
 
 describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
