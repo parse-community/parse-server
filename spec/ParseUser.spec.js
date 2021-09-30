@@ -3948,7 +3948,7 @@ describe('Parse.User testing', () => {
     const response = (obj, prev) => {
       expect(obj.get('authData')).toBeUndefined();
       expect(obj.authData).toBeUndefined();
-      expect(prev?.authData).toBeUndefined();
+      expect(prev && prev.authData).toBeUndefined();
       if (prev && prev.get) {
         expect(prev.get('authData')).toBeUndefined();
       }
@@ -3972,6 +3972,9 @@ describe('Parse.User testing', () => {
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.close();
+    await new Promise(resolve => process.nextTick(resolve));
   });
 
   describe('issue #4897', () => {
