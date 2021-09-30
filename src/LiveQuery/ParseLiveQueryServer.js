@@ -179,6 +179,14 @@ class ParseLiveQueryServer {
                 deletedParseObject = res.object.toJSON();
                 deletedParseObject.className = className;
               }
+              if (
+                (deletedParseObject.className === '_User' ||
+                  deletedParseObject.className === '_Session') &&
+                !client.hasMasterKey
+              ) {
+                delete deletedParseObject.sessionToken;
+                delete deletedParseObject.authData;
+              }
               client.pushDelete(requestId, deletedParseObject);
             })
             .catch(error => {
@@ -314,6 +322,16 @@ class ParseLiveQueryServer {
                 if (res.original && typeof res.original.toJSON === 'function') {
                   originalParseObject = res.original.toJSON();
                   originalParseObject.className = res.original.className || className;
+                }
+                if (
+                  (currentParseObject.className === '_User' ||
+                    currentParseObject.className === '_Session') &&
+                  !client.hasMasterKey
+                ) {
+                  delete currentParseObject.sessionToken;
+                  delete originalParseObject?.sessionToken;
+                  delete currentParseObject.authData;
+                  delete originalParseObject?.authData;
                 }
                 const functionName =
                   'push' + message.event.charAt(0).toUpperCase() + message.event.slice(1);

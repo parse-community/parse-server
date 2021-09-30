@@ -928,6 +928,52 @@ describe('ParseLiveQuery', function () {
     done();
   });
 
+  it('should strip out session token in LiveQuery', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['_User'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('foo', 'bar');
+
+    const query = new Parse.Query(Parse.User);
+    query.equalTo('foo', 'bar');
+    const subscription = await query.subscribe();
+
+    const events = ['create', 'update', 'enter', 'leave', 'delete'];
+    const response = (obj, prev) => {
+      expect(obj.get('sessionToken')).toBeUndefined();
+      expect(obj.sessionToken).toBeUndefined();
+      expect(prev?.sessionToken).toBeUndefined();
+      if (prev && prev.get) {
+        expect(prev.get('sessionToken')).toBeUndefined();
+      }
+    };
+    const calls = {};
+    for (const key of events) {
+      calls[key] = response;
+      spyOn(calls, key).and.callThrough();
+      subscription.on(key, calls[key]);
+    }
+    await user.signUp();
+    user.unset('foo');
+    await user.save();
+    user.set('foo', 'bar');
+    await user.save();
+    user.set('yolo', 'bar');
+    await user.save();
+    await user.destroy();
+    await new Promise(resolve => process.nextTick(resolve));
+    for (const key of events) {
+      expect(calls[key]).toHaveBeenCalled();
+    }
+  });
+
   afterEach(async function (done) {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();

@@ -3929,6 +3929,51 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('should strip out authdata in LiveQuery', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    await reconfigureServer({
+      liveQuery: { classNames: ['_User'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const query = new Parse.Query(Parse.User);
+    query.doesNotExist('foo');
+    const subscription = await query.subscribe();
+
+    const events = ['create', 'update', 'enter', 'leave', 'delete'];
+    const response = (obj, prev) => {
+      expect(obj.get('authData')).toBeUndefined();
+      expect(obj.authData).toBeUndefined();
+      expect(prev?.authData).toBeUndefined();
+      if (prev && prev.get) {
+        expect(prev.get('authData')).toBeUndefined();
+      }
+    };
+    const calls = {};
+    for (const key of events) {
+      calls[key] = response;
+      spyOn(calls, key).and.callThrough();
+      subscription.on(key, calls[key]);
+    }
+    const user = await Parse.User._logInWith('facebook');
+
+    user.set('foo', 'bar');
+    await user.save();
+    user.unset('foo');
+    await user.save();
+    user.set('yolo', 'bar');
+    await user.save();
+    await user.destroy();
+    await new Promise(resolve => process.nextTick(resolve));
+    for (const key of events) {
+      expect(calls[key]).toHaveBeenCalled();
+    }
+  });
+
   describe('issue #4897', () => {
     it_only_db('mongo')('should be able to login with a legacy user (no ACL)', async () => {
       // This issue is a side effect of the locked users and legacy users which don't have ACL's
