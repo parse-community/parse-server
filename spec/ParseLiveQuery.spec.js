@@ -861,7 +861,7 @@ describe('ParseLiveQuery', function () {
     const response = (obj, prev) => {
       expect(obj.get('sessionToken')).toBeUndefined();
       expect(obj.sessionToken).toBeUndefined();
-      expect(prev?.sessionToken).toBeUndefined();
+      expect(prev && prev.sessionToken).toBeUndefined();
       if (prev && prev.get) {
         expect(prev.get('sessionToken')).toBeUndefined();
       }
