@@ -68,7 +68,8 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
-    const contentType = mime.getType(filename);
+    const contentType = mime.getType(filename) || 'binary/octet-stream';
+
     if (isFileStreamable(req, filesController)) {
       filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
         res.status(404);
