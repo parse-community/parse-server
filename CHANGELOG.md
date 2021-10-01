@@ -4,7 +4,8 @@ Jump directly to a version:
 
 | 4.x                                  |
 |--------------------------------------|
-| [**4.10.3 (latest release)**](#4103) |
+| [**4.10.4 (latest release)**](#4104) |
+| [4.10.3](#4103) |
 | [4.10.2](#4102)                      |
 | [4.10.1](#4101)                      |
 | [4.10.0](#4100)                      |
@@ -94,7 +95,7 @@ Jump directly to a version:
 ___
 
 ## Unreleased (Master Branch)
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.3...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.4...master)
 
 ### Breaking Changes
 - Improved schema caching through database real-time hooks. Reduces DB queries, decreases Parse Query execution time and fixes a potential schema memory leak. If multiple Parse Server instances connect to the same DB (for example behind a load balancer), set the [Parse Server Option](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) `databaseOptions.enableSchemaHooks: true` to enable this feature and keep the schema in sync across all instances. Failing to do so will cause a schema change to not propagate to other instances and re-syncing will only happen when these instances restart. The options `enableSingleSchemaCache` and `schemaCacheTTL` have been removed. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required. (Diamond Lewis, SebC) [#7214](https://github.com/parse-community/parse-server/issues/7214)
@@ -156,6 +157,12 @@ ___
 - Allow cloud string for ES modules (Daniel Blyth) [#7560](https://github.com/parse-community/parse-server/pull/7560)
 - docs: Introduce deprecation ID for reference in comments and online search (Manuel Trezza) [#7562](https://github.com/parse-community/parse-server/pull/7562)
 - Fix Queries return empty results if nested date attributes are used in constraints [#7582](https://github.com/parse-community/parse-server/pull/7582)
+
+## 4.10.4
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.3...4.10.4)
+
+### Security Fixes
+- Strip out sessionToken when LiveQuery is used on Parse.User (Daniel Blyth) [GHSA-7pr3-p5fm-8r9x](https://github.com/parse-community/parse-server/security/advisories/GHSA-7pr3-p5fm-8r9x)
 
 ## 4.10.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.2...4.10.3)
