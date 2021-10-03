@@ -6,7 +6,7 @@ const httpRequest = require('../lib/cloud-code/httpRequest'),
   express = require('express');
 
 const port = 13371;
-const httpRequestServer = 'http://localhost:' + port;
+const httpRequestServer = `http://localhost:${port}`;
 
 function startServer(done) {
   const app = express();
@@ -53,7 +53,7 @@ describe('httpRequest', () => {
 
   it('should do /hello', async () => {
     const httpResponse = await httpRequest({
-      url: httpRequestServer + '/hello',
+      url: `${httpRequestServer}/hello`,
     });
 
     expect(httpResponse.status).toBe(200);
@@ -64,7 +64,7 @@ describe('httpRequest', () => {
 
   it('should do not follow redirects by default', async () => {
     const httpResponse = await httpRequest({
-      url: httpRequestServer + '/301',
+      url: `${httpRequestServer}/301`,
     });
 
     expect(httpResponse.status).toBe(301);
@@ -72,7 +72,7 @@ describe('httpRequest', () => {
 
   it('should follow redirects when set', async () => {
     const httpResponse = await httpRequest({
-      url: httpRequestServer + '/301',
+      url: `${httpRequestServer}/301`,
       followRedirects: true,
     });
 
@@ -83,24 +83,24 @@ describe('httpRequest', () => {
   });
 
   it('should fail on 404', async () => {
-    try {
-      await httpRequest({
-        url: httpRequestServer + '/404',
-      });
-
-      fail('should not succeed');
-    } catch (httpResponse) {
-      expect(httpResponse.status).toBe(404);
-      expect(httpResponse.buffer).toEqual(Buffer.from('NO'));
-      expect(httpResponse.text).toEqual('NO');
-      expect(httpResponse.data).toBe(undefined);
-    }
+    await expectAsync(
+      httpRequest({
+        url: `${httpRequestServer}/404`,
+      })
+    ).toBeRejectedWith(
+      jasmine.objectContaining({
+        status: 404,
+        buffer: Buffer.from('NO'),
+        text: 'NO',
+        data: undefined,
+      })
+    );
   });
 
   it('should post on echo', async () => {
     const httpResponse = await httpRequest({
       method: 'POST',
-      url: httpRequestServer + '/echo',
+      url: `${httpRequestServer}/echo`,
       body: {
         foo: 'bar',
       },
@@ -154,21 +154,16 @@ describe('httpRequest', () => {
   });
 
   it('should fail gracefully', async () => {
-    try {
-      await httpRequest({
+    await expectAsync(
+      httpRequest({
         url: 'http://not a good url',
-      });
-
-      fail('should not succeed');
-    } catch (error) {
-      expect(error).not.toBeUndefined();
-      expect(error).not.toBeNull();
-    }
+      })
+    ).toBeRejected();
   });
 
   it('should params object to query string', async () => {
     const httpResponse = await httpRequest({
-      url: httpRequestServer + '/qs',
+      url: `${httpRequestServer}/qs`,
       params: {
         foo: 'bar',
       },
@@ -180,7 +175,7 @@ describe('httpRequest', () => {
 
   it('should params string to query string', async () => {
     const httpResponse = await httpRequest({
-      url: httpRequestServer + '/qs',
+      url: `${httpRequestServer}/qs`,
       params: 'foo=bar&foo2=bar2',
     });
 
@@ -204,6 +199,7 @@ describe('httpRequest', () => {
 
     const serialized = JSON.stringify(httpResponse);
     const result = JSON.parse(serialized);
+
     expect(result.text).toBe('hello');
     expect(result.data).toBe(undefined);
     expect(result.body).toBe(undefined);
@@ -231,6 +227,7 @@ describe('httpRequest', () => {
 
     const serialized = JSON.stringify(httpResponse);
     const result = JSON.parse(serialized);
+
     expect(result.text).toBe('hello');
     expect(result.data).toBe(undefined);
   });
@@ -240,6 +237,7 @@ describe('httpRequest', () => {
     const httpResponse = new HTTPResponse({}, Buffer.from(json));
     const serialized = JSON.stringify(httpResponse);
     const result = JSON.parse(serialized);
+
     expect(result.text).toEqual('{"foo":"bar"}');
     expect(result.data).toEqual({ foo: 'bar' });
   });
@@ -251,17 +249,19 @@ describe('httpRequest', () => {
     let foundData,
       foundText,
       foundBody = false;
+
     for (const key in encoded) {
-      if (key == 'data') {
+      if (key === 'data') {
         foundData = true;
       }
-      if (key == 'text') {
+      if (key === 'text') {
         foundText = true;
       }
-      if (key == 'body') {
+      if (key === 'body') {
         foundBody = true;
       }
     }
+
     expect(foundData).toBe(true);
     expect(foundText).toBe(true);
     expect(foundBody).toBe(false);
