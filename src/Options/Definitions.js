@@ -441,13 +441,6 @@ module.exports.SecurityOptions = {
   },
 };
 module.exports.SchemaOptions = {
-  // definitions: JSONSchema[];
-  // strict: ?boolean;
-  // deleteExtraFields: ?boolean;
-  // recreateModifiedFields: ?boolean;
-  // lockSchemas: ?boolean;
-  // beforeMigration: ?() => void | Promise<void>;
-  // afterMigration: ?() => void | Promise<void>;
   definitions: {
     help: 'The schema definitions.',
     default: [],

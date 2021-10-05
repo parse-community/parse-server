@@ -8,7 +8,7 @@ import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
-import type { MigrationsOptions } from '../SchemaMigrations/Migrations';
+import type { SchemaOptions } from '../SchemaMigrations/Migrations';
 
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
@@ -243,7 +243,7 @@ export interface ParseServerOptions {
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
   /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema */
-  schema: ?MigrationsOptions;
+  schema: ?SchemaOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
   /* The security options to identify and report weak security settings.

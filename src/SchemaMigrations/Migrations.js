@@ -35,7 +35,7 @@ export interface IndexesInterface {
   [key: string]: IndexInterface;
 }
 
-export interface MigrationsOptions {
+export interface SchemaOptions {
   definitions: JSONSchema[];
   strict: ?boolean;
   deleteExtraFields: ?boolean;

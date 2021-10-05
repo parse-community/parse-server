@@ -14,7 +14,6 @@ import {
   SchemaOptions,
 } from './Options/Definitions';
 import { isBoolean, isString, isArray } from 'lodash';
-import type { MigrationsOptions } from './SchemaMigrations/Migrations';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -77,6 +76,7 @@ export class Config {
     fileUpload,
     pages,
     security,
+    schema,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -113,7 +113,7 @@ export class Config {
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
-    this.validateSchemaOptions(security);
+    this.validateSchemaOptions(schema);
   }
 
   static validateSecurityOptions(security) {
@@ -132,7 +132,7 @@ export class Config {
     }
   }
 
-  static validateSchemaOptions(schema: MigrationsOptions) {
+  static validateSchemaOptions(schema: SchemaOptions) {
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }

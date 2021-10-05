@@ -9,22 +9,22 @@ import * as Migrations from './Migrations';
 
 export class DefinedSchemas {
   config: ParseServerOptions;
-  migrationsOptions: Migrations.MigrationsOptions;
+  schemaOptions: Migrations.SchemaOptions;
   localSchemas: Migrations.JSONSchema[];
   retries: number;
   maxRetries: number;
 
-  constructor(migrationsOptions: Migrations.MigrationsOptions, config: ParseServerOptions) {
+  constructor(schemaOptions: Migrations.SchemaOptions, config: ParseServerOptions) {
     this.localSchemas = [];
     this.config = Config.get(config.appId);
-    this.migrationsOptions = migrationsOptions;
+    this.schemaOptions = schemaOptions;
 
-    if (migrationsOptions && migrationsOptions.definitions) {
-      if (!Array.isArray(migrationsOptions.definitions)) {
+    if (schemaOptions && schemaOptions.definitions) {
+      if (!Array.isArray(schemaOptions.definitions)) {
         throw `"schema.definitions" must be an array of schemas`;
       }
 
-      this.localSchemas = migrationsOptions.definitions;
+      this.localSchemas = schemaOptions.definitions;
     }
 
     this.retries = 0;
@@ -66,14 +66,14 @@ export class DefinedSchemas {
   async execute() {
     try {
       logger.info('Running Migrations');
-      if (this.migrationsOptions && this.migrationsOptions.beforeMigration) {
-        await Promise.resolve(this.migrationsOptions.beforeMigration());
+      if (this.schemaOptions && this.schemaOptions.beforeMigration) {
+        await Promise.resolve(this.schemaOptions.beforeMigration());
       }
 
       await this.executeMigrations();
 
-      if (this.migrationsOptions && this.migrationsOptions.afterMigration) {
-        await Promise.resolve(this.migrationsOptions.afterMigration());
+      if (this.schemaOptions && this.schemaOptions.afterMigration) {
+        await Promise.resolve(this.schemaOptions.afterMigration());
       }
 
       logger.info('Running Migrations Completed');
@@ -122,7 +122,7 @@ export class DefinedSchemas {
   }
 
   checkForMissingSchemas() {
-    if (this.migrationsOptions.strict !== true) {
+    if (this.schemaOptions.strict !== true) {
       return;
     }
 
@@ -141,7 +141,7 @@ export class DefinedSchemas {
       process.exit(1);
     }
 
-    if (this.migrationsOptions.strict && missingSchemas.length) {
+    if (this.schemaOptions.strict && missingSchemas.length) {
       logger.warn(
         `The following schemas are currently present in the database, but not explicitly defined in a schema: "${missingSchemas.join(
           '", "'
@@ -273,14 +273,14 @@ export class DefinedSchemas {
         }
       });
 
-    if (this.migrationsOptions.deleteExtraFields === true) {
+    if (this.schemaOptions.deleteExtraFields === true) {
       fieldsToDelete.forEach(fieldName => {
         newLocalSchema.deleteField(fieldName);
       });
 
       // Delete fields from the schema then apply changes
       await this.updateSchemaToDB(newLocalSchema);
-    } else if (this.migrationsOptions.strict === true && fieldsToDelete.length) {
+    } else if (this.schemaOptions.strict === true && fieldsToDelete.length) {
       logger.warn(
         `The following fields exist in the database for "${
           localSchema.className
@@ -288,7 +288,7 @@ export class DefinedSchemas {
       );
     }
 
-    if (this.migrationsOptions.recreateModifiedFields === true) {
+    if (this.schemaOptions.recreateModifiedFields === true) {
       fieldsToRecreate.forEach(field => {
         newLocalSchema.deleteField(field.fieldName);
       });
@@ -300,7 +300,7 @@ export class DefinedSchemas {
         const field = localSchema.fields[fieldInfo.fieldName];
         this.handleFields(newLocalSchema, fieldInfo.fieldName, field);
       });
-    } else if (this.migrationsOptions.strict === true && fieldsToRecreate.length) {
+    } else if (this.schemaOptions.strict === true && fieldsToRecreate.length) {
       fieldsToRecreate.forEach(field => {
         const from =
           field.from.type + (field.from.targetClass ? ` (${field.from.targetClass})` : '');
