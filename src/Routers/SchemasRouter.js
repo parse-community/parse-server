@@ -36,7 +36,7 @@ function getOneSchema(req) {
 }
 
 const checkIfDefinedSchemasIsUsed = req => {
-  if (req.config && req.config.schema && req.config.schema.lockSchemas === true) {
+  if (req.config?.schema?.lockSchemas === true) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
       'Cannot perform this operation when schemas options is used.'
@@ -46,27 +46,27 @@ const checkIfDefinedSchemasIsUsed = req => {
 
 export const internalCreateSchema = async (className, body, config) => {
   const controller = await config.database.loadSchema({ clearCache: true });
+  const response = await controller.addClassIfNotExists(
+    className,
+    body.fields,
+    body.classLevelPermissions,
+    body.indexes
+  );
   return {
-    response: await controller.addClassIfNotExists(
-      className,
-      body.fields,
-      body.classLevelPermissions,
-      body.indexes
-    ),
+    response,
   };
 };
 
 export const internalUpdateSchema = async (className, body, config) => {
   const controller = await config.database.loadSchema({ clearCache: true });
-  return {
-    response: await controller.updateClass(
-      className,
-      body.fields || {},
-      body.classLevelPermissions,
-      body.indexes,
-      config.database
-    ),
-  };
+  const response = await controller.updateClass(
+    className,
+    body.fields || {},
+    body.classLevelPermissions,
+    body.indexes,
+    config.database
+  );
+  return { response };
 };
 
 async function createSchema(req) {

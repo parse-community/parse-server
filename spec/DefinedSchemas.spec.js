@@ -14,12 +14,15 @@ describe('DefinedSchemas', () => {
   let config;
   beforeEach(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000000;
-
     config = Config.get('test');
-    await config.database.adapter.deleteAllClasses();
+    if (config) {
+      await config.database.adapter.deleteAllClasses();
+    }
   });
   afterAll(async () => {
-    await config.database.adapter.deleteAllClasses();
+    if (config) {
+      await config.database.adapter.deleteAllClasses();
+    }
   });
 
   describe('Fields', () => {
@@ -544,21 +547,17 @@ describe('DefinedSchemas', () => {
     expect(schema.className).toEqual('Test');
 
     const schemas = await Parse.Schema.all();
-    expect(schemas.length).toEqual(3);
+    // Role could be flaky since all system classes are not ensured
+    // at start up by the DefinedSchema system
+    expect(schemas.filter(({ className }) => className !== '_Role').length).toEqual(3);
 
-    try {
-      await new Parse.Schema('TheNewTest').save();
-      fail('TheNewTest.save() should have failed');
-    } catch (e) {
-      expect(e.message).toContain('Cannot perform this operation when schemas options is used.');
-    }
+    await expectAsync(new Parse.Schema('TheNewTest').save()).toBeRejectedWithError(
+      'Cannot perform this operation when schemas options is used.'
+    );
 
-    try {
-      await new Parse.Schema('_User').update();
-      fail('_User.update() should have failed');
-    } catch (e) {
-      expect(e.message).toContain('Cannot perform this operation when schemas options is used.');
-    }
+    await expectAsync(new Parse.Schema('_User').update()).toBeRejectedWithError(
+      'Cannot perform this operation when schemas options is used.'
+    );
   });
   it('should only enable delete class endpoint since', async () => {
     await reconfigureServer({
@@ -574,34 +573,26 @@ describe('DefinedSchemas', () => {
     expect(schemas.length).toEqual(3);
   });
   it('should run beforeMigration before execution of DefinedSchemas', async () => {
-    let before = false;
-    const server = await reconfigureServer({
+    const config = {
       schema: {
         definitions: [{ className: '_User' }, { className: 'Test' }],
-        beforeMigration: async () => {
-          expect(before).toEqual(false);
-          before = true;
-        },
+        beforeMigration: async () => {},
       },
-    });
-    before = true;
-    expect(before).toEqual(true);
-    expect(server).toBeDefined();
+    };
+    const spy = spyOn(config.schema, 'beforeMigration');
+    await reconfigureServer(config);
+    expect(spy).toHaveBeenCalledTimes(1);
   });
   it('should run afterMigration after execution of DefinedSchemas', async () => {
-    let before = false;
-    const server = await reconfigureServer({
+    const config = {
       schema: {
         definitions: [{ className: '_User' }, { className: 'Test' }],
-        afterMigration: async () => {
-          expect(before).toEqual(false);
-          before = true;
-        },
+        afterMigration: async () => {},
       },
-    });
-    before = true;
-    expect(before).toEqual(true);
-    expect(server).toBeDefined();
+    };
+    const spy = spyOn(config.schema, 'afterMigration');
+    await reconfigureServer(config);
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('should use logger in case of error', async () => {

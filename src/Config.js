@@ -13,7 +13,7 @@ import {
   SecurityOptions,
   SchemaOptions,
 } from './Options/Definitions';
-import { isBoolean, isString, isArray } from 'lodash';
+import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -133,12 +133,13 @@ export class Config {
   }
 
   static validateSchemaOptions(schema: SchemaOptions) {
+    if (!schema) return;
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
     if (schema.definitions === undefined) {
       schema.definitions = SchemaOptions.definitions.default;
-    } else if (!isArray(schema.definitions)) {
+    } else if (!Array.isArray(schema.definitions)) {
       throw 'Parse Server option schema.definitions must be an array.';
     }
     if (schema.strict === undefined) {
@@ -164,12 +165,12 @@ export class Config {
     if (schema.beforeMigration === undefined) {
       schema.beforeMigration = null;
     } else if (schema.beforeMigration !== null && typeof schema.beforeMigration !== 'function') {
-      throw 'Parse Server option schema.beforeMigration must be a boolean.';
+      throw 'Parse Server option schema.beforeMigration must be a function.';
     }
     if (schema.afterMigration === undefined) {
       schema.afterMigration = null;
     } else if (schema.afterMigration !== null && typeof schema.afterMigration !== 'function') {
-      throw 'Parse Server option schema.afterMigration must be a boolean.';
+      throw 'Parse Server option schema.afterMigration must be a function.';
     }
   }
 

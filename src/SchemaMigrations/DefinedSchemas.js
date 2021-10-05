@@ -18,7 +18,6 @@ export class DefinedSchemas {
     this.localSchemas = [];
     this.config = Config.get(config.appId);
     this.schemaOptions = schemaOptions;
-
     if (schemaOptions && schemaOptions.definitions) {
       if (!Array.isArray(schemaOptions.definitions)) {
         throw `"schema.definitions" must be an array of schemas`;
@@ -66,13 +65,13 @@ export class DefinedSchemas {
   async execute() {
     try {
       logger.info('Running Migrations');
-      if (this.schemaOptions && this.schemaOptions.beforeMigration) {
+      if (this.schemaOptions?.beforeMigration) {
         await Promise.resolve(this.schemaOptions.beforeMigration());
       }
 
       await this.executeMigrations();
 
-      if (this.schemaOptions && this.schemaOptions.afterMigration) {
+      if (this.schemaOptions?.afterMigration) {
         await Promise.resolve(this.schemaOptions.afterMigration());
       }
 
@@ -151,8 +150,8 @@ export class DefinedSchemas {
   }
 
   // Required for testing purpose
-  async wait(time) {
-    await new Promise(resolve => setTimeout(resolve, time));
+  wait(time) {
+    return new Promise(resolve => setTimeout(resolve, time));
   }
 
   async enforceCLPForNonProvidedClass(): void {
