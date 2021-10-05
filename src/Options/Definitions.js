@@ -156,7 +156,8 @@ module.exports.ParseServerOptions = {
   },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
-    help: 'Sets wether we should expire the inactive sessions, defaults to true',
+    help:
+      'Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.',
     action: parsers.booleanParser,
     default: true,
   },
