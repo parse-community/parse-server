@@ -217,6 +217,32 @@ function matchesKeyConstraints(object, key, constraints) {
       compareTo = Parse._decode(key, compareTo);
     }
     switch (condition) {
+      case '$eq': {
+        if (typeof compareTo !== 'object') {
+          // Equality (or Array contains) cases
+          if (Array.isArray(object[key])) {
+            if (object[key].indexOf(constraints[condition]) === -1) {
+              return false;
+            }
+            break;
+          }
+          if (object[key] !== compareTo) {
+            return false;
+          }
+          break;
+        } else {
+          if (compareTo && constraints[condition].__type === 'Pointer') {
+            return equalObjectsGeneric(object[key], constraints[condition], function (obj, ptr) {
+              return (
+                typeof obj !== 'undefined' &&
+                ptr.className === obj.className &&
+                ptr.objectId === obj.objectId
+              );
+            });
+          }
+          return equalObjectsGeneric(object[key], compareTo, equalObjects);
+        }
+      }
       case '$lt':
         if (object[key] >= compareTo) {
           return false;
