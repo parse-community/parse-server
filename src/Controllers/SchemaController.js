@@ -1116,11 +1116,10 @@ export default class SchemaController {
       // we can safely return
       if (isValidation || _.isEqual(expectedType, type)) {
         return undefined;
-      } else {
-        // Field options are may be changed
-        // ensure to have an update to date schema field
-        return this._dbAdapter.updateFieldOptions(className, fieldName, type);
       }
+      // Field options are may be changed
+      // ensure to have an update to date schema field
+      return this._dbAdapter.updateFieldOptions(className, fieldName, type);
     }
 
     return this._dbAdapter
