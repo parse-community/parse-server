@@ -1,5 +1,6 @@
 import MongoCollection from './MongoCollection';
 import Parse from 'parse/node';
+import _ from 'lodash'
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -276,8 +277,9 @@ class MongoSchemaCollection {
   }
 
   async updateFieldOptions(className: string, fieldName: string, fieldType: any) {
-    // eslint-disable-next-line no-unused-vars
-    const { type, targetClass, ...fieldOptions } = fieldType;
+    const fieldOptions = _.cloneDeep(fieldType);
+    delete fieldOptions.type
+    delete fieldOptions.targetClass
     await this.upsertSchema(
       className,
       { [fieldName]: { $exists: true } },
