@@ -185,6 +185,14 @@ class ParseLiveQueryServer {
             if (res.object && typeof res.object.toJSON === 'function') {
               deletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
+            if (
+              (deletedParseObject.className === '_User' ||
+                deletedParseObject.className === '_Session') &&
+              !client.hasMasterKey
+            ) {
+              delete deletedParseObject.sessionToken;
+              delete deletedParseObject.authData;
+            }
             client.pushDelete(requestId, deletedParseObject);
           } catch (error) {
             Client.pushError(
@@ -335,6 +343,16 @@ class ParseLiveQueryServer {
                 res.original,
                 res.original.className || className
               );
+            }
+            if (
+              (currentParseObject.className === '_User' ||
+                currentParseObject.className === '_Session') &&
+              !client.hasMasterKey
+            ) {
+              delete currentParseObject.sessionToken;
+              delete originalParseObject?.sessionToken;
+              delete currentParseObject.authData;
+              delete originalParseObject?.authData;
             }
             const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
