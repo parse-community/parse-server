@@ -923,7 +923,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20cannot%20contain%20your%20username.&app=passwordPolicy`
+                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20cannot%20contain%20your%20username&app=passwordPolicy`
                 );
 
                 Parse.User.logIn('user1', 'r@nd0m')
@@ -1500,7 +1500,7 @@ describe('Password Policy: ', () => {
             const token = data[1];
             expect(response.status).toEqual(302);
             expect(response.text).toEqual(
-              `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`
+              `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords&app=passwordPolicy`
             );
             done();
             return Promise.resolve();
