@@ -2410,6 +2410,18 @@ describe('afterFind hooks', () => {
     expect(pointer.get('foo')).toBe('bar');
   });
 
+  it('can set invalid object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    Parse.Cloud.afterFind('MyObject', () => [{}]);
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
+    const obj2 = await query.first();
+    expect(obj2).toBeDefined();
+    expect(obj2.toJSON()).toEqual({});
+    expect(obj2.id).toBeUndefined();
+  });
+
   it('can return a unsaved object in afterFind', async () => {
     const obj = new Parse.Object('MyObject');
     await obj.save();
