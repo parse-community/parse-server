@@ -1408,7 +1408,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
       // default public r/w ACL
       if (!ACL) {
         ACL = {};
-        ACL['*'] = { read: true, write: false };
+        if (!this.config.enforcePrivateUsers) {
+          ACL['*'] = { read: true, write: false };
+        }
       }
       // make sure the user is not locked down
       ACL[this.data.objectId] = { read: true, write: true };
