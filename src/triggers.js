@@ -46,6 +46,13 @@ const baseStore = function () {
   });
 };
 
+export function getClassName(parseClass) {
+  if (parseClass && parseClass.className) {
+    return parseClass.className;
+  }
+  return parseClass;
+}
+
 function validateClassNameForTriggers(className, type) {
   if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
