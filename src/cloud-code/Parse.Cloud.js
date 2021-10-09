@@ -1,5 +1,6 @@
 import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
+import Deprecator from '../Deprecator/Deprecator';
 const Config = require('../Config');
 
 function isParseObjectConstructor(object) {
@@ -716,7 +717,14 @@ ParseCloud.useMasterKey = () => {
   );
 };
 
-ParseCloud.httpRequest = require('./httpRequest');
+const request = require('./httpRequest');
+ParseCloud.httpRequest = opts => {
+  Deprecator.logRuntimeDeprecation({
+    usage: 'Parse.Cloud.httpRequest',
+    solution: 'Use a http request library instead.',
+  });
+  return request(opts);
+};
 
 module.exports = ParseCloud;
 

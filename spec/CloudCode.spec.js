@@ -1554,6 +1554,25 @@ describe('Cloud Code', () => {
     obj.save().then(done, done.fail);
   });
 
+  it('can deprecate Parse.Cloud.httpRequest', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
+    });
+    await Parse.Cloud.httpRequest({
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/hello',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      'DeprecationWarning: Parse.Cloud.httpRequest is deprecated and will be removed in a future version. Use a http request library instead.'
+    );
+  });
+
   describe('cloud jobs', () => {
     it('should define a job', done => {
       expect(() => {
