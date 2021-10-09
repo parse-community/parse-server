@@ -7,13 +7,6 @@ function isParseObjectConstructor(object) {
   return typeof object === 'function' && Object.prototype.hasOwnProperty.call(object, 'className');
 }
 
-function getClassName(parseClass) {
-  if (parseClass && parseClass.className) {
-    return parseClass.className;
-  }
-  return parseClass;
-}
-
 function validateValidator(validator) {
   if (!validator || typeof validator === 'function') {
     return;
@@ -162,7 +155,7 @@ ParseCloud.job = function (functionName, handler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
-  var className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeSave,
@@ -198,7 +191,7 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
-  var className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeDelete,
@@ -237,7 +230,7 @@ ParseCloud.beforeLogin = function (handler) {
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
-    className = getClassName(handler);
+    className = triggers.getClassName(handler);
     handler = arguments[1];
   }
   triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
@@ -267,7 +260,7 @@ ParseCloud.afterLogin = function (handler) {
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
-    className = getClassName(handler);
+    className = triggers.getClassName(handler);
     handler = arguments[1];
   }
   triggers.addTrigger(triggers.Types.afterLogin, className, handler, Parse.applicationId);
@@ -296,7 +289,7 @@ ParseCloud.afterLogout = function (handler) {
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
-    className = getClassName(handler);
+    className = triggers.getClassName(handler);
     handler = arguments[1];
   }
   triggers.addTrigger(triggers.Types.afterLogout, className, handler, Parse.applicationId);
@@ -328,7 +321,7 @@ ParseCloud.afterLogout = function (handler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
-  var className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterSave,
@@ -364,7 +357,7 @@ ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
-  var className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterDelete,
@@ -400,7 +393,7 @@ ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.BeforeFindRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
-  var className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeFind,
@@ -436,7 +429,7 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.AfterFindRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
-  const className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterFind,
@@ -664,7 +657,7 @@ ParseCloud.sendEmail = function (data) {
  */
 ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
   validateValidator(validationHandler);
-  var className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeSubscribe,
     className,
@@ -702,7 +695,7 @@ ParseCloud.onLiveQueryEvent = function (handler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.LiveQueryEventTrigger}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandler) {
-  const className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterEvent,
