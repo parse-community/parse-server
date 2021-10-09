@@ -168,6 +168,27 @@ export function _unregisterAll() {
   Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
 }
 
+export function toJSONwithObjects(object, className) {
+  if (!object || !object.toJSON) {
+    return {};
+  }
+  const toJSON = object.toJSON();
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(object._getStateIdentifier());
+  for (const key in pending) {
+    const val = object.get(key);
+    if (!val || !val._toFullJSON) {
+      toJSON[key] = val;
+      continue;
+    }
+    toJSON[key] = val._toFullJSON();
+  }
+  if (className) {
+    toJSON.className = className;
+  }
+  return toJSON;
+}
+
 export function getTrigger(className, triggerType, applicationId) {
   if (!applicationId) {
     throw 'Missing ApplicationID';
@@ -323,7 +344,7 @@ export function getResponseObject(request, resolve, reject) {
           response = request.objects;
         }
         response = response.map(object => {
-          return object.toJSON();
+          return toJSONwithObjects(object);
         });
         return resolve(response);
       }
@@ -451,12 +472,6 @@ export function maybeRunAfterFindTrigger(
         const response = trigger(request);
         if (response && typeof response.then === 'function') {
           return response.then(results => {
-            if (!results) {
-              throw new Parse.Error(
-                Parse.Error.SCRIPT_FAILED,
-                'AfterFind expect results to be returned in the promise'
-              );
-            }
             return results;
           });
         }
