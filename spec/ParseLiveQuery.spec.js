@@ -358,6 +358,44 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  it('can handle afterEvent set pointers', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    const secondObject = new Parse.Object('Test2');
+    secondObject.set('foo', 'bar');
+    await secondObject.save();
+
+    Parse.Cloud.afterLiveQueryEvent('TestObject', async ({ object }) => {
+      const query = new Parse.Query('Test2');
+      const obj = await query.first();
+      object.set('obj', obj);
+    });
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+    subscription.on('update', object => {
+      expect(object.get('obj')).toBeDefined();
+      expect(object.get('obj').get('foo')).toBe('bar');
+      done();
+    });
+    subscription.on('error', () => {
+      fail('error should not have been called.');
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+  });
+
   it('can handle async afterEvent modification', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -708,6 +746,58 @@ describe('ParseLiveQuery', function () {
     }
   });
 
+  it('liveQuery on Session class', async done => {
+    await reconfigureServer({
+      liveQuery: { classNames: [Parse.Session] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
+
+    const query = new Parse.Query(Parse.Session);
+    const subscription = await query.subscribe();
+
+    subscription.on('create', async obj => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      expect(obj.get('user').id).toBe(user.id);
+      expect(obj.get('createdWith')).toEqual({ action: 'login', authProvider: 'password' });
+      expect(obj.get('expiresAt')).toBeInstanceOf(Date);
+      expect(obj.get('installationId')).toBeDefined();
+      expect(obj.get('createdAt')).toBeInstanceOf(Date);
+      expect(obj.get('updatedAt')).toBeInstanceOf(Date);
+      done();
+    });
+
+    await Parse.User.logIn('username', 'password');
+  });
+
+  it('prevent liveQuery on Session class when not logged in', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: [Parse.Session],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    Parse.LiveQuery.on('error', error => {
+      expect(error).toBe('Invalid session token');
+    });
+    const query = new Parse.Query(Parse.Session);
+    const subscription = await query.subscribe();
+    subscription.on('error', error => {
+      Parse.LiveQuery.removeAllListeners('error');
+      expect(error).toBe('Invalid session token');
+      done();
+    });
+  });
+
   it('handle invalid websocket payload length', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -754,7 +844,7 @@ describe('ParseLiveQuery', function () {
 
     await reconfigureServer({
       liveQuery: {
-        classNames: ['_User'],
+        classNames: [Parse.User],
       },
       startLiveQueryServer: true,
       verbose: false,
@@ -838,6 +928,52 @@ describe('ParseLiveQuery', function () {
     await obj2.save();
     await new Promise(resolve => setTimeout(resolve, 200));
     done();
+  });
+
+  it('should strip out session token in LiveQuery', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['_User'] },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('foo', 'bar');
+
+    const query = new Parse.Query(Parse.User);
+    query.equalTo('foo', 'bar');
+    const subscription = await query.subscribe();
+
+    const events = ['create', 'update', 'enter', 'leave', 'delete'];
+    const response = (obj, prev) => {
+      expect(obj.get('sessionToken')).toBeUndefined();
+      expect(obj.sessionToken).toBeUndefined();
+      expect(prev && prev.sessionToken).toBeUndefined();
+      if (prev && prev.get) {
+        expect(prev.get('sessionToken')).toBeUndefined();
+      }
+    };
+    const calls = {};
+    for (const key of events) {
+      calls[key] = response;
+      spyOn(calls, key).and.callThrough();
+      subscription.on(key, calls[key]);
+    }
+    await user.signUp();
+    user.unset('foo');
+    await user.save();
+    user.set('foo', 'bar');
+    await user.save();
+    user.set('yolo', 'bar');
+    await user.save();
+    await user.destroy();
+    await new Promise(resolve => process.nextTick(resolve));
+    for (const key of events) {
+      expect(calls[key]).toHaveBeenCalled();
+    }
   });
 
   afterEach(async function (done) {
