@@ -5,6 +5,10 @@ RUN apk update; \
   apk add git;
 WORKDIR /tmp
 COPY package*.json ./
+
+# Copy local dependencies for CI tests
+COPY spec/dependencies spec/dependencies
+
 RUN npm ci
 COPY . .
 RUN npm run build

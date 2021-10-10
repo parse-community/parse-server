@@ -7,18 +7,17 @@ on:
     branches:
       - '**'
 env:
-  COVERAGE_OPTION: ./node_modules/.bin/nyc
-  NODE_VERSION: 10
+  NODE_VERSION: 14.18.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-ci:
     name: CI Self-Check
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
       - name: Cache Node.js modules
@@ -30,16 +29,25 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - name: CI Self-Check
+      - name: CI Environments Check
         run: npm run ci:check
+      - name: CI Node Engine Check
+        run: npm run ci:checkNodeEngine
+  check-changelog:
+    name: Changelog
+    timeout-minutes: 5
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dangoslen/changelog-enforcer@v2
   check-lint:
      name: Lint
-     timeout-minutes: 30
+     timeout-minutes: 15
      runs-on: ubuntu-18.04
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v1
+         uses: actions/setup-node@v2
          with:
            node-version: ${{ matrix.node-version }}
        - name: Cache Node.js modules
@@ -52,53 +60,92 @@ jobs:
        - name: Install dependencies
          run: npm ci
        - run: npm run lint
+  check-circular:
+     name: Circular Dependencies
+     timeout-minutes: 5
+     runs-on: ubuntu-18.04
+     steps:
+       - uses: actions/checkout@v2
+       - name: Use Node.js ${{ matrix.NODE_VERSION }}
+         uses: actions/setup-node@v2
+         with:
+           node-version: ${{ matrix.node-version }}
+       - name: Cache Node.js modules
+         uses: actions/cache@v2
+         with:
+           path: ~/.npm
+           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+           restore-keys: |
+             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+       - name: Install dependencies
+         run: npm ci
+       - run: npm run madge:circular
+  check-docker:
+    name: Docker Build
+    timeout-minutes: 5
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build docker image
+        uses: docker/build-push-action@v2
+  check-lock-file-version:
+    name: NPM Lock File Version
+    timeout-minutes: 5
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check NPM lock file version
+        uses: mansona/npm-lockfile-version@v1
+        with:
+          version: 1
   check-mongo:
     strategy:
       matrix:
         include:
-          - name: Mongo 4.4, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.4.4
+          - name: MongoDB 5.0, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 5.0.3
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
-          - name: Mongo 4.2, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.2.12
+            NODE_VERSION: 14.18.0
+          - name: MongoDB 4.4, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
-          - name: Mongo 4.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.23
+            NODE_VERSION: 14.18.0
+          - name: MongoDB 4.2, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.2.17
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
-          - name: Mongo 3.6, Standalone, MMAPv1
-            MONGODB_VERSION: 3.6.22
+            NODE_VERSION: 14.18.0
+          - name: MongoDB 4.0, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.0.27
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 14.18.0
+          - name: MongoDB 4.0, Standalone, MMAPv1
+            MONGODB_VERSION: 4.0.27
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
-            NODE_VERSION: 14.16.0
+            NODE_VERSION: 14.18.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 4.4.4
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.16.0
-          - name: Node 10
-            MONGODB_VERSION: 4.4.4
-            MONGODB_TOPOLOGY: standalone
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 10.24.0
+            NODE_VERSION: 14.18.0
           - name: Node 12
-            MONGODB_VERSION: 4.4.4
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 12.21.0
+            NODE_VERSION: 12.22.6
           - name: Node 15
-            MONGODB_VERSION: 4.4.4
+            MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 15.11.0
+            NODE_VERSION: 15.14.0
+      fail-fast: false
     name: ${{ matrix.name }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     services:
       redis:
@@ -114,7 +161,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.NODE_VERSION }}
       - name: Cache Node.js modules
@@ -135,18 +182,21 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Postgres 10, Postgis 3.1
-            POSTGRES_IMAGE: postgis/postgis:10-3.1
-          - name: Postgres 11, Postgis 3.1
+          - name: PostgreSQL 11, PostGIS 3.0
+            POSTGRES_IMAGE: postgis/postgis:11-3.0
+            NODE_VERSION: 14.18.0
+          - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
-          - name: Postgres 12, Postgis 3.1
+            NODE_VERSION: 14.18.0
+          - name: PostgreSQL 12, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:12-3.1
-          - name: Postgres 12, Postgis 3.0
-            POSTGRES_IMAGE: postgis/postgis:12-3.0
-          - name: Postgres 13, Postgis 3.1
+            NODE_VERSION: 14.18.0
+          - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
+            NODE_VERSION: 14.18.0
+      fail-fast: false
     name: ${{ matrix.name }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     services:
       redis:
@@ -167,12 +217,13 @@ jobs:
     env:
       PARSE_SERVER_TEST_DB: postgres
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
+      NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js 10
-        uses: actions/setup-node@v1
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
         with:
-          node-version: 10
+          node-version: ${{ matrix.NODE_VERSION }}
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:

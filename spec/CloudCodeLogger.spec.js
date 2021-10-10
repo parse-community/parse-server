@@ -14,6 +14,7 @@ describe('Cloud Code Logger', () => {
     return reconfigureServer({
       // useful to flip to false for fine tuning :).
       silent: true,
+      logLevel: undefined,
     })
       .then(() => {
         return Parse.User.signUp('tester', 'abc')

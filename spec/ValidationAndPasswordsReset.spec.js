@@ -1,6 +1,6 @@
 'use strict';
 
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 

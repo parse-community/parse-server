@@ -3,7 +3,6 @@
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
 const dd = require('deep-diff');
-const TestUtils = require('../lib/TestUtils');
 
 let config;
 
@@ -23,11 +22,6 @@ const hasAllPODobject = () => {
 describe('SchemaController', () => {
   beforeEach(() => {
     config = Config.get('test');
-  });
-
-  afterEach(async () => {
-    await config.database.schemaCache.clear();
-    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('can validate one object', done => {
@@ -853,7 +847,8 @@ describe('SchemaController', () => {
       });
   });
 
-  it('creates non-custom classes which include relation field', done => {
+  it('creates non-custom classes which include relation field', async done => {
+    await reconfigureServer();
     config.database
       .loadSchema()
       //as `_Role` is always created by default, we only get it here
@@ -897,7 +892,6 @@ describe('SchemaController', () => {
             objectId: { type: 'String' },
             updatedAt: { type: 'Date' },
             createdAt: { type: 'Date' },
-            restricted: { type: 'Boolean' },
             user: { type: 'Pointer', targetClass: '_User' },
             installationId: { type: 'String' },
             sessionToken: { type: 'String' },
@@ -1312,7 +1306,8 @@ describe('SchemaController', () => {
       );
   });
 
-  it('properly handles volatile _Schemas', done => {
+  it('properly handles volatile _Schemas', async done => {
+    await reconfigureServer();
     function validateSchemaStructure(schema) {
       expect(Object.prototype.hasOwnProperty.call(schema, 'className')).toBe(true);
       expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(true);
@@ -1347,17 +1342,6 @@ describe('SchemaController', () => {
       })
       .then(done)
       .catch(done.fail);
-  });
-
-  it('setAllClasses return classes if cache fails', async () => {
-    const schema = await config.database.loadSchema();
-
-    spyOn(schema._cache, 'setAllClasses').and.callFake(() => Promise.reject('Oops!'));
-    const errorSpy = spyOn(console, 'error').and.callFake(() => {});
-    const allSchema = await schema.setAllClasses();
-
-    expect(allSchema).toBeDefined();
-    expect(errorSpy).toHaveBeenCalledWith('Error saving schema to cache:', 'Oops!');
   });
 
   it('should not throw on null field types', async () => {

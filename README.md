@@ -17,9 +17,9 @@
     <a href="https://www.npmjs.com/package/parse-server"><img alt="npm version" src="https://img.shields.io/npm/v/parse-server.svg?style=flat"></a>
     <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
     <a href="https://snyk.io/test/github/parse-community/parse-server"><img alt="Snyk badge" src="https://snyk.io/test/github/parse-community/parse-server/badge.svg"></a>
-    <a href="https://nodejs.org/"><img alt="Node.js 10,12,14,15" src="https://img.shields.io/badge/nodejs-10,_12,_14,_15-green.svg?logo=node.js&style=flat"></a>
-    <a href="https://www.mongodb.com/"><img alt="MongoDB 3.6,4.0,4.2,4.4" src="https://img.shields.io/badge/mongodb-3.6,_4.0,_4.2,_4.4-green.svg?logo=mongodb&style=flat"></a>
-   <a href="https://www.postgresql.org"> <img alt="PostgreSQL 10,11,12,13" src="https://img.shields.io/badge/postgresql-10,_11,_12,_13-green.svg?logo=postgresql&style=flat"></a>
+    <a href="https://nodejs.org/"><img alt="Node.js 12,14,15" src="https://img.shields.io/badge/nodejs-12,_14,_15-green.svg?logo=node.js&style=flat"></a>
+    <a href="https://www.mongodb.com/"><img alt="MongoDB 4.0,4.2,4.4,5.0" src="https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat"></a>
+   <a href="https://www.postgresql.org"> <img alt="PostgreSQL 11,12,13" src="https://img.shields.io/badge/postgresql-11,_12,_13-green.svg?logo=postgresql&style=flat"></a>
 </p>
 
 <h2 align="center">Our Sponsors</h2>
@@ -58,6 +58,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
+  - [Password and Account Policy](#password-and-account-policy)
   - [Custom Routes](#custom-routes)
     - [Example](#example)
     - [Reserved Paths](#reserved-paths)
@@ -75,6 +76,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
       - [Reserved Keys](#reserved-keys)
       - [Parameters](#parameters-1)
   - [Logging](#logging)
+- [Deprecations](#deprecations)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
   - [Running](#running)
@@ -110,32 +112,30 @@ Before you start make sure you have installed:
 #### Node.js
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Patch Version | End-of-Life Date | Compatibility      |
-|------------|----------------------|------------------|--------------------|
-| Node.js 10 | 10.24.0              | April 2021       | ✅ Fully compatible |
-| Node.js 12 | 12.21.0              | April 2022       | ✅ Fully compatible |
-| Node.js 14 | 14.16.0              | April 2023       | ✅ Fully compatible |
-| Node.js 15 | 15.11.0               | June 2021        | ✅ Fully compatible |
+| Version    | Latest Version | End-of-Life Date | Compatibility      |
+|------------|----------------|------------------|--------------------|
+| Node.js 12 | 12.22.6        | April 2022       | ✅ Fully compatible |
+| Node.js 14 | 14.18.0        | April 2023       | ✅ Fully compatible |
+| Node.js 15 | 15.14.0        | June 2021        | ✅ Fully compatible |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
-|-------------|----------------------|------------------|--------------------|
-| MongoDB 3.6 | 3.6.21               | April 2021       | ✅ Fully compatible |
-| MongoDB 4.0 | 4.0.23               | January 2022     | ✅ Fully compatible |
-| MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
-| MongoDB 4.4 | 4.4.4                | TBD              | ✅ Fully compatible |
+| Version     | Latest Version | End-of-Life Date | Compatibility      |
+|-------------|----------------|------------------|--------------------|
+| MongoDB 4.0 | 4.0.27         | April 2022       | ✅ Fully compatible |
+| MongoDB 4.2 | 4.2.17         | TBD              | ✅ Fully compatible |
+| MongoDB 4.4 | 4.4.9          | TBD              | ✅ Fully compatible |
+| MongoDB 5.0 | 5.0.3          | January 2024     | ✅ Fully compatible |
   
 #### PostgreSQL
-Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility. We follow the [PostGIS docker tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported and have not reached their end-of-life date.
+Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
 
-| Version       | PostGIS Version | End-of-Life Date | Compatibility      |
-|---------------|-----------------|------------------|--------------------|
-| Postgres 10.x | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
-| Postgres 11.x | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
-| Postgres 12.x | 3.0.x, 3.1.x    | November 2024    | ✅ Fully compatible |
-| Postgres 13.x | 3.0.x, 3.1.x    | November 2025    | ✅ Fully compatible |
+| Version     | PostGIS Version | End-of-Life Date | Parse Server Support End | Compatibility      |
+|-------------|-----------------|------------------|--------------------------|--------------------|
+| Postgres 11 | 3.0, 3.1        | November 2023    | April 2022               | ✅ Fully compatible |
+| Postgres 12 | 3.1             | November 2024    | April 2023               | ✅ Fully compatible |
+| Postgres 13 | 3.1             | November 2025    | April 2024               | ✅ Fully compatible |
 
 ### Locally
 ```bash
@@ -300,7 +300,7 @@ For the full list of available options, run `parse-server --help` or take a look
 * `port` - The default port is 1337, specify this parameter to use a different port.
 * `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
-* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
+* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](https://docs.parseplatform.org/parse-server/guide/#push-notifications-quick-start).
 
 ## Client Key Options
 
@@ -313,76 +313,32 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 ## Email Verification and Password Reset
 
-Verifying user email addresses and enabling password reset via email requires an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
+Verifying user email addresses and enabling password reset via email requires an email adapter. There are many email adapters provided and maintained by the community. The following is an example configuration with an example email adapter. See the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) for more details and a full list of available options.
 
 ```js
-var server = ParseServer({
+const server = ParseServer({
   ...otherOptions,
+
   // Enable email verification
   verifyUserEmails: true,
 
-  // if `verifyUserEmails` is `true` and
-  //     if `emailVerifyTokenValidityDuration` is `undefined` then
-  //        email verify token never expires
-  //     else
-  //        email verify token expires after `emailVerifyTokenValidityDuration`
-  //
-  // `emailVerifyTokenValidityDuration` defaults to `undefined`
-  //
-  // email verify token below expires in 2 hours (= 2 * 60 * 60 == 7200 seconds)
-  emailVerifyTokenValidityDuration: 2 * 60 * 60, // in seconds (2 hours = 7200 seconds)
+  // Set email verification token validity to 2 hours
+  emailVerifyTokenValidityDuration: 2 * 60 * 60,
 
-  // set preventLoginWithUnverifiedEmail to false to allow user to login without verifying their email
-  // set preventLoginWithUnverifiedEmail to true to prevent user from login if their email is not verified
-  preventLoginWithUnverifiedEmail: false, // defaults to false
-
-  // The public URL of your app.
-  // This will appear in the link that is used to verify email addresses and reset passwords.
-  // Set the mount path as it is in serverURL
-  publicServerURL: 'https://example.com/parse',
-  // Your apps name. This will appear in the subject and body of the emails that are sent.
-  appName: 'Parse App',
-  // The email adapter
+  // Set email adapter
   emailAdapter: {
-    module: '@parse/simple-mailgun-adapter',
+    module: 'example-mail-adapter',
     options: {
-      // The address that your emails come from
-      fromAddress: 'parse@example.com',
-      // Your domain from mailgun.com
-      domain: 'example.com',
-      // Your API key from mailgun.com
-      apiKey: 'key-mykey',
+      // Additional adapter options
+      ...mailAdapterOptions
     }
   },
-
-  // account lockout policy setting (OPTIONAL) - defaults to undefined
-  // if the account lockout policy is set and there are more than `threshold` number of failed login attempts then the `login` api call returns error code `Parse.Error.OBJECT_NOT_FOUND` with error message `Your account is locked due to multiple failed login attempts. Please try again after <duration> minute(s)`. After `duration` minutes of no login attempts, the application will allow the user to try login again.
-  accountLockout: {
-    duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
-    threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
-    unlockOnPasswordReset: true, // Is true if the account lock should be removed after a successful password reset. Default: false.
-}
-  },
-  // optional settings to enforce password policies
-  passwordPolicy: {
-    // Two optional settings to enforce strong passwords. Either one or both can be specified.
-    // If both are specified, both checks must pass to accept the password
-    // 1. a RegExp object or a regex string representing the pattern to enforce
-    validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
-    // 2. a callback function to be invoked to validate the password
-    validatorCallback: (password) => { return validatePassword(password) },
-    validationError: 'Password must contain at least 1 digit.' // optional error message to be sent instead of the default "Password does not meet the Password Policy requirements." message.
-    doNotAllowUsername: true, // optional setting to disallow username in passwords
-    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset.
-    maxPasswordHistory: 5, // optional setting to prevent reuse of previous n passwords. Maximum value that can be specified is 20. Not specifying it or specifying 0 will not enforce history.
-    //optional setting to set a validity duration for password reset links (in seconds)
-    resetTokenValidityDuration: 24*60*60, // expire after 24 hours
-  }
 });
 ```
 
-You can also use other email adapters contributed by the community such as:
-- [parse-smtp-template (Multi Language and Multi Template)](https://www.npmjs.com/package/parse-smtp-template)
+Email adapters contributed by the community:
+- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
+- [parse-smtp-template](https://www.npmjs.com/package/parse-smtp-template) (localization, templates)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
 - [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter)
@@ -392,7 +348,36 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
-- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter)
+
+## Password and Account Policy
+
+Set a password and account policy that meets your security requirements. The following is an example configuration. See the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) for more details and a full list of available options.
+
+```js
+const server = ParseServer({
+  ...otherOptions,
+
+  // The account lock policy
+  accountLockout: {
+    // Lock the account for 5 minutes.
+    duration: 5,
+    // Lock an account after 3 failed log-in attempts
+    threshold: 3,
+    // Unlock the account after a successful password reset
+    unlockOnPasswordReset: true,
+  },
+
+  // The password policy
+  passwordPolicy: {    
+    // Enforce a password of at least 8 characters which contain at least 1 lower case, 1 upper case and 1 digit
+    validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/,
+    // Do not allow the username as part of the password
+    doNotAllowUsername: true,
+    // Do not allow to re-use the last 5 passwords when setting a new password
+    maxPasswordHistory: 5,
+  },
+});
+```
 
 ## Custom Routes
 **Caution, this is an experimental feature that may not be appropriate for production.**
@@ -754,6 +739,10 @@ Logs are also viewable in Parse Dashboard.
 **Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+# Deprecations
+
+See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
 
 # Live Query
 

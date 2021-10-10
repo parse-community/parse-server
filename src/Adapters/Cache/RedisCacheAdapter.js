@@ -1,12 +1,13 @@
 import redis from 'redis';
-import logger from '../../../logger';
-import { KeyPromiseQueue } from './KeyPromiseQueue';
+import logger from '../../logger';
+import { KeyPromiseQueue } from '../../KeyPromiseQueue';
 
 const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
 const FLUSH_DB_KEY = '__flush_db__';
 
-function debug() {
-  logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
+function debug(...args: any) {
+  const message = ['RedisCacheAdapter: ' + arguments[0]].concat(args.slice(1, args.length));
+  logger.debug.apply(logger, message);
 }
 
 const isValidTTL = ttl => typeof ttl === 'number' && ttl > 0;
@@ -33,13 +34,13 @@ export class RedisCacheAdapter {
   }
 
   get(key) {
-    debug('get', key);
+    debug('get', { key });
     return this.queue.enqueue(
       key,
       () =>
         new Promise(resolve => {
           this.client.get(key, function (err, res) {
-            debug('-> get', key, res);
+            debug('-> get', { key, res });
             if (!res) {
               return resolve(null);
             }
@@ -51,7 +52,7 @@ export class RedisCacheAdapter {
 
   put(key, value, ttl = this.ttl) {
     value = JSON.stringify(value);
-    debug('put', key, value, ttl);
+    debug('put', { key, value, ttl });
 
     if (ttl === 0) {
       // ttl of zero is a logical no-op, but redis cannot set expire time of zero
@@ -86,7 +87,7 @@ export class RedisCacheAdapter {
   }
 
   del(key) {
-    debug('del', key);
+    debug('del', { key });
     return this.queue.enqueue(
       key,
       () =>

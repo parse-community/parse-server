@@ -6,6 +6,7 @@ import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
+import { CheckGroup } from '../Security/CheckGroup';
 
 // @flow
 type Adapter<T> = string | any | T;
@@ -62,8 +63,9 @@ export interface ParseServerOptions {
   /* The full URI to your database. Supported databases are mongodb or postgres.
   :DEFAULT: mongodb://localhost:27017/parse */
   databaseURI: string;
-  /* Options to pass to the mongodb client */
-  databaseOptions: ?any;
+  /* Options to pass to the database client
+  :ENV: PARSE_SERVER_DATABASE_OPTIONS */
+  databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database */
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
@@ -116,20 +118,37 @@ export interface ParseServerOptions {
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Enable (or disable) user email validation, defaults to false
+  /* Set to `true` to require users to verify their email address to complete the sign-up process.
+  <br><br>
+  Default is `false`.
   :DEFAULT: false */
   verifyUserEmails: ?boolean;
-  /* Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false
+  /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.
+  <br><br>
+  Default is `false`.
+  <br>
+  Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   preventLoginWithUnverifiedEmail: ?boolean;
-  /* Email verification token validity duration, in seconds */
+  /* Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.
+  <br><br>
+  For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).
+  <br><br>
+  Default is `undefined`.
+  <br>
+  Requires option `verifyUserEmails: true`.
+  */
   emailVerifyTokenValidityDuration: ?number;
-  /* an existing email verify token should be reused when resend verification email is requested
+  /* Set to `true` if a email verification token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.
+  <br><br>
+  Default is `false`.
+  <br>
+  Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   emailVerifyTokenReuseIfValid: ?boolean;
-  /* account lockout policy for failed login attempts */
+  /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
-  /* Password policy for enforcing password related rules */
+  /* The password policy for enforcing password related rules. */
   passwordPolicy: ?PasswordPolicyOptions;
   /* Adapter module for the cache */
   cacheAdapter: ?Adapter<CacheAdapter>;
@@ -151,28 +170,25 @@ export interface ParseServerOptions {
   sessionLength: ?number;
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
-  /* Sets wether we should expire the inactive sessions, defaults to true
+  /* Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
   :DEFAULT: true */
   expireInactiveSessions: ?boolean;
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
   :DEFAULT: true */
   revokeSessionOnPasswordReset: ?boolean;
-  /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
-  :DEFAULT: 5000 */
-  schemaCacheTTL: ?number;
   /* Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
   :DEFAULT: 5000 */
   cacheTTL: ?number;
   /* Sets the maximum size for the in memory cache, defaults to 10000
   :DEFAULT: 10000 */
   cacheMaxSize: ?number;
-  /* Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
-  :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
+  /* Set to `true` if Parse requests within the same Node.js environment as Parse Server should be routed to Parse Server directly instead of via the HTTP interface. Default is `false`.
+  <br><br>
+  If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.
+  <br><br>
+  ⚠️ In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.
   :DEFAULT: false */
   directAccess: ?boolean;
-  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
-  :DEFAULT: false */
-  enableSingleSchemaCache: ?boolean;
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
   enableExpressErrorHandler: ?boolean;
@@ -227,6 +243,23 @@ export interface ParseServerOptions {
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+  /* The security options to identify and report weak security settings.
+  :DEFAULT: {} */
+  security: ?SecurityOptions;
+  /* Set to true if new users should be created without public read and write access.
+  :DEFAULT: false */
+  enforcePrivateUsers: ?boolean;
+}
+
+export interface SecurityOptions {
+  /* Is true if Parse Server should check for weak security settings.
+  :DEFAULT: false */
+  enableCheck: ?boolean;
+  /* Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
+  :DEFAULT: false */
+  enableCheckLog: ?boolean;
+  /* The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`. */
+  checkGroups: ?(CheckGroup[]);
 }
 
 export interface PagesOptions {
@@ -364,29 +397,62 @@ export interface IdempotencyOptions {
 }
 
 export interface AccountLockoutOptions {
-  /* number of minutes that a locked-out account remains locked out before automatically becoming unlocked. */
+  /* Set the duration in minutes that a locked-out account remains locked out before automatically becoming unlocked.
+  <br><br>
+  Valid values are greater than `0` and less than `100000`. */
   duration: ?number;
-  /* number of failed sign-in attempts that will cause a user account to be locked */
+  /* Set the number of failed sign-in attempts that will cause a user account to be locked. If the account is locked. The account will unlock after the duration set in the `duration` option has passed and no further login attempts have been made.
+  <br><br>
+  Valid values are greater than `0` and less than `1000`. */
   threshold: ?number;
-  /* Is true if the account lock should be removed after a successful password reset.
+  /* Set to `true`  if the account should be unlocked after a successful password reset.
+  <br><br>
+  Default is `false`.
+  <br>
+  Requires options `duration` and `threshold` to be set.
   :DEFAULT: false */
   unlockOnPasswordReset: ?boolean;
 }
 
 export interface PasswordPolicyOptions {
-  /* a RegExp object or a regex string representing the pattern to enforce */
+  /* Set the regular expression validation pattern a password must match to be accepted.
+  <br><br>
+  If used in combination with `validatorCallback`, the password must pass both to be accepted. */
   validatorPattern: ?string;
-  /* a callback function to be invoked to validate the password  */
+  /*   */
+  /* Set a callback function to validate a password to be accepted.
+  <br><br>
+  If used in combination with `validatorPattern`, the password must pass both to be accepted. */
   validatorCallback: ?() => void;
-  /* disallow username in passwords */
+  /* Set the error message to be sent.
+  <br><br>
+  Default is `Password does not meet the Password Policy requirements.` */
+  validationError: ?string;
+  /* Set to `true` to disallow the username as part of the password.
+  <br><br>
+  Default is `false`.
+  :DEFAULT: false */
   doNotAllowUsername: ?boolean;
-  /* days for password expiry */
+  /* Set the number of days after which a password expires. Login attempts fail if the user does not reset the password before expiration. */
   maxPasswordAge: ?number;
-  /* setting to prevent reuse of previous n passwords */
+  /* Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.
+  <br><br>
+  Valid values are >= `0` and <= `20`.
+  <br>
+  Default is `0`.
+  */
   maxPasswordHistory: ?number;
-  /* time for token to expire */
+  /* Set the validity duration of the password reset token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.
+  <br><br>
+  For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).
+  <br><br>
+  Default is `undefined`.
+  */
   resetTokenValidityDuration: ?number;
-  /* resend token if it's still valid */
+  /* Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.
+  <br><br>
+  Default is `false`.
+  :DEFAULT: false */
   resetTokenReuseIfValid: ?boolean;
 }
 
@@ -400,4 +466,10 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+}
+
+export interface DatabaseOptions {
+  /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
+  :DEFAULT: false */
+  enableSchemaHooks: ?boolean;
 }

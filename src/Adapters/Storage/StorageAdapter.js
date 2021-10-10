@@ -111,6 +111,7 @@ export interface StorageAdapter {
     explain?: boolean
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
+  watch(callback: () => void): void;
 
   // Indexing
   createIndexes(className: string, indexes: any, conn: ?any): Promise<void>;

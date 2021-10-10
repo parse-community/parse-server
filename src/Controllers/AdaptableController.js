@@ -10,7 +10,6 @@ based on the parameters passed
 
 // _adapter is private, use Symbol
 var _adapter = Symbol();
-import Config from '../Config';
 
 export class AdaptableController {
   constructor(adapter, appId, options) {
@@ -26,10 +25,6 @@ export class AdaptableController {
 
   get adapter() {
     return this[_adapter];
-  }
-
-  get config() {
-    return Config.get(this.appId);
   }
 
   expectedAdapterType() {

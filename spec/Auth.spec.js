@@ -230,10 +230,10 @@ describe('Auth', () => {
         const role2 = new Parse.Role('role2loadtest' + i, acl2);
         role.getUsers().add([user]);
         role2.getUsers().add([user2]);
-        roles.push(role.save());
-        roles.push(role2.save());
+        roles.push(role);
+        roles.push(role2);
       }
-      const savedRoles = await Promise.all(roles);
+      const savedRoles = await Parse.Object.saveAll(roles);
       expect(savedRoles.length).toBe(rolesNumber * 2);
       const cloudRoles = await userAuth.getRolesForUser();
       const cloudRoles2 = await user2Auth.getRolesForUser();

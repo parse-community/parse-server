@@ -166,16 +166,22 @@ export class FilesRouter {
         // update fileSize
         const bufferData = Buffer.from(fileObject.file._data, 'base64');
         fileObject.fileSize = Buffer.byteLength(bufferData);
+        // prepare file options
+        const fileOptions = {
+          metadata: fileObject.file._metadata,
+        };
+        // some s3-compatible providers (DigitalOcean, Linode) do not accept tags
+        // so we do not include the tags option if it is empty.
+        const fileTags =
+          Object.keys(fileObject.file._tags).length > 0 ? { tags: fileObject.file._tags } : {};
+        Object.assign(fileOptions, fileTags);
         // save file
         const createFileResult = await filesController.createFile(
           config,
           fileObject.file._name,
           bufferData,
           fileObject.file._source.type,
-          {
-            tags: fileObject.file._tags,
-            metadata: fileObject.file._metadata,
-          }
+          fileOptions
         );
         // update file with new data
         fileObject.file._name = createFileResult.name;

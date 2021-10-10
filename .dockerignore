@@ -16,6 +16,8 @@ lib/
 
 # Tests
 spec/
+# Keep local dependencies used to CI tests
+!spec/dependencies/
 
 # IDEs
 .idea/
