@@ -76,6 +76,7 @@ export class Config {
     fileUpload,
     pages,
     security,
+    enforcePrivateUsers,
     schema,
   }) {
     if (masterKey === readOnlyMasterKey) {
@@ -114,6 +115,13 @@ export class Config {
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
+    this.validateEnforcePrivateUsers(enforcePrivateUsers);
+  }
+
+  static validateEnforcePrivateUsers(enforcePrivateUsers) {
+    if (typeof enforcePrivateUsers !== 'boolean') {
+      throw 'Parse Server option enforcePrivateUsers must be a boolean.';
+    }
   }
 
   static validateSecurityOptions(security) {
