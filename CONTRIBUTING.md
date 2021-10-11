@@ -19,8 +19,9 @@
     - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
-- [Commit Message](#commit-message)
+- [Pull Request](#pull-request)
   - [Breaking Change](#breaking-change)
+- [Merging](#merging)
 - [Code of Conduct](#code-of-conduct)
 
 ## Contributing
@@ -290,7 +291,7 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 5. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
 6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
-## Commit Message
+## Pull Request
 
 For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
 
@@ -325,19 +326,23 @@ Currently, we are not making use of the commit _scope_, which would be written a
 
 ### Breaking Change
 
-If a pull request contains a braking change, the description of the pull request must contain a special chapter at the bottom.
+If a pull request contains a braking change, the description of the pull request must contain a dedicated chapter at the bottom to indicate this. This is to assist the committer of the pull request to avoid merging a breaking change as non-breaking.
 
-The chapter consists of the phrase `BREAKING CHANGE`, capitalized, in a single line without any formatting. It must be followed by an empty line, then a short description of the breaking change, and ideally how the developer should address it. This chapter should contain more details focusing on the "breaking” aspect of the change, as it is intended to assist the developer in adapting their deployment. However, keep it concise, as it will also become part of the changelog entry.
+## Merging
 
-For example:
+The following guide is for anyone who merges a contributor pull request into the working branch, the working branch into a release branch, a release branch into another release branch, or any other direct commits such as hotfixes into release branches or the working branch.
 
-```
-Detailed pull request description...
+- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message.
+- If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
 
-BREAKING CHANGE
-
-The door handle has be pulled up to open the door, not down. Adjust your habits accordingly by walking on your hands.
-```
+  ```
+  fix: remove handle from door
+  
+  BREAKING CHANGE: You cannot open the door anymore by using a handle. See the [#migration guide](http://example.com) for more details.
+  ```
+  Keep in mind that in a repository with release automation, merging such a commit message will trigger a release with a major version increment.
+- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
+- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
 
 ## Code of Conduct
 
