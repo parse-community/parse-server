@@ -24,6 +24,7 @@ const debug = function (...args: any) {
 
 import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
+import { ErrorMessage } from '../../../Errors/message';
 
 const parseTypeToPostgresType = type => {
   switch (type.type) {
@@ -227,10 +228,7 @@ const validateKeys = object => {
       }
 
       if (key.includes('$') || key.includes('.')) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_NESTED_KEY,
-          "Nested keys should not contain the '$' or '.' characters"
-        );
+        throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, ErrorMessage.INVALID_NESTED_KEY());
       }
     }
   }
@@ -480,9 +478,9 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         );
       }
     } else if (typeof fieldValue.$in !== 'undefined') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
+      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.BAD_VALUE('$in'));
     } else if (typeof fieldValue.$nin !== 'undefined') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nin value');
+      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.BAD_VALUE('$nin'));
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
@@ -490,7 +488,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         if (!isAllValuesRegexOrNone(fieldValue.$all)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            'All $all values must be of regex type or none: ' + fieldValue.$all
+            ErrorMessage.ALL_VALUES_MUST_BE_REGEX(fieldValue.$all)
           );
         }
 
@@ -525,7 +523,10 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     if (fieldValue.$containedBy) {
       const arr = fieldValue.$containedBy;
       if (!(arr instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$containedBy:', 'array')
+        );
       }
 
       patterns.push(`$${index}:name <@ $${index + 1}::jsonb`);
@@ -537,36 +538,45 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       const search = fieldValue.$text.$search;
       let language = 'english';
       if (typeof search !== 'object') {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $search, should be object`);
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $search,', 'object')
+        );
       }
       if (!search.$term || typeof search.$term !== 'string') {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $term, should be string`);
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $term,', 'string')
+        );
       }
       if (search.$language && typeof search.$language !== 'string') {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $language, should be string`);
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $language,', 'string')
+        );
       } else if (search.$language) {
         language = search.$language;
       }
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: $caseSensitive, should be boolean`
+          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $caseSensitive,', 'boolean')
         );
       } else if (search.$caseSensitive) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: $caseSensitive not supported, please use $regex or create a separate lower case column.`
+          ErrorMessage.VALUE_NOT_SUPPORTED('$text: $caseSensitive')
         );
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: $diacriticSensitive, should be boolean`
+          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $diacriticSensitive,', 'boolean')
         );
       } else if (search.$diacriticSensitive === false) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: $diacriticSensitive - false not supported, install Postgres Unaccent Extension`
+          ErrorMessage.BAD_VALUE_POSTGRES_EXTENSION_REQUIRED('$text: $diacriticSensitive - false')
         );
       }
       patterns.push(
@@ -611,7 +621,10 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance'
+          ErrorMessage.VALUE_SHOULD_BE_TYPE(
+            '$geoWithin value; $centerSphere',
+            'an array of Parse.GeoPoint and distance'
+          )
         );
       }
       // Get point, convert to geo point if necessary and validate
@@ -980,7 +993,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
       })
       .catch(err => {
         if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`);
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            ErrorMessage.DUPLICATE_CLASS(className)
+          );
         }
         throw err;
       });
@@ -1433,7 +1449,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .one(qs, values, a => +a.count)
       .then(count => {
         if (count === 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.OBJECT_NOT_FOUND());
         } else {
           return count;
         }
@@ -1944,10 +1960,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         error.message.includes(constraintName)
       ) {
         // Cast the error into the proper parse error
-        throw new Parse.Error(
-          Parse.Error.DUPLICATE_VALUE,
-          'A duplicate value for a field with unique values was provided.'
-        );
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.DUPLICATE_VALUE());
       } else {
         throw error;
       }
@@ -2411,10 +2424,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         error.message.includes(indexNameOptions.name)
       ) {
         // Cast the error into the proper parse error
-        throw new Parse.Error(
-          Parse.Error.DUPLICATE_VALUE,
-          'A duplicate value for a field with unique values was provided.'
-        );
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.DUPLICATE_VALUE());
       } else {
         throw error;
       }
@@ -2424,7 +2434,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
 function convertPolygonToSQL(polygon) {
   if (polygon.length < 3) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, `Polygon must have at least 3 values`);
+    throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.INVALID_POLYGON_VALUES());
   }
   if (
     polygon[0][0] !== polygon[polygon.length - 1][0] ||
@@ -2446,7 +2456,7 @@ function convertPolygonToSQL(polygon) {
   if (unique.length < 3) {
     throw new Parse.Error(
       Parse.Error.INTERNAL_SERVER_ERROR,
-      'GeoJSON: Loop must have at least 3 different vertices'
+      ErrorMessage.GEO_JSON_INVALID_VERTICES()
     );
   }
   const points = polygon

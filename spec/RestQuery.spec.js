@@ -165,7 +165,7 @@ describe('rest query', () => {
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
         expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation.'
+          'This user is not allowed to access non-existent class: ClientClassCreation.'
         );
         done();
       }
