@@ -5,7 +5,7 @@ on:
       - master
   pull_request:
     branches:
-      - '**'
+      - "**"
 env:
   NODE_VERSION: 14.18.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
@@ -20,13 +20,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Cache Node.js modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+          cache: npm
       - name: Install dependencies
         run: npm ci
       - name: CI Environments Check
@@ -38,48 +32,36 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: dangoslen/changelog-enforcer@v2
+      - uses: actions/checkout@v2
+      - uses: dangoslen/changelog-enforcer@v2
   check-lint:
-     name: Lint
-     timeout-minutes: 15
-     runs-on: ubuntu-18.04
-     steps:
-       - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v2
-         with:
-           node-version: ${{ matrix.node-version }}
-       - name: Cache Node.js modules
-         uses: actions/cache@v2
-         with:
-           path: ~/.npm
-           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-           restore-keys: |
-             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-       - name: Install dependencies
-         run: npm ci
-       - run: npm run lint
+    name: Lint
+    timeout-minutes: 15
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run lint
   check-circular:
-     name: Circular Dependencies
-     timeout-minutes: 5
-     runs-on: ubuntu-18.04
-     steps:
-       - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v2
-         with:
-           node-version: ${{ matrix.node-version }}
-       - name: Cache Node.js modules
-         uses: actions/cache@v2
-         with:
-           path: ~/.npm
-           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-           restore-keys: |
-             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-       - name: Install dependencies
-         run: npm ci
-       - run: npm run madge:circular
+    name: Circular Dependencies
+    timeout-minutes: 5
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run madge:circular
   check-docker:
     name: Docker Build
     timeout-minutes: 5
@@ -151,8 +133,8 @@ jobs:
       redis:
         image: redis
         ports:
-            - 6379:6379
-    env:      
+          - 6379:6379
+    env:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
@@ -164,13 +146,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.NODE_VERSION }}
-      - name: Cache Node.js modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+          cache: npm
       - name: Install dependencies
         run: npm ci
       - run: npm run pretest
@@ -210,10 +186,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       PARSE_SERVER_TEST_DB: postgres
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
@@ -224,13 +197,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.NODE_VERSION }}
-      - name: Cache Node.js modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+          cache: npm
       - name: Install dependencies
         run: npm ci
       - run: bash scripts/before_script_postgres.sh
