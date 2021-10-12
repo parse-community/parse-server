@@ -25,6 +25,7 @@ WORKDIR /parse-server
 
 COPY package*.json ./
 
+RUN npm cache clean --force
 RUN npm ci --production --ignore-scripts
 
 COPY bin bin
