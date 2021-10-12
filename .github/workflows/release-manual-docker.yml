@@ -42,11 +42,14 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # The following parameter is modified to manually make pre-releases on the `master` branch;
+          # change this accordingly before adding release automation.
           flavor: |
-            latest=${{ steps.branch.outputs.branch_name == 'master' && github.event.inputs.ref == '' }}
+            latest=false
+          # The following parameter is modified to manually make pre-releases on the `master` branch;
+          # change this accordingly before adding release automation.
           tags: |
             type=semver,enable=true,pattern={{version}},value=${{ github.event.inputs.ref }}
-            type=raw,enable=${{ github.event.inputs.ref == '' }},value=latest
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
