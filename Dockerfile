@@ -9,6 +9,7 @@ COPY package*.json ./
 # Copy local dependencies for CI tests
 COPY spec/dependencies spec/dependencies
 
+RUN npm cache clean --force
 RUN npm ci
 COPY . .
 RUN npm run build
