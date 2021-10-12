@@ -12,14 +12,8 @@ const cleanUpIndexes = schema => {
 
 describe('DefinedSchemas', () => {
   let config;
-  beforeEach(async () => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000000;
+  afterEach(async () => {
     config = Config.get('test');
-    if (config) {
-      await config.database.adapter.deleteAllClasses();
-    }
-  });
-  afterAll(async () => {
     if (config) {
       await config.database.adapter.deleteAllClasses();
     }
