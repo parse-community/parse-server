@@ -137,7 +137,7 @@ jobs:
             MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 12.22.6
+            NODE_VERSION: 12.22.7
           - name: Node 15
             MONGODB_VERSION: 4.4.9
             MONGODB_TOPOLOGY: standalone
