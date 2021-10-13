@@ -254,7 +254,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [SashiDo](https://blog.sashido.io/tag/migration/)
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
-* [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
+* [Back4app](https://www.back4app.com/docs/get-started/welcome)
 * [Glitch](https://glitch.com/edit/#!/parse-server)
 * [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
 
