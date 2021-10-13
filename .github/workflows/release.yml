@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: '10.14'
+          node-version: '12.2'
           registry-url: https://registry.npmjs.org/
       - name: Cache Node.js modules
         uses: actions/cache@v2
@@ -19,7 +19,7 @@ jobs:
           restore-keys: |
               ${{ runner.os }}-node-
       - run: npm ci
-      - run: npm publish
+      - run: npm publish --tag alpha
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
   publish-docs:
@@ -30,7 +30,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: '10.14'
+          node-version: '12.2'
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
