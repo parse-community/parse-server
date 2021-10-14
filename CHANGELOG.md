@@ -174,6 +174,7 @@ ___
 - refactor: deprecate `Parse.Cloud.httpRequest`; it is recommended to use a HTTP library instead. (Daniel Blyth) [#7595](https://github.com/parse-community/parse-server/pull/7595)
 - refactor: Modernize HTTPRequest tests (brandongregoryscott) [#7604](https://github.com/parse-community/parse-server/pull/7604)
 - Allow liveQuery on Session class (Daniel Blyth) [#7554](https://github.com/parse-community/parse-server/pull/7554)
+- Fix Mongo deprecation warnings on database connect and returnOriginal (Moumouls) [#7626](https://github.com/parse-community/parse-server/pull/7626)
 
 # 4.10.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.3...4.10.4)
