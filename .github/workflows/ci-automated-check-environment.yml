@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Compose branch name for PR
         id: branch
-        run: echo "::set-output name=name::ci-bump-environment-${{ github.run_id }}${{ github.run_number }}"
+        run: echo "::set-output name=name::ci-bump-environment"
       - name: Create branch
         run: |
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
@@ -55,6 +55,9 @@ jobs:
           pr_source: ${{ steps.branch.outputs.name }}
           pr_labels: type:ci
           pr_body: |
-            # Outdated CI environment
+            ## Outdated CI environment
+
             This pull request was created, because the CI environment uses frameworks that are not up-to-date.
-            ### ⚠️ You must use `Squash and merge` to merge this pull request.
+            You can see which frameworks need to be upgraded in the [logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            *⚠️ Use `Squash and merge` to merge this pull request.*
