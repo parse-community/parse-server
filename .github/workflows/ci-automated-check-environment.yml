@@ -53,11 +53,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           pr_title: "ci: bump environment"
           pr_source: ${{ steps.branch.outputs.name }}
-          pr_labels: type:ci
           pr_body: |
             ## Outdated CI environment
 
-            This pull request was created, because the CI environment uses frameworks that are not up-to-date.
+            This pull request was created because the CI environment uses frameworks that are not up-to-date.
             You can see which frameworks need to be upgraded in the [logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
             *⚠️ Use `Squash and merge` to merge this pull request.*
