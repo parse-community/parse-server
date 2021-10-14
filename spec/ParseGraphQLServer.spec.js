@@ -2284,8 +2284,7 @@ describe('ParseGraphQLServer', () => {
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
             expect(nodeResult.data.node2.someField).toBe('some value 2');
           });
-          // TODO: (moumouls, davimacedo) Fix flaky test
-          xit('Id inputs should work either with global id or object id', async () => {
+          it('Id inputs should work either with global id or object id', async () => {
             try {
               await apolloClient.mutate({
                 mutation: gql`
@@ -2592,9 +2591,12 @@ describe('ParseGraphQLServer', () => {
                   .map(value => value.node.someField)
                   .sort()
               ).toEqual(['some value 22', 'some value 44']);
-              expect(
-                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.id
-              ).toBeLessThan(findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.id);
+              // NOTE: Here @davimacedo tried to test RelayID order, but the test is wrong since
+              // "objectId1" < "objectId2" do not always keep the order when objectId is transformed
+              // to base64 by Relay
+              // "SecondaryObject:bBRgmzIRRM" < "SecondaryObject:nTMcuVbATY" true
+              // base64("SecondaryObject:bBRgmzIRRM"") < base64(""SecondaryObject:nTMcuVbATY"") false
+              // "U2Vjb25kYXJ5T2JqZWN0OmJCUmdteklSUk0=" < "U2Vjb25kYXJ5T2JqZWN0Om5UTWN1VmJBVFk=" false
               expect(
                 findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId
               ).toBeLessThan(
@@ -2759,6 +2761,23 @@ describe('ParseGraphQLServer', () => {
             } catch (e) {
               handleError(e);
             }
+          });
+          it('Id inputs should work either with global id or object id with objectId higher than 19', async () => {
+            await reconfigureServer({ objectIdSize: 20 });
+            const obj = new Parse.Object('SomeClass');
+            await obj.save({ name: 'aname', type: 'robot' });
+            const result = await apolloClient.query({
+              query: gql`
+                query getSomeClass($id: ID!) {
+                  someClass(id: $id) {
+                    objectId
+                    id
+                  }
+                }
+              `,
+              variables: { id: obj.id },
+            });
+            expect(result.data.someClass.objectId).toEqual(obj.id);
           });
         });
       });
