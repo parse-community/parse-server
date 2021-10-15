@@ -9,6 +9,7 @@ COPY package*.json ./
 # Copy local dependencies for CI tests
 COPY spec/dependencies spec/dependencies
 
+RUN npm cache clean --force
 RUN npm ci
 COPY . .
 RUN npm run build
@@ -25,6 +26,7 @@ WORKDIR /parse-server
 
 COPY package*.json ./
 
+RUN npm cache clean --force
 RUN npm ci --production --ignore-scripts
 
 COPY bin bin
