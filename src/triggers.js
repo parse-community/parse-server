@@ -911,7 +911,6 @@ export function maybeRunTrigger(
           }
           return null;
         }
-
         return promise;
       })
       .then(success, error);

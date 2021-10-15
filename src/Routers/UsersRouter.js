@@ -8,6 +8,7 @@ import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
+import { runAuthEvent, getAuthEventRequest, EventTypes, resolveError } from '../events';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 
@@ -181,76 +182,104 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleLogIn(req) {
-    const user = await this._authenticateUserFromRequest(req);
+    const credentials = {
+      username: req.body?.username || req.query?.username,
+      email: req.body?.email || req.query?.email,
+    };
+    const request = getAuthEventRequest(credentials, req.auth, req.config);
+    try {
+      // run loginStarted event
+      await runAuthEvent(EventTypes.Auth.loginStarted, request, req.config.applicationId);
+      const user = await this._authenticateUserFromRequest(req);
 
-    // handle password expiry policy
-    if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
-      let changedAt = user._password_changed_at;
+      // handle password expiry policy
+      if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
+        let changedAt = user._password_changed_at;
 
-      if (!changedAt) {
-        // password was created before expiry policy was enabled.
-        // simply update _User object so that it will start enforcing from now
-        changedAt = new Date();
-        req.config.database.update(
-          '_User',
-          { username: user.username },
-          { _password_changed_at: Parse._encode(changedAt) }
-        );
-      } else {
-        // check whether the password has expired
-        if (changedAt.__type == 'Date') {
-          changedAt = new Date(changedAt.iso);
-        }
-        // Calculate the expiry time.
-        const expiresAt = new Date(
-          changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge
-        );
-        if (expiresAt < new Date())
-          // fail of current time is past password expiry time
-          throw new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Your password has expired. Please reset your password.'
+        if (!changedAt) {
+          // password was created before expiry policy was enabled.
+          // simply update _User object so that it will start enforcing from now
+          changedAt = new Date();
+          req.config.database.update(
+            '_User',
+            { username: user.username },
+            { _password_changed_at: Parse._encode(changedAt) }
           );
+        } else {
+          // check whether the password has expired
+          if (changedAt.__type == 'Date') {
+            changedAt = new Date(changedAt.iso);
+          }
+          // Calculate the expiry time.
+          const expiresAt = new Date(
+            changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge
+          );
+          if (expiresAt < new Date())
+            // fail of current time is past password expiry time
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'Your password has expired. Please reset your password.'
+            );
+        }
       }
+
+      // Remove hidden properties.
+      UsersRouter.removeHiddenProperties(user);
+
+      req.config.filesController.expandFilesInObject(req.config, user);
+
+      // Before login trigger; throws if failure
+      await maybeRunTrigger(
+        TriggerTypes.beforeLogin,
+        req.auth,
+        Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+        null,
+        req.config
+      );
+
+      // run userAuthenticated event
+      request.user = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
+      await runAuthEvent(EventTypes.Auth.userAuthenticated, request, req.config.applicationId);
+
+      const { sessionData, createSession } = RestWrite.createSession(req.config, {
+        userId: user.objectId,
+        createdWith: {
+          action: 'login',
+          authProvider: 'password',
+        },
+        installationId: req.info.installationId,
+      });
+
+      user.sessionToken = sessionData.sessionToken;
+
+      await createSession();
+
+      const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
+      maybeRunTrigger(
+        TriggerTypes.afterLogin,
+        { ...req.auth, user: afterLoginUser },
+        afterLoginUser,
+        null,
+        req.config
+      );
+
+      // run loginFinished event
+      request.user = { ...req.auth, user: afterLoginUser };
+      runAuthEvent(EventTypes.Auth.loginFinished, request, req.config.applicationId);
+
+      return { response: user };
+    } catch (error) {
+      request.error = error;
+      const response = await runAuthEvent(
+        EventTypes.Auth.loginFailed,
+        request,
+        req.config.applicationId
+      );
+      if (response) {
+        throw resolveError(response);
+      }
+      throw error;
     }
-
-    // Remove hidden properties.
-    UsersRouter.removeHiddenProperties(user);
-
-    req.config.filesController.expandFilesInObject(req.config, user);
-
-    // Before login trigger; throws if failure
-    await maybeRunTrigger(
-      TriggerTypes.beforeLogin,
-      req.auth,
-      Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
-      null,
-      req.config
-    );
-
-    const { sessionData, createSession } = RestWrite.createSession(req.config, {
-      userId: user.objectId,
-      createdWith: {
-        action: 'login',
-        authProvider: 'password',
-      },
-      installationId: req.info.installationId,
-    });
-
-    user.sessionToken = sessionData.sessionToken;
-
-    await createSession();
-
-    const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
-    maybeRunTrigger(
-      TriggerTypes.afterLogin,
-      { ...req.auth, user: afterLoginUser },
-      afterLoginUser,
-      null,
-      req.config
-    );
-
-    return { response: user };
   }
 
   /**
@@ -317,38 +346,54 @@ export class UsersRouter extends ClassesRouter {
       });
   }
 
-  handleLogOut(req) {
+  async handleLogOut(req) {
     const success = { response: {} };
-    if (req.info && req.info.sessionToken) {
-      return rest
-        .find(
-          req.config,
-          Auth.master(req.config),
-          '_Session',
-          { sessionToken: req.info.sessionToken },
-          undefined,
-          req.info.clientSDK,
-          req.info.context
-        )
-        .then(records => {
-          if (records.results && records.results.length) {
-            return rest
-              .del(
-                req.config,
-                Auth.master(req.config),
-                '_Session',
-                records.results[0].objectId,
-                req.info.context
-              )
-              .then(() => {
-                this._runAfterLogoutTrigger(req, records.results[0]);
-                return Promise.resolve(success);
-              });
-          }
-          return Promise.resolve(success);
-        });
+    // Event request
+    const request = getAuthEventRequest({}, req.auth, req.config);
+
+    try {
+      //Run logoutStarted event
+      await runAuthEvent(EventTypes.Auth.logoutStarted, request, req.config.applicationId);
+
+      if (!req.info || !req.info.sessionToken) {
+        return Promise.resolve(success);
+      }
+      const records = await rest.find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { sessionToken: req.info.sessionToken },
+        undefined,
+        req.info.clientSDK,
+        req.info.context
+      );
+      if (!records.results || !records.results.length) {
+        return Promise.resolve(success);
+      }
+      await rest.del(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        records.results[0].objectId,
+        req.info.context
+      );
+      //Run logoutFinished event
+      runAuthEvent(EventTypes.Auth.logoutFinished, request, req.config.applicationId);
+
+      this._runAfterLogoutTrigger(req, records.results[0]);
+      return Promise.resolve(success);
+    } catch (error) {
+      request.error = error;
+      const response = await runAuthEvent(
+        EventTypes.Auth.logoutFailed,
+        request,
+        req.config.applicationId
+      );
+      if (response) {
+        throw resolveError(response);
+      }
+      throw error;
     }
-    return Promise.resolve(success);
   }
 
   _runAfterLogoutTrigger(req, session) {
