@@ -57,7 +57,7 @@ describe('ParseGraphQLSchema', () => {
     it('should load a brand new GraphQL Schema if Parse Schema changes', async () => {
       await parseGraphQLSchema.load();
       const parseClasses = parseGraphQLSchema.parseClasses;
-      const parseClassesString = parseGraphQLSchema.parseClassesString;
+      const parseCachedClasses = parseGraphQLSchema.parseCachedClasses;
       const parseClassTypes = parseGraphQLSchema.parseClassTypes;
       const graphQLSchema = parseGraphQLSchema.graphQLSchema;
       const graphQLTypes = parseGraphQLSchema.graphQLTypes;
@@ -70,7 +70,7 @@ describe('ParseGraphQLSchema', () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       await parseGraphQLSchema.load();
       expect(parseClasses).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(parseClassesString).not.toBe(parseGraphQLSchema.parseClassesString);
+      expect(parseCachedClasses).not.toBe(parseGraphQLSchema.parseCachedClasses);
       expect(parseClassTypes).not.toBe(parseGraphQLSchema.parseClassTypes);
       expect(graphQLSchema).not.toBe(parseGraphQLSchema.graphQLSchema);
       expect(graphQLTypes).not.toBe(parseGraphQLSchema.graphQLTypes);
@@ -94,7 +94,7 @@ describe('ParseGraphQLSchema', () => {
       });
       await parseGraphQLSchema.load();
       const parseClasses = parseGraphQLSchema.parseClasses;
-      const parseClassesString = parseGraphQLSchema.parseClassesString;
+      const parseCachedClasses = parseGraphQLSchema.parseCachedClasses;
       const parseClassTypes = parseGraphQLSchema.parseClassTypes;
       const graphQLSchema = parseGraphQLSchema.graphQLSchema;
       const graphQLTypes = parseGraphQLSchema.graphQLTypes;
@@ -109,7 +109,7 @@ describe('ParseGraphQLSchema', () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       await parseGraphQLSchema.load();
       expect(parseClasses).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(parseClassesString).not.toBe(parseGraphQLSchema.parseClassesString);
+      expect(parseCachedClasses).not.toBe(parseGraphQLSchema.parseCachedClasses);
       expect(parseClassTypes).not.toBe(parseGraphQLSchema.parseClassTypes);
       expect(graphQLSchema).not.toBe(parseGraphQLSchema.graphQLSchema);
       expect(graphQLTypes).not.toBe(parseGraphQLSchema.graphQLTypes);
