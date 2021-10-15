@@ -170,7 +170,7 @@ export interface ParseServerOptions {
   sessionLength: ?number;
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
-  /* Sets wether we should expire the inactive sessions, defaults to true
+  /* Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
   :DEFAULT: true */
   expireInactiveSessions: ?boolean;
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
@@ -246,6 +246,9 @@ export interface ParseServerOptions {
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
+  /* Set to true if new users should be created without public read and write access.
+  :DEFAULT: false */
+  enforcePrivateUsers: ?boolean;
 }
 
 export interface SecurityOptions {

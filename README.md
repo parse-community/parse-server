@@ -18,7 +18,7 @@
     <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
     <a href="https://snyk.io/test/github/parse-community/parse-server"><img alt="Snyk badge" src="https://snyk.io/test/github/parse-community/parse-server/badge.svg"></a>
     <a href="https://nodejs.org/"><img alt="Node.js 12,14,15" src="https://img.shields.io/badge/nodejs-12,_14,_15-green.svg?logo=node.js&style=flat"></a>
-    <a href="https://www.mongodb.com/"><img alt="MongoDB 4.0,4.2,4.4" src="https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4-green.svg?logo=mongodb&style=flat"></a>
+    <a href="https://www.mongodb.com/"><img alt="MongoDB 4.0,4.2,4.4,5.0" src="https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat"></a>
    <a href="https://www.postgresql.org"> <img alt="PostgreSQL 11,12,13" src="https://img.shields.io/badge/postgresql-11,_12,_13-green.svg?logo=postgresql&style=flat"></a>
 </p>
 
@@ -114,8 +114,8 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 | Version    | Latest Version | End-of-Life Date | Compatibility      |
 |------------|----------------|------------------|--------------------|
-| Node.js 12 | 12.22.1        | April 2022       | ✅ Fully compatible |
-| Node.js 14 | 14.17.1        | April 2023       | ✅ Fully compatible |
+| Node.js 12 | 12.22.7        | April 2022       | ✅ Fully compatible |
+| Node.js 14 | 14.18.1        | April 2023       | ✅ Fully compatible |
 | Node.js 15 | 15.14.0        | June 2021        | ✅ Fully compatible |
 
 #### MongoDB
@@ -123,9 +123,10 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 
 | Version     | Latest Version | End-of-Life Date | Compatibility      |
 |-------------|----------------|------------------|--------------------|
-| MongoDB 4.0 | 4.0.25         | January 2022     | ✅ Fully compatible |
-| MongoDB 4.2 | 4.2.14         | TBD              | ✅ Fully compatible |
-| MongoDB 4.4 | 4.4.6          | TBD              | ✅ Fully compatible |
+| MongoDB 4.0 | 4.0.27         | April 2022       | ✅ Fully compatible |
+| MongoDB 4.2 | 4.2.17         | TBD              | ✅ Fully compatible |
+| MongoDB 4.4 | 4.4.9          | TBD              | ✅ Fully compatible |
+| MongoDB 5.0 | 5.0.3          | January 2024     | ✅ Fully compatible |
   
 #### PostgreSQL
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
@@ -253,7 +254,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [SashiDo](https://blog.sashido.io/tag/migration/)
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
-* [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
+* [Back4app](https://www.back4app.com/docs/get-started/welcome)
 * [Glitch](https://glitch.com/edit/#!/parse-server)
 * [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
 
@@ -741,11 +742,7 @@ Logs are also viewable in Parse Dashboard.
 
 # Deprecations
 
-The following Parse Server options and APIs are deprecated and will change in future versions. The "Deprecation" version indicates from when an item has been deprecated with runtime warnings. The "End-of-Life" version indicates when the deprecation period has ended and the breaking change came into effect. In rare cases, deprecations may be revoked without any breaking change coming into effect.
-
-| Type   | Item           | Deprecation | End-of-Life | Details                                 |
-|--------|----------------|-------------|-------------|-----------------------------------------|
-| Option | `directAccess` | `5.0.0`     | tbd         | Default changes from `false` to `true`. |
+See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
 
 # Live Query
 
