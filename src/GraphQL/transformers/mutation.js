@@ -225,7 +225,7 @@ const transformers = {
       };
     }
     if (value.unlink) {
-      return null;
+      return { __op: 'Delete' };
     }
   },
 };

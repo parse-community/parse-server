@@ -8365,6 +8365,29 @@ describe('ParseGraphQLServer', () => {
 
           expect(result.id).toBeDefined();
           expect(result.company).toBeNull();
+
+          const {
+            data: { country: result1 },
+          } = await apolloClient.query({
+            query: gql`
+              query getCountry($id: ID!) {
+                country(id: $id) {
+                  id
+                  objectId
+                  company {
+                    id
+                    objectId
+                    name
+                  }
+                }
+              }
+            `,
+            variables: {
+              id: country.id,
+            },
+          });
+
+          expect(result1.countries).toBeNull();
         });
 
         it_only_db('mongo')('should support relation and nested relation on create', async () => {
