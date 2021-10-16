@@ -169,7 +169,6 @@ ___
 - Remove hardcoded errors (Daniel Blyth) [#7546](https://github.com/parse-community/parse-server/pull/7546)
 
 ## 4.10.3
-=======
 - CI now pushes docker images to Docker Hub (Corey Baker) [#7548](https://github.com/parse-community/parse-server/pull/7548)
 - Allow afterFind and afterLiveQueryEvent to set unsaved pointers and keys (dblythy) [#7310](https://github.com/parse-community/parse-server/pull/7310)
 - Allow setting descending sort to full text queries (dblythy) [#7496](https://github.com/parse-community/parse-server/pull/7496)
