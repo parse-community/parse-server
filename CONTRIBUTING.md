@@ -19,6 +19,9 @@
     - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
+- [Pull Request](#pull-request)
+  - [Breaking Change](#breaking-change)
+- [Merging](#merging)
 - [Code of Conduct](#code-of-conduct)
 
 ## Contributing
@@ -287,6 +290,59 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 4. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
 5. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
 6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
+
+## Pull Request
+
+For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
+
+```
+<type>: <summary>
+```
+
+The _type_ is the category of change that is made, possible types are:
+- `feat` - add a new feature
+- `fix` - fix a bug
+- `refactor` - refactor code without impact on features or performance
+- `docs` - add or edit code comments, documentation, GitHub pages
+- `style` - edit code style
+- `build` - retry failing build and anything build process related
+- `perf` - performance optimization
+- `ci` - continuous integration
+- `test` - tests
+
+The _summary_ is a short change description in present tense, not capitalized, without period at the end. This summary will also be used as the changelog entry.
+- It must be short and self-explanatory for a reader who does not see the details of the full pull request description
+- It must not contain abbreviations, e.g. instead of `LQ` write `LiveQuery`
+- It must use the correct product and feature names as referenced in the documentation, e.g. instead of `Cloud Validator` use `Cloud Function validation`
+- In case of a breaking change, the summary must not contain duplicate information that is also in the [BREAKING CHANGE](#breaking-change) chapter of the pull request description. It must not contain a note that it is a breaking change, as this will be automatically flagged as such if the pull request description contains the BREAKING CHANGE chapter.
+
+For example:
+
+```
+feat: add handle to door for easy opening
+```
+
+Currently, we are not making use of the commit _scope_, which would be written as `<type>(<scope>): <summary>`, that attributes a change to a specific part of the product.
+
+### Breaking Change
+
+If a pull request contains a braking change, the description of the pull request must contain a dedicated chapter at the bottom to indicate this. This is to assist the committer of the pull request to avoid merging a breaking change as non-breaking.
+
+## Merging
+
+The following guide is for anyone who merges a contributor pull request into the working branch, the working branch into a release branch, a release branch into another release branch, or any other direct commits such as hotfixes into release branches or the working branch.
+
+- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message.
+- If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
+
+  ```
+  fix: remove handle from door
+  
+  BREAKING CHANGE: You cannot open the door anymore by using a handle. See the [#migration guide](http://example.com) for more details.
+  ```
+  Keep in mind that in a repository with release automation, merging such a commit message will trigger a release with a major version increment.
+- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
+- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
 
 ## Code of Conduct
 
