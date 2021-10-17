@@ -105,7 +105,7 @@ ___
 ## Features
   - (none)
 ## Bug Fixes
-  - refactor: Mongo deprecation warnings on database connect and returnOriginal (Moumouls) [#7626](https://github.com/parse-community/parse-server/pull/7626)
+  - (none)
 
 # [5.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/4.10.4...5.0.0-alpha.1) (2021-10-12)
 
