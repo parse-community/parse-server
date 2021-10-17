@@ -103,7 +103,7 @@ ___
 ## Breaking Changes
   - (none)
 ## Features
-  - (none)
+  - Allow a pointer to be removed using GraphQL (Chris Bland) [#7517](https://github.com/parse-community/parse-server/issues/7517)
 ## Bug Fixes
   - (none)
 
@@ -174,7 +174,6 @@ ___
 - refactor: deprecate `Parse.Cloud.httpRequest`; it is recommended to use a HTTP library instead. (Daniel Blyth) [#7595](https://github.com/parse-community/parse-server/pull/7595)
 - refactor: Modernize HTTPRequest tests (brandongregoryscott) [#7604](https://github.com/parse-community/parse-server/pull/7604)
 - Allow liveQuery on Session class (Daniel Blyth) [#7554](https://github.com/parse-community/parse-server/pull/7554)
-- Allow a pointer to be removed using GraphQL (Chris Bland) [#7517](https://github.com/parse-community/parse-server/issues/7517)
 
 # 4.10.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.3...4.10.4)
