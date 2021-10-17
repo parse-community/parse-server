@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "4.10.4",
+  "version": "5.0.0-alpha.1",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -47,7 +47,7 @@
     "mime": "2.5.2",
     "mongodb": "3.6.11",
     "mustache": "4.2.0",
-    "parse": "3.3.0",
+    "parse": "3.3.1",
     "pg-monitor": "1.4.1",
     "pg-promise": "10.11.0",
     "pluralize": "8.0.0",
