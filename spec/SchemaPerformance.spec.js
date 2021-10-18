@@ -157,7 +157,7 @@ describe('Schema Performance', function () {
     expect(getAllSpy.calls.count()).toBe(0);
   });
 
-  it_exclude_dbs(['postgres'])('test schema update class', async () => {
+  it('test schema update class', async () => {
     const container = new Container();
     await container.save();
 
@@ -202,6 +202,6 @@ describe('Schema Performance', function () {
       {},
       config.database
     );
-    expect(getAllSpy.calls.count()).toBe(0);
+    expect(getAllSpy.calls.count()).toBe(2);
   });
 });
