@@ -23,7 +23,7 @@ const headers = {
   'X-Parse-Installation-Id': 'yolo',
 };
 
-describe_only_db('mongo')('miscellaneous', () => {
+describe('miscellaneous', () => {
   it('db contains document after successful save', async () => {
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');

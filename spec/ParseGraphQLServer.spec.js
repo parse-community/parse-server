@@ -25,6 +25,7 @@ const {
   GraphQLEnumType,
   GraphQLInputObjectType,
   GraphQLSchema,
+  GraphQLList,
 } = require('graphql');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
@@ -4012,64 +4013,61 @@ describe('ParseGraphQLServer', () => {
             expect(someClassSubObject.someClassField).toEqual('imSomeClassTwo');
           });
 
-          it_only_db('mongo')(
-            'should return many child objects in allow cyclic query',
-            async () => {
-              const obj1 = new Parse.Object('Employee');
-              const obj2 = new Parse.Object('Team');
-              const obj3 = new Parse.Object('Company');
-              const obj4 = new Parse.Object('Country');
+          it('should return many child objects in allow cyclic query', async () => {
+            const obj1 = new Parse.Object('Employee');
+            const obj2 = new Parse.Object('Team');
+            const obj3 = new Parse.Object('Company');
+            const obj4 = new Parse.Object('Country');
 
-              obj1.set('name', 'imAnEmployee');
-              await obj1.save();
+            obj1.set('name', 'imAnEmployee');
+            await obj1.save();
 
-              obj2.set('name', 'imATeam');
-              obj2.set('employees', [obj1]);
-              await obj2.save();
+            obj2.set('name', 'imATeam');
+            obj2.set('employees', [obj1]);
+            await obj2.save();
 
-              obj3.set('name', 'imACompany');
-              obj3.set('teams', [obj2]);
-              obj3.set('employees', [obj1]);
-              await obj3.save();
+            obj3.set('name', 'imACompany');
+            obj3.set('teams', [obj2]);
+            obj3.set('employees', [obj1]);
+            await obj3.save();
 
-              obj4.set('name', 'imACountry');
-              obj4.set('companies', [obj3]);
-              await obj4.save();
+            obj4.set('name', 'imACountry');
+            obj4.set('companies', [obj3]);
+            await obj4.save();
 
-              obj1.set('country', obj4);
-              await obj1.save();
+            obj1.set('country', obj4);
+            await obj1.save();
 
-              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const result = (
-                await apolloClient.query({
-                  query: gql`
-                    query DeepComplexGraphQLQuery($id: ID!) {
-                      country(id: $id) {
-                        objectId
-                        name
-                        companies {
-                          ... on Company {
-                            objectId
-                            name
-                            employees {
-                              ... on Employee {
-                                objectId
-                                name
-                              }
+            const result = (
+              await apolloClient.query({
+                query: gql`
+                  query DeepComplexGraphQLQuery($id: ID!) {
+                    country(id: $id) {
+                      objectId
+                      name
+                      companies {
+                        ... on Company {
+                          objectId
+                          name
+                          employees {
+                            ... on Employee {
+                              objectId
+                              name
                             }
-                            teams {
-                              ... on Team {
-                                objectId
-                                name
-                                employees {
-                                  ... on Employee {
+                          }
+                          teams {
+                            ... on Team {
+                              objectId
+                              name
+                              employees {
+                                ... on Employee {
+                                  objectId
+                                  name
+                                  country {
                                     objectId
                                     name
-                                    country {
-                                      objectId
-                                      name
-                                    }
                                   }
                                 }
                               }
@@ -4078,54 +4076,54 @@ describe('ParseGraphQLServer', () => {
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    id: obj4.id,
-                  },
-                })
-              ).data.country;
+                  }
+                `,
+                variables: {
+                  id: obj4.id,
+                },
+              })
+            ).data.country;
 
-              const expectedResult = {
-                objectId: obj4.id,
-                name: 'imACountry',
-                __typename: 'Country',
-                companies: [
-                  {
-                    objectId: obj3.id,
-                    name: 'imACompany',
-                    __typename: 'Company',
-                    employees: [
-                      {
-                        objectId: obj1.id,
-                        name: 'imAnEmployee',
-                        __typename: 'Employee',
-                      },
-                    ],
-                    teams: [
-                      {
-                        objectId: obj2.id,
-                        name: 'imATeam',
-                        __typename: 'Team',
-                        employees: [
-                          {
-                            objectId: obj1.id,
-                            name: 'imAnEmployee',
-                            __typename: 'Employee',
-                            country: {
-                              objectId: obj4.id,
-                              name: 'imACountry',
-                              __typename: 'Country',
-                            },
+            const expectedResult = {
+              objectId: obj4.id,
+              name: 'imACountry',
+              __typename: 'Country',
+              companies: [
+                {
+                  objectId: obj3.id,
+                  name: 'imACompany',
+                  __typename: 'Company',
+                  employees: [
+                    {
+                      objectId: obj1.id,
+                      name: 'imAnEmployee',
+                      __typename: 'Employee',
+                    },
+                  ],
+                  teams: [
+                    {
+                      objectId: obj2.id,
+                      name: 'imATeam',
+                      __typename: 'Team',
+                      employees: [
+                        {
+                          objectId: obj1.id,
+                          name: 'imAnEmployee',
+                          __typename: 'Employee',
+                          country: {
+                            objectId: obj4.id,
+                            name: 'imACountry',
+                            __typename: 'Country',
                           },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              };
-              expect(result).toEqual(expectedResult);
-            }
-          );
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            };
+            expect(result).toEqual(expectedResult);
+          });
 
           it('should respect level permissions', async () => {
             await prepareData();
@@ -8688,7 +8686,7 @@ describe('ParseGraphQLServer', () => {
           expect(result2.companies.edges[0].node.objectId).toEqual(company1.id);
         });
 
-        it_only_db('mongo')('should support relational where query', async () => {
+        it('should support relational where query', async () => {
           const president = new Parse.Object('President');
           president.set('name', 'James');
           await president.save();
@@ -10341,6 +10339,18 @@ describe('ParseGraphQLServer', () => {
             robot: { value: 'robot' },
           },
         });
+        const TypeEnumWhereInput = new GraphQLInputObjectType({
+          name: 'TypeEnumWhereInput',
+          fields: {
+            equalTo: { type: TypeEnum },
+          },
+        });
+        const SomeClass2WhereInput = new GraphQLInputObjectType({
+          name: 'SomeClass2WhereInput',
+          fields: {
+            type: { type: TypeEnumWhereInput },
+          },
+        });
         const SomeClassType = new GraphQLObjectType({
             name: 'SomeClass',
             fields: {
@@ -10386,6 +10396,18 @@ describe('ParseGraphQLServer', () => {
                       return obj.toJSON();
                     },
                   },
+                  customQueryWithAutoTypeReturnList: {
+                    type: new GraphQLList(SomeClassType),
+                    args: {
+                      id: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: async (p, { id }) => {
+                      const obj = new Parse.Object('SomeClass');
+                      obj.id = id;
+                      await obj.fetch();
+                      return [obj.toJSON(), obj.toJSON(), obj.toJSON()];
+                    },
+                  },
                 },
               }),
               types: [
@@ -10401,7 +10423,17 @@ describe('ParseGraphQLServer', () => {
                     type: { type: TypeEnum },
                   },
                 }),
+                // Enhanced where input with a extended enum
+                new GraphQLInputObjectType({
+                  name: 'SomeClassWhereInput',
+                  fields: {
+                    type: {
+                      type: TypeEnumWhereInput,
+                    },
+                  },
+                }),
                 SomeClassType,
+                SomeClass2WhereInput,
               ],
             }),
           });
@@ -10461,6 +10493,65 @@ describe('ParseGraphQLServer', () => {
         expect(result.data.customQueryWithAutoTypeReturn.name).toEqual('aname');
         expect(result.data.customQueryWithAutoTypeReturn.nameUpperCase).toEqual('ANAME');
         expect(result.data.customQueryWithAutoTypeReturn.type).toEqual('robot');
+      });
+
+      it('can resolve a custom query with auto type list return', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
+        await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { id: obj.id },
+          query: gql`
+            query CustomQuery($id: String!) {
+              customQueryWithAutoTypeReturnList(id: $id) {
+                id
+                objectId
+                nameUpperCase
+                name
+                type
+              }
+            }
+          `,
+        });
+        result.data.customQueryWithAutoTypeReturnList.forEach(rObj => {
+          expect(rObj.objectId).toBeDefined();
+          expect(rObj.objectId).toEqual(obj.id);
+          expect(rObj.name).toEqual('aname');
+          expect(rObj.nameUpperCase).toEqual('ANAME');
+          expect(rObj.type).toEqual('robot');
+        });
+      });
+
+      it('can resolve a stacked query with same where variables on overloaded where input', async () => {
+        const objPointer = new Parse.Object('SomeClass2');
+        await objPointer.save({ name: 'aname', type: 'robot' });
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot', pointer: objPointer });
+        await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { where: { OR: [{ pointer: { have: { objectId: { exists: true } } } }] } },
+          query: gql`
+            query someQuery($where: SomeClassWhereInput!) {
+              q1: someClasses(where: $where) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+              q2: someClasses(where: $where) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
+            }
+          `,
+        });
+        expect(result.data.q1.edges.length).toEqual(1);
+        expect(result.data.q2.edges.length).toEqual(1);
+        expect(result.data.q1.edges[0].node.id).toEqual(result.data.q2.edges[0].node.id);
       });
 
       it('can resolve a custom extend type', async () => {
