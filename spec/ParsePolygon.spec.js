@@ -5,17 +5,8 @@ const defaultHeaders = {
   'X-Parse-Rest-API-Key': 'rest',
   'Content-Type': 'application/json',
 };
-const Config = require('../lib/Config');
 
 describe('Parse.Polygon testing', () => {
-  let config;
-  beforeEach(async () => {
-    if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
-      require('../lib/TestUtils').destroyAllDataPermanently();
-    }
-    config = Config.get('test');
-    config.schemaCache.clear();
-  });
   it('polygon save open path', done => {
     const coords = [
       [0, 0],
@@ -217,7 +208,7 @@ describe('Parse.Polygon testing', () => {
 
   describe('with location', () => {
     if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
-      require('../lib/TestUtils').destroyAllDataPermanently();
+      beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
     }
 
     it('polygonContain query', done => {
@@ -432,6 +423,7 @@ describe('Parse.Polygon testing', () => {
 });
 
 describe_only_db('mongo')('Parse.Polygon testing', () => {
+  const Config = require('../lib/Config');
   let config;
   beforeEach(async () => {
     if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
@@ -504,6 +496,9 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
   });
 
   it('polygon coordinates reverse input', done => {
+    const Config = require('../lib/Config');
+    const config = Config.get('test');
+
     // When stored the first point should be the last point
     const input = [
       [12, 11],
