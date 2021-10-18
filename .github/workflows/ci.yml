@@ -223,6 +223,7 @@ jobs:
     env:
       PARSE_SERVER_TEST_DB: postgres
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
+      POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2
