@@ -172,7 +172,7 @@ describe('Parse.Relation testing', () => {
       .then(done, done.fail);
   });
 
-  it_exclude_dbs(['postgres'])('queries with relations', async () => {
+  it('queries with relations', async () => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
     for (let i = 0; i < 10; i++) {
@@ -283,7 +283,7 @@ describe('Parse.Relation testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('query on pointer and relation fields with equal', done => {
+  it('query on pointer and relation fields with equal', done => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
     for (let i = 0; i < 10; i++) {
@@ -366,7 +366,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('or queries on pointer and relation fields', done => {
+  it('or queries on pointer and relation fields', done => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
     for (let i = 0; i < 10; i++) {
