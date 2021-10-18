@@ -105,7 +105,7 @@ ___
 ## Features
   - (none)
 ## Bug Fixes
-  - (none)
+- Downgrade GraphQL Relay to 0.7.0 to allow usage of objectId size higher than `19` on GraphQL API (Moumouls) [#7622](https://github.com/parse-community/parse-server/issues/7622)
 
 # [5.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/4.10.4...5.0.0-alpha.1) (2021-10-12)
 
@@ -128,7 +128,6 @@ ___
 - Add REST API endpoint `/loginAs` to create session of any user with master key; allows to impersonate another user. (GormanFletcher) [#7406](https://github.com/parse-community/parse-server/pull/7406)
 - Add official support for MongoDB 5.0 (Manuel Trezza) [#7469](https://github.com/parse-community/parse-server/pull/7469)
 - Added Parse Server Configuration `enforcePrivateUsers`, which will remove public access by default on new Parse.Users (dblythy) [#7319](https://github.com/parse-community/parse-server/pull/7319)
-- Downgrade GraphQL Relay to 0.7.0 to allow usage of objectId size higher than `19` on GraphQL API (Moumouls) [#7622](https://github.com/parse-community/parse-server/issues/7622)
 
 ## Other Changes
 - Support native mongodb syntax in aggregation pipelines (Raschid JF Rafeally) [#7339](https://github.com/parse-community/parse-server/pull/7339)
