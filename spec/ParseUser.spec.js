@@ -72,7 +72,9 @@ describe('Parse.User testing', () => {
       })
       .catch(err => {
         expect(err.status).toBe(404);
-        expect(err.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(err.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       });
   });
@@ -99,7 +101,9 @@ describe('Parse.User testing', () => {
       })
       .catch(err => {
         expect(err.status).toBe(404);
-        expect(err.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(err.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       });
   });
