@@ -23,7 +23,7 @@ const headers = {
   'X-Parse-Installation-Id': 'yolo',
 };
 
-describe_only_db('mongo')('miscellaneous', () => {
+describe('miscellaneous', () => {
   it('db contains document after successful save', async () => {
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
@@ -1015,7 +1015,7 @@ describe('miscellaneous', function () {
         done();
       },
       e => {
-        expect(e.code).toEqual(141);
+        expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
         expect(e.message).toEqual('noway');
         done();
       }

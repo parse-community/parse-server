@@ -4013,64 +4013,61 @@ describe('ParseGraphQLServer', () => {
             expect(someClassSubObject.someClassField).toEqual('imSomeClassTwo');
           });
 
-          it_only_db('mongo')(
-            'should return many child objects in allow cyclic query',
-            async () => {
-              const obj1 = new Parse.Object('Employee');
-              const obj2 = new Parse.Object('Team');
-              const obj3 = new Parse.Object('Company');
-              const obj4 = new Parse.Object('Country');
+          it('should return many child objects in allow cyclic query', async () => {
+            const obj1 = new Parse.Object('Employee');
+            const obj2 = new Parse.Object('Team');
+            const obj3 = new Parse.Object('Company');
+            const obj4 = new Parse.Object('Country');
 
-              obj1.set('name', 'imAnEmployee');
-              await obj1.save();
+            obj1.set('name', 'imAnEmployee');
+            await obj1.save();
 
-              obj2.set('name', 'imATeam');
-              obj2.set('employees', [obj1]);
-              await obj2.save();
+            obj2.set('name', 'imATeam');
+            obj2.set('employees', [obj1]);
+            await obj2.save();
 
-              obj3.set('name', 'imACompany');
-              obj3.set('teams', [obj2]);
-              obj3.set('employees', [obj1]);
-              await obj3.save();
+            obj3.set('name', 'imACompany');
+            obj3.set('teams', [obj2]);
+            obj3.set('employees', [obj1]);
+            await obj3.save();
 
-              obj4.set('name', 'imACountry');
-              obj4.set('companies', [obj3]);
-              await obj4.save();
+            obj4.set('name', 'imACountry');
+            obj4.set('companies', [obj3]);
+            await obj4.save();
 
-              obj1.set('country', obj4);
-              await obj1.save();
+            obj1.set('country', obj4);
+            await obj1.save();
 
-              await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const result = (
-                await apolloClient.query({
-                  query: gql`
-                    query DeepComplexGraphQLQuery($id: ID!) {
-                      country(id: $id) {
-                        objectId
-                        name
-                        companies {
-                          ... on Company {
-                            objectId
-                            name
-                            employees {
-                              ... on Employee {
-                                objectId
-                                name
-                              }
+            const result = (
+              await apolloClient.query({
+                query: gql`
+                  query DeepComplexGraphQLQuery($id: ID!) {
+                    country(id: $id) {
+                      objectId
+                      name
+                      companies {
+                        ... on Company {
+                          objectId
+                          name
+                          employees {
+                            ... on Employee {
+                              objectId
+                              name
                             }
-                            teams {
-                              ... on Team {
-                                objectId
-                                name
-                                employees {
-                                  ... on Employee {
+                          }
+                          teams {
+                            ... on Team {
+                              objectId
+                              name
+                              employees {
+                                ... on Employee {
+                                  objectId
+                                  name
+                                  country {
                                     objectId
                                     name
-                                    country {
-                                      objectId
-                                      name
-                                    }
                                   }
                                 }
                               }
@@ -4079,54 +4076,54 @@ describe('ParseGraphQLServer', () => {
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    id: obj4.id,
-                  },
-                })
-              ).data.country;
+                  }
+                `,
+                variables: {
+                  id: obj4.id,
+                },
+              })
+            ).data.country;
 
-              const expectedResult = {
-                objectId: obj4.id,
-                name: 'imACountry',
-                __typename: 'Country',
-                companies: [
-                  {
-                    objectId: obj3.id,
-                    name: 'imACompany',
-                    __typename: 'Company',
-                    employees: [
-                      {
-                        objectId: obj1.id,
-                        name: 'imAnEmployee',
-                        __typename: 'Employee',
-                      },
-                    ],
-                    teams: [
-                      {
-                        objectId: obj2.id,
-                        name: 'imATeam',
-                        __typename: 'Team',
-                        employees: [
-                          {
-                            objectId: obj1.id,
-                            name: 'imAnEmployee',
-                            __typename: 'Employee',
-                            country: {
-                              objectId: obj4.id,
-                              name: 'imACountry',
-                              __typename: 'Country',
-                            },
+            const expectedResult = {
+              objectId: obj4.id,
+              name: 'imACountry',
+              __typename: 'Country',
+              companies: [
+                {
+                  objectId: obj3.id,
+                  name: 'imACompany',
+                  __typename: 'Company',
+                  employees: [
+                    {
+                      objectId: obj1.id,
+                      name: 'imAnEmployee',
+                      __typename: 'Employee',
+                    },
+                  ],
+                  teams: [
+                    {
+                      objectId: obj2.id,
+                      name: 'imATeam',
+                      __typename: 'Team',
+                      employees: [
+                        {
+                          objectId: obj1.id,
+                          name: 'imAnEmployee',
+                          __typename: 'Employee',
+                          country: {
+                            objectId: obj4.id,
+                            name: 'imACountry',
+                            __typename: 'Country',
                           },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              };
-              expect(result).toEqual(expectedResult);
-            }
-          );
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            };
+            expect(result).toEqual(expectedResult);
+          });
 
           it('should respect level permissions', async () => {
             await prepareData();
@@ -8756,7 +8753,7 @@ describe('ParseGraphQLServer', () => {
           expect(result2.companies.edges[0].node.objectId).toEqual(company1.id);
         });
 
-        it_only_db('mongo')('should support relational where query', async () => {
+        it('should support relational where query', async () => {
           const president = new Parse.Object('President');
           president.set('name', 'James');
           await president.save();
