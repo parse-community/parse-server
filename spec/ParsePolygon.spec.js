@@ -208,7 +208,7 @@ describe('Parse.Polygon testing', () => {
 
   describe('with location', () => {
     if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
-      beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
+      beforeEach(async () => require('../lib/TestUtils').destroyAllDataPermanently());
     }
 
     it('polygonContain query', done => {
