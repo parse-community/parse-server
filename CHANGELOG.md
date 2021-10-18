@@ -103,7 +103,7 @@ ___
 ## Breaking Changes
   - (none)
 ## Features
-  - (none)
+  - Enable currently disabled Parse Server tests on Postgres (Corey Baker) [#7641](https://github.com/parse-community/parse-server/pull/7176)
 ## Bug Fixes
   - (none)
 
