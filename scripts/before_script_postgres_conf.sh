@@ -13,7 +13,7 @@ echo "[SCRIPT] Before Script :: Setup Parse Postgres configuration file"
 
 PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -h localhost -U postgres <<-EOSQL
     ALTER SYSTEM SET max_connections TO '200';
-    ALTER SYSTEM SET shared_buffer TO '1536MB';
+    ALTER SYSTEM SET shared_buffers TO '1536MB';
     ALTER SYSTEM SET effective_cache_size TO '4608MB';
     ALTER SYSTEM SET maintenance_work_mem TO '384MB';
     ALTER SYSTEM SET checkpoint_completion_target TO '0.9';
