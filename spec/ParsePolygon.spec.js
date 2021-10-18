@@ -216,13 +216,10 @@ describe('Parse.Polygon testing', () => {
   });
 
   describe('with location', () => {
-    let config;
     beforeEach(async () => {
       if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
         require('../lib/TestUtils').destroyAllDataPermanently();
       }
-      config = Config.get('test');
-      config.schemaCache.clear();
     });
     it('polygonContain query', done => {
       const points1 = [
