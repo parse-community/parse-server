@@ -1,14 +1,21 @@
 const TestObject = Parse.Object.extend('TestObject');
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
-const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const request = require('../lib/request');
 const defaultHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'rest',
   'Content-Type': 'application/json',
 };
+const Config = require('../lib/Config');
 
 describe('Parse.Polygon testing', () => {
+  let config;
+  beforeEach(async () => {
+    if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
+      require('../lib/TestUtils').destroyAllDataPermanently();
+    }
+    config = Config.get('test');
+    config.schemaCache.clear();
+  });
   it('polygon save open path', done => {
     const coords = [
       [0, 0],
@@ -209,10 +216,14 @@ describe('Parse.Polygon testing', () => {
   });
 
   describe('with location', () => {
-    if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
-      beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
-    }
-
+    let config;
+    beforeEach(async () => {
+      if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
+        require('../lib/TestUtils').destroyAllDataPermanently();
+      }
+      config = Config.get('test');
+      config.schemaCache.clear();
+    });
     it('polygonContain query', done => {
       const points1 = [
         [0, 0],
@@ -425,7 +436,14 @@ describe('Parse.Polygon testing', () => {
 });
 
 describe_only_db('mongo')('Parse.Polygon testing', () => {
-  beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
+  let config;
+  beforeEach(async () => {
+    if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
+      require('../lib/TestUtils').destroyAllDataPermanently();
+    }
+    config = Config.get('test');
+    config.schemaCache.clear();
+  });
   it('support 2d and 2dsphere', done => {
     const coords = [
       [0, 0],
@@ -437,7 +455,7 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
     // testings against REST API, use raw formats
     const polygon = { __type: 'Polygon', coordinates: coords };
     const location = { __type: 'GeoPoint', latitude: 10, longitude: 10 };
-    const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
+    const databaseAdapter = config.database.adapter;
     return reconfigureServer({
       appId: 'test',
       restAPIKey: 'rest',
@@ -490,9 +508,6 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
   });
 
   it('polygon coordinates reverse input', done => {
-    const Config = require('../lib/Config');
-    const config = Config.get('test');
-
     // When stored the first point should be the last point
     const input = [
       [12, 11],
