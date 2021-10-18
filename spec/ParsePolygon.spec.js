@@ -1,5 +1,6 @@
 const TestObject = Parse.Object.extend('TestObject');
 const request = require('../lib/request');
+const TestUtils = require('../lib/TestUtils');
 const defaultHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'rest',
@@ -208,7 +209,7 @@ describe('Parse.Polygon testing', () => {
 
   describe('with location', () => {
     if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
-      beforeEach(async () => await require('../lib/TestUtils').destroyAllDataPermanently());
+      beforeEach(async () => await TestUtils.destroyAllDataPermanently());
     }
 
     it('polygonContain query', done => {
@@ -427,7 +428,7 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
   let config;
   beforeEach(async () => {
     if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
-      await require('../lib/TestUtils').destroyAllDataPermanently();
+      await TestUtils.destroyAllDataPermanently();
     }
     config = Config.get('test');
     config.schemaCache.clear();
