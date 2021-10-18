@@ -4,6 +4,8 @@ set -e
 
 echo "[SCRIPT] Before Script :: Setup Parse Postgres configuration file"
 
+su - postgres
+
 cat >> ${PGDATA}/postgresql.conf <<EOSQL
 
 # DB Version: 13

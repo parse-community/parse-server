@@ -240,7 +240,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - run: |
-          su - postgres
           bash scripts/before_script_postgres_conf.sh
           bash scripts/before_script_postgres.sh
       - run: npm run coverage
