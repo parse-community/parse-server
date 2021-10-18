@@ -3535,7 +3535,7 @@ describe('schemas', () => {
       });
     });
 
-    it_only_db('mongo')('get indexes on startup', done => {
+    it_exclude_dbs(['postgres'])('get indexes on startup', done => {
       const obj = new Parse.Object('TestObject');
       obj
         .save()
@@ -3558,7 +3558,7 @@ describe('schemas', () => {
         });
     });
 
-    it_only_db('mongo')('get compound indexes on startup', done => {
+    it_exclude_dbs(['postgres'])('get compound indexes on startup', done => {
       const obj = new Parse.Object('TestObject');
       obj.set('subject', 'subject');
       obj.set('comment', 'comment');
@@ -3593,7 +3593,7 @@ describe('schemas', () => {
         });
     });
 
-    it_only_db('mongo')('cannot update to duplicate value on unique index', done => {
+    it_exclude_dbs(['postgres'])('cannot update to duplicate value on unique index', done => {
       const index = {
         code: 1,
       };
