@@ -101,7 +101,7 @@ ___
 # [Unreleased (master branch)](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.1...master)
 
 ## Breaking Changes
-  - (none)
+  - feat: `null` value on field during graphql mutation now unset the value from the database, file unset changed
 ## Features
   - (none)
 ## Bug Fixes
