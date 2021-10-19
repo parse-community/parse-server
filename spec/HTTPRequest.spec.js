@@ -126,9 +126,7 @@ describe('httpRequest', () => {
   it('should encode a JSON body', () => {
     const options = {
       body: { foo: 'bar' },
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     };
     const result = httpRequest.encodeBody(options);
 
