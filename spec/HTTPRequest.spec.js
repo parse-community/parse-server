@@ -124,17 +124,17 @@ describe('httpRequest', () => {
   });
 
   it('should encode a JSON body', () => {
-    const body = { foo: 'bar' };
     const options = {
-      body,
+      body: { foo: 'bar' },
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
       },
     };
     const result = httpRequest.encodeBody(options);
 
     expect(result.body).toEqual('{"foo":"bar"}');
+    expect(result.headers['Content-Type']).toEqual('application/json');
+    expect(result.headers['Content-Length']).toEqual(13);
   });
 
   it('should encode a www-form body', () => {
