@@ -103,7 +103,7 @@ ___
 ## Breaking Changes
   - (none)
 ## Features
-- feat: add support for $eq queries in LiveQuery (Prerna Mehra) [#7607](https://github.com/parse-community/parse-server/pull/7607)
+- add support for $eq queries in LiveQuery (Prerna Mehra) [#7607](https://github.com/parse-community/parse-server/pull/7607)
 
 ## Bug Fixes
   - (none)
