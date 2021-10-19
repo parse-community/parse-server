@@ -53,6 +53,7 @@ const encodeBody = function ({ body, headers = {} }) {
     var contentType = contentTypeKeys[0];
     if (headers[contentType].match(/application\/json/i)) {
       body = JSON.stringify(body);
+      headers['Content-Length'] = Buffer.byteLength(body);
     } else if (headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
       body = querystring.stringify(body);
     }

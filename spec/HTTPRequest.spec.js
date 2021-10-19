@@ -124,9 +124,13 @@ describe('httpRequest', () => {
   });
 
   it('should encode a JSON body', () => {
+    const body = { foo: 'bar' };
     const options = {
-      body: { foo: 'bar' },
-      headers: { 'Content-Type': 'application/json' },
+      body,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
     };
     const result = httpRequest.encodeBody(options);
 
