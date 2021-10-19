@@ -147,7 +147,7 @@ describe('Regex Vulnerabilities', function () {
         await Parse.User.logIn('someemail@somedomain.com', 'newpassword');
         fail('should not work');
       } catch (e) {
-        expect(e.code).toEqual(101);
+        expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
         expect(e.message).toEqual('Invalid username/password.');
       }
     });

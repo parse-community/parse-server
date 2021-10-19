@@ -99,7 +99,7 @@ describe('Pointer Permissions', () => {
           },
           err => {
             // User 1 should not be able to update obj2
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             return Promise.resolve();
           }
         )
@@ -203,7 +203,7 @@ describe('Pointer Permissions', () => {
             fail('User 2 should not get the obj1 object');
           },
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             expect(err.message).toBe('Object not found.');
             return Promise.resolve();
           }
@@ -530,7 +530,7 @@ describe('Pointer Permissions', () => {
             done();
           },
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -583,7 +583,7 @@ describe('Pointer Permissions', () => {
             done();
           },
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -695,7 +695,7 @@ describe('Pointer Permissions', () => {
             done();
           },
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -819,7 +819,7 @@ describe('Pointer Permissions', () => {
             done();
           },
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             done();
           }
         );
@@ -848,7 +848,7 @@ describe('Pointer Permissions', () => {
         .then(
           () => {},
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             return Promise.resolve();
           }
         )
@@ -891,7 +891,7 @@ describe('Pointer Permissions', () => {
         .then(
           () => {},
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             return Promise.resolve();
           }
         )
@@ -934,7 +934,7 @@ describe('Pointer Permissions', () => {
         .then(
           () => {},
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             return Promise.resolve();
           }
         )
@@ -977,7 +977,7 @@ describe('Pointer Permissions', () => {
             fail();
           },
           err => {
-            expect(err.code).toBe(101);
+            expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
             return Promise.resolve();
           }
         )
@@ -1111,7 +1111,7 @@ describe('Pointer Permissions', () => {
         done.fail('User should not be able to update obj2');
       } catch (err) {
         // User 1 should not be able to update obj2
-        expect(err.code).toBe(101);
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       }
 
       obj.set('hello', 'world');
@@ -1186,7 +1186,7 @@ describe('Pointer Permissions', () => {
         await q.get(obj.id);
         done.fail('User 3 should not get the obj1 object');
       } catch (err) {
-        expect(err.code).toBe(101);
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
         expect(err.message).toBe('Object not found.');
       }
 
@@ -1541,7 +1541,7 @@ describe('Pointer Permissions', () => {
         await obj.save({ key: 'value' });
         done.fail('Should not succeed saving');
       } catch (err) {
-        expect(err.code).toBe(101);
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
         done();
       }
     });
@@ -1590,7 +1590,7 @@ describe('Pointer Permissions', () => {
           await obj.save({ key: 'value' });
           done.fail('Should not succeed saving');
         } catch (err) {
-          expect(err.code).toBe(101);
+          expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
         }
       }
       done();
@@ -1692,7 +1692,7 @@ describe('Pointer Permissions', () => {
         await obj.fetch();
         done.fail('Should not succeed fetching');
       } catch (err) {
-        expect(err.code).toBe(101);
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
         done();
       }
       done();
@@ -1811,7 +1811,7 @@ describe('Pointer Permissions', () => {
           await obj.fetch();
           done.fail('Should not succeed fetching');
         } catch (err) {
-          expect(err.code).toBe(101);
+          expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
         }
       }
       done();
@@ -1863,7 +1863,7 @@ describe('Pointer Permissions', () => {
         await q.get(object.id);
         done.fail();
       } catch (err) {
-        expect(err.code).toBe(101);
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       }
 
       try {
@@ -1894,7 +1894,7 @@ describe('Pointer Permissions', () => {
         await object.save({ hello: 'bar' });
         done.fail();
       } catch (err) {
-        expect(err.code).toBe(101);
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       }
 
       try {
@@ -1925,7 +1925,7 @@ describe('Pointer Permissions', () => {
         await object.destroy();
         done.fail();
       } catch (err) {
-        expect(err.code).toBe(101);
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       }
       try {
         await object.destroy({ useMasterKey: true });
