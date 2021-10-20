@@ -132,7 +132,7 @@ describe('httpRequest', () => {
 
     expect(result.body).toEqual('{"foo":"bar"}');
     expect(result.headers['Content-Type']).toEqual('application/json');
-    expect(result.headers['Content-Length']).toEqual(13);
+    expect(result.headers['Content-Length']).toEqual(Buffer.byteLength(result.body));
   });
 
   it('should encode a www-form body', () => {
