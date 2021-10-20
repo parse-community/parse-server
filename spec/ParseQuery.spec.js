@@ -1339,7 +1339,7 @@ describe('Parse.Query testing', () => {
       .then(done.fail)
       .catch(error => {
         equal(error.code, Parse.Error.INVALID_JSON);
-        equal(error.message, 'bad $nin value.');
+        equal(error.message, 'bad $nin value');
         done();
       });
   });
