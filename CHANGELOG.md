@@ -103,7 +103,7 @@ ___
 ## Breaking Changes
   - (none)
 ## Features
-  - Add Content-Length HTTP header to JSON POST requests in `httpRequest`.
+  - Add Content-Length HTTP header to POST requests for webhooks ([#7647](https://github.com/parse-community/parse-server/pull/7647))
 ## Bug Fixes
   - (none)
 
