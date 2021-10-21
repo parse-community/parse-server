@@ -1801,6 +1801,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           key.length > 0 &&
           // Remove selected field not referenced in the schema
           // Relation is not a column in postgres
+          // $score is a Parse special field and is also not a column
           ((schema.fields[key] && schema.fields[key].type !== 'Relation') || key === '$score')
         ) {
           memo.push(key);
