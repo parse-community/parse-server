@@ -103,7 +103,7 @@ ___
 ## Breaking Changes
   - (none)
 ## Features
-  - (none)
+  - Add Content-Length HTTP header to JSON POST requests in `httpRequest`.
 ## Bug Fixes
   - (none)
 
