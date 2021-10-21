@@ -11,8 +11,8 @@
 [![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
-[![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
 [![npm alpha version](https://img.shields.io/npm/v/parse-server/alpha.svg)](https://www.npmjs.com/package/parse-server)
+<!-- [![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server) -->
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
 [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)][open-collective-link]
