@@ -180,10 +180,10 @@ export class MongoStorageAdapter implements StorageAdapter {
           delete this.connectionPromise;
           return;
         }
-        database.on('error', () => {
+        client.on('error', () => {
           delete this.connectionPromise;
         });
-        database.on('close', () => {
+        client.on('close', () => {
           delete this.connectionPromise;
         });
         this.client = client;
@@ -560,7 +560,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this._adaptiveCollection(className)
       .then(collection =>
         collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
-          returnOriginal: false,
+          returnDocument: 'after',
           session: transactionalSession || undefined,
         })
       )

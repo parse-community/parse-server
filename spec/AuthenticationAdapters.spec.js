@@ -1750,7 +1750,7 @@ describe('microsoft graph auth adapter', () => {
       access_token: 'very.long.bad.token',
     };
     microsoft.validateAuthData(authData).then(done.fail, err => {
-      expect(err.code).toBe(101);
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       expect(err.message).toBe('Microsoft Graph auth is invalid for this user.');
       done();
     });
