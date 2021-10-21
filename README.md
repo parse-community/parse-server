@@ -30,7 +30,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 A big *thank you* to all our backers and sponsors who support the development of Parse Platform!
 
-### 🥉 Bronze Sponsors
+### 💎 Diamond Sponsors
     
 [![Sponsor](https://opencollective.com/parse-server/sponsor/0/avatar.svg)](https://opencollective.com/parse-server/sponsor/0/website)
 
