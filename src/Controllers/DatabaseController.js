@@ -1063,7 +1063,7 @@ class DatabaseController {
     }
     if (query['$and']) {
       return Promise.all(
-        query['$or'].map(aQuery => {
+        query['$and'].map(aQuery => {
           return this.reduceRelationKeys(className, aQuery, queryOptions);
         })
       );
