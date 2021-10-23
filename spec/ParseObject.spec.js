@@ -223,7 +223,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can set null', function (done) {
+  it('can set null', function (done) {
     const obj = new Parse.Object('TestObject');
     obj.set('foo', null);
     obj.save().then(
@@ -232,7 +232,7 @@ describe('Parse.Object testing', () => {
           equal(obj.get('foo'), null);
         });
         on_db('postgres', () => {
-          fail('should not succeed');
+          equal(obj.get('foo'), null);
         });
         done();
       },

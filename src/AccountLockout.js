@@ -91,7 +91,7 @@ export class AccountLockout {
         err &&
         err.code &&
         err.message &&
-        err.code === 101 &&
+        err.code === Parse.Error.OBJECT_NOT_FOUND &&
         err.message === 'Object not found.'
       ) {
         return; // nothing to update so we are good
