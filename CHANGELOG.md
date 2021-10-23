@@ -105,7 +105,7 @@ ___
 ## Features
   - (none)
 ## Bug Fixes
-  - (none)
+- fix: relational query with nested condition not working [#7593](https://github.com/parse-community/parse-server/pull/7593)
 
 # [5.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/4.10.4...5.0.0-alpha.1) (2021-10-12)
 
