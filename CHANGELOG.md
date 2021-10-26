@@ -11,7 +11,7 @@ These are the official, stable releases that you can use in your production envi
 Details:
 - Stability: *stable*
 - NPM channel: `@latest`
-- Branch: [master][branch_release]
+- Branch: [release][branch_release]
 - Purpose: official release
 - Suitable environment: production
 
@@ -24,7 +24,7 @@ These are releases that are pretty stable, but may have still some bugs to be fi
 Details:
 - Stability: *pretty stable*
 - NPM channel: `@beta`
-- Branch: [master][branch_beta]
+- Branch: [beta][branch_beta]
 - Purpose: feature maturation
 - Suitable environment: development
 
@@ -37,13 +37,14 @@ These releases contain the latest development changes, but you should be prepare
 Details:
 - Stability: *unstable*
 - NPM channel: `@alpha`
-- Branch: [master][branch_alpha]
+- Branch: [alpha][branch_alpha]
 - Purpose: product development
 - Suitable environment: experimental
 
-[log_release]: https://github.com/parse-community/parse-server/blob/master/changelogs/CHANGELOG_release.md
-[log_beta]: https://github.com/parse-community/parse-server/blob/master/changelogs/CHANGELOG_beta.md
-[log_alpha]: https://github.com/parse-community/parse-server/blob/master/changelogs/CHANGELOG_alpha.md
-[branch_release]: https://github.com/parse-community/parse-server/tree/master
-[branch_beta]: https://github.com/parse-community/parse-server/tree/master
-[branch_alpha]: https://github.com/parse-community/parse-server/tree/master
+
+[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
+[log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
+[log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
+[branch_release]: https://github.com/parse-community/parse-server/tree/release
+[branch_beta]: https://github.com/parse-community/parse-server/tree/beta
+[branch_alpha]: https://github.com/parse-community/parse-server/tree/alpha
