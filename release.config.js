@@ -28,7 +28,7 @@ async function config() {
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
-  const changelogFile = `./changelogs/CHANGELOG_alpha.md`;
+  const changelogFile = `./changelogs/CHANGELOG_${branch}.md`;
   console.log(`Changelog file output to: ${changelogFile}`);
 
   // Load template file contents
@@ -37,9 +37,9 @@ async function config() {
   const config = {
     branches: [
       'release',
-      { name: 'master', prerelease: true, channel: 'alpha' },
-      // { name: 'beta', prerelease: true },
-      // 'next-major',
+      { name: 'alpha', prerelease: true },
+      { name: 'beta', prerelease: true },
+      'next-major',
       // Long-Term-Support branches
       // { name: 'release-1', range: '1.x.x', channel: '1.x' },
       // { name: 'release-2', range: '2.x.x', channel: '2.x' },
@@ -107,7 +107,7 @@ async function readFile(filePath) {
 
 function getReleaseComment() {
   const url = repositoryUrl + '/releases/tag/${nextRelease.gitTag}';
-  let comment = '🎉 This pull request has been released in version [${nextRelease.version}](' + url + ')';
+  const comment = '🎉 This change has been released in version [${nextRelease.version}](' + url + ')';
   return comment;
 }
 
