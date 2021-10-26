@@ -39,6 +39,34 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can load cloud code as a module', async () => {
+    process.env.npm_package_type = 'module';
+    await reconfigureServer({ cloud: './spec/cloud/cloudCodeModuleFile.js' });
+    const result = await Parse.Cloud.run('cloudCodeInFile');
+    expect(result).toEqual('It is possible to define cloud code in a file.');
+    delete process.env.npm_package_type;
+  });
+
+  it('can load cloud code as a function', async () => {
+    await reconfigureServer({
+      cloud: () => {
+        Parse.Cloud.define('hellofunction', () => {
+          return 'Hello world function!';
+        });
+      },
+    });
+    const result = await Parse.Cloud.run('hellofunction');
+    expect(result).toBe('Hello world function!');
+  });
+
+  it('can cannot load invalid cloud code', async () => {
+    await expectAsync(
+      reconfigureServer({
+        cloud: true,
+      })
+    ).toBeRejectedWith("argument 'cloud' must either be a string or a function");
+  });
+
   it('can create functions', done => {
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';

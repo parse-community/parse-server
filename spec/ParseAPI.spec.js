@@ -1827,6 +1827,13 @@ describe('miscellaneous', function () {
         }
       );
   });
+  it('test TestUtils', () => {
+    delete process.env.TESTING;
+    expect(() => TestUtils.destroyAllDataPermanently()).toThrow(
+      'Only supported in test environment'
+    );
+    process.env.TESTING = true;
+  });
 });
 
 describe_only_db('mongo')('legacy _acl', () => {

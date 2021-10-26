@@ -97,6 +97,25 @@ describe('ParsePubSub', function () {
     expect(EventEmitterPubSub.createPublisher).not.toHaveBeenCalled();
   });
 
+  it('cannot create publisher/sub with an invalid adapter', function () {
+    expect(() =>
+      ParsePubSub.createPublisher({
+        pubSubAdapter: {
+          createPublisher: 'a',
+          createSubscriber: () => {},
+        },
+      })
+    ).toThrow('pubSubAdapter should have createPublisher()');
+    expect(() =>
+      ParsePubSub.createSubscriber({
+        pubSubAdapter: {
+          createPublisher: () => {},
+          createSubscriber: 'a',
+        },
+      })
+    ).toThrow('pubSubAdapter should have createSubscriber()');
+  });
+
   it('can create publisher/sub with custom function adapter', function () {
     const adapter = {
       createPublisher: jasmine.createSpy('createPublisher'),

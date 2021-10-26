@@ -92,6 +92,14 @@ describe('Pages Router', () => {
         expect(response.status).toBe(403);
       }
     });
+
+    it('can create new page', () => {
+      const page = new Page({ id: 'testId', defaultFile: './defaultFile' });
+      page.id = 'newId';
+      page.defaultFile = 'newDefaultFile';
+      expect(page._id).toBe('newId');
+      expect(page._defaultFile).toBe('newDefaultFile');
+    });
   });
 
   describe('AJAX requests', () => {

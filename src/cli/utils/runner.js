@@ -10,13 +10,7 @@ function logStartupOptions(options) {
       value = '***REDACTED***';
     }
     if (typeof value === 'object') {
-      try {
-        value = JSON.stringify(value);
-      } catch (e) {
-        if (value && value.constructor && value.constructor.name) {
-          value = value.constructor.name;
-        }
-      }
+      value = JSON.stringify(value);
     }
     /* eslint-disable no-console */
     console.log(`${key}: ${value}`);
