@@ -19,6 +19,14 @@ const mockAdapter = {
 };
 
 describe('Cloud Code', () => {
+  it('can cannot load invalid cloud code', async () => {
+    await expectAsync(
+      reconfigureServer({
+        cloud: true,
+      })
+    ).toBeRejectedWith("argument 'cloud' must either be a string or a function");
+  });
+
   it('can load absolute cloud code file', done => {
     reconfigureServer({
       cloud: __dirname + '/cloud/cloudCodeRelativeFile.js',
@@ -57,14 +65,6 @@ describe('Cloud Code', () => {
     });
     const result = await Parse.Cloud.run('hellofunction');
     expect(result).toBe('Hello world function!');
-  });
-
-  it('can cannot load invalid cloud code', async () => {
-    await expectAsync(
-      reconfigureServer({
-        cloud: true,
-      })
-    ).toBeRejectedWith("argument 'cloud' must either be a string or a function");
   });
 
   it('can create functions', done => {
