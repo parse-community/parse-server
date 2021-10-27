@@ -15,7 +15,7 @@ Details:
 - Purpose: official release
 - Suitable environment: production
 
-## ⚠️ [Beta Releases][log_beta]
+<!--## ⚠️ [Beta Releases][log_beta]
 
 > ### “Please try out, we’d love your feedback!”
 
@@ -26,7 +26,7 @@ Details:
 - NPM channel: `@beta`
 - Branch: [beta][branch_beta]
 - Purpose: feature maturation
-- Suitable environment: development
+- Suitable environment: development -->
 
 ## 🔥 [Alpha Releases][log_alpha]
 
@@ -42,7 +42,8 @@ Details:
 - Suitable environment: experimental
 
 
-[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
+[log_release]: https://github.com/parse-community/parse-server/blob/release/CHANGELOG.md
+<!--[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md -->
 [log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
 [log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
 [branch_release]: https://github.com/parse-community/parse-server/tree/release
