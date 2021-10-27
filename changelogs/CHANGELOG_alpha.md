@@ -1,3 +1,15 @@
+# [5.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.1...5.0.0-alpha.2) (2021-10-27)
+
+
+### Bug Fixes
+
+* setting a field to null does not delete it via GraphQL API ([#7649](https://github.com/parse-community/parse-server/issues/7649)) ([626fad2](https://github.com/parse-community/parse-server/commit/626fad2e71017dcc62196c487de5f908fa43000b))
+
+
+### BREAKING CHANGES
+
+* To delete a field via the GraphQL API, the field value has to be set to `null`. Previously, setting a field value to `null` would save a null value in the database, which was not according to the [GraphQL specs](https://spec.graphql.org/June2018/#sec-Null-Value). To delete a file field use `file: null`, the previous way of using `file: { file: null }` has become obsolete. ([626fad2](626fad2))
+
 # [5.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/4.10.4...5.0.0-alpha.1) (2021-10-12)
 
 ## Breaking Changes
