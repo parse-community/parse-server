@@ -4,9 +4,9 @@ Changelogs are separated by release type for better overview.
 
 ## ✅ [Stable Releases][log_release]
 
-These are the official, stable releases that you can use in your production environments.
-
 > ### “Stable for production!”
+
+These are the official, stable releases that you can use in your production environments.
 
 Details:
 - Stability: *stable*
@@ -17,9 +17,9 @@ Details:
 
 ## ⚠️ [Beta Releases][log_beta]
 
-These are releases that are pretty stable, but may have still some bugs to be fixed before official release.
-
 > ### “Please try out, we’d love your feedback!”
+
+These are releases that are pretty stable, but may have still some bugs to be fixed before official release.
 
 Details:
 - Stability: *pretty stable*
