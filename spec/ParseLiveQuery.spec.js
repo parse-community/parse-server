@@ -949,7 +949,7 @@ describe('ParseLiveQuery', function () {
     const response = (obj, prev) => {
       expect(obj.get('sessionToken')).toBeUndefined();
       expect(obj.sessionToken).toBeUndefined();
-      expect(prev?.sessionToken).toBeUndefined();
+      expect(prev && prev.sessionToken).toBeUndefined();
       if (prev && prev.get) {
         expect(prev.get('sessionToken')).toBeUndefined();
       }
@@ -967,8 +967,10 @@ describe('ParseLiveQuery', function () {
     await user.save();
     user.set('yolo', 'bar');
     await user.save();
+    user.set('foo', 'bar');
+    await user.save();
     await user.destroy();
-    await new Promise(resolve => process.nextTick(resolve));
+    await new Promise(resolve => setTimeout(resolve, 500));
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }

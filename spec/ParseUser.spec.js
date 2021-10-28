@@ -3948,7 +3948,7 @@ describe('Parse.User testing', () => {
     const response = (obj, prev) => {
       expect(obj.get('authData')).toBeUndefined();
       expect(obj.authData).toBeUndefined();
-      expect(prev?.authData).toBeUndefined();
+      expect(prev && prev.authData).toBeUndefined();
       if (prev && prev.get) {
         expect(prev.get('authData')).toBeUndefined();
       }
@@ -3967,11 +3967,17 @@ describe('Parse.User testing', () => {
     await user.save();
     user.set('yolo', 'bar');
     await user.save();
+    user.unset('foo');
+    await user.save();
     await user.destroy();
-    await new Promise(resolve => process.nextTick(resolve));
+    await new Promise(resolve => setTimeout(resolve, 500));
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
+    subscription.unsubscribe();
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.close();
+    await new Promise(resolve => setTimeout(resolve, 500));
   });
 
   describe('issue #4897', () => {

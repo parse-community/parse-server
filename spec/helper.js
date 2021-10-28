@@ -2,6 +2,18 @@
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
+const SpecReporter = require('jasmine-spec-reporter').SpecReporter;
+
+jasmine.getEnv().clearReporters(); // remove default reporter logs
+jasmine.getEnv().addReporter(
+  new SpecReporter({
+    // add jasmine-spec-reporter
+    spec: {
+      displayPending: true,
+    },
+  })
+);
+
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
     return callback();
