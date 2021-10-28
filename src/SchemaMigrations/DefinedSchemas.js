@@ -30,8 +30,6 @@ export class DefinedSchemas {
     this.maxRetries = 3;
   }
 
-  // Simulate save like the SDK
-  // We cannot use SDK since routes are disabled
   async saveSchemaToDB(schema: Parse.Schema): Promise<void> {
     const payload = {
       className: schema.className,

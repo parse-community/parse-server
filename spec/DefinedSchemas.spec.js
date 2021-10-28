@@ -393,45 +393,45 @@ describe('DefinedSchemas', () => {
       cleanUpIndexes(schema);
       expect(schema.indexes).toBeUndefined();
     });
-    // xit('should keep protected indexes', async () => {
-    //   const server = await reconfigureServer();
-    //
-    //   const expectedIndexes = {
-    //     username_1: { username: 1 },
-    //     case_insensitive_username: { username: 1 },
-    //     email_1: { email: 1 },
-    //     case_insensitive_email: { email: 1 },
-    //   };
-    //   const schemas = {
-    //     definitions: [
-    //       {
-    //         className: '_User',
-    //         indexes: {
-    //           case_insensitive_username: { password: true },
-    //           case_insensitive_email: { password: true },
-    //         },
-    //       },
-    //       { className: 'Test' },
-    //     ],
-    //   };
-    //   Create
-    // await new DefinedSchemas(schemas, server.config).execute();
-    // let userSchema = await new Parse.Schema('_User').get();
-    // let testSchema = await new Parse.Schema('Test').get();
-    // cleanUpIndexes(userSchema);
-    // cleanUpIndexes(testSchema);
-    // expect(testSchema.indexes).toBeUndefined();
-    // expect(userSchema.indexes).toEqual(expectedIndexes);
-    //
-    // Update
-    // await new DefinedSchemas(schemas, server.config).execute();
-    // userSchema = await new Parse.Schema('_User').get();
-    // testSchema = await new Parse.Schema('Test').get();
-    // cleanUpIndexes(userSchema);
-    // cleanUpIndexes(testSchema);
-    // expect(testSchema.indexes).toBeUndefined();
-    // expect(userSchema.indexes).toEqual(expectedIndexes);
-    // });
+    it('should keep protected indexes', async () => {
+      const server = await reconfigureServer();
+
+      const expectedIndexes = {
+        username_1: { username: 1 },
+        case_insensitive_username: { username: 1 },
+        email_1: { email: 1 },
+        case_insensitive_email: { email: 1 },
+      };
+      const schemas = {
+        definitions: [
+          {
+            className: '_User',
+            indexes: {
+              case_insensitive_username: { password: true },
+              case_insensitive_email: { password: true },
+            },
+          },
+          { className: 'Test' },
+        ],
+      };
+      //  Create
+      await new DefinedSchemas(schemas, server.config).execute();
+      let userSchema = await new Parse.Schema('_User').get();
+      let testSchema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(userSchema);
+      cleanUpIndexes(testSchema);
+      expect(testSchema.indexes).toBeUndefined();
+      expect(userSchema.indexes).toEqual(expectedIndexes);
+
+      //   Update
+      await new DefinedSchemas(schemas, server.config).execute();
+      userSchema = await new Parse.Schema('_User').get();
+      testSchema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(userSchema);
+      cleanUpIndexes(testSchema);
+      expect(testSchema.indexes).toBeUndefined();
+      expect(userSchema.indexes).toEqual(expectedIndexes);
+    });
   });
 
   describe('ClassLevelPermissions', () => {
@@ -595,7 +595,7 @@ describe('DefinedSchemas', () => {
     const logger = require('../lib/logger').logger;
     spyOn(DefinedSchemas.prototype, 'wait').and.resolveTo();
     spyOn(logger, 'error').and.callThrough();
-    spyOn(Parse.Schema, 'all').and.callFake(async () => {
+    spyOn(Parse.Schema, 'all').and.callFake(() => {
       throw error;
     });
 
