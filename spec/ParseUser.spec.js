@@ -4030,14 +4030,17 @@ describe('Parse.User testing', () => {
     await user.save();
     user.set('yolo', 'bar');
     await user.save();
+    user.unset('foo');
+    await user.save();
     await user.destroy();
-    await new Promise(resolve => process.nextTick(resolve));
+    await new Promise(resolve => setTimeout(resolve, 500));
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
+    subscription.unsubscribe();
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();
-    await new Promise(resolve => process.nextTick(resolve));
+    await new Promise(resolve => setTimeout(resolve, 500));
   });
 });
 
