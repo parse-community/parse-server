@@ -3541,6 +3541,6 @@ describe('sendEmail', () => {
     });
     const q = new Parse.Query('TestObject');
     const res = await q.first();
-    expect(res).toBeDefined();
+    expect(res.id).toEqual(item1.id);
   });
 });
