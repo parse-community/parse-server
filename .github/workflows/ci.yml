@@ -72,7 +72,7 @@ jobs:
        - run: npm run madge:circular
   check-docker:
     name: Docker Build
-    timeout-minutes: 5
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
