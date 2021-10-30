@@ -4023,14 +4023,11 @@ describe('Parse.User testing', () => {
       subscription.on(key, calls[key]);
     }
     const user = await Parse.User._logInWith('facebook');
-
     user.set('foo', 'bar');
     await user.save();
     user.unset('foo');
     await user.save();
     user.set('yolo', 'bar');
-    await user.save();
-    user.unset('foo');
     await user.save();
     await user.destroy();
     await new Promise(resolve => setTimeout(resolve, 10));
