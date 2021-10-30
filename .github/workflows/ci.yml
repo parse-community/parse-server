@@ -183,23 +183,18 @@ jobs:
         include:
           - name: PostgreSQL 11, PostGIS 3.0
             POSTGRES_IMAGE: postgis/postgis:11-3.0
-            POSTGRES_VERSION: 11.13.0
             NODE_VERSION: 14.18.1
           - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
-            POSTGRES_VERSION: 11.13.0
             NODE_VERSION: 14.18.1
           - name: PostgreSQL 12, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:12-3.1
-            POSTGRES_VERSION: 12.8.0
             NODE_VERSION: 14.18.1
           - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
-            POSTGRES_VERSION: 13.4.0
             NODE_VERSION: 14.18.1
           - name: PostgreSQL 14, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:14-3.1
-            POSTGRES_VERSION: 14.0.0
             NODE_VERSION: 14.18.1
       fail-fast: false
     name: ${{ matrix.name }}
@@ -224,7 +219,6 @@ jobs:
     env:
       PARSE_SERVER_TEST_DB: postgres
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
-      POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2
