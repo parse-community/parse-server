@@ -217,7 +217,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_only_db('postgres')('group by date object', done => {
+  it('group by date object', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     const obj3 = new TestObject();
@@ -247,7 +247,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it_only_db('postgres')('group by date object transform', done => {
+  it('group by date object transform', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     const obj3 = new TestObject();
