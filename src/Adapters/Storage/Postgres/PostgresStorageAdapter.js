@@ -1980,10 +1980,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
     } else {
       qs = 'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
     }
-
     return this._client
       .one(qs, values, a => {
-        if (a.approximate_row_count != null) {
+        if (a.approximate_row_count == -1) {
+          return 0;
+        } else if (a.approximate_row_count != null) {
           return +a.approximate_row_count;
         } else {
           return +a.count;
@@ -2111,7 +2112,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
                   columns.push(
                     `EXTRACT(${
                       mongoAggregateToPostgres[operation]
-                    } FROM $${index}:name AT TIME ZONE 'UTC') AS $${index + 1}:name`
+                    } FROM $${index}:name AT TIME ZONE 'UTC')::integer AS $${index + 1}:name`
                   );
                   values.push(source, alias);
                   index += 2;

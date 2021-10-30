@@ -8,7 +8,7 @@
 
 [![Node Version](https://img.shields.io/badge/nodejs-12,_14,_15-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
@@ -121,7 +121,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 |-------------|----------------|------------------|--------------------|
 | MongoDB 4.0 | 4.0.27         | April 2022       | ✅ Fully compatible |
 | MongoDB 4.2 | 4.2.17         | TBD              | ✅ Fully compatible |
-| MongoDB 4.4 | 4.4.10          | TBD              | ✅ Fully compatible |
+| MongoDB 4.4 | 4.4.10         | TBD              | ✅ Fully compatible |
 | MongoDB 5.0 | 5.0.3          | January 2024     | ✅ Fully compatible |
   
 #### PostgreSQL
