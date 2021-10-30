@@ -3960,7 +3960,6 @@ describe('Parse.User testing', () => {
       subscription.on(key, calls[key]);
     }
     const user = await Parse.User._logInWith('facebook');
-
     user.set('foo', 'bar');
     await user.save();
     user.unset('foo');
