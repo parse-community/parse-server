@@ -1,15 +1,13 @@
 const Config = require('../lib/Config');
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
-const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 
-describe_only_db('mongo')('Schema Performance', function () {
+describe('Schema Performance', function () {
   let getAllSpy;
   let config;
 
   beforeEach(async () => {
     config = Config.get('test');
     config.schemaCache.clear();
-    const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
+    const databaseAdapter = config.database.adapter;
     await reconfigureServer({ databaseAdapter });
     getAllSpy = spyOn(databaseAdapter, 'getAllClasses').and.callThrough();
   });
@@ -204,6 +202,6 @@ describe_only_db('mongo')('Schema Performance', function () {
       {},
       config.database
     );
-    expect(getAllSpy.calls.count()).toBe(0);
+    expect(getAllSpy.calls.count()).toBe(2);
   });
 });
