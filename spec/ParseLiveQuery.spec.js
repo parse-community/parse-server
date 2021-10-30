@@ -310,14 +310,10 @@ describe('ParseLiveQuery', function () {
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
       const current = req.object;
       const original = req.original;
-
-      setTimeout(() => {
-        done();
-      }, 2000);
-
       if (current.get('foo') != original.get('foo')) {
         req.sendEvent = false;
       }
+      setTimeout(done, 1000);
     });
 
     const query = new Parse.Query(TestObject);
@@ -733,9 +729,7 @@ describe('ParseLiveQuery', function () {
     });
     object.set({ foo: 'bar' });
     await object.save();
-    setTimeout(async () => {
-      done();
-    }, 1000);
+    setTimeout(done, 1000);
   });
 
   it('can return a new beforeSubscribe query', async done => {
@@ -922,9 +916,9 @@ describe('ParseLiveQuery', function () {
     });
     await obj1.save();
     await Parse.User.logOut();
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 100));
     await obj2.save();
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 100));
     done();
   });
 
@@ -978,8 +972,6 @@ describe('ParseLiveQuery', function () {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();
     // Wait for live query client to disconnect
-    setTimeout(() => {
-      done();
-    }, 1000);
+    setTimeout(done, 10);
   });
 });
