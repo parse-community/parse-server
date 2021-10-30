@@ -1982,12 +1982,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     }
     return this._client
       .one(qs, values, a => {
-        if (a.approximate_row_count == -1) {
-          return 0;
-        } else if (a.approximate_row_count != null) {
-          return +a.approximate_row_count;
+        if (a.approximate_row_count == null || a.approximate_row_count == -1) {
+          return !isNaN(a.count) ? +a.count : 0;
         } else {
-          return +a.count;
+          return +a.approximate_row_count;
         }
       })
       .catch(error => {
