@@ -970,7 +970,7 @@ describe('ParseLiveQuery', function () {
     user.set('yolo', 'bar');
     await user.save();
     await user.destroy();
-    await new Promise(resolve => process.nextTick(resolve));
+    await new Promise(resolve => setTimeout(resolve, 10));
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
