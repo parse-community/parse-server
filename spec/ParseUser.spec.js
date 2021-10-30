@@ -3967,7 +3967,6 @@ describe('Parse.User testing', () => {
     await user.save();
     user.set('yolo', 'bar');
     await user.save();
-    user.unset('foo');
     await user.destroy();
     await new Promise(resolve => setTimeout(resolve, 10));
     for (const key of events) {
