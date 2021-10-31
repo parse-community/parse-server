@@ -1,3 +1,10 @@
+# [5.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.3...5.0.0-alpha.4) (2021-10-31)
+
+
+### Features
+
+* add support for Postgres 14 ([#7644](https://github.com/parse-community/parse-server/issues/7644)) ([090350a](https://github.com/parse-community/parse-server/commit/090350a7a0fac945394ca1cb24b290316ef06aa7))
+
 # [5.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.2...5.0.0-alpha.3) (2021-10-29)
 
 
