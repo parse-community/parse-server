@@ -1980,10 +1980,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
     } else {
       qs = 'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
     }
+
     return this._client
       .one(qs, values, a => {
         if (a.approximate_row_count == null || a.approximate_row_count == -1) {
-          return !isNaN(a.count) ? +a.count : 0;
+          return !isNaN(+a.count) ? +a.count : 0;
         } else {
           return +a.approximate_row_count;
         }
