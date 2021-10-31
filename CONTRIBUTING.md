@@ -19,6 +19,9 @@
     - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
+- [Pull Request](#pull-request)
+  - [Breaking Change](#breaking-change)
+- [Merging](#merging)
 - [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
 
@@ -143,13 +146,15 @@ If your pull request introduces a change that may affect the storage or retrieva
 
   - `it_only_mongodb_version('>=4.4')` // will test with any version of Postgres but only with version >=4.4 of MongoDB; accepts semver notation to specify a version range
   - `it_exclude_mongodb_version('<4.4')` // will test with any version of Postgres and MongoDB, excluding version <4.4 of MongoDB; accepts semver notation to specify a version range
+  - `it_only_postgres_version('>=13')` // will test with any version of Mongo but only with version >=13 of Postgres; accepts semver notation to specify a version range
+  - `it_exclude_postgres_version('<13')` // will test with any version of Postgres and MongoDB, excluding version <13 of Postgres; accepts semver notation to specify a version range
 
 #### Postgres with Docker
 
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
 ```
-docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:11-3.0-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION pgcrypto; CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
+docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:13-3.1-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION pgcrypto; CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
 ```
 To stop the Postgres instance:
 
@@ -157,7 +162,7 @@ To stop the Postgres instance:
 docker stop parse-postgres
 ```
 
-You can also use the [postgis/postgis:11-2.5-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines:
+You can also use the [postgis/postgis:13-3.1-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines:
 
 ```
 #Install additional scripts. These are run in abc order during initial start
@@ -183,14 +188,16 @@ If you change or remove an existing feature that would lead to a breaking change
   - Use a default value that falls back to existing behavior.
   - Add a deprecation definition in `Deprecator/Deprecations.js` that will output a deprecation warning log message on Parse Server launch, for example:
     > DeprecationWarning: The Parse Server option 'example' will be removed in a future release.
-  
+
+For deprecations that can only be determined ad-hoc during runtime, for example Parse Query syntax deprecations, use the `Deprecator.logRuntimeDeprecation()` method.
+
 Deprecations become breaking changes after notifying developers through deprecation warnings for at least one entire previous major release. For example:
   - `4.5.0` is the current version
   - `4.6.0` adds a new optional feature and a deprecation warning for the existing feature
   - `5.0.0` marks the beginning of logging the deprecation warning for one entire major release
   - `6.0.0` makes the breaking change by removing the deprecation warning and making the new feature replace the existing feature
 
-Developer feedback during the deprecation period may further postpone the introduction of a breaking change.
+See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
 
 ## Feature Considerations
 ### Security Checks
@@ -276,11 +283,69 @@ Introducing new Parse Errors requires the following steps:
 Introducing new [Parse Server configuration][config] parameters requires the following steps:
 
 1. Add parameters definitions in [/src/Options/index.js][config-index].
-1. If a nested configuration object has been added, add the environment variable option prefix to `getENVPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js).
-1. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
-1. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
-1. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
-1. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
+2. If the new parameter does not have one single value but is a parameter group (an object containing multiple sub-parameters):
+   - add the environment variable prefix for the parameter group to `nestedOptionEnvPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js)
+   - add the parameter group type to `nestedOptionTypes` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js)
+  
+    For example, take a look at the existing Parse Server `security` parameter. It is a parameter group, because it has multiple sub-parameter such as `checkGroups`. Its interface is defined in [index.js][config-index] as `export interface SecurityOptions`. Therefore, the value to add to `nestedOptionTypes` would be `SecurityOptions`, the value to add to `nestedOptionEnvPrefix` would be `PARSE_SERVER_SECURITY_`.
+
+3. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
+4. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
+5. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
+6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
+
+## Pull Request
+
+For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
+
+```
+<type>: <summary>
+```
+
+The _type_ is the category of change that is made, possible types are:
+- `feat` - add a new feature
+- `fix` - fix a bug
+- `refactor` - refactor code without impact on features or performance
+- `docs` - add or edit code comments, documentation, GitHub pages
+- `style` - edit code style
+- `build` - retry failing build and anything build process related
+- `perf` - performance optimization
+- `ci` - continuous integration
+- `test` - tests
+
+The _summary_ is a short change description in present tense, not capitalized, without period at the end. This summary will also be used as the changelog entry.
+- It must be short and self-explanatory for a reader who does not see the details of the full pull request description
+- It must not contain abbreviations, e.g. instead of `LQ` write `LiveQuery`
+- It must use the correct product and feature names as referenced in the documentation, e.g. instead of `Cloud Validator` use `Cloud Function validation`
+- In case of a breaking change, the summary must not contain duplicate information that is also in the [BREAKING CHANGE](#breaking-change) chapter of the pull request description. It must not contain a note that it is a breaking change, as this will be automatically flagged as such if the pull request description contains the BREAKING CHANGE chapter.
+
+For example:
+
+```
+feat: add handle to door for easy opening
+```
+
+Currently, we are not making use of the commit _scope_, which would be written as `<type>(<scope>): <summary>`, that attributes a change to a specific part of the product.
+
+### Breaking Change
+
+If a pull request contains a braking change, the description of the pull request must contain a dedicated chapter at the bottom to indicate this. This is to assist the committer of the pull request to avoid merging a breaking change as non-breaking.
+
+## Merging
+
+The following guide is for anyone who merges a contributor pull request into the working branch, the working branch into a release branch, a release branch into another release branch, or any other direct commits such as hotfixes into release branches or the working branch.
+
+- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message.
+- If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
+
+  ```
+  fix: remove handle from door
+  
+  BREAKING CHANGE: You cannot open the door anymore by using a handle. See the [#migration guide](http://example.com) for more details.
+  ```
+  Keep in mind that in a repository with release automation, merging such a commit message will trigger a release with a major version increment.
+- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
+- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
 
 ## Versioning
 

@@ -39,6 +39,14 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can load cloud code as a module', async () => {
+    process.env.npm_package_type = 'module';
+    await reconfigureServer({ cloud: './spec/cloud/cloudCodeModuleFile.js' });
+    const result = await Parse.Cloud.run('cloudCodeInFile');
+    expect(result).toEqual('It is possible to define cloud code in a file.');
+    delete process.env.npm_package_type;
+  });
+
   it('can create functions', done => {
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';
@@ -67,7 +75,7 @@ describe('Cloud Code', () => {
 
   it('is cleared cleared after the previous test', done => {
     Parse.Cloud.run('hello', {}).catch(error => {
-      expect(error.code).toEqual(141);
+      expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
       done();
     });
   });
@@ -101,7 +109,7 @@ describe('Cloud Code', () => {
     Parse.Cloud.run('cloudCodeWithError').then(
       () => done.fail('should not succeed'),
       e => {
-        expect(e).toEqual(new Parse.Error(141, 'foo is not defined'));
+        expect(e).toEqual(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'foo is not defined'));
         done();
       }
     );
@@ -115,7 +123,7 @@ describe('Cloud Code', () => {
     Parse.Cloud.run('cloudCodeWithError').then(
       () => done.fail('should not succeed'),
       e => {
-        expect(e.code).toEqual(141);
+        expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
         expect(e.message).toEqual('Script failed.');
         done();
       }
@@ -134,7 +142,7 @@ describe('Cloud Code', () => {
       const query = new Parse.Query('beforeFind');
       await query.first();
     } catch (e) {
-      expect(e.code).toBe(141);
+      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
       expect(e.message).toBe('throw beforeFind');
       done();
     }
@@ -459,7 +467,7 @@ describe('Cloud Code', () => {
       });
     } catch (e) {
       catched = true;
-      expect(e.code).toBe(101);
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
     expect(catched).toBe(true);
     expect(called).toBe(7);
@@ -471,7 +479,7 @@ describe('Cloud Code', () => {
       });
     } catch (e) {
       catched = true;
-      expect(e.code).toBe(101);
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
     expect(catched).toBe(true);
     expect(called).toBe(7);
@@ -483,7 +491,7 @@ describe('Cloud Code', () => {
       });
     } catch (e) {
       catched = true;
-      expect(e.code).toBe(101);
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
     expect(catched).toBe(true);
     expect(called).toBe(7);
@@ -1546,6 +1554,25 @@ describe('Cloud Code', () => {
     obj.save().then(done, done.fail);
   });
 
+  it('can deprecate Parse.Cloud.httpRequest', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
+    });
+    await Parse.Cloud.httpRequest({
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/hello',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      'DeprecationWarning: Parse.Cloud.httpRequest is deprecated and will be removed in a future version. Use a http request library instead.'
+    );
+  });
+
   describe('cloud jobs', () => {
     it('should define a job', done => {
       expect(() => {
@@ -1734,7 +1761,7 @@ describe('Cloud Code', () => {
 
     it('should set the failure message on the job error', async () => {
       Parse.Cloud.job('myJobError', () => {
-        throw new Parse.Error(101, 'Something went wrong');
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Something went wrong');
       });
       const job = await Parse.Cloud.startJob('myJobError');
       let jobStatus, status;
@@ -2011,7 +2038,7 @@ describe('beforeFind hooks', () => {
         done();
       },
       err => {
-        expect(err.code).toBe(141);
+        expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
         expect(err.message).toEqual('Do not run that query');
         done();
       }
@@ -2383,6 +2410,53 @@ describe('afterFind hooks', () => {
     });
   });
 
+  it('can set a pointer object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    Parse.Cloud.afterFind('MyObject', async ({ objects }) => {
+      const otherObject = new Parse.Object('Test');
+      otherObject.set('foo', 'bar');
+      await otherObject.save();
+      objects[0].set('Pointer', otherObject);
+      objects[0].set('xyz', 'yolo');
+      expect(objects[0].get('Pointer').get('foo')).toBe('bar');
+    });
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
+    const obj2 = await query.first();
+    expect(obj2.get('xyz')).toBe('yolo');
+    const pointer = obj2.get('Pointer');
+    expect(pointer.get('foo')).toBe('bar');
+  });
+
+  it('can set invalid object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    Parse.Cloud.afterFind('MyObject', () => [{}]);
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
+    const obj2 = await query.first();
+    expect(obj2).toBeDefined();
+    expect(obj2.toJSON()).toEqual({});
+    expect(obj2.id).toBeUndefined();
+  });
+
+  it('can return a unsaved object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    Parse.Cloud.afterFind('MyObject', async () => {
+      const otherObject = new Parse.Object('Test');
+      otherObject.set('foo', 'bar');
+      return [otherObject];
+    });
+    const query = new Parse.Query('MyObject');
+    const obj2 = await query.first();
+    expect(obj2.get('foo')).toEqual('bar');
+    expect(obj2.id).toBeUndefined();
+    await obj2.save();
+    expect(obj2.id).toBeDefined();
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.afterFind('MyObject', req => {
       expect(req.headers).toBeDefined();
@@ -2517,6 +2591,201 @@ describe('afterFind hooks', () => {
         expect(hook.method).not.toHaveBeenCalled();
         done();
       });
+  });
+
+  it('should throw error if context header is malformed', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', () => {
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', () => {
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': 'key',
+      },
+      body: {
+        foo: 'bar',
+      },
+    });
+    try {
+      await req;
+      fail('Should have thrown error');
+    } catch (e) {
+      expect(e).toBeDefined();
+      expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
+    }
+    expect(calledBefore).toBe(false);
+    expect(calledAfter).toBe(false);
+  });
+
+  it('should throw error if context header is string "1"', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', () => {
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', () => {
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '1',
+      },
+      body: {
+        foo: 'bar',
+      },
+    });
+    try {
+      await req;
+      fail('Should have thrown error');
+    } catch (e) {
+      expect(e).toBeDefined();
+      expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
+    }
+    expect(calledBefore).toBe(false);
+    expect(calledAfter).toBe(false);
+  });
+
+  it('should expose context in beforeSave/afterSave via header', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
+      expect(req.context.otherKey).toBe(1);
+      expect(req.context.key).toBe('value');
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
+      expect(req.context.otherKey).toBe(1);
+      expect(req.context.key).toBe('value');
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
+      },
+      body: {
+        foo: 'bar',
+      },
+    });
+    await req;
+    expect(calledBefore).toBe(true);
+    expect(calledAfter).toBe(true);
+  });
+
+  it('should override header context with body context in beforeSave/afterSave', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
+      expect(req.context.otherKey).toBe(10);
+      expect(req.context.key).toBe('hello');
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
+      expect(req.context.otherKey).toBe(10);
+      expect(req.context.key).toBe('hello');
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
+      },
+      body: {
+        foo: 'bar',
+        _ApplicationId: 'test',
+        _context: '{"key":"hello","otherKey":10}',
+      },
+    });
+    await req;
+    expect(calledBefore).toBe(true);
+    expect(calledAfter).toBe(true);
+  });
+
+  it('should throw error if context body is malformed', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', () => {
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', () => {
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
+      },
+      body: {
+        foo: 'bar',
+        _ApplicationId: 'test',
+        _context: 'key',
+      },
+    });
+    try {
+      await req;
+      fail('Should have thrown error');
+    } catch (e) {
+      expect(e).toBeDefined();
+      expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
+    }
+    expect(calledBefore).toBe(false);
+    expect(calledAfter).toBe(false);
+  });
+
+  it('should throw error if context body is string "true"', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('TestObject', () => {
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('TestObject', () => {
+      calledAfter = true;
+    });
+    const req = request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
+      },
+      body: {
+        foo: 'bar',
+        _ApplicationId: 'test',
+        _context: 'true',
+      },
+    });
+    try {
+      await req;
+      fail('Should have thrown error');
+    } catch (e) {
+      expect(e).toBeDefined();
+      expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
+    }
+    expect(calledBefore).toBe(false);
+    expect(calledAfter).toBe(false);
   });
 
   it('should expose context in before and afterSave', async () => {
@@ -2802,6 +3071,26 @@ describe('afterLogin hook', () => {
     await Parse.User.signUp('testuser', 'p@ssword');
     await Parse.User.logIn('testuser', 'p@ssword');
     done();
+  });
+
+  it('context options should override _context object property when saving a new object', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+      expect(req.context.hello).not.toBeDefined();
+      expect(req._context).not.toBeDefined();
+      expect(req.object._context).not.toBeDefined();
+      expect(req.object.context).not.toBeDefined();
+    });
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+      expect(req.context.hello).not.toBeDefined();
+      expect(req._context).not.toBeDefined();
+      expect(req.object._context).not.toBeDefined();
+      expect(req.object.context).not.toBeDefined();
+    });
+    const obj = new TestObject();
+    obj.set('_context', { hello: 'world' });
+    await obj.save(null, { context: { a: 'a' } });
   });
 
   it('should have access to context when saving a new object', async () => {
@@ -3234,5 +3523,24 @@ describe('sendEmail', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to send email because no mail adapter is configured for Parse Server.'
     );
+  });
+
+  it('should have object found with nested relational data query', async () => {
+    const obj1 = Parse.Object.extend('TestObject');
+    const obj2 = Parse.Object.extend('TestObject2');
+    let item2 = new obj2();
+    item2 = await item2.save();
+    let item1 = new obj1();
+    const relation = item1.relation('rel');
+    relation.add(item2);
+    item1 = await item1.save();
+    Parse.Cloud.beforeFind('TestObject', req => {
+      const additionalQ = new Parse.Query('TestObject');
+      additionalQ.equalTo('rel', item2);
+      return Parse.Query.and(req.query, additionalQ);
+    });
+    const q = new Parse.Query('TestObject');
+    const res = await q.first();
+    expect(res.id).toEqual(item1.id);
   });
 });
