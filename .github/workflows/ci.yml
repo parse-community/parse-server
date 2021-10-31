@@ -193,6 +193,9 @@ jobs:
           - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
             NODE_VERSION: 14.18.1
+          - name: PostgreSQL 14, PostGIS 3.1
+            POSTGRES_IMAGE: postgis/postgis:14-3.1
+            NODE_VERSION: 14.18.1
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -232,7 +235,9 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - run: bash scripts/before_script_postgres.sh
+      - run: |
+          bash scripts/before_script_postgres_conf.sh
+          bash scripts/before_script_postgres.sh
       - run: npm run coverage
         env:
           CI: true

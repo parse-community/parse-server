@@ -446,6 +446,15 @@ global.it_only_mongodb_version = version => {
   }
 };
 
+global.it_only_postgres_version = version => {
+  const envVersion = process.env.POSTGRES_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
 global.fit_only_mongodb_version = version => {
   const envVersion = process.env.MONGODB_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
@@ -457,6 +466,15 @@ global.fit_only_mongodb_version = version => {
 
 global.it_exclude_mongodb_version = version => {
   const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
+global.it_exclude_postgres_version = version => {
+  const envVersion = process.env.POSTGRES_VERSION;
   if (!envVersion || !semver.satisfies(envVersion, version)) {
     return it;
   } else {
