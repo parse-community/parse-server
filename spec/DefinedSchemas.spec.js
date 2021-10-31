@@ -393,7 +393,7 @@ describe('DefinedSchemas', () => {
       cleanUpIndexes(schema);
       expect(schema.indexes).toBeUndefined();
     });
-    it('should keep protected indexes', async () => {
+    xit('should keep protected indexes', async () => {
       const server = await reconfigureServer();
 
       const expectedIndexes = {
