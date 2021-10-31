@@ -351,21 +351,22 @@ The following guide is for anyone who merges a contributor pull request into the
 
 > The following versioning system is applied since Parse Server 5.0.0 and does not necessarily apply to previous releases.
 
-Parse Server follows [semantic versioning](https://semver.org) with a flavor of [calendric versioning](https://calver.org). Semantic versioning makes Parse Server easy to upgrade because breaking changes only occur in major releases. Calendric versioning gives an additional sense of how old a Parse Server release is and allows for future Long-Term Support concepts, which Parse Server currently does not provide.
+Parse Server follows [semantic versioning](https://semver.org) with a flavor of [calendric versioning](https://calver.org). Semantic versioning makes Parse Server easy to upgrade because breaking changes only occur in major releases. Calendric versioning gives an additional sense of how old a Parse Server release is and allows for Long-Term Support of previous major releases.
 
-Syntax: `[major]`**.**`[minor]`**.**`[patch]`**-**`[pre-release-label]`
+Example version: `5.0.0-alpha.1`
 
-- The `major` version increments with the first release of every year and may include changes that are *not* backwards compatible.
+Syntax: `[major]`**.**`[minor]`**.**`[patch]`**-**`[pre-release-label]`**.**`[pre-release-increment]`
+
+- The `major` version increments with the first release of every year and may include changes that are *not backwards compatible*.
 - The `minor` version increments during the year and may include new features or improvements of existing features that are backwards compatible.
 - The `patch` version increments during the year and may include bug fixes that are backwards compatible.
 - The `pre-release-label` is optional for pre-release versions such as:
   - `-alpha` (likely to contain bugs, likely to change in features until release)
   - `-beta` (likely to contain bugs, no change in features until release)
-  - `-rc0` (unlikely to contain bugs, no change in features until release)
+- The `[pre-release-increment]` is a number that increments with every new version of a pre-release
 
 Exceptions:
-- The `major` version may increment during the year in the unlikely event that a breaking change is so urgent that it cannot wait for the next yearly release. An example would be a vulnerability fix that leads to an unavoidable breaking change.
-- Bug fixes of security vulnerabilities are `patch` releases, unless they cause a breaking change, then they are `major` releases.
+- The `major` version may increment during the year in the unlikely event that a breaking change is so urgent that it cannot wait for the next yearly release. An example would be a vulnerability fix that leads to an unavoidable breaking change. However, security requirements depend on the application and not every vulnerability may affect every deployment, depending on the features used. Therefore we usually prefer to deprecate insecure functionality and introduce the breaking change following our [deprecation policy](#deprecation-policy).
 
 ## Code of Conduct
 
