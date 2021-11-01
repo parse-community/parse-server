@@ -15,7 +15,7 @@ Details:
 - Purpose: official release
 - Suitable environment: production
 
-<!--## ⚠️ [Beta Releases][log_beta]
+## ⚠️ [Beta Releases][log_beta]
 
 > ### “Please try out, we’d love your feedback!”
 
@@ -26,7 +26,7 @@ Details:
 - NPM channel: `@beta`
 - Branch: [beta][branch_beta]
 - Purpose: feature maturation
-- Suitable environment: development -->
+- Suitable environment: development
 
 ## 🔥 [Alpha Releases][log_alpha]
 
