@@ -1119,6 +1119,16 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._notifySchemaChange();
   }
 
+  async updateFieldOptions(className: string, fieldName: string, type: any) {
+    await this._client.tx('update-schema-field-options', async t => {
+      const path = `{fields,${fieldName}}`;
+      await t.none(
+        'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
+        { path, type, className }
+      );
+    });
+  }
+
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   async deleteClass(className: string) {
@@ -1983,10 +1993,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     return this._client
       .one(qs, values, a => {
-        if (a.approximate_row_count != null) {
-          return +a.approximate_row_count;
+        if (a.approximate_row_count == null || a.approximate_row_count == -1) {
+          return !isNaN(+a.count) ? +a.count : 0;
         } else {
-          return +a.count;
+          return +a.approximate_row_count;
         }
       })
       .catch(error => {
@@ -2111,7 +2121,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
                   columns.push(
                     `EXTRACT(${
                       mongoAggregateToPostgres[operation]
-                    } FROM $${index}:name AT TIME ZONE 'UTC') AS $${index + 1}:name`
+                    } FROM $${index}:name AT TIME ZONE 'UTC')::integer AS $${index + 1}:name`
                   );
                   values.push(source, alias);
                   index += 2;

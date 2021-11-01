@@ -1,3 +1,4 @@
+// @flow
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
@@ -7,8 +8,8 @@ import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
+import type { SchemaOptions } from '../SchemaMigrations/Migrations';
 
-// @flow
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
 type NumberOrString = number | string;
@@ -241,6 +242,8 @@ export interface ParseServerOptions {
   playgroundPath: ?string;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
+  /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema */
+  schema: ?SchemaOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
   /* The security options to identify and report weak security settings.
