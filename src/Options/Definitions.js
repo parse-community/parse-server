@@ -446,6 +446,45 @@ module.exports.SecurityOptions = {
     default: false,
   },
 };
+module.exports.SchemaOptions = {
+  definitions: {
+    help: 'The schema definitions.',
+    default: [],
+  },
+  strict: {
+    env: 'PARSE_SERVER_SCHEMA_STRICT',
+    help: 'Is true if Parse Server should exit if schema update fail.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  deleteExtraFields: {
+    env: 'PARSE_SERVER_SCHEMA_DELETE_EXTRA_FIELDS',
+    help:
+      'Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  recreateModifiedFields: {
+    env: 'PARSE_SERVER_SCHEMA_RECREATE_MODIFIED_FIELDS',
+    help:
+      'Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  lockSchemas: {
+    env: 'PARSE_SERVER_SCHEMA_LOCK',
+    help:
+      'Is true if Parse Server will reject any attempts to modify the schema while the server is running.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  beforeMigration: {
+    help: 'Execute a callback before running schema migrations.',
+  },
+  afterMigration: {
+    help: 'Execute a callback after running schema migrations.',
+  },
+};
 module.exports.PagesOptions = {
   customRoutes: {
     env: 'PARSE_SERVER_PAGES_CUSTOM_ROUTES',

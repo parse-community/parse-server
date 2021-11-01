@@ -10,6 +10,14 @@ import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLControlle
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformTypes } from '../transformers/mutation';
 
+const filterDeletedFields = fields =>
+  Object.keys(fields).reduce((acc, key) => {
+    if (typeof fields[key] === 'object' && fields[key]?.__op === 'Delete') {
+      acc[key] = null;
+    }
+    return acc;
+  }, fields);
+
 const getOnlyRequiredFields = (
   updatedFields,
   selectedFieldsString,
@@ -131,7 +139,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             [getGraphQLQueryName]: {
               ...createdObject,
               updatedAt: createdObject.createdAt,
-              ...parseFields,
+              ...filterDeletedFields(parseFields),
               ...optimizedObject,
             },
           };
@@ -240,7 +248,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             [getGraphQLQueryName]: {
               objectId: id,
               ...updatedObject,
-              ...parseFields,
+              ...filterDeletedFields(parseFields),
               ...optimizedObject,
             },
           };
