@@ -70,10 +70,11 @@ export interface JSONSchema {
 }
 
 export class CLP {
-  static allow(perms: CLPData): CLPInterface {
+  static allow(perms: { [key: string]: CLPData }): CLPInterface {
     const out = {};
 
     for (const [perm, ops] of Object.entries(perms)) {
+      // @flow-disable-next Property `@@iterator` is missing in mixed [1] but exists in `$Iterable` [2].
       for (const op of ops) {
         out[op] = out[op] || {};
         out[op][perm] = true;
@@ -88,9 +89,7 @@ export function makeSchema(className: ClassNameType, schema: JSONSchema): JSONSc
   // This function solve two things:
   // 1. It provides auto-completion to the users who are implementing schemas
   // 2. It allows forward-compatible point in order to allow future changes to the internal structure of JSONSchema without affecting all the users
+  schema.className = className;
 
-  return {
-    className,
-    ...schema,
-  };
+  return schema;
 }
