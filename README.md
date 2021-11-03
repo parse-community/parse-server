@@ -29,15 +29,15 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 ---
 
-A big *thank you* 🙏 to all our backers and sponsors who support the development of Parse Platform!
+A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform!
 
 ### Diamond Sponsors
 
-![Diamond Sponsors](https://opencollective.com/parse-server/tiers/diamond-sponsor.svg?avatarHeight=70&button=false)
+[![Diamond Sponsors](https://opencollective.com/parse-server/tiers/diamond-sponsor.svg?avatarHeight=70&button=false)](https://opencollective.com/parse-server/contribute/diamond-sponsor-10560)
 
 #### Bronze Sponsors
 
-![Bronze Sponsors](https://opencollective.com/parse-server/tiers/bronze-sponsor.svg?avatarHeight=36&button=false)
+[![Bronze Sponsors](https://opencollective.com/parse-server/tiers/bronze-sponsor.svg?avatarHeight=36&button=false)](https://opencollective.com/parse-server/contribute/bronze-sponsor-10559)
 
 ---
 
