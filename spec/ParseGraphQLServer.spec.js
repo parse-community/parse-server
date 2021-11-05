@@ -7201,6 +7201,29 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.challenge.challengeData).toEqual({
             challengeAdapter: { someData: true },
           });
+
+          await expectAsync(
+            apolloClient.mutate({
+              mutation: gql`
+                mutation Challenge($input: ChallengeInput!) {
+                  challenge(input: $input) {
+                    clientMutationId
+                    challengeData
+                  }
+                }
+              `,
+              variables: {
+                input: {
+                  clientMutationId,
+                  username: 'username',
+                  password: 'wrongPassword',
+                  challengeData: {
+                    challengeAdapter: { someChallengeData: true },
+                  },
+                },
+              },
+            })
+          ).toBeRejected();
         });
 
         it('should log the user in', async () => {
