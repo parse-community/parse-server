@@ -77,11 +77,9 @@ describe('Webauthn', () => {
     });
 
     const user = new Parse.User();
-    try {
-      await user.save({ authData: { webauthn: { id: 'webauthn' } } });
-    } catch (e) {
-      expect(e.message).toContain('Webauthn can only be configured on an already logged in user.');
-    }
+    await expectAsync(
+      user.save({ authData: { webauthn: { id: 'webauthn' } } })
+    ).toBeRejectedWithError('Webauthn can only be configured on an already logged in user.');
   });
   it('should register if user logged', async () => {
     await reconfigureServer({
@@ -120,21 +118,19 @@ describe('Webauthn', () => {
       auth: { webauthn: { options: { rpId: attestationRpId, origin: attestationOrigin } } },
     });
 
-    try {
-      await user.save(
+    await expectAsync(
+      user.save(
         {
           authData: {
             webauthn: { attestation: clientAttestation, signedChallenge: 'test' },
           },
         },
         { sessionToken: user.getSessionToken() }
-      );
-    } catch (e) {
-      expect(e.message).toContain('Invalid signedChallenge');
-    }
+      )
+    ).toBeRejectedWithError('Invalid signedChallenge');
 
-    try {
-      await user.save(
+    await expectAsync(
+      user.save(
         {
           authData: {
             webauthn: {
@@ -144,10 +140,8 @@ describe('Webauthn', () => {
           },
         },
         { sessionToken: user.getSessionToken() }
-      );
-    } catch (e) {
-      expect(e.message).toContain('Invalid webauthn attestation');
-    }
+      )
+    ).toBeRejectedWithError('Invalid webauthn attestation');
 
     await user.save(
       {
@@ -250,8 +244,8 @@ describe('Webauthn', () => {
 
     const user2 = new Parse.User();
 
-    try {
-      await user2.save({
+    await expectAsync(
+      user2.save({
         authData: {
           webauthn: {
             id: assertionCredential.id,
@@ -259,10 +253,9 @@ describe('Webauthn', () => {
             signedChallenge: sign({ challenge: 'test' }, jwtSecret),
           },
         },
-      });
-    } catch (e) {
-      expect(e.message).toContain('Invalid webauthn assertion');
-    }
+      })
+    ).toBeRejectedWithError('Invalid webauthn assertion');
+
     await user2.save({
       authData: {
         webauthn: {

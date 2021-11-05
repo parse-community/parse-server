@@ -19,6 +19,16 @@ const responses = {
   microsoft: { id: 'userId', mail: 'userMail' },
 };
 
+// A simple wrapper to allow usage of
+// expectAsync().toBeRejectedWithError(errorMessage)
+const requestWithExpectedError = async params => {
+  try {
+    return await request(params);
+  } catch (e) {
+    throw new Error(e.data.error);
+  }
+};
+
 describe('AuthenticationProviders', function () {
   [
     'apple',
@@ -2212,12 +2222,9 @@ describe('Auth Adapter features', () => {
     expect(user.get('authData')).toEqual({ baseAdapter: { id: 'test' } });
 
     const user2 = new Parse.User();
-    try {
-      await user2.save({ authData: { baseAdapter: { id: 'another' } } });
-      fail();
-    } catch (e) {
-      expect(e.message).toContain('this auth is already used');
-    }
+    await expectAsync(
+      user2.save({ authData: { baseAdapter: { id: 'another' } } })
+    ).toBeRejectedWithError('this auth is already used');
   });
 
   it('should pass authData, options, req, user to validateAuthData', async () => {
@@ -2372,14 +2379,11 @@ describe('Auth Adapter features', () => {
   it('should throw if no triggers found', async () => {
     await reconfigureServer({ auth: { wrongAdapter } });
     const user = new Parse.User();
-    try {
-      await user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } });
-      fail('should throw');
-    } catch (e) {
-      expect(e.message).toContain(
-        'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
-      );
-    }
+    await expectAsync(
+      user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } })
+    ).toBeRejectedWithError(
+      'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
+    );
   });
   it('should not update authData if provider return doNotSave', async () => {
     spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: true });
@@ -2449,17 +2453,14 @@ describe('Auth Adapter features', () => {
     });
 
     const user2 = new Parse.User();
-    try {
-      await user2.save({
+    await expectAsync(
+      user2.save({
         authData: {
           baseAdapter: { id: 'baseAdapter' },
         },
-      });
-      fail('should require additional authData');
-    } catch (e) {
-      expect(e.message).toContain('Missing additional authData additionalAdapter');
-      expect(user2.getSessionToken()).toBeUndefined();
-    }
+      })
+    ).toBeRejectedWithError('Missing additional authData additionalAdapter');
+    expect(user2.getSessionToken()).toBeUndefined();
 
     await user2.save({
       authData: {
@@ -2745,41 +2746,32 @@ describe('Auth Adapter features', () => {
       auth: { challengeAdapter },
     });
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
         body: {},
-      });
-      fail('should throw Nothing to challenge.');
-    } catch (e) {
-      expect(e.text).toContain('Nothing to challenge.');
-    }
+      })
+    ).toBeRejectedWithError('Nothing to challenge.');
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
         body: { challengeData: true },
-      });
-      fail('should throw challengeData should be an object.');
-    } catch (e) {
-      expect(e.text).toContain('challengeData should be an object.');
-    }
+      })
+    ).toBeRejectedWithError('challengeData should be an object.');
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
         body: { challengeData: { data: true }, authData: true },
-      });
-      fail('should throw authData should be an object.');
-    } catch (e) {
-      expect(e.text).toContain('authData should be an object.');
-    }
+      })
+    ).toBeRejectedWithError('authData should be an object.');
 
     const res = await request({
       headers: headers,
@@ -2819,8 +2811,8 @@ describe('Auth Adapter features', () => {
     const user = new Parse.User();
     await user.save({ username: 'username', password: 'password' });
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
@@ -2830,16 +2822,11 @@ describe('Auth Adapter features', () => {
             challengeAdapter: { someData: true },
           },
         }),
-      });
-      fail('should throw You provided username or email, you need to also provide password.');
-    } catch (e) {
-      expect(e.text).toContain(
-        'You provided username or email, you need to also provide password.'
-      );
-    }
+      })
+    ).toBeRejectedWithError('You provided username or email, you need to also provide password.');
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
@@ -2851,15 +2838,10 @@ describe('Auth Adapter features', () => {
             challengeAdapter: { someData: true },
           },
         }),
-      });
-      fail(
-        'should throw You cant provide username/email and authData, only use one identification method.'
-      );
-    } catch (e) {
-      expect(e.text).toContain(
-        'You cant provide username/email and authData, only use one identification method.'
-      );
-    }
+      })
+    ).toBeRejectedWithError(
+      'You cant provide username/email and authData, only use one identification method.'
+    );
 
     const res = await request({
       headers: headers,
@@ -2901,8 +2883,8 @@ describe('Auth Adapter features', () => {
       auth: { challengeAdapter, soloAdapter },
     });
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
@@ -2914,11 +2896,8 @@ describe('Auth Adapter features', () => {
             challengeAdapter: { id: 'challengeAdapter' },
           },
         }),
-      });
-      fail();
-    } catch (e) {
-      expect(e.text).toContain('User not found.');
-    }
+      })
+    ).toBeRejectedWithError('User not found.');
 
     const user = new Parse.User();
     await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
@@ -2926,8 +2905,8 @@ describe('Auth Adapter features', () => {
     const user2 = new Parse.User();
     await user2.save({ authData: { soloAdapter: { id: 'soloAdapter' } } });
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
@@ -2940,11 +2919,8 @@ describe('Auth Adapter features', () => {
             soloAdapter: { id: 'soloAdapter' },
           },
         }),
-      });
-      fail();
-    } catch (e) {
-      expect(e.text).toContain('You cant provide more than one authData provider with an id.');
-    }
+      })
+    ).toBeRejectedWithError('You cant provide more than one authData provider with an id.');
 
     const res = await request({
       headers: headers,
@@ -2989,8 +2965,8 @@ describe('Auth Adapter features', () => {
       auth: { challengeAdapter, soloAdapter },
     });
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
@@ -3002,19 +2978,16 @@ describe('Auth Adapter features', () => {
             challengeAdapter: { id: 'challengeAdapter' },
           },
         }),
-      });
-      fail();
-    } catch (e) {
-      expect(e.text).toContain('User not found.');
-    }
+      })
+    ).toBeRejectedWithError('User not found.');
 
     const user = new Parse.User();
     await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
 
     spyOn(challengeAdapter, 'validateAuthData').and.rejectWith({});
 
-    try {
-      await request({
+    await expectAsync(
+      requestWithExpectedError({
         headers: headers,
         method: 'POST',
         url: 'http://localhost:8378/1/challenge',
@@ -3026,11 +2999,8 @@ describe('Auth Adapter features', () => {
             challengeAdapter: { id: 'challengeAdapter' },
           },
         }),
-      });
-      fail();
-    } catch (e) {
-      expect(e.text).toContain('User not found.');
-    }
+      })
+    ).toBeRejectedWithError('User not found.');
 
     const validateCall = challengeAdapter.validateAuthData.calls.argsFor(0);
     expect(challengeAdapter.validateAuthData).toHaveBeenCalledTimes(1);
