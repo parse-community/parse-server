@@ -1,8 +1,7 @@
 name: ci
 on:
   push:
-    branches:
-      - master
+    branches: [ release, alpha, beta, next-major ]
   pull_request:
     branches:
       - '**'
@@ -31,13 +30,6 @@ jobs:
         run: npm ci
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
-  check-changelog:
-    name: Changelog
-    timeout-minutes: 5
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v2
-    - uses: dangoslen/changelog-enforcer@v2
   check-lint:
      name: Lint
      timeout-minutes: 15
@@ -80,12 +72,21 @@ jobs:
        - run: npm run madge:circular
   check-docker:
     name: Docker Build
-    timeout-minutes: 5
+    timeout-minutes: 15
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
       - name: Build docker image
         uses: docker/build-push-action@v2
+        with:
+          context: .
+          platforms: linux/amd64
   check-lock-file-version:
     name: NPM Lock File Version
     timeout-minutes: 5
@@ -192,6 +193,9 @@ jobs:
           - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
             NODE_VERSION: 14.18.1
+          - name: PostgreSQL 14, PostGIS 3.1
+            POSTGRES_IMAGE: postgis/postgis:14-3.1
+            NODE_VERSION: 14.18.1
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -231,7 +235,9 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - run: bash scripts/before_script_postgres.sh
+      - run: |
+          bash scripts/before_script_postgres_conf.sh
+          bash scripts/before_script_postgres.sh
       - run: npm run coverage
         env:
           CI: true
