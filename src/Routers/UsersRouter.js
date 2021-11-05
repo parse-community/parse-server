@@ -547,11 +547,14 @@ export class UsersRouter extends ClassesRouter {
     const challenge = await Auth.reducePromise(
       Object.keys(challengeData).sort(),
       async (acc, provider) => {
-        const challengeHandler = req.config.authDataManager.getValidatorForProvider(provider)
-          .adapter.challenge;
-        if (typeof challengeHandler === 'function') {
+        const authAdapter = req.config.authDataManager.getValidatorForProvider(provider);
+        if (!authAdapter) return acc;
+        const {
+          adapter: { challenge },
+        } = authAdapter;
+        if (typeof challenge === 'function') {
           acc[provider] =
-            (await challengeHandler(
+            (await challenge(
               challengeData[provider],
               authData && authData[provider],
               req.config.auth[provider],
@@ -564,7 +567,7 @@ export class UsersRouter extends ClassesRouter {
       {}
     );
 
-    return { response: Object.keys(challenge).length ? { challengeData: challenge } : undefined };
+    return { response: { challengeData: challenge } };
   }
 
   mountRoutes() {

@@ -2158,8 +2158,9 @@ describe('Auth Adapter features', () => {
     validateAuthData: () => Promise.resolve(),
   };
   const baseAdapter2 = {
-    validateAppId: () => Promise.resolve(),
+    validateAppId: appIds => (appIds[0] === 'test' ? Promise.resolve() : Promise.reject()),
     validateAuthData: () => Promise.resolve(),
+    appIds: ['test'],
     options: { anOption: true },
   };
 
@@ -2190,6 +2191,13 @@ describe('Auth Adapter features', () => {
   };
 
   const modernAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateSetUp: () => Promise.resolve(),
+    validateUpdate: () => Promise.resolve(),
+    validateLogin: () => Promise.resolve(),
+  };
+
+  const modernAdapter2 = {
     validateAppId: () => Promise.resolve(),
     validateSetUp: () => Promise.resolve(),
     validateUpdate: () => Promise.resolve(),
@@ -2278,8 +2286,11 @@ describe('Auth Adapter features', () => {
     spyOn(modernAdapter, 'validateSetUp').and.resolveTo({});
     spyOn(modernAdapter, 'validateUpdate').and.resolveTo({});
     spyOn(modernAdapter, 'validateLogin').and.resolveTo({});
+    spyOn(modernAdapter2, 'validateSetUp').and.resolveTo({});
+    spyOn(modernAdapter2, 'validateUpdate').and.resolveTo({});
+    spyOn(modernAdapter2, 'validateLogin').and.resolveTo({});
 
-    await reconfigureServer({ auth: { modernAdapter } });
+    await reconfigureServer({ auth: { modernAdapter, modernAdapter2 } });
     const user = new Parse.User();
 
     await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
@@ -2296,6 +2307,32 @@ describe('Auth Adapter features', () => {
     expect(call[2].config.headers).toBeDefined();
     expect(call[3]).toBeUndefined();
     expect(user.getSessionToken()).toBeDefined();
+
+    await user.save(
+      { authData: { modernAdapter2: { id: 'modernAdapter2' } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    expect(modernAdapter2.validateUpdate).toHaveBeenCalledTimes(0);
+    expect(modernAdapter2.validateLogin).toHaveBeenCalledTimes(0);
+    expect(modernAdapter2.validateSetUp).toHaveBeenCalledTimes(1);
+    const call2 = modernAdapter2.validateSetUp.calls.argsFor(0);
+    expect(call2[0]).toEqual({ id: 'modernAdapter2' });
+    expect(call2[1]).toEqual(modernAdapter2);
+    expect(call2[2].config).toBeDefined();
+    expect(call2[2].isChallenge).toBeUndefined();
+    expect(call2[2].auth).toBeDefined();
+    expect(call2[2].config.headers).toBeDefined();
+    expect(call2[3] instanceof Parse.User).toBeTruthy();
+    expect(call2[3].id).toEqual(user.id);
+
+    const user2 = new Parse.User();
+    user2.id = user.id;
+    await user2.fetch({ useMasterKey: true });
+    expect(user2.get('authData')).toEqual({
+      modernAdapter: { id: 'modernAdapter' },
+      modernAdapter2: { id: 'modernAdapter2' },
+    });
   });
   it('should trigger correctly validateLogin', async () => {
     spyOn(modernAdapter, 'validateSetUp').and.resolveTo({});
@@ -2385,6 +2422,15 @@ describe('Auth Adapter features', () => {
       'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
     );
   });
+  it('should throw if no triggers found', async () => {
+    await reconfigureServer({ auth: { wrongAdapter } });
+    const user = new Parse.User();
+    await expectAsync(
+      user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } })
+    ).toBeRejectedWithError(
+      'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
+    );
+  });
   it('should not update authData if provider return doNotSave', async () => {
     spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: true });
     await reconfigureServer({
@@ -2403,6 +2449,7 @@ describe('Auth Adapter features', () => {
   });
   it('should perform authData validation only when its required', async () => {
     spyOn(baseAdapter2, 'validateAuthData').and.resolveTo({});
+    spyOn(baseAdapter2, 'validateAppId').and.resolveTo({});
     spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
     await reconfigureServer({
       auth: { baseAdapter2, baseAdapter },
@@ -2418,6 +2465,7 @@ describe('Auth Adapter features', () => {
     });
 
     expect(baseAdapter2.validateAuthData).toHaveBeenCalledTimes(1);
+    expect(baseAdapter2.validateAppId).toHaveBeenCalledTimes(1);
 
     const user2 = new Parse.User();
     await user2.save({
@@ -2596,7 +2644,7 @@ describe('Auth Adapter features', () => {
         },
       }),
     });
-    const result = JSON.parse(res.text);
+    const result = res.data;
     expect(result.authDataResponse).toEqual({
       baseAdapter2: { someData2: true },
       baseAdapter: { someData: true },
@@ -2784,7 +2832,7 @@ describe('Auth Adapter features', () => {
       }),
     });
 
-    expect(JSON.parse(res.text)).toEqual({
+    expect(res.data).toEqual({
       challengeData: {
         challengeAdapter: {
           token: 'test',
@@ -2800,6 +2848,26 @@ describe('Auth Adapter features', () => {
     expect(challengeCall[3].auth).toBeDefined();
     expect(challengeCall[3].config.headers).toBeDefined();
     expect(challengeCall[4]).toBeUndefined();
+  });
+  it('should return empty challenge data response if challenged provider does not exists', async () => {
+    spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
+
+    await reconfigureServer({
+      auth: { challengeAdapter },
+    });
+
+    const res = await request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/challenge',
+      body: JSON.stringify({
+        challengeData: {
+          nonExistingProvider: { someData: true },
+        },
+      }),
+    });
+
+    expect(res.data).toEqual({ challengeData: {} });
   });
   it('should return challenge with username created user', async () => {
     spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
@@ -2856,7 +2924,7 @@ describe('Auth Adapter features', () => {
       }),
     });
 
-    expect(JSON.parse(res.text)).toEqual({
+    expect(res.data).toEqual({
       challengeData: {
         challengeAdapter: {
           token: 'test',
@@ -2936,7 +3004,7 @@ describe('Auth Adapter features', () => {
       }),
     });
 
-    expect(JSON.parse(res.text)).toEqual({
+    expect(res.data).toEqual({
       challengeData: {
         challengeAdapter: {
           token: 'test',

@@ -13,8 +13,6 @@ import Parse from 'parse/node';
 import { sign, verify } from 'jsonwebtoken';
 import crypto from 'crypto';
 
-export const validateAppId = () => Promise.resolve();
-
 const toUserFriendlyRpName = url => {
   const domain = getDomainWithoutWww(url);
   const baseDomain = getBaseDomain(domain).split('.')[0];
@@ -139,11 +137,6 @@ const loginOptions = config => {
 
 const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user) => {
   const dbAuthData = user && user.get('authData') && user.get('authData').webauthn;
-  if (!dbAuthData)
-    throw new Parse.Error(
-      Parse.Error.OTHER_CAUSE,
-      'webauthn not configured for this user or credential id not recognized.'
-    );
   if (!assertion) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'assertion is required.');
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
   try {

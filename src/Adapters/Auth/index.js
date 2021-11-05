@@ -80,28 +80,29 @@ function authDataValidator(provider, adapter, appIds, options) {
       // trigger a logged in user
       const isLoggedIn =
         (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
-      let isUpdate = false;
       let hasAuthDataConfigured = false;
 
       if (user && user.get('authData') && user.get('authData')[provider]) {
         hasAuthDataConfigured = true;
       }
 
-      if (isLoggedIn && hasAuthDataConfigured) {
-        isUpdate = true;
+      if (isLoggedIn) {
+        // User is currently updating his authData
+        if (hasAuthDataConfigured) {
+          return adapter.validateUpdate(authData, options, req, user);
+        }
+        // Let's setup if the user does not have the provider configured
+        return adapter.validateSetUp(authData, options, req, user);
       }
 
-      if (isUpdate) {
-        return adapter.validateUpdate(authData, options, req, user);
-      }
-
-      if (!isLoggedIn && hasAuthDataConfigured) {
+      // Not logged in and authData configured into the DB
+      if (hasAuthDataConfigured) {
         return adapter.validateLogin(authData, options, req, user);
       }
 
-      if (!hasAuthDataConfigured) {
-        return adapter.validateSetUp(authData, options, req, user);
-      }
+      // Finally, user not logged in and the provider is not setup
+      // use cases: existing user using a new auth provider at login time or new user
+      return adapter.validateSetUp(authData, options, req, user);
     }
     throw new Parse.Error(
       Parse.Error.OTHER_CAUSE,
@@ -111,7 +112,12 @@ function authDataValidator(provider, adapter, appIds, options) {
 }
 
 function loadAuthAdapter(provider, authOptions) {
+  // `providers` are default providers already implemented
+  // into parse-server
   let defaultAdapter = providers[provider];
+  // authOptions could contain a complete custom adapter
+  // or just some options for a default auth parse adapter
+  // like facebook
   const providerOptions = authOptions[provider];
   if (
     providerOptions &&
@@ -121,6 +127,7 @@ function loadAuthAdapter(provider, authOptions) {
     defaultAdapter = oauth2;
   }
 
+  // Default provider not found and a custom auth provider was not provided
   if (!defaultAdapter && !providerOptions) {
     return;
   }
@@ -161,9 +168,9 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return { validator: undefined };
     }
-
-    const { adapter, appIds, providerOptions } = loadAuthAdapter(provider, authOptions);
-
+    const authAdapter = loadAuthAdapter(provider, authOptions);
+    if (!authAdapter) return;
+    const { adapter, appIds, providerOptions } = authAdapter;
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 

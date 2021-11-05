@@ -135,6 +135,7 @@ describe('Webauthn', () => {
           authData: {
             webauthn: {
               attestation: clientAttestation,
+              // Non base 64 challenge
               signedChallenge: sign({ challenge: 'test' }, jwtSecret),
             },
           },
@@ -142,6 +143,66 @@ describe('Webauthn', () => {
         { sessionToken: user.getSessionToken() }
       )
     ).toBeRejectedWithError('Invalid webauthn attestation');
+
+    await expectAsync(
+      user.save(
+        {
+          authData: {
+            webauthn: {
+              attestation: clientAttestation,
+              // Incomplete signed challenge
+              signedChallenge: sign({}, jwtSecret),
+            },
+          },
+        },
+        { sessionToken: user.getSessionToken() }
+      )
+    ).toBeRejectedWithError('Invalid signedChallenge');
+
+    await expectAsync(
+      user.save(
+        {
+          authData: {
+            webauthn: {
+              attestation: clientAttestation,
+              signedChallenge: sign(
+                // Wrong base 64 challenge
+                { challenge: 'dG90YWxseVVuaXF1ZVZhbHVlRXZlcnlBdHRlc3RhdGlvbw==' },
+                jwtSecret
+              ),
+            },
+          },
+        },
+        { sessionToken: user.getSessionToken() }
+      )
+    ).toBeRejectedWithError('Invalid webauthn attestation');
+
+    await expectAsync(
+      user.save(
+        {
+          authData: {
+            webauthn: {
+              // Signed challenge not provided
+              attestation: clientAttestation,
+            },
+          },
+        },
+        { sessionToken: user.getSessionToken() }
+      )
+    ).toBeRejectedWithError('signedChallenge is required.');
+
+    await expectAsync(
+      user.save(
+        {
+          authData: {
+            webauthn: {
+              // Missing attestation
+            },
+          },
+        },
+        { sessionToken: user.getSessionToken() }
+      )
+    ).toBeRejectedWithError('attestation is required.');
 
     await user.save(
       {
@@ -243,6 +304,17 @@ describe('Webauthn', () => {
     expect(options.timeout).toEqual(60000);
 
     const user2 = new Parse.User();
+
+    await expectAsync(
+      user2.save({
+        authData: {
+          webauthn: {
+            id: assertionCredential.id,
+            // Assertion is missing
+          },
+        },
+      })
+    ).toBeRejectedWithError('assertion is required.');
 
     await expectAsync(
       user2.save({

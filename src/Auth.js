@@ -332,7 +332,7 @@ const findUsersWithAuthData = (config, authData) => {
 
   let findPromise = Promise.resolve([]);
   if (query.length > 0) {
-    findPromise = config.database.find('_User', { $or: query }, {});
+    findPromise = config.database.find('_User', { $or: query }, { limit: 2 });
   }
 
   return findPromise;
