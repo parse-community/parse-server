@@ -3,6 +3,7 @@ const Config = require('../lib/Config');
 const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
+const Auth = require('../lib/Auth');
 
 const responses = {
   gpgames: { playerId: 'userId' },
@@ -2232,6 +2233,62 @@ describe('Auth Adapter features', () => {
     const user2 = new Parse.User();
     await expectAsync(
       user2.save({ authData: { baseAdapter: { id: 'another' } } })
+    ).toBeRejectedWithError('this auth is already used');
+  });
+
+  it('should ensure no duplicate auth data id after before save in case of more than one result', async () => {
+    await reconfigureServer({
+      auth: { baseAdapter },
+      cloud: () => {
+        Parse.Cloud.beforeSave('_User', async request => {
+          request.object.set('authData', { baseAdapter: { id: 'test' } });
+        });
+      },
+    });
+
+    const user = new Parse.User();
+    await user.save({ authData: { baseAdapter: { id: 'another' } } });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData')).toEqual({ baseAdapter: { id: 'test' } });
+
+    let i = 0;
+    const originalFn = Auth.findUsersWithAuthData;
+    spyOn(Auth, 'findUsersWithAuthData').and.callFake((...params) => {
+      // First call is triggered during authData validation
+      if (i === 0) {
+        i++;
+        return originalFn(...params);
+      }
+      // Second call is triggered after beforeSave
+      // if authData was touched by the developer in the cloud code
+      // more than one result should never occur in Parse
+      // but a developer with a direct access to the database
+      // could break something, login/register will be canceled
+      // to avoid non determinist login between users found by the authData query
+      // true, true, just simulate a query return with length === 2
+      return Promise.resolve([true, true]);
+    });
+    const user2 = new Parse.User();
+    await expectAsync(
+      user2.save({ authData: { baseAdapter: { id: 'another' } } })
+    ).toBeRejectedWithError('this auth is already used');
+  });
+
+  it('should ensure no duplicate auth data id during authData validation in case of more than one result', async () => {
+    await reconfigureServer({
+      auth: { baseAdapter },
+      cloud: () => {
+        Parse.Cloud.beforeSave('_User', async request => {
+          request.object.set('authData', { baseAdapter: { id: 'test' } });
+        });
+      },
+    });
+
+    spyOn(Auth, 'findUsersWithAuthData').and.resolveTo([true, true]);
+
+    const user = new Parse.User();
+    await expectAsync(
+      user.save({ authData: { baseAdapter: { id: 'another' } } })
     ).toBeRejectedWithError('this auth is already used');
   });
 

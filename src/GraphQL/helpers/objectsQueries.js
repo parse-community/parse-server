@@ -58,6 +58,7 @@ const getObject = async (
       options.keys = keys;
     }
   } catch (e) {
+    /* istanbul ignore next: improve coverage */
     console.error(e);
   }
   if (include) {

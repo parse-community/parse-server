@@ -119,6 +119,7 @@ const verifyRegister = async ({ signedChallenge, attestation }, options = {}, co
         id: attestation.id,
       };
     }
+    /* istanbul ignore next: fail safe */
     throw new Error();
   } catch (e) {
     throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid webauthn attestation');
@@ -157,6 +158,7 @@ const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user)
         counter: assertionInfo.newCounter,
       };
     }
+    /* istanbul ignore next: fail safe */
     throw new Error();
   } catch (e) {
     throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid webauthn assertion');
