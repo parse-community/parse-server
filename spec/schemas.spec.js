@@ -1791,14 +1791,14 @@ describe('schemas', () => {
       await testSchema.save();
     });
 
-    it('addField not required for adding a nested field (#7371)', async () => {
+    it('addField permission not required for adding a nested property', async () => {
       const obj = new Parse.Object('test_7371');
       obj.set('a', {});
       await obj.save();
       obj.set('a.b', 2);
       await obj.save();
     });
-    it('addField not required for modifying a nested field (#7371)', async () => {
+    it('addField permission not required for modifying a nested property', async () => {
       const obj = new Parse.Object('test_7371');
       obj.set('a', { b: 1 });
       await obj.save();
