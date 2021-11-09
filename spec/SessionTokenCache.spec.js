@@ -1,8 +1,7 @@
-const SessionTokenCache = require('../lib/LiveQuery/SessionTokenCache')
-  .SessionTokenCache;
+const SessionTokenCache = require('../lib/LiveQuery/SessionTokenCache').SessionTokenCache;
 
-describe('SessionTokenCache', function() {
-  beforeEach(function(done) {
+describe('SessionTokenCache', function () {
+  beforeEach(function (done) {
     const Parse = require('parse/node');
 
     spyOn(Parse, 'Query').and.returnValue({
@@ -13,13 +12,13 @@ describe('SessionTokenCache', function() {
           })
         )
       ),
-      equalTo: function() {},
+      equalTo: function () {},
     });
 
     done();
   });
 
-  it('can get undefined userId', function(done) {
+  it('can get undefined userId', function (done) {
     const sessionTokenCache = new SessionTokenCache();
 
     sessionTokenCache.getUserId(undefined).then(
@@ -31,7 +30,7 @@ describe('SessionTokenCache', function() {
     );
   });
 
-  it('can get existing userId', function(done) {
+  it('can get existing userId', function (done) {
     const sessionTokenCache = new SessionTokenCache();
     const sessionToken = 'sessionToken';
     const userId = 'userId';
@@ -43,7 +42,7 @@ describe('SessionTokenCache', function() {
     });
   });
 
-  it('can get new userId', function(done) {
+  it('can get new userId', function (done) {
     const sessionTokenCache = new SessionTokenCache();
 
     sessionTokenCache.getUserId('sessionToken').then(userIdFromCache => {

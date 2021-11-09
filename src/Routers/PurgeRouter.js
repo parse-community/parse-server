@@ -30,14 +30,9 @@ export class PurgeRouter extends PromiseRouter {
   }
 
   mountRoutes() {
-    this.route(
-      'DELETE',
-      '/purge/:className',
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.handlePurge(req);
-      }
-    );
+    this.route('DELETE', '/purge/:className', middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.handlePurge(req);
+    });
   }
 }
 

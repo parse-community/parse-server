@@ -15,19 +15,12 @@ var triggers = require('./triggers');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
-    return triggers.getTrigger(
-      className,
-      triggers.Types[triggerType],
-      config.applicationId
-    );
+    return triggers.getTrigger(className, triggers.Types[triggerType], config.applicationId);
   });
 }
 
 function checkLiveQuery(className, config) {
-  return (
-    config.liveQueryController &&
-    config.liveQueryController.hasLiveQuery(className)
-  );
+  return config.liveQueryController && config.liveQueryController.hasLiveQuery(className);
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
@@ -52,7 +45,9 @@ function find(config, auth, className, restWhere, restOptions, clientSDK, contex
         className,
         restWhere,
         restOptions,
-        clientSDK
+        clientSDK,
+        true,
+        context
       );
       return query.execute();
     });
@@ -82,7 +77,9 @@ const get = (config, auth, className, objectId, restOptions, clientSDK, context)
         className,
         restWhere,
         restOptions,
-        clientSDK
+        clientSDK,
+        true,
+        context
       );
       return query.execute();
     });
@@ -95,10 +92,7 @@ function del(config, auth, className, objectId, context) {
   }
 
   if (className === '_User' && auth.isUnauthenticated()) {
-    throw new Parse.Error(
-      Parse.Error.SESSION_MISSING,
-      'Insufficient auth to delete user'
-    );
+    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth to delete user');
   }
 
   enforceRoleSecurity('delete', className, auth);
@@ -108,10 +102,7 @@ function del(config, auth, className, objectId, context) {
 
   return Promise.resolve()
     .then(() => {
-      const hasTriggers = checkTriggers(className, config, [
-        'beforeDelete',
-        'afterDelete',
-      ]);
+      const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery || className == '_Session') {
         return new RestQuery(config, auth, className, { objectId })
@@ -122,10 +113,7 @@ function del(config, auth, className, objectId, context) {
               firstResult.className = className;
               if (className === '_Session' && !auth.isMaster) {
                 if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_SESSION_TOKEN,
-                    'Invalid session token'
-                  );
+                  throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
                 }
               }
               var cacheAdapter = config.cacheController;
@@ -140,10 +128,7 @@ function del(config, auth, className, objectId, context) {
                 context
               );
             }
-            throw new Parse.Error(
-              Parse.Error.OBJECT_NOT_FOUND,
-              'Object not found for delete.'
-            );
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for delete.');
           });
       }
       return Promise.resolve({});
@@ -179,12 +164,7 @@ function del(config, auth, className, objectId, context) {
     .then(() => {
       // Notify LiveQuery server if possible
       const perms = schemaController.getClassLevelPermissions(className);
-      config.liveQueryController.onAfterDelete(
-        className,
-        inflatedObject,
-        null,
-        perms
-      );
+      config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
@@ -202,16 +182,7 @@ function del(config, auth, className, objectId, context) {
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject, clientSDK, context) {
   enforceRoleSecurity('create', className, auth);
-  var write = new RestWrite(
-    config,
-    auth,
-    className,
-    null,
-    restObject,
-    null,
-    clientSDK,
-    context
-  );
+  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context);
   return write.execute();
 }
 
@@ -223,10 +194,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
 
   return Promise.resolve()
     .then(() => {
-      const hasTriggers = checkTriggers(className, config, [
-        'beforeSave',
-        'afterSave',
-      ]);
+      const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
         // Do not use find, as it runs the before finds
@@ -237,7 +205,8 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
           restWhere,
           undefined,
           undefined,
-          false
+          false,
+          context
         ).execute({
           op: 'update',
         });
@@ -268,11 +237,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
 
 function handleSessionMissingError(error, className, auth) {
   // If we're trying to update a user without / with bad session token
-  if (
-    className === '_User' &&
-    error.code === Parse.Error.OBJECT_NOT_FOUND &&
-    !auth.isMaster
-  ) {
+  if (className === '_User' && error.code === Parse.Error.OBJECT_NOT_FOUND && !auth.isMaster) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
@@ -302,10 +267,7 @@ function enforceRoleSecurity(method, className, auth) {
   }
 
   // readOnly masterKey is not allowed
-  if (
-    auth.isReadOnly &&
-    (method === 'delete' || method === 'create' || method === 'update')
-  ) {
+  if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
     const error = `read-only masterKey isn't allowed to perform the ${method} operation.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }

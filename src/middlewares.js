@@ -25,6 +25,17 @@ const getMountForRequest = function (req) {
 export function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
 
+  let context = {};
+  if (req.get('X-Parse-Cloud-Context') != null) {
+    try {
+      context = JSON.parse(req.get('X-Parse-Cloud-Context'));
+      if (Object.prototype.toString.call(context) !== '[object Object]') {
+        throw 'Context is not an object';
+      }
+    } catch (e) {
+      return malformedContext(req, res);
+    }
+  }
   var info = {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
@@ -35,7 +46,7 @@ export function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
     clientVersion: req.get('X-Parse-Client-Version'),
-    context: {},
+    context: context,
   };
 
   var basicAuth = httpAuth(req);
@@ -81,8 +92,7 @@ export function handleParseHeaders(req, res, next) {
       req.body &&
       req.body._ApplicationId &&
       AppCache.get(req.body._ApplicationId) &&
-      (!info.masterKey ||
-        AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
+      (!info.masterKey || AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
     ) {
       info.appId = req.body._ApplicationId;
       info.javascriptKey = req.body._JavaScriptKey || '';
@@ -106,8 +116,19 @@ export function handleParseHeaders(req, res, next) {
         info.masterKey = req.body._MasterKey;
         delete req.body._MasterKey;
       }
-      if (req.body._context && req.body._context instanceof Object) {
-        info.context = req.body._context;
+      if (req.body._context) {
+        if (req.body._context instanceof Object) {
+          info.context = req.body._context;
+        } else {
+          try {
+            info.context = JSON.parse(req.body._context);
+            if (Object.prototype.toString.call(info.context) !== '[object Object]') {
+              throw 'Context is not an object';
+            }
+          } catch (e) {
+            return malformedContext(req, res);
+          }
+        }
         delete req.body._context;
       }
       if (req.body._ContentType) {
@@ -239,22 +260,19 @@ export function handleParseHeaders(req, res, next) {
         });
       }
     })
-    .then((auth) => {
+    .then(auth => {
       if (auth) {
         req.auth = auth;
         next();
       }
     })
-    .catch((error) => {
+    .catch(error => {
       if (error instanceof Parse.Error) {
         next(error);
         return;
       } else {
         // TODO: Determine the correct error scenario.
-        req.config.loggerController.error(
-          'error getting auth for sessionToken',
-          error
-        );
+        req.config.loggerController.error('error getting auth for sessionToken', error);
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
@@ -327,10 +345,7 @@ export function allowCrossDomain(appId) {
     res.header('Access-Control-Allow-Origin', allowOrigin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
-    res.header(
-      'Access-Control-Expose-Headers',
-      'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
-    );
+    res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
     // intercept OPTIONS method
     if ('OPTIONS' == req.method) {
       res.sendStatus(200);
@@ -416,12 +431,16 @@ export function promiseEnforceMasterKeyAccess(request) {
  */
 export function promiseEnsureIdempotency(req) {
   // Enable feature only for MongoDB
-  if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
+  if (!(req.config.database.adapter instanceof MongoStorageAdapter)) {
+    return Promise.resolve();
+  }
   // Get parameters
   const config = req.config;
-  const requestId = ((req || {}).headers || {})["x-parse-request-id"];
+  const requestId = ((req || {}).headers || {})['x-parse-request-id'];
   const { paths, ttl } = config.idempotencyOptions;
-  if (!requestId || !config.idempotencyOptions) { return Promise.resolve(); }
+  if (!requestId || !config.idempotencyOptions) {
+    return Promise.resolve();
+  }
   // Request path may contain trailing slashes, depending on the original request, so remove
   // leading and trailing slashes to make it easier to specify paths in the configuration
   const reqPath = req.path.replace(/^\/|\/$/, '');
@@ -435,26 +454,30 @@ export function promiseEnsureIdempotency(req) {
       break;
     }
   }
-  if (!match) { return Promise.resolve(); }
+  if (!match) {
+    return Promise.resolve();
+  }
   // Try to store request
   const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
-  return rest.create(
-    config,
-    auth.master(config),
-    '_Idempotency',
-    { reqId: requestId, expire: Parse._encode(expiryDate) }
-  ).catch (e => {
-    if (e.code == Parse.Error.DUPLICATE_VALUE) {
-      throw new Parse.Error(
-        Parse.Error.DUPLICATE_REQUEST,
-        'Duplicate request'
-      );
-    }
-    throw e;
-  });
+  return rest
+    .create(config, auth.master(config), '_Idempotency', {
+      reqId: requestId,
+      expire: Parse._encode(expiryDate),
+    })
+    .catch(e => {
+      if (e.code == Parse.Error.DUPLICATE_VALUE) {
+        throw new Parse.Error(Parse.Error.DUPLICATE_REQUEST, 'Duplicate request');
+      }
+      throw e;
+    });
 }
 
 function invalidRequest(req, res) {
   res.status(403);
   res.end('{"error":"unauthorized"}');
+}
+
+function malformedContext(req, res) {
+  res.status(400);
+  res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
 }

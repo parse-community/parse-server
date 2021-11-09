@@ -4,15 +4,11 @@ import * as middleware from '../middlewares';
 
 export class HooksRouter extends PromiseRouter {
   createHook(aHook, config) {
-    return config.hooksController
-      .createHook(aHook)
-      .then(hook => ({ response: hook }));
+    return config.hooksController.createHook(aHook).then(hook => ({ response: hook }));
   }
 
   updateHook(aHook, config) {
-    return config.hooksController
-      .updateHook(aHook)
-      .then(hook => ({ response: hook }));
+    return config.hooksController.updateHook(aHook).then(hook => ({ response: hook }));
   }
 
   handlePost(req) {
@@ -22,17 +18,12 @@ export class HooksRouter extends PromiseRouter {
   handleGetFunctions(req) {
     var hooksController = req.config.hooksController;
     if (req.params.functionName) {
-      return hooksController
-        .getFunction(req.params.functionName)
-        .then(foundFunction => {
-          if (!foundFunction) {
-            throw new Parse.Error(
-              143,
-              `no function named: ${req.params.functionName} is defined`
-            );
-          }
-          return Promise.resolve({ response: foundFunction });
-        });
+      return hooksController.getFunction(req.params.functionName).then(foundFunction => {
+        if (!foundFunction) {
+          throw new Parse.Error(143, `no function named: ${req.params.functionName} is defined`);
+        }
+        return Promise.resolve({ response: foundFunction });
+      });
     }
 
     return hooksController.getFunctions().then(
@@ -52,26 +43,19 @@ export class HooksRouter extends PromiseRouter {
         .getTrigger(req.params.className, req.params.triggerName)
         .then(foundTrigger => {
           if (!foundTrigger) {
-            throw new Parse.Error(
-              143,
-              `class ${req.params.className} does not exist`
-            );
+            throw new Parse.Error(143, `class ${req.params.className} does not exist`);
           }
           return Promise.resolve({ response: foundTrigger });
         });
     }
 
-    return hooksController
-      .getTriggers()
-      .then(triggers => ({ response: triggers || [] }));
+    return hooksController.getTriggers().then(triggers => ({ response: triggers || [] }));
   }
 
   handleDelete(req) {
     var hooksController = req.config.hooksController;
     if (req.params.functionName) {
-      return hooksController
-        .deleteFunction(req.params.functionName)
-        .then(() => ({ response: {} }));
+      return hooksController.deleteFunction(req.params.functionName).then(() => ({ response: {} }));
     } else if (req.params.className && req.params.triggerName) {
       return hooksController
         .deleteTrigger(req.params.className, req.params.triggerName)

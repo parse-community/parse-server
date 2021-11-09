@@ -28,20 +28,49 @@ function getOneSchema(req) {
     .then(schema => ({ response: schema }))
     .catch(error => {
       if (error === undefined) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_CLASS_NAME,
-          `Class ${className} does not exist.`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       } else {
-        throw new Parse.Error(
-          Parse.Error.INTERNAL_SERVER_ERROR,
-          'Database adapter error.'
-        );
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
       }
     });
 }
 
-function createSchema(req) {
+const checkIfDefinedSchemasIsUsed = req => {
+  if (req.config?.schema?.lockSchemas === true) {
+    throw new Parse.Error(
+      Parse.Error.OPERATION_FORBIDDEN,
+      'Cannot perform this operation when schemas options is used.'
+    );
+  }
+};
+
+export const internalCreateSchema = async (className, body, config) => {
+  const controller = await config.database.loadSchema({ clearCache: true });
+  const response = await controller.addClassIfNotExists(
+    className,
+    body.fields,
+    body.classLevelPermissions,
+    body.indexes
+  );
+  return {
+    response,
+  };
+};
+
+export const internalUpdateSchema = async (className, body, config) => {
+  const controller = await config.database.loadSchema({ clearCache: true });
+  const response = await controller.updateClass(
+    className,
+    body.fields || {},
+    body.classLevelPermissions,
+    body.indexes,
+    config.database
+  );
+  return { response };
+};
+
+async function createSchema(req) {
+  checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -50,10 +79,7 @@ function createSchema(req) {
   }
   if (req.params.className && req.body.className) {
     if (req.params.className != req.body.className) {
-      return classNameMismatchResponse(
-        req.body.className,
-        req.params.className
-      );
+      return classNameMismatchResponse(req.body.className, req.params.className);
     }
   }
 
@@ -62,20 +88,11 @@ function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return req.config.database
-    .loadSchema({ clearCache: true })
-    .then(schema =>
-      schema.addClassIfNotExists(
-        className,
-        req.body.fields,
-        req.body.classLevelPermissions,
-        req.body.indexes
-      )
-    )
-    .then(schema => ({ response: schema }));
+  return await internalCreateSchema(className, req.body, req.config);
 }
 
 function modifySchema(req) {
+  checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -85,22 +102,9 @@ function modifySchema(req) {
   if (req.body.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
-
-  const submittedFields = req.body.fields || {};
   const className = req.params.className;
 
-  return req.config.database
-    .loadSchema({ clearCache: true })
-    .then(schema =>
-      schema.updateClass(
-        className,
-        submittedFields,
-        req.body.classLevelPermissions,
-        req.body.indexes,
-        req.config.database
-      )
-    )
-    .then(result => ({ response: result }));
+  return internalUpdateSchema(className, req.body, req.config);
 }
 
 const deleteSchema = req => {
@@ -116,31 +120,19 @@ const deleteSchema = req => {
       SchemaController.invalidClassNameMessage(req.params.className)
     );
   }
-  return req.config.database
-    .deleteSchema(req.params.className)
-    .then(() => ({ response: {} }));
+  return req.config.database.deleteSchema(req.params.className).then(() => ({ response: {} }));
 };
 
 export class SchemasRouter extends PromiseRouter {
   mountRoutes() {
-    this.route(
-      'GET',
-      '/schemas',
-      middleware.promiseEnforceMasterKeyAccess,
-      getAllSchemas
-    );
+    this.route('GET', '/schemas', middleware.promiseEnforceMasterKeyAccess, getAllSchemas);
     this.route(
       'GET',
       '/schemas/:className',
       middleware.promiseEnforceMasterKeyAccess,
       getOneSchema
     );
-    this.route(
-      'POST',
-      '/schemas',
-      middleware.promiseEnforceMasterKeyAccess,
-      createSchema
-    );
+    this.route('POST', '/schemas', middleware.promiseEnforceMasterKeyAccess, createSchema);
     this.route(
       'POST',
       '/schemas/:className',

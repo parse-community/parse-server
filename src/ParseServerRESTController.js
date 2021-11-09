@@ -14,9 +14,7 @@ function getSessionToken(options) {
 function getAuth(options = {}, config) {
   const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
-    return Promise.resolve(
-      new Auth.Auth({ config, isMaster: true, installationId })
-    );
+    return Promise.resolve(new Auth.Auth({ config, isMaster: true, installationId }));
   }
   return getSessionToken(options).then(sessionToken => {
     if (sessionToken) {
@@ -50,47 +48,60 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     if (path === '/batch') {
-      let initialPromise = Promise.resolve();
-      if (data.transaction === true) {
-        initialPromise = config.database.createTransactionalSession();
-      }
-      return initialPromise.then(() => {
-        const promises = data.requests.map(request => {
-          return handleRequest(
-            request.method,
-            request.path,
-            request.body,
-            options,
-            config
-          ).then(
-            response => {
-              return { success: response };
-            },
-            error => {
-              return {
-                error: { code: error.code, error: error.message },
-              };
-            }
-          );
-        });
-        return Promise.all(promises).then(result => {
-          if (data.transaction === true) {
-            if (
-              result.find(resultItem => typeof resultItem.error === 'object')
-            ) {
-              return config.database.abortTransactionalSession().then(() => {
-                return Promise.reject(result);
-              });
-            } else {
-              return config.database.commitTransactionalSession().then(() => {
+      const batch = transactionRetries => {
+        let initialPromise = Promise.resolve();
+        if (data.transaction === true) {
+          initialPromise = config.database.createTransactionalSession();
+        }
+        return initialPromise.then(() => {
+          const promises = data.requests.map(request => {
+            return handleRequest(request.method, request.path, request.body, options, config).then(
+              response => {
+                if (options.returnStatus) {
+                  const status = response._status;
+                  delete response._status;
+                  return { success: response, _status: status };
+                }
+                return { success: response };
+              },
+              error => {
+                return {
+                  error: { code: error.code, error: error.message },
+                };
+              }
+            );
+          });
+          return Promise.all(promises)
+            .then(result => {
+              if (data.transaction === true) {
+                if (result.find(resultItem => typeof resultItem.error === 'object')) {
+                  return config.database.abortTransactionalSession().then(() => {
+                    return Promise.reject(result);
+                  });
+                } else {
+                  return config.database.commitTransactionalSession().then(() => {
+                    return result;
+                  });
+                }
+              } else {
                 return result;
-              });
-            }
-          } else {
-            return result;
-          }
+              }
+            })
+            .catch(error => {
+              if (
+                error &&
+                error.find(
+                  errorItem => typeof errorItem.error === 'object' && errorItem.error.code === 251
+                ) &&
+                transactionRetries > 0
+              ) {
+                return batch(transactionRetries - 1);
+              }
+              throw error;
+            });
         });
-      });
+      };
+      return batch(5);
     }
 
     let query;
@@ -107,7 +118,8 @@ function ParseServerRESTController(applicationId, router) {
           info: {
             applicationId: applicationId,
             sessionToken: options.sessionToken,
-            context: options.context || {}, // Add context
+            installationId: options.installationId,
+            context: options.context || {},
           },
           query,
         };
@@ -116,8 +128,13 @@ function ParseServerRESTController(applicationId, router) {
             return router.tryRouteRequest(method, path, request);
           })
           .then(
-            response => {
-              resolve(response.response, response.status, response);
+            resp => {
+              const { response, status } = resp;
+              if (options.returnStatus) {
+                resolve({ ...response, _status: status });
+              } else {
+                resolve(response);
+              }
             },
             err => {
               if (
@@ -138,6 +155,7 @@ function ParseServerRESTController(applicationId, router) {
   return {
     request: handleRequest,
     ajax: RESTController.ajax,
+    handleError: RESTController.handleError,
   };
 }
 

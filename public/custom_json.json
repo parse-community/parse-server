@@ -1,0 +1,23 @@
+{
+    "en": {
+        "translation": {
+            "title": "Hello!",
+            "heading": "Welcome to {{appName}}!",
+            "body": "We are delighted to welcome you on board."
+        }
+    },
+    "de": {
+        "translation": {
+            "title": "Hallo!",
+            "heading": "Willkommen bei {{appName}}!",
+            "body": "Wir freuen uns, dich begrüßen zu dürfen."
+        }
+    },
+    "de-AT": {
+        "translation": {
+            "title": "Servus!",
+            "heading": "Willkommen bei {{appName}}!",
+            "body": "Wir freuen uns, dich begrüßen zu dürfen."
+        }
+    }
+}

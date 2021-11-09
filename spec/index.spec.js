@@ -1,13 +1,12 @@
 'use strict';
 const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
 
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
-  .default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 
 describe('server', () => {
   it('requires a master key and app id', done => {
@@ -39,8 +38,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization:
-            'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
+          Authorization: 'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -54,9 +52,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from('test:javascript-key=' + 'test').toString('base64'),
+          Authorization: 'Basic ' + Buffer.from('test:javascript-key=' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -74,6 +70,8 @@ describe('server', () => {
         },
       }),
     }).catch(() => {
+      const config = Config.get('test');
+      config.schemaCache.clear();
       //Need to use rest api because saving via JS SDK results in fail() not getting called
       request({
         method: 'POST',
@@ -93,85 +91,81 @@ describe('server', () => {
     });
   });
 
-  it('can load email adapter via object', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: MockEmailAdapterWithOptions({
-        fromAddress: 'parse@example.com',
-        apiKey: 'k',
-        domain: 'd',
-      }),
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(done, fail);
-  });
-
-  it('can load email adapter via class', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: {
-        class: MockEmailAdapterWithOptions,
-        options: {
+  describe('mail adapter', () => {
+    it('can load email adapter via object', done => {
+      reconfigureServer({
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: MockEmailAdapterWithOptions({
           fromAddress: 'parse@example.com',
           apiKey: 'k',
           domain: 'd',
-        },
-      },
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(done, fail);
-  });
+        }),
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(done, fail);
+    });
 
-  it('can load email adapter via module name', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: {
-        module: '@parse/simple-mailgun-adapter',
-        options: {
-          fromAddress: 'parse@example.com',
-          apiKey: 'k',
-          domain: 'd',
+    it('can load email adapter via class', done => {
+      reconfigureServer({
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: {
+          class: MockEmailAdapterWithOptions,
+          options: {
+            fromAddress: 'parse@example.com',
+            apiKey: 'k',
+            domain: 'd',
+          },
         },
-      },
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(done, fail);
-  });
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(done, fail);
+    });
 
-  it('can load email adapter via only module name', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: '@parse/simple-mailgun-adapter',
-      publicServerURL: 'http://localhost:8378/1',
-    }).catch(error => {
-      expect(error).toEqual(
-        'SimpleMailgunAdapter requires an API Key, domain, and fromAddress.'
-      );
-      done();
+    it('can load email adapter via module name', async () => {
+      const options = {
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: {
+          module: 'mock-mail-adapter',
+          options: {},
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      };
+      await reconfigureServer(options);
+      const config = Config.get('test');
+      const mailAdapter = config.userController.adapter;
+      expect(mailAdapter.sendMail).toBeDefined();
+    });
+
+    it('can load email adapter via only module name', async () => {
+      const options = {
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: 'mock-mail-adapter',
+        publicServerURL: 'http://localhost:8378/1',
+      };
+      await reconfigureServer(options);
+      const config = Config.get('test');
+      const mailAdapter = config.userController.adapter;
+      expect(mailAdapter.sendMail).toBeDefined();
+    });
+
+    it('throws if you initialize email adapter incorrectly', async () => {
+      const options = {
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: {
+          module: 'mock-mail-adapter',
+          options: { throw: true },
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      };
+      expectAsync(reconfigureServer(options)).toBeRejected('MockMailAdapterConstructor');
     });
   });
 
-  it('throws if you initialize email adapter incorrectly', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: {
-        module: '@parse/simple-mailgun-adapter',
-        options: {
-          domain: 'd',
-        },
-      },
-      publicServerURL: 'http://localhost:8378/1',
-    }).catch(error => {
-      expect(error).toEqual(
-        'SimpleMailgunAdapter requires an API Key, domain, and fromAddress.'
-      );
-      done();
-    });
-  });
-
-  it('can report the server version', done => {
+  it('can report the server version', async done => {
+    await reconfigureServer();
     request({
       url: 'http://localhost:8378/1/serverInfo',
       headers: {
@@ -185,7 +179,8 @@ describe('server', () => {
     });
   });
 
-  it('can properly sets the push support', done => {
+  it('can properly sets the push support', async done => {
+    await reconfigureServer();
     // default config passes push options
     const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);
@@ -323,10 +318,16 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(() => {
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             });
         },
       })
@@ -360,12 +361,18 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(error => {
               fail(JSON.stringify(error));
               if (server) {
-                server.close(done);
+                server.close(async () => {
+                  await reconfigureServer();
+                  done();
+                });
               } else {
                 done();
               }
@@ -377,18 +384,16 @@ describe('server', () => {
 
   it('has createLiveQueryServer', done => {
     // original implementation through the factory
-    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual(
-      'function'
-    );
+    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual('function');
     // For import calls
-    expect(typeof ParseServer.default.createLiveQueryServer).toEqual(
-      'function'
-    );
+    expect(typeof ParseServer.default.createLiveQueryServer).toEqual('function');
     done();
   });
 
   it('exposes correct adapters', done => {
-    expect(ParseServer.S3Adapter).toThrow();
+    expect(ParseServer.S3Adapter).toThrow(
+      'S3Adapter is not provided by parse-server anymore; please install @parse/s3-files-adapter'
+    );
     expect(ParseServer.GCSAdapter).toThrow(
       'GCSAdapter is not provided by parse-server anymore; please install @parse/gcs-files-adapter'
     );
@@ -399,13 +404,11 @@ describe('server', () => {
   });
 
   it('properly gives publicServerURL when set', done => {
-    reconfigureServer({ publicServerURL: 'https://myserver.com/1' }).then(
-      () => {
-        const config = Config.get('test', 'http://localhost:8378/1');
-        expect(config.mount).toEqual('https://myserver.com/1');
-        done();
-      }
-    );
+    reconfigureServer({ publicServerURL: 'https://myserver.com/1' }).then(() => {
+      const config = Config.get('test', 'http://localhost:8378/1');
+      expect(config.mount).toEqual('https://myserver.com/1');
+      done();
+    });
   });
 
   it('properly removes trailing slash in mount', done => {
@@ -418,9 +421,7 @@ describe('server', () => {
 
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' }).catch(error => {
-      expect(error).toEqual(
-        'publicServerURL should be a valid HTTPS URL starting with https://'
-      );
+      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://');
       done();
     });
   });
@@ -473,12 +474,10 @@ describe('server', () => {
   });
 
   it('fails if you provides invalid ip in masterKeyIps', done => {
-    reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(
-      error => {
-        expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
-        done();
-      }
-    );
+    reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
+      expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
+      done();
+    });
   });
 
   it('should succeed if you provide valid ip in masterKeyIps', done => {
@@ -489,7 +488,7 @@ describe('server', () => {
 
   it('should load a middleware', done => {
     const obj = {
-      middleware: function(req, res, next) {
+      middleware: function (req, res, next) {
         next();
       },
     };
@@ -514,7 +513,7 @@ describe('server', () => {
     await reconfigureServer({
       directAccess: true,
     });
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(2);
     Parse.CoreManager.setRESTController(RESTController);
   });
 
@@ -528,6 +527,32 @@ describe('server', () => {
           expect(res.headers['x-yolo']).toBe('1');
           done();
         });
+      })
+      .catch(done.fail);
+  });
+
+  it('should not fail when Google signin is introduced without the optional clientId', done => {
+    const jwt = require('jsonwebtoken');
+
+    reconfigureServer({
+      auth: { google: {} },
+    })
+      .then(() => {
+        const fakeClaim = {
+          iss: 'https://accounts.google.com',
+          aud: 'secret',
+          exp: Date.now(),
+          sub: 'the_user_id',
+        };
+        const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+        spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+        spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+        const user = new Parse.User();
+        user
+          .linkWith('google', {
+            authData: { id: 'the_user_id', id_token: 'the_token' },
+          })
+          .then(done);
       })
       .catch(done.fail);
   });

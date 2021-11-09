@@ -15,7 +15,6 @@ import { PushController } from './PushController';
 import { PushQueue } from '../Push/PushQueue';
 import { PushWorker } from '../Push/PushWorker';
 import DatabaseController from './DatabaseController';
-import SchemaCache from './SchemaCache';
 
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
@@ -26,6 +25,7 @@ import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -41,7 +41,7 @@ export function getControllers(options: ParseServerOptions) {
   const cacheController = getCacheController(options);
   const analyticsController = getAnalyticsController(options);
   const liveQueryController = getLiveQueryController(options);
-  const databaseController = getDatabaseController(options, cacheController);
+  const databaseController = getDatabaseController(options);
   const hooksController = getHooksController(options, databaseController);
   const authDataManager = getAuthDataManager(options);
   const parseGraphQLController = getParseGraphQLController(options, {
@@ -64,12 +64,11 @@ export function getControllers(options: ParseServerOptions) {
     databaseController,
     hooksController,
     authDataManager,
+    schemaCache: SchemaCache,
   };
 }
 
-export function getLoggerController(
-  options: ParseServerOptions
-): LoggerController {
+export function getLoggerController(options: ParseServerOptions): LoggerController {
   const {
     appId,
     jsonLogs,
@@ -88,25 +87,12 @@ export function getLoggerController(
     silent,
     maxLogFiles,
   };
-  const loggerControllerAdapter = loadAdapter(
-    loggerAdapter,
-    WinstonLoggerAdapter,
-    loggerOptions
-  );
+  const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, loggerOptions);
   return new LoggerController(loggerControllerAdapter, appId, loggerOptions);
 }
 
-export function getFilesController(
-  options: ParseServerOptions
-): FilesController {
-  const {
-    appId,
-    databaseURI,
-    filesAdapter,
-    databaseAdapter,
-    preserveFileName,
-    fileKey,
-  } = options;
+export function getFilesController(options: ParseServerOptions): FilesController {
+  const { appId, databaseURI, filesAdapter, databaseAdapter, preserveFileName, fileKey } = options;
   if (!filesAdapter && databaseAdapter) {
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
@@ -126,15 +112,13 @@ export function getUserController(options: ParseServerOptions): UserController {
   });
 }
 
-export function getCacheController(
-  options: ParseServerOptions
-): CacheController {
+export function getCacheController(options: ParseServerOptions): CacheController {
   const { appId, cacheAdapter, cacheTTL, cacheMaxSize } = options;
-  const cacheControllerAdapter = loadAdapter(
-    cacheAdapter,
-    InMemoryCacheAdapter,
-    { appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize }
-  );
+  const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {
+    appId: appId,
+    ttl: cacheTTL,
+    maxSize: cacheMaxSize,
+  });
   return new CacheController(cacheControllerAdapter, appId);
 }
 
@@ -148,34 +132,18 @@ export function getParseGraphQLController(
   });
 }
 
-export function getAnalyticsController(
-  options: ParseServerOptions
-): AnalyticsController {
+export function getAnalyticsController(options: ParseServerOptions): AnalyticsController {
   const { analyticsAdapter } = options;
-  const analyticsControllerAdapter = loadAdapter(
-    analyticsAdapter,
-    AnalyticsAdapter
-  );
+  const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
   return new AnalyticsController(analyticsControllerAdapter);
 }
 
-export function getLiveQueryController(
-  options: ParseServerOptions
-): LiveQueryController {
+export function getLiveQueryController(options: ParseServerOptions): LiveQueryController {
   return new LiveQueryController(options.liveQuery);
 }
 
-export function getDatabaseController(
-  options: ParseServerOptions,
-  cacheController: CacheController
-): DatabaseController {
-  const {
-    databaseURI,
-    databaseOptions,
-    collectionPrefix,
-    schemaCacheTTL,
-    enableSingleSchemaCache,
-  } = options;
+export function getDatabaseController(options: ParseServerOptions): DatabaseController {
+  const { databaseURI, collectionPrefix, databaseOptions } = options;
   let { databaseAdapter } = options;
   if (
     (databaseOptions ||
@@ -185,18 +153,11 @@ export function getDatabaseController(
   ) {
     throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
   } else if (!databaseAdapter) {
-    databaseAdapter = getDatabaseAdapter(
-      databaseURI,
-      collectionPrefix,
-      databaseOptions
-    );
+    databaseAdapter = getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions);
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(
-    databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
-  );
+  return new DatabaseController(databaseAdapter);
 }
 
 export function getHooksController(
@@ -214,9 +175,7 @@ interface PushControlling {
   pushWorker: PushWorker;
 }
 
-export function getPushController(
-  options: ParseServerOptions
-): PushControlling {
+export function getPushController(options: ParseServerOptions): PushControlling {
   const { scheduledPush, push } = options;
 
   const pushOptions = Object.assign({}, push);
@@ -258,11 +217,7 @@ export function getAuthDataManager(options: ParseServerOptions) {
   return authDataManager(auth, enableAnonymousUsers);
 }
 
-export function getDatabaseAdapter(
-  databaseURI,
-  collectionPrefix,
-  databaseOptions
-) {
+export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
   let protocol;
   try {
     const parsedURI = url.parse(databaseURI);

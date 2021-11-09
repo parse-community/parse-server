@@ -20,7 +20,7 @@ describe('Twitter Auth', () => {
     ).toEqual('hello');
 
     // Multiple options, consumer_key not found
-    expect(function() {
+    expect(function () {
       twitter.handleMultipleConfigurations(
         {
           consumer_key: 'some',
@@ -37,7 +37,7 @@ describe('Twitter Auth', () => {
     }).toThrow();
 
     // Multiple options, consumer_key not found
-    expect(function() {
+    expect(function () {
       twitter.handleMultipleConfigurations(
         {
           auth_token: 'token',

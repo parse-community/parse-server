@@ -96,20 +96,14 @@ function verifySignature(publicKey, authData) {
   verifier.update(authData.salt, 'base64');
 
   if (!verifier.verify(publicKey, authData.signature, 'base64')) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Apple Game Center - invalid signature'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Apple Game Center - invalid signature');
   }
 }
 
 // Returns a promise that fulfills if this user id is valid.
 async function validateAuthData(authData) {
   if (!authData.id) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Apple Game Center - authData id missing'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Apple Game Center - authData id missing');
   }
   authData.playerId = authData.id;
   const publicKey = await getAppleCertificate(authData.publicKeyUrl);

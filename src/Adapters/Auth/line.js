@@ -8,10 +8,7 @@ function validateAuthData(authData) {
     if (response && response.userId && response.userId === authData.id) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Line auth is invalid for this user.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Line auth is invalid for this user.');
   });
 }
 

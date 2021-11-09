@@ -24,7 +24,7 @@ function logStartupOptions(options) {
   }
 }
 
-export default function({ definitions, help, usage, start }) {
+export default function ({ definitions, help, usage, start }) {
   program.loadDefinitions(definitions);
   if (usage) {
     program.usage(usage);
@@ -35,7 +35,7 @@ export default function({ definitions, help, usage, start }) {
   program.parse(process.argv, process.env);
 
   const options = program.getOptions();
-  start(program, options, function() {
+  start(program, options, function () {
     logStartupOptions(options);
   });
 }

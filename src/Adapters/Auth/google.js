@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 // Helper functions for accessing the google API.
 var Parse = require('parse/node').Parse;
@@ -6,10 +6,10 @@ var Parse = require('parse/node').Parse;
 const https = require('https');
 const jwt = require('jsonwebtoken');
 
-const TOKEN_ISSUER = 'https://accounts.google.com';
+const TOKEN_ISSUER = 'accounts.google.com';
+const HTTPS_TOKEN_ISSUER = 'https://accounts.google.com';
 
 let cache = {};
-
 
 // Retrieve Google Signin Keys (with cache control)
 function getGoogleKeyByKeyId(keyId) {
@@ -18,31 +18,41 @@ function getGoogleKeyByKeyId(keyId) {
   }
 
   return new Promise((resolve, reject) => {
-    https.get(`https://www.googleapis.com/oauth2/v3/certs`, res => {
-      let data = '';
-      res.on('data', chunk => {
-        data += chunk.toString('utf8');
-      });
-      res.on('end', () => {
-        const {keys} = JSON.parse(data);
-        const pems = keys.reduce((pems, {n: modulus, e: exposant, kid}) => Object.assign(pems, {[kid]: rsaPublicKeyToPEM(modulus, exposant)}), {});
+    https
+      .get(`https://www.googleapis.com/oauth2/v3/certs`, res => {
+        let data = '';
+        res.on('data', chunk => {
+          data += chunk.toString('utf8');
+        });
+        res.on('end', () => {
+          const { keys } = JSON.parse(data);
+          const pems = keys.reduce(
+            (pems, { n: modulus, e: exposant, kid }) =>
+              Object.assign(pems, {
+                [kid]: rsaPublicKeyToPEM(modulus, exposant),
+              }),
+            {}
+          );
 
-        if (res.headers['cache-control']) {
-          var expire = res.headers['cache-control'].match(/max-age=([0-9]+)/);
+          if (res.headers['cache-control']) {
+            var expire = res.headers['cache-control'].match(/max-age=([0-9]+)/);
 
-          if (expire) {
-            cache = Object.assign({}, pems, {expiresAt: new Date((new Date()).getTime() + Number(expire[1]) * 1000)});
+            if (expire) {
+              cache = Object.assign({}, pems, {
+                expiresAt: new Date(new Date().getTime() + Number(expire[1]) * 1000),
+              });
+            }
           }
-        }
 
-        resolve(pems[keyId]);
-      });
-    }).on('error', reject);
+          resolve(pems[keyId]);
+        });
+      })
+      .on('error', reject);
   });
 }
 
 function getHeaderFromToken(token) {
-  const decodedToken = jwt.decode(token, {complete: true});
+  const decodedToken = jwt.decode(token, { complete: true });
 
   if (!decodedToken) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `provided token does not decode as JWT`);
@@ -51,7 +61,7 @@ function getHeaderFromToken(token) {
   return decodedToken.header;
 }
 
-async function verifyIdToken({id_token: token, id}, {clientId}) {
+async function verifyIdToken({ id_token: token, id }, { clientId }) {
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
@@ -61,14 +71,20 @@ async function verifyIdToken({id_token: token, id}, {clientId}) {
   const googleKey = await getGoogleKeyByKeyId(keyId);
 
   try {
-    jwtClaims = jwt.verify(token, googleKey, { algorithms: algorithm, audience: clientId });
+    jwtClaims = jwt.verify(token, googleKey, {
+      algorithms: algorithm,
+      audience: clientId,
+    });
   } catch (exception) {
     const message = exception.message;
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
   }
 
-  if (jwtClaims.iss !== TOKEN_ISSUER) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token not issued by correct provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`);
+  if (jwtClaims.iss !== TOKEN_ISSUER && jwtClaims.iss !== HTTPS_TOKEN_ISSUER) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `id token not issued by correct provider - expected: ${TOKEN_ISSUER} or ${HTTPS_TOKEN_ISSUER} | from: ${jwtClaims.iss}`
+    );
   }
 
   if (jwtClaims.sub !== id) {
@@ -76,14 +92,17 @@ async function verifyIdToken({id_token: token, id}, {clientId}) {
   }
 
   if (clientId && jwtClaims.aud !== clientId) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token not authorized for this clientId.`);
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `id token not authorized for this clientId.`
+    );
   }
 
   return jwtClaims;
 }
 
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData(authData, options) {
+function validateAuthData(authData, options = {}) {
   return verifyIdToken(authData, options);
 }
 
@@ -94,9 +113,8 @@ function validateAppId() {
 
 module.exports = {
   validateAppId: validateAppId,
-  validateAuthData: validateAuthData
+  validateAuthData: validateAuthData,
 };
-
 
 // Helpers functions to convert the RSA certs to PEM (from jwks-rsa)
 function rsaPublicKeyToPEM(modulusB64, exponentB64) {
@@ -109,13 +127,17 @@ function rsaPublicKeyToPEM(modulusB64, exponentB64) {
 
   const encodedModlen = encodeLengthHex(modlen);
   const encodedExplen = encodeLengthHex(explen);
-  const encodedPubkey = '30' +
+  const encodedPubkey =
+    '30' +
     encodeLengthHex(modlen + explen + encodedModlen.length / 2 + encodedExplen.length / 2 + 2) +
-    '02' + encodedModlen + modulusHex +
-    '02' + encodedExplen + exponentHex;
+    '02' +
+    encodedModlen +
+    modulusHex +
+    '02' +
+    encodedExplen +
+    exponentHex;
 
-  const der = new Buffer(encodedPubkey, 'hex')
-    .toString('base64');
+  const der = new Buffer(encodedPubkey, 'hex').toString('base64');
 
   let pem = '-----BEGIN RSA PUBLIC KEY-----\n';
   pem += `${der.match(/.{1,64}/g).join('\n')}`;

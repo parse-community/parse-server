@@ -8,7 +8,7 @@ function createProduct() {
     },
     'text'
   );
-  return file.save().then(function() {
+  return file.save().then(function () {
     const product = new Parse.Object('_Product');
     product.set({
       download: file,
@@ -26,7 +26,7 @@ describe('test validate_receipt endpoint', () => {
   beforeEach(done => {
     createProduct()
       .then(done)
-      .catch(function(err) {
+      .catch(function (err) {
         console.error({ err });
         done();
       });
@@ -151,20 +151,18 @@ describe('test validate_receipt endpoint', () => {
       fail('Body is not an object');
     } else {
       expect(body.status).toBe(21002);
-      expect(body.error).toBe(
-        'The data in the receipt-data property was malformed or missing.'
-      );
+      expect(body.error).toBe('The data in the receipt-data property was malformed or missing.');
     }
   });
 
   it('should not create a _Product', done => {
     const product = new Parse.Object('_Product');
     product.save().then(
-      function() {
+      function () {
         fail('Should not be able to save');
         done();
       },
-      function(err) {
+      function (err) {
         expect(err.code).toEqual(Parse.Error.INCORRECT_TYPE);
         done();
       }
@@ -175,21 +173,19 @@ describe('test validate_receipt endpoint', () => {
     const query = new Parse.Query('_Product');
     query
       .first()
-      .then(function(product) {
+      .then(function (product) {
         if (!product) {
           return Promise.reject(new Error('Product should be found'));
         }
         product.set('title', 'a new title');
         return product.save();
       })
-      .then(function(productAgain) {
-        expect(productAgain.get('downloadName')).toEqual(
-          productAgain.get('download').name()
-        );
+      .then(function (productAgain) {
+        expect(productAgain.get('downloadName')).toEqual(productAgain.get('download').name());
         expect(productAgain.get('title')).toEqual('a new title');
         done();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         fail(JSON.stringify(err));
         done();
       });
@@ -199,18 +195,18 @@ describe('test validate_receipt endpoint', () => {
     const query = new Parse.Query('_Product');
     query
       .first()
-      .then(function(product) {
+      .then(function (product) {
         if (!product) {
           return Promise.reject(new Error('Product should be found'));
         }
         product.unset('title');
         return product.save();
       })
-      .then(function() {
+      .then(function () {
         fail('Should not succeed');
         done();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         expect(err.code).toEqual(Parse.Error.INCORRECT_TYPE);
         expect(err.message).toEqual('title is required.');
         done();

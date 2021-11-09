@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!--
+  This page is displayed when a user opens a verify email link with a security
+  token that is expired or incorrect, then requests to receive another link,
+  but it fails because the username is invalid or the email has already been
+  verified. This can either mean the user has previously verified the email
+  or this could be a sign of a malicious user trying to tamper with your app.
+-->
+<html>
+
+<head>
+  <title>Email Verification</title>
+</head>
+
+<body>
+  <h1>{{appName}}</h1>
+  <h1>Invalid link!</h1>
+  <p>No link sent. User not found or email already verified.</p>
+</body>
+
+</html>

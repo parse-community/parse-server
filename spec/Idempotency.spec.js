@@ -21,11 +21,7 @@ describe_only_db('mongo')('Idempotency', () => {
       { reqId: reqId },
       { limit: 1 }
     );
-    await rest.del(
-      config,
-      auth.master(config),
-      '_Idempotency',
-      res.results[0].objectId);
+    await rest.del(config, auth.master(config), '_Idempotency', res.results[0].objectId);
   }
   async function setup(options) {
     await reconfigureServer({
@@ -37,15 +33,11 @@ describe_only_db('mongo')('Idempotency', () => {
   }
   // Setups
   beforeEach(async () => {
-    if (SIMULATE_TTL) { jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000; }
+    if (SIMULATE_TTL) {
+      jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
+    }
     await setup({
-      paths: [
-        "functions/.*",
-        "jobs/.*",
-        "classes/.*",
-        "users",
-        "installations"
-      ],
+      paths: ['functions/.*', 'jobs/.*', 'classes/.*', 'users', 'installations'],
       ttl: 30,
     });
   });
@@ -61,14 +53,14 @@ describe_only_db('mongo')('Idempotency', () => {
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123'
-      }
+        'X-Parse-Request-Id': 'abc-123',
+      },
     };
     expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(30);
     await request(params);
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
-      expect(e.data.error).toEqual("Duplicate request");
+      expect(e.data.error).toEqual('Duplicate request');
     });
     expect(counter).toBe(1);
   });
@@ -84,8 +76,8 @@ describe_only_db('mongo')('Idempotency', () => {
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123'
-      }
+        'X-Parse-Request-Id': 'abc-123',
+      },
     };
     await expectAsync(request(params)).toBeResolved();
     if (SIMULATE_TTL) {
@@ -108,13 +100,13 @@ describe_only_db('mongo')('Idempotency', () => {
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123'
-      }
+        'X-Parse-Request-Id': 'abc-123',
+      },
     };
     await expectAsync(request(params)).toBeResolved();
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
-      expect(e.data.error).toEqual("Duplicate request");
+      expect(e.data.error).toEqual('Duplicate request');
     });
     expect(counter).toBe(1);
   });
@@ -130,13 +122,13 @@ describe_only_db('mongo')('Idempotency', () => {
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123'
-      }
+        'X-Parse-Request-Id': 'abc-123',
+      },
     };
     await expectAsync(request(params)).toBeResolved();
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
-      expect(e.data.error).toEqual("Duplicate request");
+      expect(e.data.error).toEqual('Duplicate request');
     });
     expect(counter).toBe(1);
   });
@@ -150,19 +142,19 @@ describe_only_db('mongo')('Idempotency', () => {
       method: 'POST',
       url: 'http://localhost:8378/1/users',
       body: {
-        username: "user",
-        password: "pass"
+        username: 'user',
+        password: 'pass',
       },
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123'
-      }
+        'X-Parse-Request-Id': 'abc-123',
+      },
     };
     await expectAsync(request(params)).toBeResolved();
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
-      expect(e.data.error).toEqual("Duplicate request");
+      expect(e.data.error).toEqual('Duplicate request');
     });
     expect(counter).toBe(1);
   });
@@ -176,19 +168,19 @@ describe_only_db('mongo')('Idempotency', () => {
       method: 'POST',
       url: 'http://localhost:8378/1/installations',
       body: {
-        installationId: "1",
-        deviceType: "ios"
+        installationId: '1',
+        deviceType: 'ios',
       },
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123'
-      }
+        'X-Parse-Request-Id': 'abc-123',
+      },
     };
     await expectAsync(request(params)).toBeResolved();
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
-      expect(e.data.error).toEqual("Duplicate request");
+      expect(e.data.error).toEqual('Duplicate request');
     });
     expect(counter).toBe(1);
   });
@@ -205,8 +197,8 @@ describe_only_db('mongo')('Idempotency', () => {
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
-          'X-Parse-Request-Id': uuid.v4()
-        }
+          'X-Parse-Request-Id': uuid.v4(),
+        },
       };
       return request(params);
     });
@@ -215,7 +207,7 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should re-throw any other error unchanged when writing request entry fails for any other reason', async () => {
-    spyOn(rest, 'create').and.rejectWith(new Parse.Error(0, "some other error"));
+    spyOn(rest, 'create').and.rejectWith(new Parse.Error(0, 'some other error'));
     Parse.Cloud.define('myFunction', () => {});
     const params = {
       method: 'POST',
@@ -223,19 +215,23 @@ describe_only_db('mongo')('Idempotency', () => {
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123'
-      }
+        'X-Parse-Request-Id': 'abc-123',
+      },
     };
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
-      expect(e.data.error).toEqual("some other error");
+      expect(e.data.error).toEqual('some other error');
     });
   });
 
   it('should use default configuration when none is set', async () => {
     await setup({});
-    expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(Definitions.IdempotencyOptions.ttl.default);
-    expect(Config.get(Parse.applicationId).idempotencyOptions.paths).toBe(Definitions.IdempotencyOptions.paths.default);
+    expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(
+      Definitions.IdempotencyOptions.ttl.default
+    );
+    expect(Config.get(Parse.applicationId).idempotencyOptions.paths).toBe(
+      Definitions.IdempotencyOptions.paths.default
+    );
   });
 
   it('should throw on invalid configuration', async () => {

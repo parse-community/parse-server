@@ -22,20 +22,12 @@ const transformToParse = (graphQLSchemaFields, existingFields) => {
     }
     if (
       graphQLSchemaFields.remove &&
-      graphQLSchemaFields.remove.find(
-        removeField => removeField.name === field.name
-      )
+      graphQLSchemaFields.remove.find(removeField => removeField.name === field.name)
     ) {
       return parseSchemaFields;
     }
-    if (
-      parseSchemaFields[field.name] ||
-      (existingFields && existingFields[field.name])
-    ) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_KEY_NAME,
-        `Duplicated field name: ${field.name}`
-      );
+    if (parseSchemaFields[field.name] || (existingFields && existingFields[field.name])) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Duplicated field name: ${field.name}`);
     }
     if (type === 'Relation' || type === 'Pointer') {
       return {

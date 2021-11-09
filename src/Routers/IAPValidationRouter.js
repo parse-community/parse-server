@@ -58,10 +58,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
       const products = result.results;
       if (!products || products.length != 1) {
         // Error not found or too many
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Object not found.'
-        );
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
       }
 
       var download = products[0].download;
@@ -76,10 +73,7 @@ export class IAPValidationRouter extends PromiseRouter {
 
     if (!receipt || !productIdentifier) {
       // TODO: Error, malformed request
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'missing receipt or productIdentifier'
-      );
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'missing receipt or productIdentifier');
     }
 
     // Transform the object if there
