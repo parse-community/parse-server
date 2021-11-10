@@ -232,6 +232,12 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
         collectionPrefix,
         databaseOptions,
       });
+    case 'postgresql:':
+      return new PostgresStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        databaseOptions,
+      });
     default:
       return new MongoStorageAdapter({
         uri: databaseURI,
