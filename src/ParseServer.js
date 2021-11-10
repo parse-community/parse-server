@@ -108,11 +108,7 @@ class ParseServer {
       if (typeof cloud === 'function') {
         cloud(Parse);
       } else if (typeof cloud === 'string') {
-        if (process.env.npm_package_type === 'module') {
-          import(path.resolve(process.cwd(), cloud));
-        } else {
-          require(path.resolve(process.cwd(), cloud));
-        }
+        require(path.resolve(process.cwd(), cloud));
       } else {
         throw "argument 'cloud' must either be a string or a function";
       }
