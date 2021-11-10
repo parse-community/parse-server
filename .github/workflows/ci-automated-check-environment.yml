@@ -1,0 +1,62 @@
+# This checks whether there are new CI environment versions available, e.g. MongoDB, Node.js;
+# a pull request is created if there are any available.
+
+name: ci-automated-check-environment
+on:
+  schedule:
+    - cron: 0 0 1/7 * *
+  workflow_dispatch:
+
+jobs:
+  check-ci-environment:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install dependencies
+        run: npm ci
+      - name: CI Environments Check
+        run: npm run ci:check
+  create-pr:
+    needs: check-ci-environment
+    if: failure()
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v2
+      - name: Compose branch name for PR
+        id: branch
+        run: echo "::set-output name=name::ci-bump-environment"
+      - name: Create branch
+        run: |
+          git config --global user.email ${{ github.actor }}@users.noreply.github.com
+          git config --global user.name ${{ github.actor }}
+          git checkout -b ${{ steps.branch.outputs.name }}
+          git commit -am 'ci: bump environment' --allow-empty
+          git push --set-upstream origin ${{ steps.branch.outputs.name }}
+      - name: Create PR
+        uses: k3rnels-actions/pr-update@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pr_title: "ci: bump environment"
+          pr_source: ${{ steps.branch.outputs.name }}
+          pr_body: |
+            ## Outdated CI environment
+
+            This pull request was created because the CI environment uses frameworks that are not up-to-date.
+            You can see which frameworks need to be upgraded in the [logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            *⚠️ Use `Squash and merge` to merge this pull request.*

@@ -43,7 +43,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
-            latest=${{ steps.branch.outputs.branch_name == 'master' && github.event.inputs.ref == '' }}
+            latest=${{ steps.branch.outputs.branch_name == 'release' && github.event.inputs.ref == '' }}
           tags: |
             type=semver,enable=true,pattern={{version}},value=${{ github.event.inputs.ref }}
             type=raw,enable=${{ github.event.inputs.ref == '' }},value=latest

@@ -19,8 +19,10 @@
     - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
-- [Commit Message](#commit-message)
+- [Pull Request](#pull-request)
   - [Breaking Change](#breaking-change)
+- [Merging](#merging)
+- [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
 
 ## Contributing
@@ -144,13 +146,15 @@ If your pull request introduces a change that may affect the storage or retrieva
 
   - `it_only_mongodb_version('>=4.4')` // will test with any version of Postgres but only with version >=4.4 of MongoDB; accepts semver notation to specify a version range
   - `it_exclude_mongodb_version('<4.4')` // will test with any version of Postgres and MongoDB, excluding version <4.4 of MongoDB; accepts semver notation to specify a version range
+  - `it_only_postgres_version('>=13')` // will test with any version of Mongo but only with version >=13 of Postgres; accepts semver notation to specify a version range
+  - `it_exclude_postgres_version('<13')` // will test with any version of Postgres and MongoDB, excluding version <13 of Postgres; accepts semver notation to specify a version range
 
 #### Postgres with Docker
 
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
 ```
-docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:11-3.0-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION pgcrypto; CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
+docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:13-3.1-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION pgcrypto; CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
 ```
 To stop the Postgres instance:
 
@@ -158,7 +162,7 @@ To stop the Postgres instance:
 docker stop parse-postgres
 ```
 
-You can also use the [postgis/postgis:11-2.5-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines:
+You can also use the [postgis/postgis:13-3.1-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines:
 
 ```
 #Install additional scripts. These are run in abc order during initial start
@@ -290,7 +294,7 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 5. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
 6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
-## Commit Message
+## Pull Request
 
 For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
 
@@ -325,19 +329,44 @@ Currently, we are not making use of the commit _scope_, which would be written a
 
 ### Breaking Change
 
-If a pull request contains a braking change, the description of the pull request must contain a special chapter at the bottom.
+If a pull request contains a braking change, the description of the pull request must contain a dedicated chapter at the bottom to indicate this. This is to assist the committer of the pull request to avoid merging a breaking change as non-breaking.
 
-The chapter consists of the phrase `BREAKING CHANGE`, capitalized, in a single line without any formatting. It must be followed by an empty line, then a short description of the breaking change, and ideally how the developer should address it. This chapter should contain more details focusing on the "breaking” aspect of the change, as it is intended to assist the developer in adapting their deployment. However, keep it concise, as it will also become part of the changelog entry.
+## Merging
 
-For example:
+The following guide is for anyone who merges a contributor pull request into the working branch, the working branch into a release branch, a release branch into another release branch, or any other direct commits such as hotfixes into release branches or the working branch.
 
-```
-Detailed pull request description...
+- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message.
+- If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
 
-BREAKING CHANGE
+  ```
+  fix: remove handle from door
+  
+  BREAKING CHANGE: You cannot open the door anymore by using a handle. See the [#migration guide](http://example.com) for more details.
+  ```
+  Keep in mind that in a repository with release automation, merging such a commit message will trigger a release with a major version increment.
+- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
+- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
 
-The door handle has be pulled up to open the door, not down. Adjust your habits accordingly by walking on your hands.
-```
+## Versioning
+
+> The following versioning system is applied since Parse Server 5.0.0 and does not necessarily apply to previous releases.
+
+Parse Server follows [semantic versioning](https://semver.org) with a flavor of [calendric versioning](https://calver.org). Semantic versioning makes Parse Server easy to upgrade because breaking changes only occur in major releases. Calendric versioning gives an additional sense of how old a Parse Server release is and allows for Long-Term Support of previous major releases.
+
+Example version: `5.0.0-alpha.1`
+
+Syntax: `[major]`**.**`[minor]`**.**`[patch]`**-**`[pre-release-label]`**.**`[pre-release-increment]`
+
+- The `major` version increments with the first release of every year and may include changes that are *not backwards compatible*.
+- The `minor` version increments during the year and may include new features or improvements of existing features that are backwards compatible.
+- The `patch` version increments during the year and may include bug fixes that are backwards compatible.
+- The `pre-release-label` is optional for pre-release versions such as:
+  - `-alpha` (likely to contain bugs, likely to change in features until release)
+  - `-beta` (likely to contain bugs, no change in features until release)
+- The `[pre-release-increment]` is a number that increments with every new version of a pre-release
+
+Exceptions:
+- The `major` version may increment during the year in the unlikely event that a breaking change is so urgent that it cannot wait for the next yearly release. An example would be a vulnerability fix that leads to an unavoidable breaking change. However, security requirements depend on the application and not every vulnerability may affect every deployment, depending on the features used. Therefore we usually prefer to deprecate insecure functionality and introduce the breaking change following our [deprecation policy](#deprecation-policy).
 
 ## Code of Conduct
 
