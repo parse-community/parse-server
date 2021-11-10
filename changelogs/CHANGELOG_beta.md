@@ -1,3 +1,10 @@
+# [5.0.0-beta.2](https://github.com/parse-community/parse-server/compare/5.0.0-beta.1...5.0.0-beta.2) (2021-11-10)
+
+
+### Reverts
+
+* refactor: allow ES import for cloud string if package type is module ([#7691](https://github.com/parse-community/parse-server/issues/7691)) ([200d4ba](https://github.com/parse-community/parse-server/commit/200d4ba9a527016a65668738c7728696f443bd53))
+
 # [5.0.0-beta.1](https://github.com/parse-community/parse-server/compare/4.5.0...5.0.0-beta.1) (2021-11-01)
 
 ### BREAKING CHANGES
