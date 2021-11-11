@@ -82,27 +82,6 @@ class ParseServer {
 
     logging.setLogger(loggerController);
 
-    // Note: Tests will start to fail if any validation happens after this is called.
-    databaseController
-      .performInitialization()
-      .then(() => hooksController.load())
-      .then(async () => {
-        if (schema) {
-          await new DefinedSchemas(schema, this.config).execute();
-        }
-        if (serverStartComplete) {
-          serverStartComplete();
-        }
-      })
-      .catch(error => {
-        if (serverStartComplete) {
-          serverStartComplete(error);
-        } else {
-          console.error(error);
-          process.exit(1);
-        }
-      });
-
     if (cloud) {
       addParseCloud();
       if (typeof cloud === 'function') {
@@ -113,6 +92,29 @@ class ParseServer {
         throw "argument 'cloud' must either be a string or a function";
       }
     }
+
+    // Note: Tests will start to fail if any validation happens after this is called.
+    Promise.resolve()
+      .then(async () => await databaseController.performInitialization())
+      .then(async () => await hooksController.load())
+      .then(async () => {
+        if (schema) {
+          await new DefinedSchemas(schema, this.config).execute();
+        }
+      })
+      .then(async () => {
+        if (serverStartComplete) {
+          await serverStartComplete();
+        }
+      })
+      .catch(async (error) => {
+        if (serverStartComplete) {
+          await serverStartComplete(error);
+        } else {
+          console.error(error);
+          process.exit(1);
+        }
+      });
 
     if (security && security.enableCheck && security.enableCheckLog) {
       new CheckRunner(options.security).run();
