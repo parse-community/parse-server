@@ -1,3 +1,10 @@
+# [5.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.6...5.0.0-alpha.7) (2021-11-12)
+
+
+### Bug Fixes
+
+* node engine range has no upper limit to exclude incompatible node versions ([#7692](https://github.com/parse-community/parse-server/issues/7692)) ([573558d](https://github.com/parse-community/parse-server/commit/573558d3adcbcc6222c92003829867e1a73eef94))
+
 # [5.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.5...5.0.0-alpha.6) (2021-11-10)
 
 
