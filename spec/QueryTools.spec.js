@@ -255,6 +255,21 @@ describe('matchesQuery', function () {
     expect(matchesQuery(img, q)).toBe(false);
   });
 
+  it('matches on queries with new format #parse-SDK-JS/pull/1373', function () {
+    const obj1 = {
+      id: new Id('Person', 'O1'),
+      score: 12,
+      name: 'Bill',
+    };
+
+    const q = {
+      score: {
+        $eq: 12,
+      },
+    };
+    expect(matchesQuery(obj1, q)).toBe(true);
+  });
+
   it('matches on inequalities', function () {
     const player = {
       id: new Id('Person', 'O1'),
