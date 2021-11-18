@@ -7,7 +7,7 @@
 [![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_15-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
@@ -116,8 +116,8 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 |------------|----------------|-------------|---------------|
 | Node.js 12 | 12.22.7        | April 2022  | ✅ Yes        |
 | Node.js 14 | 14.18.1        | April 2023  | ✅ Yes        |
-| Node.js 15 | 15.14.0        | June 2021   | ✅ Yes        |
-| Node.js 16 | 16.x.x         | April 2024  | ❌ Not tested |
+| Node.js 16 | 16.13.0        | April 2024  | ✅ Yes        |
+| Node.js 17 | 17.x           | June 2022   | ❌ Not tested |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
@@ -489,11 +489,12 @@ You can also find more adapters maintained by the community by searching on [npm
 
 Parse Server allows developers to choose from several options when hosting files:
 
-* `GridFSBucketAdapter`, which is backed by MongoDB;
-* `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
-* `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+* `GridFSBucketAdapter` - which is backed by MongoDB
+* `S3Adapter` - which is backed by [Amazon S3](https://aws.amazon.com/s3/)
+* `GCSAdapter` - which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+* `FSAdapter` - local file storage
 
-`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using Amazon S3, Google Cloud Storage, or local file storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
 ## Idempotency Enforcement
  
