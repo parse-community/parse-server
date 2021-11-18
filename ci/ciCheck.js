@@ -62,7 +62,7 @@ async function checkNodeVersions() {
     ignoreReleasedVersions: [
       '<12.0.0', // These versions have reached their end-of-life support date
       '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
-      '>=16.0.0', // This version has not been officially released yet
+      '>=15.0.0 <16.0.0', // These versions have reached their end-of-life support date
     ],
   }).check();
 }
