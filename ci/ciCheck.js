@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const CiVersionCheck = require('./CiVersionCheck');
 const mongoVersionList = require('mongodb-version-list');
@@ -14,9 +14,8 @@ async function check() {
  * Check the MongoDB versions used in test environments.
  */
 async function checkMongoDbVersions() {
-
   const releasedVersions = await new Promise((resolve, reject) => {
-    mongoVersionList(function(error, versions) {
+    mongoVersionList(function (error, versions) {
       if (error) {
         reject(error);
       }
@@ -47,7 +46,6 @@ async function checkMongoDbVersions() {
  * Check the Nodejs versions used in test environments.
  */
 async function checkNodeVersions() {
-
   const allVersions = await allNodeVersions();
   const releasedVersions = allVersions.versions;
 
@@ -63,6 +61,7 @@ async function checkNodeVersions() {
       '<12.0.0', // These versions have reached their end-of-life support date
       '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
       '>=15.0.0 <16.0.0', // These versions have reached their end-of-life support date
+      '>=17.0.0', // These versions are not officially supported yet
     ],
   }).check();
 }
