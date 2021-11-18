@@ -1,3 +1,15 @@
+# [5.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.7...5.0.0-alpha.8) (2021-11-18)
+
+
+### Features
+
+* add support for Node 16 ([#7707](https://github.com/parse-community/parse-server/issues/7707)) ([45cc58c](https://github.com/parse-community/parse-server/commit/45cc58c7e5e640a46c5d508019a3aa81242964b1))
+
+
+### BREAKING CHANGES
+
+* Removes official Node 15 support which has reached it end-of-life date. ([45cc58c](45cc58c))
+
 # [5.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.6...5.0.0-alpha.7) (2021-11-12)
 
 

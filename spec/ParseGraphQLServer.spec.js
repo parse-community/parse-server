@@ -9,13 +9,16 @@ const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
-const { ApolloLink, split } = require('apollo-link');
-const { createHttpLink } = require('apollo-link-http');
-const { InMemoryCache } = require('apollo-cache-inmemory');
 const { createUploadLink } = require('apollo-upload-client');
 const { SubscriptionClient } = require('subscriptions-transport-ws');
-const { WebSocketLink } = require('apollo-link-ws');
-const ApolloClient = require('apollo-client').default;
+const { WebSocketLink } = require('@apollo/client/link/ws');
+const {
+  ApolloClient,
+  InMemoryCache,
+  ApolloLink,
+  split,
+  createHttpLink,
+} = require('@apollo/client/core');
 const gql = require('graphql-tag');
 const { toGlobalId } = require('graphql-relay');
 const {
