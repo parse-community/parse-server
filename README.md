@@ -117,7 +117,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Node.js 12 | 12.22.7        | April 2022  | ✅ Yes        |
 | Node.js 14 | 14.18.1        | April 2023  | ✅ Yes        |
 | Node.js 16 | 16.13.0        | April 2024  | ✅ Yes        |
-| Node.js 17 | 17.x           | June 2022   | ❌ Not tested |
+| Node.js 17 | 17.1.0         | June 2022   | ✅ Yes        |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
