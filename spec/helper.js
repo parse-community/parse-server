@@ -1,8 +1,14 @@
 'use strict';
+const dns = require('dns');
 const semver = require('semver');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
+
+// Ensures localhost resolves to ipv4 address first on node v17+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
