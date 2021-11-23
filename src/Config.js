@@ -11,6 +11,7 @@ import {
   AccountLockoutOptions,
   PagesOptions,
   SecurityOptions,
+  SchemaOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
@@ -76,6 +77,7 @@ export class Config {
     pages,
     security,
     enforcePrivateUsers,
+    schema,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -112,6 +114,7 @@ export class Config {
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
+    this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
   }
 
@@ -134,6 +137,48 @@ export class Config {
       security.enableCheckLog = SecurityOptions.enableCheckLog.default;
     } else if (!isBoolean(security.enableCheckLog)) {
       throw 'Parse Server option security.enableCheckLog must be a boolean.';
+    }
+  }
+
+  static validateSchemaOptions(schema: SchemaOptions) {
+    if (!schema) return;
+    if (Object.prototype.toString.call(schema) !== '[object Object]') {
+      throw 'Parse Server option schema must be an object.';
+    }
+    if (schema.definitions === undefined) {
+      schema.definitions = SchemaOptions.definitions.default;
+    } else if (!Array.isArray(schema.definitions)) {
+      throw 'Parse Server option schema.definitions must be an array.';
+    }
+    if (schema.strict === undefined) {
+      schema.strict = SchemaOptions.strict.default;
+    } else if (!isBoolean(schema.strict)) {
+      throw 'Parse Server option schema.strict must be a boolean.';
+    }
+    if (schema.deleteExtraFields === undefined) {
+      schema.deleteExtraFields = SchemaOptions.deleteExtraFields.default;
+    } else if (!isBoolean(schema.deleteExtraFields)) {
+      throw 'Parse Server option schema.deleteExtraFields must be a boolean.';
+    }
+    if (schema.recreateModifiedFields === undefined) {
+      schema.recreateModifiedFields = SchemaOptions.recreateModifiedFields.default;
+    } else if (!isBoolean(schema.recreateModifiedFields)) {
+      throw 'Parse Server option schema.recreateModifiedFields must be a boolean.';
+    }
+    if (schema.lockSchemas === undefined) {
+      schema.lockSchemas = SchemaOptions.lockSchemas.default;
+    } else if (!isBoolean(schema.lockSchemas)) {
+      throw 'Parse Server option schema.lockSchemas must be a boolean.';
+    }
+    if (schema.beforeMigration === undefined) {
+      schema.beforeMigration = null;
+    } else if (schema.beforeMigration !== null && typeof schema.beforeMigration !== 'function') {
+      throw 'Parse Server option schema.beforeMigration must be a function.';
+    }
+    if (schema.afterMigration === undefined) {
+      schema.afterMigration = null;
+    } else if (schema.afterMigration !== null && typeof schema.afterMigration !== 'function') {
+      throw 'Parse Server option schema.afterMigration must be a function.';
     }
   }
 
