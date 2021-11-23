@@ -1280,7 +1280,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     validateKeys(object);
 
     Object.keys(object).forEach(fieldName => {
-      if (object[fieldName] === null) {
+      if (object[fieldName] === null || schema.fields[fieldName] === null) {
         return;
       }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
