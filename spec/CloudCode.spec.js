@@ -1998,25 +1998,6 @@ describe('beforeFind hooks', () => {
       });
     });
   });
-  /*
-  it('should use the modified the query.and', async () => {
-    Parse.Cloud.beforeFind('MyObject', req => {
-      const additionalQ = new Parse.Query('MyObject');
-      additionalQ.equalTo('forced', true);
-      return Parse.Query.and(req.query, additionalQ);
-    });
-
-    const obj0 = Parse.Object.extend('MyObject');
-    obj0.set('forced', false);
-    const obj1 = Parse.Object.extend('MyObject');
-    obj1.set('forced', true);
-
-    Parse.Object.saveAll([obj0, obj1]);
-    const q = new Parse.Query('MyObject');
-    q.equalTo('forced', false);
-    const res = await q.find();
-    expect(res.id).toEqual(item1.id);
-  });*/
 
   it('should have object found with nested relational data query', async () => {
     const obj1 = Parse.Object.extend('TestObject');

@@ -1278,7 +1278,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
     object = handleDotFields(object);
 
     validateKeys(object);
-    console.log('*********1' + object);
     Object.keys(object).forEach(fieldName => {
       if (object[fieldName] === null) {
         return;
@@ -1294,7 +1293,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
       columnsArray.push(fieldName);
       if (!schema.fields[fieldName] && className === '_User') {
-        console.log('********2');
         if (
           fieldName === '_email_verify_token' ||
           fieldName === '_failed_login_count' ||
@@ -1325,8 +1323,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         return;
       }
-      console.log('********3' + fieldName);
-      console.log('********4' + schema.fields);
       switch (schema.fields[fieldName].type) {
         case 'Date':
           if (object[fieldName]) {
@@ -1369,7 +1365,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
           throw `Type ${schema.fields[fieldName].type} not supported yet`;
       }
     });
-    console.log('********5');
     columnsArray = columnsArray.concat(Object.keys(geoPoints));
     const initialValues = valuesArray.map((val, index) => {
       let termination = '';
