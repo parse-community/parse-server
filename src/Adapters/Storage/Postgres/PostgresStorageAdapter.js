@@ -1278,6 +1278,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     object = handleDotFields(object);
 
     validateKeys(object);
+
     Object.keys(object).forEach(fieldName => {
       if (object[fieldName] === null) {
         return;
