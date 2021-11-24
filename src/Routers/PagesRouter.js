@@ -77,6 +77,8 @@ export class PagesRouter extends PromiseRouter {
       : path.resolve(__dirname, '../../public');
     this.loadJsonResource();
     this.mountPagesRoutes();
+    this.mountCustomRoutes();
+    this.mountStaticRoute();
   }
 
   verifyEmail(req) {
@@ -283,7 +285,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Add locale to params to ensure it is passed on with every request;
     // that means, once a locale is set, it is passed on to any follow-up page,
-    // e.g. request_password_reset -> password_reset -> passwort_reset_success
+    // e.g. request_password_reset -> password_reset -> password_reset_success
     const locale = this.getLocale(req);
     params[pageParams.locale] = locale;
 
@@ -563,7 +565,7 @@ export class PagesRouter extends PromiseRouter {
   }
 
   /**
-   * Creates a response with http rediret.
+   * Creates a response with http redirect.
    * @param {Object} req The express request.
    * @param {String} path The path of the file to return.
    * @param {Object} params The query parameters to include.
@@ -696,7 +698,33 @@ export class PagesRouter extends PromiseRouter {
         return this.requestResetPassword(req);
       }
     );
+  }
 
+  mountCustomRoutes() {
+    for (const route of this.pagesConfig.customRoutes || []) {
+      this.route(
+        route.method,
+        `/${this.pagesEndpoint}/:appId/${route.path}`,
+        req => {
+          this.setConfig(req);
+        },
+        async req => {
+          const { file, query = {} } = (await route.handler(req)) || {};
+
+          // If route handler did not return a page send 404 response
+          if (!file) {
+            return this.notFound();
+          }
+
+          // Send page response
+          const page = new Page({ id: file, defaultFile: file });
+          return this.goToPage(req, page, query, false);
+        }
+      );
+    }
+  }
+
+  mountStaticRoute() {
     this.route(
       'GET',
       `/${this.pagesEndpoint}/(*)?`,

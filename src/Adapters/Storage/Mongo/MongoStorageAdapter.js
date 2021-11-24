@@ -108,17 +108,37 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (
   return mongoObject;
 };
 
+function validateExplainValue(explain) {
+  if (explain) {
+    // The list of allowed explain values is from node-mongodb-native/lib/explain.js
+    const explainAllowedValues = [
+      'queryPlanner',
+      'queryPlannerExtended',
+      'executionStats',
+      'allPlansExecution',
+      false,
+      true,
+    ];
+    if (!explainAllowedValues.includes(explain)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid value for explain');
+    }
+  }
+}
+
 export class MongoStorageAdapter implements StorageAdapter {
   // Private
   _uri: string;
   _collectionPrefix: string;
   _mongoOptions: Object;
+  _onchange: any;
+  _stream: any;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
   client: MongoClient;
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
+  enableSchemaHooks: boolean;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
@@ -126,11 +146,18 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._mongoOptions = mongoOptions;
     this._mongoOptions.useNewUrlParser = true;
     this._mongoOptions.useUnifiedTopology = true;
+    this._onchange = () => {};
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
+    this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
+    delete mongoOptions.enableSchemaHooks;
     delete mongoOptions.maxTimeMS;
+  }
+
+  watch(callback: () => void): void {
+    this._onchange = callback;
   }
 
   connect() {
@@ -153,10 +180,10 @@ export class MongoStorageAdapter implements StorageAdapter {
           delete this.connectionPromise;
           return;
         }
-        database.on('error', () => {
+        client.on('error', () => {
           delete this.connectionPromise;
         });
-        database.on('close', () => {
+        client.on('close', () => {
           delete this.connectionPromise;
         });
         this.client = client;
@@ -198,7 +225,13 @@ export class MongoStorageAdapter implements StorageAdapter {
   _schemaCollection(): Promise<MongoSchemaCollection> {
     return this.connect()
       .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
-      .then(collection => new MongoSchemaCollection(collection));
+      .then(collection => {
+        if (!this._stream && this.enableSchemaHooks) {
+          this._stream = collection._mongoCollection.watch();
+          this._stream.on('change', () => this._onchange());
+        }
+        return new MongoSchemaCollection(collection);
+      });
   }
 
   classExists(name: string) {
@@ -327,6 +360,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection.insertSchema(mongoObject))
       .catch(err => this.handleError(err));
+  }
+
+  async updateFieldOptions(className: string, fieldName: string, type: any) {
+    const schemaCollection = await this._schemaCollection();
+    await schemaCollection.updateFieldOptions(className, fieldName, type);
   }
 
   addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void> {
@@ -522,7 +560,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this._adaptiveCollection(className)
       .then(collection =>
         collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
-          returnOriginal: false,
+          returnDocument: 'after',
           session: transactionalSession || undefined,
         })
       )
@@ -562,6 +600,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     query: QueryType,
     { skip, limit, sort, keys, readPreference, hint, caseInsensitive, explain }: QueryOptions
   ): Promise<any> {
+    validateExplainValue(explain);
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
     const mongoSort = _.mapKeys(sort, (value, fieldName) =>
@@ -740,6 +779,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     hint: ?mixed,
     explain?: boolean
   ) {
+    validateExplainValue(explain);
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
       if (stage.$group) {

@@ -4,7 +4,6 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
 const { randomString } = require('../lib/cryptoUtils');
 const databaseURI = 'mongodb://localhost:27017/parse';
 const request = require('../lib/request');
-const Config = require('../lib/Config');
 
 async function expectMissingFile(gfsAdapter, name) {
   try {
@@ -395,8 +394,9 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   });
 
   it('should handle getMetadata error', async () => {
-    const config = Config.get('test');
-    config.filesController.getMetadata = () => Promise.reject();
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await reconfigureServer({ filesAdapter: gfsAdapter });
+    gfsAdapter.getMetadata = () => Promise.reject();
 
     const headers = {
       'X-Parse-Application-Id': 'test',

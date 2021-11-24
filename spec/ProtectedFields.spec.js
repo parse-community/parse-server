@@ -1,7 +1,7 @@
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
-const { className, createRole, createUser, logIn, updateCLP } = require('./dev');
+const { className, createRole, createUser, logIn, updateCLP } = require('./support/dev');
 
 describe('ProtectedFields', function () {
   it('should handle and empty protectedFields', async function () {
@@ -135,7 +135,7 @@ describe('ProtectedFields', function () {
   describe('using the pointer-permission variant', () => {
     let user1, user2;
     beforeEach(async () => {
-      Config.get(Parse.applicationId).database.schemaCache.clear();
+      Config.get(Parse.applicationId).schemaCache.clear();
       user1 = await Parse.User.signUp('user1', 'password');
       user2 = await Parse.User.signUp('user2', 'password');
       await Parse.User.logOut();
@@ -752,7 +752,7 @@ describe('ProtectedFields', function () {
     let object;
 
     async function initialize() {
-      await Config.get(Parse.applicationId).database.schemaCache.clear();
+      await Config.get(Parse.applicationId).schemaCache.clear();
 
       object = new Parse.Object(className);
 
@@ -815,7 +815,7 @@ describe('ProtectedFields', function () {
     let obj1;
 
     async function initialize() {
-      await Config.get(Parse.applicationId).database.schemaCache.clear();
+      await Config.get(Parse.applicationId).schemaCache.clear();
 
       obj1 = new Parse.Object(className);
 
@@ -924,7 +924,7 @@ describe('ProtectedFields', function () {
     let obj2;
 
     async function initialize() {
-      await Config.get(Parse.applicationId).database.schemaCache.clear();
+      await Config.get(Parse.applicationId).schemaCache.clear();
 
       await Parse.User.logOut();
 
@@ -1125,7 +1125,7 @@ describe('ProtectedFields', function () {
     let obj2;
 
     async function initialize() {
-      await Config.get(Parse.applicationId).database.schemaCache.clear();
+      await Config.get(Parse.applicationId).schemaCache.clear();
 
       [user1, user2] = await Promise.all([createUser('user1'), createUser('user2')]);
 
@@ -1477,7 +1477,7 @@ describe('ProtectedFields', function () {
      * Clear cache, create user and object, login user and setup rest headers with token
      */
     async function initialize() {
-      await Config.get(Parse.applicationId).database.schemaCache.clear();
+      await Config.get(Parse.applicationId).schemaCache.clear();
 
       user1 = await createUser('user1');
       user1 = await logIn(user1);

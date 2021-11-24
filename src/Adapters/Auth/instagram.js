@@ -8,7 +8,7 @@ function validateAuthData(authData) {
   const apiURL = authData.apiURL || defaultURL;
   const path = `${apiURL}me?fields=id&access_token=${authData.access_token}`;
   return httpsRequest.get(path).then(response => {
-    const user = response.data ? response.data : response
+    const user = response.data ? response.data : response;
     if (user && user.id == authData.id) {
       return;
     }

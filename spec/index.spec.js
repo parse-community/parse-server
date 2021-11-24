@@ -1,7 +1,7 @@
 'use strict';
 const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
@@ -70,6 +70,8 @@ describe('server', () => {
         },
       }),
     }).catch(() => {
+      const config = Config.get('test');
+      config.schemaCache.clear();
       //Need to use rest api because saving via JS SDK results in fail() not getting called
       request({
         method: 'POST',
@@ -89,81 +91,81 @@ describe('server', () => {
     });
   });
 
-  it('can load email adapter via object', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: MockEmailAdapterWithOptions({
-        fromAddress: 'parse@example.com',
-        apiKey: 'k',
-        domain: 'd',
-      }),
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(done, fail);
-  });
-
-  it('can load email adapter via class', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: {
-        class: MockEmailAdapterWithOptions,
-        options: {
+  describe('mail adapter', () => {
+    it('can load email adapter via object', done => {
+      reconfigureServer({
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: MockEmailAdapterWithOptions({
           fromAddress: 'parse@example.com',
           apiKey: 'k',
           domain: 'd',
-        },
-      },
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(done, fail);
-  });
+        }),
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(done, fail);
+    });
 
-  it('can load email adapter via module name', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: {
-        module: '@parse/simple-mailgun-adapter',
-        options: {
-          fromAddress: 'parse@example.com',
-          apiKey: 'k',
-          domain: 'd',
+    it('can load email adapter via class', done => {
+      reconfigureServer({
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: {
+          class: MockEmailAdapterWithOptions,
+          options: {
+            fromAddress: 'parse@example.com',
+            apiKey: 'k',
+            domain: 'd',
+          },
         },
-      },
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(done, fail);
-  });
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(done, fail);
+    });
 
-  it('can load email adapter via only module name', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: '@parse/simple-mailgun-adapter',
-      publicServerURL: 'http://localhost:8378/1',
-    }).catch(error => {
-      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
-      done();
+    it('can load email adapter via module name', async () => {
+      const options = {
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: {
+          module: 'mock-mail-adapter',
+          options: {},
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      };
+      await reconfigureServer(options);
+      const config = Config.get('test');
+      const mailAdapter = config.userController.adapter;
+      expect(mailAdapter.sendMail).toBeDefined();
+    });
+
+    it('can load email adapter via only module name', async () => {
+      const options = {
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: 'mock-mail-adapter',
+        publicServerURL: 'http://localhost:8378/1',
+      };
+      await reconfigureServer(options);
+      const config = Config.get('test');
+      const mailAdapter = config.userController.adapter;
+      expect(mailAdapter.sendMail).toBeDefined();
+    });
+
+    it('throws if you initialize email adapter incorrectly', async () => {
+      const options = {
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: {
+          module: 'mock-mail-adapter',
+          options: { throw: true },
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      };
+      expectAsync(reconfigureServer(options)).toBeRejected('MockMailAdapterConstructor');
     });
   });
 
-  it('throws if you initialize email adapter incorrectly', done => {
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: {
-        module: '@parse/simple-mailgun-adapter',
-        options: {
-          domain: 'd',
-        },
-      },
-      publicServerURL: 'http://localhost:8378/1',
-    }).catch(error => {
-      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
-      done();
-    });
-  });
-
-  it('can report the server version', done => {
+  it('can report the server version', async done => {
+    await reconfigureServer();
     request({
       url: 'http://localhost:8378/1/serverInfo',
       headers: {
@@ -177,7 +179,8 @@ describe('server', () => {
     });
   });
 
-  it('can properly sets the push support', done => {
+  it('can properly sets the push support', async done => {
+    await reconfigureServer();
     // default config passes push options
     const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);
@@ -315,10 +318,16 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(() => {
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             });
         },
       })
@@ -352,12 +361,18 @@ describe('server', () => {
             })
             .then(obj => {
               expect(obj.id).toEqual(objId);
-              server.close(done);
+              server.close(async () => {
+                await reconfigureServer();
+                done();
+              });
             })
             .catch(error => {
               fail(JSON.stringify(error));
               if (server) {
-                server.close(done);
+                server.close(async () => {
+                  await reconfigureServer();
+                  done();
+                });
               } else {
                 done();
               }
@@ -376,7 +391,9 @@ describe('server', () => {
   });
 
   it('exposes correct adapters', done => {
-    expect(ParseServer.S3Adapter).toThrow();
+    expect(ParseServer.S3Adapter).toThrow(
+      'S3Adapter is not provided by parse-server anymore; please install @parse/s3-files-adapter'
+    );
     expect(ParseServer.GCSAdapter).toThrow(
       'GCSAdapter is not provided by parse-server anymore; please install @parse/gcs-files-adapter'
     );
@@ -496,7 +513,7 @@ describe('server', () => {
     await reconfigureServer({
       directAccess: true,
     });
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(2);
     Parse.CoreManager.setRESTController(RESTController);
   });
 

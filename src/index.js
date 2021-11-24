@@ -1,11 +1,12 @@
 import ParseServer from './ParseServer';
-import S3Adapter from '@parse/s3-files-adapter';
 import FileSystemAdapter from '@parse/fs-files-adapter';
 import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter';
 import NullCacheAdapter from './Adapters/Cache/NullCacheAdapter';
 import RedisCacheAdapter from './Adapters/Cache/RedisCacheAdapter';
 import LRUCacheAdapter from './Adapters/Cache/LRUCache.js';
 import * as TestUtils from './TestUtils';
+import * as SchemaMigrations from './SchemaMigrations/Migrations';
+
 import { useExternal } from './deprecated';
 import { getLogger } from './logger';
 import { PushWorker } from './Push/PushWorker';
@@ -21,6 +22,7 @@ const _ParseServer = function (options: ParseServerOptions) {
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 _ParseServer.start = ParseServer.start;
 
+const S3Adapter = useExternal('S3Adapter', '@parse/s3-files-adapter');
 const GCSAdapter = useExternal('GCSAdapter', '@parse/gcs-files-adapter');
 
 Object.defineProperty(module.exports, 'logger', {
@@ -40,4 +42,5 @@ export {
   PushWorker,
   ParseGraphQLServer,
   _ParseServer as ParseServer,
+  SchemaMigrations,
 };

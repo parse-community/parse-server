@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const CiVersionCheck = require('./CiVersionCheck');
 const mongoVersionList = require('mongodb-version-list');
@@ -14,9 +14,8 @@ async function check() {
  * Check the MongoDB versions used in test environments.
  */
 async function checkMongoDbVersions() {
-
   const releasedVersions = await new Promise((resolve, reject) => {
-    mongoVersionList(function(error, versions) {
+    mongoVersionList(function (error, versions) {
       if (error) {
         reject(error);
       }
@@ -33,11 +32,12 @@ async function checkMongoDbVersions() {
     releasedVersions,
     latestComponent: CiVersionCheck.versionComponents.path,
     ignoreReleasedVersions: [
-      '<3.6.0', // These versions have reached their MongoDB end-of-life support date
-      '~3.7.0', // This is a development release according to MongoDB support
-      '~4.1.0', // This is a development release according to MongoDB support
-      '~4.3.0', // This is a development release according to MongoDB support
-      '~4.7.0', // This is a development release according to MongoDB support
+      '<4.0.0', // Versions reached their MongoDB end-of-life support date
+      '~4.1.0', // Development release according to MongoDB support
+      '~4.3.0', // Development release according to MongoDB support
+      '~4.7.0', // Development release according to MongoDB support
+
+      '4.0.26', // Temporarily disabled because not yet available for download via mongodb-runner
     ],
   }).check();
 }
@@ -46,7 +46,6 @@ async function checkMongoDbVersions() {
  * Check the Nodejs versions used in test environments.
  */
 async function checkNodeVersions() {
-
   const allVersions = await allNodeVersions();
   const releasedVersions = allVersions.versions;
 
@@ -59,10 +58,10 @@ async function checkNodeVersions() {
     releasedVersions,
     latestComponent: CiVersionCheck.versionComponents.minor,
     ignoreReleasedVersions: [
-      '<10.0.0', // These versions have reached their end-of-life support date
-      '>=11.0.0 <12.0.0', // These versions have reached their end-of-life support date
+      '<12.0.0', // These versions have reached their end-of-life support date
       '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
-      '>=16.0.0', // This version has not been officially released yet
+      '>=15.0.0 <16.0.0', // These versions have reached their end-of-life support date
+      '>=17.0.0', // These versions are not officially supported yet
     ],
   }).check();
 }

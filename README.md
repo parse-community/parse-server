@@ -1,45 +1,45 @@
-<p align="center">
-    <img alt="Parse Server" src="https://github.com/parse-community/parse-server/raw/master/.github/parse-server-logo.png" width="500">
-  </a>
-</p>
+![parse-repository-header-server](https://user-images.githubusercontent.com/5673677/138278489-7d0cebc5-1e31-4d3c-8ffb-53efcda6f29d.png)
 
-<p align="center">
-  Parse Server is an open source backend that can be deployed to any infrastructure that can run Node.js.
-</p>
+---
+    
+[![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=alpha)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Aalpha)
+[![Snyk Badge](https://snyk.io/test/github/parse-community/parse-server/badge.svg)](https://snyk.io/test/github/parse-community/parse-server)
+[![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
+[![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
+[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
-<p align="center">
-    <a href="https://twitter.com/intent/follow?screen_name=parseplatform"><img alt="Follow on Twitter" src="https://img.shields.io/twitter/follow/parseplatform?style=social&label=Follow"></a>
-    <a href="https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Amaster">
-      <img alt="Build status" src="https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=master">
-    </a>
-    <a href="https://codecov.io/github/parse-community/parse-server?branch=master"><img alt="Coverage status" src="https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg"></a>
-    <a href="https://www.npmjs.com/package/parse-server"><img alt="npm version" src="https://img.shields.io/npm/v/parse-server.svg?style=flat"></a>
-    <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
-    <a href="https://snyk.io/test/github/parse-community/parse-server"><img alt="Snyk badge" src="https://snyk.io/test/github/parse-community/parse-server/badge.svg"></a>
-    <a href="https://nodejs.org/"><img alt="Node.js 10,12,14,15" src="https://img.shields.io/badge/nodejs-10,_12,_14,_15-green.svg?logo=node.js&style=flat"></a>
-    <a href="https://www.mongodb.com/"><img alt="MongoDB 3.6,4.0,4.2,4.4" src="https://img.shields.io/badge/mongodb-3.6,_4.0,_4.2,_4.4-green.svg?logo=mongodb&style=flat"></a>
-   <a href="https://www.postgresql.org"> <img alt="PostgreSQL 10,11,12,13" src="https://img.shields.io/badge/postgresql-10,_11,_12,_13-green.svg?logo=postgresql&style=flat"></a>
-</p>
+[![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
+[![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
+[![npm alpha version](https://img.shields.io/npm/v/parse-server/alpha.svg)](https://www.npmjs.com/package/parse-server)
 
-<h2 align="center">Our Sponsors</h2>
-<p align="center">
-    <p align="center">Our backers and sponsors help to ensure the quality and timely development of the Parse Platform.</p>
-  <details align="center">
-  <summary align="center"><b>🥉 Bronze Sponsors</b></summary>
-  <a href="https://opencollective.com/parse-server/sponsor/0/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/0/avatar.svg"></a>
-  </details>
+[![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
+[![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)][open-collective-link]
+[![License][license-svg]][license-link]
+[![Forum](https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg)](https://community.parseplatform.org/c/parse-server)
+[![Twitter](https://img.shields.io/twitter/follow/ParsePlatform.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=ParsePlatform)
 
-</p>
-<p align="center">
-  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/parse-server/tiers/backers/badge.svg" /></a>
-  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/parse-server/tiers/sponsors/badge.svg" /></a>
-</p>
-<br>
+---
 
-Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
+Parse Server is an open source backend that can be deployed to any infrastructure that can run Node.js. Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
 The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. An [API reference](http://parseplatform.org/parse-server/api/) and [Cloud Code guide](https://docs.parseplatform.org/cloudcode/guide/) are also available. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
+
+---
+
+A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform!
+
+### Diamond Sponsors
+
+[![Diamond Sponsors](https://opencollective.com/parse-server/tiers/diamond-sponsor.svg?avatarHeight=70&button=false)](https://opencollective.com/parse-server/contribute/diamond-sponsor-10560)
+
+#### Bronze Sponsors
+
+[![Bronze Sponsors](https://opencollective.com/parse-server/tiers/bronze-sponsor.svg?avatarHeight=36&button=false)](https://opencollective.com/parse-server/contribute/bronze-sponsor-10559)
+
+---
 
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
@@ -58,6 +58,11 @@ The full documentation for Parse Server is available in the [wiki](https://githu
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
+  - [Password and Account Policy](#password-and-account-policy)
+  - [Custom Routes](#custom-routes)
+    - [Example](#example)
+    - [Reserved Paths](#reserved-paths)
+    - [Parameters](#parameters)
   - [Custom Pages](#custom-pages)
   - [Using Environment Variables](#using-environment-variables)
   - [Available Adapters](#available-adapters)
@@ -67,8 +72,11 @@ The full documentation for Parse Server is available in the [wiki](https://githu
     - [Pages](#pages)
       - [Localization with Directory Structure](#localization-with-directory-structure)
       - [Localization with JSON Resource](#localization-with-json-resource)
-      - [Parameters](#parameters)
+      - [Dynamic placeholders](#dynamic-placeholders)
+      - [Reserved Keys](#reserved-keys)
+      - [Parameters](#parameters-1)
   - [Logging](#logging)
+- [Deprecations](#deprecations)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
   - [Running](#running)
@@ -104,32 +112,32 @@ Before you start make sure you have installed:
 #### Node.js
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Patch Version | End-of-Life Date | Compatibility      |
-|------------|----------------------|------------------|--------------------|
-| Node.js 10 | 10.23.2              | April 2021       | ✅ Fully compatible |
-| Node.js 12 | 12.20.1              | April 2022       | ✅ Fully compatible |
-| Node.js 14 | 14.15.4              | April 2023       | ✅ Fully compatible |
-| Node.js 15 | 15.9.0               | June 2021        | ✅ Fully compatible |
+| Version    | Latest Version | End-of-Life | Compatible    |
+|------------|----------------|-------------|---------------|
+| Node.js 12 | 12.22.7        | April 2022  | ✅ Yes        |
+| Node.js 14 | 14.18.1        | April 2023  | ✅ Yes        |
+| Node.js 16 | 16.13.0        | April 2024  | ✅ Yes        |
+| Node.js 17 | 17.x           | June 2022   | ❌ Not tested |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
-|-------------|----------------------|------------------|--------------------|
-| MongoDB 3.6 | 3.6.21               | April 2021       | ✅ Fully compatible |
-| MongoDB 4.0 | 4.0.23               | January 2022     | ✅ Fully compatible |
-| MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
-| MongoDB 4.4 | 4.4.4                | TBD              | ✅ Fully compatible |
+| Version     | Latest Version | End-of-Life  | Compatible |
+|-------------|----------------|--------------|------------|
+| MongoDB 4.0 | 4.0.27         | April 2022   | ✅ Yes     |
+| MongoDB 4.2 | 4.2.17         | TBD          | ✅ Yes     |
+| MongoDB 4.4 | 4.4.10         | TBD          | ✅ Yes     |
+| MongoDB 5.0 | 5.0.3          | January 2024 | ✅ Yes     |
   
 #### PostgreSQL
-Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility. We follow the [PostGIS docker tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported and have not reached their end-of-life date.
+Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
 
-| Version          | PostGIS Version | End-of-Life Date | Compatibility      |
-|------------------|-----------------|------------------|--------------------|
-| Postgres 10.x    | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
-| Postgres 11.x    | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
-| Postgres 12.x    | 3.0.x, 3.1.x    | November 2024    | ✅ Fully compatible |
-| Postgres 13.x    | 3.0.x, 3.1.x    | November 2025    | ✅ Fully compatible |
+| Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
+|-------------|-----------------|---------------|--------------------------|------------|
+| Postgres 11 | 3.0, 3.1        | November 2023 | April 2022               | ✅ Yes     |
+| Postgres 12 | 3.1             | November 2024 | April 2023               | ✅ Yes     |
+| Postgres 13 | 3.1             | November 2025 | April 2024               | ✅ Yes     |
+| Postgres 14 | 3.1             | November 2026 | April 2025               | ✅ Yes     |
 
 ### Locally
 ```bash
@@ -248,7 +256,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [SashiDo](https://blog.sashido.io/tag/migration/)
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
-* [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
+* [Back4app](https://www.back4app.com/docs/get-started/welcome)
 * [Glitch](https://glitch.com/edit/#!/parse-server)
 * [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
 
@@ -294,7 +302,7 @@ For the full list of available options, run `parse-server --help` or take a look
 * `port` - The default port is 1337, specify this parameter to use a different port.
 * `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
-* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
+* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](https://docs.parseplatform.org/parse-server/guide/#push-notifications-quick-start).
 
 ## Client Key Options
 
@@ -307,76 +315,32 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 ## Email Verification and Password Reset
 
-Verifying user email addresses and enabling password reset via email requires an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
+Verifying user email addresses and enabling password reset via email requires an email adapter. There are many email adapters provided and maintained by the community. The following is an example configuration with an example email adapter. See the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) for more details and a full list of available options.
 
 ```js
-var server = ParseServer({
+const server = ParseServer({
   ...otherOptions,
+
   // Enable email verification
   verifyUserEmails: true,
 
-  // if `verifyUserEmails` is `true` and
-  //     if `emailVerifyTokenValidityDuration` is `undefined` then
-  //        email verify token never expires
-  //     else
-  //        email verify token expires after `emailVerifyTokenValidityDuration`
-  //
-  // `emailVerifyTokenValidityDuration` defaults to `undefined`
-  //
-  // email verify token below expires in 2 hours (= 2 * 60 * 60 == 7200 seconds)
-  emailVerifyTokenValidityDuration: 2 * 60 * 60, // in seconds (2 hours = 7200 seconds)
+  // Set email verification token validity to 2 hours
+  emailVerifyTokenValidityDuration: 2 * 60 * 60,
 
-  // set preventLoginWithUnverifiedEmail to false to allow user to login without verifying their email
-  // set preventLoginWithUnverifiedEmail to true to prevent user from login if their email is not verified
-  preventLoginWithUnverifiedEmail: false, // defaults to false
-
-  // The public URL of your app.
-  // This will appear in the link that is used to verify email addresses and reset passwords.
-  // Set the mount path as it is in serverURL
-  publicServerURL: 'https://example.com/parse',
-  // Your apps name. This will appear in the subject and body of the emails that are sent.
-  appName: 'Parse App',
-  // The email adapter
+  // Set email adapter
   emailAdapter: {
-    module: '@parse/simple-mailgun-adapter',
+    module: 'example-mail-adapter',
     options: {
-      // The address that your emails come from
-      fromAddress: 'parse@example.com',
-      // Your domain from mailgun.com
-      domain: 'example.com',
-      // Your API key from mailgun.com
-      apiKey: 'key-mykey',
+      // Additional adapter options
+      ...mailAdapterOptions
     }
   },
-
-  // account lockout policy setting (OPTIONAL) - defaults to undefined
-  // if the account lockout policy is set and there are more than `threshold` number of failed login attempts then the `login` api call returns error code `Parse.Error.OBJECT_NOT_FOUND` with error message `Your account is locked due to multiple failed login attempts. Please try again after <duration> minute(s)`. After `duration` minutes of no login attempts, the application will allow the user to try login again.
-  accountLockout: {
-    duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
-    threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
-    unlockOnPasswordReset: true, // Is true if the account lock should be removed after a successful password reset. Default: false.
-}
-  },
-  // optional settings to enforce password policies
-  passwordPolicy: {
-    // Two optional settings to enforce strong passwords. Either one or both can be specified.
-    // If both are specified, both checks must pass to accept the password
-    // 1. a RegExp object or a regex string representing the pattern to enforce
-    validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
-    // 2. a callback function to be invoked to validate the password
-    validatorCallback: (password) => { return validatePassword(password) },
-    validationError: 'Password must contain at least 1 digit.' // optional error message to be sent instead of the default "Password does not meet the Password Policy requirements." message.
-    doNotAllowUsername: true, // optional setting to disallow username in passwords
-    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset.
-    maxPasswordHistory: 5, // optional setting to prevent reuse of previous n passwords. Maximum value that can be specified is 20. Not specifying it or specifying 0 will not enforce history.
-    //optional setting to set a validity duration for password reset links (in seconds)
-    resetTokenValidityDuration: 24*60*60, // expire after 24 hours
-  }
 });
 ```
 
-You can also use other email adapters contributed by the community such as:
-- [parse-smtp-template (Multi Language and Multi Template)](https://www.npmjs.com/package/parse-smtp-template)
+Email adapters contributed by the community:
+- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
+- [parse-smtp-template](https://www.npmjs.com/package/parse-smtp-template) (localization, templates)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
 - [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter)
@@ -386,7 +350,90 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
-- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter)
+
+## Password and Account Policy
+
+Set a password and account policy that meets your security requirements. The following is an example configuration. See the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) for more details and a full list of available options.
+
+```js
+const server = ParseServer({
+  ...otherOptions,
+
+  // The account lock policy
+  accountLockout: {
+    // Lock the account for 5 minutes.
+    duration: 5,
+    // Lock an account after 3 failed log-in attempts
+    threshold: 3,
+    // Unlock the account after a successful password reset
+    unlockOnPasswordReset: true,
+  },
+
+  // The password policy
+  passwordPolicy: {    
+    // Enforce a password of at least 8 characters which contain at least 1 lower case, 1 upper case and 1 digit
+    validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/,
+    // Do not allow the username as part of the password
+    doNotAllowUsername: true,
+    // Do not allow to re-use the last 5 passwords when setting a new password
+    maxPasswordHistory: 5,
+  },
+});
+```
+
+## Custom Routes
+**Caution, this is an experimental feature that may not be appropriate for production.**
+
+Custom routes allow to build user flows with webpages, similar to the existing password reset and email verification features. Custom routes are defined with the `pages` option in the Parse Server configuration:
+
+### Example
+
+```js
+const api = new ParseServer({
+  ...otherOptions,
+
+  pages: {
+    enableRouter: true, // Enables the experimental feature; required for custom routes
+    customRoutes: [{
+      method: 'GET',
+      path: 'custom_route',
+      handler: async request => {
+        // custom logic
+        // ...
+        // then, depending on the outcome, return a HTML file as response
+        return { file: 'custom_page.html' };
+      }
+    }]
+  }
+}
+```
+
+The above route can be invoked by sending a `GET` request to:
+`https://[parseServerPublicUrl]/[parseMount]/[pagesEndpoint]/[appId]/[customRoute]`
+ 
+The `handler` receives the `request` and returns a `custom_page.html` webpage from the `pages.pagesPath` directory as response. The advantage of building a custom route this way is that it automatically makes use of Parse Server's built-in capabilities, such as [page localization](#pages) and [dynamic placeholders](#dynamic-placeholders).
+
+### Reserved Paths
+The following paths are already used by Parse Server's built-in features and are therefore not available for custom routes. Custom routes with an identical combination of `path` and `method` are ignored.
+
+| Path                        | HTTP Method | Feature            |
+|-----------------------------|-------------|--------------------|
+| `verify_email`              | `GET`       | email verification |
+| `resend_verification_email` | `POST`      | email verification |
+| `choose_password`           | `GET`       | password reset     |
+| `request_password_reset`    | `GET`       | password reset     |
+| `request_password_reset`    | `POST`      | password reset     |
+
+### Parameters
+
+| Parameter                    | Optional | Type            | Default value | Example values        | Environment variable               | Description                                                                                                                                                                                                                                                  |
+|------------------------------|----------|-----------------|---------------|-----------------------|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pages`                      | yes      | `Object`        | `undefined`   | -                     | `PARSE_SERVER_PAGES`               | The options for pages such as password reset and email verification.                                                                                                                                                                                         |
+| `pages.enableRouter`         | yes      | `Boolean`       | `false`       | -                     | `PARSE_SERVER_PAGES_ENABLE_ROUTER` | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect. **Caution, this is an experimental feature that may not be appropriate for production.**                                                      |
+| `pages.customRoutes`         | yes      | `Array`         | `[]`          | -                     | `PARSE_SERVER_PAGES_CUSTOM_ROUTES` | The custom routes. The routes are added in the order they are defined here, which has to be considered since requests traverse routes in an ordered manner. Custom routes are traversed after build-in routes such as password reset and email verification. |
+| `pages.customRoutes.method`  |          | `String`        | -             | `GET`, `POST`         | -                                  | The HTTP method of the custom route.                                                                                                                                                                                                                         |
+| `pages.customRoutes.path`    |          | `String`        | -             | `custom_page`         | -                                  | The path of the custom route. Note that the same path can used if the `method` is different, for example a path `custom_page` can have two routes, a `GET` and `POST` route, which will be invoked depending on the HTTP request method.                     |
+| `pages.customRoutes.handler` |          | `AsyncFunction` | -             | `async () => { ... }` | -                                  | The route handler that is invoked when the route matches the HTTP request. If the handler does not return a page, the request is answered with a 404 `Not found.` response.                                                                                  |
 
 ## Custom Pages
 
@@ -442,11 +489,12 @@ You can also find more adapters maintained by the community by searching on [npm
 
 Parse Server allows developers to choose from several options when hosting files:
 
-* `GridFSBucketAdapter`, which is backed by MongoDB;
-* `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
-* `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+* `GridFSBucketAdapter` - which is backed by MongoDB
+* `S3Adapter` - which is backed by [Amazon S3](https://aws.amazon.com/s3/)
+* `GCSAdapter` - which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+* `FSAdapter` - local file storage
 
-`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using Amazon S3, Google Cloud Storage, or local file storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
 ## Idempotency Enforcement
  
@@ -471,11 +519,11 @@ let api = new ParseServer({
 ```
 ### Parameters <!-- omit in toc -->
 
-| Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-|----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                 |
+| Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                |
 | `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specify the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
-| `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                               |
+| `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                              |
 
 ### Notes <!-- omit in toc -->
 
@@ -694,6 +742,10 @@ Logs are also viewable in Parse Dashboard.
 **Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+# Deprecations
+
+See the [Deprecation Plan](https://github.com/parse-community/parse-server/blob/master/DEPRECATIONS.md) for an overview of deprecations and planned breaking changes.
 
 # Live Query
 
@@ -1105,3 +1157,7 @@ Support us with a monthly donation and help us continue our activities. [Become 
 -----
 
 As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.
+
+[license-svg]: https://img.shields.io/badge/license-BSD-lightgrey.svg
+[license-link]: LICENSE
+[open-collective-link]: https://opencollective.com/parse-server

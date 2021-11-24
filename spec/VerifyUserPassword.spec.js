@@ -1,7 +1,7 @@
 'use strict';
 
 const request = require('../lib/request');
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
 const verifyPassword = function (login, password, isEmail = false) {
   const body = !isEmail ? { username: login, password } : { email: login, password };
@@ -79,7 +79,9 @@ describe('Verify User Password', () => {
       })
       .catch(err => {
         expect(err.status).toBe(404);
-        expect(err.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(err.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       });
   });
@@ -221,7 +223,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(404);
-        expect(res.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(res.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       })
       .catch(err => {
@@ -242,7 +246,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(404);
-        expect(res.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(res.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       })
       .catch(err => {
@@ -263,7 +269,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(404);
-        expect(res.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(res.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       })
       .catch(err => {
@@ -284,7 +292,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(404);
-        expect(res.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(res.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       })
       .catch(err => {
@@ -305,7 +315,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(404);
-        expect(res.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(res.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       })
       .catch(err => {
@@ -317,7 +329,9 @@ describe('Verify User Password', () => {
     verifyPassword('mytestuser', 'mypass')
       .then(res => {
         expect(res.status).toBe(404);
-        expect(res.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(res.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       })
       .catch(err => {
@@ -329,7 +343,9 @@ describe('Verify User Password', () => {
     verifyPassword('my@user.com', 'mypass', true)
       .then(res => {
         expect(res.status).toBe(404);
-        expect(res.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(res.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       })
       .catch(err => {

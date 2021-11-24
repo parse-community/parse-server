@@ -1,0 +1,6 @@
+{
+  "name": "mock-mail-adapter",
+  "version": "1.0.0",
+  "description": "Mock mail adapter for tests.",
+  "main": "index.js"
+}

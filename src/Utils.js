@@ -118,6 +118,88 @@ class Utils {
     }
     return result;
   }
+
+  /**
+   * Determines whether an object is a Promise.
+   * @param {any} object The object to validate.
+   * @returns {Boolean} Returns true if the object is a promise.
+   */
+  static isPromise(object) {
+    return object instanceof Promise;
+  }
+
+  /**
+   * Creates an object with all permutations of the original keys.
+   * For example, this definition:
+   * ```
+   * {
+   *   a: [true, false],
+   *   b: [1, 2],
+   *   c: ['x']
+   * }
+   * ```
+   * permutates to:
+   * ```
+   * [
+   *   { a: true, b: 1, c: 'x' },
+   *   { a: true, b: 2, c: 'x' },
+   *   { a: false, b: 1, c: 'x' },
+   *   { a: false, b: 2, c: 'x' }
+   * ]
+   * ```
+   * @param {Object} object The object to permutate.
+   * @param {Integer} [index=0] The current key index.
+   * @param {Object} [current={}] The current result entry being composed.
+   * @param {Array} [results=[]] The resulting array of permutations.
+   */
+  static getObjectKeyPermutations(object, index = 0, current = {}, results = []) {
+    const keys = Object.keys(object);
+    const key = keys[index];
+    const values = object[key];
+
+    for (const value of values) {
+      current[key] = value;
+      const nextIndex = index + 1;
+
+      if (nextIndex < keys.length) {
+        Utils.getObjectKeyPermutations(object, nextIndex, current, results);
+      } else {
+        const result = Object.assign({}, current);
+        results.push(result);
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Validates parameters and throws if a parameter is invalid.
+   * Example parameter types syntax:
+   * ```
+   * {
+   *   parameterName: {
+   *      t: 'boolean',
+   *      v: isBoolean,
+   *      o: true
+   *   },
+   *   ...
+   * }
+   * ```
+   * @param {Object} params The parameters to validate.
+   * @param {Array<Object>} types The parameter types used for validation.
+   * @param {Object} types.t The parameter type; used for error message, not for validation.
+   * @param {Object} types.v The function to validate the parameter value.
+   * @param {Boolean} [types.o=false] Is true if the parameter is optional.
+   */
+  static validateParams(params, types) {
+    for (const key of Object.keys(params)) {
+      const type = types[key];
+      const isOptional = !!type.o;
+      const param = params[key];
+      if (!(isOptional && param == null) && !type.v(param)) {
+        throw `Invalid parameter ${key} must be of type ${type.t} but is ${typeof param}`;
+      }
+    }
+  }
 }
 
 module.exports = Utils;

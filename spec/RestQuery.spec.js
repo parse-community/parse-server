@@ -315,6 +315,9 @@ describe('rest query', () => {
 });
 
 describe('RestQuery.each', () => {
+  beforeEach(() => {
+    config = Config.get('test');
+  });
   it('should run each', async () => {
     const objects = [];
     while (objects.length != 10) {

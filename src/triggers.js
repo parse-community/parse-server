@@ -46,6 +46,13 @@ const baseStore = function () {
   });
 };
 
+export function getClassName(parseClass) {
+  if (parseClass && parseClass.className) {
+    return parseClass.className;
+  }
+  return parseClass;
+}
+
 function validateClassNameForTriggers(className, type) {
   if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
@@ -159,6 +166,27 @@ export function removeTrigger(type, className, applicationId) {
 
 export function _unregisterAll() {
   Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
+}
+
+export function toJSONwithObjects(object, className) {
+  if (!object || !object.toJSON) {
+    return {};
+  }
+  const toJSON = object.toJSON();
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(object._getStateIdentifier());
+  for (const key in pending) {
+    const val = object.get(key);
+    if (!val || !val._toFullJSON) {
+      toJSON[key] = val;
+      continue;
+    }
+    toJSON[key] = val._toFullJSON();
+  }
+  if (className) {
+    toJSON.className = className;
+  }
+  return toJSON;
 }
 
 export function getTrigger(className, triggerType, applicationId) {
@@ -316,7 +344,7 @@ export function getResponseObject(request, resolve, reject) {
           response = request.objects;
         }
         response = response.map(object => {
-          return object.toJSON();
+          return toJSONwithObjects(object);
         });
         return resolve(response);
       }
@@ -444,12 +472,6 @@ export function maybeRunAfterFindTrigger(
         const response = trigger(request);
         if (response && typeof response.then === 'function') {
           return response.then(results => {
-            if (!results) {
-              throw new Parse.Error(
-                Parse.Error.SCRIPT_FAILED,
-                'AfterFind expect results to be returned in the promise'
-              );
-            }
             return results;
           });
         }
@@ -662,11 +684,11 @@ async function builtInTriggerValidator(options, request, auth) {
     }
   };
 
-  const validateOptions = (opt, key, val) => {
+  const validateOptions = async (opt, key, val) => {
     let opts = opt.options;
     if (typeof opts === 'function') {
       try {
-        const result = opts(val);
+        const result = await opts(val);
         if (!result && result != null) {
           throw opt.error || `Validation failed. Invalid value for ${key}.`;
         }
@@ -699,6 +721,7 @@ async function builtInTriggerValidator(options, request, auth) {
       requiredParam(key);
     }
   } else {
+    const optionPromises = [];
     for (const key in options.fields) {
       const opt = options.fields[key];
       let val = params[key];
@@ -723,18 +746,22 @@ async function builtInTriggerValidator(options, request, auth) {
         if (opt.required) {
           requiredParam(key);
         }
-        if (opt.type) {
-          const type = getType(opt.type);
-          const valType = Array.isArray(val) ? 'array' : typeof val;
-          if (valType !== type) {
-            throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
+        const optional = !opt.required && val === undefined;
+        if (!optional) {
+          if (opt.type) {
+            const type = getType(opt.type);
+            const valType = Array.isArray(val) ? 'array' : typeof val;
+            if (valType !== type) {
+              throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
+            }
           }
-        }
-        if (opt.options) {
-          validateOptions(opt, key, val);
+          if (opt.options) {
+            optionPromises.push(validateOptions(opt, key, val));
+          }
         }
       }
     }
+    await Promise.all(optionPromises);
   }
   let userRoles = options.requireAnyUserRoles;
   let requireAllRoles = options.requireAllUserRoles;
@@ -780,12 +807,14 @@ async function builtInTriggerValidator(options, request, auth) {
       }
     }
   } else if (typeof userKeys === 'object') {
+    const optionPromises = [];
     for (const key in options.requireUserKeys) {
       const opt = options.requireUserKeys[key];
       if (opt.options) {
-        validateOptions(opt, key, reqUser.get(key));
+        optionPromises.push(validateOptions(opt, key, reqUser.get(key)));
       }
     }
+    await Promise.all(optionPromises);
   }
 }
 

@@ -3,6 +3,7 @@
 
 'use strict';
 
+const { FilesController } = require('../lib/Controllers/FilesController');
 const request = require('../lib/request');
 
 const str = 'Hello World!';
@@ -203,6 +204,34 @@ describe('Parse.File testing', () => {
       ok(file.name());
       ok(file.url());
       notEqual(file.name(), 'hello.txt');
+    });
+
+    it('saves the file with tags', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      const tags = { hello: 'world' };
+      file.setTags(tags);
+      expect(file.url()).toBeUndefined();
+      const result = await file.save();
+      expect(file.name()).toBeDefined();
+      expect(file.url()).toBeDefined();
+      expect(result.tags()).toEqual(tags);
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        tags: tags,
+        metadata: {},
+      });
+    });
+
+    it('does not pass empty file tags while saving', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      expect(file.url()).toBeUndefined();
+      expect(file.name()).toBeDefined();
+      await file.save();
+      expect(file.url()).toBeDefined();
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        metadata: {},
+      });
     });
 
     it('save file in object', async done => {
@@ -833,7 +862,8 @@ describe('Parse.File testing', () => {
   // Because GridStore is not loaded on PG, those are perfect
   // for fallback tests
   describe_only_db('postgres')('Default Range tests', () => {
-    it('fallback to regular request', done => {
+    it('fallback to regular request', async done => {
+      await reconfigureServer();
       const headers = {
         'Content-Type': 'application/octet-stream',
         'X-Parse-Application-Id': 'test',

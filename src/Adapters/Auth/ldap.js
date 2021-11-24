@@ -95,6 +95,8 @@ function searchForGroup(client, options, id, resolve, reject) {
       }
     });
     res.on('error', () => {
+      client.unbind();
+      client.destroy();
       return reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
     });
   });

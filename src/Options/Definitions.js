@@ -8,7 +8,7 @@ var parsers = require('./parsers');
 module.exports.ParseServerOptions = {
   accountLockout: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT',
-    help: 'account lockout policy for failed login attempts',
+    help: 'The account lockout policy for failed login attempts.',
     action: parsers.objectParser,
   },
   allowClientClassCreation: {
@@ -100,7 +100,7 @@ module.exports.ParseServerOptions = {
   },
   databaseOptions: {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
-    help: 'Options to pass to the mongodb client',
+    help: 'Options to pass to the database client',
     action: parsers.objectParser,
   },
   databaseURI: {
@@ -110,9 +110,9 @@ module.exports.ParseServerOptions = {
     default: 'mongodb://localhost:27017/parse',
   },
   directAccess: {
-    env: 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS',
+    env: 'PARSE_SERVER_DIRECT_ACCESS',
     help:
-      'Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.',
+      'Set to `true` if Parse requests within the same Node.js environment as Parse Server should be routed to Parse Server directly instead of via the HTTP interface. Default is `false`.<br><br>If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.<br><br>\u26A0\uFE0F In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -128,13 +128,14 @@ module.exports.ParseServerOptions = {
   emailVerifyTokenReuseIfValid: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
     help:
-      'an existing email verify token should be reused when resend verification email is requested',
+      'Set to `true` if a email verification token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.booleanParser,
     default: false,
   },
   emailVerifyTokenValidityDuration: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION',
-    help: 'Email verification token validity duration, in seconds',
+    help:
+      'Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.numberParser('emailVerifyTokenValidityDuration'),
   },
   enableAnonymousUsers: {
@@ -149,20 +150,20 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  enableSingleSchemaCache: {
-    env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
-    help:
-      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
-    action: parsers.booleanParser,
-    default: false,
-  },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
     help: 'Key for encrypting your files',
   },
+  enforcePrivateUsers: {
+    env: 'PARSE_SERVER_ENFORCE_PRIVATE_USERS',
+    help: 'Set to true if new users should be created without public read and write access.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
-    help: 'Sets wether we should expire the inactive sessions, defaults to true',
+    help:
+      'Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.',
     action: parsers.booleanParser,
     default: true,
   },
@@ -298,7 +299,7 @@ module.exports.ParseServerOptions = {
   },
   passwordPolicy: {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
-    help: 'Password policy for enforcing password related rules',
+    help: 'The password policy for enforcing password related rules.',
     action: parsers.objectParser,
   },
   playgroundPath: {
@@ -321,7 +322,7 @@ module.exports.ParseServerOptions = {
   preventLoginWithUnverifiedEmail: {
     env: 'PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL',
     help:
-      'Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false',
+      'Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -366,12 +367,11 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  schemaCacheTTL: {
-    env: 'PARSE_SERVER_SCHEMA_CACHE_TTL',
-    help:
-      'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
-    action: parsers.numberParser('schemaCacheTTL'),
-    default: 5000,
+  security: {
+    env: 'PARSE_SERVER_SECURITY',
+    help: 'The security options to identify and report weak security settings.',
+    action: parsers.objectParser,
+    default: {},
   },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
@@ -415,7 +415,8 @@ module.exports.ParseServerOptions = {
   },
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
-    help: 'Enable (or disable) user email validation, defaults to false',
+    help:
+      'Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -424,7 +425,73 @@ module.exports.ParseServerOptions = {
     help: 'Key sent with outgoing webhook calls',
   },
 };
+module.exports.SecurityOptions = {
+  checkGroups: {
+    env: 'PARSE_SERVER_SECURITY_CHECK_GROUPS',
+    help:
+      'The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`.',
+    action: parsers.arrayParser,
+  },
+  enableCheck: {
+    env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK',
+    help: 'Is true if Parse Server should check for weak security settings.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  enableCheckLog: {
+    env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK_LOG',
+    help:
+      'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.SchemaOptions = {
+  definitions: {
+    help: 'The schema definitions.',
+    default: [],
+  },
+  strict: {
+    env: 'PARSE_SERVER_SCHEMA_STRICT',
+    help: 'Is true if Parse Server should exit if schema update fail.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  deleteExtraFields: {
+    env: 'PARSE_SERVER_SCHEMA_DELETE_EXTRA_FIELDS',
+    help:
+      'Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  recreateModifiedFields: {
+    env: 'PARSE_SERVER_SCHEMA_RECREATE_MODIFIED_FIELDS',
+    help:
+      'Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  lockSchemas: {
+    env: 'PARSE_SERVER_SCHEMA_LOCK',
+    help:
+      'Is true if Parse Server will reject any attempts to modify the schema while the server is running.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  beforeMigration: {
+    help: 'Execute a callback before running schema migrations.',
+  },
+  afterMigration: {
+    help: 'Execute a callback after running schema migrations.',
+  },
+};
 module.exports.PagesOptions = {
+  customRoutes: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_ROUTES',
+    help: 'The custom routes.',
+    action: parsers.arrayParser,
+    default: [],
+  },
   customUrls: {
     env: 'PARSE_SERVER_PAGES_CUSTOM_URLS',
     help: 'The URLs to the custom pages.',
@@ -479,6 +546,23 @@ module.exports.PagesOptions = {
       'The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.',
     action: parsers.objectParser,
     default: {},
+  },
+};
+module.exports.PagesRoute = {
+  handler: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_HANDLER',
+    help: 'The route handler that is an async function.',
+    required: true,
+  },
+  method: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_METHOD',
+    help: "The route method, e.g. 'GET' or 'POST'.",
+    required: true,
+  },
+  path: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_PATH',
+    help: 'The route path.',
+    required: true,
   },
 };
 module.exports.PagesCustomUrlsOptions = {
@@ -668,17 +752,19 @@ module.exports.AccountLockoutOptions = {
   duration: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_DURATION',
     help:
-      'number of minutes that a locked-out account remains locked out before automatically becoming unlocked.',
+      'Set the duration in minutes that a locked-out account remains locked out before automatically becoming unlocked.<br><br>Valid values are greater than `0` and less than `100000`.',
     action: parsers.numberParser('duration'),
   },
   threshold: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_THRESHOLD',
-    help: 'number of failed sign-in attempts that will cause a user account to be locked',
+    help:
+      'Set the number of failed sign-in attempts that will cause a user account to be locked. If the account is locked. The account will unlock after the duration set in the `duration` option has passed and no further login attempts have been made.<br><br>Valid values are greater than `0` and less than `1000`.',
     action: parsers.numberParser('threshold'),
   },
   unlockOnPasswordReset: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_UNLOCK_ON_PASSWORD_RESET',
-    help: 'Is true if the account lock should be removed after a successful password reset.',
+    help:
+      'Set to `true`  if the account should be unlocked after a successful password reset.<br><br>Default is `false`.<br>Requires options `duration` and `threshold` to be set.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -686,36 +772,50 @@ module.exports.AccountLockoutOptions = {
 module.exports.PasswordPolicyOptions = {
   doNotAllowUsername: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_DO_NOT_ALLOW_USERNAME',
-    help: 'disallow username in passwords',
+    help:
+      'Set to `true` to disallow the username as part of the password.<br><br>Default is `false`.',
     action: parsers.booleanParser,
+    default: false,
   },
   maxPasswordAge: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_MAX_PASSWORD_AGE',
-    help: 'days for password expiry',
+    help:
+      'Set the number of days after which a password expires. Login attempts fail if the user does not reset the password before expiration.',
     action: parsers.numberParser('maxPasswordAge'),
   },
   maxPasswordHistory: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_MAX_PASSWORD_HISTORY',
-    help: 'setting to prevent reuse of previous n passwords',
+    help:
+      'Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.<br><br>Valid values are >= `0` and <= `20`.<br>Default is `0`.',
     action: parsers.numberParser('maxPasswordHistory'),
   },
   resetTokenReuseIfValid: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID',
-    help: "resend token if it's still valid",
+    help:
+      'Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.',
     action: parsers.booleanParser,
+    default: false,
   },
   resetTokenValidityDuration: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION',
-    help: 'time for token to expire',
+    help:
+      'Set the validity duration of the password reset token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.',
     action: parsers.numberParser('resetTokenValidityDuration'),
+  },
+  validationError: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATION_ERROR',
+    help:
+      'Set the error message to be sent.<br><br>Default is `Password does not meet the Password Policy requirements.`',
   },
   validatorCallback: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_CALLBACK',
-    help: 'a callback function to be invoked to validate the password',
+    help:
+      'Set a callback function to validate a password to be accepted.<br><br>If used in combination with `validatorPattern`, the password must pass both to be accepted.',
   },
   validatorPattern: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_PATTERN',
-    help: 'a RegExp object or a regex string representing the pattern to enforce',
+    help:
+      'Set the regular expression validation pattern a password must match to be accepted.<br><br>If used in combination with `validatorCallback`, the password must pass both to be accepted.',
   },
 };
 module.exports.FileUploadOptions = {
@@ -734,6 +834,15 @@ module.exports.FileUploadOptions = {
   enableForPublic: {
     env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_PUBLIC',
     help: 'Is true if file upload should be allowed for anyone, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
+module.exports.DatabaseOptions = {
+  enableSchemaHooks: {
+    env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
+    help:
+      'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
   },

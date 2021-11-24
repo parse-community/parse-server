@@ -24,7 +24,6 @@ describe_only_db('mongo')('Parse.Query hint', () => {
   });
 
   afterEach(async () => {
-    await config.database.schemaCache.clear();
     await TestUtils.destroyAllDataPermanently(false);
   });
 

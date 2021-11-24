@@ -63,7 +63,7 @@ describe('Pages Router', () => {
       expect(response.status).toBe(200);
     });
 
-    it('responds with 404 if publicServerURL is not confgured', async () => {
+    it('responds with 404 if publicServerURL is not configured', async () => {
       await reconfigureServer({
         appName: 'unused',
         pages: { enableRouter: true },
@@ -252,6 +252,9 @@ describe('Pages Router', () => {
         expect(Config.get(Parse.applicationId).pages.customUrls).toBe(
           Definitions.PagesOptions.customUrls.default
         );
+        expect(Config.get(Parse.applicationId).pages.customRoutes).toBe(
+          Definitions.PagesOptions.customRoutes.default
+        );
       });
 
       it('throws on invalid configuration', async () => {
@@ -296,6 +299,10 @@ describe('Pages Router', () => {
           { localizationFallbackLocale: 0 },
           { localizationFallbackLocale: {} },
           { localizationFallbackLocale: [] },
+          { customRoutes: true },
+          { customRoutes: 0 },
+          { customRoutes: 'a' },
+          { customRoutes: {} },
         ];
         for (const option of options) {
           await expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected();
@@ -969,6 +976,230 @@ describe('Pages Router', () => {
         }).catch(e => e);
         expect(response.status).toBe(404);
         expect(response.text).toBe('Not found.');
+      });
+    });
+
+    describe('custom route', () => {
+      it('handles custom route with GET', async () => {
+        config.pages.customRoutes = [
+          {
+            method: 'GET',
+            path: 'custom_page',
+            handler: async req => {
+              expect(req).toBeDefined();
+              expect(req.method).toBe('GET');
+              return { file: 'custom_page.html' };
+            },
+          },
+        ];
+        await reconfigureServer(config);
+        const handlerSpy = spyOn(config.pages.customRoutes[0], 'handler').and.callThrough();
+
+        const url = `${config.publicServerURL}/apps/${config.appId}/custom_page`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).toBe(200);
+        expect(response.text).toMatch(config.appName);
+        expect(handlerSpy).toHaveBeenCalled();
+      });
+
+      it('handles custom route with POST', async () => {
+        config.pages.customRoutes = [
+          {
+            method: 'POST',
+            path: 'custom_page',
+            handler: async req => {
+              expect(req).toBeDefined();
+              expect(req.method).toBe('POST');
+              return { file: 'custom_page.html' };
+            },
+          },
+        ];
+        const handlerSpy = spyOn(config.pages.customRoutes[0], 'handler').and.callThrough();
+        await reconfigureServer(config);
+
+        const url = `${config.publicServerURL}/apps/${config.appId}/custom_page`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+          method: 'POST',
+        }).catch(e => e);
+        expect(response.status).toBe(200);
+        expect(response.text).toMatch(config.appName);
+        expect(handlerSpy).toHaveBeenCalled();
+      });
+
+      it('handles multiple custom routes', async () => {
+        config.pages.customRoutes = [
+          {
+            method: 'GET',
+            path: 'custom_page',
+            handler: async req => {
+              expect(req).toBeDefined();
+              expect(req.method).toBe('GET');
+              return { file: 'custom_page.html' };
+            },
+          },
+          {
+            method: 'POST',
+            path: 'custom_page',
+            handler: async req => {
+              expect(req).toBeDefined();
+              expect(req.method).toBe('POST');
+              return { file: 'custom_page.html' };
+            },
+          },
+        ];
+        const getHandlerSpy = spyOn(config.pages.customRoutes[0], 'handler').and.callThrough();
+        const postHandlerSpy = spyOn(config.pages.customRoutes[1], 'handler').and.callThrough();
+        await reconfigureServer(config);
+
+        const url = `${config.publicServerURL}/apps/${config.appId}/custom_page`;
+        const getResponse = await request({
+          url: url,
+          followRedirects: false,
+          method: 'GET',
+        }).catch(e => e);
+        expect(getResponse.status).toBe(200);
+        expect(getResponse.text).toMatch(config.appName);
+        expect(getHandlerSpy).toHaveBeenCalled();
+
+        const postResponse = await request({
+          url: url,
+          followRedirects: false,
+          method: 'POST',
+        }).catch(e => e);
+        expect(postResponse.status).toBe(200);
+        expect(postResponse.text).toMatch(config.appName);
+        expect(postHandlerSpy).toHaveBeenCalled();
+      });
+
+      it('handles custom route with async handler', async () => {
+        config.pages.customRoutes = [
+          {
+            method: 'GET',
+            path: 'custom_page',
+            handler: async req => {
+              expect(req).toBeDefined();
+              expect(req.method).toBe('GET');
+              const file = await new Promise(resolve =>
+                setTimeout(resolve('custom_page.html'), 1000)
+              );
+              return { file };
+            },
+          },
+        ];
+        await reconfigureServer(config);
+        const handlerSpy = spyOn(config.pages.customRoutes[0], 'handler').and.callThrough();
+
+        const url = `${config.publicServerURL}/apps/${config.appId}/custom_page`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).toBe(200);
+        expect(response.text).toMatch(config.appName);
+        expect(handlerSpy).toHaveBeenCalled();
+      });
+
+      it('returns 404 if custom route does not return page', async () => {
+        config.pages.customRoutes = [
+          {
+            method: 'GET',
+            path: 'custom_page',
+            handler: async () => {},
+          },
+        ];
+        await reconfigureServer(config);
+        const handlerSpy = spyOn(config.pages.customRoutes[0], 'handler').and.callThrough();
+
+        const url = `${config.publicServerURL}/apps/${config.appId}/custom_page`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).toBe(404);
+        expect(response.text).toMatch('Not found');
+        expect(handlerSpy).toHaveBeenCalled();
+      });
+    });
+
+    describe('custom endpoint', () => {
+      it('password reset works with custom endpoint', async () => {
+        config.pages.pagesEndpoint = 'customEndpoint';
+        await reconfigureServer(config);
+        const sendPasswordResetEmail = spyOn(
+          config.emailAdapter,
+          'sendPasswordResetEmail'
+        ).and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+        await Parse.User.requestPasswordReset(user.getEmail());
+
+        const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
+        const linkResponse = await request({
+          url: link,
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const appId = linkResponse.headers['x-parse-page-param-appid'];
+        const token = linkResponse.headers['x-parse-page-param-token'];
+        const username = linkResponse.headers['x-parse-page-param-username'];
+        const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
+        expect(appId).toBeDefined();
+        expect(token).toBeDefined();
+        expect(username).toBeDefined();
+        expect(publicServerUrl).toBeDefined();
+        expect(passwordResetPagePath).toMatch(new RegExp(`\/${pages.passwordReset.defaultFile}`));
+        pageResponse.calls.reset();
+
+        const formUrl = `${publicServerUrl}/${config.pages.pagesEndpoint}/${appId}/request_password_reset`;
+        const formResponse = await request({
+          url: formUrl,
+          method: 'POST',
+          body: {
+            token,
+            username,
+            new_password: 'newPassword',
+          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          followRedirects: false,
+        });
+        expect(formResponse.status).toEqual(200);
+        expect(pageResponse.calls.all()[0].args[0]).toContain(
+          `/${pages.passwordResetSuccess.defaultFile}`
+        );
+      });
+
+      it('email verification works with custom endpoint', async () => {
+        config.pages.pagesEndpoint = 'customEndpoint';
+        await reconfigureServer(config);
+        const sendVerificationEmail = spyOn(
+          config.emailAdapter,
+          'sendVerificationEmail'
+        ).and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+
+        const link = sendVerificationEmail.calls.all()[0].args[0].link;
+        const linkResponse = await request({
+          url: link,
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const pagePath = pageResponse.calls.all()[0].args[0];
+        expect(pagePath).toMatch(new RegExp(`\/${pages.emailVerificationSuccess.defaultFile}`));
       });
     });
   });
