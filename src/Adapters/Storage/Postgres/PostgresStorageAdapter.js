@@ -1365,6 +1365,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           throw `Type ${schema.fields[fieldName].type} not supported yet`;
       }
     });
+
     columnsArray = columnsArray.concat(Object.keys(geoPoints));
     const initialValues = valuesArray.map((val, index) => {
       let termination = '';

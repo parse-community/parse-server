@@ -2440,33 +2440,6 @@ describe('afterFind hooks', () => {
     expect(pointer.get('foo')).toBe('bar');
   });
 
-  it('can set a pointer object in afterFind with User', async () => {
-    await Parse.User.signUp('tupac', 'shakur');
-    const obj = new Parse.Object('MyObject');
-    obj.set('xyz', 'yolo');
-    await obj.save();
-    Parse.Cloud.afterFind('MyObject', async ({ user, objects }) => {
-      const otherObject = new Parse.Object('Test');
-      otherObject.set('foo', 'bar');
-      otherObject.set('user', user);
-      for (const property in objects[0].attributes) {
-        if (Object.prototype.hasOwnProperty.call(objects[0].attributes, property)) {
-          otherObject.set(property, objects[0].attributes[property]);
-        }
-      }
-      await otherObject.save(null, { useMasterKey: true });
-      const query = new Parse.Query('Test');
-      query.equalTo('foo', 'bar');
-      const obj = await query.first();
-      expect(obj.get('user').id).toEqual(user.id);
-      expect(obj.get('xyz')).toBe('yolo');
-    });
-    const query = new Parse.Query('MyObject');
-    query.equalTo('objectId', obj.id);
-    const obj2 = await query.first();
-    expect(obj2.get('xyz')).toBe('yolo');
-  });
-
   it('can set invalid object in afterFind', async () => {
     const obj = new Parse.Object('MyObject');
     await obj.save();
