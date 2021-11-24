@@ -1998,6 +1998,44 @@ describe('beforeFind hooks', () => {
       });
     });
   });
+  /*
+  it('should use the modified the query.and', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      const additionalQ = new Parse.Query('MyObject');
+      additionalQ.equalTo('forced', true);
+      return Parse.Query.and(req.query, additionalQ);
+    });
+
+    const obj0 = Parse.Object.extend('MyObject');
+    obj0.set('forced', false);
+    const obj1 = Parse.Object.extend('MyObject');
+    obj1.set('forced', true);
+
+    Parse.Object.saveAll([obj0, obj1]);
+    const q = new Parse.Query('MyObject');
+    q.equalTo('forced', false);
+    const res = await q.find();
+    expect(res.id).toEqual(item1.id);
+  });*/
+
+  it('should have object found with nested relational data query', async () => {
+    const obj1 = Parse.Object.extend('TestObject');
+    const obj2 = Parse.Object.extend('TestObject2');
+    let item2 = new obj2();
+    item2 = await item2.save();
+    let item1 = new obj1();
+    const relation = item1.relation('rel');
+    relation.add(item2);
+    item1 = await item1.save();
+    Parse.Cloud.beforeFind('TestObject', req => {
+      const additionalQ = new Parse.Query('TestObject');
+      additionalQ.equalTo('rel', item2);
+      return Parse.Query.and(req.query, additionalQ);
+    });
+    const q = new Parse.Query('TestObject');
+    const res = await q.first();
+    expect(res.id).toEqual(item1.id);
+  });
 
   it('should use the modified exclude query', async () => {
     Parse.Cloud.beforeFind('MyObject', req => {
@@ -2419,6 +2457,33 @@ describe('afterFind hooks', () => {
     expect(obj2.get('xyz')).toBe('yolo');
     const pointer = obj2.get('Pointer');
     expect(pointer.get('foo')).toBe('bar');
+  });
+
+  it('can set a pointer object in afterFind with User', async () => {
+    await Parse.User.signUp('tupac', 'shakur');
+    const obj = new Parse.Object('MyObject');
+    obj.set('xyz', 'yolo');
+    await obj.save();
+    Parse.Cloud.afterFind('MyObject', async ({ user, objects }) => {
+      const otherObject = new Parse.Object('Test');
+      otherObject.set('foo', 'bar');
+      otherObject.set('user', user);
+      for (const property in objects[0].attributes) {
+        if (Object.prototype.hasOwnProperty.call(objects[0].attributes, property)) {
+          otherObject.set(property, objects[0].attributes[property]);
+        }
+      }
+      await otherObject.save(null, { useMasterKey: true });
+      const query = new Parse.Query('Test');
+      query.equalTo('foo', 'bar');
+      const obj = await query.first();
+      expect(obj.get('user').id).toEqual(user.id);
+      expect(obj.get('xyz')).toBe('yolo');
+    });
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
+    const obj2 = await query.first();
+    expect(obj2.get('xyz')).toBe('yolo');
   });
 
   it('can set invalid object in afterFind', async () => {
@@ -3515,24 +3580,5 @@ describe('sendEmail', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to send email because no mail adapter is configured for Parse Server.'
     );
-  });
-
-  it('should have object found with nested relational data query', async () => {
-    const obj1 = Parse.Object.extend('TestObject');
-    const obj2 = Parse.Object.extend('TestObject2');
-    let item2 = new obj2();
-    item2 = await item2.save();
-    let item1 = new obj1();
-    const relation = item1.relation('rel');
-    relation.add(item2);
-    item1 = await item1.save();
-    Parse.Cloud.beforeFind('TestObject', req => {
-      const additionalQ = new Parse.Query('TestObject');
-      additionalQ.equalTo('rel', item2);
-      return Parse.Query.and(req.query, additionalQ);
-    });
-    const q = new Parse.Query('TestObject');
-    const res = await q.first();
-    expect(res.id).toEqual(item1.id);
   });
 });
