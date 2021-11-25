@@ -25,7 +25,7 @@
     "@graphql-tools/utils": "6.2.4",
     "@parse/fs-files-adapter": "1.2.1",
     "@parse/push-adapter": "3.4.1",
-    "apollo-server-express": "2.25.2",
+    "apollo-server-express": "3.4.1",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
     "commander": "5.1.0",
