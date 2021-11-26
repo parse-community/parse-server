@@ -1999,6 +1999,25 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('should have object found with nested relational data query', async () => {
+    const obj1 = Parse.Object.extend('TestObject');
+    const obj2 = Parse.Object.extend('TestObject2');
+    let item2 = new obj2();
+    item2 = await item2.save();
+    let item1 = new obj1();
+    const relation = item1.relation('rel');
+    relation.add(item2);
+    item1 = await item1.save();
+    Parse.Cloud.beforeFind('TestObject', req => {
+      const additionalQ = new Parse.Query('TestObject');
+      additionalQ.equalTo('rel', item2);
+      return Parse.Query.and(req.query, additionalQ);
+    });
+    const q = new Parse.Query('TestObject');
+    const res = await q.first();
+    expect(res.id).toEqual(item1.id);
+  });
+
   it('should use the modified exclude query', async () => {
     Parse.Cloud.beforeFind('MyObject', req => {
       const q = req.query;
@@ -3515,24 +3534,5 @@ describe('sendEmail', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to send email because no mail adapter is configured for Parse Server.'
     );
-  });
-
-  it('should have object found with nested relational data query', async () => {
-    const obj1 = Parse.Object.extend('TestObject');
-    const obj2 = Parse.Object.extend('TestObject2');
-    let item2 = new obj2();
-    item2 = await item2.save();
-    let item1 = new obj1();
-    const relation = item1.relation('rel');
-    relation.add(item2);
-    item1 = await item1.save();
-    Parse.Cloud.beforeFind('TestObject', req => {
-      const additionalQ = new Parse.Query('TestObject');
-      additionalQ.equalTo('rel', item2);
-      return Parse.Query.and(req.query, additionalQ);
-    });
-    const q = new Parse.Query('TestObject');
-    const res = await q.first();
-    expect(res.id).toEqual(item1.id);
   });
 });
