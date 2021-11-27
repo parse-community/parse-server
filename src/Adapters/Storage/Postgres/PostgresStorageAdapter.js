@@ -1807,7 +1807,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
         if (key === 'ACL') {
           memo.push('_rperm');
           memo.push('_wperm');
-        } else if (key.length > 0) {
+        } else if (
+          key.length > 0 &&
+          // Remove selected field not referenced in the schema
+          // Relation is not a column in postgres
+          // $score is a Parse special field and is also not a column
+          ((schema.fields[key] && schema.fields[key].type !== 'Relation') || key === '$score')
+        ) {
           memo.push(key);
         }
         return memo;
