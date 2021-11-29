@@ -1,3 +1,10 @@
+# [5.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.8...5.0.0-alpha.9) (2021-11-27)
+
+
+### Bug Fixes
+
+* unable to use objectId size higher than 19 on GraphQL API ([#7627](https://github.com/parse-community/parse-server/issues/7627)) ([ed86c80](https://github.com/parse-community/parse-server/commit/ed86c807721cc52a1a5a9dea0b768717eec269ed))
+
 # [5.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.7...5.0.0-alpha.8) (2021-11-18)
 
 
