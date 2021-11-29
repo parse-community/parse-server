@@ -109,9 +109,11 @@ describe('Parse.Query Full Text Search testing', () => {
         throw new Parse.Error(e.data.code, e.data.error);
       }
     };
-    await expectAsync(invalidQuery()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $search, should be object')
-    );
+    if (process.env.PARSE_SERVER_TEST_DB != 'postgres') {
+      await expectAsync(invalidQuery()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $search, should be object')
+      );
+    }
   });
 
   it('fullTextSearch: $language, invalid input', async () => {
