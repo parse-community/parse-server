@@ -118,27 +118,36 @@ describe('Parse.Query Full Text Search testing', () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { language: true });
-    await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $language, should be string')
-    );
+    if (process.env.PARSE_SERVER_TEST_DB != 'postgres') {
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $language, should be string')
+      );
+    }
   });
 
   it('fullTextSearch: $caseSensitive, invalid input', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { caseSensitive: 'string' });
-    await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $caseSensitive, should be boolean')
-    );
+    if (process.env.PARSE_SERVER_TEST_DB != 'postgres') {
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $caseSensitive, should be boolean')
+      );
+    }
   });
 
   it('fullTextSearch: $diacriticSensitive, invalid input', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { diacriticSensitive: 'string' });
-    await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $diacriticSensitive, should be boolean')
-    );
+    if (process.env.PARSE_SERVER_TEST_DB != 'postgres') {
+      await expectAsync(query.find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $text: $diacriticSensitive, should be boolean'
+        )
+      );
+    }
   });
 });
 
