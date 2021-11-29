@@ -972,9 +972,9 @@ class DatabaseController {
       });
     }
     if (query['$and']) {
-      const ors = query['$and'];
+      const ands = query['$and'];
       return Promise.all(
-        ors.map((aQuery, index) => {
+        ands.map((aQuery, index) => {
           return this.reduceInRelation(className, aQuery, schema).then(aQuery => {
             query['$and'][index] = aQuery;
           });
