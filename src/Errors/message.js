@@ -32,16 +32,17 @@ export const ErrorMessage = {
   USER_NO_MODIFY: field => 'Cannot modify user' + field + '.',
   INVALID_ACL: () => 'Invalid ACL.',
   DUPLICATE_VALUE: () => 'A duplicate value for a field with unique values was provided.',
-  DUPLICATE_CLASS: className => `Class ${className} already exists.`,
+  DUPLICATE_CLASS: className => 'Class ' + className + 'already exists.',
   DATABASE_ADAPTER_ERROR: () => 'Database adapter error.',
   GEO_JSON_INVALID_VERTICES: () => 'GeoJSON: Loop must have at least 3 different vertices.',
   INVALID_POLYGON_VALUES: () => 'Polygon must have atleast 3 values.',
   INVALID_NESTED_KEY: () => "Nested keys should not contain the '$' or '.' characters",
-  BAD_VALUE: type => `bad ${type} value.`,
-  ALL_VALUES_MUST_BE_REGEX: value => `All $all values must be of regex type or none: ${value}.`,
-  VALUE_SHOULD_BE_TYPE: (value, type) => `bad ${value} should be an ${type}`,
+  BAD_VALUE: type => 'bad ' + type + 'value.',
+  ALL_VALUES_MUST_BE_REGEX: value =>
+    'All $all values must be of regex type or none: ' + value + '.',
+  VALUE_SHOULD_BE_TYPE: (value, type) => 'bad ' + value + 'should be an ' + type + '.',
   VALUE_NOT_SUPPORTED: value =>
-    `bad ${value} not supported, please use $regex or create a separate lower case column.`,
+    'bad ' + value + 'not supported, please use $regex or create a separate lower case column.',
   BAD_VALUE_POSTGRES_EXTENSION_REQUIRED: value =>
-    `bad ${value} not supported, install Postgres Unaccent Extension`,
+    'bad ' + value + 'not supported, install Postgres Unaccent Extension',
 };
