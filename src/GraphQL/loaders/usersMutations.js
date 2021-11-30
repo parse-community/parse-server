@@ -280,7 +280,7 @@ const load = parseGraphQLSchema => {
     mutateAndGetPayload: async ({ username, password, token }, context) => {
       const { config } = context;
       if (!username) {
-        throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.USERNAME_NOT_PROVIDED());
+        throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.USERNAME_MISSING());
       }
       if (!password) {
         throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'you must provide a password');
