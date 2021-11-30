@@ -7,7 +7,6 @@ import { OBJECT } from './defaultGraphQLTypes';
 import { getUserFromSessionToken } from './usersQueries';
 import { transformTypes } from '../transformers/mutation';
 import Parse from 'parse/node';
-import { ErrorMessage } from '../../Errors/message';
 
 const usersRouter = new UsersRouter();
 
@@ -280,7 +279,7 @@ const load = parseGraphQLSchema => {
     mutateAndGetPayload: async ({ username, password, token }, context) => {
       const { config } = context;
       if (!username) {
-        throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.USERNAME_NOT_PROVIDED());
+        throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'you must provide a username');
       }
       if (!password) {
         throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'you must provide a password');
