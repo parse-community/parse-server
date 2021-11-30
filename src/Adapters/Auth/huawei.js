@@ -27,27 +27,28 @@ async function verifyIdToken({ id_token: token, id }) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
   const huaweiData = await getDataFromHuawei(token);
-  // Error from huawei
-  if(!huaweiData || huaweiData.error){
-    throw new Parse.Error(Parse.Error.OTHER_CAUSE,
-      huaweiData.error_description ?
-        `${huaweiData.error_description} (${huaweiData.error}::${huaweiData.sub_error})` :
-        `undefined Error from huawei (${huaweiData.error}::${huaweiData.sub_error || "No SubError"}})`
-    );
+  
+  if(!huaweiData){
+    throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Undefined error from Huawei API.`);
   }
+  else if(huaweiData.error){
+    throw new Parse.Error(Parse.Error.OTHER_CAUSE,
+      `${huaweiData.error_description} (${huaweiData.error}::${huaweiData.sub_error})`
+    );
+  } // Error from huawei
   const { sub, iss, exp, iat } = huaweiData;
 
   // Content Check
   if(iss !== TOKEN_ISSUER)
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token not issued by correct provider.');
   if(id !== sub)
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'auth data is invalid for this user.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Auth data is invalid for this user.');
 
   // Expiration Check
   if(exp < Date.now() / 1000)
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token is expired');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token is expired.');
   if(iat > Date.now() / 1000)
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token not issued by correct provider or method');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token not issued by correct provider or method.');
 } // Returns a promise that fulfills if this user id is valid.
 
 
