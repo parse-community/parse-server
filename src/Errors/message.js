@@ -44,4 +44,5 @@ export const ErrorMessage = {
     `bad ${value} not supported, please use $regex or create a separate lower case column.`,
   BAD_VALUE_POSTGRES_EXTENSION_REQUIRED: value =>
     `bad ${value} not supported, install Postgres Unaccent Extension`,
+  USERNAME_NOT_PROVIDED: () => `you must provide a username`,
 };
