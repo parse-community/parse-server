@@ -286,7 +286,7 @@ const load = parseGraphQLSchema => {
         throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.PASSWORD_MISSING());
       }
       if (!token) {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, ErrorMessage.FIELD_IS_REQUIRED('token'));
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'you must provide a token');
       }
 
       const userController = config.userController;
