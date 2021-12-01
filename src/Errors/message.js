@@ -25,8 +25,8 @@ export const ErrorMessage = {
   minOneIdField: () =>
     'At least one ID field (deviceToken, installationId) must be specified in this operation.',
   unknownObjectUpdate: () => 'Object not found for update.',
-  noOp: field => 'The ' + field + ' can not be changed in this operation.',
-  reqOp: field => 'The ' + field + ' must be specified in this operation.',
+  noOp: field => 'The field ' + field + ' can not be changed in this operation.',
+  reqOp: field => 'The field ' + field + ' must be specified in this operation.',
   installationIdWithDeviceToken: () =>
     'Must specify installationId when deviceToken matches multiple Installation objects.',
   userNoModify: field => 'Cannot modify user' + field + '.',
