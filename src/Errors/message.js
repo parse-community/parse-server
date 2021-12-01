@@ -5,12 +5,21 @@ export const ErrorMessage = {
   userNoAccessClass: className =>
     'This user is not allowed to access non-existent class: ' + className + '.',
   objectNotFound: () => 'Object not found.',
+  userNotFound: () => 'user not found',
   fieldIsRequired: fieldName =>
     'A value for the field ' + fieldName + ' is required to save/update the object.',
   userMissing: () => 'Bad or missing username.',
   passwordMissing: () => 'Password is required.',
+  usernameEmailRequired: () => 'username/email is required.',
+  emailRequired: () => 'you must provide an email',
+  usernamePasswordInvalid: () => 'Invalid username/password.',
+  emailInvalid: () => 'you must provide a valid email string',
+  emailVerified: email => 'Email ' + email + ' is already verified.',
   unsupportedService: () => 'This authentication method is unsupported.',
   accountLinked: () => 'This auth is already used.',
+  emailNotVerified: () => 'User email is not verified.',
+  sessionTokenInvalid: () => 'Invalid session token',
+  masterKeyRequired: () => 'master key is required',
   clientEmailVerification: () => "Clients aren't allowed to manually update email verification.",
   usernameTaken: () => 'Account already exists for this username.',
   invalidEmailAddressFormat: () => 'Email address format is invalid.',
@@ -44,4 +53,8 @@ export const ErrorMessage = {
     'bad ' + value + 'not supported, please use $regex or create a separate lower case column.',
   badValuePostgresExtensionRequired: value =>
     'bad ' + value + 'not supported, install Postgres Unaccent Extension',
+  fieldMissingForVerificationFunc: field =>
+    'The field' + field.indexOf(',') > -1
+      ? 's '
+      : ' ' + ' are required for password reset and email verification functionality.',
 };

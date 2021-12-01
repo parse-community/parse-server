@@ -10,6 +10,7 @@ import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
+import { ErrorMessage } from './Errors/message';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -73,17 +74,17 @@ export class UsersRouter extends ClassesRouter {
 
       // TODO: use the right error codes / descriptions.
       if (!username && !email) {
-        throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
+        throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.usernameEmailRequired());
       }
       if (!password) {
-        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'Password is required.');
+        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.passwordMissing());
       }
       if (
         typeof password !== 'string' ||
         (email && typeof email !== 'string') ||
         (username && typeof username !== 'string')
       ) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.usernamePasswordInvalid());
       }
 
       let user;
@@ -100,7 +101,10 @@ export class UsersRouter extends ClassesRouter {
         .find('_User', query)
         .then(results => {
           if (!results.length) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              ErrorMessage.usernamePasswordInvalid()
+            );
           }
 
           if (results.length > 1) {
@@ -122,21 +126,27 @@ export class UsersRouter extends ClassesRouter {
         })
         .then(() => {
           if (!isValidPassword) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              ErrorMessage.usernamePasswordInvalid()
+            );
           }
           // Ensure the user isn't locked out
           // A locked out user won't be able to login
           // To lock a user out, just set the ACL to `masterKey` only  ({}).
           // Empty ACL is OK
           if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              ErrorMessage.usernamePasswordInvalid()
+            );
           }
           if (
             req.config.verifyUserEmails &&
             req.config.preventLoginWithUnverifiedEmail &&
             !user.emailVerified
           ) {
-            throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+            throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, ErrorMessage.emailNotVerified());
           }
 
           this._sanitizeAuthData(user);
@@ -151,7 +161,7 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, ErrorMessage.sessionTokenInvalid());
     }
     const sessionToken = req.info.sessionToken;
     return rest
@@ -166,7 +176,10 @@ export class UsersRouter extends ClassesRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            ErrorMessage.sessionTokenInvalid()
+          );
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
@@ -269,7 +282,7 @@ export class UsersRouter extends ClassesRouter {
    */
   async handleLogInAs(req) {
     if (!req.auth.isMaster) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, ErrorMessage.masterKeyRequired());
     }
 
     const userId = req.body.userId || req.query.userId;
@@ -283,7 +296,7 @@ export class UsersRouter extends ClassesRouter {
     const queryResults = await req.config.database.find('_User', { objectId: userId });
     const user = queryResults[0];
     if (!user) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'user not found');
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.userNotFound());
     }
 
     this._sanitizeAuthData(user);
@@ -376,7 +389,7 @@ export class UsersRouter extends ClassesRouter {
         // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
         throw new Parse.Error(
           Parse.Error.INTERNAL_SERVER_ERROR,
-          'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.'
+          ErrorMessage.fieldMissingForVerificationFunc('appName, publicServerURL, and emailAdapter')
         );
       } else {
         throw e;
@@ -389,13 +402,10 @@ export class UsersRouter extends ClassesRouter {
 
     const { email } = req.body;
     if (!email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, ErrorMessage.emailRequired());
     }
     if (typeof email !== 'string') {
-      throw new Parse.Error(
-        Parse.Error.INVALID_EMAIL_ADDRESS,
-        'you must provide a valid email string'
-      );
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, ErrorMessage.emailInvalid());
     }
     const userController = req.config.userController;
     return userController.sendPasswordResetEmail(email).then(
@@ -423,7 +433,7 @@ export class UsersRouter extends ClassesRouter {
 
     const { email } = req.body;
     if (!email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, ErrorMessage.emailRequired());
     }
     if (typeof email !== 'string') {
       throw new Parse.Error(
@@ -434,7 +444,7 @@ export class UsersRouter extends ClassesRouter {
 
     return req.config.database.find('_User', { email: email }).then(results => {
       if (!results.length || results.length < 1) {
-        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, ErrorMessage.userNotFound());
       }
       const user = results[0];
 
@@ -442,7 +452,7 @@ export class UsersRouter extends ClassesRouter {
       delete user.password;
 
       if (user.emailVerified) {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, ErrorMessage.emailVerified());
       }
 
       const userController = req.config.userController;

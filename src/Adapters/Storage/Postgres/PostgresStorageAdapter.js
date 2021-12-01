@@ -7,6 +7,7 @@ import _ from 'lodash';
 // @flow-disable-next
 import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
+import { ErrorMessage } from './Errors/message';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -24,7 +25,6 @@ const debug = function (...args: any) {
 
 import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
-import { ErrorMessage } from '../../../Errors/message';
 
 const parseTypeToPostgresType = type => {
   switch (type.type) {
@@ -1411,10 +1411,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .then(() => ({ ops: [object] }))
       .catch(error => {
         if (error.code === PostgresUniqueIndexViolationError) {
-          const err = new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided.'
-          );
+          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
           err.underlyingError = error;
           if (error.constraint) {
             const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
