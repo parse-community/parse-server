@@ -7,7 +7,7 @@ import _ from 'lodash';
 // @flow-disable-next
 import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
-import { ErrorMessage } from './Errors/message';
+import { ErrorMessage } from '../../../Errors/message';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
