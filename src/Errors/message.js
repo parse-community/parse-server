@@ -39,8 +39,6 @@ export const ErrorMessage = {
     'bad ' + value + 'not supported, please use $regex or create a separate lower case column.',
   databasePostgresExtensionRequired: (value, extension) =>
     'bad ' + value + 'not supported, install ' + extension + ' Extension',
-  fieldMissingForVerificationFunc: field =>
-    'The field' + field.indexOf(',') > -1
-      ? 's '
-      : ' ' + ' are required for password reset and email verification functionality.',
+  fieldMissingForVerificationFunc: () =>
+    'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.',
 };

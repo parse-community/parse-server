@@ -404,7 +404,7 @@ export class UsersRouter extends ClassesRouter {
         // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
         throw new Parse.Error(
           Parse.Error.INTERNAL_SERVER_ERROR,
-          ErrorMessage.fieldMissingForVerificationFunc('appName, publicServerURL, and emailAdapter')
+          ErrorMessage.fieldMissingForVerificationFunc()
         );
       } else {
         throw e;

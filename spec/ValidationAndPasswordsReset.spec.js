@@ -3,6 +3,7 @@
 const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const request = require('../lib/request');
 const Config = require('../lib/Config');
+const { ErrorMessage } = require('../lib/Errors/message.js');
 
 describe('Custom Pages, Email Verification, Password Reset', () => {
   it('should set the custom pages', done => {
@@ -369,9 +370,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
               done();
             },
             error => {
-              expect(error.message).toEqual(
-                'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.'
-              );
+              expect(error.message).toEqual(ErrorMessage.fieldMissingForVerificationFunc());
               done();
             }
           );
