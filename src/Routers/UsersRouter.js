@@ -10,7 +10,7 @@ import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
-import { ErrorMessage } from './Errors/message';
+import { ErrorMessage } from '../Errors/message';
 
 export class UsersRouter extends ClassesRouter {
   className() {
