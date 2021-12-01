@@ -478,9 +478,9 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         );
       }
     } else if (typeof fieldValue.$in !== 'undefined') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.badValue('$in'));
+      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.objectFieldValueInvalid('$in'));
     } else if (typeof fieldValue.$nin !== 'undefined') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.badValue('$nin'));
+      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.objectFieldValueInvalid('$nin'));
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
@@ -488,7 +488,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         if (!isAllValuesRegexOrNone(fieldValue.$all)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.allValuesMustBeRegex(fieldValue.$all)
+            ErrorMessage.queryAllValueInvalid(fieldValue.$all)
           );
         }
 
@@ -525,7 +525,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (!(arr instanceof Array)) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueShouldBeType('$containedBy:', 'array')
+          ErrorMessage.queryValueTypeInvalid('array', '$containedBy:')
         );
       }
 
@@ -540,19 +540,19 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (typeof search !== 'object') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueNotSupported('$text: $search,', 'object')
+          ErrorMessage.queryValueTypeInvalid('object', '$text: $search,')
         );
       }
       if (!search.$term || typeof search.$term !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueShouldBeType('$text: $term,', 'string')
+          ErrorMessage.queryValueTypeInvalid('string', '$text: $term,')
         );
       }
       if (search.$language && typeof search.$language !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueShouldBeType('$text: $language,', 'string')
+          ErrorMessage.queryValueTypeInvalid('string', '$text: $language,')
         );
       } else if (search.$language) {
         language = search.$language;
@@ -560,23 +560,26 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueShouldBeType('$text: $caseSensitive,', 'boolean')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive,')
         );
       } else if (search.$caseSensitive) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueNotSupported('$text: $caseSensitive')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive')
         );
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueShouldBeType('$text: $diacriticSensitive,', 'array')
+          ErrorMessage.queryValueTypeInvalid('array', '$text: $diacriticSensitive,')
         );
       } else if (search.$diacriticSensitive === false) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.badValuePostgresExtensionRequired('$text: $diacriticSensitive - false')
+          ErrorMessage.databasePostgresExtensionRequired(
+            '$text: $diacriticSensitive - false',
+            'Postgres Unaccent'
+          )
         );
       }
       patterns.push(
@@ -621,9 +624,9 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.valueShouldBeType(
-            '$geoWithin value; $centerSphere',
-            'an array of Parse.GeoPoint and distance'
+          ErrorMessage.queryValueTypeInvalid(
+            'an array of Parse.GeoPoint and distance',
+            '$geoWithin value; $centerSphere'
           )
         );
       }
@@ -995,7 +998,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
-            ErrorMessage.duplicateClass(className)
+            ErrorMessage.exists('Class', className)
           );
         }
         throw err;
@@ -1456,7 +1459,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .one(qs, values, a => +a.count)
       .then(count => {
         if (count === 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.objectNotFound());
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.notFound('Object'));
         } else {
           return count;
         }

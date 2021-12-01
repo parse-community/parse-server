@@ -74,17 +74,23 @@ export class UsersRouter extends ClassesRouter {
 
       // TODO: use the right error codes / descriptions.
       if (!username && !email) {
-        throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.usernameEmailRequired());
+        throw new Parse.Error(
+          Parse.Error.USERNAME_MISSING,
+          ErrorMessage.required('username/email', '')
+        );
       }
       if (!password) {
-        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.passwordMissing());
+        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.required('password', ''));
       }
       if (
         typeof password !== 'string' ||
         (email && typeof email !== 'string') ||
         (username && typeof username !== 'string')
       ) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.usernamePasswordInvalid());
+        throw new Parse.Error(
+          Parse.Error.OBJECT_NOT_FOUND,
+          ErrorMessage.invalid('username/password')
+        );
       }
 
       let user;
@@ -103,7 +109,7 @@ export class UsersRouter extends ClassesRouter {
           if (!results.length) {
             throw new Parse.Error(
               Parse.Error.OBJECT_NOT_FOUND,
-              ErrorMessage.usernamePasswordInvalid()
+              ErrorMessage.invalid('username/password')
             );
           }
 
@@ -128,7 +134,7 @@ export class UsersRouter extends ClassesRouter {
           if (!isValidPassword) {
             throw new Parse.Error(
               Parse.Error.OBJECT_NOT_FOUND,
-              ErrorMessage.usernamePasswordInvalid()
+              ErrorMessage.invalid('username/password')
             );
           }
           // Ensure the user isn't locked out
@@ -138,7 +144,7 @@ export class UsersRouter extends ClassesRouter {
           if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
             throw new Parse.Error(
               Parse.Error.OBJECT_NOT_FOUND,
-              ErrorMessage.usernamePasswordInvalid()
+              ErrorMessage.invalid('username/password')
             );
           }
           if (
@@ -146,7 +152,10 @@ export class UsersRouter extends ClassesRouter {
             req.config.preventLoginWithUnverifiedEmail &&
             !user.emailVerified
           ) {
-            throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, ErrorMessage.emailNotVerified());
+            throw new Parse.Error(
+              Parse.Error.EMAIL_NOT_FOUND,
+              ErrorMessage.unverified('User email')
+            );
           }
 
           this._sanitizeAuthData(user);
@@ -161,7 +170,10 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, ErrorMessage.sessionTokenInvalid());
+      throw new Parse.Error(
+        Parse.Error.INVALID_SESSION_TOKEN,
+        ErrorMessage.invalid('Session token', false)
+      );
     }
     const sessionToken = req.info.sessionToken;
     return rest
@@ -178,7 +190,7 @@ export class UsersRouter extends ClassesRouter {
         if (!response.results || response.results.length == 0 || !response.results[0].user) {
           throw new Parse.Error(
             Parse.Error.INVALID_SESSION_TOKEN,
-            ErrorMessage.sessionTokenInvalid()
+            ErrorMessage.invalid('Session token', false)
           );
         } else {
           const user = response.results[0].user;
@@ -282,7 +294,10 @@ export class UsersRouter extends ClassesRouter {
    */
   async handleLogInAs(req) {
     if (!req.auth.isMaster) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, ErrorMessage.masterKeyRequired());
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        ErrorMessage.required('Master Key', '')
+      );
     }
 
     const userId = req.body.userId || req.query.userId;
@@ -296,7 +311,7 @@ export class UsersRouter extends ClassesRouter {
     const queryResults = await req.config.database.find('_User', { objectId: userId });
     const user = queryResults[0];
     if (!user) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.userNotFound());
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.notFound('User'));
     }
 
     this._sanitizeAuthData(user);
@@ -402,10 +417,10 @@ export class UsersRouter extends ClassesRouter {
 
     const { email } = req.body;
     if (!email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING, ErrorMessage.emailRequired());
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, ErrorMessage.required('email'));
     }
     if (typeof email !== 'string') {
-      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, ErrorMessage.emailInvalid());
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, ErrorMessage.invalid('email'));
     }
     const userController = req.config.userController;
     return userController.sendPasswordResetEmail(email).then(
@@ -433,7 +448,7 @@ export class UsersRouter extends ClassesRouter {
 
     const { email } = req.body;
     if (!email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING, ErrorMessage.emailRequired());
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, ErrorMessage.required('email'));
     }
     if (typeof email !== 'string') {
       throw new Parse.Error(
@@ -444,7 +459,7 @@ export class UsersRouter extends ClassesRouter {
 
     return req.config.database.find('_User', { email: email }).then(results => {
       if (!results.length || results.length < 1) {
-        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, ErrorMessage.userNotFound());
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, ErrorMessage.notFound('User'));
       }
       const user = results[0];
 
@@ -452,7 +467,10 @@ export class UsersRouter extends ClassesRouter {
       delete user.password;
 
       if (user.emailVerified) {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, ErrorMessage.emailVerified());
+        throw new Parse.Error(
+          Parse.Error.OTHER_CAUSE,
+          ErrorMessage.verified('Email ' + user.email)
+        );
       }
 
       const userController = req.config.userController;

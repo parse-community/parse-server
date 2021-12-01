@@ -280,10 +280,10 @@ const load = parseGraphQLSchema => {
     mutateAndGetPayload: async ({ username, password, token }, context) => {
       const { config } = context;
       if (!username) {
-        throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.userMissing());
+        throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.required('username', ''));
       }
       if (!password) {
-        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.passwordMissing());
+        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.required('password', ''));
       }
       if (!token) {
         throw new Parse.Error(Parse.Error.OTHER_CAUSE, ErrorMessage.fieldIsRequired('token'));

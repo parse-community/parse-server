@@ -27,7 +27,7 @@ import { ErrorMessage } from './Errors/message';
 // for the _User class.
 function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action) {
   if (auth.isReadOnly) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, ErrorMessage.readOnlyMasterKey());
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, ErrorMessage.masterKeyReadOnly());
   }
   this.config = config;
   this.auth = auth;
@@ -44,17 +44,14 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   if (!query) {
     if (this.config.allowCustomObjectId) {
       if (Object.prototype.hasOwnProperty.call(data, 'objectId') && !data.objectId) {
-        throw new Parse.Error(Parse.Error.MISSING_OBJECT_ID, ErrorMessage.missingObjectId());
+        throw new Parse.Error(Parse.Error.MISSING_OBJECT_ID, ErrorMessage.noEmpty('ObjectId'));
       }
     } else {
       if (data.objectId) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          ErrorMessage.invalidKeyName('objectId')
-        );
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, ErrorMessage.invalid('objectId'));
       }
       if (data.id) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, ErrorMessage.invalidKeyName('id'));
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, ErrorMessage.invalid('id'));
       }
     }
   }
@@ -176,7 +173,7 @@ RestWrite.prototype.validateClientClassCreation = function () {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
-            ErrorMessage.userNoAccessClass(this.className)
+            ErrorMessage.unauthorizedAccess('class', this.className)
           );
         }
       });
@@ -248,7 +245,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
       // In the case that there is no permission for the operation, it throws an error
       return databasePromise.then(result => {
         if (!result || result.length <= 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.objectNotFound());
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.notFound('Object'));
         }
       });
     })
@@ -337,7 +334,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
           } else if (schema.fields[fieldName] && schema.fields[fieldName].required === true) {
             throw new Parse.Error(
               Parse.Error.VALIDATION_ERROR,
-              ErrorMessage.fieldIsRequired(fieldName)
+              ErrorMessage.required('field' + ' ' + fieldName)
             );
           }
         }
@@ -377,10 +374,10 @@ RestWrite.prototype.validateAuthData = function () {
 
   if (!this.query && !this.data.authData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
-      throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.userMissing());
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, ErrorMessage.required('username', ''));
     }
     if (typeof this.data.password !== 'string' || _.isEmpty(this.data.password)) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.passwordMissing());
+      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, ErrorMessage.required('password', ''));
     }
   }
 
@@ -649,7 +646,10 @@ RestWrite.prototype._validateUserName = function () {
     )
     .then(results => {
       if (results.length > 0) {
-        throw new Parse.Error(Parse.Error.USERNAME_TAKEN, ErrorMessage.usernameTaken());
+        throw new Parse.Error(
+          Parse.Error.USERNAME_TAKEN,
+          ErrorMessage.exists('Account', 'username')
+        );
       }
       return;
     });
@@ -674,7 +674,7 @@ RestWrite.prototype._validateEmail = function () {
   // Validate basic email address format
   if (!this.data.email.match(/^.+@.+$/)) {
     return Promise.reject(
-      new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, ErrorMessage.invalidEmailAddressFormat())
+      new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, ErrorMessage.invalid('Email address'))
     );
   }
   // Case insensitive match, see note above function.
@@ -691,7 +691,7 @@ RestWrite.prototype._validateEmail = function () {
     )
     .then(results => {
       if (results.length > 0) {
-        throw new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.emailTaken());
+        throw new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.exists('Account', 'email'));
       }
       if (
         !this.data.authData ||
@@ -972,7 +972,10 @@ RestWrite.prototype.handleSession = function () {
   }
 
   if (!this.auth.user && !this.auth.isMaster) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, ErrorMessage.invalidSessionToken());
+    throw new Parse.Error(
+      Parse.Error.INVALID_SESSION_TOKEN,
+      ErrorMessage.required('Session Token', '')
+    );
   }
 
   // TODO: Verify proper error to throw
@@ -1037,7 +1040,7 @@ RestWrite.prototype.handleInstallation = function () {
     !this.data.installationId &&
     !this.auth.installationId
   ) {
-    throw new Parse.Error(135, ErrorMessage.minOneIdField());
+    throw new Parse.Error(135, ErrorMessage.required('deviceToken or installationId'));
   }
 
   // If the device token is 64 characters long, we assume it is for iOS
@@ -1120,7 +1123,7 @@ RestWrite.prototype.handleInstallation = function () {
       // Sanity checks when running a query
       if (this.query && this.query.objectId) {
         if (!objectIdMatch) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.unknownObjectUpdate());
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.notFound('Object'));
         }
         if (
           this.data.installationId &&
@@ -1294,7 +1297,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
     throw new Parse.Error(
       Parse.Error.SESSION_MISSING,
-      ErrorMessage.userNoModify(this.query.objectId)
+      ErrorMessage.noUpdate('User', this.query.objectId)
     );
   }
 
@@ -1411,11 +1414,14 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
         // Quick check, if we were able to infer the duplicated field name
         if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
-          throw new Parse.Error(Parse.Error.USERNAME_TAKEN, ErrorMessage.usernameTaken());
+          throw new Parse.Error(
+            Parse.Error.USERNAME_TAKEN,
+            ErrorMessage.exists('Account', 'username')
+          );
         }
 
         if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
-          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.emailTaken());
+          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.exists('Account', 'email'));
         }
 
         // If this was a failed user creation due to username or email already taken, we need to
@@ -1433,7 +1439,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
           )
           .then(results => {
             if (results.length > 0) {
-              throw new Parse.Error(Parse.Error.USERNAME_TAKEN, ErrorMessage.usernameTaken());
+              throw new Parse.Error(
+                Parse.Error.USERNAME_TAKEN,
+                ErrorMessage.exists('Account', 'username')
+              );
             }
             return this.config.database.find(
               this.className,
@@ -1443,7 +1452,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
           })
           .then(results => {
             if (results.length > 0) {
-              throw new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.emailTaken());
+              throw new Parse.Error(
+                Parse.Error.EMAIL_TAKEN,
+                ErrorMessage.exists('Account', 'email')
+              );
             }
             throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
           });
