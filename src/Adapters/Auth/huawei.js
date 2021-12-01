@@ -39,15 +39,15 @@ async function verifyIdToken({ id_token: token, id }) {
 
   // Content Check
   if(iss !== TOKEN_ISSUER)
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token not issued by correct provider.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'id token not issued by correct provider.');
   if(id !== sub)
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Auth data is invalid for this user.');
 
   // Expiration Check
   if(exp < Date.now() / 1000)
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token is expired.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'id token is expired.');
   if(iat > Date.now() / 1000)
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'ID token not issued by correct provider or method.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'id token not issued by correct provider or method.');
 } // Returns a promise that fulfills if this user id is valid.
 
 
