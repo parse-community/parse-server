@@ -228,7 +228,7 @@ const validateKeys = object => {
       }
 
       if (key.includes('$') || key.includes('.')) {
-        throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, ErrorMessage.INVALID_NESTED_KEY());
+        throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, ErrorMessage.invalidNestedKey());
       }
     }
   }
@@ -478,9 +478,9 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         );
       }
     } else if (typeof fieldValue.$in !== 'undefined') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.BAD_VALUE('$in'));
+      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.badValue('$in'));
     } else if (typeof fieldValue.$nin !== 'undefined') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.BAD_VALUE('$nin'));
+      throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.badValue('$nin'));
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
@@ -488,7 +488,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         if (!isAllValuesRegexOrNone(fieldValue.$all)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.ALL_VALUES_MUST_BE_REGEX(fieldValue.$all)
+            ErrorMessage.allValuesMustBeRegex(fieldValue.$all)
           );
         }
 
@@ -525,7 +525,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (!(arr instanceof Array)) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$containedBy:', 'array')
+          ErrorMessage.valueShouldBeType('$containedBy:', 'array')
         );
       }
 
@@ -540,19 +540,19 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (typeof search !== 'object') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $search,', 'object')
+          ErrorMessage.valueNotSupported('$text: $search,', 'object')
         );
       }
       if (!search.$term || typeof search.$term !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $term,', 'string')
+          ErrorMessage.valueShouldBeType('$text: $term,', 'string')
         );
       }
       if (search.$language && typeof search.$language !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $language,', 'string')
+          ErrorMessage.valueShouldBeType('$text: $language,', 'string')
         );
       } else if (search.$language) {
         language = search.$language;
@@ -560,23 +560,23 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $caseSensitive,', 'boolean')
+          ErrorMessage.valueShouldBeType('$text: $caseSensitive,', 'boolean')
         );
       } else if (search.$caseSensitive) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_NOT_SUPPORTED('$text: $caseSensitive')
+          ErrorMessage.valueNotSupported('$text: $caseSensitive')
         );
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_SHOULD_BE_ARRAY('$text: $diacriticSensitive,', 'boolean')
+          ErrorMessage.valueShouldBeType('$text: $diacriticSensitive,', 'array')
         );
       } else if (search.$diacriticSensitive === false) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.BAD_VALUE_POSTGRES_EXTENSION_REQUIRED('$text: $diacriticSensitive - false')
+          ErrorMessage.badValuePostgresExtensionRequired('$text: $diacriticSensitive - false')
         );
       }
       patterns.push(
@@ -621,7 +621,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.VALUE_SHOULD_BE_TYPE(
+          ErrorMessage.valueShouldBeType(
             '$geoWithin value; $centerSphere',
             'an array of Parse.GeoPoint and distance'
           )
@@ -995,7 +995,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
-            ErrorMessage.DUPLICATE_CLASS(className)
+            ErrorMessage.duplicateClass(className)
           );
         }
         throw err;
@@ -1459,7 +1459,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .one(qs, values, a => +a.count)
       .then(count => {
         if (count === 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.OBJECT_NOT_FOUND());
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.objectNotFound());
         } else {
           return count;
         }
@@ -1976,7 +1976,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         error.message.includes(constraintName)
       ) {
         // Cast the error into the proper parse error
-        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.DUPLICATE_VALUE());
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
       } else {
         throw error;
       }
@@ -2440,7 +2440,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         error.message.includes(indexNameOptions.name)
       ) {
         // Cast the error into the proper parse error
-        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.DUPLICATE_VALUE());
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
       } else {
         throw error;
       }
@@ -2450,7 +2450,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
 function convertPolygonToSQL(polygon) {
   if (polygon.length < 3) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.INVALID_POLYGON_VALUES());
+    throw new Parse.Error(Parse.Error.INVALID_JSON, ErrorMessage.invalidPolygonValues());
   }
   if (
     polygon[0][0] !== polygon[polygon.length - 1][0] ||
@@ -2470,10 +2470,7 @@ function convertPolygonToSQL(polygon) {
     return foundIndex === index;
   });
   if (unique.length < 3) {
-    throw new Parse.Error(
-      Parse.Error.INTERNAL_SERVER_ERROR,
-      ErrorMessage.GEO_JSON_INVALID_VERTICES()
-    );
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, ErrorMessage.geoJsonInvalidVertices());
   }
   const points = polygon
     .map(point => {

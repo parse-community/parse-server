@@ -483,7 +483,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
-          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.DUPLICATE_VALUE());
+          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
           err.underlyingError = error;
           if (error.message) {
             const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
@@ -517,14 +517,14 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(
         ({ result }) => {
           if (result.n === 0) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.OBJECT_NOT_FOUND());
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.objectNotFound());
           }
           return Promise.resolve();
         },
         () => {
           throw new Parse.Error(
             Parse.Error.INTERNAL_SERVER_ERROR,
-            ErrorMessage.DATABASE_ADAPTER_ERROR()
+            ErrorMessage.databaseAdapterError()
           );
         }
       );
@@ -568,7 +568,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result.value, schema))
       .catch(error => {
         if (error.code === 11000) {
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.DUPLICATE_VALUE());
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
         }
         throw error;
       })
@@ -706,7 +706,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
       .catch(error => {
         if (error.code === 11000) {
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.DUPLICATE_VALUE());
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
         }
         throw error;
       })
