@@ -27,7 +27,6 @@ async function verifyIdToken({ id_token: token, id }) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
   const huaweiData = await getDataFromHuawei(token);
-  
   if(!huaweiData){
     throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Undefined error from Huawei API.`);
   }
