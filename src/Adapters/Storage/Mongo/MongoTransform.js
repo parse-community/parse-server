@@ -919,7 +919,7 @@ function transformConstraint(constraint, field, count = false) {
         if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `bad $text: $caseSensitive, should be boolean`
+            ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive,')
           );
         } else if (search.$caseSensitive) {
           answer[key].$caseSensitive = search.$caseSensitive;

@@ -135,7 +135,10 @@ describe('Parse.Query Full Text Search testing', () => {
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { caseSensitive: 'string' });
     await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $caseSensitive, should be boolean')
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive,')
+      )
     );
   });
 
