@@ -691,7 +691,10 @@ RestWrite.prototype._validateEmail = function () {
     )
     .then(results => {
       if (results.length > 0) {
-        throw new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.exists('Account', 'email'));
+        throw new Parse.Error(
+          Parse.Error.EMAIL_TAKEN,
+          ErrorMessage.exists('Account', 'email address')
+        );
       }
       if (
         !this.data.authData ||
@@ -1421,7 +1424,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
         }
 
         if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
-          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.exists('Account', 'email'));
+          throw new Parse.Error(
+            Parse.Error.EMAIL_TAKEN,
+            ErrorMessage.exists('Account', 'email address')
+          );
         }
 
         // If this was a failed user creation due to username or email already taken, we need to
@@ -1454,7 +1460,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
             if (results.length > 0) {
               throw new Parse.Error(
                 Parse.Error.EMAIL_TAKEN,
-                ErrorMessage.exists('Account', 'email')
+                ErrorMessage.exists('Account', 'email address')
               );
             }
             throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
