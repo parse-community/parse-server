@@ -25,12 +25,7 @@ const isAccountLockoutError = function (username, password, duration, waitTime) 
       Parse.User.logIn(username, password)
         .then(() => reject('login should have failed'))
         .catch(err => {
-          if (
-            err.message ===
-            'Your account is locked due to multiple failed login attempts. Please try again after ' +
-              duration +
-              ' minute(s)'
-          ) {
+          if (err.message === ErrorMessage.accountLocked(duration)) {
             resolve();
           } else {
             reject(err);

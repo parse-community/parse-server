@@ -12,6 +12,8 @@ export const ErrorMessage = {
   noUpdate: (type, key) => `Can not update ${type} ${key}`,
   unsupportedService: () => 'This authentication method is unsupported.',
   accountLinked: () => 'This auth is already used.',
+  accountLocked: duration =>
+    `Your account is locked due to multiple failed login attempts. Please try again after ${duration} minute(s).`,
   clientEmailVerification: () => "Clients aren't allowed to manually update email verification.",
   passwordPolicy: () => 'Password does not meet the Password Policy requirements.',
   usernameInPassword: () => 'Password cannot contain your username.',
