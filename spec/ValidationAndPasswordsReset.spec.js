@@ -232,7 +232,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
               done();
             },
             error => {
-              expect(error.message).toEqual('User email is not verified.');
+              expect(error.message).toEqual(ErrorMessage.unverified('User email'));
               done();
             }
           );
@@ -404,9 +404,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
               done();
             },
             error => {
-              expect(error.message).toEqual(
-                'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.'
-              );
+              expect(error.message).toEqual(ErrorMessage.fieldMissingForVerificationFunc());
               done();
             }
           );
@@ -437,9 +435,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
               done();
             },
             error => {
-              expect(error.message).toEqual(
-                'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.'
-              );
+              expect(error.message).toEqual(ErrorMessage.fieldMissingForVerificationFunc());
               done();
             }
           );
