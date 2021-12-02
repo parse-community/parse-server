@@ -1,5 +1,6 @@
 import log from '../../../logger';
 import _ from 'lodash';
+import { ErrorMessage } from '../../../Errors/message';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
@@ -875,7 +876,10 @@ function transformConstraint(constraint, field, count = false) {
       case '$containedBy': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('array', '$containedBy:')
+          );
         }
         answer.$elemMatch = {
           $nin: arr.map(transformer),

@@ -5,6 +5,7 @@
 'use strict';
 
 const Parse = require('parse/node');
+const { ErrorMessage } = require('../lib/Errors/message');
 const request = require('../lib/request');
 
 const masterKeyHeaders = {
@@ -980,7 +981,7 @@ describe('Parse.Query testing', () => {
       .then(done.fail)
       .catch(response => {
         equal(response.data.code, Parse.Error.INVALID_JSON);
-        equal(response.data.error, 'bad $containedBy: should be an array');
+        equal(response.data.error, ErrorMessage.queryValueTypeInvalid('array', '$containedBy:'));
         done();
       });
   });
