@@ -4,6 +4,7 @@ const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
 const semver = require('semver');
 const TestUtils = require('../lib/TestUtils');
+const { ErrorMessage } = require('../lib/Errors/message');
 
 let RESTController;
 
@@ -650,7 +651,7 @@ describe('ParseServerRESTController', () => {
       },
       err => {
         expect(err.code).toBe(Parse.Error.USERNAME_MISSING);
-        expect(err.message).toBe('Bad or missing username.');
+        expect(err.message).toBe(ErrorMessage.required('username', ''));
         done();
       }
     );
@@ -667,7 +668,7 @@ describe('ParseServerRESTController', () => {
       },
       err => {
         expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
-        expect(err.message).toBe('Password is required.');
+        expect(err.message).toBe(ErrorMessage.required('password', ''));
         done();
       }
     );
