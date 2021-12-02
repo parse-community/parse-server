@@ -120,7 +120,10 @@ describe('Parse.Query Full Text Search testing', () => {
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { language: true });
     await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $language, should be string')
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        ErrorMessage.queryValueTypeInvalid('string', '$text: $language,')
+      )
     );
   });
 
@@ -140,7 +143,7 @@ describe('Parse.Query Full Text Search testing', () => {
     await expectAsync(query.find()).toBeRejectedWith(
       new Parse.Error(
         Parse.Error.INVALID_JSON,
-        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive,')
+        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive')
       )
     );
   });

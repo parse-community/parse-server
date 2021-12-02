@@ -565,7 +565,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       } else if (search.$caseSensitive) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive,')
         );
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {

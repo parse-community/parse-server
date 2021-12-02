@@ -893,17 +893,26 @@ function transformConstraint(constraint, field, count = false) {
       case '$text': {
         const search = constraint[key].$search;
         if (typeof search !== 'object') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $search, should be object`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('object', '$text: $search,')
+          );
         }
         if (!search.$term || typeof search.$term !== 'string') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $term, should be string`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('string', '$text: $term,')
+          );
         } else {
           answer[key] = {
             $search: search.$term,
           };
         }
         if (search.$language && typeof search.$language !== 'string') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $language, should be string`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('string', '$text: $language,')
+          );
         } else if (search.$language) {
           answer[key].$language = search.$language;
         }
@@ -918,7 +927,7 @@ function transformConstraint(constraint, field, count = false) {
         if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `bad $text: $diacriticSensitive, should be boolean`
+            ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive')
           );
         } else if (search.$diacriticSensitive) {
           answer[key].$diacriticSensitive = search.$diacriticSensitive;
