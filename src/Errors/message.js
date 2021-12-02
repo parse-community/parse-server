@@ -1,7 +1,7 @@
 export const ErrorMessage = {
   masterKeyReadOnly: () => 'Cannot perform a write operation when using readOnlyMasterKey.',
   noEmpty: (field, isField = true) =>
-    `${isField === true ? 'The field ' : ''} must not be empty, null or undefined.`,
+    `${isField === true ? 'The field ' : ''}${field} must not be empty, null or undefined.`,
   invalid: (field, isField = true) => `${isField === true ? 'The field' : ''} ${field} is invalid.`,
   unauthorizedAccess: (type, value) => `This user is not allowed to access ${type}: ${value}`,
   notFound: type => `${type} not found.`,

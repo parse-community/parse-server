@@ -6,6 +6,7 @@ const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const RestWrite = require('../lib/RestWrite');
 const request = require('../lib/request');
+const { ErrorMessage } = require('../lib/Errors/message');
 
 let config;
 let database;
@@ -77,7 +78,7 @@ describe('rest create', () => {
       objectId: '',
     };
 
-    const err = 'The field objectId must not be empty, null or undefined.';
+    const err = ErrorMessage.noEmpty('ObjectId');
 
     expect(() => rest.create(config, auth.nobody(config), 'MyClass', objIdEmpty)).toThrowError(err);
 
@@ -214,7 +215,7 @@ describe('rest create', () => {
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
         expect(err.message).toEqual(
-          'This user is not allowed to access non-existent class: ClientClassCreation.'
+          ErrorMessage.unauthorizedAccess('class', 'ClientClassCreation')
         );
         done();
       }
@@ -504,7 +505,7 @@ describe('rest create', () => {
     }).then(fail, response => {
       const b = response.data;
       expect(b.code).toEqual(105);
-      expect(b.error).toEqual('objectId is an invalid field name.');
+      expect(b.error).toEqual(ErrorMessage.invalid('objectId'));
       done();
     });
   });
@@ -526,7 +527,7 @@ describe('rest create', () => {
     }).then(fail, response => {
       const b = response.data;
       expect(b.code).toEqual(105);
-      expect(b.error).toEqual('id is an invalid field name.');
+      expect(b.error).toEqual(ErrorMessage.invalid('id'));
       done();
     });
   });
