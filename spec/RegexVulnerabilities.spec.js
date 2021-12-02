@@ -1,3 +1,4 @@
+const { ErrorMessage } = require('../lib/Errors/message');
 const request = require('../lib/request');
 
 const serverURL = 'http://localhost:8378/1';
@@ -148,7 +149,7 @@ describe('Regex Vulnerabilities', function () {
         fail('should not work');
       } catch (e) {
         expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-        expect(e.message).toEqual('Invalid username/password.');
+        expect(e.message).toEqual(ErrorMessage.invalid('username/password'));
       }
     });
 
