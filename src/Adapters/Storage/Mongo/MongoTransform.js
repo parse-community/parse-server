@@ -927,7 +927,7 @@ function transformConstraint(constraint, field, count = false) {
         if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive')
+            ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive,')
           );
         } else if (search.$diacriticSensitive) {
           answer[key].$diacriticSensitive = search.$diacriticSensitive;
