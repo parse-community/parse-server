@@ -198,7 +198,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(400);
-        expect(res.text).toMatch('{"code":201,"error":"Password is required."}');
+        expect(res.text).toMatch(
+          '{"code":201,"error":"' + ErrorMessage.required('password') + '"}'
+        );
         done();
       })
       .catch(err => {
