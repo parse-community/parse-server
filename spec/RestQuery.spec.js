@@ -166,7 +166,7 @@ describe('rest query', () => {
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
         expect(err.message).toEqual(
-          ErrorMessage.unauthorizedAccess('Class', 'ClientClassCreation')
+          ErrorMessage.unauthorizedAccess('class', 'ClientClassCreation')
         );
         done();
       }
