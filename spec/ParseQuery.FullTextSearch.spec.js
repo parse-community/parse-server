@@ -149,7 +149,7 @@ describe('Parse.Query Full Text Search testing', () => {
     await expectAsync(query.find()).toBeRejectedWith(
       new Parse.Error(
         Parse.Error.INVALID_JSON,
-        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive')
+        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive,')
       )
     );
   });
