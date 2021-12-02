@@ -111,7 +111,10 @@ describe('Parse.Query Full Text Search testing', () => {
       }
     };
     await expectAsync(invalidQuery()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $search, should be object')
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        ErrorMessage.queryValueTypeInvalid('object', '$text: $search,')
+      )
     );
   });
 
