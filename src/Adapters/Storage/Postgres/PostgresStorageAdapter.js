@@ -525,7 +525,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (!(arr instanceof Array)) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('array', '$containedBy:')
+          ErrorMessage.queryValueTypeInvalid('an array', '$containedBy:')
         );
       }
 
@@ -540,7 +540,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (typeof search !== 'object') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('object', '$text: $search,')
+          ErrorMessage.queryValueTypeInvalid('an object', '$text: $search,')
         );
       }
       if (!search.$term || typeof search.$term !== 'string') {
@@ -571,7 +571,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('array', '$text: $diacriticSensitive,')
+          ErrorMessage.queryValueTypeInvalid('an array', '$text: $diacriticSensitive,')
         );
       } else if (search.$diacriticSensitive === false) {
         throw new Parse.Error(

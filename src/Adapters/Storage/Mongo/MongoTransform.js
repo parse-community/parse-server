@@ -878,7 +878,7 @@ function transformConstraint(constraint, field, count = false) {
         if (!(arr instanceof Array)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('array', '$containedBy:')
+            ErrorMessage.queryValueTypeInvalid('an array', '$containedBy:')
           );
         }
         answer.$elemMatch = {
