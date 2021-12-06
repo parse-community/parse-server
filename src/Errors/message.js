@@ -32,7 +32,7 @@ export const ErrorMessage = {
   geoJsonInvalidVertices: () => 'GeoJSON: Loop must have at least 3 different vertices.',
   invalidPolygonValues: () => 'Polygon must have atleast 3 values.',
   invalidNestedKey: () => "Nested keys should not contain the '$' or '.' characters",
-  objectFieldValueInvalid: type => `Invalid ${type} value`,
+  objectFieldValueInvalid: type => `Invalid ${type} value provided.`,
   queryAllValueInvalid: value => `All $all values must be of regex type or none: ${value}.`,
   queryValueTypeInvalid: (type, key, value) =>
     `Invalid ${key}: ${value}${value ? ',' : ''} should be ${type}.`,
