@@ -6,8 +6,8 @@ export const ErrorMessage = {
   unauthorizedAccess: (type, value) => `This user is not allowed to access ${type}: ${value}`,
   notFound: type => `${type} not found.`,
   exists: (type, key) => `${type} ${key} already exists`,
-  required: (field, op = ' to save/update the object', isField = false) =>
-    `A value for ${isField === true ? 'field ' : ''}${field} is required${op}.`,
+  required: (field, op = 'to save/update the object', isField = false) =>
+    `A value for ${isField === true ? 'field ' : ''}${field} is required${op ? ' ' : ''}${op}.`,
   verified: type => `${type} is already verified.`,
   unverified: type => `${type} is not verified.`,
   noUpdate: (type, key) => `Can not update ${type} ${key}`,
