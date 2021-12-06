@@ -878,7 +878,7 @@ function transformConstraint(constraint, field, count = false) {
         if (!(arr instanceof Array)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('an array', '$containedBy:')
+            ErrorMessage.queryValueTypeInvalid('an array', '$containedBy')
           );
         }
         answer.$elemMatch = {
@@ -895,13 +895,13 @@ function transformConstraint(constraint, field, count = false) {
         if (typeof search !== 'object') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('object', '$text: $search')
+            ErrorMessage.queryValueTypeInvalid('object', '$text', '$search')
           );
         }
         if (!search.$term || typeof search.$term !== 'string') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('string', '$text: $term')
+            ErrorMessage.queryValueTypeInvalid('string', '$text', '$term')
           );
         } else {
           answer[key] = {
@@ -911,7 +911,7 @@ function transformConstraint(constraint, field, count = false) {
         if (search.$language && typeof search.$language !== 'string') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('string', '$text: $language')
+            ErrorMessage.queryValueTypeInvalid('string', '$text', '$language')
           );
         } else if (search.$language) {
           answer[key].$language = search.$language;
@@ -919,7 +919,7 @@ function transformConstraint(constraint, field, count = false) {
         if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive')
+            ErrorMessage.queryValueTypeInvalid('boolean', '$text', '$caseSensitive')
           );
         } else if (search.$caseSensitive) {
           answer[key].$caseSensitive = search.$caseSensitive;
@@ -927,7 +927,7 @@ function transformConstraint(constraint, field, count = false) {
         if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive')
+            ErrorMessage.queryValueTypeInvalid('boolean', '$text', '$diacriticSensitive')
           );
         } else if (search.$diacriticSensitive) {
           answer[key].$diacriticSensitive = search.$diacriticSensitive;

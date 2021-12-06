@@ -34,7 +34,8 @@ export const ErrorMessage = {
   invalidNestedKey: () => "Nested keys should not contain the '$' or '.' characters",
   objectFieldValueInvalid: type => `bad ${type} value.`,
   queryAllValueInvalid: value => `All $all values must be of regex type or none: ${value}.`,
-  queryValueTypeInvalid: (type, value) => `bad ${value}, should be ${type}.`,
+  queryValueTypeInvalid: (type, key, value) =>
+    `bad ${key}: ${value}${value ? ',' : ''} should be ${type}.`,
   valueNotSupported: value =>
     `bad ${value} not supported, please use $regex or create a separate lower case column.`,
   databasePostgresExtensionRequired: (value, extension) =>

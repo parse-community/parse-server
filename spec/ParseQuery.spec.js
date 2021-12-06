@@ -981,7 +981,7 @@ describe('Parse.Query testing', () => {
       .then(done.fail)
       .catch(response => {
         equal(response.data.code, Parse.Error.INVALID_JSON);
-        equal(response.data.error, ErrorMessage.queryValueTypeInvalid('an array', '$containedBy:'));
+        equal(response.data.error, ErrorMessage.queryValueTypeInvalid('an array', '$containedBy'));
         done();
       });
   });
