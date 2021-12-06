@@ -32,14 +32,14 @@ export const ErrorMessage = {
   geoJsonInvalidVertices: () => 'GeoJSON: Loop must have at least 3 different vertices.',
   invalidPolygonValues: () => 'Polygon must have atleast 3 values.',
   invalidNestedKey: () => "Nested keys should not contain the '$' or '.' characters",
-  objectFieldValueInvalid: type => `bad ${type} value`,
+  objectFieldValueInvalid: type => `Invalid ${type} value`,
   queryAllValueInvalid: value => `All $all values must be of regex type or none: ${value}.`,
   queryValueTypeInvalid: (type, key, value) =>
-    `bad ${key}: ${value}${value ? ',' : ''} should be ${type}.`,
+    `Invalid ${key}: ${value}${value ? ',' : ''} should be ${type}.`,
   valueNotSupported: value =>
-    `bad ${value} not supported, please use $regex or create a separate lower case column.`,
+    `Invalid ${value} not supported, please use $regex or create a separate lower case column.`,
   databasePostgresExtensionRequired: (value, extension) =>
-    `bad ${value} not supported, install ${extension} Extension.`,
+    `Invalid ${value} not supported, install ${extension} Extension.`,
   fieldMissingForVerificationFunc: () =>
     'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.',
 };
