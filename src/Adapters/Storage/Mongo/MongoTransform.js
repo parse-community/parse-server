@@ -835,7 +835,10 @@ function transformConstraint(constraint, field, count = false) {
       case '$nin': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.objectFieldValueInvalid(key)
+          );
         }
         answer[key] = _.flatMap(arr, value => {
           return (atom => {
@@ -851,7 +854,10 @@ function transformConstraint(constraint, field, count = false) {
       case '$all': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.objectFieldValueInvalid(key)
+          );
         }
         answer[key] = arr.map(transformInteriorAtom);
 
@@ -1017,7 +1023,10 @@ function transformConstraint(constraint, field, count = false) {
               return point;
             }
             if (!GeoPointCoder.isValidJSON(point)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                ErrorMessage.objectFieldValueInvalid('$geoWithin')
+              );
             } else {
               Parse.GeoPoint._validate(point.latitude, point.longitude);
             }

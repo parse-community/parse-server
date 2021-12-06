@@ -1320,7 +1320,7 @@ describe('Parse.Query testing', () => {
       .then(done.fail)
       .catch(error => {
         equal(error.code, Parse.Error.INVALID_JSON);
-        expect(['bad $in value', 'bad $in value.'].indexOf(error.message) > -1).toBeTruthy();
+        equal(error.message, ErrorMessage.objectFieldValueInvalid('$in'));
         done();
       });
   });
@@ -1340,7 +1340,7 @@ describe('Parse.Query testing', () => {
       .then(done.fail)
       .catch(error => {
         equal(error.code, Parse.Error.INVALID_JSON);
-        expect(['bad $nin value', 'bad $nin value.'].indexOf(error.message) > -1).toBeTruthy();
+        equal(error.message, ErrorMessage.objectFieldValueInvalid('$nin'));
         done();
       });
   });
