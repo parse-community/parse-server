@@ -113,7 +113,7 @@ describe('Parse.Query Full Text Search testing', () => {
     await expectAsync(invalidQuery()).toBeRejectedWith(
       new Parse.Error(
         Parse.Error.INVALID_JSON,
-        ErrorMessage.queryValueTypeInvalid('object', '$text: $search,')
+        ErrorMessage.queryValueTypeInvalid('object', '$text: $search')
       )
     );
   });
@@ -125,7 +125,7 @@ describe('Parse.Query Full Text Search testing', () => {
     await expectAsync(query.find()).toBeRejectedWith(
       new Parse.Error(
         Parse.Error.INVALID_JSON,
-        ErrorMessage.queryValueTypeInvalid('string', '$text: $language,')
+        ErrorMessage.queryValueTypeInvalid('string', '$text: $language')
       )
     );
   });
@@ -137,7 +137,7 @@ describe('Parse.Query Full Text Search testing', () => {
     await expectAsync(query.find()).toBeRejectedWith(
       new Parse.Error(
         Parse.Error.INVALID_JSON,
-        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive,')
+        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive')
       )
     );
   });
@@ -149,7 +149,7 @@ describe('Parse.Query Full Text Search testing', () => {
     await expectAsync(query.find()).toBeRejectedWith(
       new Parse.Error(
         Parse.Error.INVALID_JSON,
-        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive,')
+        ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive')
       )
     );
   });

@@ -540,19 +540,19 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (typeof search !== 'object') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('object', '$text: $search,')
+          ErrorMessage.queryValueTypeInvalid('object', '$text: $search')
         );
       }
       if (!search.$term || typeof search.$term !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('string', '$text: $term,')
+          ErrorMessage.queryValueTypeInvalid('string', '$text: $term')
         );
       }
       if (search.$language && typeof search.$language !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('string', '$text: $language,')
+          ErrorMessage.queryValueTypeInvalid('string', '$text: $language')
         );
       } else if (search.$language) {
         language = search.$language;
@@ -560,18 +560,18 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive,')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive')
         );
       } else if (search.$caseSensitive) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive,')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $caseSensitive')
         );
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive,')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text: $diacriticSensitive')
         );
       } else if (search.$diacriticSensitive === false) {
         throw new Parse.Error(
