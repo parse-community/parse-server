@@ -270,6 +270,41 @@ describe('matchesQuery', function () {
     expect(matchesQuery(obj1, q)).toBe(true);
   });
 
+  it('matches on queries with new format #parse-SDK-JS/pull/1373 for Pointer', function () {
+    const obj1 = {
+      objectId: 'Person01',
+      name: 'Bill',
+      age: 34,
+    };
+
+    const obj2 = {
+      objectId: 'Car01',
+      name: 'Volkswagen',
+      owner: pointer('Person', obj1.objectId),
+    };
+
+    const q = {
+      owner: {
+        $eq: pointer('Person', obj1.objectId),
+      },
+    };
+    expect(matchesQuery(obj2, q)).toBe(true);
+  });
+
+  it('matches on queries with new format #parse-SDK-JS/pull/1373 for Object', function () {
+    const obj1 = {
+      id: new Id('Person', '01'),
+      addr: { planet: 'Earth' },
+    };
+
+    const q = {
+      addr: {
+        $eq: { planet: 'Earth' },
+      },
+    };
+    expect(matchesQuery(obj1, q)).toBe(true);
+  });
+
   it('matches on inequalities', function () {
     const player = {
       id: new Id('Person', 'O1'),
