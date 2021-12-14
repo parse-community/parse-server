@@ -488,7 +488,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         if (!isAllValuesRegexOrNone(fieldValue.$all)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            ErrorMessage.queryAllValueInvalid(fieldValue.$all)
+            ErrorMessage.queryValueTypeInvalid(`regex type or none: ${fieldValue.$all}`, '$all')
           );
         }
 
