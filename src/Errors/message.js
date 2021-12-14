@@ -30,16 +30,13 @@ export const ErrorMessage = {
   duplicateValue: () => 'A duplicate value for a field with unique values was provided.',
   databaseAdapterError: () => 'Database adapter error.',
   geoJsonInvalidVertices: () => 'GeoJSON: Loop must have at least 3 different vertices.',
-  invalidPolygonValues: () => 'Polygon must have atleast 3 values.',
+  invalidPolygonValues: () => 'Polygon must have at least 3 values.',
   invalidNestedKey: () => "Nested keys should not contain the '$' or '.' characters",
   objectFieldValueInvalid: type => `Invalid ${type} value provided.`,
   queryAllValueInvalid: value => `All $all values must be of regex type or none: ${value}.`,
-  queryValueTypeInvalid: (type, key, value) =>
-    `Invalid ${key}: ${value}${value ? ',' : ''} should be ${type}.`,
-  valueNotSupported: value =>
-    `Invalid ${value} not supported, please use $regex or create a separate lower case column.`,
-  databasePostgresExtensionRequired: (value, extension) =>
-    `Invalid ${value} not supported, install ${extension} Extension.`,
+  queryValueTypeInvalid: (type, key) => `Value of '${key}' must be of type ${type}.`,
+  databasePostgresExtensionRequired: (key, extension) =>
+    `Query key ${key} requires Postgres extension ${extension}.`,
   fieldMissingForVerificationFunc: () =>
     'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.',
 };
