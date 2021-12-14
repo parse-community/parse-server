@@ -560,18 +560,18 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('boolean', '$text', '$caseSensitive')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text.$caseSensitive')
         );
       } else if (search.$caseSensitive) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('boolean', '$text', '$caseSensitive')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text.$caseSensitive')
         );
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          ErrorMessage.queryValueTypeInvalid('boolean', '$text', '$diacriticSensitive')
+          ErrorMessage.queryValueTypeInvalid('boolean', '$text.$diacriticSensitive')
         );
       } else if (search.$diacriticSensitive === false) {
         throw new Parse.Error(
