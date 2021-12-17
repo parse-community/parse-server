@@ -107,7 +107,7 @@ describe('Password Policy: ', () => {
           })
             .then(response => {
               expect(response.status).toEqual(302);
-              const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=testResetTokenValidity/;
+              const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=testResetTokenValidity/;
               expect(response.text.match(re)).not.toBe(null);
               done();
             })
@@ -622,7 +622,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -714,7 +714,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -900,7 +900,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -991,7 +991,7 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         });
         expect(response.status).toEqual(302);
-        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+        const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
         const match = response.text.match(re);
         if (!match) {
           fail('should have a token');
@@ -1051,7 +1051,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1317,7 +1317,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1472,7 +1472,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/127\.0\.0\.1:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
