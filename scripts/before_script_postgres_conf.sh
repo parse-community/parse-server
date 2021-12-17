@@ -11,7 +11,7 @@ echo "[SCRIPT] Before Script :: Setup Parse Postgres configuration file"
 # CPUs num: 1
 # Data Storage: ssd
 
-PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -h localhost -U postgres <<-EOSQL
+PGPASSWORD=postgres psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres <<-EOSQL
     ALTER SYSTEM SET max_connections TO '200';
     ALTER SYSTEM SET shared_buffers TO '1536MB';
     ALTER SYSTEM SET effective_cache_size TO '4608MB';

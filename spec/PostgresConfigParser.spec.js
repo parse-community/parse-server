@@ -23,7 +23,7 @@ describe('PostgresConfigParser.parseQueryParams', () => {
   });
 });
 
-const baseURI = 'postgres://username:password@localhost:5432/db-name';
+const baseURI = 'postgres://username:password@127.0.0.1:5432/db-name';
 const testfile = fs.readFileSync('./Dockerfile').toString();
 const dbOptionsTest = {};
 dbOptionsTest[

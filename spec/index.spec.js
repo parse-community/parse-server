@@ -64,7 +64,7 @@ describe('server', () => {
   it('fails if database is unreachable', done => {
     reconfigureServer({
       databaseAdapter: new MongoStorageAdapter({
-        uri: 'mongodb://fake:fake@localhost:43605/drew3',
+        uri: 'mongodb://fake:fake@127.0.0.1:43605/drew3',
         mongoOptions: {
           serverSelectionTimeoutMS: 2000,
         },

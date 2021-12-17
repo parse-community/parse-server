@@ -23,7 +23,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example');
     const options = {
       suffix: 'o=example',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
     };
     await ldap.validateAuthData({ id: 'testuser', password: 'secret' }, options);
@@ -34,7 +34,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
-      url: `ldaps://localhost:${sslport}`,
+      url: `ldaps://127.0.0.1:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: { rejectUnauthorized: false },
     };
@@ -46,7 +46,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
-      url: `ldaps://localhost:${sslport}`,
+      url: `ldaps://127.0.0.1:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
         ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
@@ -61,7 +61,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
-      url: `ldaps://localhost:${sslport}`,
+      url: `ldaps://127.0.0.1:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
         ca: fs.readFileSync(__dirname + '/support/cert/anothercert.pem'),
@@ -81,7 +81,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(sslport, 'uid=testuser, o=example', false, true);
     const options = {
       suffix: 'o=example',
-      url: `ldaps://localhost:${sslport}`,
+      url: `ldaps://127.0.0.1:${sslport}`,
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
         ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
@@ -101,7 +101,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example');
     const options = {
       suffix: 'o=example',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
     };
     try {
@@ -117,7 +117,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example');
     const options = {
       suffix: 'o=example',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
       groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
@@ -130,7 +130,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example');
     const options = {
       suffix: 'o=example',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'groupTheUserIsNotIn',
       groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
@@ -148,7 +148,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example');
     const options = {
       suffix: 'o=invalid',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
       groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
@@ -166,7 +166,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example', true);
     const options = {
       suffix: 'o=example',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
       groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
@@ -184,7 +184,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example', true);
     const options = {
       suffix: 'o=example',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
     };
     const authData = { id: 'testuser', password: 'secret' };
@@ -197,7 +197,7 @@ describe('Ldap Auth', () => {
     const server = await mockLdapServer(port, 'uid=testuser, o=example', true);
     const options = {
       suffix: 'o=example',
-      url: `ldap://localhost:${port}`,
+      url: `ldap://127.0.0.1:${port}`,
       dn: 'uid={{id}}, o=example',
     };
     await reconfigureServer({ auth: { ldap: options } });

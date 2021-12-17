@@ -223,7 +223,7 @@ jobs:
           --health-retries 5
     env:
       PARSE_SERVER_TEST_DB: postgres
-      PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
+      PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@127.0.0.1:5432/parse_server_postgres_adapter_test_database
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2

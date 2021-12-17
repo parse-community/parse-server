@@ -128,7 +128,7 @@ describe('OAuth', function () {
 
   it('Should fail a request', done => {
     const options = {
-      host: 'localhost',
+      host: '127.0.0.1',
       consumer_key: 'XXXXXXXXXXXXXXXXXXXXXXXXX',
       consumer_secret: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
     };

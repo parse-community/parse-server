@@ -7,7 +7,7 @@ function getDatabaseOptionsFromURI(uri) {
   const queryParams = parseQueryParams(parsedURI.query);
   const authParts = parsedURI.auth ? parsedURI.auth.split(':') : [];
 
-  databaseOptions.host = parsedURI.hostname || 'localhost';
+  databaseOptions.host = parsedURI.hostname || '127.0.0.1';
   databaseOptions.port = parsedURI.port ? parseInt(parsedURI.port) : 5432;
   databaseOptions.database = parsedURI.pathname ? parsedURI.pathname.substr(1) : undefined;
 

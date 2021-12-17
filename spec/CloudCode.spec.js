@@ -1665,7 +1665,7 @@ describe('Cloud Code', () => {
 
       request({
         method: 'POST',
-        url: `http://${Parse.applicationId}:${Parse.masterKey}@localhost:8378/1/jobs/myJob`,
+        url: `http://${Parse.applicationId}:${Parse.masterKey}@127.0.0.1:8378/1/jobs/myJob`,
       })
         .then(async response => {
           const jobStatusId = response.headers['x-parse-job-status-id'];

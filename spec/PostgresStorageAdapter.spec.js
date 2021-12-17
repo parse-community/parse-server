@@ -2,7 +2,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const databaseURI =
   process.env.PARSE_SERVER_TEST_DATABASE_URI ||
-  'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+  'postgres://127.0.0.1:5432/parse_server_postgres_adapter_test_database';
 const Config = require('../lib/Config');
 
 const getColumns = (client, className) => {

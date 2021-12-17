@@ -42,7 +42,7 @@ const RESTController = require('parse/lib/node/RESTController');
 const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://127.0.0.1:27017/parseServerMongoAdapterTestDatabase';
-const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const postgresURI = 'postgres://127.0.0.1:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 // need to bind for mocking mocha
 

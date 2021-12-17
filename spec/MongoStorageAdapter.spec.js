@@ -24,10 +24,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('auto-escapes symbols in auth information', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
-      uri: 'mongodb://user!with@+ symbols:password!with@+ symbols@localhost:1234/parse',
+      uri: 'mongodb://user!with@+ symbols:password!with@+ symbols@127.0.0.1:1234/parse',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
-      'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
+      'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@127.0.0.1:1234/parse',
       jasmine.any(Object)
     );
   });
@@ -35,10 +35,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it("doesn't double escape already URI-encoded information", () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
-      uri: 'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
+      uri: 'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@127.0.0.1:1234/parse',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
-      'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
+      'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@127.0.0.1:1234/parse',
       jasmine.any(Object)
     );
   });

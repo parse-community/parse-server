@@ -411,7 +411,7 @@ describe('ParseGraphQLServer', () => {
       await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
 
       const subscriptionClient = new SubscriptionClient(
-        'ws://localhost:13377/subscriptions',
+        'ws://127.0.0.1:13377/subscriptions',
         {
           reconnect: true,
           connectionParams: headers,
