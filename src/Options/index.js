@@ -62,7 +62,7 @@ export interface ParseServerOptions {
   :ENV: SILENT */
   silent: ?boolean;
   /* The full URI to your database. Supported databases are mongodb or postgres.
-  :DEFAULT: mongodb://localhost:27017/parse */
+  :DEFAULT: mongodb://127.0.0.1:27017/parse */
   databaseURI: string;
   /* Options to pass to the database client
   :ENV: PARSE_SERVER_DATABASE_OPTIONS */

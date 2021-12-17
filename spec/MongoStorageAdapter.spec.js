@@ -2,7 +2,7 @@
 
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const { MongoClient } = require('mongodb');
-const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const databaseURI = 'mongodb://127.0.0.1:27017/parseServerMongoAdapterTestDatabase';
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
@@ -383,7 +383,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         await reconfigureServer({
           databaseAdapter: undefined,
           databaseURI:
-            'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
+            'mongodb://127.0.0.1:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
         });
         await TestUtils.destroyAllDataPermanently(true);
       });

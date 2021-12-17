@@ -49,7 +49,7 @@ describe_only_db('mongo')('Read preference option', () => {
   xit('should preserve the read preference set (#4831)', async () => {
     const { MongoStorageAdapter } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
     const adapterOptions = {
-      uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+      uri: 'mongodb://127.0.0.1:27017/parseServerMongoAdapterTestDatabase',
       mongoOptions: {
         readPreference: ReadPreference.NEAREST,
       },

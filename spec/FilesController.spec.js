@@ -6,7 +6,7 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
 const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
-const databaseURI = 'mongodb://localhost:27017/parse';
+const databaseURI = 'mongodb://127.0.0.1:27017/parse';
 
 const mockAdapter = {
   createFile: () => {
@@ -24,7 +24,7 @@ const mockAdapter = {
 describe('FilesController', () => {
   it('should properly expand objects', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://127.0.0.1:27017/parse');
     const filesController = new FilesController(gridStoreAdapter);
     const result = filesController.expandFilesInObject(config, function () {});
 
@@ -88,7 +88,7 @@ describe('FilesController', () => {
 
   it('should add a unique hash to the file name when the preserveFileName option is false', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://127.0.0.1:27017/parse');
     spyOn(gridStoreAdapter, 'createFile');
     gridStoreAdapter.createFile.and.returnValue(Promise.resolve());
     const fileName = 'randomFileName.pdf';
@@ -109,7 +109,7 @@ describe('FilesController', () => {
 
   it('should not add a unique hash to the file name when the preserveFileName option is true', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://127.0.0.1:27017/parse');
     spyOn(gridStoreAdapter, 'createFile');
     gridStoreAdapter.createFile.and.returnValue(Promise.resolve());
     const fileName = 'randomFileName.pdf';
@@ -135,14 +135,14 @@ describe('FilesController', () => {
   });
 
   it('should reject slashes in file names', done => {
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://127.0.0.1:27017/parse');
     const fileName = 'foo/randomFileName.pdf';
     expect(gridStoreAdapter.validateFilename(fileName)).not.toBe(null);
     done();
   });
 
   it('should also reject slashes in file names', done => {
-    const gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
+    const gridStoreAdapter = new GridStoreAdapter('mongodb://127.0.0.1:27017/parse');
     const fileName = 'foo/randomFileName.pdf';
     expect(gridStoreAdapter.validateFilename(fileName)).not.toBe(null);
     done();

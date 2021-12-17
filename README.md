@@ -143,7 +143,7 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 ```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://127.0.0.1/test
 ```
 ***Note:*** *If installation with* `-g` *fails due to permission problems* (`npm ERR! code 'EACCES'`), *please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions).*
 
@@ -270,7 +270,7 @@ var ParseServer = require('parse-server').ParseServer;
 var app = express();
 
 var api = new ParseServer({
-  databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
+  databaseURI: 'mongodb://127.0.0.1:27017/dev', // Connection string for your MongoDB database
   cloud: './cloud/main.js', // Path to your Cloud Code
   appId: 'myAppId',
   masterKey: 'myMasterKey', // Keep this key secret!
@@ -766,7 +766,7 @@ The easiest way to run the Parse GraphQL API is through the CLI:
 ```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://127.0.0.1:1337/parse --mountGraphQL --mountPlayground
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://127.0.0.1/test --publicServerURL http://127.0.0.1:1337/parse --mountGraphQL --mountPlayground
 ```
 
 After starting the server, you can visit http://127.0.0.1:1337/playground in your browser to start playing with your GraphQL API.
@@ -815,7 +815,7 @@ const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
 const app = express();
 
 const parseServer = new ParseServer({
-  databaseURI: 'mongodb://localhost:27017/test',
+  databaseURI: 'mongodb://127.0.0.1:27017/test',
   appId: 'APPLICATION_ID',
   masterKey: 'MASTER_KEY',
   serverURL: 'http://127.0.0.1:1337/parse',
@@ -1028,7 +1028,7 @@ Parse GraphQL Server allows you to create a custom GraphQL schema with own queri
 To start creating your custom schema, you need to code a `schema.graphql` file and initialize Parse Server with `--graphQLSchema` and `--cloud` options:
 
 ```bash
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://127.0.0.1:1337/parse --cloud ./cloud/main.js --graphQLSchema ./cloud/schema.graphql --mountGraphQL --mountPlayground
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://127.0.0.1/test --publicServerURL http://127.0.0.1:1337/parse --cloud ./cloud/main.js --graphQLSchema ./cloud/schema.graphql --mountGraphQL --mountPlayground
 ```
 
 ### Creating your first custom query <!-- omit in toc -->

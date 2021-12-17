@@ -2,7 +2,7 @@ const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridS
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
 const { randomString } = require('../lib/cryptoUtils');
-const databaseURI = 'mongodb://localhost:27017/parse';
+const databaseURI = 'mongodb://127.0.0.1:27017/parse';
 const request = require('../lib/request');
 
 async function expectMissingFile(gfsAdapter, name) {
@@ -439,7 +439,7 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   });
 
   it('handleShutdown, close connection', async () => {
-    const databaseURI = 'mongodb://localhost:27017/parse';
+    const databaseURI = 'mongodb://127.0.0.1:27017/parse';
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
 
     const db = await gfsAdapter._connect();

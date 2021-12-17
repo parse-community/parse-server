@@ -239,7 +239,7 @@ describe('Parse.User testing', () => {
 
   it_only_db('mongo')('should let legacy users without ACL login', async () => {
     await reconfigureServer();
-    const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    const databaseURI = 'mongodb://127.0.0.1:27017/parseServerMongoAdapterTestDatabase';
     const adapter = new MongoStorageAdapter({
       collectionPrefix: 'test_',
       uri: databaseURI,

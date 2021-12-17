@@ -8,7 +8,7 @@ const FilesController = require('../lib/Controllers/FilesController').default;
 // Small additional tests to improve overall coverage
 describe_only_db('mongo')('GridStoreAdapter', () => {
   it('should properly instanciate the GridStore when deleting a file', async done => {
-    const databaseURI = 'mongodb://localhost:27017/parse';
+    const databaseURI = 'mongodb://127.0.0.1:27017/parse';
     const config = Config.get(Parse.applicationId);
     const gridStoreAdapter = new GridStoreAdapter(databaseURI);
     const db = await gridStoreAdapter._connect();
@@ -93,7 +93,7 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
   });
 
   it('handleShutdown, close connection', async () => {
-    const databaseURI = 'mongodb://localhost:27017/parse';
+    const databaseURI = 'mongodb://127.0.0.1:27017/parse';
     const gridStoreAdapter = new GridStoreAdapter(databaseURI);
 
     const db = await gridStoreAdapter._connect();

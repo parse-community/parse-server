@@ -107,7 +107,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_DATABASE_URI',
     help: 'The full URI to your database. Supported databases are mongodb or postgres.',
     required: true,
-    default: 'mongodb://localhost:27017/parse',
+    default: 'mongodb://127.0.0.1:27017/parse',
   },
   directAccess: {
     env: 'PARSE_SERVER_DIRECT_ACCESS',

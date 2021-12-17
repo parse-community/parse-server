@@ -53,7 +53,7 @@ describe('Server Url Checks', () => {
   });
 
   xit('handleShutdown, close connection', done => {
-    const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    const mongoURI = 'mongodb://127.0.0.1:27017/parseServerMongoAdapterTestDatabase';
     const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
     let databaseAdapter;
     if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
