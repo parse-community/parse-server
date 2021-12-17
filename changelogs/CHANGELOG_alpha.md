@@ -1,3 +1,10 @@
+# [5.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.12...5.0.0-alpha.13) (2021-12-08)
+
+
+### Bug Fixes
+
+* node engine compatibility did not include node 16 ([#7739](https://github.com/parse-community/parse-server/issues/7739)) ([ea7c014](https://github.com/parse-community/parse-server/commit/ea7c01400f992a1263543706fe49b6174758a2d6))
+
 # [5.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.11...5.0.0-alpha.12) (2021-12-06)
 
 
