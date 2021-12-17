@@ -25,12 +25,12 @@ describe('Server Url Checks', () => {
   });
 
   afterAll(done => {
-    Parse.serverURL = 'http://localhost:8378/1';
+    Parse.serverURL = 'http://127.0.0.1:8378/1';
     server.close(done);
   });
 
   it('validate good server url', done => {
-    Parse.serverURL = 'http://localhost:13376';
+    Parse.serverURL = 'http://127.0.0.1:13376';
     ParseServer.verifyServerUrl(async result => {
       if (!result) {
         done.fail('Did not pass valid url');

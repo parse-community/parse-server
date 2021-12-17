@@ -28,7 +28,7 @@ function createParseServer(options) {
   return new Promise((resolve, reject) => {
     const parseServer = new ParseServer.default(
       Object.assign({}, defaultConfiguration, options, {
-        serverURL: 'http://localhost:12668/parse',
+        serverURL: 'http://127.0.0.1:12668/parse',
         serverStartComplete: error => {
           if (error) {
             reject(error);
@@ -38,7 +38,7 @@ function createParseServer(options) {
             app.use('/parse', parseServer.app);
 
             const server = app.listen(12668);
-            Parse.serverURL = 'http://localhost:12668/parse';
+            Parse.serverURL = 'http://127.0.0.1:12668/parse';
             resolve(server);
           }
         },
@@ -52,7 +52,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
 
   afterAll(done => {
     if (server) {
-      Parse.serverURL = 'http://localhost:8378/1';
+      Parse.serverURL = 'http://127.0.0.1:8378/1';
       server.close(done);
     }
   });

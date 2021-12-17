@@ -208,7 +208,7 @@ describe('rest query', () => {
         const p0 = request({
           headers: headers,
           url:
-            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            'http://127.0.0.1:8378/1/classes/TestParameterEncode?' +
             querystring
               .stringify({
                 where: '{"foo":{"$ne": "baz"}}',
@@ -223,7 +223,7 @@ describe('rest query', () => {
         const p1 = request({
           headers: headers,
           url:
-            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            'http://127.0.0.1:8378/1/classes/TestParameterEncode?' +
             querystring
               .stringify({
                 limit: 1,

@@ -121,7 +121,7 @@ describe('ParseLiveQueryServer', function () {
         masterKey: 'world',
         port: 22345,
         mountPath: '/1',
-        serverURL: 'http://localhost:12345/1',
+        serverURL: 'http://127.0.0.1:12345/1',
         liveQuery: {
           classNames: ['Yolo'],
         },
@@ -143,7 +143,7 @@ describe('ParseLiveQueryServer', function () {
         masterKey: 'world',
         port: 22346,
         mountPath: '/1',
-        serverURL: 'http://localhost:12345/1',
+        serverURL: 'http://127.0.0.1:12345/1',
         liveQuery: {
           classNames: ['Yolo'],
         },

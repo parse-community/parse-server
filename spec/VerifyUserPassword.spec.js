@@ -355,7 +355,7 @@ describe('Verify User Password', () => {
   });
   it('fails to verify password when preventLoginWithUnverifiedEmail is set to true REST API', done => {
     reconfigureServer({
-      publicServerURL: 'http://localhost:8378/',
+      publicServerURL: 'http://127.0.0.1:8378/',
       appName: 'emailVerify',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
@@ -393,7 +393,7 @@ describe('Verify User Password', () => {
         duration: 1,
         threshold: 2,
       },
-      publicServerURL: 'http://localhost:8378/',
+      publicServerURL: 'http://127.0.0.1:8378/',
     })
       .then(() => {
         const user = new Parse.User();

@@ -200,7 +200,7 @@ npm install -s
 CURL_CMD=$(cat << EOF
 curl -X POST -H 'X-Parse-Application-Id: ${APP_ID}' \\
   -H 'Content-Type: application/json' \\
-  -d '{"foo":"bar"}' http://localhost:1337/parse/classes/TestObject
+  -d '{"foo":"bar"}' http://127.0.0.1:1337/parse/classes/TestObject
 EOF)
 
 echo "\n${CHECK} Happy Parsing!\n\n"

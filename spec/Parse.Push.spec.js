@@ -156,7 +156,7 @@ describe('Parse.Push', () => {
     await pushCompleted(pushStatusId);
     try {
       await request({
-        url: 'http://localhost:8378/1/classes/_PushStatus',
+        url: 'http://127.0.0.1:8378/1/classes/_PushStatus',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -181,7 +181,7 @@ describe('Parse.Push', () => {
     });
     await pushCompleted(pushStatusId);
     const response = await request({
-      url: 'http://localhost:8378/1/classes/_PushStatus',
+      url: 'http://127.0.0.1:8378/1/classes/_PushStatus',
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',

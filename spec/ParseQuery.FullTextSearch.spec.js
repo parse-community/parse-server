@@ -21,7 +21,7 @@ const fullTextHelper = async () => {
   await reconfigureServer({
     appId: 'test',
     restAPIKey: 'test',
-    publicServerURL: 'http://localhost:8378/1',
+    publicServerURL: 'http://127.0.0.1:8378/1',
     databaseAdapter,
   });
   await Parse.Object.saveAll(
@@ -97,7 +97,7 @@ describe('Parse.Query Full Text Search testing', () => {
       try {
         await request({
           method: 'POST',
-          url: 'http://localhost:8378/1/classes/TestObject',
+          url: 'http://127.0.0.1:8378/1/classes/TestObject',
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -186,7 +186,7 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
         expect(indexes.length).toEqual(1);
         return request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/schemas/TestObject',
+          url: 'http://127.0.0.1:8378/1/schemas/TestObject',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
@@ -216,7 +216,7 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
         };
         return request({
           method: 'POST',
-          url: 'http://localhost:8378/1/classes/TestObject',
+          url: 'http://127.0.0.1:8378/1/classes/TestObject',
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -232,7 +232,7 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
       .then(indexes => {
         expect(indexes.length).toEqual(2);
         request({
-          url: 'http://localhost:8378/1/schemas/TestObject',
+          url: 'http://127.0.0.1:8378/1/schemas/TestObject',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
@@ -284,7 +284,7 @@ describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', 
         };
         return request({
           method: 'POST',
-          url: 'http://localhost:8378/1/classes/TestObject',
+          url: 'http://127.0.0.1:8378/1/classes/TestObject',
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -318,7 +318,7 @@ describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', 
         };
         return request({
           method: 'POST',
-          url: 'http://localhost:8378/1/classes/TestObject',
+          url: 'http://127.0.0.1:8378/1/classes/TestObject',
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',

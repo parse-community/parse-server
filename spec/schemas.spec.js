@@ -147,7 +147,7 @@ describe('schemas', () => {
 
   it('requires the master key to get all schemas', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       json: true,
       headers: noAuthHeaders,
     }).then(fail, response => {
@@ -161,7 +161,7 @@ describe('schemas', () => {
 
   it('requires the master key to get one schema', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/SomeSchema',
+      url: 'http://127.0.0.1:8378/1/schemas/SomeSchema',
       json: true,
       headers: restKeyHeaders,
     }).then(fail, response => {
@@ -173,7 +173,7 @@ describe('schemas', () => {
 
   it('asks for the master key if you use the rest key', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       json: true,
       headers: restKeyHeaders,
     }).then(fail, response => {
@@ -185,7 +185,7 @@ describe('schemas', () => {
 
   it('creates _User schema when server starts', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       json: true,
       headers: masterKeyHeaders,
     }).then(response => {
@@ -218,7 +218,7 @@ describe('schemas', () => {
       })
       .then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas',
+          url: 'http://127.0.0.1:8378/1/schemas',
           json: true,
           headers: masterKeyHeaders,
         }).then(response => {
@@ -243,7 +243,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         json: true,
         headers: masterKeyHeaders,
       }).then(response => {
@@ -257,7 +257,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HASALLPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HASALLPOD',
         json: true,
         headers: masterKeyHeaders,
       }).then(fail, response => {
@@ -273,7 +273,7 @@ describe('schemas', () => {
 
   it('requires the master key to create a schema', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       json: true,
       headers: noAuthHeaders,
@@ -289,7 +289,7 @@ describe('schemas', () => {
 
   it('sends an error if you use mismatching class names', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/A',
+      url: 'http://127.0.0.1:8378/1/schemas/A',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -308,7 +308,7 @@ describe('schemas', () => {
 
   it('sends an error if you use no class name', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -325,7 +325,7 @@ describe('schemas', () => {
 
   it('sends an error if you try to create the same class twice', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -334,7 +334,7 @@ describe('schemas', () => {
       },
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas',
+        url: 'http://127.0.0.1:8378/1/schemas',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -354,7 +354,7 @@ describe('schemas', () => {
 
   it('responds with all fields when you create a class', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -384,7 +384,7 @@ describe('schemas', () => {
 
   it('responds with all fields and options when you create a class with field options', done => {
     request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -465,7 +465,7 @@ describe('schemas', () => {
   it('try to set a relation field as a required field', async done => {
     try {
       await request({
-        url: 'http://localhost:8378/1/schemas',
+        url: 'http://127.0.0.1:8378/1/schemas',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -491,7 +491,7 @@ describe('schemas', () => {
   it('try to set a relation field with a default value', async done => {
     try {
       await request({
-        url: 'http://localhost:8378/1/schemas',
+        url: 'http://127.0.0.1:8378/1/schemas',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -516,7 +516,7 @@ describe('schemas', () => {
 
   it('try to update schemas with a relation field with options', async done => {
     await request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -529,7 +529,7 @@ describe('schemas', () => {
     });
     try {
       await request({
-        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClassRelationWithOptions',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -552,7 +552,7 @@ describe('schemas', () => {
 
     try {
       await request({
-        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClassRelationWithOptions',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -578,7 +578,7 @@ describe('schemas', () => {
   it('validated the data type of default values when creating a new class', async () => {
     try {
       await request({
-        url: 'http://localhost:8378/1/schemas',
+        url: 'http://127.0.0.1:8378/1/schemas',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -600,7 +600,7 @@ describe('schemas', () => {
   it('validated the data type of default values when adding new fields', async () => {
     try {
       await request({
-        url: 'http://localhost:8378/1/schemas',
+        url: 'http://127.0.0.1:8378/1/schemas',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -612,7 +612,7 @@ describe('schemas', () => {
         },
       });
       await request({
-        url: 'http://localhost:8378/1/schemas/NewClassWithValidation',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClassWithValidation',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -639,7 +639,7 @@ describe('schemas', () => {
       )
       .then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/_Installation',
+          url: 'http://127.0.0.1:8378/1/schemas/_Installation',
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
@@ -679,7 +679,7 @@ describe('schemas', () => {
 
   it('lets you specify class name in both places', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/NewClass',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClass',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -703,14 +703,14 @@ describe('schemas', () => {
 
   it('requires the master key to modify schemas', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/NewClass',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClass',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
       body: {},
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'PUT',
         headers: noAuthHeaders,
         json: true,
@@ -725,7 +725,7 @@ describe('schemas', () => {
 
   it('rejects class name mis-matches in put', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/NewClass',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClass',
       method: 'PUT',
       headers: masterKeyHeaders,
       json: true,
@@ -742,7 +742,7 @@ describe('schemas', () => {
 
   it('refuses to add fields to non-existent classes', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/NoClass',
+      url: 'http://127.0.0.1:8378/1/schemas/NoClass',
       method: 'PUT',
       headers: masterKeyHeaders,
       json: true,
@@ -763,7 +763,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -785,7 +785,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -807,7 +807,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -832,7 +832,7 @@ describe('schemas', () => {
     obj.set('aString', 'aString');
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -858,7 +858,7 @@ describe('schemas', () => {
     obj.set('geo1', new Parse.GeoPoint({ latitude: 0, longitude: 0 }));
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -891,7 +891,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -905,7 +905,7 @@ describe('schemas', () => {
 
   it('lets you add fields', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/NewClass',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClass',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -913,7 +913,7 @@ describe('schemas', () => {
     }).then(() => {
       request({
         method: 'PUT',
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,
         json: true,
         body: {
@@ -936,7 +936,7 @@ describe('schemas', () => {
           })
         ).toEqual(undefined);
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
@@ -959,7 +959,7 @@ describe('schemas', () => {
 
   it('lets you add fields with options', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/NewClass',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClass',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -967,7 +967,7 @@ describe('schemas', () => {
     }).then(() => {
       request({
         method: 'PUT',
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,
         json: true,
         body: {
@@ -998,7 +998,7 @@ describe('schemas', () => {
           })
         ).toEqual(undefined);
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
@@ -1025,7 +1025,7 @@ describe('schemas', () => {
 
   it('should validate required fields', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/NewClass',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClass',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -1033,7 +1033,7 @@ describe('schemas', () => {
     }).then(() => {
       request({
         method: 'PUT',
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,
         json: true,
         body: {
@@ -1149,7 +1149,7 @@ describe('schemas', () => {
 
   it('should validate required fields and set default values after before save trigger', async () => {
     await request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -1255,12 +1255,12 @@ describe('schemas', () => {
   it('lets you add fields to system schema', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/_User',
+      url: 'http://127.0.0.1:8378/1/schemas/_User',
       headers: masterKeyHeaders,
       json: true,
     }).then(fail, () => {
       request({
-        url: 'http://localhost:8378/1/schemas/_User',
+        url: 'http://127.0.0.1:8378/1/schemas/_User',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -1295,7 +1295,7 @@ describe('schemas', () => {
           })
         ).toBeUndefined();
         request({
-          url: 'http://localhost:8378/1/schemas/_User',
+          url: 'http://127.0.0.1:8378/1/schemas/_User',
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
@@ -1337,7 +1337,7 @@ describe('schemas', () => {
       .save()
       .then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/SimpleOne',
+          url: 'http://127.0.0.1:8378/1/schemas/SimpleOne',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -1371,7 +1371,7 @@ describe('schemas', () => {
     const obj1 = hasAllPODobject();
     obj1.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -1421,7 +1421,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -1436,7 +1436,7 @@ describe('schemas', () => {
         expect(response.data.error).toEqual('invalid field type: fake type');
         request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/schemas/HasAllPOD',
+          url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
@@ -1449,7 +1449,7 @@ describe('schemas', () => {
 
   it('requires the master key to delete schemas', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/DoesntMatter',
+      url: 'http://127.0.0.1:8378/1/schemas/DoesntMatter',
       method: 'DELETE',
       headers: noAuthHeaders,
       json: true,
@@ -1464,7 +1464,7 @@ describe('schemas', () => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        url: 'http://127.0.0.1:8378/1/schemas/HasAllPOD',
         method: 'DELETE',
         headers: masterKeyHeaders,
         json: true,
@@ -1480,7 +1480,7 @@ describe('schemas', () => {
 
   it('fails when deleting collections with invalid class names', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/_GlobalConfig',
+      url: 'http://127.0.0.1:8378/1/schemas/_GlobalConfig',
       method: 'DELETE',
       headers: masterKeyHeaders,
       json: true,
@@ -1496,7 +1496,7 @@ describe('schemas', () => {
 
   it('does not fail when deleting nonexistant collections', done => {
     request({
-      url: 'http://localhost:8378/1/schemas/Missing',
+      url: 'http://127.0.0.1:8378/1/schemas/Missing',
       method: 'DELETE',
       headers: masterKeyHeaders,
       json: true,
@@ -1521,7 +1521,7 @@ describe('schemas', () => {
       .then(obj2 => obj2.destroy())
       .then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/MyOtherClass',
+          url: 'http://127.0.0.1:8378/1/schemas/MyOtherClass',
           method: 'DELETE',
           headers: masterKeyHeaders,
           json: true,
@@ -1545,7 +1545,7 @@ describe('schemas', () => {
             })
             .then(() => {
               request({
-                url: 'http://localhost:8378/1/schemas/MyOtherClass',
+                url: 'http://127.0.0.1:8378/1/schemas/MyOtherClass',
                 headers: masterKeyHeaders,
                 json: true,
               }).then(fail, response => {
@@ -1570,7 +1570,7 @@ describe('schemas', () => {
   it('deletes schema when actual collection does not exist', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClassForDelete',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1579,7 +1579,7 @@ describe('schemas', () => {
     }).then(response => {
       expect(response.data.className).toEqual('NewClassForDelete');
       request({
-        url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClassForDelete',
         method: 'DELETE',
         headers: masterKeyHeaders,
         json: true,
@@ -1599,7 +1599,7 @@ describe('schemas', () => {
   it('deletes schema when actual collection exists', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+      url: 'http://127.0.0.1:8378/1/schemas/NewClassForDelete',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1608,7 +1608,7 @@ describe('schemas', () => {
     }).then(response => {
       expect(response.data.className).toEqual('NewClassForDelete');
       request({
-        url: 'http://localhost:8378/1/classes/NewClassForDelete',
+        url: 'http://127.0.0.1:8378/1/classes/NewClassForDelete',
         method: 'POST',
         headers: restKeyHeaders,
         json: true,
@@ -1616,13 +1616,13 @@ describe('schemas', () => {
         expect(typeof response.data.objectId).toEqual('string');
         request({
           method: 'DELETE',
-          url: 'http://localhost:8378/1/classes/NewClassForDelete/' + response.data.objectId,
+          url: 'http://127.0.0.1:8378/1/classes/NewClassForDelete/' + response.data.objectId,
           headers: restKeyHeaders,
           json: true,
         }).then(() => {
           request({
             method: 'DELETE',
-            url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+            url: 'http://127.0.0.1:8378/1/schemas/NewClassForDelete',
             headers: masterKeyHeaders,
             json: true,
           }).then(response => {
@@ -1643,7 +1643,7 @@ describe('schemas', () => {
   it('should set/get schema permissions', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1658,7 +1658,7 @@ describe('schemas', () => {
       },
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/schemas/AClass',
+        url: 'http://127.0.0.1:8378/1/schemas/AClass',
         headers: masterKeyHeaders,
         json: true,
       }).then(response => {
@@ -1687,7 +1687,7 @@ describe('schemas', () => {
     object.save().then(() => {
       request({
         method: 'PUT',
-        url: 'http://localhost:8378/1/schemas/AClass',
+        url: 'http://127.0.0.1:8378/1/schemas/AClass',
         headers: masterKeyHeaders,
         json: true,
         body: {
@@ -1716,7 +1716,7 @@ describe('schemas', () => {
   it('should not be able to add a field', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1751,7 +1751,7 @@ describe('schemas', () => {
   it('should be able to add a field', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1816,7 +1816,7 @@ describe('schemas', () => {
 
     const { data } = await request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1842,7 +1842,7 @@ describe('schemas', () => {
     const shortId = '1';
     const { data } = await request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1872,7 +1872,7 @@ describe('schemas', () => {
 
     const { data } = await request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/AClass',
+      url: 'http://127.0.0.1:8378/1/classes/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1886,7 +1886,7 @@ describe('schemas', () => {
 
     const { data: created } = await request({
       method: 'GET',
-      url: `http://localhost:8378/1/classes/AClass/${data.objectId}`,
+      url: `http://127.0.0.1:8378/1/classes/AClass/${data.objectId}`,
       headers: masterKeyHeaders,
       json: true,
     });
@@ -1900,7 +1900,7 @@ describe('schemas', () => {
   it('should throw with invalid userId (invalid char)', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1921,7 +1921,7 @@ describe('schemas', () => {
   it('should throw with invalid * (spaces before)', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1940,7 +1940,7 @@ describe('schemas', () => {
   it('should throw with invalid * (spaces after)', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1959,7 +1959,7 @@ describe('schemas', () => {
   it('should throw if permission is number', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -1980,7 +1980,7 @@ describe('schemas', () => {
   it('should throw if permission is empty string', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
+      url: 'http://127.0.0.1:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
@@ -2000,7 +2000,7 @@ describe('schemas', () => {
 
   function setPermissionsOnClass(className, permissions, doPut) {
     return request({
-      url: 'http://localhost:8378/1/schemas/' + className,
+      url: 'http://127.0.0.1:8378/1/schemas/' + className,
       method: doPut ? 'PUT' : 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -2544,7 +2544,7 @@ describe('schemas', () => {
       .then(() => {
         request({
           method: 'DELETE',
-          url: 'http://localhost:8378/1/schemas/MyClass',
+          url: 'http://127.0.0.1:8378/1/schemas/MyClass',
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
@@ -2616,7 +2616,7 @@ describe('schemas', () => {
       })
       .then(() => {
         return request({
-          url: 'http://localhost:8378/1/schemas/_Role',
+          url: 'http://127.0.0.1:8378/1/schemas/_Role',
           headers: masterKeyHeaders,
           json: true,
         });
@@ -2849,14 +2849,14 @@ describe('schemas', () => {
 
     it('cannot create index if field does not exist', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -2875,14 +2875,14 @@ describe('schemas', () => {
 
     it('can create index on default field', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -2900,14 +2900,14 @@ describe('schemas', () => {
 
     it('cannot create compound index if field does not exist', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -2929,7 +2929,7 @@ describe('schemas', () => {
 
     it('allows add index when you create a class', done => {
       request({
-        url: 'http://localhost:8378/1/schemas',
+        url: 'http://127.0.0.1:8378/1/schemas',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -2966,7 +2966,7 @@ describe('schemas', () => {
 
     it('empty index returns nothing', done => {
       request({
-        url: 'http://localhost:8378/1/schemas',
+        url: 'http://127.0.0.1:8378/1/schemas',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -2995,14 +2995,14 @@ describe('schemas', () => {
 
     it('lets you add indexes', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -3033,7 +3033,7 @@ describe('schemas', () => {
             })
           ).toEqual(undefined);
           request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
+            url: 'http://127.0.0.1:8378/1/schemas/NewClass',
             headers: masterKeyHeaders,
             json: true,
           }).then(response => {
@@ -3063,14 +3063,14 @@ describe('schemas', () => {
 
     it_only_db('mongo')('lets you add index with with pointer like structure', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -3101,7 +3101,7 @@ describe('schemas', () => {
             })
           ).toEqual(undefined);
           request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
+            url: 'http://127.0.0.1:8378/1/schemas/NewClass',
             headers: masterKeyHeaders,
             json: true,
           }).then(response => {
@@ -3131,14 +3131,14 @@ describe('schemas', () => {
 
     it('lets you add multiple indexes', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -3179,7 +3179,7 @@ describe('schemas', () => {
             })
           ).toEqual(undefined);
           request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
+            url: 'http://127.0.0.1:8378/1/schemas/NewClass',
             headers: masterKeyHeaders,
             json: true,
           }).then(response => {
@@ -3214,14 +3214,14 @@ describe('schemas', () => {
 
     it('lets you delete indexes', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -3252,7 +3252,7 @@ describe('schemas', () => {
             })
           ).toEqual(undefined);
           request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
+            url: 'http://127.0.0.1:8378/1/schemas/NewClass',
             method: 'PUT',
             headers: masterKeyHeaders,
             json: true,
@@ -3287,14 +3287,14 @@ describe('schemas', () => {
 
     it('lets you delete multiple indexes', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -3333,7 +3333,7 @@ describe('schemas', () => {
             })
           ).toEqual(undefined);
           request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
+            url: 'http://127.0.0.1:8378/1/schemas/NewClass',
             method: 'PUT',
             headers: masterKeyHeaders,
             json: true,
@@ -3375,7 +3375,7 @@ describe('schemas', () => {
       const waitForIndexBuild = new Promise(r => setTimeout(r, 500));
 
       await request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
@@ -3383,7 +3383,7 @@ describe('schemas', () => {
       });
 
       let response = await request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -3427,7 +3427,7 @@ describe('schemas', () => {
 
       await waitForIndexBuild;
       response = await request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -3460,7 +3460,7 @@ describe('schemas', () => {
 
       await waitForIndexBuild;
       response = await request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'PUT',
         headers: masterKeyHeaders,
         json: true,
@@ -3498,14 +3498,14 @@ describe('schemas', () => {
 
     it('cannot delete index that does not exist', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -3524,14 +3524,14 @@ describe('schemas', () => {
 
     it('cannot update index that exist', done => {
       request({
-        url: 'http://localhost:8378/1/schemas/NewClass',
+        url: 'http://127.0.0.1:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
       }).then(() => {
         request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
+          url: 'http://127.0.0.1:8378/1/schemas/NewClass',
           method: 'PUT',
           headers: masterKeyHeaders,
           json: true,
@@ -3545,7 +3545,7 @@ describe('schemas', () => {
           },
         }).then(() => {
           request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
+            url: 'http://127.0.0.1:8378/1/schemas/NewClass',
             method: 'PUT',
             headers: masterKeyHeaders,
             json: true,
@@ -3571,12 +3571,12 @@ describe('schemas', () => {
           return reconfigureServer({
             appId: 'test',
             restAPIKey: 'test',
-            publicServerURL: 'http://localhost:8378/1',
+            publicServerURL: 'http://127.0.0.1:8378/1',
           });
         })
         .then(() => {
           request({
-            url: 'http://localhost:8378/1/schemas/TestObject',
+            url: 'http://127.0.0.1:8378/1/schemas/TestObject',
             headers: masterKeyHeaders,
             json: true,
           }).then(response => {
@@ -3602,12 +3602,12 @@ describe('schemas', () => {
           return reconfigureServer({
             appId: 'test',
             restAPIKey: 'test',
-            publicServerURL: 'http://localhost:8378/1',
+            publicServerURL: 'http://127.0.0.1:8378/1',
           });
         })
         .then(() => {
           request({
-            url: 'http://localhost:8378/1/schemas/TestObject',
+            url: 'http://127.0.0.1:8378/1/schemas/TestObject',
             headers: masterKeyHeaders,
             json: true,
           }).then(response => {

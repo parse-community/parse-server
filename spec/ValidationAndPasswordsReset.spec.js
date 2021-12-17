@@ -43,7 +43,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(async () => {
       spyOn(emailAdapter, 'sendVerificationEmail');
       const user = new Parse.User();
@@ -69,7 +69,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(async () => {
       spyOn(emailAdapter, 'sendVerificationEmail');
       const user = new Parse.User();
@@ -94,7 +94,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(async () => {
       spyOn(emailAdapter, 'sendVerificationEmail');
       const user = new Parse.User();
@@ -132,7 +132,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     spyOn(emailAdapter, 'sendVerificationEmail').and.callFake(options => {
       expect(options.link).not.toBeNull();
@@ -176,7 +176,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'My Cool App',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(async () => {
       const user = new Parse.User();
       user.setPassword('asdf');
@@ -205,7 +205,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
   it('prevents user from login if email is not verified but preventLoginWithUnverifiedEmail is set to true', done => {
     reconfigureServer({
       appName: 'test',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
       emailAdapter: MockEmailAdapterWithOptions({
@@ -257,7 +257,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setPassword('other-password');
@@ -273,7 +273,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user'
+            'Found. Redirecting to http://127.0.0.1:8378/1/apps/verify_email_success.html?username=user'
           );
           user
             .fetch()
@@ -310,7 +310,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
   it('allows user to login if email is not verified but preventLoginWithUnverifiedEmail is set to false', done => {
     reconfigureServer({
       appName: 'test',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: false,
       emailAdapter: MockEmailAdapterWithOptions({
@@ -348,7 +348,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
   it('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
     reconfigureServer({
       appName: undefined,
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       emailAdapter: MockEmailAdapterWithOptions({
         fromAddress: 'parse@example.com',
         apiKey: 'k',
@@ -421,7 +421,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
   it('fails if you set a publicServerURL, have an appName, but no emailAdapter and send a password reset email', done => {
     reconfigureServer({
       appName: 'unused',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       emailAdapter: undefined,
     })
       .then(() => {
@@ -454,7 +454,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
   it('succeeds sending a password reset email if appName, publicServerURL, and email adapter are provided', done => {
     reconfigureServer({
       appName: 'coolapp',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       emailAdapter: MockEmailAdapterWithOptions({
         fromAddress: 'parse@example.com',
         apiKey: 'k',
@@ -501,7 +501,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     spyOn(adapter, 'sendMail').and.callThrough();
     reconfigureServer({
       appName: 'coolapp',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       emailAdapter: adapter,
     })
       .then(() => {
@@ -535,7 +535,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     };
     reconfigureServer({
       appName: 'unused',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
     }).then(async () => {
@@ -566,7 +566,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'emailing app',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(async () => {
       const user = new Parse.User();
       user.setPassword('asdf');
@@ -592,7 +592,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'emailing app',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setPassword('other-password');
@@ -608,7 +608,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user'
+            'Found. Redirecting to http://127.0.0.1:8378/1/apps/verify_email_success.html?username=user'
           );
           user
             .fetch()
@@ -640,15 +640,15 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         sendPasswordResetEmail: () => Promise.resolve(),
         sendMail: () => {},
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/apps/test/verify_email',
+        url: 'http://127.0.0.1:8378/1/apps/test/verify_email',
         followRedirects: false,
       }).then(response => {
         expect(response.status).toEqual(302);
         expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
+          'Found. Redirecting to http://127.0.0.1:8378/1/apps/invalid_link.html'
         );
         done();
       });
@@ -664,15 +664,15 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         sendPasswordResetEmail: () => Promise.resolve(),
         sendMail: () => {},
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga',
+        url: 'http://127.0.0.1:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga',
         followRedirects: false,
       }).then(response => {
         expect(response.status).toEqual(302);
         expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=sadfasga&appId=test'
+          'Found. Redirecting to http://127.0.0.1:8378/1/apps/invalid_verification_link.html?username=sadfasga&appId=test'
         );
         done();
       });
@@ -688,10 +688,10 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         sendPasswordResetEmail: () => Promise.resolve(),
         sendMail: () => {},
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+        url: 'http://127.0.0.1:8378/1/apps/test/resend_verification_email',
         method: 'POST',
         followRedirects: false,
         body: {
@@ -700,7 +700,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       }).then(response => {
         expect(response.status).toEqual(302);
         expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/link_send_fail.html'
+          'Found. Redirecting to http://127.0.0.1:8378/1/apps/link_send_fail.html'
         );
         done();
       });
@@ -712,12 +712,12 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     const emailAdapter = {
       sendVerificationEmail: () => {
         request({
-          url: 'http://localhost:8378/1/apps/test/verify_email?token=invalid&username=zxcv',
+          url: 'http://127.0.0.1:8378/1/apps/test/verify_email?token=invalid&username=zxcv',
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=zxcv&appId=test'
+            'Found. Redirecting to http://127.0.0.1:8378/1/apps/invalid_verification_link.html?username=zxcv&appId=test'
           );
           user.fetch().then(() => {
             expect(user.get('emailVerified')).toEqual(false);
@@ -732,7 +732,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'emailing app',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setPassword('asdf');
       user.setUsername('zxcv');
@@ -768,7 +768,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'emailing app',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setPassword('asdf');
       user.setUsername('zxcv+zxcv');
@@ -794,16 +794,16 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         sendPasswordResetEmail: () => Promise.resolve(),
         sendMail: () => {},
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       request({
         url:
-          'http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga',
+          'http://127.0.0.1:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga',
         followRedirects: false,
       }).then(response => {
         expect(response.status).toEqual(302);
         expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
+          'Found. Redirecting to http://127.0.0.1:8378/1/apps/invalid_link.html'
         );
         done();
       });
@@ -830,7 +830,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           const token = match[1];
 
           request({
-            url: 'http://localhost:8378/1/apps/test/request_password_reset',
+            url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
             method: 'POST',
             body: { new_password: 'hello', token, username: 'zxcv' },
             headers: {
@@ -840,7 +840,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           }).then(response => {
             expect(response.status).toEqual(302);
             expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv'
+              'Found. Redirecting to http://127.0.0.1:8378/1/apps/password_reset_success.html?username=zxcv'
             );
 
             Parse.User.logIn('zxcv', 'hello').then(
@@ -870,7 +870,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'emailing app',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setPassword('asdf');
       user.setUsername('zxcv');
@@ -907,7 +907,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           const token = match[1];
 
           request({
-            url: 'http://localhost:8378/1/apps/test/request_password_reset',
+            url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
             method: 'POST',
             body: { new_password: 'hello', token, username: 'zxcv+1' },
             headers: {
@@ -917,7 +917,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           }).then(response => {
             expect(response.status).toEqual(302);
             expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv%2B1'
+              'Found. Redirecting to http://127.0.0.1:8378/1/apps/password_reset_success.html?username=zxcv%2B1'
             );
             done();
           });
@@ -929,7 +929,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'emailing app',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setPassword('asdf');
       user.setUsername('zxcv+1');
@@ -965,7 +965,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         const token = match[1];
 
         const resetResponse = await request({
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
           method: 'POST',
           body: { new_password: 'hello', token, username: 'zxcv' },
           headers: {
@@ -996,7 +996,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       appName: 'emailing app',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     user.setPassword('asdf');
     user.setUsername('zxcv');
@@ -1007,13 +1007,13 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it('should return ajax failure error on ajax request with wrong data provided', async () => {
     await reconfigureServer({
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
 
     try {
       await request({
         method: 'POST',
-        url: 'http://localhost:8378/1/apps/test/request_password_reset',
+        url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
         body: `new_password=user1&token=12345&username=Johnny`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -1032,7 +1032,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
   it('deletes password reset token on email address change', done => {
     reconfigureServer({
       appName: 'coolapp',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
       emailAdapter: MockEmailAdapterWithOptions({
         fromAddress: 'parse@example.com',
         apiKey: 'k',

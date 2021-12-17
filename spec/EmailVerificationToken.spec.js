@@ -19,7 +19,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 0.5, // 0.5 second
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testEmailVerifyTokenValidity');
@@ -38,7 +38,7 @@ describe('Email Verification Token Expiration: ', () => {
           }).then(response => {
             expect(response.status).toEqual(302);
             expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
+              'Found. Redirecting to http://127.0.0.1:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
             );
             done();
           });
@@ -65,7 +65,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 0.5, // 0.5 second
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testEmailVerifyTokenValidity');
@@ -117,7 +117,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testEmailVerifyTokenValidity');
@@ -132,7 +132,7 @@ describe('Email Verification Token Expiration: ', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
+            'Found. Redirecting to http://127.0.0.1:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
           );
           done();
         });
@@ -158,7 +158,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testEmailVerifyTokenValidity');
@@ -205,7 +205,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testEmailVerifyTokenValidity');
@@ -252,7 +252,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('sets_email_verify_token_expires_at');
@@ -297,7 +297,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('unsets_email_verify_token_expires_at');
@@ -353,7 +353,7 @@ describe('Email Verification Token Expiration: ', () => {
       appName: 'emailVerifyToken',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     };
 
     // setup server WITHOUT enabling the expire email verify token flag
@@ -386,7 +386,7 @@ describe('Email Verification Token Expiration: ', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
+            'Found. Redirecting to http://127.0.0.1:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
           );
           done();
         });
@@ -411,7 +411,7 @@ describe('Email Verification Token Expiration: ', () => {
       appName: 'emailVerifyToken',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     };
 
     // setup server WITHOUT enabling the expire email verify token flag
@@ -439,7 +439,7 @@ describe('Email Verification Token Expiration: ', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
+            'Found. Redirecting to http://127.0.0.1:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
           );
           done();
         });
@@ -467,7 +467,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     };
 
     reconfigureServer(serverConfig)
@@ -539,7 +539,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('resends_verification_token');
@@ -562,7 +562,7 @@ describe('Email Verification Token Expiration: ', () => {
         expect(sendVerificationEmailCallCount).toBe(1);
 
         return request({
-          url: 'http://localhost:8378/1/verificationEmailRequest',
+          url: 'http://127.0.0.1:8378/1/verificationEmailRequest',
           method: 'POST',
           body: {
             email: 'user@parse.com',
@@ -620,7 +620,7 @@ describe('Email Verification Token Expiration: ', () => {
         emailAdapter: emailAdapter,
         emailVerifyTokenValidityDuration: 5 * 60, // 5 minutes
         emailVerifyTokenReuseIfValid: [],
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       });
       fail('should have thrown.');
     } catch (e) {
@@ -632,7 +632,7 @@ describe('Email Verification Token Expiration: ', () => {
         verifyUserEmails: true,
         emailAdapter: emailAdapter,
         emailVerifyTokenReuseIfValid: true,
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       });
       fail('should have thrown.');
     } catch (e) {
@@ -659,7 +659,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5 * 60, // 5 minutes
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
       emailVerifyTokenReuseIfValid: true,
     });
     const user = new Parse.User();
@@ -680,7 +680,7 @@ describe('Email Verification Token Expiration: ', () => {
       }, 1000);
     });
     const response = await request({
-      url: 'http://localhost:8378/1/verificationEmailRequest',
+      url: 'http://127.0.0.1:8378/1/verificationEmailRequest',
       method: 'POST',
       body: {
         email: 'user@example.com',
@@ -725,7 +725,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('no_new_verification_token_once_verified');
@@ -745,7 +745,7 @@ describe('Email Verification Token Expiration: ', () => {
         expect(sendVerificationEmailCallCount).toBe(1);
 
         return request({
-          url: 'http://localhost:8378/1/verificationEmailRequest',
+          url: 'http://127.0.0.1:8378/1/verificationEmailRequest',
           method: 'POST',
           body: {
             email: 'user@parse.com',
@@ -785,11 +785,11 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         return request({
-          url: 'http://localhost:8378/1/verificationEmailRequest',
+          url: 'http://127.0.0.1:8378/1/verificationEmailRequest',
           method: 'POST',
           body: {
             email: 'user@parse.com',
@@ -831,11 +831,11 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         request({
-          url: 'http://localhost:8378/1/verificationEmailRequest',
+          url: 'http://127.0.0.1:8378/1/verificationEmailRequest',
           method: 'POST',
           body: {},
           headers: {
@@ -876,11 +876,11 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         request({
-          url: 'http://localhost:8378/1/verificationEmailRequest',
+          url: 'http://127.0.0.1:8378/1/verificationEmailRequest',
           method: 'POST',
           body: { email: 3 },
           headers: {
@@ -920,7 +920,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testEmailVerifyTokenValidity');
@@ -963,7 +963,7 @@ describe('Email Verification Token Expiration: ', () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5, // 5 seconds
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testEmailVerifyTokenValidity');

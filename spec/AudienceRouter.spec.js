@@ -399,12 +399,12 @@ describe('AudiencesRouter', () => {
     await reconfigureServer({
       appId: 'test',
       restAPIKey: 'test',
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     try {
       await request({
         method: 'POST',
-        url: 'http://localhost:8378/1/classes/_Audience',
+        url: 'http://127.0.0.1:8378/1/classes/_Audience',
         body: { lorem: 'ipsum', _method: 'POST' },
         headers: {
           'X-Parse-Application-Id': 'test',

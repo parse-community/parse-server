@@ -44,7 +44,7 @@ describe('Parse.Query testing', () => {
       try {
         await request({
           method: 'GET',
-          url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+          url: `http://127.0.0.1:8378/1/classes/_User?explain=${value}`,
           json: true,
           headers: masterKeyHeaders,
         });
@@ -74,7 +74,7 @@ describe('Parse.Query testing', () => {
     for (const value of values) {
       const response = await request({
         method: 'GET',
-        url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+        url: `http://127.0.0.1:8378/1/classes/_User?explain=${value}`,
         json: true,
         headers: masterKeyHeaders,
       });
@@ -5108,7 +5108,7 @@ describe('Parse.Query testing', () => {
   it('can add new config to existing config', async () => {
     await request({
       method: 'PUT',
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       body: {
         params: {
@@ -5120,7 +5120,7 @@ describe('Parse.Query testing', () => {
 
     await request({
       method: 'PUT',
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       body: {
         params: { newConfig: 'good' },

@@ -387,7 +387,7 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     const response = await request({
       method: 'GET',
       headers,
-      url: `http://localhost:8378/1/files/test/metadata/${file.name()}`,
+      url: `http://127.0.0.1:8378/1/files/test/metadata/${file.name()}`,
     });
     fileData = response.data;
     expect(fileData.metadata).toEqual(metadata);
@@ -405,7 +405,7 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     const response = await request({
       method: 'GET',
       headers,
-      url: `http://localhost:8378/1/files/test/metadata/filename.txt`,
+      url: `http://127.0.0.1:8378/1/files/test/metadata/filename.txt`,
     });
     expect(response.data).toEqual({});
   });

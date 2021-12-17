@@ -398,7 +398,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         await request({
           method: 'POST',
           headers: headers,
-          url: 'http://localhost:8378/1/batch',
+          url: 'http://127.0.0.1:8378/1/batch',
           body: JSON.stringify({
             requests: [
               {
@@ -429,7 +429,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         await request({
           method: 'POST',
           headers: headers,
-          url: 'http://localhost:8378/1/batch',
+          url: 'http://127.0.0.1:8378/1/batch',
           body: JSON.stringify({
             requests: [
               {
@@ -460,7 +460,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         await request({
           method: 'POST',
           headers: headers,
-          url: 'http://localhost:8378/1/batch',
+          url: 'http://127.0.0.1:8378/1/batch',
           body: JSON.stringify({
             requests: [
               {
@@ -490,7 +490,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         await request({
           method: 'PUT',
           headers: headers,
-          url: 'http://localhost:8378/1/classes/MyObject/' + myObject.id,
+          url: 'http://127.0.0.1:8378/1/classes/MyObject/' + myObject.id,
           body: { myAttribute: 'myValue' },
         });
 

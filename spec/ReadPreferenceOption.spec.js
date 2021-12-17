@@ -410,7 +410,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
+      url: 'http://127.0.0.1:8378/1/classes/MyObject/' + obj0.id,
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -444,7 +444,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
+      url: 'http://127.0.0.1:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -481,7 +481,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
+      url: 'http://127.0.0.1:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -518,7 +518,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/',
+      url: 'http://127.0.0.1:8378/1/classes/MyObject/',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -551,7 +551,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject?readPreference=SECONDARY',
+      url: 'http://127.0.0.1:8378/1/classes/MyObject?readPreference=SECONDARY',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -588,7 +588,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     const response = await request({
       method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/?readPreference=SECONDARY',
+      url: 'http://127.0.0.1:8378/1/classes/MyObject/?readPreference=SECONDARY',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -854,7 +854,7 @@ describe_only_db('mongo')('Read preference option', () => {
     const response = await request({
       method: 'GET',
       url:
-        'http://localhost:8378/1/classes/MyObject2/' +
+        'http://127.0.0.1:8378/1/classes/MyObject2/' +
         obj2.id +
         '?include=' +
         JSON.stringify(['myObject1', 'myObject1.myObject0']) +
@@ -909,7 +909,7 @@ describe_only_db('mongo')('Read preference option', () => {
     const response = await request({
       method: 'GET',
       url:
-        'http://localhost:8378/1/classes/MyObject2?where=' +
+        'http://127.0.0.1:8378/1/classes/MyObject2?where=' +
         JSON.stringify({ boolKey: false }) +
         '&include=' +
         JSON.stringify(['myObject1', 'myObject1.myObject0']) +
@@ -1200,7 +1200,7 @@ describe_only_db('mongo')('Read preference option', () => {
     const response = await request({
       method: 'GET',
       url:
-        'http://localhost:8378/1/classes/MyObject2/?where=' +
+        'http://127.0.0.1:8378/1/classes/MyObject2/?where=' +
         whereString +
         '&readPreference=SECONDARY_PREFERRED&subqueryReadPreference=SECONDARY',
       headers: {

@@ -496,7 +496,7 @@ describe('rest create', () => {
     request({
       headers: headers,
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       body: JSON.stringify({
         foo: 'bar',
         objectId: 'hello',
@@ -518,7 +518,7 @@ describe('rest create', () => {
     request({
       headers: headers,
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       body: JSON.stringify({
         foo: 'bar',
         id: 'hello',
@@ -675,14 +675,14 @@ describe('rest create', () => {
         let sessionId;
         return request({
           headers: headers,
-          url: 'http://localhost:8378/1/sessions/me',
+          url: 'http://127.0.0.1:8378/1/sessions/me',
         })
           .then(response => {
             sessionId = response.data.objectId;
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: 'http://127.0.0.1:8378/1/sessions/' + sessionId,
               body: {
                 installationId: 'yolo',
               },
@@ -694,7 +694,7 @@ describe('rest create', () => {
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: 'http://127.0.0.1:8378/1/sessions/' + sessionId,
               body: {
                 sessionToken: 'yolo',
               },
@@ -711,7 +711,7 @@ describe('rest create', () => {
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: 'http://127.0.0.1:8378/1/sessions/' + sessionId,
               body: {
                 user: Parse._encode(user),
               },
@@ -725,7 +725,7 @@ describe('rest create', () => {
             return request({
               headers,
               method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              url: 'http://127.0.0.1:8378/1/sessions/' + sessionId,
               body: {
                 user: Parse._encode(user),
               },
@@ -752,7 +752,7 @@ describe('rest create', () => {
         return request({
           headers,
           method: 'POST',
-          url: 'http://localhost:8378/1/sessions',
+          url: 'http://127.0.0.1:8378/1/sessions',
           body: {
             user: { __type: 'Pointer', className: '_User', objectId: 'fakeId' },
           },

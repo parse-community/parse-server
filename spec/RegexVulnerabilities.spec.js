@@ -1,6 +1,6 @@
 const request = require('../lib/request');
 
-const serverURL = 'http://localhost:8378/1';
+const serverURL = 'http://127.0.0.1:8378/1';
 const headers = {
   'Content-Type': 'application/json',
 };
@@ -14,7 +14,7 @@ const emailAdapter = {
   sendMail: () => {},
 };
 const appName = 'test';
-const publicServerURL = 'http://localhost:8378/1';
+const publicServerURL = 'http://127.0.0.1:8378/1';
 
 describe('Regex Vulnerabilities', function () {
   beforeEach(async function () {

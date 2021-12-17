@@ -196,7 +196,7 @@ describe_only(() => {
         };
         request({
           headers: headers,
-          url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+          url: 'http://127.0.0.1:8378/1/login?username=test&password=moon-y',
         }).then(() => {
           const winstonLoggerAdapter = new WinstonLoggerAdapter();
           return winstonLoggerAdapter

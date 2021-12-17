@@ -19,7 +19,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         resetTokenValidityDuration: 0.5, // 0.5 second
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testResetTokenValidity');
@@ -48,7 +48,7 @@ describe('Password Policy: ', () => {
             .then(response => {
               expect(response.status).toEqual(302);
               expect(response.text).toEqual(
-                'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
+                'Found. Redirecting to http://127.0.0.1:8378/1/apps/invalid_link.html'
               );
               done();
             })
@@ -79,7 +79,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         resetTokenValidityDuration: 5, // 5 seconds
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('testResetTokenValidity');
@@ -137,7 +137,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         resetTokenValidityDuration: 5 * 60, // 5 minutes
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     const user = new Parse.User();
     user.setUsername('testResetTokenValidity');
@@ -166,7 +166,7 @@ describe('Password Policy: ', () => {
         resetTokenValidityDuration: 5 * 60, // 5 minutes
         resetTokenReuseIfValid: true,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     const user = new Parse.User();
     user.setUsername('testResetTokenValidity');
@@ -196,7 +196,7 @@ describe('Password Policy: ', () => {
           resetTokenValidityDuration: 5 * 60, // 5 minutes
           resetTokenReuseIfValid: [],
         },
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       });
       fail('should have thrown.');
     } catch (e) {
@@ -209,7 +209,7 @@ describe('Password Policy: ', () => {
         passwordPolicy: {
           resetTokenReuseIfValid: true,
         },
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       });
       fail('should have thrown.');
     } catch (e) {
@@ -224,7 +224,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         resetTokenValidityDuration: 'not a number',
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.resetTokenValidityDuration "not a number" test failed');
@@ -242,7 +242,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         resetTokenValidityDuration: 0,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('resetTokenValidityDuration negative number test failed');
@@ -260,7 +260,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: 1234, // number is not a valid setting
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.validatorPattern type test failed');
@@ -280,7 +280,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorCallback: 'abc', // string is not a valid setting
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.validatorCallback type test failed');
@@ -299,7 +299,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: /[0-9]+/, // password should contain at least one digit
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('nodigit');
@@ -324,7 +324,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: '^.{8,}', // password should contain at least 8 char
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('less');
@@ -349,7 +349,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: '^.{8,}', // password should contain at least 8 char
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('');
@@ -374,7 +374,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: /[0-9]+/, // password should contain at least one digit
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('1digit');
@@ -415,7 +415,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: '[!@#$]+', // password should contain at least one special char
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('p@sswrod');
@@ -456,7 +456,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorCallback: () => false, // just fail
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('any');
@@ -481,7 +481,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorCallback: () => true, // never fail
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('oneUpper');
@@ -523,7 +523,7 @@ describe('Password Policy: ', () => {
         validatorPattern: /[A-Z]+/, // password should contain at least one UPPER case letter
         validatorCallback: () => true,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('all lower');
@@ -549,7 +549,7 @@ describe('Password Policy: ', () => {
         validatorPattern: /[A-Z]+/, // password should contain at least one UPPER case letter
         validatorCallback: () => false,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('oneUpper');
@@ -575,7 +575,7 @@ describe('Password Policy: ', () => {
         validatorPattern: /[A-Z]+/, // password should contain at least one digit
         validatorCallback: () => true,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('oneUpper');
@@ -633,7 +633,7 @@ describe('Password Policy: ', () => {
 
             request({
               method: 'POST',
-              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
               body: `new_password=has2init&token=${token}&username=user1`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -645,7 +645,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
+                  'Found. Redirecting to http://127.0.0.1:8378/1/apps/password_reset_success.html?username=user1'
                 );
 
                 Parse.User.logIn('user1', 'has2init')
@@ -679,7 +679,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: /[0-9]+/, // password should contain at least one digit
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('has 1 digit');
@@ -725,7 +725,7 @@ describe('Password Policy: ', () => {
 
             request({
               method: 'POST',
-              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
               body: `new_password=hasnodigit&token=${token}&username=user1`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -737,7 +737,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20should%20contain%20at%20least%20one%20digit.&app=passwordPolicy`
+                  `Found. Redirecting to http://127.0.0.1:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20should%20contain%20at%20least%20one%20digit.&app=passwordPolicy`
                 );
 
                 Parse.User.logIn('user1', 'has 1 digit')
@@ -772,7 +772,7 @@ describe('Password Policy: ', () => {
         validatorPattern: /[0-9]+/, // password should contain at least one digit
         validationError: 'Password should contain at least one digit.',
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('has 1 digit');
@@ -800,7 +800,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         doNotAllowUsername: 'no',
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.doNotAllowUsername type test failed');
@@ -820,7 +820,7 @@ describe('Password Policy: ', () => {
         validatorPattern: /[0-9]+/,
         doNotAllowUsername: true,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('@user11');
@@ -846,7 +846,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         doNotAllowUsername: true,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('r@nd0m');
@@ -870,7 +870,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         validatorPattern: /[0-9]+/,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -911,7 +911,7 @@ describe('Password Policy: ', () => {
 
             request({
               method: 'POST',
-              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
               body: `new_password=xuser12&token=${token}&username=user1`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -923,7 +923,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20cannot%20contain%20your%20username.&app=passwordPolicy`
+                  `Found. Redirecting to http://127.0.0.1:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20cannot%20contain%20your%20username.&app=passwordPolicy`
                 );
 
                 Parse.User.logIn('user1', 'r@nd0m')
@@ -957,7 +957,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         doNotAllowUsername: true,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('r@nd0m');
@@ -1002,7 +1002,7 @@ describe('Password Policy: ', () => {
         try {
           await request({
             method: 'POST',
-            url: 'http://localhost:8378/1/apps/test/request_password_reset',
+            url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
             body: `new_password=xuser12&token=${token}&username=user1`,
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
@@ -1028,7 +1028,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         doNotAllowUsername: true,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     user.setUsername('user1');
     user.setPassword('r@nd0m');
@@ -1062,7 +1062,7 @@ describe('Password Policy: ', () => {
 
             request({
               method: 'POST',
-              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
               body: `new_password=uuser11&token=${token}&username=user1`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -1074,7 +1074,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
+                  'Found. Redirecting to http://127.0.0.1:8378/1/apps/password_reset_success.html?username=user1'
                 );
 
                 Parse.User.logIn('user1', 'uuser11')
@@ -1107,7 +1107,7 @@ describe('Password Policy: ', () => {
         validatorPattern: /[0-9]+/,
         doNotAllowUsername: false,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         user.setUsername('user1');
@@ -1134,7 +1134,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordAge: 'not a number',
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.maxPasswordAge "not a number" test failed');
@@ -1152,7 +1152,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordAge: -100,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.maxPasswordAge negative number test failed');
@@ -1171,7 +1171,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordAge: 1, // 1 day
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1204,7 +1204,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordAge: 0.5 / (24 * 60 * 60), // 0.5 sec
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1240,7 +1240,7 @@ describe('Password Policy: ', () => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1255,7 +1255,7 @@ describe('Password Policy: ', () => {
                 passwordPolicy: {
                   maxPasswordAge: 0.5 / (24 * 60 * 60), // 0.5 sec
                 },
-                publicServerURL: 'http://localhost:8378/1',
+                publicServerURL: 'http://127.0.0.1:8378/1',
               }).then(() => {
                 Parse.User.logIn('user1', 'user1')
                   .then(() => {
@@ -1328,7 +1328,7 @@ describe('Password Policy: ', () => {
 
             request({
               method: 'POST',
-              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
               body: `new_password=uuser11&token=${token}&username=user1`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -1340,7 +1340,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
+                  'Found. Redirecting to http://127.0.0.1:8378/1/apps/password_reset_success.html?username=user1'
                 );
 
                 Parse.User.logIn('user1', 'uuser11')
@@ -1371,7 +1371,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordAge: 0.5 / (24 * 60 * 60), // 0.5 sec
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1413,7 +1413,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: 'not a number',
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.maxPasswordHistory "not a number" test failed');
@@ -1431,7 +1431,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: -10,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.maxPasswordHistory negative number test failed');
@@ -1449,7 +1449,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: 21,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         fail('passwordPolicy.maxPasswordHistory negative number test failed');
@@ -1483,7 +1483,7 @@ describe('Password Policy: ', () => {
           .then(token => {
             return request({
               method: 'POST',
-              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
               body: `new_password=user1&token=${token}&username=user1`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -1500,7 +1500,7 @@ describe('Password Policy: ', () => {
             const token = data[1];
             expect(response.status).toEqual(302);
             expect(response.text).toEqual(
-              `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`
+              `Found. Redirecting to http://127.0.0.1:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`
             );
             done();
             return Promise.resolve();
@@ -1520,7 +1520,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: 1,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1550,7 +1550,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: 5,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1583,7 +1583,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: 5,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1633,7 +1633,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: 5,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       user.setUsername('user1');
       user.setPassword('user1');
@@ -1686,7 +1686,7 @@ describe('Password Policy: ', () => {
       passwordPolicy: {
         maxPasswordHistory: 1,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     user.setUsername('user1');
     user.setPassword('user1');

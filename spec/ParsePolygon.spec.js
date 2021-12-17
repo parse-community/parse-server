@@ -448,7 +448,7 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
     return reconfigureServer({
       appId: 'test',
       restAPIKey: 'rest',
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
       databaseAdapter,
     })
       .then(() => {
@@ -462,7 +462,7 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
       .then(() => {
         return request({
           method: 'POST',
-          url: 'http://localhost:8378/1/classes/TestObject',
+          url: 'http://127.0.0.1:8378/1/classes/TestObject',
           body: {
             _method: 'POST',
             location,
@@ -475,7 +475,7 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
       .then(resp => {
         return request({
           method: 'POST',
-          url: `http://localhost:8378/1/classes/TestObject/${resp.data.objectId}`,
+          url: `http://127.0.0.1:8378/1/classes/TestObject/${resp.data.objectId}`,
           body: { _method: 'GET' },
           headers: defaultHeaders,
         });

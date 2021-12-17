@@ -9,7 +9,7 @@ const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 
 const port = 34567;
-const hookServerURL = 'http://localhost:' + port;
+const hookServerURL = 'http://127.0.0.1:' + port;
 
 describe('Hooks', () => {
   let server;

@@ -420,7 +420,7 @@ describe('ParseGraphQLServer', () => {
       );
       const wsLink = new WebSocketLink(subscriptionClient);
       const httpLink = createUploadLink({
-        uri: 'http://localhost:13377/graphql',
+        uri: 'http://127.0.0.1:13377/graphql',
         fetch,
         headers,
       });
@@ -482,7 +482,7 @@ describe('ParseGraphQLServer', () => {
             });
           }).concat(
             createHttpLink({
-              uri: 'http://localhost:13377/graphql',
+              uri: 'http://127.0.0.1:13377/graphql',
               fetch,
               headers: {
                 ...headers,
@@ -532,7 +532,7 @@ describe('ParseGraphQLServer', () => {
       it('should mount playground', async () => {
         const res = await req({
           method: 'GET',
-          url: 'http://localhost:13377/playground',
+          url: 'http://127.0.0.1:13377/playground',
         });
         expect(res.status).toEqual(200);
       });
@@ -6792,7 +6792,7 @@ describe('ParseGraphQLServer', () => {
             const clientMutationId = uuidv4();
 
             parseServer = await global.reconfigureServer({
-              publicServerURL: 'http://localhost:13377/parse',
+              publicServerURL: 'http://127.0.0.1:13377/parse',
             });
 
             const body = new FormData();
@@ -6824,7 +6824,7 @@ describe('ParseGraphQLServer', () => {
               contentType: 'text/plain',
             });
 
-            let res = await fetch('http://localhost:13377/graphql', {
+            let res = await fetch('http://127.0.0.1:13377/graphql', {
               method: 'POST',
               headers,
               body,
@@ -7045,7 +7045,7 @@ describe('ParseGraphQLServer', () => {
           const clientMutationId = uuidv4();
           const userSchema = new Parse.Schema('_User');
           parseServer = await global.reconfigureServer({
-            publicServerURL: 'http://localhost:13377/parse',
+            publicServerURL: 'http://127.0.0.1:13377/parse',
             auth: {
               myAuth: {
                 module: global.mockCustomAuthenticator('parse', 'graphql'),
@@ -7273,7 +7273,7 @@ describe('ParseGraphQLServer', () => {
           parseServer = await global.reconfigureServer({
             appName: 'test',
             emailAdapter: emailAdapter,
-            publicServerURL: 'http://localhost:13377/parse',
+            publicServerURL: 'http://127.0.0.1:13377/parse',
             auth: {
               myAuth: {
                 module: global.mockCustomAuthenticator('parse', 'graphql'),
@@ -9094,7 +9094,7 @@ describe('ParseGraphQLServer', () => {
         it('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
-              publicServerURL: 'http://localhost:13377/parse',
+              publicServerURL: 'http://127.0.0.1:13377/parse',
             });
 
             const body = new FormData();
@@ -9124,7 +9124,7 @@ describe('ParseGraphQLServer', () => {
               contentType: 'text/plain',
             });
 
-            let res = await fetch('http://localhost:13377/graphql', {
+            let res = await fetch('http://127.0.0.1:13377/graphql', {
               method: 'POST',
               headers,
               body,
@@ -9236,7 +9236,7 @@ describe('ParseGraphQLServer', () => {
               contentType: 'text/plain',
             });
 
-            res = await fetch('http://localhost:13377/graphql', {
+            res = await fetch('http://127.0.0.1:13377/graphql', {
               method: 'POST',
               headers,
               body: body2,
@@ -10401,7 +10401,7 @@ describe('ParseGraphQLServer', () => {
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
         const httpLink = createUploadLink({
-          uri: 'http://localhost:13377/graphql',
+          uri: 'http://127.0.0.1:13377/graphql',
           fetch,
           headers,
         });
@@ -10619,7 +10619,7 @@ describe('ParseGraphQLServer', () => {
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
         const httpLink = createUploadLink({
-          uri: 'http://localhost:13377/graphql',
+          uri: 'http://127.0.0.1:13377/graphql',
           fetch,
           headers,
         });
@@ -10803,7 +10803,7 @@ describe('ParseGraphQLServer', () => {
           parseGraphQLServer.applyGraphQL(expressApp);
           await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
           const httpLink = createUploadLink({
-            uri: 'http://localhost:13377/graphql',
+            uri: 'http://127.0.0.1:13377/graphql',
             fetch,
             headers,
           });

@@ -965,7 +965,7 @@ describe('miscellaneous', function () {
         request({
           method: 'PUT',
           headers: headers,
-          url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
+          url: 'http://127.0.0.1:8378/1/classes/GameScore/' + obj.id,
           body: JSON.stringify({
             a: 'b',
             c: { __op: 'Increment', amount: 2 },
@@ -1080,7 +1080,7 @@ describe('miscellaneous', function () {
     request({
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/classes/GameScore',
+      url: 'http://127.0.0.1:8378/1/classes/GameScore',
       body: JSON.stringify({ a: 'b' }),
     }).then(() => {
       expect(triggerTime).toEqual(2);
@@ -1110,13 +1110,13 @@ describe('miscellaneous', function () {
     request({
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/classes/GameScore',
+      url: 'http://127.0.0.1:8378/1/classes/GameScore',
       body: JSON.stringify({ a: 'b' }),
     }).then(response => {
       request({
         method: 'DELETE',
         headers: headers,
-        url: 'http://localhost:8378/1/classes/GameScore/' + response.data.objectId,
+        url: 'http://127.0.0.1:8378/1/classes/GameScore/' + response.data.objectId,
       }).then(() => {
         expect(triggerTime).toEqual(2);
         done();
@@ -1154,7 +1154,7 @@ describe('miscellaneous', function () {
     request({
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/functions/echoParams', //?option=1&other=2
+      url: 'http://127.0.0.1:8378/1/functions/echoParams', //?option=1&other=2
       qs: {
         option: 1,
         other: 2,
@@ -1214,7 +1214,7 @@ describe('miscellaneous', function () {
     };
     request({
       headers: headers,
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
     }).then(fail, response => {
       const b = response.data;
       expect(b.error).toEqual('unauthorized');
@@ -1230,7 +1230,7 @@ describe('miscellaneous', function () {
     };
     request({
       headers: headers,
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
     }).then(fail, response => {
       const b = response.data;
       expect(b.error).toEqual('unauthorized');
@@ -1246,7 +1246,7 @@ describe('miscellaneous', function () {
     };
     request({
       headers: headers,
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
     }).then(fail, response => {
       const b = response.data;
       expect(b.error).toEqual('unauthorized');
@@ -1262,7 +1262,7 @@ describe('miscellaneous', function () {
     };
     request({
       headers: headers,
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
     }).then(fail, response => {
       const b = response.data;
       expect(b.error).toEqual('unauthorized');
@@ -1297,7 +1297,7 @@ describe('miscellaneous', function () {
     const requestOptions = {
       headers: headers,
       method: 'POST',
-      url: 'http://localhost:8378/1/installations',
+      url: 'http://127.0.0.1:8378/1/installations',
       body: JSON.stringify(data),
     };
     request(requestOptions).then(response => {
@@ -1325,11 +1325,11 @@ describe('miscellaneous', function () {
     const requestOptions = {
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/users',
+      url: 'http://127.0.0.1:8378/1/users',
       body: JSON.stringify(data),
     };
     request(requestOptions).then(() => {
-      requestOptions.url = 'http://localhost:8378/1/login';
+      requestOptions.url = 'http://127.0.0.1:8378/1/login';
       request(requestOptions).then(response => {
         const b = response.data;
         expect(typeof b['sessionToken']).toEqual('string');
@@ -1354,7 +1354,7 @@ describe('miscellaneous', function () {
         };
         const requestOptions = {
           headers: headers,
-          url: 'http://localhost:8378/1/classes/AnObject',
+          url: 'http://127.0.0.1:8378/1/classes/AnObject',
           json: true,
         };
         request(requestOptions).then(res => {
@@ -1382,7 +1382,7 @@ describe('miscellaneous', function () {
     };
     const requestOptions = {
       headers: headers,
-      url: 'http://localhost:8378/1/classes/AnObject',
+      url: 'http://127.0.0.1:8378/1/classes/AnObject',
       json: true,
     };
     const object = new Parse.Object('AnObject');
@@ -1395,7 +1395,7 @@ describe('miscellaneous', function () {
             amount: amount,
           },
         },
-        url: 'http://localhost:8378/1/classes/AnObject/' + object.id,
+        url: 'http://127.0.0.1:8378/1/classes/AnObject/' + object.id,
         method: 'PUT',
       });
       return request(options).then(res => res.data);
@@ -1423,7 +1423,7 @@ describe('miscellaneous', function () {
       request({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        url: 'http://localhost:8378/1/classes/AnObject',
+        url: 'http://127.0.0.1:8378/1/classes/AnObject',
         body: {
           _method: 'GET',
           _ApplicationId: 'test',
@@ -1583,7 +1583,7 @@ describe('miscellaneous', function () {
         request({
           method: 'DELETE',
           headers: headers,
-          url: 'http://localhost:8378/1/purge/TestObject',
+          url: 'http://127.0.0.1:8378/1/purge/TestObject',
         }).then(() => {
           const query = new Parse.Query(TestObject);
           return query.count().then(count => {
@@ -1603,7 +1603,7 @@ describe('miscellaneous', function () {
     request({
       method: 'DELETE',
       headers: headers,
-      url: 'http://localhost:8378/1/purge/TestObject',
+      url: 'http://127.0.0.1:8378/1/purge/TestObject',
     })
       .then(() => {
         fail('Should not succeed');
@@ -1663,7 +1663,7 @@ describe('miscellaneous', function () {
         return request({
           method: 'DELETE',
           headers: headers,
-          url: 'http://localhost:8378/1/purge/_Role',
+          url: 'http://127.0.0.1:8378/1/purge/_Role',
           json: true,
         });
       })
@@ -1713,7 +1713,7 @@ describe('miscellaneous', function () {
               'X-Parse-Application-Id': 'test',
               'X-Parse-Master-Key': 'test',
             },
-            url: 'http://localhost:8378/1/schemas/MyObject',
+            url: 'http://127.0.0.1:8378/1/schemas/MyObject',
             json: true,
           });
         }
@@ -1742,7 +1742,7 @@ describe_only_db('mongo')('legacy _acl', () => {
     request({
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/classes/Report',
+      url: 'http://127.0.0.1:8378/1/classes/Report',
       body: {
         ACL: {},
         name: 'My Report',

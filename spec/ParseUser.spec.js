@@ -54,7 +54,7 @@ describe('Parse.User testing', () => {
     await Parse.User.signUp('asdf', 'zxcv');
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/login',
+      url: 'http://127.0.0.1:8378/1/login',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -83,7 +83,7 @@ describe('Parse.User testing', () => {
     await Parse.User.signUp('asdf', 'zxcv');
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/login',
+      url: 'http://127.0.0.1:8378/1/login',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -112,7 +112,7 @@ describe('Parse.User testing', () => {
     await Parse.User.signUp('some_user', 'some_password');
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/login',
+      url: 'http://127.0.0.1:8378/1/login',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -280,7 +280,7 @@ describe('Parse.User testing', () => {
   it('should be let masterKey lock user out with authData', async () => {
     const response = await request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -304,7 +304,7 @@ describe('Parse.User testing', () => {
     // update the user
     const options = {
       method: 'POST',
-      url: `http://localhost:8378/1/classes/_User/`,
+      url: `http://127.0.0.1:8378/1/classes/_User/`,
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -2117,7 +2117,7 @@ describe('Parse.User testing', () => {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
-        url: 'http://localhost:8378/1/users',
+        url: 'http://127.0.0.1:8378/1/users',
       }).then(response => {
         const b = response.data;
         expect(b.results.length).toEqual(1);
@@ -2364,7 +2364,7 @@ describe('Parse.User testing', () => {
             'X-Parse-Session-Token': user.getSessionToken(),
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/sessions',
+          url: 'http://127.0.0.1:8378/1/sessions',
         }).then(response => {
           const b = response.data;
           expect(typeof b.sessionToken).toEqual('string');
@@ -2385,7 +2385,7 @@ describe('Parse.User testing', () => {
         'X-Parse-Session-Token': user.getSessionToken(),
         'X-Parse-REST-API-Key': 'rest',
       },
-      url: 'http://localhost:8378/1/sessions/me',
+      url: 'http://127.0.0.1:8378/1/sessions/me',
     });
     const data = response.data;
     expect(typeof data.sessionToken).toEqual('string');
@@ -2406,7 +2406,7 @@ describe('Parse.User testing', () => {
         'X-Parse-Session-Token': user.getSessionToken(),
         'X-Parse-REST-API-Key': 'rest',
       },
-      url: 'http://localhost:8378/1/sessions/me',
+      url: 'http://127.0.0.1:8378/1/sessions/me',
     });
     const data = response.data;
     expect(typeof data.sessionToken).toEqual('string');
@@ -2425,7 +2425,7 @@ describe('Parse.User testing', () => {
         'X-Parse-Session-Token': user.getSessionToken(),
         'X-Parse-REST-API-Key': 'rest',
       },
-      url: 'http://localhost:8378/1/sessions/me',
+      url: 'http://127.0.0.1:8378/1/sessions/me',
     });
     const data = response.data;
     expect(typeof data.sessionToken).toEqual('string');
@@ -2448,7 +2448,7 @@ describe('Parse.User testing', () => {
             'X-Parse-Session-Token': user.getSessionToken(),
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/sessions/me',
+          url: 'http://127.0.0.1:8378/1/sessions/me',
         }).then(response => {
           const b = response.data;
           request({
@@ -2458,7 +2458,7 @@ describe('Parse.User testing', () => {
               'X-Parse-Session-Token': user.getSessionToken(),
               'X-Parse-REST-API-Key': 'rest',
             },
-            url: 'http://localhost:8378/1/sessions/' + b.objectId,
+            url: 'http://127.0.0.1:8378/1/sessions/' + b.objectId,
             body: JSON.stringify({ foo: 'bar' }),
           }).then(() => {
             done();
@@ -2479,7 +2479,7 @@ describe('Parse.User testing', () => {
             'X-Parse-Session-Token': user.getSessionToken(),
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/sessions/me',
+          url: 'http://127.0.0.1:8378/1/sessions/me',
         }).then(response => {
           const b = response.data;
           request({
@@ -2490,7 +2490,7 @@ describe('Parse.User testing', () => {
               'X-Parse-REST-API-Key': 'rest',
               'Content-Type': 'application/json',
             },
-            url: 'http://localhost:8378/1/sessions/' + b.objectId,
+            url: 'http://127.0.0.1:8378/1/sessions/' + b.objectId,
             body: JSON.stringify({ foo: 'bar' }),
           }).then(fail, response => {
             const b = response.data;
@@ -2501,7 +2501,7 @@ describe('Parse.User testing', () => {
                 'X-Parse-Application-Id': 'test',
                 'X-Parse-REST-API-Key': 'rest',
               },
-              url: 'http://localhost:8378/1/sessions/' + b.objectId,
+              url: 'http://127.0.0.1:8378/1/sessions/' + b.objectId,
               body: JSON.stringify({ foo: 'bar' }),
             }).then(fail, response => {
               const b = response.data;
@@ -2528,7 +2528,7 @@ describe('Parse.User testing', () => {
             'X-Parse-Session-Token': user.getSessionToken(),
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/sessions',
+          url: 'http://127.0.0.1:8378/1/sessions',
         }).then(response => {
           const b = response.data;
           expect(b.results.length).toEqual(1);
@@ -2554,7 +2554,7 @@ describe('Parse.User testing', () => {
             'X-Parse-Session-Token': user.getSessionToken(),
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/sessions',
+          url: 'http://127.0.0.1:8378/1/sessions',
         }).then(response => {
           const b = response.data;
           let objId;
@@ -2573,7 +2573,7 @@ describe('Parse.User testing', () => {
               'X-Parse-Session-Token': user.getSessionToken(),
               'X-Parse-REST-API-Key': 'rest',
             },
-            url: 'http://localhost:8378/1/sessions/' + objId,
+            url: 'http://127.0.0.1:8378/1/sessions/' + objId,
           }).then(() => {
             request({
               headers: {
@@ -2581,7 +2581,7 @@ describe('Parse.User testing', () => {
                 'X-Parse-Session-Token': user.getSessionToken(),
                 'X-Parse-REST-API-Key': 'rest',
               },
-              url: 'http://localhost:8378/1/sessions',
+              url: 'http://127.0.0.1:8378/1/sessions',
             }).then(fail, response => {
               const b = response.data;
               expect(b.code).toEqual(209);
@@ -2608,7 +2608,7 @@ describe('Parse.User testing', () => {
             'X-Parse-Session-Token': user.getSessionToken(),
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/sessions',
+          url: 'http://127.0.0.1:8378/1/sessions',
         }).then(response => {
           const b = response.data;
           expect(b.results.length).toEqual(1);
@@ -2619,7 +2619,7 @@ describe('Parse.User testing', () => {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'rest',
             },
-            url: 'http://localhost:8378/1/sessions/' + objId,
+            url: 'http://127.0.0.1:8378/1/sessions/' + objId,
           }).then(fail, response => {
             const b = response.data;
             expect(b.code).toEqual(209);
@@ -2747,7 +2747,7 @@ describe('Parse.User testing', () => {
   it('session expiresAt correct format', async done => {
     await Parse.User.signUp('asdf', 'zxcv');
     request({
-      url: 'http://localhost:8378/1/classes/_Session',
+      url: 'http://127.0.0.1:8378/1/classes/_Session',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test',
@@ -2762,7 +2762,7 @@ describe('Parse.User testing', () => {
   it('Invalid session tokens are rejected', async done => {
     await Parse.User.signUp('asdf', 'zxcv');
     request({
-      url: 'http://localhost:8378/1/classes/AClass',
+      url: 'http://127.0.0.1:8378/1/classes/AClass',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Rest-API-Key': 'rest',
@@ -2792,7 +2792,7 @@ describe('Parse.User testing', () => {
         )
         .then(() => {
           return request({
-            url: 'http://localhost:8378/1/login?username=user&password=test',
+            url: 'http://127.0.0.1:8378/1/login?username=user&password=test',
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-Master-Key': 'test',
@@ -2851,7 +2851,7 @@ describe('Parse.User testing', () => {
     // Simulate anonymous user save
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -2870,7 +2870,7 @@ describe('Parse.User testing', () => {
         // Simulate registration
         return request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/classes/_User/' + user.objectId,
+          url: 'http://127.0.0.1:8378/1/classes/_User/' + user.objectId,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Session-Token': user.sessionToken,
@@ -2894,7 +2894,7 @@ describe('Parse.User testing', () => {
         expect(user.sessionToken).not.toEqual(originalSessionToken);
         // test that the sessionToken is valid
         return request({
-          url: 'http://localhost:8378/1/users/me',
+          url: 'http://127.0.0.1:8378/1/users/me',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Session-Token': user.sessionToken,
@@ -2930,12 +2930,12 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     // Simulate anonymous user save
     return request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -2951,7 +2951,7 @@ describe('Parse.User testing', () => {
         const user = response.data;
         return request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/classes/_User/' + user.objectId,
+          url: 'http://127.0.0.1:8378/1/classes/_User/' + user.objectId,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Session-Token': user.sessionToken,
@@ -2994,7 +2994,7 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     const user = new Parse.User();
     user.set('username', 'asdf@jkl.com');
@@ -3003,7 +3003,7 @@ describe('Parse.User testing', () => {
     await user.signUp();
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/requestPasswordReset',
+      url: 'http://127.0.0.1:8378/1/requestPasswordReset',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Session-Token': user.sessionToken,
@@ -3083,7 +3083,7 @@ describe('Parse.User testing', () => {
       .then(() =>
         request({
           method: 'GET',
-          url: 'http://localhost:8378/1/classes/_Session',
+          url: 'http://127.0.0.1:8378/1/classes/_Session',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
@@ -3097,7 +3097,7 @@ describe('Parse.User testing', () => {
         token = body.results[0].sessionToken;
         return request({
           method: 'PUT',
-          url: 'http://localhost:8378/1/classes/_Session/' + id,
+          url: 'http://127.0.0.1:8378/1/classes/_Session/' + id,
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
@@ -3181,7 +3181,7 @@ describe('Parse.User testing', () => {
   it('should revoke sessions when converting anonymous user to "normal" user', done => {
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -3225,7 +3225,7 @@ describe('Parse.User testing', () => {
     reconfigureServer({ revokeSessionOnPasswordReset: false }).then(() => {
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/classes/_User',
+        url: 'http://127.0.0.1:8378/1/classes/_User',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
@@ -3298,7 +3298,7 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         return user.signUp();
@@ -3334,7 +3334,7 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         return user.signUp();
@@ -3342,7 +3342,7 @@ describe('Parse.User testing', () => {
       .then(() =>
         request({
           method: 'GET',
-          url: 'http://localhost:8378/1/users/me',
+          url: 'http://127.0.0.1:8378/1/users/me',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Session-Token': Parse.User.current().getSessionToken(),
@@ -3377,7 +3377,7 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         return user.signUp();
@@ -3385,7 +3385,7 @@ describe('Parse.User testing', () => {
       .then(() =>
         request({
           method: 'GET',
-          url: 'http://localhost:8378/1/users/' + Parse.User.current().id,
+          url: 'http://127.0.0.1:8378/1/users/' + Parse.User.current().id,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3422,14 +3422,14 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         return user.signUp();
       })
       .then(() =>
         request({
-          url: 'http://localhost:8378/1/login?email=test@email.com&username=hello&password=world',
+          url: 'http://127.0.0.1:8378/1/login?email=test@email.com&username=hello&password=world',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3466,7 +3466,7 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         return user.signUp();
@@ -3517,7 +3517,7 @@ describe('Parse.User testing', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     });
     const user = new Parse.User();
     user.set('email', 'email1@host.com');
@@ -3540,7 +3540,7 @@ describe('Parse.User testing', () => {
 
     function validate(block) {
       return request({
-        url: `http://localhost:8378/1/classes/_User/${objectId}`,
+        url: `http://127.0.0.1:8378/1/classes/_User/${objectId}`,
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
@@ -3551,7 +3551,7 @@ describe('Parse.User testing', () => {
 
     request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -3577,7 +3577,7 @@ describe('Parse.User testing', () => {
         // update the user
         const options = {
           method: 'PUT',
-          url: `http://localhost:8378/1/classes/_User/${objectId}`,
+          url: `http://127.0.0.1:8378/1/classes/_User/${objectId}`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3616,7 +3616,7 @@ describe('Parse.User testing', () => {
       })
       .then(() => {
         const options = {
-          url: `http://localhost:8378/1/login`,
+          url: `http://127.0.0.1:8378/1/login`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3640,7 +3640,7 @@ describe('Parse.User testing', () => {
       .then(() => {
         const options = {
           method: 'POST',
-          url: `http://localhost:8378/1/login`,
+          url: `http://127.0.0.1:8378/1/login`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3664,7 +3664,7 @@ describe('Parse.User testing', () => {
       })
       .then(() => {
         const options = {
-          url: `http://localhost:8378/1/login?email=yo@lo.com&password=yolopass`,
+          url: `http://127.0.0.1:8378/1/login?email=yo@lo.com&password=yolopass`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3686,7 +3686,7 @@ describe('Parse.User testing', () => {
       })
       .then(() => {
         const options = {
-          url: `http://localhost:8378/1/login?email=yo@lo.com&username=yolo&password=yolopass`,
+          url: `http://127.0.0.1:8378/1/login?email=yo@lo.com&username=yolo&password=yolopass`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3708,7 +3708,7 @@ describe('Parse.User testing', () => {
       })
       .then(() => {
         const options = {
-          url: `http://localhost:8378/1/login?email=yo@lo.com&username=yolo2&password=yolopass`,
+          url: `http://127.0.0.1:8378/1/login?email=yo@lo.com&username=yolo2&password=yolopass`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3733,7 +3733,7 @@ describe('Parse.User testing', () => {
       })
       .then(() => {
         const options = {
-          url: `http://localhost:8378/1/login?email=yo@lo2.com&username=yolo&password=yolopass`,
+          url: `http://127.0.0.1:8378/1/login?email=yo@lo2.com&username=yolo&password=yolopass`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3758,7 +3758,7 @@ describe('Parse.User testing', () => {
       })
       .then(() => {
         const options = {
-          url: `http://localhost:8378/1/login?password=yolopass`,
+          url: `http://127.0.0.1:8378/1/login?password=yolopass`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -3849,7 +3849,7 @@ describe('Parse.User testing', () => {
       })
       .then(() => {
         const options = {
-          url: `http://localhost:8378/1/login?username=yolo`,
+          url: `http://127.0.0.1:8378/1/login?username=yolo`,
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -4119,7 +4119,7 @@ describe('login as other user', () => {
     try {
       const response = await request({
         method: 'POST',
-        url: 'http://localhost:8378/1/loginAs',
+        url: 'http://127.0.0.1:8378/1/loginAs',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
@@ -4147,7 +4147,7 @@ describe('login as other user', () => {
     try {
       await request({
         method: 'POST',
-        url: 'http://localhost:8378/1/loginAs',
+        url: 'http://127.0.0.1:8378/1/loginAs',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
@@ -4179,7 +4179,7 @@ describe('login as other user', () => {
       try {
         await request({
           method: 'POST',
-          url: 'http://localhost:8378/1/loginAs',
+          url: 'http://127.0.0.1:8378/1/loginAs',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
@@ -4213,7 +4213,7 @@ describe('login as other user', () => {
     try {
       await request({
         method: 'POST',
-        url: 'http://localhost:8378/1/loginAs',
+        url: 'http://127.0.0.1:8378/1/loginAs',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',

@@ -4,9 +4,9 @@ const semver = require('semver');
 const TestUtils = require('../lib/TestUtils');
 
 const originalURL = '/parse/batch';
-const serverURL = 'http://localhost:1234/parse';
-const serverURL1 = 'http://localhost:1234/1';
-const serverURLNaked = 'http://localhost:1234/';
+const serverURL = 'http://127.0.0.1:1234/parse';
+const serverURL1 = 'http://127.0.0.1:1234/1';
+const serverURLNaked = 'http://127.0.0.1:1234/';
 const publicServerURL = 'http://domain.com/parse';
 const publicServerURLNaked = 'http://domain.com/';
 const publicServerURLLong = 'https://domain.com/something/really/long';
@@ -95,7 +95,7 @@ describe('batch', () => {
     request({
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/batch',
+      url: 'http://127.0.0.1:8378/1/batch',
       body: JSON.stringify({
         requests: [
           {
@@ -134,7 +134,7 @@ describe('batch', () => {
     request({
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/batch',
+      url: 'http://127.0.0.1:8378/1/batch',
       body: JSON.stringify({
         requests: [
           {
@@ -205,7 +205,7 @@ describe('batch', () => {
             request({
               method: 'POST',
               headers: headers,
-              url: 'http://localhost:8378/1/batch',
+              url: 'http://127.0.0.1:8378/1/batch',
               body: JSON.stringify({
                 requests: [
                   {
@@ -253,7 +253,7 @@ describe('batch', () => {
           await request({
             method: 'POST',
             headers: headers,
-            url: 'http://localhost:8378/1/batch',
+            url: 'http://127.0.0.1:8378/1/batch',
             body: JSON.stringify({
               requests: [
                 {
@@ -378,7 +378,7 @@ describe('batch', () => {
               await request({
                 method: 'POST',
                 headers: headers,
-                url: 'http://localhost:8378/1/batch',
+                url: 'http://127.0.0.1:8378/1/batch',
                 body: JSON.stringify({
                   requests: [
                     {
@@ -485,7 +485,7 @@ describe('batch', () => {
         const response = await request({
           method: 'POST',
           headers: headers,
-          url: 'http://localhost:8378/1/batch',
+          url: 'http://127.0.0.1:8378/1/batch',
           body: JSON.stringify({
             requests: [
               {
@@ -512,7 +512,7 @@ describe('batch', () => {
         await request({
           method: 'POST',
           headers: headers,
-          url: 'http://localhost:8378/1/batch',
+          url: 'http://127.0.0.1:8378/1/batch',
           body: JSON.stringify({
             requests: [
               {

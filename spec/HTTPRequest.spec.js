@@ -6,7 +6,7 @@ const httpRequest = require('../lib/cloud-code/httpRequest'),
   express = require('express');
 
 const port = 13371;
-const httpRequestServer = `http://localhost:${port}`;
+const httpRequestServer = `http://127.0.0.1:${port}`;
 
 function startServer(done) {
   const app = express();

@@ -43,7 +43,7 @@ describe('Account Lockout Policy: ', () => {
   it('account should not be locked even after failed login attempts if account lockout policy is not set', done => {
     reconfigureServer({
       appName: 'unlimited',
-      publicServerURL: 'http://localhost:1337/1',
+      publicServerURL: 'http://127.0.0.1:1337/1',
     })
       .then(() => {
         const user = new Parse.User();
@@ -236,7 +236,7 @@ describe('Account Lockout Policy: ', () => {
         duration: 1,
         threshold: 2,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         const user = new Parse.User();
@@ -269,7 +269,7 @@ describe('Account Lockout Policy: ', () => {
         duration: 0.05, // 0.05*60 = 3 secs
         threshold: 2,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         const user = new Parse.User();
@@ -306,7 +306,7 @@ describe('Account Lockout Policy: ', () => {
         duration: 0.05, // 0.05*60 = 3 secs
         threshold: 2,
       },
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     })
       .then(() => {
         const user = new Parse.User();
@@ -357,7 +357,7 @@ describe('lockout with password reset option', () => {
     const config = {
       appName: 'exampleApp',
       accountLockout: accountLockout,
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
         sendPasswordResetEmail: () => Promise.resolve(),

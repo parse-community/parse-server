@@ -40,7 +40,7 @@ describe('test validate_receipt endpoint', () => {
         'Content-Type': 'application/json',
       },
       method: 'POST',
-      url: 'http://localhost:8378/1/validate_purchase',
+      url: 'http://127.0.0.1:8378/1/validate_purchase',
       body: {
         productIdentifier: 'a-product',
         receipt: {
@@ -70,7 +70,7 @@ describe('test validate_receipt endpoint', () => {
         'X-Parse-REST-API-Key': 'rest',
         'Content-Type': 'application/json',
       },
-      url: 'http://localhost:8378/1/validate_purchase',
+      url: 'http://127.0.0.1:8378/1/validate_purchase',
       method: 'POST',
       body: {
         productIdentifier: 'a-product',
@@ -88,7 +88,7 @@ describe('test validate_receipt endpoint', () => {
         'X-Parse-REST-API-Key': 'rest',
         'Content-Type': 'application/json',
       },
-      url: 'http://localhost:8378/1/validate_purchase',
+      url: 'http://127.0.0.1:8378/1/validate_purchase',
       method: 'POST',
       body: {
         receipt: {
@@ -109,7 +109,7 @@ describe('test validate_receipt endpoint', () => {
         'X-Parse-REST-API-Key': 'rest',
         'Content-Type': 'application/json',
       },
-      url: 'http://localhost:8378/1/validate_purchase',
+      url: 'http://127.0.0.1:8378/1/validate_purchase',
       method: 'POST',
       body: {
         productIdentifier: 'another-product',
@@ -136,7 +136,7 @@ describe('test validate_receipt endpoint', () => {
         'X-Parse-REST-API-Key': 'rest',
         'Content-Type': 'application/json',
       },
-      url: 'http://localhost:8378/1/validate_purchase',
+      url: 'http://127.0.0.1:8378/1/validate_purchase',
       method: 'POST',
       body: {
         productIdentifier: 'a-product',

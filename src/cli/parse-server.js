@@ -86,7 +86,7 @@ runner({
         console.log(
           '[' +
             process.pid +
-            '] GraphQL running on http://localhost:' +
+            '] GraphQL running on http://127.0.0.1:' +
             options.port +
             options.graphQLPath
         );
@@ -95,7 +95,7 @@ runner({
         console.log(
           '[' +
             process.pid +
-            '] Playground running on http://localhost:' +
+            '] Playground running on http://127.0.0.1:' +
             options.port +
             options.playgroundPath
         );

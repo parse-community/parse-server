@@ -166,7 +166,7 @@ describe('AuthenticationProviders', function () {
         'X-Parse-Session-Token': token,
         'Content-Type': 'application/json',
       },
-      url: 'http://localhost:8378/1/users',
+      url: 'http://127.0.0.1:8378/1/users',
       body: jsonBody,
     };
     return request(options)

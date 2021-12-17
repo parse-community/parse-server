@@ -5,7 +5,7 @@ const request = require('../lib/request');
 describe('features', () => {
   it('should return the serverInfo', async () => {
     const response = await request({
-      url: 'http://localhost:8378/1/serverInfo',
+      url: 'http://127.0.0.1:8378/1/serverInfo',
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -22,7 +22,7 @@ describe('features', () => {
   it('requires the master key to get features', async done => {
     try {
       await request({
-        url: 'http://localhost:8378/1/serverInfo',
+        url: 'http://127.0.0.1:8378/1/serverInfo',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',

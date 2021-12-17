@@ -23,7 +23,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'argle bargle',
       }).then(response => {
         const b = response.data;
@@ -40,7 +40,7 @@ describe('Parse.File testing', () => {
     it('works with _ContentType', done => {
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/files/file',
+        url: 'http://127.0.0.1:8378/1/files/file',
         body: JSON.stringify({
           _ApplicationId: 'test',
           _JavaScriptKey: 'test',
@@ -72,7 +72,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'argle bargle',
       }).then(response => {
         const b = response.data;
@@ -94,7 +94,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/testfile.txt',
+        url: 'http://127.0.0.1:8378/1/files/testfile.txt',
         body: 'check one two',
       }).then(response => {
         const b = response.data;
@@ -110,7 +110,7 @@ describe('Parse.File testing', () => {
               'X-Parse-REST-API-Key': 'rest',
               'X-Parse-Master-Key': 'test',
             },
-            url: 'http://localhost:8378/1/files/' + b.name,
+            url: 'http://127.0.0.1:8378/1/files/' + b.name,
           }).then(response => {
             expect(response.status).toEqual(200);
             request({
@@ -137,7 +137,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/thefile.jpg',
+        url: 'http://127.0.0.1:8378/1/files/thefile.jpg',
         body: 'the file body',
       }).then(response => {
         const b = response.data;
@@ -149,7 +149,7 @@ describe('Parse.File testing', () => {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
           },
-          url: 'http://localhost:8378/1/files/' + b.name,
+          url: 'http://127.0.0.1:8378/1/files/' + b.name,
         }).then(fail, response => {
           const del_b = response.data;
           expect(response.status).toEqual(403);
@@ -162,7 +162,7 @@ describe('Parse.File testing', () => {
               'X-Parse-REST-API-Key': 'rest',
               'X-Parse-Master-Key': 'tryagain',
             },
-            url: 'http://localhost:8378/1/files/' + b.name,
+            url: 'http://127.0.0.1:8378/1/files/' + b.name,
           }).then(fail, response => {
             const del_b2 = response.data;
             expect(response.status).toEqual(403);
@@ -182,7 +182,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.jpg',
+        url: 'http://127.0.0.1:8378/1/files/file.jpg',
         body: 'argle bargle',
       }).then(response => {
         const b = response.data;
@@ -360,7 +360,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file',
+        url: 'http://127.0.0.1:8378/1/files/file',
         body: 'fee fi fo',
       }).then(response => {
         const b = response.data;
@@ -381,7 +381,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/hello world.txt',
+        url: 'http://127.0.0.1:8378/1/files/hello world.txt',
         body: 'oh emm gee',
       }).then(response => {
         const b = response.data;
@@ -423,7 +423,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/di$avowed.txt',
+        url: 'http://127.0.0.1:8378/1/files/di$avowed.txt',
         body: 'will fail',
       }).then(fail, response => {
         const b = response.data;
@@ -446,7 +446,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/' + fileName,
+        url: 'http://127.0.0.1:8378/1/files/' + fileName,
         body: 'will fail',
       }).then(fail, response => {
         const b = response.data;
@@ -599,7 +599,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: '',
       }).then(fail, response => {
         expect(response.status).toBe(400);
@@ -618,7 +618,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/',
+        url: 'http://127.0.0.1:8378/1/files/',
         body: 'yolo',
       }).then(fail, response => {
         expect(response.status).toBe(400);
@@ -640,7 +640,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'DELETE',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
       }).then(fail, response => {
         expect(response.status).toBe(400);
         const body = response.text;
@@ -664,7 +664,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'argle bargle',
       }).then(response => {
         const b = response.data;
@@ -693,7 +693,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'argle bargle',
       }).then(response => {
         const b = response.data;
@@ -723,7 +723,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'argle bargle',
       }).then(response => {
         const b = response.data;
@@ -752,7 +752,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'something different',
       }).then(response => {
         const b = response.data;
@@ -782,7 +782,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'something different',
       }).then(response => {
         const b = response.data;
@@ -820,7 +820,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: repeat('argle bargle', 100),
       }).then(response => {
         const b = response.data;
@@ -843,7 +843,7 @@ describe('Parse.File testing', () => {
 
     it('fails to stream unknown file', done => {
       request({
-        url: 'http://localhost:8378/1/files/test/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/test/file.txt',
         headers: {
           'Content-Type': 'application/octet-stream',
           'X-Parse-Application-Id': 'test',
@@ -872,7 +872,7 @@ describe('Parse.File testing', () => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
+        url: 'http://127.0.0.1:8378/1/files/file.txt',
         body: 'argle bargle',
       }).then(response => {
         const b = response.data;

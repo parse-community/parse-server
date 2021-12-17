@@ -53,7 +53,7 @@ describe_only(() => {
 
   it('can check invalid master key of request', done => {
     request({
-      url: 'http://localhost:8378/1/scriptlog',
+      url: 'http://127.0.0.1:8378/1/scriptlog',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -81,12 +81,12 @@ describe_only(() => {
     }).then(function () {
       request({
         headers: headers,
-        url: 'http://localhost:8378/1/login?username=test&password=simplepass.com',
+        url: 'http://127.0.0.1:8378/1/login?username=test&password=simplepass.com',
       })
         .catch(() => {})
         .then(() => {
           request({
-            url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+            url: 'http://127.0.0.1:8378/1/scriptlog?size=4&level=verbose',
             headers: headers,
           }).then(response => {
             const body = response.data;
@@ -114,12 +114,12 @@ describe_only(() => {
           headers: headers,
           // using urlencoded password, 'simple @,/?:&=+$#pass.com'
           url:
-            'http://localhost:8378/1/login?username=test&password=simple%20%40%2C%2F%3F%3A%26%3D%2B%24%23pass.com',
+            'http://127.0.0.1:8378/1/login?username=test&password=simple%20%40%2C%2F%3F%3A%26%3D%2B%24%23pass.com',
         })
           .catch(() => {})
           .then(() => {
             return request({
-              url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+              url: 'http://127.0.0.1:8378/1/scriptlog?size=4&level=verbose',
               headers: headers,
             }).then(response => {
               const body = response.data;
@@ -146,7 +146,7 @@ describe_only(() => {
       request({
         method: 'POST',
         headers: headers,
-        url: 'http://localhost:8378/1/login',
+        url: 'http://127.0.0.1:8378/1/login',
         body: {
           username: 'test',
           password: 'simplepass.com',
@@ -155,7 +155,7 @@ describe_only(() => {
         .catch(() => {})
         .then(() => {
           request({
-            url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+            url: 'http://127.0.0.1:8378/1/scriptlog?size=4&level=verbose',
             headers: headers,
           }).then(response => {
             const body = response.data;

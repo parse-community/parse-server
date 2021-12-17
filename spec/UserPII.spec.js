@@ -126,7 +126,7 @@ describe('Personally Identifiable Information', () => {
 
   it('should not get PII via REST', done => {
     return request({
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Javascript-Key': 'test',
@@ -144,7 +144,7 @@ describe('Personally Identifiable Information', () => {
 
   it('should get PII via REST with self credentials', done => {
     return request({
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -164,7 +164,7 @@ describe('Personally Identifiable Information', () => {
 
   it('should get PII via REST using master key', done => {
     request({
-      url: 'http://localhost:8378/1/classes/_User',
+      url: 'http://127.0.0.1:8378/1/classes/_User',
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -183,7 +183,7 @@ describe('Personally Identifiable Information', () => {
 
   it('should not get PII via REST by ID', done => {
     request({
-      url: `http://localhost:8378/1/classes/_User/${user.id}`,
+      url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Javascript-Key': 'test',
@@ -202,7 +202,7 @@ describe('Personally Identifiable Information', () => {
 
   it('should get PII via REST by ID  with self credentials', done => {
     request({
-      url: `http://localhost:8378/1/classes/_User/${user.id}`,
+      url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -222,7 +222,7 @@ describe('Personally Identifiable Information', () => {
 
   it('should get PII via REST by ID  with master key', done => {
     request({
-      url: `http://localhost:8378/1/classes/_User/${user.id}`,
+      url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -355,7 +355,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should not get PII via REST', done => {
       request({
-        url: 'http://localhost:8378/1/classes/_User',
+        url: 'http://127.0.0.1:8378/1/classes/_User',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-Javascript-Key': 'test',
@@ -374,7 +374,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST with self credentials', done => {
       request({
-        url: 'http://localhost:8378/1/classes/_User',
+        url: 'http://127.0.0.1:8378/1/classes/_User',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -395,7 +395,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST using master key', done => {
       request({
-        url: 'http://localhost:8378/1/classes/_User',
+        url: 'http://127.0.0.1:8378/1/classes/_User',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -418,7 +418,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should not get PII via REST by ID', done => {
       request({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -439,7 +439,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST by ID  with self credentials', done => {
       request({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -461,7 +461,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST by ID  with master key', done => {
       request({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-Javascript-Key': 'test',
@@ -545,7 +545,7 @@ describe('Personally Identifiable Information', () => {
 
       it('privileged user should not get user PII via REST by ID', done => {
         request({
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
+          url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
           json: true,
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -619,7 +619,7 @@ describe('Personally Identifiable Information', () => {
 
       it('should not get user PII via REST by ID', done => {
         request({
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
+          url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
           json: true,
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -804,7 +804,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should not get PII via REST', done => {
       request({
-        url: 'http://localhost:8378/1/classes/_User',
+        url: 'http://127.0.0.1:8378/1/classes/_User',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-Javascript-Key': 'test',
@@ -823,7 +823,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST with self credentials', done => {
       request({
-        url: 'http://localhost:8378/1/classes/_User',
+        url: 'http://127.0.0.1:8378/1/classes/_User',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -847,7 +847,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST using master key', done => {
       request({
-        url: 'http://localhost:8378/1/classes/_User',
+        url: 'http://127.0.0.1:8378/1/classes/_User',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -870,7 +870,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should not get PII via REST by ID', done => {
       request({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -891,7 +891,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST by ID  with self credentials', done => {
       request({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -913,7 +913,7 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via REST by ID  with master key', done => {
       request({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-Javascript-Key': 'test',
@@ -997,7 +997,7 @@ describe('Personally Identifiable Information', () => {
 
       it('privileged user should get user PII via REST by ID', done => {
         request({
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
+          url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
           json: true,
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -1071,7 +1071,7 @@ describe('Personally Identifiable Information', () => {
 
       it('should not get user PII via REST by ID', done => {
         request({
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
+          url: `http://127.0.0.1:8378/1/classes/_User/${user.id}`,
           json: true,
           headers: {
             'X-Parse-Application-Id': 'test',

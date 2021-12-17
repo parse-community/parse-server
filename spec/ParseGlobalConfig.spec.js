@@ -46,7 +46,7 @@ describe('a GlobalConfig', () => {
 
   it('can be retrieved', done => {
     request({
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       headers,
     }).then(response => {
@@ -63,7 +63,7 @@ describe('a GlobalConfig', () => {
 
   it('internal parameter can be retrieved with master key', done => {
     request({
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       headers,
     }).then(response => {
@@ -80,7 +80,7 @@ describe('a GlobalConfig', () => {
 
   it('internal parameter cannot be retrieved without master key', done => {
     request({
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -102,7 +102,7 @@ describe('a GlobalConfig', () => {
   it('can be updated when a master key exists', done => {
     request({
       method: 'PUT',
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       body: { params: { companies: ['US', 'DK', 'SE'] } },
       headers,
@@ -117,7 +117,7 @@ describe('a GlobalConfig', () => {
   it('can add and retrive files', done => {
     request({
       method: 'PUT',
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       body: {
         params: { file: { __type: 'File', name: 'name', url: 'http://url' } },
@@ -140,7 +140,7 @@ describe('a GlobalConfig', () => {
     const geopoint = new Parse.GeoPoint(10, -20);
     request({
       method: 'PUT',
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       body: { params: { point: geopoint.toJSON() } },
       headers,
@@ -160,7 +160,7 @@ describe('a GlobalConfig', () => {
   it('properly handles delete op', done => {
     request({
       method: 'PUT',
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       body: {
         params: {
@@ -175,7 +175,7 @@ describe('a GlobalConfig', () => {
       expect(response.status).toEqual(200);
       expect(body.result).toEqual(true);
       request({
-        url: 'http://localhost:8378/1/config',
+        url: 'http://127.0.0.1:8378/1/config',
         json: true,
         headers,
       }).then(response => {
@@ -196,7 +196,7 @@ describe('a GlobalConfig', () => {
   it('fail to update if master key is missing', done => {
     request({
       method: 'PUT',
-      url: 'http://localhost:8378/1/config',
+      url: 'http://127.0.0.1:8378/1/config',
       json: true,
       body: { params: { companies: [] } },
       headers: {
@@ -222,7 +222,7 @@ describe('a GlobalConfig', () => {
       )
       .then(() => {
         request({
-          url: 'http://localhost:8378/1/config',
+          url: 'http://127.0.0.1:8378/1/config',
           json: true,
           headers,
         }).then(response => {

@@ -23,7 +23,7 @@ describe('Pages Router', () => {
       config = {
         appId: 'test',
         appName: 'exampleAppname',
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
         pages: { enableRouter: true },
       };
       await reconfigureServer(config);
@@ -31,11 +31,11 @@ describe('Pages Router', () => {
 
     it('responds with file content on direct page request', async () => {
       const urls = [
-        'http://localhost:8378/1/apps/email_verification_link_invalid.html',
-        'http://localhost:8378/1/apps/choose_password?appId=test',
-        'http://localhost:8378/1/apps/email_verification_success.html',
-        'http://localhost:8378/1/apps/password_reset_success.html',
-        'http://localhost:8378/1/apps/custom_json.html',
+        'http://127.0.0.1:8378/1/apps/email_verification_link_invalid.html',
+        'http://127.0.0.1:8378/1/apps/choose_password?appId=test',
+        'http://127.0.0.1:8378/1/apps/email_verification_success.html',
+        'http://127.0.0.1:8378/1/apps/password_reset_success.html',
+        'http://127.0.0.1:8378/1/apps/custom_json.html',
       ];
       for (const url of urls) {
         const response = await request({ url }).catch(e => e);
@@ -48,7 +48,7 @@ describe('Pages Router', () => {
       await reconfigureServer(config);
 
       const response = await request({
-        url: 'http://localhost:8378/1/apps/email_verification_link_invalid.html',
+        url: 'http://127.0.0.1:8378/1/apps/email_verification_link_invalid.html',
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -58,7 +58,7 @@ describe('Pages Router', () => {
       await reconfigureServer(config);
 
       const response = await request({
-        url: `http://localhost:8378/1/pages/email_verification_link_invalid.html`,
+        url: `http://127.0.0.1:8378/1/pages/email_verification_link_invalid.html`,
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -69,9 +69,9 @@ describe('Pages Router', () => {
         pages: { enableRouter: true },
       });
       const urls = [
-        'http://localhost:8378/1/apps/test/verify_email',
-        'http://localhost:8378/1/apps/choose_password?appId=test',
-        'http://localhost:8378/1/apps/test/request_password_reset',
+        'http://127.0.0.1:8378/1/apps/test/verify_email',
+        'http://127.0.0.1:8378/1/apps/choose_password?appId=test',
+        'http://127.0.0.1:8378/1/apps/test/request_password_reset',
       ];
       for (const url of urls) {
         const response = await request({ url }).catch(e => e);
@@ -81,11 +81,11 @@ describe('Pages Router', () => {
 
     it('responds with 403 access denied with invalid appId', async () => {
       const reqs = [
-        { url: 'http://localhost:8378/1/apps/invalid/verify_email', method: 'GET' },
-        { url: 'http://localhost:8378/1/apps/choose_password?id=invalid', method: 'GET' },
-        { url: 'http://localhost:8378/1/apps/invalid/request_password_reset', method: 'GET' },
-        { url: 'http://localhost:8378/1/apps/invalid/request_password_reset', method: 'POST' },
-        { url: 'http://localhost:8378/1/apps/invalid/resend_verification_email', method: 'POST' },
+        { url: 'http://127.0.0.1:8378/1/apps/invalid/verify_email', method: 'GET' },
+        { url: 'http://127.0.0.1:8378/1/apps/choose_password?id=invalid', method: 'GET' },
+        { url: 'http://127.0.0.1:8378/1/apps/invalid/request_password_reset', method: 'GET' },
+        { url: 'http://127.0.0.1:8378/1/apps/invalid/request_password_reset', method: 'POST' },
+        { url: 'http://127.0.0.1:8378/1/apps/invalid/resend_verification_email', method: 'POST' },
       ];
       for (const req of reqs) {
         const response = await request(req).catch(e => e);
@@ -98,7 +98,7 @@ describe('Pages Router', () => {
     beforeEach(async () => {
       await reconfigureServer({
         appName: 'exampleAppname',
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
         pages: { enableRouter: true },
       });
     });
@@ -107,7 +107,7 @@ describe('Pages Router', () => {
       spyOn(UserController.prototype, 'updatePassword').and.callFake(() => Promise.resolve());
       const res = await request({
         method: 'POST',
-        url: 'http://localhost:8378/1/apps/test/request_password_reset',
+        url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
         body: `new_password=user1&token=43634643&username=username`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -123,7 +123,7 @@ describe('Pages Router', () => {
       try {
         await request({
           method: 'POST',
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
           body: `new_password=&token=132414&username=Johnny`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -141,7 +141,7 @@ describe('Pages Router', () => {
       try {
         await request({
           method: 'POST',
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
           body: `new_password=user1&token=43634643&username=`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -159,7 +159,7 @@ describe('Pages Router', () => {
       try {
         await request({
           method: 'POST',
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          url: 'http://127.0.0.1:8378/1/apps/test/request_password_reset',
           body: `new_password=user1&token=&username=Johnny`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -206,7 +206,7 @@ describe('Pages Router', () => {
           sendPasswordResetEmail: () => Promise.resolve(),
           sendMail: () => {},
         },
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
         pages: {
           enableRouter: true,
           enableLocalization: true,
@@ -345,7 +345,7 @@ describe('Pages Router', () => {
         };
         await reconfigureServer(config);
         const response = await request({
-          url: 'http://localhost:8378/1/apps/custom_json.html',
+          url: 'http://127.0.0.1:8378/1/apps/custom_json.html',
           followRedirects: false,
           method: 'GET',
         });
@@ -360,7 +360,7 @@ describe('Pages Router', () => {
         };
         await reconfigureServer(config);
         const response = await request({
-          url: 'http://localhost:8378/1/apps/custom_json.html',
+          url: 'http://127.0.0.1:8378/1/apps/custom_json.html',
           followRedirects: false,
           method: 'GET',
         });
@@ -375,7 +375,7 @@ describe('Pages Router', () => {
         };
         await reconfigureServer(config);
         const response = await request({
-          url: 'http://localhost:8378/1/apps/custom_json.html',
+          url: 'http://127.0.0.1:8378/1/apps/custom_json.html',
           followRedirects: false,
           method: 'GET',
         });
@@ -577,7 +577,7 @@ describe('Pages Router', () => {
         spyOnProperty(Page.prototype, 'defaultFile').and.returnValue(jsonPageFile);
 
         const response = await request({
-          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
+          url: `http://127.0.0.1:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
           followRedirects: false,
         }).catch(e => e);
         expect(response.status).toEqual(200);
@@ -626,13 +626,13 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://127.0.0.1:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
           followRedirects: false,
           method: 'POST',
         });
         expect(response.status).toEqual(303);
         expect(response.headers.location).toContain(
-          'http://localhost:8378/1/apps/de-AT/password_reset_link_invalid.html'
+          'http://127.0.0.1:8378/1/apps/de-AT/password_reset_link_invalid.html'
         );
       });
 
@@ -640,7 +640,7 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://127.0.0.1:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
           followRedirects: false,
           method: 'GET',
         });

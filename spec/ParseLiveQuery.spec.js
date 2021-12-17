@@ -854,7 +854,7 @@ describe('ParseLiveQuery', function () {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 20, // 0.5 second
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
     }).then(() => {
       const user = new Parse.User();
       user.set('password', 'asdf');

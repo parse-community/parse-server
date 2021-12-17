@@ -180,7 +180,7 @@ $ curl -X POST \
 -H "X-Parse-Application-Id: APPLICATION_ID" \
 -H "Content-Type: application/json" \
 -d '{"score":1337,"playerName":"Sean Plott","cheatMode":false}' \
-http://localhost:1337/parse/classes/GameScore
+http://127.0.0.1:1337/parse/classes/GameScore
 ```
 
 You should get a response similar to this:
@@ -197,7 +197,7 @@ You can now retrieve this object directly (make sure to replace `2ntvSpRGIK` wit
 ```bash
 $ curl -X GET \
   -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore/2ntvSpRGIK
+  http://127.0.0.1:1337/parse/classes/GameScore/2ntvSpRGIK
 ```
 ```json
 // Response
@@ -216,7 +216,7 @@ Keeping tracks of individual object ids is not ideal, however. In most cases you
 ```bash
 $ curl -X GET \
   -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore
+  http://127.0.0.1:1337/parse/classes/GameScore
 ```
 ```json
 // The response will provide all the matching objects within the `results` array:
@@ -275,7 +275,7 @@ var api = new ParseServer({
   appId: 'myAppId',
   masterKey: 'myMasterKey', // Keep this key secret!
   fileKey: 'optionalFileKey',
-  serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
+  serverURL: 'http://127.0.0.1:1337/parse' // Don't forget to change to https if needed
 });
 
 // Serve the Parse API on the /parse URL prefix
@@ -766,10 +766,10 @@ The easiest way to run the Parse GraphQL API is through the CLI:
 ```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://127.0.0.1:1337/parse --mountGraphQL --mountPlayground
 ```
 
-After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+After starting the server, you can visit http://127.0.0.1:1337/playground in your browser to start playing with your GraphQL API.
 
 ***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
@@ -787,12 +787,12 @@ $ docker run --name my-mongo -d mongo
 #### Running the Parse Server Image <!-- omit in toc -->
 
 ```bash
-$ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
+$ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://127.0.0.1:1337/parse --mountGraphQL --mountPlayground
 ```
 
 ***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server.*
 
-After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+After starting the server, you can visit http://127.0.0.1:1337/playground in your browser to start playing with your GraphQL API.
 
 ***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
@@ -818,8 +818,8 @@ const parseServer = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/test',
   appId: 'APPLICATION_ID',
   masterKey: 'MASTER_KEY',
-  serverURL: 'http://localhost:1337/parse',
-  publicServerURL: 'http://localhost:1337/parse'
+  serverURL: 'http://127.0.0.1:1337/parse',
+  publicServerURL: 'http://127.0.0.1:1337/parse'
 });
 
 const parseGraphQLServer = new ParseGraphQLServer(
@@ -835,9 +835,9 @@ parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
 parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
 
 app.listen(1337, function() {
-  console.log('REST API running on http://localhost:1337/parse');
-  console.log('GraphQL API running on http://localhost:1337/graphql');
-  console.log('GraphQL Playground running on http://localhost:1337/playground');
+  console.log('REST API running on http://127.0.0.1:1337/parse');
+  console.log('GraphQL API running on http://127.0.0.1:1337/graphql');
+  console.log('GraphQL Playground running on http://127.0.0.1:1337/playground');
 });
 ```
 
@@ -848,7 +848,7 @@ $ npx mongodb-runner start
 $ node index.js
 ```
 
-After starting the app, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+After starting the app, you can visit http://127.0.0.1:1337/playground in your browser to start playing with your GraphQL API.
 
 ***Note:*** Do ***NOT*** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
@@ -1028,7 +1028,7 @@ Parse GraphQL Server allows you to create a custom GraphQL schema with own queri
 To start creating your custom schema, you need to code a `schema.graphql` file and initialize Parse Server with `--graphQLSchema` and `--cloud` options:
 
 ```bash
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://localhost:1337/parse --cloud ./cloud/main.js --graphQLSchema ./cloud/schema.graphql --mountGraphQL --mountPlayground
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://127.0.0.1:1337/parse --cloud ./cloud/main.js --graphQLSchema ./cloud/schema.graphql --mountGraphQL --mountPlayground
 ```
 
 ### Creating your first custom query <!-- omit in toc -->

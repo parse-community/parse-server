@@ -49,7 +49,7 @@ describe_only_db('mongo')('Idempotency', () => {
     });
     const params = {
       method: 'POST',
-      url: 'http://localhost:8378/1/functions/myFunction',
+      url: 'http://127.0.0.1:8378/1/functions/myFunction',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
@@ -72,7 +72,7 @@ describe_only_db('mongo')('Idempotency', () => {
     });
     const params = {
       method: 'POST',
-      url: 'http://localhost:8378/1/functions/myFunction',
+      url: 'http://127.0.0.1:8378/1/functions/myFunction',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
@@ -96,7 +96,7 @@ describe_only_db('mongo')('Idempotency', () => {
     });
     const params = {
       method: 'POST',
-      url: 'http://localhost:8378/1/jobs/myJob',
+      url: 'http://127.0.0.1:8378/1/jobs/myJob',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
@@ -118,7 +118,7 @@ describe_only_db('mongo')('Idempotency', () => {
     });
     const params = {
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/MyClass',
+      url: 'http://127.0.0.1:8378/1/classes/MyClass',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
@@ -140,7 +140,7 @@ describe_only_db('mongo')('Idempotency', () => {
     });
     const params = {
       method: 'POST',
-      url: 'http://localhost:8378/1/users',
+      url: 'http://127.0.0.1:8378/1/users',
       body: {
         username: 'user',
         password: 'pass',
@@ -166,7 +166,7 @@ describe_only_db('mongo')('Idempotency', () => {
     });
     const params = {
       method: 'POST',
-      url: 'http://localhost:8378/1/installations',
+      url: 'http://127.0.0.1:8378/1/installations',
       body: {
         installationId: '1',
         deviceType: 'ios',
@@ -193,7 +193,7 @@ describe_only_db('mongo')('Idempotency', () => {
     const promises = [...Array(100).keys()].map(() => {
       const params = {
         method: 'POST',
-        url: 'http://localhost:8378/1/classes/MyClass',
+        url: 'http://127.0.0.1:8378/1/classes/MyClass',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
@@ -211,7 +211,7 @@ describe_only_db('mongo')('Idempotency', () => {
     Parse.Cloud.define('myFunction', () => {});
     const params = {
       method: 'POST',
-      url: 'http://localhost:8378/1/functions/myFunction',
+      url: 'http://127.0.0.1:8378/1/functions/myFunction',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,

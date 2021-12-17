@@ -557,7 +557,7 @@ describe('PushController', () => {
     };
     await installation.save();
     await reconfigureServer({
-      serverURL: 'http://localhost:8378/', // server with borked URL
+      serverURL: 'http://127.0.0.1:8378/', // server with borked URL
       push: { adapter: pushAdapter },
     });
     const pushStatusId = await sendPush(payload, {}, config, auth);
@@ -567,7 +567,7 @@ describe('PushController', () => {
         resolve();
       }, 1000);
     });
-    Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
+    Parse.serverURL = 'http://127.0.0.1:8378/1'; // GOOD url
     const result = await Parse.Push.getPushStatus(pushStatusId);
     expect(result).toBeDefined();
     await pushCompleted(pushStatusId);

@@ -48,7 +48,7 @@ describe('Parse.GeoPoint testing', () => {
     obj.set('name', 'Zhoul');
     await obj.save();
     Parse.Cloud.httpRequest({
-      url: 'http://localhost:8378/1/classes/TestObject/' + obj.id,
+      url: 'http://127.0.0.1:8378/1/classes/TestObject/' + obj.id,
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test',

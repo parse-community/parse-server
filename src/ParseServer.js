@@ -386,7 +386,7 @@ function injectDefaults(options: ParseServerOptions) {
   });
 
   if (!Object.prototype.hasOwnProperty.call(options, 'serverURL')) {
-    options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+    options.serverURL = `http://127.0.0.1:${options.port}${options.mountPath}`;
   }
 
   // Reserved Characters

@@ -85,7 +85,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
 // Default server configuration for tests.
 const defaultConfiguration = {
   filesAdapter,
-  serverURL: 'http://localhost:' + port + '/1',
+  serverURL: 'http://127.0.0.1:' + port + '/1',
   databaseAdapter,
   appId: 'test',
   javascriptKey: 'test',
@@ -187,7 +187,7 @@ const reconfigureServer = (changedConfiguration = {}) => {
 
 // Set up a Parse client to talk to our test API server
 const Parse = require('parse/node');
-Parse.serverURL = 'http://localhost:' + port + '/1';
+Parse.serverURL = 'http://127.0.0.1:' + port + '/1';
 
 beforeAll(async () => {
   try {
@@ -200,7 +200,7 @@ beforeAll(async () => {
   await reconfigureServer();
 
   Parse.initialize('test', 'test', 'test');
-  Parse.serverURL = 'http://localhost:' + port + '/1';
+  Parse.serverURL = 'http://127.0.0.1:' + port + '/1';
 });
 
 afterEach(function (done) {

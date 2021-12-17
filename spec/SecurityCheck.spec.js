@@ -15,7 +15,7 @@ describe('Security Check', () => {
   let checkSuccess;
   let checkFail;
   let config;
-  const publicServerURL = 'http://localhost:8378/1';
+  const publicServerURL = 'http://127.0.0.1:8378/1';
   const securityUrl = publicServerURL + '/security';
 
   async function reconfigureServerWithSecurityConfig(security) {

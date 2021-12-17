@@ -110,7 +110,7 @@ describe('ParseServerRESTController', () => {
 
     expect(status).toBe(201);
     expect(response).toEqual(resp);
-    expect(location).toBe(`http://localhost:8378/1/classes/MyObject/${resp.objectId}`);
+    expect(location).toBe(`http://127.0.0.1:8378/1/classes/MyObject/${resp.objectId}`);
   });
 
   it('should handle response status in batch', async () => {

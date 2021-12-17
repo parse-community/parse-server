@@ -1214,7 +1214,7 @@ describe('Cloud Code', () => {
       .then(user => {
         session1 = user.getSessionToken();
         return request({
-          url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+          url: 'http://127.0.0.1:8378/1/login?username=test&password=moon-y',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
@@ -1229,7 +1229,7 @@ describe('Cloud Code', () => {
       .then(() =>
         request({
           method: 'POST',
-          url: 'http://localhost:8378/1/functions/checkStaleUser',
+          url: 'http://127.0.0.1:8378/1/functions/checkStaleUser',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
@@ -1254,7 +1254,7 @@ describe('Cloud Code', () => {
       .then(() =>
         request({
           method: 'POST',
-          url: 'http://localhost:8378/1/functions/checkStaleUser',
+          url: 'http://127.0.0.1:8378/1/functions/checkStaleUser',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
@@ -1554,7 +1554,7 @@ describe('Cloud Code', () => {
     });
     await Parse.Cloud.httpRequest({
       method: 'POST',
-      url: 'http://localhost:8378/1/functions/hello',
+      url: 'http://127.0.0.1:8378/1/functions/hello',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -1575,7 +1575,7 @@ describe('Cloud Code', () => {
 
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/jobs/myJob',
+        url: 'http://127.0.0.1:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
@@ -1602,7 +1602,7 @@ describe('Cloud Code', () => {
 
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/jobs/myJob',
+        url: 'http://127.0.0.1:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
@@ -1632,7 +1632,7 @@ describe('Cloud Code', () => {
 
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/jobs/myJob',
+        url: 'http://127.0.0.1:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
@@ -1696,7 +1696,7 @@ describe('Cloud Code', () => {
 
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/jobs/myJob',
+        url: 'http://127.0.0.1:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
@@ -1727,7 +1727,7 @@ describe('Cloud Code', () => {
 
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/jobs/myJob',
+        url: 'http://127.0.0.1:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
@@ -1816,7 +1816,7 @@ describe('beforeSave hooks', () => {
     const req = request({
       // Parse JS SDK does not currently support custom object ids (see #1097), so we do a REST request
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -2064,7 +2064,7 @@ describe('beforeFind hooks', () => {
     });
 
     request({
-      url: 'http://localhost:8378/1/classes/MyObject',
+      url: 'http://127.0.0.1:8378/1/classes/MyObject',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
@@ -2124,7 +2124,7 @@ describe('beforeFind hooks', () => {
     obj.save().then(function () {
       request({
         method: 'GET',
-        url: 'http://localhost:8378/1/classes/MyObject/' + obj.id,
+        url: 'http://127.0.0.1:8378/1/classes/MyObject/' + obj.id,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
@@ -2615,7 +2615,7 @@ describe('afterFind hooks', () => {
     });
     const req = request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -2647,7 +2647,7 @@ describe('afterFind hooks', () => {
     });
     const req = request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -2685,7 +2685,7 @@ describe('afterFind hooks', () => {
     });
     const req = request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -2717,7 +2717,7 @@ describe('afterFind hooks', () => {
     });
     const req = request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       headers: {
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
@@ -2744,7 +2744,7 @@ describe('afterFind hooks', () => {
     });
     const req = request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       headers: {
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
@@ -2777,7 +2777,7 @@ describe('afterFind hooks', () => {
     });
     const req = request({
       method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      url: 'http://127.0.0.1:8378/1/classes/TestObject',
       headers: {
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',

@@ -1093,7 +1093,7 @@ describe('Installations', () => {
         };
         return request({
           headers: headers,
-          url: 'http://localhost:8378/1/installations/' + createResult.response.objectId,
+          url: 'http://127.0.0.1:8378/1/installations/' + createResult.response.objectId,
         }).then(response => {
           const body = response.data;
           expect(body.objectId).toEqual(createResult.response.objectId);
@@ -1125,7 +1125,7 @@ describe('Installations', () => {
         request({
           method: 'POST',
           headers: headers,
-          url: 'http://localhost:8378/1/classes/_Installation',
+          url: 'http://127.0.0.1:8378/1/classes/_Installation',
           json: true,
           body: {
             date: new Date(),

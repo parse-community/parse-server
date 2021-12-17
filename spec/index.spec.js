@@ -36,7 +36,7 @@ describe('server', () => {
   it('support http basic authentication with masterkey', done => {
     reconfigureServer({ appId: 'test' }).then(() => {
       request({
-        url: 'http://localhost:8378/1/classes/TestObject',
+        url: 'http://127.0.0.1:8378/1/classes/TestObject',
         headers: {
           Authorization: 'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
         },
@@ -50,7 +50,7 @@ describe('server', () => {
   it('support http basic authentication with javascriptKey', done => {
     reconfigureServer({ appId: 'test' }).then(() => {
       request({
-        url: 'http://localhost:8378/1/classes/TestObject',
+        url: 'http://127.0.0.1:8378/1/classes/TestObject',
         headers: {
           Authorization: 'Basic ' + Buffer.from('test:javascript-key=' + 'test').toString('base64'),
         },
@@ -75,7 +75,7 @@ describe('server', () => {
       //Need to use rest api because saving via JS SDK results in fail() not getting called
       request({
         method: 'POST',
-        url: 'http://localhost:8378/1/classes/NewClass',
+        url: 'http://127.0.0.1:8378/1/classes/NewClass',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
@@ -101,7 +101,7 @@ describe('server', () => {
           apiKey: 'k',
           domain: 'd',
         }),
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       }).then(done, fail);
     });
 
@@ -117,7 +117,7 @@ describe('server', () => {
             domain: 'd',
           },
         },
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       }).then(done, fail);
     });
 
@@ -129,7 +129,7 @@ describe('server', () => {
           module: 'mock-mail-adapter',
           options: {},
         },
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       };
       await reconfigureServer(options);
       const config = Config.get('test');
@@ -142,7 +142,7 @@ describe('server', () => {
         appName: 'unused',
         verifyUserEmails: true,
         emailAdapter: 'mock-mail-adapter',
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       };
       await reconfigureServer(options);
       const config = Config.get('test');
@@ -158,7 +158,7 @@ describe('server', () => {
           module: 'mock-mail-adapter',
           options: { throw: true },
         },
-        publicServerURL: 'http://localhost:8378/1',
+        publicServerURL: 'http://127.0.0.1:8378/1',
       };
       expectAsync(reconfigureServer(options)).toBeRejected('MockMailAdapterConstructor');
     });
@@ -167,7 +167,7 @@ describe('server', () => {
   it('can report the server version', async done => {
     await reconfigureServer();
     request({
-      url: 'http://localhost:8378/1/serverInfo',
+      url: 'http://127.0.0.1:8378/1/serverInfo',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test',
@@ -186,7 +186,7 @@ describe('server', () => {
     expect(config.hasPushSupport).toEqual(true);
     expect(config.hasPushScheduledSupport).toEqual(false);
     request({
-      url: 'http://localhost:8378/1/serverInfo',
+      url: 'http://127.0.0.1:8378/1/serverInfo',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test',
@@ -209,7 +209,7 @@ describe('server', () => {
         expect(config.hasPushSupport).toEqual(false);
         expect(config.hasPushScheduledSupport).toEqual(false);
         request({
-          url: 'http://localhost:8378/1/serverInfo',
+          url: 'http://127.0.0.1:8378/1/serverInfo',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
@@ -239,7 +239,7 @@ describe('server', () => {
         expect(config.hasPushSupport).toEqual(true);
         expect(config.hasPushScheduledSupport).toEqual(false);
         request({
-          url: 'http://localhost:8378/1/serverInfo',
+          url: 'http://127.0.0.1:8378/1/serverInfo',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
@@ -270,7 +270,7 @@ describe('server', () => {
         expect(config.hasPushSupport).toEqual(true);
         expect(config.hasPushScheduledSupport).toEqual(true);
         request({
-          url: 'http://localhost:8378/1/serverInfo',
+          url: 'http://127.0.0.1:8378/1/serverInfo',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
@@ -288,7 +288,7 @@ describe('server', () => {
 
   it('can respond 200 on path health', done => {
     request({
-      url: 'http://localhost:8378/1/health',
+      url: 'http://127.0.0.1:8378/1/health',
     }).then(response => {
       expect(response.status).toBe(200);
       done();
@@ -300,7 +300,7 @@ describe('server', () => {
       Object.assign({}, defaultConfiguration, {
         appId: 'aTestApp',
         masterKey: 'aTestMasterKey',
-        serverURL: 'http://localhost:12666/parse',
+        serverURL: 'http://127.0.0.1:12666/parse',
         serverStartComplete: () => {
           expect(Parse.applicationId).toEqual('aTestApp');
           const app = express();
@@ -341,7 +341,7 @@ describe('server', () => {
       Object.assign({}, defaultConfiguration, {
         appId: 'anOtherTestApp',
         masterKey: 'anOtherTestMasterKey',
-        serverURL: 'http://localhost:12667/parse',
+        serverURL: 'http://127.0.0.1:12667/parse',
         serverStartComplete: error => {
           const promise = error ? Promise.reject(error) : Promise.resolve();
           promise
@@ -405,7 +405,7 @@ describe('server', () => {
 
   it('properly gives publicServerURL when set', done => {
     reconfigureServer({ publicServerURL: 'https://myserver.com/1' }).then(() => {
-      const config = Config.get('test', 'http://localhost:8378/1');
+      const config = Config.get('test', 'http://127.0.0.1:8378/1');
       expect(config.mount).toEqual('https://myserver.com/1');
       done();
     });
@@ -413,8 +413,8 @@ describe('server', () => {
 
   it('properly removes trailing slash in mount', done => {
     reconfigureServer({}).then(() => {
-      const config = Config.get('test', 'http://localhost:8378/1/');
-      expect(config.mount).toEqual('http://localhost:8378/1');
+      const config = Config.get('test', 'http://127.0.0.1:8378/1/');
+      expect(config.mount).toEqual('http://127.0.0.1:8378/1');
       done();
     });
   });
@@ -522,7 +522,7 @@ describe('server', () => {
       middleware: 'spec/support/CustomMiddleware',
     })
       .then(() => {
-        return request({ url: 'http://localhost:8378/1' }).then(fail, res => {
+        return request({ url: 'http://127.0.0.1:8378/1' }).then(fail, res => {
           // Just check that the middleware set the header
           expect(res.headers['x-yolo']).toBe('1');
           done();

@@ -12,7 +12,7 @@ describe('Security Check Groups', () => {
     config = {
       appId: 'test',
       appName: 'ExampleAppName',
-      publicServerURL: 'http://localhost:8378/1',
+      publicServerURL: 'http://127.0.0.1:8378/1',
       security: {
         enableCheck: true,
         enableCheckLog: false,
