@@ -13,92 +13,40 @@ const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 
-describe('Parse.User auth after save testing (original object not being retrieved) ', () => {
-  it('check if user is new when using signup or edit with auth login methods', async done => {
-     let counter = 0;
-     Parse.Cloud.beforeSave(Parse.User, async (request) => {
-       const { object: user } = request;
-       if (user.get("authData") != null && user.isNew()) {
-         console.log("Before save: new user")
-         user.setUsername("facebookaccount");
-       }
-     });
-     Parse.Cloud.afterSave(Parse.User, async (request) => {
-       if (!request.original) {
-         console.log("After save: new user "+counter);
-         const user = request.object
-         if (user.get("authData") != null) {
-           if(counter > 0){
-             done.fail();
-           }
-           counter++;
-           console.log("Counter: "+counter+" User signed up using auth -> username " + user.get("username"));
-         }
-       }
-       else {
-         console.log("User updated profile");
-       }
-     });
- 
-     const provider = getMockFacebookProvider();
-     Parse.User._registerAuthenticationProvider(provider);
-     const user = await Parse.User._logInWith('facebook');
-     await Parse.User.logOut();
-     //Parse.User._registerAuthenticationProvider(provider);
-     await Parse.User._logInWith('facebook');
- 
- 
-   });
-   const getMockFacebookProviderWithIdToken = function (id, token) {
-     return {
-       authData: {
-         id: id,
-         access_token: token,
-         expiration_date: new Date().toJSON(),
-       },
-       shouldError: false,
-       loggedOut: false,
-       synchronizedUserId: null,
-       synchronizedAuthToken: null,
-       synchronizedExpiration: null,
- 
-       authenticate: function (options) {
-         if (this.shouldError) {
-           options.error(this, 'An error occurred');
-         } else if (this.shouldCancel) {
-           options.error(this, null);
-         } else {
-           options.success(this, this.authData);
-         }
-       },
-       restoreAuthentication: function (authData) {
-         if (!authData) {
-           this.synchronizedUserId = null;
-           this.synchronizedAuthToken = null;
-           this.synchronizedExpiration = null;
-           return true;
-         }
-         this.synchronizedUserId = authData.id;
-         this.synchronizedAuthToken = authData.access_token;
-         this.synchronizedExpiration = authData.expiration_date;
-         return true;
-       },
-       getAuthType: function () {
-         return 'facebook';
-       },
-       deauthenticate: function () {
-         this.loggedOut = true;
-         this.restoreAuthentication(null);
-       },
-     };
-   };
-  const getMockFacebookProvider = function () {
-     return getMockFacebookProviderWithIdToken('8675309', 'jenny');
-   };
- 
- });
- 
 describe('Parse.User testing', () => {
+  it('retrieves original object when user logs in with third party auth', async done => {
+    let counter = 0;
+    Parse.Cloud.beforeSave(Parse.User, async request => {
+      const { object: user } = request;
+      if (user.get('authData') != null && user.isNew()) {
+        console.log('Before save: new user');
+        user.setUsername('facebookaccount');
+      }
+    });
+    Parse.Cloud.afterSave(Parse.User, async request => {
+      if (!request.original) {
+        console.log('After save: new user ' + counter);
+        const user = request.object;
+        if (user.get('authData') != null) {
+          if (counter > 0) {
+            done.fail();
+          }
+          counter++;
+          console.log(
+            'Counter: ' + counter + ' User signed up using auth -> username ' + user.get('username')
+          );
+        }
+      } else {
+        console.log('User updated profile');
+      }
+    });
+
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User.logOut();
+    await Parse.User._logInWith('facebook');
+  });
+
   it('user sign up class method', async done => {
     const user = await Parse.User.signUp('asdf', 'zxcv');
     ok(user.getSessionToken());
