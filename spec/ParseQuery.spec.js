@@ -4766,7 +4766,7 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
-  it_only_db('mongo')('should handle relative times correctly', function (done) {
+  it('should handle relative times correctly', function (done) {
     const now = Date.now();
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
@@ -4838,7 +4838,7 @@ describe('Parse.Query testing', () => {
       .then(done, done.fail);
   });
 
-  it_only_db('mongo')('should error on invalid relative time', function (done) {
+  it('should error on invalid relative time', function (done) {
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
       ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
@@ -4852,7 +4852,7 @@ describe('Parse.Query testing', () => {
       .then(done.fail, () => done());
   });
 
-  it_only_db('mongo')('should error when using $relativeTime on non-Date field', function (done) {
+  it('should error when using $relativeTime on non-Date field', function (done) {
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
       nonDateField: 'abcd',
