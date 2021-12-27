@@ -176,12 +176,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     try {
       await database.find(
         tableName,
-        { 
-          createdAt: { 
-            $eq: { 
+        {
+          createdAt: {
+            $eq: {
               $relativeTime: '12 days ago'
             }
-          } 
+          }
         },
         { }
       );
@@ -219,12 +219,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     try {
       await database.find(
         tableName,
-        { 
-          createdAt: { 
-            $ne: { 
+        {
+          createdAt: {
+            $ne: {
               $relativeTime: '12 days ago'
             }
-          } 
+          }
         },
         { }
       );
@@ -262,12 +262,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     try {
       await database.find(
         tableName,
-        { 
-          createdAt: { 
-            $exists: { 
+        {
+          createdAt: {
+            $exists: {
               $relativeTime: '12 days ago'
             }
-          } 
+          }
         },
         { }
       );

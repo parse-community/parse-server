@@ -804,7 +804,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
               console.error('Error while parsing relative date', parserResult);
               throw new Parse.Error(
                 Parse.Error.INVALID_JSON,
-                `bad $relativeTime (${key}) value. ${parserResult.info}`
+                `bad $relativeTime (${postgresValue.$relativeTime}) value. ${parserResult.info}`
               );
             }
           }
