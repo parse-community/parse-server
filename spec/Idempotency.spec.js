@@ -11,9 +11,11 @@ describe('Idempotency', () => {
   /** Enable TTL expiration simulated by removing entry instead of waiting for MongoDB TTL monitor which
    runs only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
   const SIMULATE_TTL = true;
+  const applicationId = "testIdempotency";
+
   // Helpers
   async function deleteRequestEntry(reqId) {
-    const config = Config.get(Parse.applicationId);
+    const config = Config.get(applicationId);
     const res = await rest.find(
       config,
       auth.master(config),
@@ -25,7 +27,7 @@ describe('Idempotency', () => {
   }
   async function setup(options) {
     await reconfigureServer({
-      appId: Parse.applicationId,
+      appId: applicationId,
       masterKey: Parse.masterKey,
       serverURL: Parse.serverURL,
       idempotencyOptions: options,
@@ -56,7 +58,7 @@ describe('Idempotency', () => {
         'X-Parse-Request-Id': 'abc-123',
       },
     };
-    expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(30);
+    expect(Config.get(applicationId).idempotencyOptions.ttl).toBe(30);
     await request(params);
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
@@ -74,7 +76,7 @@ describe('Idempotency', () => {
       method: 'POST',
       url: 'http://localhost:8378/1/functions/myFunction',
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Application-Id': applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
         'X-Parse-Request-Id': 'abc-123',
       },
@@ -98,7 +100,7 @@ describe('Idempotency', () => {
       method: 'POST',
       url: 'http://localhost:8378/1/jobs/myJob',
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Application-Id': applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
         'X-Parse-Request-Id': 'abc-123',
       },
@@ -120,7 +122,7 @@ describe('Idempotency', () => {
       method: 'POST',
       url: 'http://localhost:8378/1/classes/MyClass',
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Application-Id': applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
         'X-Parse-Request-Id': 'abc-123',
       },
@@ -146,7 +148,7 @@ describe('Idempotency', () => {
         password: 'pass',
       },
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Application-Id': applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
         'X-Parse-Request-Id': 'abc-123',
       },
@@ -172,7 +174,7 @@ describe('Idempotency', () => {
         deviceType: 'ios',
       },
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Application-Id': applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
         'X-Parse-Request-Id': 'abc-123',
       },
@@ -195,7 +197,7 @@ describe('Idempotency', () => {
         method: 'POST',
         url: 'http://localhost:8378/1/classes/MyClass',
         headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Application-Id': applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
           'X-Parse-Request-Id': uuid.v4(),
         },
@@ -213,7 +215,7 @@ describe('Idempotency', () => {
       method: 'POST',
       url: 'http://localhost:8378/1/functions/myFunction',
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Application-Id': applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
         'X-Parse-Request-Id': 'abc-123',
       },
@@ -226,10 +228,10 @@ describe('Idempotency', () => {
 
   it('should use default configuration when none is set', async () => {
     await setup({});
-    expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(
+    expect(Config.get(applicationId).idempotencyOptions.ttl).toBe(
       Definitions.IdempotencyOptions.ttl.default
     );
-    expect(Config.get(Parse.applicationId).idempotencyOptions.paths).toBe(
+    expect(Config.get(applicationId).idempotencyOptions.paths).toBe(
       Definitions.IdempotencyOptions.paths.default
     );
   });

@@ -666,7 +666,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     mongoFieldNames.forEach(fieldName => {
       indexCreationRequest[fieldName] = options.indexType !== undefined ? options.indexType : 1;
     });
-    //const dropIndex = options.dropIndex !== undefined ? options.dropIndex : false;
+    const dropIndex = options.dropIndex !== undefined ? options.dropIndex : false;
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
     const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
@@ -680,10 +680,10 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...ttlOptions,
     };
     const promises = [];
-    /*if (dropIndex) {
+    if (dropIndex) {
       const promise = this.dropIndex(className, indexName);
       promises.push(promise);
-    }*/
+    }
     return Promise.all(promises)
       .then(() => this._adaptiveCollection(className))
       .then(
