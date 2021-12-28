@@ -11,8 +11,8 @@ describe('Idempotency', () => {
   /** Enable TTL expiration simulated by removing entry instead of waiting for MongoDB TTL monitor which
    runs only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
   const SIMULATE_TTL = true;
-  const ttl = 2;
-  const maxTimeOut = 4000;
+  const ttl = 30;
+  const maxTimeOut = 130000;
 
   // Helpers
   async function deleteRequestEntry(reqId) {
