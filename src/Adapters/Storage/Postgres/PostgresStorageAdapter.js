@@ -964,6 +964,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       );
     });
     this._notifySchemaChange();
+    return Promise.resolve();
   }
 
   async createClass(className: string, schema: SchemaType, conn: ?any) {
@@ -2416,25 +2417,30 @@ export class PostgresStorageAdapter implements StorageAdapter {
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
-    await conn.none(qs, [indexNameOptions.name, className, ...fieldNames]).catch(error => {
-      if (
-        error.code === PostgresDuplicateRelationError &&
-        error.message.includes(indexNameOptions.name)
-      ) {
-        // Index already exists. Ignore error.
-      } else if (
-        error.code === PostgresUniqueIndexViolationError &&
-        error.message.includes(indexNameOptions.name)
-      ) {
-        // Cast the error into the proper parse error
-        throw new Parse.Error(
-          Parse.Error.DUPLICATE_VALUE,
-          'A duplicate value for a field with unique values was provided'
-        );
-      } else {
-        throw error;
-      }
-    });
+    const setIdempodencyTrigger = options.setIdempodencyTrigger !== undefined ? options.setIdempodencyTrigger : false;
+    if (setIdempodencyTrigger) {
+      await this.ensureIdempodencyTriggerExists(options);
+    }
+    return conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
+      .catch(error => {
+        if (
+          error.code === PostgresDuplicateRelationError &&
+          error.message.includes(indexNameOptions.name)
+        ) {
+          // Index already exists. Ignore error.
+        } else if (
+          error.code === PostgresUniqueIndexViolationError &&
+          error.message.includes(indexNameOptions.name)
+        ) {
+          // Cast the error into the proper parse error
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+        } else {
+          throw error;
+        }
+      });
   }
 
   async deleteIdempodencyTrigger(
@@ -2442,7 +2448,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const qs = 'DROP TRIGGER IF EXISTS idempodency_delete_old_rows_trigger ON "_Idempotency"';
-    await conn
+    return conn
       .none(qs)
       .catch(error => {
         throw error;
@@ -2451,44 +2457,43 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async ensureIdempodencyTriggerExists(
     options?: Object = {}
-    ): Promise<any> {
-      const conn = options.conn !== undefined ? options.conn : this._client;
-      await this.deleteIdempodencyTrigger(options = { conn: conn })
-        .catch(error => {
+  ): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
+    const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE timestamp < NOW() - INTERVAL $1::text; RETURN NEW; END; $$;';
+    await this.deleteIdempodencyTrigger(options = { conn: conn })
+      .catch(error => {
+        throw error;
+      })
+    return conn
+      .none(qs, [ttlOptions])
+      .catch(error => {
+        if (
+          error.code === PostgresDuplicateRelationError ||
+          error.code === PostgresUniqueIndexViolationError ||
+          error.code === PostgresDuplicateObjectError
+        ) {
+          // Function already exists, must have been created by a different request. Ignore error.
+        } else {
           throw error;
-        })
-      const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
-      const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE timestamp < NOW() - INTERVAL $1::text; RETURN NEW; END; $$;';
-      await conn
-        .none(qs, [ttlOptions])
-        .catch(error => {
-          if (
-            error.code === PostgresDuplicateRelationError ||
-            error.code === PostgresUniqueIndexViolationError ||
-            error.code === PostgresDuplicateObjectError
-          ) {
-            // Function already exists, must have been created by a different request. Ignore error.
-          } else {
-            throw error;
-          }
-        });
-      /*const qs2 = 'CREATE TRIGGER idempodency_delete_old_rows_trigger AFTER INSERT ON "_Idempotency" FOR EACH ROW EXECUTE PROCEDURE idempodency_delete_old_rows()';
-      await conn
-        .none(qs2)
-        .catch(error => {
-          if (
-            error.code === PostgresDuplicateRelationError ||
-            error.code === PostgresUniqueIndexViolationError ||
-            error.code === PostgresDuplicateObjectError
-          ) {
-            console.log("3333");
-            // Function already exists, must have been created by a different request. Ignore error.
-          } else {
-            console.log("4444");
-            throw error;
-          }
-        });
-      console.log("11111+++" );*/
+        }
+      });
+    /*const qs2 = 'CREATE TRIGGER idempodency_delete_old_rows_trigger AFTER INSERT ON "_Idempotency" FOR EACH ROW EXECUTE PROCEDURE idempodency_delete_old_rows()';
+    return conn
+      .none(qs2)
+      .catch(error => {
+        if (
+          error.code === PostgresDuplicateRelationError ||
+          error.code === PostgresUniqueIndexViolationError ||
+          error.code === PostgresDuplicateObjectError
+        ) {
+          console.log("3333");
+          // Function already exists, must have been created by a different request. Ignore error.
+        } else {
+          console.log("4444");
+          throw error;
+        }
+      });*/
   }
 }
 

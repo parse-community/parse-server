@@ -400,7 +400,7 @@ class DatabaseController {
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
 
-  constructor(adapter: StorageAdapter, idempotencyOptions = {}) {
+  constructor(adapter: StorageAdapter, idempotencyOptions?: Object = {}) {
     this.adapter = adapter;
     this.idempotencyOptions = idempotencyOptions;
     // We don't want a mutable this.schema, because then you could have
@@ -1715,7 +1715,7 @@ class DatabaseController {
       },
     };
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
-    await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));  
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
@@ -1760,27 +1760,18 @@ class DatabaseController {
         throw error;
       });
 
+    const options = this.idempotencyOptions;
     if (this.adapter instanceof MongoStorageAdapter) {
-      await this.adapter
-        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, this.idempotencyOptions)
-        .catch(error => {
-          logger.warn('Unable to create TTL index for idempotency expire date: ', error);
-          throw error;
-        });
+      options.dropIndex = true;
     } else if (this.adapter instanceof PostgresStorageAdapter) {
-      await this.adapter
-        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'idempotency_expire', false)
-        .catch(error => {
-          logger.warn('Unable to create index for idempotency expire date: ', error);
-          throw error;
-        });
-      await this.adapter
-        .ensureIdempodencyTriggerExists(this.idempotencyOptions)
-        .catch(error => {
-          logger.warn('Unable to create trigger for idempotency expire date: ', error);
-          throw error;
-        });
+      options.setIdempodencyTrigger = true;
     }
+    await this.adapter
+      .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, options)
+      .catch(error => {
+        logger.warn('Unable to create TTL index for idempotency expire date: ', error);
+        throw error;
+      });
     await this.adapter.updateSchemaWithIndexes();
   }
 
