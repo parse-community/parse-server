@@ -429,6 +429,18 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     expect(adapter._onchange).toHaveBeenCalled();
   });
+
+  it('Idempotency class should have trigger', async () => {
+    await reconfigureServer();
+    const config = Config.get('test');
+    const adapter = config.database.adapter;
+    const client = adapter._client;
+    const triggers = await client.one("SELECT event_object_table, trigger_name, event_manipulation, action_statement FROM information_schema.triggers WHERE event_object_table = '_Idempotency' ORDER BY event_object_table,event_manipulation");
+    expect(triggers.event_object_table).toBe("_Idempotency");
+    expect(triggers.trigger_name).toBe("idempodency_delete_old_rows_trigger");
+    expect(triggers.event_manipulation).toBe("INSERT");
+    expect(triggers.action_statement).toBe("EXECUTE FUNCTION idempodency_delete_old_rows()");
+  });
 });
 
 describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {

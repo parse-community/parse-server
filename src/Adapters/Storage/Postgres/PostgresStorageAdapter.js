@@ -2460,12 +2460,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
-    const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE timestamp < NOW() - INTERVAL $1::text; RETURN NEW; END; $$;';
+    const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; RETURN NEW; END; $$;';
     await this.deleteIdempodencyTrigger(options = { conn: conn })
       .catch(error => {
         throw error;
       })
-    return conn
+    await conn
       .none(qs, [ttlOptions])
       .catch(error => {
         if (
@@ -2478,7 +2478,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           throw error;
         }
       });
-    /*const qs2 = 'CREATE TRIGGER idempodency_delete_old_rows_trigger AFTER INSERT ON "_Idempotency" FOR EACH ROW EXECUTE PROCEDURE idempodency_delete_old_rows()';
+    const qs2 = 'CREATE TRIGGER idempodency_delete_old_rows_trigger AFTER INSERT ON "_Idempotency" FOR EACH ROW EXECUTE PROCEDURE idempodency_delete_old_rows()';
     return conn
       .none(qs2)
       .catch(error => {
@@ -2487,13 +2487,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
           error.code === PostgresUniqueIndexViolationError ||
           error.code === PostgresDuplicateObjectError
         ) {
-          console.log("3333");
           // Function already exists, must have been created by a different request. Ignore error.
         } else {
-          console.log("4444");
           throw error;
         }
-      });*/
+      });
   }
 }
 
