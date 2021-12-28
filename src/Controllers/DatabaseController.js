@@ -1762,7 +1762,7 @@ class DatabaseController {
 
     const options = this.idempotencyOptions;
     if (this.adapter instanceof MongoStorageAdapter) {
-      options.dropIndex = true;
+      options.dropIndex = false;
     } else if (this.adapter instanceof PostgresStorageAdapter) {
       options.setIdempodencyTrigger = true;
     }
