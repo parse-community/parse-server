@@ -12,6 +12,7 @@ describe('Idempotency', () => {
    runs only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
   const SIMULATE_TTL = true;
   const ttl = 2;
+  const maxTimeOut = 4000;
 
   // Helpers
   async function deleteRequestEntry(reqId) {
@@ -86,7 +87,7 @@ describe('Idempotency', () => {
     if (SIMULATE_TTL) {
       await deleteRequestEntry('abc-123');
     } else {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, maxTimeOut));
     }
     await expectAsync(request(params)).toBeResolved();
     expect(counter).toBe(2);
