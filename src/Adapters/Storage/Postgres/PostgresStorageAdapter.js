@@ -2436,6 +2436,60 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
     });
   }
+
+  async deleteIdempodencyTrigger(
+    options?: Object = {}
+  ): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const qs = 'DROP TRIGGER IF EXISTS idempodency_delete_old_rows_trigger ON "_Idempotency"';
+    await conn
+      .none(qs)
+      .catch(error => {
+        throw error;
+      });
+  }
+
+  async ensureIdempodencyTriggerExists(
+    options?: Object = {}
+    ): Promise<any> {
+      const conn = options.conn !== undefined ? options.conn : this._client;
+      await this.deleteIdempodencyTrigger(options = { conn: conn })
+        .catch(error => {
+          throw error;
+        })
+      const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
+      const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE timestamp < NOW() - INTERVAL $1::text; RETURN NEW; END; $$;';
+      await conn
+        .none(qs, [ttlOptions])
+        .catch(error => {
+          if (
+            error.code === PostgresDuplicateRelationError ||
+            error.code === PostgresUniqueIndexViolationError ||
+            error.code === PostgresDuplicateObjectError
+          ) {
+            // Function already exists, must have been created by a different request. Ignore error.
+          } else {
+            throw error;
+          }
+        });
+      /*const qs2 = 'CREATE TRIGGER idempodency_delete_old_rows_trigger AFTER INSERT ON "_Idempotency" FOR EACH ROW EXECUTE PROCEDURE idempodency_delete_old_rows()';
+      await conn
+        .none(qs2)
+        .catch(error => {
+          if (
+            error.code === PostgresDuplicateRelationError ||
+            error.code === PostgresUniqueIndexViolationError ||
+            error.code === PostgresDuplicateObjectError
+          ) {
+            console.log("3333");
+            // Function already exists, must have been created by a different request. Ignore error.
+          } else {
+            console.log("4444");
+            throw error;
+          }
+        });
+      console.log("11111+++" );*/
+  }
 }
 
 function convertPolygonToSQL(polygon) {

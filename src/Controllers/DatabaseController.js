@@ -14,6 +14,7 @@ import logger from '../logger';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
+import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
@@ -394,12 +395,14 @@ const relationSchema = {
 
 class DatabaseController {
   adapter: StorageAdapter;
+  idempotencyOptions: any;
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
 
-  constructor(adapter: StorageAdapter) {
+  constructor(adapter: StorageAdapter, idempotencyOptions = {}) {
     this.adapter = adapter;
+    this.idempotencyOptions = idempotencyOptions;
     // We don't want a mutable this.schema, because then you could have
     // one request that uses different schemas for different parts of
     // it. Instead, use loadSchema to get a schema.
@@ -1712,10 +1715,8 @@ class DatabaseController {
       },
     };
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
-    await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
-    if (this.adapter instanceof MongoStorageAdapter) {
-      await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
-    }
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));  
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
@@ -1751,20 +1752,32 @@ class DatabaseController {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
       throw error;
     });
+
+    await this.adapter
+      .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
+      .catch(error => {
+        logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
+        throw error;
+      });
+
     if (this.adapter instanceof MongoStorageAdapter) {
       await this.adapter
-        .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
-        .catch(error => {
-          logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
-          throw error;
-        });
-
-      await this.adapter
-        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
-          ttl: 0,
-        })
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, this.idempotencyOptions)
         .catch(error => {
           logger.warn('Unable to create TTL index for idempotency expire date: ', error);
+          throw error;
+        });
+    } else if (this.adapter instanceof PostgresStorageAdapter) {
+      await this.adapter
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'idempotency_expire', false)
+        .catch(error => {
+          logger.warn('Unable to create index for idempotency expire date: ', error);
+          throw error;
+        });
+      await this.adapter
+        .ensureIdempodencyTriggerExists(this.idempotencyOptions)
+        .catch(error => {
+          logger.warn('Unable to create trigger for idempotency expire date: ', error);
           throw error;
         });
     }
