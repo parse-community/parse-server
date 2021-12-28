@@ -404,7 +404,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         if (fieldName.indexOf('.') >= 0) {
           values.push(fieldValue.$eq);
           patterns.push(`${transformDotField(fieldName)} = $${index++}`);
-        } if (typeof fieldValue.$eq === 'object' && fieldValue.$eq.$relativeTime) {
+        } else if (typeof fieldValue.$eq === 'object' && fieldValue.$eq.$relativeTime) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
             '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
