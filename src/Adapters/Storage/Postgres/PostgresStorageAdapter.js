@@ -2417,8 +2417,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
-    const setIdempodencyTrigger = options.setIdempodencyFunction !== undefined ? options.setIdempodencyTrigger : false;
-    if (setIdempodencyTrigger) {
+    const setIdempodencyFunction = options.setIdempodencyFunction !== undefined ? options.setIdempodencyFunction : false;
+    if (setIdempodencyFunction) {
       await this.ensureIdempodencyFunctionExists(options);
     }
     return conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
