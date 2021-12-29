@@ -2417,9 +2417,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
-    const setIdempodencyTrigger = options.setIdempodencyTrigger !== undefined ? options.setIdempodencyTrigger : false;
+    const setIdempodencyTrigger = options.setIdempodencyFunction !== undefined ? options.setIdempodencyTrigger : false;
     if (setIdempodencyTrigger) {
-      await this.ensureIdempodencyTriggerExists(options);
+      await this.ensureIdempodencyFunctionExists(options);
     }
     return conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch(error => {
@@ -2443,11 +2443,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async deleteIdempodencyTrigger(
+  async deleteIdempodencyFunction(
     options?: Object = {}
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
-    const qs = 'DROP TRIGGER IF EXISTS idempodency_delete_old_rows_trigger ON "_Idempotency"';
+    const qs = 'DROP FUNCTION IF EXISTS idempodency_delete_old_rows()';
     return conn
       .none(qs)
       .catch(error => {
@@ -2455,32 +2455,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async ensureIdempodencyTriggerExists(
+  async ensureIdempodencyFunctionExists(
     options?: Object = {}
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
     const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; RETURN NEW; END; $$;';
-    await this.deleteIdempodencyTrigger(options = { conn: conn })
-      .catch(error => {
-        throw error;
-      })
-    await conn
-      .none(qs, [ttlOptions])
-      .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError ||
-          error.code === PostgresUniqueIndexViolationError ||
-          error.code === PostgresDuplicateObjectError
-        ) {
-          // Function already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
-      });
-    const qs2 = 'CREATE TRIGGER idempodency_delete_old_rows_trigger AFTER INSERT ON "_Idempotency" FOR EACH ROW EXECUTE PROCEDURE idempodency_delete_old_rows()';
     return conn
-      .none(qs2)
+      .none(qs, [ttlOptions])
       .catch(error => {
         if (
           error.code === PostgresDuplicateRelationError ||

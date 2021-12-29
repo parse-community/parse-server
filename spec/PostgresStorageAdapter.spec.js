@@ -430,16 +430,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     expect(adapter._onchange).toHaveBeenCalled();
   });
 
-  it('Idempotency class should have trigger', async () => {
+  it('Idempotency class should have function', async () => {
     await reconfigureServer();
     const config = Config.get('test');
     const adapter = config.database.adapter;
     const client = adapter._client;
-    const triggers = await client.one("SELECT event_object_table, trigger_name, event_manipulation, action_statement FROM information_schema.triggers WHERE event_object_table = '_Idempotency' ORDER BY event_object_table,event_manipulation");
-    expect(triggers.event_object_table).toBe("_Idempotency");
-    expect(triggers.trigger_name).toBe("idempodency_delete_old_rows_trigger");
-    expect(triggers.event_manipulation).toBe("INSERT");
-    expect(triggers.action_statement).toBe("EXECUTE FUNCTION idempodency_delete_old_rows()");
+    const foundFunction = await client.one("SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempodency_delete_old_rows'");
+    expect(foundFunction.format).toBe("public.idempodency_delete_old_rows()");
   });
 });
 

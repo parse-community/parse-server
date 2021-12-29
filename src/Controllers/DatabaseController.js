@@ -1760,18 +1760,25 @@ class DatabaseController {
         throw error;
       });
 
-    const options = this.idempotencyOptions;
     if (this.adapter instanceof MongoStorageAdapter) {
-      options.ttl = 0;
+      await this.adapter
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
+          ttl: 0,
+        })
+        .catch(error => {
+          logger.warn('Unable to create TTL index for idempotency expire date: ', error);
+          throw error;
+        });
     } else if (this.adapter instanceof PostgresStorageAdapter) {
-      options.setIdempodencyTrigger = true;
+      const options = this.idempotencyOptions;
+      options.setIdempodencyFunction = true;
+      await this.adapter
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, options)
+        .catch(error => {
+          logger.warn('Unable to create TTL index for idempotency expire date: ', error);
+          throw error;
+        });
     }
-    await this.adapter
-      .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, options)
-      .catch(error => {
-        logger.warn('Unable to create TTL index for idempotency expire date: ', error);
-        throw error;
-      });
     await this.adapter.updateSchemaWithIndexes();
   }
 
