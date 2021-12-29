@@ -12,7 +12,6 @@ const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
-const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
 const logger = require('../../../logger');
 
