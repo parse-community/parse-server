@@ -432,11 +432,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
 
   it('Idempotency class should have function', async () => {
     await reconfigureServer();
-    const config = Config.get('test');
-    const adapter = config.database.adapter;
+    const adapter = Config.get('test').database.adapter;
     const client = adapter._client;
-    const foundFunction = await client.one("SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempodency_delete_old_rows'");
+    const qs = "SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempodency_delete_old_rows'";
+    const foundFunction = await client.one(qs);
     expect(foundFunction.format).toBe("public.idempodency_delete_old_rows()");
+    await adapter.deleteIdempodencyFunction();
+    await client.none(qs);
   });
 });
 
