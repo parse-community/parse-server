@@ -886,7 +886,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async classExists(name: string) {
-    await this._client.one(
+    return this._client.one(
       'SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)',
       [name],
       a => a.exists
