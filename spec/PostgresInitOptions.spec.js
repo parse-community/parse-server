@@ -48,36 +48,47 @@ function createParseServer(options) {
 }
 
 describe_only_db('postgres')('Postgres database init options', () => {
-  let server;
-  let adapter;
 
-  afterAll(async () => {
-    adapter.handleShutdown();
-    if (server) {
-      Parse.serverURL = 'http://localhost:8378/1';
-      await server.close();
-    }
+  beforeEach(async () => {
+    await reconfigureServer();
   });
 
   it('should create server with public schema databaseOptions', async () => {
-    adapter = new PostgresStorageAdapter({
+    const adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',
       databaseOptions: databaseOptions1,
     });
-    const newServer = await createParseServer({ databaseAdapter: adapter });
-    server = newServer;
+    const server = await createParseServer({ databaseAdapter: adapter });
     const score = new GameScore({
       score: 1337,
       playerName: 'Sean Plott',
       cheatMode: false,
     });
     await score.save();
-    await reconfigureServer();
+    await server.close();
+  });
+
+  it('should create server using postgresql uri with public schema databaseOptions', async () => {
+    const postgresURI2 = new URL(postgresURI);
+    postgresURI2.protocol = 'postgresql:';
+    const adapter = new PostgresStorageAdapter({
+      uri: postgresURI2.toString(),
+      collectionPrefix: 'test_',
+      databaseOptions: databaseOptions1,
+    });
+    const server = await createParseServer({ databaseAdapter: adapter });
+    const score = new GameScore({
+      score: 1337,
+      playerName: 'Sean Plott',
+      cheatMode: false,
+    });
+    await score.save();
+    await server.close();
   });
 
   it('should fail to create server if schema databaseOptions does not exist', async () => {
-    adapter = new PostgresStorageAdapter({
+    const adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',
       databaseOptions: databaseOptions2,
