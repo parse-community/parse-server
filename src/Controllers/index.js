@@ -225,7 +225,7 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
     /* */
   }
   switch (protocol) {
-    case 'postgres:': 
+    case 'postgres:':
     case 'postgresql:':
       return new PostgresStorageAdapter({
         uri: databaseURI,
