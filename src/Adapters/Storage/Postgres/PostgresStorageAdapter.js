@@ -873,15 +873,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         'CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )'
       )
       .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError ||
-          error.code === PostgresUniqueIndexViolationError ||
-          error.code === PostgresDuplicateObjectError
-        ) {
-          // Table already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
+        throw error;
       });
   }
 
@@ -2422,23 +2414,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     }
     await conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError &&
-          error.message.includes(indexNameOptions.name)
-        ) {
-          // Index already exists. Ignore error.
-        } else if (
-          error.code === PostgresUniqueIndexViolationError &&
-          error.message.includes(indexNameOptions.name)
-        ) {
-          // Cast the error into the proper parse error
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
-        } else {
-          throw error;
-        }
+        throw error;
       });
   }
 
@@ -2463,15 +2439,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return conn
       .none(qs, [ttlOptions])
       .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError ||
-          error.code === PostgresUniqueIndexViolationError ||
-          error.code === PostgresDuplicateObjectError
-        ) {
-          // Function already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
+        throw error;
       });
   }
 }
