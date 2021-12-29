@@ -1704,7 +1704,7 @@ describe('Apple Game Center Auth adapter', () => {
       await gcenter.validateAuthData(authData);
       fail();
     } catch (e) {
-      expect(e.message).toBeDefined();
+      expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: invalid.com');
     }
   });
 });
