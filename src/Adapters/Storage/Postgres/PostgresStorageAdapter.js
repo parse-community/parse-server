@@ -1029,7 +1029,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join()})`;
     const values = [className, ...valuesArray];
 
-    await conn.task('create-table', async t => {
+    return conn.task('create-table', async t => {
       try {
         await t.none(qs, values);
       } catch (error) {
@@ -1952,7 +1952,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const constraintName = `${className}_unique_${fieldNames.sort().join('_')}`;
     const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE UNIQUE INDEX IF NOT EXISTS $2:name ON $1:name(${constraintPatterns.join()})`;
-    await this._client.none(qs, [className, constraintName, ...fieldNames]).catch(error => {
+    return this._client.none(qs, [className, constraintName, ...fieldNames]).catch(error => {
       if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
         // Index already exists. Ignore error.
       } else if (
@@ -2302,7 +2302,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         .then(() => this.schemaUpgrade(schema.className, schema));
     });
     promises.push(this._listenToSchema());
-    await Promise.all(promises)
+    return Promise.all(promises)
       .then(() => {
         return this._client.tx('perform-initialization', async t => {
           await t.none(sql.misc.jsonObjectSetKeys);
@@ -2447,7 +2447,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const qs = 'DROP FUNCTION IF EXISTS idempodency_delete_old_rows()';
-    await conn
+    return conn
       .none(qs)
       .catch(error => {
         throw error;
@@ -2460,7 +2460,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
     const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; END; $$;';
-    await conn
+    return conn
       .none(qs, [ttlOptions])
       .catch(error => {
         if (
