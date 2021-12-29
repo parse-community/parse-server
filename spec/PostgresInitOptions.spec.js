@@ -49,7 +49,7 @@ function createParseServer(options) {
 
 describe_only_db('postgres')('Postgres database init options', () => {
 
-  beforeEach(async () => {
+  afterEach(async () => {
     await reconfigureServer();
   });
 

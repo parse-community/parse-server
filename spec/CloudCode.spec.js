@@ -19,6 +19,10 @@ const mockAdapter = {
 };
 
 describe('Cloud Code', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('can load absolute cloud code file', done => {
     reconfigureServer({
       cloud: __dirname + '/cloud/cloudCodeRelativeFile.js',
@@ -1566,6 +1570,10 @@ describe('Cloud Code', () => {
   });
 
   describe('cloud jobs', () => {
+    beforeEach(async () => {
+      await reconfigureServer();
+    });
+
     it('should define a job', done => {
       expect(() => {
         Parse.Cloud.job('myJob', ({ message }) => {
@@ -1775,6 +1783,10 @@ describe('Cloud Code', () => {
 });
 
 describe('cloud functions', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('Should have request ip', done => {
     Parse.Cloud.define('myFunction', req => {
       expect(req.ip).toBeDefined();
@@ -1786,6 +1798,10 @@ describe('cloud functions', () => {
 });
 
 describe('beforeSave hooks', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.headers).toBeDefined();
@@ -1841,6 +1857,10 @@ describe('beforeSave hooks', () => {
 });
 
 describe('afterSave hooks', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.afterSave('MyObject', req => {
       expect(req.headers).toBeDefined();
@@ -1863,6 +1883,10 @@ describe('afterSave hooks', () => {
 });
 
 describe('beforeDelete hooks', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.beforeDelete('MyObject', req => {
       expect(req.headers).toBeDefined();
@@ -1891,6 +1915,10 @@ describe('beforeDelete hooks', () => {
 });
 
 describe('afterDelete hooks', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.afterDelete('MyObject', req => {
       expect(req.headers).toBeDefined();
@@ -1919,6 +1947,10 @@ describe('afterDelete hooks', () => {
 });
 
 describe('beforeFind hooks', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should add beforeFind trigger', done => {
     Parse.Cloud.beforeFind('MyObject', req => {
       const q = req.query;
@@ -2175,6 +2207,10 @@ describe('beforeFind hooks', () => {
 });
 
 describe('afterFind hooks', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should add afterFind trigger', done => {
     Parse.Cloud.afterFind('MyObject', req => {
       const q = req.query;
@@ -2843,6 +2879,10 @@ describe('afterFind hooks', () => {
 });
 
 describe('beforeLogin hook', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should run beforeLogin with correct credentials', async done => {
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
@@ -3023,6 +3063,10 @@ describe('beforeLogin hook', () => {
 });
 
 describe('afterLogin hook', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('should run afterLogin after successful login', async done => {
     let hit = 0;
     Parse.Cloud.afterLogin(req => {
@@ -3227,6 +3271,10 @@ describe('afterLogin hook', () => {
 });
 
 describe('saveFile hooks', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
@@ -3512,6 +3560,10 @@ describe('saveFile hooks', () => {
 });
 
 describe('sendEmail', () => {
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('can send email via Parse.Cloud', async done => {
     const emailAdapter = {
       sendMail: mailData => {

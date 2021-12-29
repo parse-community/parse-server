@@ -59,6 +59,11 @@ const createRole = function (name, sibling, user) {
 };
 
 describe('Parse Role testing', () => {
+
+  beforeEach(async () => {
+    await reconfigureServer();
+  });
+
   it('Do a bunch of basic role testing', done => {
     let user;
     let role;
@@ -228,7 +233,6 @@ describe('Parse Role testing', () => {
   });
 
   it('Different _Role objects cannot have the same name.', async done => {
-    await reconfigureServer();
     const roleName = 'MyRole';
     let aUser;
     createTestUser()
