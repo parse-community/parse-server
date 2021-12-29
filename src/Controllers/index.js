@@ -219,7 +219,7 @@ export function getAuthDataManager(options: ParseServerOptions) {
 export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
   let protocol;
   try {
-    const parsedURI = new URL(databaseURI)
+    const parsedURI = new URL(databaseURI);
     protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
   } catch (e) {
     /* */
