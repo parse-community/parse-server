@@ -1,5 +1,4 @@
 const Parse = require('parse/node').Parse;
-const url = require('url');
 const path = require('path');
 // These methods handle batch requests.
 const batchPath = '/batch';
@@ -11,9 +10,9 @@ function mountOnto(router) {
   });
 }
 
-function parseURL(URL) {
-  if (typeof URL === 'string') {
-    return url.parse(URL);
+function parseURL(url) {
+  if (typeof url === 'string') {
+    return new URL(url);
   }
   return undefined;
 }
@@ -33,9 +32,9 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     return path.posix.join('/', requestPath.slice(apiPrefix.length));
   };
 
-  if (serverURL && publicServerURL && serverURL.path != publicServerURL.path) {
-    const localPath = serverURL.path;
-    const publicPath = publicServerURL.path;
+  if (serverURL && publicServerURL && serverURL.pathname != publicServerURL.pathname) {
+    const localPath = serverURL.pathname;
+    const publicPath = publicServerURL.pathname;
 
     // Override the api prefix
     apiPrefix = localPath;

@@ -438,4 +438,13 @@ describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {
     adapter.handleShutdown();
     expect(adapter._client.$pool.ending).toEqual(true);
   });
+
+  it('handleShutdown, close connection of postgresql uri', () => {
+    let databaseURI2 = new URL(databaseURI);
+    databaseURI2.protocol = 'postgresql:';
+    const adapter = new PostgresStorageAdapter({ uri: databaseURI2.toString() });
+    expect(adapter._client.$pool.ending).toEqual(false);
+    adapter.handleShutdown();
+    expect(adapter._client.$pool.ending).toEqual(true);
+  });
 });

@@ -49,47 +49,44 @@ function createParseServer(options) {
 
 describe_only_db('postgres')('Postgres database init options', () => {
   let server;
+  let adapter;
 
-  afterAll(done => {
+  afterAll(async () => {
+    adapter.handleShutdown();
     if (server) {
       Parse.serverURL = 'http://localhost:8378/1';
-      server.close(done);
+      await server.close();
     }
   });
 
-  it('should create server with public schema databaseOptions', done => {
-    const adapter = new PostgresStorageAdapter({
+  it('should create server with public schema databaseOptions', async () => {
+    adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',
       databaseOptions: databaseOptions1,
     });
-
-    createParseServer({ databaseAdapter: adapter })
-      .then(newServer => {
-        server = newServer;
-        const score = new GameScore({
-          score: 1337,
-          playerName: 'Sean Plott',
-          cheatMode: false,
-        });
-        return score.save();
-      })
-      .then(async () => {
-        await reconfigureServer();
-        done();
-      }, done.fail);
+    const newServer = await createParseServer({ databaseAdapter: adapter });
+    server = newServer;
+    const score = new GameScore({
+      score: 1337,
+      playerName: 'Sean Plott',
+      cheatMode: false,
+    });
+    await score.save();
+    await reconfigureServer();
   });
 
-  it('should fail to create server if schema databaseOptions does not exist', done => {
-    const adapter = new PostgresStorageAdapter({
+  it('should fail to create server if schema databaseOptions does not exist', async () => {
+    adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',
       databaseOptions: databaseOptions2,
     });
-
-    createParseServer({ databaseAdapter: adapter }).then(done.fail, async () => {
-      await reconfigureServer();
-      done();
-    });
+    try {
+      await createParseServer({ databaseAdapter: adapter });
+      fail("Should have thrown error");
+    } catch(error) {
+      expect(error).toBeDefined();
+    }
   });
 });

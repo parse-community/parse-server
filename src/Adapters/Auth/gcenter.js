@@ -14,12 +14,11 @@ const authData = {
 const { Parse } = require('parse/node');
 const crypto = require('crypto');
 const https = require('https');
-const url = require('url');
 
 const cache = {}; // (publicKey -> cert) cache
 
 function verifyPublicKeyUrl(publicKeyUrl) {
-  const parsedUrl = url.parse(publicKeyUrl);
+  const parsedUrl = new URL(publicKeyUrl);
   if (parsedUrl.protocol !== 'https:') {
     return false;
   }
