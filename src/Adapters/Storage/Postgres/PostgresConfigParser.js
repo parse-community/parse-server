@@ -1,18 +1,16 @@
-const url = require('url');
 const fs = require('fs');
 function getDatabaseOptionsFromURI(uri) {
   const databaseOptions = {};
 
-  const parsedURI = url.parse(uri);
-  const queryParams = parseQueryParams(parsedURI.query);
-  const authParts = parsedURI.auth ? parsedURI.auth.split(':') : [];
+  const parsedURI = new URL(uri);
+  const queryParams = parseQueryParams(parsedURI.searchParams.toString());
 
   databaseOptions.host = parsedURI.hostname || 'localhost';
   databaseOptions.port = parsedURI.port ? parseInt(parsedURI.port) : 5432;
   databaseOptions.database = parsedURI.pathname ? parsedURI.pathname.substr(1) : undefined;
 
-  databaseOptions.user = authParts.length > 0 ? authParts[0] : '';
-  databaseOptions.password = authParts.length > 1 ? authParts[1] : '';
+  databaseOptions.user = parsedURI.username;
+  databaseOptions.password = parsedURI.password;
 
   if (queryParams.ssl && queryParams.ssl.toLowerCase() === 'true') {
     databaseOptions.ssl = true;
