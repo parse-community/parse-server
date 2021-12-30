@@ -3,12 +3,12 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
 const semver = require('semver');
-const TestUtils = require('../lib/TestUtils');
 
 let RESTController;
 
 describe('ParseServerRESTController', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await reconfigureServer();
     RESTController = ParseServerRESTController(
       Parse.applicationId,
       ParseServer.promiseRouter({ appId: Parse.applicationId })
@@ -170,7 +170,6 @@ describe('ParseServerRESTController', () => {
   ) {
     describe('transactions', () => {
       beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
