@@ -856,9 +856,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     }
   }
 
-  _notifySchemaChange() {
+  async _notifySchemaChange() {
     if (this._stream) {
-      this._stream
+      await this._stream
         .none('NOTIFY $1~, $2', ['schema.change', { senderId: this._uuid }])
         .catch(error => {
           console.log('Failed to Notify:', error); // unlikely to ever happen
