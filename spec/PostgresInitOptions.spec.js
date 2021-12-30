@@ -33,7 +33,6 @@ describe_only_db('postgres')('Postgres database init options', () => {
     });
     await reconfigureServer({
       databaseAdapter: adapter,
-      databaseURI: undefined,
     });
     const score = new GameScore({
       score: 1337,
@@ -53,7 +52,6 @@ describe_only_db('postgres')('Postgres database init options', () => {
     });
     await reconfigureServer({
       databaseAdapter: adapter,
-      databaseURI: undefined,
     });
     const score = new GameScore({
       score: 1337,
@@ -72,7 +70,6 @@ describe_only_db('postgres')('Postgres database init options', () => {
     try {
       await reconfigureServer({
         databaseAdapter: adapter,
-        databaseURI: undefined,
       });
       fail("Should have thrown error");
     } catch(error) {
