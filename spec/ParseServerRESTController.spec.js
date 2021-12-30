@@ -8,7 +8,7 @@ const TestUtils = require('../lib/TestUtils');
 let RESTController;
 
 describe('ParseServerRESTController', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     RESTController = ParseServerRESTController(
       Parse.applicationId,
       ParseServer.promiseRouter({ appId: Parse.applicationId })
