@@ -9,7 +9,6 @@ let RESTController;
 
 describe('ParseServerRESTController', () => {
   beforeEach(async () => {
-    await reconfigureServer();
     RESTController = ParseServerRESTController(
       Parse.applicationId,
       ParseServer.promiseRouter({ appId: Parse.applicationId })
