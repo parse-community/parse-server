@@ -65,7 +65,7 @@ describe('ParseServerRESTController', () => {
         },
       ],
       transaction: false,
-    }); 
+    });
     expect(res.length).toBe(3);
   });
 
@@ -155,6 +155,7 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should handle a batch request with transaction = true', async () => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
@@ -303,6 +304,7 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should generate separate session for each call', async () => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
@@ -550,9 +552,8 @@ describe('ParseServerRESTController', () => {
   });
 
   it('ensures masterKey is properly handled', async () => {
-    let userId;
     const user = await Parse.User.signUp('user', 'pass');
-    userId = user.id;
+    const userId = user.id;
     await Parse.User.logOut();
     const res = await RESTController.request('GET', '/classes/_User', undefined, {
       useMasterKey: true,
@@ -584,7 +585,7 @@ describe('ParseServerRESTController', () => {
     } catch (err) {
       expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
       expect(err.message).toBe('password is required');
-    } 
+    }
   });
 
   it('ensures no session token is created on creating users', async () => {
