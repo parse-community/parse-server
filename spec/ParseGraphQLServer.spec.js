@@ -2601,9 +2601,9 @@ describe('ParseGraphQLServer', () => {
               // base64("SecondaryObject:bBRgmzIRRM"") < base64(""SecondaryObject:nTMcuVbATY"") false
               // "U2Vjb25kYXJ5T2JqZWN0OmJCUmdteklSUk0=" < "U2Vjb25kYXJ5T2JqZWN0Om5UTWN1VmJBVFk=" false
               expect(
-                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId.toLowerCase()
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId
               ).toBeLessThan(
-                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId.toLowerCase()
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId
               );
 
               const createPrimaryObjectResult = await apolloClient.mutate({
