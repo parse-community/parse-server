@@ -894,7 +894,7 @@ class DatabaseController {
       if (object[field] && object[field].__op && object[field].__op === 'Delete') {
         return false;
       }
-      return schemaFields.indexOf(field) < 0;
+      return schemaFields.indexOf(getRootFieldName(field)) < 0;
     });
     if (newKeys.length > 0) {
       // adds a marker that new field is being adding during update
@@ -972,9 +972,9 @@ class DatabaseController {
       });
     }
     if (query['$and']) {
-      const ors = query['$and'];
+      const ands = query['$and'];
       return Promise.all(
-        ors.map((aQuery, index) => {
+        ands.map((aQuery, index) => {
           return this.reduceInRelation(className, aQuery, schema).then(aQuery => {
             query['$and'][index] = aQuery;
           });
