@@ -426,7 +426,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       },
       classLevelPermissions: undefined,
     });
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     expect(adapter._onchange).toHaveBeenCalled();
   });
 });
