@@ -10,16 +10,9 @@ function mountOnto(router) {
   });
 }
 
-function parseURL(url) {
-  if (typeof url === 'string') {
-    return new URL(url);
-  }
-  return undefined;
-}
-
 function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
-  serverURL = serverURL ? parseURL(serverURL) : undefined;
-  publicServerURL = publicServerURL ? parseURL(publicServerURL) : undefined;
+  serverURL = serverURL ? new URL(serverURL) : undefined;
+  publicServerURL = publicServerURL ? new URL(publicServerURL) : undefined;
 
   const apiPrefixLength = originalUrl.length - batchPath.length;
   let apiPrefix = originalUrl.slice(0, apiPrefixLength);
