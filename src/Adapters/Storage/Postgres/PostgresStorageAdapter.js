@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
 import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
-import { relativeTimeToDate } from '../Mongo/MongoTransform';
+const Utils = require('../../../Utils');
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -797,7 +797,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
                 '$relativeTime can only be used with Date field'
               );
             }
-            const parserResult = relativeTimeToDate(postgresValue.$relativeTime);
+            const parserResult = Utils.relativeTimeToDate(postgresValue.$relativeTime);
             if (parserResult.status === 'success') {
               postgresValue = toPostgresValue(parserResult.result);
             } else {
