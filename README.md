@@ -528,23 +528,23 @@ let api = new ParseServer({
 ### Notes <!-- omit in toc -->
 
 - There are no additional steps needed to use this feature with MongoDB
-- For Postgres, you will need to create a cron job, use [pgAdmin](https://www.pgadmin.org/docs/pgadmin4/development/pgagent_jobs.html), or similar to call the Postgres function, `idempodency_delete_old_rows()`. For example, the cron job can call the script below (make sure the script has the same priveledges to log into Postgres as your Parse Server):
+- For Postgres, you will need to create a cron job using [pgAdmin](https://www.pgadmin.org/docs/pgadmin4/development/pgagent_jobs.html) or similar to call a Postgres function `idempotency_delete_expired_records()` that deletes expired idempotency records. You can find an example script below. Make sure the script has the same privileges to log into Postgres as Parse Server.
 
 ```bash
 #!/bin/bash
 
 set -e
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    SELECT idempodency_delete_old_rows();
+    SELECT idempotency_delete_expired_records();
 EOSQL
 
 exec "$@"
 ```
 
-Assuming the script above is named, `parse_idempodency_delete_old_rows.sh`, a cron job that runs the script every 2 minutes may look like:
+Assuming the script above is named, `parse_idempotency_delete_expired_records.sh`, a cron job that runs the script every 2 minutes may look like:
 
 ```bash
-2 * * * * /root/parse_idempodency_delete_old_rows.sh >/dev/null 2>&1
+2 * * * * /root/parse_idempotency_delete_expired_records.sh >/dev/null 2>&1
 ```
 
 ## Localization

@@ -111,7 +111,7 @@ describe('Idempotency', () => {
     await expectAsync(request(params)).toBeResolved();
     await expectAsync(request(params)).toBeRejected();
     await new Promise(resolve => setTimeout(resolve, maxTimeOut));
-    await client.one('SELECT idempodency_delete_old_rows()');
+    await client.one('SELECT idempotency_delete_expired_records()');
     await expectAsync(request(params)).toBeResolved();
     expect(counter).toBe(2);
   });

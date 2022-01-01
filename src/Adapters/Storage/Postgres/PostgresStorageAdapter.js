@@ -2421,7 +2421,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     options?: Object = {}
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
-    const qs = 'DROP FUNCTION IF EXISTS idempodency_delete_old_rows()';
+    const qs = 'DROP FUNCTION IF EXISTS idempotency_delete_expired_records()';
     return conn
       .none(qs)
       .catch(error => {
@@ -2434,7 +2434,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
-    const qs = 'CREATE OR REPLACE FUNCTION idempodency_delete_old_rows() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; END; $$;';
+    const qs = 'CREATE OR REPLACE FUNCTION idempotency_delete_expired_records() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; END; $$;';
     return conn
       .none(qs, [ttlOptions])
       .catch(error => {
