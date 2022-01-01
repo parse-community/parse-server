@@ -27,7 +27,7 @@
     "@parse/push-adapter": "3.4.1",
     "apollo-server-express": "2.25.2",
     "bcryptjs": "2.4.3",
-    "body-parser": "1.19.0",
+    "body-parser": "1.19.1",
     "commander": "5.1.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
