@@ -15,7 +15,6 @@ const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
-const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
 const logger = require('../../../logger');
 
@@ -906,15 +905,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         'CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )'
       )
       .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError ||
-          error.code === PostgresUniqueIndexViolationError ||
-          error.code === PostgresDuplicateObjectError
-        ) {
-          // Table already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
+        throw error;
       });
   }
 
