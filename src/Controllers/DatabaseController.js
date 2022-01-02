@@ -1771,7 +1771,7 @@ class DatabaseController {
         });
     } else if (this.adapter instanceof PostgresStorageAdapter) {
       const options = this.idempotencyOptions;
-      options.setIdempodencyFunction = true;
+      options.setIdempotencyFunction = true;
       await this.adapter
         .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, options)
         .catch(error => {

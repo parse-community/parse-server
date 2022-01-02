@@ -2407,9 +2407,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
-    const setIdempodencyFunction = options.setIdempodencyFunction !== undefined ? options.setIdempodencyFunction : false;
-    if (setIdempodencyFunction) {
-      await this.ensureIdempodencyFunctionExists(options);
+    const setIdempotencyFunction = options.setIdempotencyFunction !== undefined ? options.setIdempotencyFunction : false;
+    if (setIdempotencyFunction) {
+      await this.ensureIdempotencyFunctionExists(options);
     }
     await conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch(error => {
@@ -2417,7 +2417,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async deleteIdempodencyFunction(
+  async deleteIdempotencyFunction(
     options?: Object = {}
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
@@ -2429,7 +2429,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async ensureIdempodencyFunctionExists(
+  async ensureIdempotencyFunctionExists(
     options?: Object = {}
   ): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;

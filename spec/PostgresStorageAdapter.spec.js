@@ -437,7 +437,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const qs = "SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempotency_delete_expired_records'";
     const foundFunction = await client.one(qs);
     expect(foundFunction.format).toBe("public.idempotency_delete_expired_records()");
-    await adapter.deleteIdempodencyFunction();
+    await adapter.deleteIdempotencyFunction();
     await client.none(qs);
   });
 });
