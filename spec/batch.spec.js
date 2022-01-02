@@ -89,28 +89,6 @@ describe('batch', () => {
     expect(internalURL).toEqual('/classes/Object');
   });
 
-  it('should return the proper url with no url provided', () => {
-    const originalURL = '/parse/batch';
-    const internalURL = batch.makeBatchRoutingPathFunction(
-      originalURL,
-      undefined,
-      publicServerURL
-    )('/parse/classes/Object');
-
-    expect(internalURL).toEqual('/classes/Object');
-  });
-
-  it('should return the proper url with no public url provided', () => {
-    const originalURL = '/parse/batch';
-    const internalURL = batch.makeBatchRoutingPathFunction(
-      originalURL,
-      serverURLNaked,
-      undefined
-    )('/parse/classes/Object');
-
-    expect(internalURL).toEqual('/classes/Object');
-  });
-
   it('should return the proper url with bad url provided', () => {
     const originalURL = '/parse/batch';
     const internalURL = batch.makeBatchRoutingPathFunction(

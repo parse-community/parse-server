@@ -426,7 +426,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       },
       classLevelPermissions: undefined,
     });
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     expect(adapter._onchange).toHaveBeenCalled();
   });
 });
@@ -434,15 +434,6 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
 describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {
   it('handleShutdown, close connection', () => {
     const adapter = new PostgresStorageAdapter({ uri: databaseURI });
-    expect(adapter._client.$pool.ending).toEqual(false);
-    adapter.handleShutdown();
-    expect(adapter._client.$pool.ending).toEqual(true);
-  });
-
-  it('handleShutdown, close connection of postgresql uri', () => {
-    const databaseURI2 = new URL(databaseURI);
-    databaseURI2.protocol = 'postgresql:';
-    const adapter = new PostgresStorageAdapter({ uri: databaseURI2.toString() });
     expect(adapter._client.$pool.ending).toEqual(false);
     adapter.handleShutdown();
     expect(adapter._client.$pool.ending).toEqual(true);
