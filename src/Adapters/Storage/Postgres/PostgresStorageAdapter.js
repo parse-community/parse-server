@@ -7,6 +7,9 @@ import _ from 'lodash';
 // @flow-disable-next
 import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
+import { StorageAdapter } from '../StorageAdapter';
+import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
+const Utils = require('../../../Utils');
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -21,9 +24,6 @@ const debug = function (...args: any) {
   const log = logger.getLogger();
   log.debug.apply(log, args);
 };
-
-import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
 
 const parseTypeToPostgresType = type => {
   switch (type.type) {
@@ -374,6 +374,11 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
               patterns.push(
                 `(${constraintFieldName} <> $${index} OR ${constraintFieldName} IS NULL)`
               );
+            } else if (typeof fieldValue.$ne === 'object' && fieldValue.$ne.$relativeTime) {
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
+              );
             } else {
               patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
             }
@@ -399,6 +404,11 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         if (fieldName.indexOf('.') >= 0) {
           values.push(fieldValue.$eq);
           patterns.push(`${transformDotField(fieldName)} = $${index++}`);
+        } else if (typeof fieldValue.$eq === 'object' && fieldValue.$eq.$relativeTime) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
+          );
         } else {
           values.push(fieldName, fieldValue.$eq);
           patterns.push(`$${index}:name = $${index + 1}`);
@@ -513,7 +523,12 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     }
 
     if (typeof fieldValue.$exists !== 'undefined') {
-      if (fieldValue.$exists) {
+      if (typeof fieldValue.$exists === 'object' && fieldValue.$exists.$relativeTime) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
+        );
+      } else if (fieldValue.$exists) {
         patterns.push(`$${index}:name IS NOT NULL`);
       } else {
         patterns.push(`$${index}:name IS NULL`);
@@ -757,7 +772,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp] || fieldValue[cmp] === 0) {
         const pgComparator = ParseToPosgresComparator[cmp];
-        const postgresValue = toPostgresValue(fieldValue[cmp]);
+        let postgresValue = toPostgresValue(fieldValue[cmp]);
         let constraintFieldName;
         if (fieldName.indexOf('.') >= 0) {
           let castType;
@@ -775,6 +790,24 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
             : transformDotField(fieldName);
         } else {
+          if (typeof postgresValue === 'object' && postgresValue.$relativeTime) {
+            if (schema.fields[fieldName].type !== 'Date') {
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                '$relativeTime can only be used with Date field'
+              );
+            }
+            const parserResult = Utils.relativeTimeToDate(postgresValue.$relativeTime);
+            if (parserResult.status === 'success') {
+              postgresValue = toPostgresValue(parserResult.result);
+            } else {
+              console.error('Error while parsing relative date', parserResult);
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                `bad $relativeTime (${postgresValue.$relativeTime}) value. ${parserResult.info}`
+              );
+            }
+          }
           constraintFieldName = `$${index++}:name`;
           values.push(fieldName);
         }
