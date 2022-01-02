@@ -1,3 +1,10 @@
+# [5.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.14...5.0.0-alpha.15) (2022-01-02)
+
+
+### Features
+
+* support `postgresql` protocol in database URI ([#7757](https://github.com/parse-community/parse-server/issues/7757)) ([caf4a23](https://github.com/parse-community/parse-server/commit/caf4a2341f554b28e3918c53e7e897a3ca47bf8b))
+
 # [5.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.13...5.0.0-alpha.14) (2022-01-02)
 
 
