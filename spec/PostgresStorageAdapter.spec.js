@@ -558,6 +558,17 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
     expect(adapter._onchange).toHaveBeenCalled();
   });
+
+  it('Idempotency class should have function', async () => {
+    await reconfigureServer();
+    const adapter = Config.get('test').database.adapter;
+    const client = adapter._client;
+    const qs = "SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempotency_delete_expired_records'";
+    const foundFunction = await client.one(qs);
+    expect(foundFunction.format).toBe("public.idempotency_delete_expired_records()");
+    await adapter.deleteIdempotencyFunction();
+    await client.none(qs);
+  });
 });
 
 describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {

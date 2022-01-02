@@ -1,3 +1,10 @@
+# [5.0.0-alpha.16](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.15...5.0.0-alpha.16) (2022-01-02)
+
+
+### Features
+
+* add Idempotency to Postgres ([#7750](https://github.com/parse-community/parse-server/issues/7750)) ([0c3feaa](https://github.com/parse-community/parse-server/commit/0c3feaaa1751964c0db89f25674935c3354b1538))
+
 # [5.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.14...5.0.0-alpha.15) (2022-01-02)
 
 
