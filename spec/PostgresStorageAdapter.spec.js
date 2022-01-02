@@ -149,6 +149,135 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(undefined);
   });
 
+  it('$relativeTime should error on $eq', async () => {
+    const tableName = '_User';
+    const schema = {
+      fields: {
+        objectId: { type: 'String' },
+        username: { type: 'String' },
+        email: { type: 'String' },
+        emailVerified: { type: 'Boolean' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        authData: { type: 'Object' },
+      },
+    };
+    const client = adapter._client;
+    await adapter.createTable(tableName, schema);
+    await client.none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+      tableName,
+      'objectId',
+      'username',
+      'Bugs',
+      'Bunny',
+    ]);
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
+    try {
+      await database.find(
+        tableName,
+        {
+          createdAt: {
+            $eq: {
+              $relativeTime: '12 days ago'
+            }
+          }
+        },
+        { }
+      );
+      fail("Should have thrown error");
+    } catch(error) {
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    }
+    await dropTable(client, tableName);
+  });
+
+  it('$relativeTime should error on $ne', async () => {
+    const tableName = '_User';
+    const schema = {
+      fields: {
+        objectId: { type: 'String' },
+        username: { type: 'String' },
+        email: { type: 'String' },
+        emailVerified: { type: 'Boolean' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        authData: { type: 'Object' },
+      },
+    };
+    const client = adapter._client;
+    await adapter.createTable(tableName, schema);
+    await client.none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+      tableName,
+      'objectId',
+      'username',
+      'Bugs',
+      'Bunny',
+    ]);
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
+    try {
+      await database.find(
+        tableName,
+        {
+          createdAt: {
+            $ne: {
+              $relativeTime: '12 days ago'
+            }
+          }
+        },
+        { }
+      );
+      fail("Should have thrown error");
+    } catch(error) {
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    }
+    await dropTable(client, tableName);
+  });
+
+  it('$relativeTime should error on $exists', async () => {
+    const tableName = '_User';
+    const schema = {
+      fields: {
+        objectId: { type: 'String' },
+        username: { type: 'String' },
+        email: { type: 'String' },
+        emailVerified: { type: 'Boolean' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        authData: { type: 'Object' },
+      },
+    };
+    const client = adapter._client;
+    await adapter.createTable(tableName, schema);
+    await client.none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+      tableName,
+      'objectId',
+      'username',
+      'Bugs',
+      'Bunny',
+    ]);
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
+    try {
+      await database.find(
+        tableName,
+        {
+          createdAt: {
+            $exists: {
+              $relativeTime: '12 days ago'
+            }
+          }
+        },
+        { }
+      );
+      fail("Should have thrown error");
+    } catch(error) {
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    }
+    await dropTable(client, tableName);
+  });
+
   it('should use index for caseInsensitive query using Postgres', async () => {
     const tableName = '_User';
     const schema = {
