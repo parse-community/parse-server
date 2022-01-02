@@ -1767,7 +1767,7 @@ class DatabaseController {
       if (isMongoAdapter) {
         options = {
           ttl: 0,
-        }
+        };
       } else if (isPostgresAdapter) {
         options = this.idempotencyOptions;
         options.setIdempotencyFunction = true;
