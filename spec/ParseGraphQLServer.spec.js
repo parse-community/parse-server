@@ -2613,7 +2613,6 @@ describe('ParseGraphQLServer', () => {
               expect(
                 originalIds.includes(findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId)
               ).toBeTrue();
-
               const createPrimaryObjectResult = await apolloClient.mutate({
                 mutation: gql`
                   mutation CreatePrimaryObject(
