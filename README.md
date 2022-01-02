@@ -134,10 +134,10 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 
 | Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
 |-------------|-----------------|---------------|--------------------------|------------|
-| Postgres 11 | 3.0, 3.1        | November 2023 | April 2022               | ✅ Yes     |
-| Postgres 12 | 3.1             | November 2024 | April 2023               | ✅ Yes     |
-| Postgres 13 | 3.1             | November 2025 | April 2024               | ✅ Yes     |
-| Postgres 14 | 3.1             | November 2026 | April 2025               | ✅ Yes     |
+| Postgres 11 | 3.0, 3.1, 3.2   | November 2023 | April 2022               | ✅ Yes     |
+| Postgres 12 | 3.2             | November 2024 | April 2023               | ✅ Yes     |
+| Postgres 13 | 3.2             | November 2025 | April 2024               | ✅ Yes     |
+| Postgres 14 | 3.2             | November 2026 | April 2025               | ✅ Yes     |
 
 ### Locally
 ```bash

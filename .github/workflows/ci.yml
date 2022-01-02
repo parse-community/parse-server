@@ -187,14 +187,17 @@ jobs:
           - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
             NODE_VERSION: 16.13.0
-          - name: PostgreSQL 12, PostGIS 3.1
-            POSTGRES_IMAGE: postgis/postgis:12-3.1
+          - name: PostgreSQL 11, PostGIS 3.2
+            POSTGRES_IMAGE: postgis/postgis:11-3.2
             NODE_VERSION: 16.13.0
-          - name: PostgreSQL 13, PostGIS 3.1
-            POSTGRES_IMAGE: postgis/postgis:13-3.1
+          - name: PostgreSQL 12, PostGIS 3.2
+            POSTGRES_IMAGE: postgis/postgis:12-3.2
             NODE_VERSION: 16.13.0
-          - name: PostgreSQL 14, PostGIS 3.1
-            POSTGRES_IMAGE: postgis/postgis:14-3.1
+          - name: PostgreSQL 13, PostGIS 3.2
+            POSTGRES_IMAGE: postgis/postgis:13-3.2
+            NODE_VERSION: 16.13.0
+          - name: PostgreSQL 14, PostGIS 3.2
+            POSTGRES_IMAGE: postgis/postgis:14-3.2
             NODE_VERSION: 16.13.0
       fail-fast: false
     name: ${{ matrix.name }}
