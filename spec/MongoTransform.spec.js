@@ -4,6 +4,7 @@
 const transform = require('../lib/Adapters/Storage/Mongo/MongoTransform');
 const dd = require('deep-diff');
 const mongodb = require('mongodb');
+const Utils = require('../lib/Utils');
 
 describe('parseObjectToMongoObjectForCreate', () => {
   it('a basic number', done => {
@@ -592,7 +593,7 @@ describe('relativeTimeToDate', () => {
   describe('In the future', () => {
     it('should parse valid natural time', () => {
       const text = 'in 1 year 2 weeks 12 days 10 hours 24 minutes 30 seconds';
-      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      const { result, status, info } = Utils.relativeTimeToDate(text, now);
       expect(result.toISOString()).toBe('2018-10-22T23:52:46.617Z');
       expect(status).toBe('success');
       expect(info).toBe('future');
@@ -602,7 +603,7 @@ describe('relativeTimeToDate', () => {
   describe('In the past', () => {
     it('should parse valid natural time', () => {
       const text = '2 days 12 hours 1 minute 12 seconds ago';
-      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      const { result, status, info } = Utils.relativeTimeToDate(text, now);
       expect(result.toISOString()).toBe('2017-09-24T01:27:04.617Z');
       expect(status).toBe('success');
       expect(info).toBe('past');
@@ -612,7 +613,7 @@ describe('relativeTimeToDate', () => {
   describe('From now', () => {
     it('should equal current time', () => {
       const text = 'now';
-      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      const { result, status, info } = Utils.relativeTimeToDate(text, now);
       expect(result.toISOString()).toBe('2017-09-26T13:28:16.617Z');
       expect(status).toBe('success');
       expect(info).toBe('present');
@@ -621,54 +622,54 @@ describe('relativeTimeToDate', () => {
 
   describe('Error cases', () => {
     it('should error if string is completely gibberish', () => {
-      expect(transform.relativeTimeToDate('gibberishasdnklasdnjklasndkl123j123')).toEqual({
+      expect(Utils.relativeTimeToDate('gibberishasdnklasdnjklasndkl123j123')).toEqual({
         status: 'error',
         info: "Time should either start with 'in' or end with 'ago'",
       });
     });
 
     it('should error if string contains neither `ago` nor `in`', () => {
-      expect(transform.relativeTimeToDate('12 hours 1 minute')).toEqual({
+      expect(Utils.relativeTimeToDate('12 hours 1 minute')).toEqual({
         status: 'error',
         info: "Time should either start with 'in' or end with 'ago'",
       });
     });
 
     it('should error if there are missing units or numbers', () => {
-      expect(transform.relativeTimeToDate('in 12 hours 1')).toEqual({
+      expect(Utils.relativeTimeToDate('in 12 hours 1')).toEqual({
         status: 'error',
         info: 'Invalid time string. Dangling unit or number.',
       });
 
-      expect(transform.relativeTimeToDate('12 hours minute ago')).toEqual({
+      expect(Utils.relativeTimeToDate('12 hours minute ago')).toEqual({
         status: 'error',
         info: 'Invalid time string. Dangling unit or number.',
       });
     });
 
     it('should error on floating point numbers', () => {
-      expect(transform.relativeTimeToDate('in 12.3 hours')).toEqual({
+      expect(Utils.relativeTimeToDate('in 12.3 hours')).toEqual({
         status: 'error',
         info: "'12.3' is not an integer.",
       });
     });
 
     it('should error if numbers are invalid', () => {
-      expect(transform.relativeTimeToDate('12 hours 123a minute ago')).toEqual({
+      expect(Utils.relativeTimeToDate('12 hours 123a minute ago')).toEqual({
         status: 'error',
         info: "'123a' is not an integer.",
       });
     });
 
     it('should error on invalid interval units', () => {
-      expect(transform.relativeTimeToDate('4 score 7 years ago')).toEqual({
+      expect(Utils.relativeTimeToDate('4 score 7 years ago')).toEqual({
         status: 'error',
         info: "Invalid interval: 'score'",
       });
     });
 
     it("should error when string contains 'ago' and 'in'", () => {
-      expect(transform.relativeTimeToDate('in 1 day 2 minutes ago')).toEqual({
+      expect(Utils.relativeTimeToDate('in 1 day 2 minutes ago')).toEqual({
         status: 'error',
         info: "Time cannot have both 'in' and 'ago'",
       });

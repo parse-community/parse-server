@@ -562,11 +562,7 @@ describe('PushController', () => {
     });
     const pushStatusId = await sendPush(payload, {}, config, auth);
     // it is enqueued so it can take time
-    await new Promise(resolve => {
-      setTimeout(() => {
-        resolve();
-      }, 1000);
-    });
+    await sleep(1000);
     Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
     const result = await Parse.Push.getPushStatus(pushStatusId);
     expect(result).toBeDefined();
@@ -767,7 +763,7 @@ describe('PushController', () => {
     });
   });
 
-  it('should not schedule push when not configured', done => {
+  it('should not schedule push when not configured', async () => {
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
@@ -800,33 +796,20 @@ describe('PushController', () => {
       installations.push(installation);
     }
 
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations)
-          .then(() => {
-            return pushController.sendPush(payload, {}, config, auth);
-          })
-          .then(() => new Promise(resolve => setTimeout(resolve, 300)));
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true }).then(results => {
-          expect(results.length).toBe(1);
-          const pushStatus = results[0];
-          expect(pushStatus.get('status')).not.toBe('scheduled');
-          done();
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        fail('should not fail');
-        done();
-      });
+    });
+    await Parse.Object.saveAll(installations);
+    await pushController.sendPush(payload, {}, config, auth);
+    await sleep(1000);
+    const query = new Parse.Query('_PushStatus');
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(1);
+    const pushStatus = results[0];
+    expect(pushStatus.get('status')).not.toBe('scheduled');
   });
 
-  it('should schedule push when configured', done => {
+  it('should schedule push when configured', async () => {
     const auth = {
       isMaster: true,
     };
@@ -866,28 +849,19 @@ describe('PushController', () => {
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
       scheduledPush: true,
-    })
-      .then(() => {
-        const config = Config.get(Parse.applicationId);
-        return Parse.Object.saveAll(installations)
-          .then(() => {
-            return pushController.sendPush(payload, {}, config, auth);
-          })
-          .then(() => new Promise(resolve => setTimeout(resolve, 300)));
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true }).then(results => {
-          expect(results.length).toBe(1);
-          const pushStatus = results[0];
-          expect(pushStatus.get('status')).toBe('scheduled');
-        });
-      })
-      .then(done)
-      .catch(done.err);
+    });
+    const config = Config.get(Parse.applicationId);
+    await Parse.Object.saveAll(installations);
+    await pushController.sendPush(payload, {}, config, auth);
+    await sleep(1000);
+    const query = new Parse.Query('_PushStatus');
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(1);
+    const pushStatus = results[0];
+    expect(pushStatus.get('status')).toBe('scheduled');
   });
 
   it('should not enqueue push when device token is not set', async () => {
