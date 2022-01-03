@@ -135,8 +135,7 @@ describe('ParseServerRESTController', () => {
       process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
-    // Randomly fails in CI for Postgres, disabling for now
-    describe_only_db('mongo')('transactions', () => {
+    describe('transactions', () => {
       beforeEach(async () => {
         await TestUtils.destroyAllDataPermanently(true);
         if (
