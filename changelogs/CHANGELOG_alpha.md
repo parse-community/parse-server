@@ -1,3 +1,38 @@
+# [5.0.0-alpha.16](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.15...5.0.0-alpha.16) (2022-01-02)
+
+
+### Features
+
+* add Idempotency to Postgres ([#7750](https://github.com/parse-community/parse-server/issues/7750)) ([0c3feaa](https://github.com/parse-community/parse-server/commit/0c3feaaa1751964c0db89f25674935c3354b1538))
+
+# [5.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.14...5.0.0-alpha.15) (2022-01-02)
+
+
+### Features
+
+* support `postgresql` protocol in database URI ([#7757](https://github.com/parse-community/parse-server/issues/7757)) ([caf4a23](https://github.com/parse-community/parse-server/commit/caf4a2341f554b28e3918c53e7e897a3ca47bf8b))
+
+# [5.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.13...5.0.0-alpha.14) (2022-01-02)
+
+
+### Features
+
+* support relativeTime query constraint on Postgres ([#7747](https://github.com/parse-community/parse-server/issues/7747)) ([16b1b2a](https://github.com/parse-community/parse-server/commit/16b1b2a19714535ca805f2dbb3b561d8f6a519a7))
+
+# [5.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.12...5.0.0-alpha.13) (2021-12-08)
+
+
+### Bug Fixes
+
+* node engine compatibility did not include node 16 ([#7739](https://github.com/parse-community/parse-server/issues/7739)) ([ea7c014](https://github.com/parse-community/parse-server/commit/ea7c01400f992a1263543706fe49b6174758a2d6))
+
+# [5.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.11...5.0.0-alpha.12) (2021-12-06)
+
+
+### Bug Fixes
+
+* adding or modifying a nested property requires addField permissions ([#7679](https://github.com/parse-community/parse-server/issues/7679)) ([6a6248b](https://github.com/parse-community/parse-server/commit/6a6248b6cb2e732d17131e18e659943b894ed2f1))
+
 # [5.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.10...5.0.0-alpha.11) (2021-11-29)
 
 

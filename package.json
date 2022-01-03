@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "5.0.0-alpha.11",
+  "version": "5.0.0-alpha.16",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -27,12 +27,12 @@
     "@parse/push-adapter": "3.4.1",
     "apollo-server-express": "2.25.2",
     "bcryptjs": "2.4.3",
-    "body-parser": "1.19.0",
+    "body-parser": "1.19.1",
     "commander": "5.1.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.17.1",
-    "follow-redirects": "1.14.5",
+    "follow-redirects": "1.14.6",
     "graphql": "15.7.1",
     "graphql-list-fields": "2.0.2",
     "graphql-relay": "0.7.0",
@@ -131,7 +131,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">=12.20.0 <16"
+    "node": ">=12.20.0 <17"
   },
   "bin": {
     "parse-server": "bin/parse-server"
