@@ -305,6 +305,21 @@ describe('matchesQuery', function () {
     expect(matchesQuery(obj1, q)).toBe(true);
   });
 
+  it('matches on queries with new format #parse-SDK-JS/pull/1373 for Array', function () {
+    const obj = {
+      objectId: 'Person01',
+      name: 'Bill',
+      nums: [1, 2, 3, 4],
+    };
+
+    const q = {
+      nums: {
+        $eq: 5,
+      },
+    };
+    expect(matchesQuery(obj, q)).toBe(false);
+  });
+
   it('matches on inequalities', function () {
     const player = {
       id: new Id('Person', 'O1'),
