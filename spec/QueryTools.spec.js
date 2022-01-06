@@ -257,7 +257,7 @@ describe('matchesQuery', function () {
 
   it('matches on queries with new format #parse-SDK-JS/pull/1373', function () {
     const obj1 = {
-      id: new Id('Person', 'O1'),
+      objectId: 'Person01',
       score: 12,
       name: 'Bill',
     };
@@ -293,7 +293,7 @@ describe('matchesQuery', function () {
 
   it('matches on queries with new format #parse-SDK-JS/pull/1373 for Object', function () {
     const obj1 = {
-      id: new Id('Person', '01'),
+      objectId: 'Person01',
       addr: { planet: 'Earth' },
     };
 
