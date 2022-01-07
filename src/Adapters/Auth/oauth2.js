@@ -54,7 +54,6 @@
  */
 
 const Parse = require('parse/node').Parse;
-const url = require('url');
 const querystring = require('querystring');
 const httpsRequest = require('./httpsRequest');
 
@@ -112,7 +111,7 @@ function requestTokenInfo(options, access_token) {
   if (!options || !options.tokenIntrospectionEndpointUrl) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_URL);
   }
-  const parsedUrl = url.parse(options.tokenIntrospectionEndpointUrl);
+  const parsedUrl = new URL(options.tokenIntrospectionEndpointUrl);
   const postData = querystring.stringify({
     token: access_token,
   });

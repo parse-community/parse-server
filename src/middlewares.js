@@ -6,6 +6,7 @@ import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
 import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
+import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -431,7 +432,7 @@ export function promiseEnforceMasterKeyAccess(request) {
  */
 export function promiseEnsureIdempotency(req) {
   // Enable feature only for MongoDB
-  if (!(req.config.database.adapter instanceof MongoStorageAdapter)) {
+  if (!((req.config.database.adapter instanceof MongoStorageAdapter) || (req.config.database.adapter instanceof PostgresStorageAdapter))) {
     return Promise.resolve();
   }
   // Get parameters
