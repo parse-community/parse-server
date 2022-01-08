@@ -111,6 +111,28 @@ describe('batch', () => {
     expect(internalURL).toEqual('/classes/Object');
   });
 
+  it('should return the proper url with bad url provided', () => {
+    const originalURL = '/parse/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      'badurl.com',
+      publicServerURL
+    )('/parse/classes/Object');
+
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
+  it('should return the proper url with bad public url provided', () => {
+    const originalURL = '/parse/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      serverURLNaked,
+      'badurl.com'
+    )('/parse/classes/Object');
+
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
   it('should handle a batch request without transaction', async () => {
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
