@@ -1,3 +1,10 @@
+# [5.0.0-beta.5](https://github.com/parse-community/parse-server/compare/5.0.0-beta.4...5.0.0-beta.5) (2022-01-13)
+
+
+### Bug Fixes
+
+* schema cache not cleared in some cases ([#7771](https://github.com/parse-community/parse-server/issues/7771)) ([3b92fa1](https://github.com/parse-community/parse-server/commit/3b92fa1ca9e8889127a32eba913d68309397ca2c))
+
 # [5.0.0-beta.4](https://github.com/parse-community/parse-server/compare/5.0.0-beta.3...5.0.0-beta.4) (2021-11-27)
 
 
