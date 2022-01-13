@@ -1,3 +1,10 @@
+# [5.0.0-beta.6](https://github.com/parse-community/parse-server/compare/5.0.0-beta.5...5.0.0-beta.6) (2022-01-13)
+
+
+### Bug Fixes
+
+* security upgrade follow-redirects from 1.14.2 to 1.14.7 ([#7772](https://github.com/parse-community/parse-server/issues/7772)) ([4bd34b1](https://github.com/parse-community/parse-server/commit/4bd34b189bc9f5aa2e70b7e7c1a456e91b6de773))
+
 # [5.0.0-beta.5](https://github.com/parse-community/parse-server/compare/5.0.0-beta.4...5.0.0-beta.5) (2022-01-13)
 
 
