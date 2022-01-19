@@ -38,7 +38,7 @@ export class LoggerController extends AdaptableController {
   }
 
   maskSensitiveUrl(path) {
-    const urlString = 'http://localhost' + path; // prepend dummy string to make a real URL
+    const urlString = 'http://127.0.0.1' + path; // prepend dummy string to make a real URL
     const urlObj = new URL(urlString);
     const query = urlObj.searchParams;
     let sanitizedQuery = '?';

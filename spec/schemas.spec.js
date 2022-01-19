@@ -243,7 +243,7 @@ describe('schemas', () => {
   it('ensure refresh cache after creating a class', async done => {
     spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
     await request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -252,7 +252,7 @@ describe('schemas', () => {
       },
     });
     const response = await request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'GET',
       headers: masterKeyHeaders,
       json: true,
@@ -1559,7 +1559,7 @@ describe('schemas', () => {
     spyOn(config.schemaCache, 'del').and.callFake(() => {});
     spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
     await request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'POST',
       headers: masterKeyHeaders,
       json: true,
@@ -1569,12 +1569,12 @@ describe('schemas', () => {
     });
     await request({
       method: 'DELETE',
-      url: 'http://localhost:8378/1/schemas/A',
+      url: 'http://127.0.0.1:8378/1/schemas/A',
       headers: masterKeyHeaders,
       json: true,
     });
     const response = await request({
-      url: 'http://localhost:8378/1/schemas',
+      url: 'http://127.0.0.1:8378/1/schemas',
       method: 'GET',
       headers: masterKeyHeaders,
       json: true,

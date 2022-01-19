@@ -103,7 +103,7 @@ describe('Idempotency', () => {
       });
       const params = {
         method: 'POST',
-        url: 'http://localhost:8378/1/functions/myFunction',
+        url: 'http://127.0.0.1:8378/1/functions/myFunction',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
