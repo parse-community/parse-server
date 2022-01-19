@@ -2600,11 +2600,23 @@ describe('ParseGraphQLServer', () => {
               // "SecondaryObject:bBRgmzIRRM" < "SecondaryObject:nTMcuVbATY" true
               // base64("SecondaryObject:bBRgmzIRRM"") < base64(""SecondaryObject:nTMcuVbATY"") false
               // "U2Vjb25kYXJ5T2JqZWN0OmJCUmdteklSUk0=" < "U2Vjb25kYXJ5T2JqZWN0Om5UTWN1VmJBVFk=" false
+              const originalIds = [
+                getSecondaryObjectsResult.data.secondaryObject2.objectId,
+                getSecondaryObjectsResult.data.secondaryObject4.objectId,
+              ];
               expect(
                 findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId
-              ).toBeLessThan(
-                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId
-              );
+              ).not.toBe(findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId);
+              expect(
+                originalIds.includes(
+                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId
+                )
+              ).toBeTrue();
+              expect(
+                originalIds.includes(
+                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId
+                )
+              ).toBeTrue();
 
               const createPrimaryObjectResult = await apolloClient.mutate({
                 mutation: gql`
