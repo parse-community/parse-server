@@ -3224,6 +3224,15 @@ describe('afterLogin hook', () => {
     const query = new Parse.Query(TestObject);
     await query.find({ context: { a: 'a' } });
   });
+
+  it('afterFind should have access to context while making fetch call', async () => {
+    Parse.Cloud.afterFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new TestObject();
+    await obj.save();
+    await obj.fetch({ context: { a: 'a' } });
+  });
 });
 
 describe('saveFile hooks', () => {
