@@ -1,3 +1,10 @@
+# [5.0.0-alpha.19](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.18...5.0.0-alpha.19) (2022-01-22)
+
+
+### Bug Fixes
+
+* bump nanoid from 3.1.25 to 3.2.0 ([#7781](https://github.com/parse-community/parse-server/issues/7781)) ([f5f63bf](https://github.com/parse-community/parse-server/commit/f5f63bfc64d3481ed944ceb5e9f50b33dccd1ce9))
+
 # [5.0.0-alpha.18](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.17...5.0.0-alpha.18) (2022-01-13)
 
 
