@@ -61,7 +61,7 @@ describe('ParseGraphQLServer', () => {
       expect(() => new ParseGraphQLServer()).toThrow('You must provide a parseServer instance!');
     });
 
-    fit('should require config.graphQLPath', () => {
+    it('should require config.graphQLPath', () => {
       expect(() => new ParseGraphQLServer(parseServer)).toThrow(
         'You must provide a config.graphQLPath!'
       );
