@@ -47,18 +47,14 @@ const getObject = async (
   parseClasses
 ) => {
   const options = {};
-  try {
-    if (
-      !needToGetAllKeys(
-        parseClasses.find(({ className: parseClassName }) => className === parseClassName).fields,
-        keys,
-        parseClasses
-      )
-    ) {
-      options.keys = keys;
-    }
-  } catch (e) {
-    console.log(e);
+  if (
+    !needToGetAllKeys(
+      parseClasses.find(({ className: parseClassName }) => className === parseClassName).fields,
+      keys,
+      parseClasses
+    )
+  ) {
+    options.keys = keys;
   }
   if (include) {
     options.include = include;
