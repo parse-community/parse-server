@@ -1,5 +1,6 @@
 import log from '../../../logger';
 import _ from 'lodash';
+import { ErrorMessage } from '../../../Errors/message';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 const Utils = require('../../../Utils');
@@ -708,7 +709,10 @@ function transformConstraint(constraint, field, count = false) {
       case '$nin': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.objectFieldValueInvalid(key)
+          );
         }
         answer[key] = _.flatMap(arr, value => {
           return (atom => {
@@ -724,7 +728,10 @@ function transformConstraint(constraint, field, count = false) {
       case '$all': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.objectFieldValueInvalid(key)
+          );
         }
         answer[key] = arr.map(transformInteriorAtom);
 
@@ -749,7 +756,10 @@ function transformConstraint(constraint, field, count = false) {
       case '$containedBy': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('an array', '$containedBy')
+          );
         }
         answer.$elemMatch = {
           $nin: arr.map(transformer),
@@ -763,24 +773,33 @@ function transformConstraint(constraint, field, count = false) {
       case '$text': {
         const search = constraint[key].$search;
         if (typeof search !== 'object') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $search, should be object`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('object', '$text.$search')
+          );
         }
         if (!search.$term || typeof search.$term !== 'string') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $term, should be string`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('string', '$text.$term')
+          );
         } else {
           answer[key] = {
             $search: search.$term,
           };
         }
         if (search.$language && typeof search.$language !== 'string') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $language, should be string`);
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            ErrorMessage.queryValueTypeInvalid('string', '$text.$language')
+          );
         } else if (search.$language) {
           answer[key].$language = search.$language;
         }
         if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `bad $text: $caseSensitive, should be boolean`
+            ErrorMessage.queryValueTypeInvalid('boolean', '$text.$caseSensitive')
           );
         } else if (search.$caseSensitive) {
           answer[key].$caseSensitive = search.$caseSensitive;
@@ -788,7 +807,7 @@ function transformConstraint(constraint, field, count = false) {
         if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `bad $text: $diacriticSensitive, should be boolean`
+            ErrorMessage.queryValueTypeInvalid('boolean', '$text.$diacriticSensitive')
           );
         } else if (search.$diacriticSensitive) {
           answer[key].$diacriticSensitive = search.$diacriticSensitive;
@@ -878,7 +897,10 @@ function transformConstraint(constraint, field, count = false) {
               return point;
             }
             if (!GeoPointCoder.isValidJSON(point)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                ErrorMessage.objectFieldValueInvalid('$geoWithin')
+              );
             } else {
               Parse.GeoPoint._validate(point.latitude, point.longitude);
             }

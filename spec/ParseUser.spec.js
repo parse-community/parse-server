@@ -12,6 +12,7 @@ const request = require('../lib/request');
 const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
+const { ErrorMessage } = require('../lib/Errors/message');
 
 describe('Parse.User testing', () => {
   it('user sign up class method', async done => {
@@ -73,7 +74,9 @@ describe('Parse.User testing', () => {
       .catch(err => {
         expect(err.status).toBe(404);
         expect(err.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       });
@@ -102,7 +105,9 @@ describe('Parse.User testing', () => {
       .catch(err => {
         expect(err.status).toBe(404);
         expect(err.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       });
@@ -231,7 +236,7 @@ describe('Parse.User testing', () => {
       })
       .then(done.fail)
       .catch(err => {
-        expect(err.message).toBe('Invalid username/password.');
+        expect(err.message).toBe(ErrorMessage.invalid('username/password'));
         expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
         done();
       });
@@ -1910,7 +1915,7 @@ describe('Parse.User testing', () => {
         },
         err => {
           expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-          expect(err.message).toEqual('Invalid username/password.');
+          expect(err.message).toEqual(ErrorMessage.invalid('username/password'));
           done();
         }
       );
@@ -2206,7 +2211,7 @@ describe('Parse.User testing', () => {
       user2.set('username', 'Test1');
       user2.set('password', 'test');
       await expectAsync(user2.signUp()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.')
+        new Parse.Error(Parse.Error.USERNAME_TAKEN, ErrorMessage.exists('Account', 'username'))
       );
     });
 
@@ -2220,7 +2225,7 @@ describe('Parse.User testing', () => {
       user2.setUsername('Test1');
       user2.setPassword('test');
       await expectAsync(user2.signUp()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.')
+        new Parse.Error(Parse.Error.USERNAME_TAKEN, ErrorMessage.exists('Account', 'username'))
       );
     });
 
@@ -2236,7 +2241,7 @@ describe('Parse.User testing', () => {
       user2.setPassword('test');
       user2.setEmail('Test@Example.Com');
       await expectAsync(user2.signUp()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.')
+        new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.exists('Account', 'email address'))
       );
     });
 
@@ -2255,7 +2260,7 @@ describe('Parse.User testing', () => {
 
       user2.setEmail('Test@Example.Com');
       await expectAsync(user2.save()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.')
+        new Parse.Error(Parse.Error.EMAIL_TAKEN, ErrorMessage.exists('Account', 'email address'))
       );
     });
 
@@ -2505,7 +2510,7 @@ describe('Parse.User testing', () => {
               body: JSON.stringify({ foo: 'bar' }),
             }).then(fail, response => {
               const b = response.data;
-              expect(b.error).toBe('Session token required.');
+              expect(b.error).toBe(ErrorMessage.required('Session Token', ''));
               done();
             });
           });
@@ -3022,7 +3027,7 @@ describe('Parse.User testing', () => {
         expect(emailCalled).toBeTruthy();
         expect(emailOptions).toBeDefined();
         expect(err.status).toBe(400);
-        expect(err.text).toMatch('{"code":125,"error":"you must provide a valid email string"}');
+        expect(err.text).toMatch('{"code":125,"error":"' + ErrorMessage.invalid('email') + '"}');
         done();
       });
   });
@@ -3718,7 +3723,7 @@ describe('Parse.User testing', () => {
       })
       .then(done.fail)
       .catch(err => {
-        expect(err.data.error).toEqual('Invalid username/password.');
+        expect(err.data.error).toEqual(ErrorMessage.invalid('username/password'));
         done();
       });
   });
@@ -3743,7 +3748,7 @@ describe('Parse.User testing', () => {
       })
       .then(done.fail)
       .catch(err => {
-        expect(err.data.error).toEqual('Invalid username/password.');
+        expect(err.data.error).toEqual(ErrorMessage.invalid('username/password'));
         done();
       });
   });
@@ -3768,7 +3773,7 @@ describe('Parse.User testing', () => {
       })
       .then(done.fail)
       .catch(err => {
-        expect(err.data.error).toEqual('username/email is required.');
+        expect(err.data.error).toEqual(ErrorMessage.required('username/email', ''));
         done();
       });
   });
@@ -3834,7 +3839,7 @@ describe('Parse.User testing', () => {
       })
       .then(done.fail)
       .catch(err => {
-        expect(err.message).toEqual('Invalid username/password.');
+        expect(err.message).toEqual(ErrorMessage.invalid('username/password'));
         done();
       });
   });
@@ -3859,7 +3864,7 @@ describe('Parse.User testing', () => {
       })
       .then(done.fail)
       .catch(err => {
-        expect(err.data.error).toEqual('password is required.');
+        expect(err.data.error).toEqual(ErrorMessage.required('password', ''));
         done();
       });
   });
@@ -4162,7 +4167,7 @@ describe('login as other user', () => {
       done();
     } catch (err) {
       expect(err.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-      expect(err.data.error).toBe('user not found');
+      expect(err.data.error).toBe(ErrorMessage.notFound('User'));
     }
 
     const sessionsQuery = new Parse.Query(Parse.Session);
@@ -4227,7 +4232,7 @@ describe('login as other user', () => {
       done();
     } catch (err) {
       expect(err.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-      expect(err.data.error).toBe('master key is required');
+      expect(err.data.error).toBe(ErrorMessage.required('Master Key', ''));
     }
 
     const sessionsQuery = new Parse.Query(Parse.Session);

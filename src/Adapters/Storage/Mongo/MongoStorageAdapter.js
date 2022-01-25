@@ -18,6 +18,7 @@ import Parse from 'parse/node';
 import _ from 'lodash';
 import defaults from '../../../defaults';
 import logger from '../../../logger';
+import { ErrorMessage } from '../../../Errors/message';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -482,10 +483,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
-          const err = new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
+          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
           err.underlyingError = error;
           if (error.message) {
             const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
@@ -519,12 +517,15 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(
         ({ result }) => {
           if (result.n === 0) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, ErrorMessage.notFound('Object'));
           }
           return Promise.resolve();
         },
         () => {
-          throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error');
+          throw new Parse.Error(
+            Parse.Error.INTERNAL_SERVER_ERROR,
+            ErrorMessage.databaseAdapterError()
+          );
         }
       );
   }
@@ -567,10 +568,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(result => mongoObjectToParseObject(className, result.value, schema))
       .catch(error => {
         if (error.code === 11000) {
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
         }
         throw error;
       })
@@ -708,10 +706,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
       .catch(error => {
         if (error.code === 11000) {
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'Tried to ensure field uniqueness for a class that already has duplicates.'
-          );
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, ErrorMessage.duplicateValue());
         }
         throw error;
       })

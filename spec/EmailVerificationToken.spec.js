@@ -2,6 +2,7 @@
 
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const { ErrorMessage } = require('../lib/Errors/message');
 
 describe('Email Verification Token Expiration: ', () => {
   it('show the invalid verification link page, if the user clicks on the verify email link after the email verify token expires', done => {
@@ -848,7 +849,7 @@ describe('Email Verification Token Expiration: ', () => {
           .then(response => {
             expect(response.status).toBe(400);
             expect(response.data.code).toBe(Parse.Error.EMAIL_MISSING);
-            expect(response.data.error).toBe('you must provide an email');
+            expect(response.data.error).toBe(ErrorMessage.required('email'));
             expect(sendVerificationEmailCallCount).toBe(0);
             expect(sendEmailOptions).not.toBeDefined();
             done();

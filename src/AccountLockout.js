@@ -1,5 +1,6 @@
 // This class handles the Account Lockout Policy settings.
 import Parse from 'parse/node';
+import { ErrorMessage } from '../lib/Errors/message';
 
 export class AccountLockout {
   constructor(user, config) {
@@ -118,9 +119,7 @@ export class AccountLockout {
       if (Array.isArray(users) && users.length > 0) {
         throw new Parse.Error(
           Parse.Error.OBJECT_NOT_FOUND,
-          'Your account is locked due to multiple failed login attempts. Please try again after ' +
-            this._config.accountLockout.duration +
-            ' minute(s)'
+          ErrorMessage.accountLocked(this._config.accountLockout.duration)
         );
       }
     });

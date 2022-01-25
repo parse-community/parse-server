@@ -250,7 +250,7 @@ describe('AuthenticationProviders', function () {
       })
       .then(fail, ({ data }) => {
         expect(data.code).toBe(208);
-        expect(data.error).toBe('this auth is already used');
+        expect(data.error).toBe('This auth is already used.');
         done();
       })
       .catch(done.fail);

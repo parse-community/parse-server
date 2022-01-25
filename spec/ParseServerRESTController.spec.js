@@ -4,6 +4,7 @@ const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
 const semver = require('semver');
 const TestUtils = require('../lib/TestUtils');
+const { ErrorMessage } = require('../lib/Errors/message');
 
 let RESTController;
 
@@ -569,7 +570,7 @@ describe('ParseServerRESTController', () => {
       fail('Success callback should not be called when passing an empty username.');
     } catch (err) {
       expect(err.code).toBe(Parse.Error.USERNAME_MISSING);
-      expect(err.message).toBe('bad or missing username');
+      expect(err.message).toBe(ErrorMessage.required('username', ''));
     }
   });
 
@@ -582,7 +583,7 @@ describe('ParseServerRESTController', () => {
       fail('Success callback should not be called when passing an empty password.');
     } catch (err) {
       expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
-      expect(err.message).toBe('password is required');
+      expect(err.message).toBe(ErrorMessage.required('password', ''));
     }
   });
 

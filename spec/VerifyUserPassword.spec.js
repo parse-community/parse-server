@@ -1,5 +1,6 @@
 'use strict';
 
+const { ErrorMessage } = require('../lib/Errors/message');
 const request = require('../lib/request');
 const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
@@ -23,12 +24,7 @@ const isAccountLockoutError = function (username, password, duration, waitTime) 
       Parse.User.logIn(username, password)
         .then(() => reject('login should have failed'))
         .catch(err => {
-          if (
-            err.message ===
-            'Your account is locked due to multiple failed login attempts. Please try again after ' +
-              duration +
-              ' minute(s)'
-          ) {
+          if (err.message === ErrorMessage.accountLocked(duration)) {
             resolve();
           } else {
             reject(err);
@@ -80,7 +76,9 @@ describe('Verify User Password', () => {
       .catch(err => {
         expect(err.status).toBe(404);
         expect(err.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       });
@@ -112,7 +110,9 @@ describe('Verify User Password', () => {
       })
       .catch(err => {
         expect(err.status).toBe(400);
-        expect(err.text).toMatch('{"code":200,"error":"username/email is required."}');
+        expect(err.text).toMatch(
+          '{"code":200,"error":"' + ErrorMessage.required('username/email', '') + '"}'
+        );
         done();
       });
   });
@@ -143,7 +143,9 @@ describe('Verify User Password', () => {
       })
       .catch(err => {
         expect(err.status).toBe(400);
-        expect(err.text).toMatch('{"code":200,"error":"username/email is required."}');
+        expect(err.text).toMatch(
+          '{"code":200,"error":"' + ErrorMessage.required('username/email', '') + '"}'
+        );
         done();
       });
   });
@@ -160,7 +162,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(400);
-        expect(res.text).toMatch('{"code":200,"error":"username/email is required."}');
+        expect(res.text).toMatch(
+          '{"code":200,"error":"' + ErrorMessage.required('username/email', '') + '"}'
+        );
         done();
       })
       .catch(err => {
@@ -181,7 +185,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(400);
-        expect(res.text).toMatch('{"code":200,"error":"username/email is required."}');
+        expect(res.text).toMatch(
+          '{"code":200,"error":"' + ErrorMessage.required('username/email', '') + '"}'
+        );
         done();
       })
       .catch(err => {
@@ -202,7 +208,9 @@ describe('Verify User Password', () => {
       })
       .then(res => {
         expect(res.status).toBe(400);
-        expect(res.text).toMatch('{"code":201,"error":"password is required."}');
+        expect(res.text).toMatch(
+          '{"code":201,"error":"' + ErrorMessage.required('password', '') + '"}'
+        );
         done();
       })
       .catch(err => {
@@ -224,7 +232,9 @@ describe('Verify User Password', () => {
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       })
@@ -247,7 +257,9 @@ describe('Verify User Password', () => {
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       })
@@ -270,7 +282,9 @@ describe('Verify User Password', () => {
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       })
@@ -293,7 +307,9 @@ describe('Verify User Password', () => {
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       })
@@ -316,7 +332,9 @@ describe('Verify User Password', () => {
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       })
@@ -330,7 +348,9 @@ describe('Verify User Password', () => {
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       })
@@ -344,7 +364,9 @@ describe('Verify User Password', () => {
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
-          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"${ErrorMessage.invalid(
+            'username/password'
+          )}"}`
         );
         done();
       })

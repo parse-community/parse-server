@@ -1232,7 +1232,9 @@ describe('Installations', () => {
           },
           err => {
             expect(err.code).toBe(136);
-            expect(err.message).toBe('installationId may not be changed in this operation');
+            expect(err.message).toBe(
+              'The field installationId can not be changed in this operation.'
+            );
             done();
           }
         );

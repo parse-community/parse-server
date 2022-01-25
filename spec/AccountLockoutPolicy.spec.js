@@ -3,13 +3,14 @@
 const Config = require('../lib/Config');
 const Definitions = require('../lib/Options/Definitions');
 const request = require('../lib/request');
+const { ErrorMessage } = require('../lib/Errors/message');
 
 const loginWithWrongCredentialsShouldFail = function (username, password) {
   return new Promise((resolve, reject) => {
     Parse.User.logIn(username, password)
       .then(() => reject('login should have failed'))
       .catch(err => {
-        if (err.message === 'Invalid username/password.') {
+        if (err.message === ErrorMessage.invalid('username/password')) {
           resolve();
         } else {
           reject(err);
@@ -24,12 +25,7 @@ const isAccountLockoutError = function (username, password, duration, waitTime) 
       Parse.User.logIn(username, password)
         .then(() => reject('login should have failed'))
         .catch(err => {
-          if (
-            err.message ===
-            'Your account is locked due to multiple failed login attempts. Please try again after ' +
-              duration +
-              ' minute(s)'
-          ) {
+          if (err.message === ErrorMessage.accountLocked(duration)) {
             resolve();
           } else {
             reject(err);

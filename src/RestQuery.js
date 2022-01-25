@@ -6,6 +6,8 @@ var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
+const { ErrorMessage } = require('./Errors/message');
+
 // restOptions can include:
 //   skip
 //   limit
@@ -335,7 +337,7 @@ RestQuery.prototype.validateClientClassCreation = function () {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' + 'non-existent class: ' + this.className
+            ErrorMessage.unauthorizedAccess('class', this.className)
           );
         }
       });

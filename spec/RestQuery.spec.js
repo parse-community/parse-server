@@ -7,6 +7,7 @@ const RestQuery = require('../lib/RestQuery');
 const request = require('../lib/request');
 
 const querystring = require('querystring');
+const { ErrorMessage } = require('../lib/Errors/message');
 
 let config;
 let database;
@@ -165,7 +166,7 @@ describe('rest query', () => {
       err => {
         expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
         expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
+          ErrorMessage.unauthorizedAccess('class', 'ClientClassCreation')
         );
         done();
       }

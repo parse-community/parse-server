@@ -3,6 +3,7 @@
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
+const { ErrorMessage } = require('../lib/Errors/message');
 let databaseAdapter;
 
 const fullTextHelper = async () => {
@@ -110,7 +111,10 @@ describe('Parse.Query Full Text Search testing', () => {
       }
     };
     await expectAsync(invalidQuery()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $search, should be object')
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        ErrorMessage.queryValueTypeInvalid('object', '$text.$search')
+      )
     );
   });
 
@@ -119,7 +123,10 @@ describe('Parse.Query Full Text Search testing', () => {
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { language: true });
     await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $language, should be string')
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        ErrorMessage.queryValueTypeInvalid('string', '$text.$language')
+      )
     );
   });
 
@@ -128,7 +135,10 @@ describe('Parse.Query Full Text Search testing', () => {
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { caseSensitive: 'string' });
     await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $caseSensitive, should be boolean')
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        ErrorMessage.queryValueTypeInvalid('boolean', '$text.$caseSensitive')
+      )
     );
   });
 
@@ -137,7 +147,10 @@ describe('Parse.Query Full Text Search testing', () => {
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { diacriticSensitive: 'string' });
     await expectAsync(query.find()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $diacriticSensitive, should be boolean')
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        ErrorMessage.queryValueTypeInvalid('boolean', '$text.$diacriticSensitive')
+      )
     );
   });
 });
