@@ -76,25 +76,22 @@ describe('Parse.GeoPoint testing', () => {
   });
 
   // TODO: This should also have support in postgres, or higher level database agnostic support.
-  it_exclude_dbs(['postgres'])(
-    'updating geo point exception two fields',
-    async done => {
-      const point = new Parse.GeoPoint(20, 20);
-      const obj = new TestObject();
-      obj.set('locationOne', point);
-      await obj.save();
-      obj.set('locationTwo', point);
-      obj.save().then(
-        () => {
-          fail('expected error');
-        },
-        err => {
-          equal(err.code, Parse.Error.INCORRECT_TYPE);
-          done();
-        }
-      );
-    }
-  );
+  it_exclude_dbs(['postgres'])('updating geo point exception two fields', async done => {
+    const point = new Parse.GeoPoint(20, 20);
+    const obj = new TestObject();
+    obj.set('locationOne', point);
+    await obj.save();
+    obj.set('locationTwo', point);
+    obj.save().then(
+      () => {
+        fail('expected error');
+      },
+      err => {
+        equal(err.code, Parse.Error.INCORRECT_TYPE);
+        done();
+      }
+    );
+  });
 
   it('geo line', async done => {
     const line = [];
@@ -120,7 +117,7 @@ describe('Parse.GeoPoint testing', () => {
 
   it('geo max distance large', done => {
     const objects = [];
-    [0, 1, 2].map(function(i) {
+    [0, 1, 2].map(function (i) {
       const obj = new TestObject();
       const point = new Parse.GeoPoint(0.0, i * 45.0);
       obj.set('location', point);
@@ -148,7 +145,7 @@ describe('Parse.GeoPoint testing', () => {
 
   it('geo max distance medium', async () => {
     const objects = [];
-    [0, 1, 2].map(function(i) {
+    [0, 1, 2].map(function (i) {
       const obj = new TestObject();
       const point = new Parse.GeoPoint(0.0, i * 45.0);
       obj.set('location', point);
@@ -167,7 +164,7 @@ describe('Parse.GeoPoint testing', () => {
 
   it('geo max distance small', async () => {
     const objects = [];
-    [0, 1, 2].map(function(i) {
+    [0, 1, 2].map(function (i) {
       const obj = new TestObject();
       const point = new Parse.GeoPoint(0.0, i * 45.0);
       obj.set('location', point);
@@ -183,7 +180,7 @@ describe('Parse.GeoPoint testing', () => {
     equal(results[0].get('index'), 0);
   });
 
-  const makeSomeGeoPoints = function() {
+  const makeSomeGeoPoints = function () {
     const sacramento = new TestObject();
     sacramento.set('location', new Parse.GeoPoint(38.52, -121.5));
     sacramento.set('name', 'Sacramento');
@@ -445,7 +442,13 @@ describe('Parse.GeoPoint testing', () => {
     const obj3 = new Parse.Object('Polygon', { location: outbound });
     const polygon = {
       __type: 'Polygon',
-      coordinates: [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]],
+      coordinates: [
+        [0, 0],
+        [10, 0],
+        [10, 10],
+        [0, 10],
+        [0, 0],
+      ],
     };
     Parse.Object.saveAll([obj1, obj2, obj3])
       .then(() => {
@@ -478,7 +481,10 @@ describe('Parse.GeoPoint testing', () => {
     const obj = new Parse.Object('Polygon', { location: point });
     const polygon = {
       __type: 'Polygon',
-      coordinates: [[0, 0], [10, 0]],
+      coordinates: [
+        [0, 0],
+        [10, 0],
+      ],
     };
     obj
       .save()
@@ -516,7 +522,11 @@ describe('Parse.GeoPoint testing', () => {
     const obj = new Parse.Object('Polygon', { location: point });
     const polygon = {
       __type: 'Polygon',
-      coordinates: [[0, 0], [181, 0], [0, 10]],
+      coordinates: [
+        [0, 0],
+        [181, 0],
+        [0, 10],
+      ],
     };
     obj
       .save()
@@ -736,11 +746,7 @@ describe('Parse.GeoPoint testing', () => {
 
     await Parse.Object.saveAll([obj1, obj2]);
 
-    const q = new Parse.Query(TestObject).withinKilometers(
-      'location',
-      inside,
-      5
-    );
+    const q = new Parse.Query(TestObject).withinKilometers('location', inside, 5);
     const count = await q.count();
 
     equal(count, 1);
@@ -756,16 +762,8 @@ describe('Parse.GeoPoint testing', () => {
 
     await Parse.Object.saveAll([obj1, obj2, obj3]);
 
-    const q1 = new Parse.Query(TestObject).withinKilometers(
-      'location',
-      inside,
-      5
-    );
-    const q2 = new Parse.Query(TestObject).withinKilometers(
-      'location',
-      middle,
-      5
-    );
+    const q1 = new Parse.Query(TestObject).withinKilometers('location', inside, 5);
+    const q2 = new Parse.Query(TestObject).withinKilometers('location', middle, 5);
     const query = Parse.Query.or(q1, q2);
     const count = await query.count();
 
@@ -784,10 +782,7 @@ describe('Parse.GeoPoint testing', () => {
     });
     await Parse.Object.saveAll([tmp, tmp2]);
     const query = new Parse.Query(TestObject);
-    query.notEqualTo(
-      'location',
-      new Parse.GeoPoint({ latitude: 0, longitude: 0 })
-    );
+    query.notEqualTo('location', new Parse.GeoPoint({ latitude: 0, longitude: 0 }));
     const results = await query.find();
     expect(results.length).toEqual(1);
   });

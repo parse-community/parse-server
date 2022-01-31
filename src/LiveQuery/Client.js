@@ -3,13 +3,7 @@ import logger from '../logger';
 import type { FlattenedObjectData } from './Subscription';
 export type Message = { [attr: string]: any };
 
-const dafaultFields = [
-  'className',
-  'objectId',
-  'updatedAt',
-  'createdAt',
-  'ACL',
-];
+const dafaultFields = ['className', 'objectId', 'updatedAt', 'createdAt', 'ACL'];
 
 class Client {
   id: number;
@@ -110,10 +104,7 @@ class Client {
         }
         response['object'] = this._toJSONWithFields(parseObjectJSON, fields);
         if (parseOriginalObjectJSON) {
-          response['original'] = this._toJSONWithFields(
-            parseOriginalObjectJSON,
-            fields
-          );
+          response['original'] = this._toJSONWithFields(parseOriginalObjectJSON, fields);
         }
       }
       Client.pushResponse(this.parseWebSocket, JSON.stringify(response));

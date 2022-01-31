@@ -1,12 +1,11 @@
-const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
-  .default;
+const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter').default;
 
-describe('InMemoryCacheAdapter', function() {
+describe('InMemoryCacheAdapter', function () {
   const KEY = 'hello';
   const VALUE = 'world';
 
   function wait(sleep) {
-    return new Promise(function(resolve) {
+    return new Promise(function (resolve) {
       setTimeout(resolve, sleep);
     });
   }
@@ -17,12 +16,7 @@ describe('InMemoryCacheAdapter', function() {
     });
 
     // Verify all methods return promises.
-    Promise.all([
-      cache.put(KEY, VALUE),
-      cache.del(KEY),
-      cache.get(KEY),
-      cache.clear(),
-    ]).then(() => {
+    Promise.all([cache.put(KEY, VALUE), cache.del(KEY), cache.get(KEY), cache.clear()]).then(() => {
       done();
     });
   });

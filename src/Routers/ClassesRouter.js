@@ -19,10 +19,7 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleFind(req) {
-    const body = Object.assign(
-      req.body,
-      ClassesRouter.JSONFromQuery(req.query)
-    );
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body);
     if (req.config.maxLimit && body.limit > req.config.maxLimit) {
       // Silently replace the limit on the query with the max configured
@@ -51,29 +48,23 @@ export class ClassesRouter extends PromiseRouter {
 
   // Returns a promise for a {response} object.
   handleGet(req) {
-    const body = Object.assign(
-      req.body,
-      ClassesRouter.JSONFromQuery(req.query)
-    );
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
 
     for (const key of Object.keys(body)) {
       if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          'Improper encode of parameter'
-        );
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
       }
     }
 
-    if (typeof body.keys === 'string') {
-      options.keys = body.keys;
+    if (body.keys != null) {
+      options.keys = String(body.keys);
     }
-    if (body.include) {
+    if (body.include != null) {
       options.include = String(body.include);
     }
-    if (typeof body.excludeKeys == 'string') {
-      options.excludeKeys = body.excludeKeys;
+    if (body.excludeKeys != null) {
+      options.excludeKeys = String(body.excludeKeys);
     }
     if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
@@ -92,14 +83,12 @@ export class ClassesRouter extends PromiseRouter {
         this.className(req),
         req.params.objectId,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found.'
-          );
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
 
         if (this.className(req) === '_User') {
@@ -142,13 +131,7 @@ export class ClassesRouter extends PromiseRouter {
 
   handleDelete(req) {
     return rest
-      .del(
-        req.config,
-        req.auth,
-        this.className(req),
-        req.params.objectId,
-        req.info.context
-      )
+      .del(req.config, req.auth, this.className(req), req.params.objectId, req.info.context)
       .then(() => {
         return { response: {} };
       });
@@ -187,10 +170,7 @@ export class ClassesRouter extends PromiseRouter {
 
     for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Invalid parameter for query: ${key}`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
     }
     const options = {};
@@ -208,13 +188,13 @@ export class ClassesRouter extends PromiseRouter {
     if (body.count) {
       options.count = true;
     }
-    if (typeof body.keys == 'string') {
-      options.keys = body.keys;
+    if (body.keys != null) {
+      options.keys = String(body.keys);
     }
-    if (typeof body.excludeKeys == 'string') {
-      options.excludeKeys = body.excludeKeys;
+    if (body.excludeKeys != null) {
+      options.excludeKeys = String(body.excludeKeys);
     }
-    if (body.include) {
+    if (body.include != null) {
       options.include = String(body.include);
     }
     if (body.includeAll) {
@@ -229,10 +209,7 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.subqueryReadPreference === 'string') {
       options.subqueryReadPreference = body.subqueryReadPreference;
     }
-    if (
-      body.hint &&
-      (typeof body.hint === 'string' || typeof body.hint === 'object')
-    ) {
+    if (body.hint && (typeof body.hint === 'string' || typeof body.hint === 'object')) {
       options.hint = body.hint;
     }
     if (body.explain) {
@@ -251,14 +228,9 @@ export class ClassesRouter extends PromiseRouter {
     this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route(
-      'PUT',
-      '/classes/:className/:objectId',
-      promiseEnsureIdempotency,
-      req => {
-        return this.handleUpdate(req);
-      }
-    );
+    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
+      return this.handleUpdate(req);
+    });
     this.route('DELETE', '/classes/:className/:objectId', req => {
       return this.handleDelete(req);
     });

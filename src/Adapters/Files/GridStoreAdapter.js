@@ -30,13 +30,12 @@ export class GridStoreAdapter extends FilesAdapter {
 
   _connect() {
     if (!this._connectionPromise) {
-      this._connectionPromise = MongoClient.connect(
-        this._databaseURI,
-        this._mongoOptions
-      ).then(client => {
-        this._client = client;
-        return client.db(client.s.options.dbName);
-      });
+      this._connectionPromise = MongoClient.connect(this._databaseURI, this._mongoOptions).then(
+        client => {
+          this._client = client;
+          return client.db(client.s.options.dbName);
+        }
+      );
     }
     return this._connectionPromise;
   }
@@ -85,13 +84,7 @@ export class GridStoreAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
-    return (
-      config.mount +
-      '/files/' +
-      config.applicationId +
-      '/' +
-      encodeURIComponent(filename)
-    );
+    return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
   }
 
   async handleFileStream(filename: string, req, res, contentType) {
@@ -152,14 +145,14 @@ function handleRangeRequest(stream, req, res, contentType) {
     'Content-Type': contentType,
   });
 
-  stream.seek(start, function() {
+  stream.seek(start, function () {
     // Get gridFile stream
     const gridFileStream = stream.stream(true);
     let bufferAvail = 0;
     let remainingBytesToWrite = contentLength;
     let totalBytesWritten = 0;
     // Write to response
-    gridFileStream.on('data', function(data) {
+    gridFileStream.on('data', function (data) {
       bufferAvail += data.length;
       if (bufferAvail > 0) {
         // slice returns the same buffer if overflowing

@@ -6,11 +6,14 @@ const rest = require('../lib/rest');
 const auth = require('../lib/Auth');
 const uuid = require('uuid');
 
-describe_only_db('mongo')('Idempotency', () => {
+describe('Idempotency', () => {
   // Parameters
   /** Enable TTL expiration simulated by removing entry instead of waiting for MongoDB TTL monitor which
    runs only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
   const SIMULATE_TTL = true;
+  const ttl = 2;
+  const maxTimeOut = 4000;
+
   // Helpers
   async function deleteRequestEntry(reqId) {
     const config = Config.get(Parse.applicationId);
@@ -21,12 +24,7 @@ describe_only_db('mongo')('Idempotency', () => {
       { reqId: reqId },
       { limit: 1 }
     );
-    await rest.del(
-      config,
-      auth.master(config),
-      '_Idempotency',
-      res.results[0].objectId
-    );
+    await rest.del(config, auth.master(config), '_Idempotency', res.results[0].objectId);
   }
   async function setup(options) {
     await reconfigureServer({
@@ -42,16 +40,11 @@ describe_only_db('mongo')('Idempotency', () => {
       jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
     }
     await setup({
-      paths: [
-        'functions/.*',
-        'jobs/.*',
-        'classes/.*',
-        'users',
-        'installations',
-      ],
-      ttl: 30,
+      paths: ['functions/.*', 'jobs/.*', 'classes/.*', 'users', 'installations'],
+      ttl: ttl,
     });
   });
+
   // Tests
   it('should enforce idempotency for cloud code function', async () => {
     let counter = 0;
@@ -67,7 +60,7 @@ describe_only_db('mongo')('Idempotency', () => {
         'X-Parse-Request-Id': 'abc-123',
       },
     };
-    expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(30);
+    expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(ttl);
     await request(params);
     await request(params).then(fail, e => {
       expect(e.status).toEqual(400);
@@ -94,8 +87,31 @@ describe_only_db('mongo')('Idempotency', () => {
     if (SIMULATE_TTL) {
       await deleteRequestEntry('abc-123');
     } else {
-      await new Promise(resolve => setTimeout(resolve, 130000));
+      await new Promise(resolve => setTimeout(resolve, maxTimeOut));
     }
+    await expectAsync(request(params)).toBeResolved();
+    expect(counter).toBe(2);
+  });
+
+  it_only_db('postgres')('should delete request entry when postgress ttl function is called', async () => {
+    const client = Config.get(Parse.applicationId).database.adapter._client;
+    let counter = 0;
+    Parse.Cloud.define('myFunction', () => {
+      counter++;
+    });
+    const params = {
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/myFunction',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Request-Id': 'abc-123',
+      },
+    };
+    await expectAsync(request(params)).toBeResolved();
+    await expectAsync(request(params)).toBeRejected();
+    await new Promise(resolve => setTimeout(resolve, maxTimeOut));
+    await client.one('SELECT idempotency_delete_expired_records()');
     await expectAsync(request(params)).toBeResolved();
     expect(counter).toBe(2);
   });
@@ -218,9 +234,7 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should re-throw any other error unchanged when writing request entry fails for any other reason', async () => {
-    spyOn(rest, 'create').and.rejectWith(
-      new Parse.Error(0, 'some other error')
-    );
+    spyOn(rest, 'create').and.rejectWith(new Parse.Error(0, 'some other error'));
     Parse.Cloud.define('myFunction', () => {});
     const params = {
       method: 'POST',

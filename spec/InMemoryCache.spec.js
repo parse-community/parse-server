@@ -1,6 +1,6 @@
 const InMemoryCache = require('../lib/Adapters/Cache/InMemoryCache').default;
 
-describe('InMemoryCache', function() {
+describe('InMemoryCache', function () {
   const BASE_TTL = {
     ttl: 100,
   };
@@ -13,7 +13,7 @@ describe('InMemoryCache', function() {
   const VALUE = 'world';
 
   function wait(sleep) {
-    return new Promise(function(resolve) {
+    return new Promise(function (resolve) {
       setTimeout(resolve, sleep);
     });
   }

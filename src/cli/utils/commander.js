@@ -1,11 +1,13 @@
 /* eslint-disable no-console */
 import { Command } from 'commander';
 import path from 'path';
+import Deprecator from '../../Deprecator/Deprecator';
+
 let _definitions;
 let _reverseDefinitions;
 let _defaults;
 
-Command.prototype.loadDefinitions = function(definitions) {
+Command.prototype.loadDefinitions = function (definitions) {
   _definitions = definitions;
 
   Object.keys(definitions).reduce((program, opt) => {
@@ -40,14 +42,14 @@ Command.prototype.loadDefinitions = function(definitions) {
   }, {});
 
   _defaults = Object.keys(definitions).reduce((defs, opt) => {
-    if (_definitions[opt].default) {
+    if (_definitions[opt].default !== undefined) {
       defs[opt] = _definitions[opt].default;
     }
     return defs;
   }, {});
 
   /* istanbul ignore next */
-  this.on('--help', function() {
+  this.on('--help', function () {
     console.log('  Configure From Environment:');
     console.log('');
     Object.keys(_reverseDefinitions).forEach(key => {
@@ -100,7 +102,7 @@ function parseConfigFile(program) {
   return options;
 }
 
-Command.prototype.setValuesIfNeeded = function(options) {
+Command.prototype.setValuesIfNeeded = function (options) {
   Object.keys(options).forEach(key => {
     if (!Object.prototype.hasOwnProperty.call(this, key)) {
       this[key] = options[key];
@@ -110,7 +112,7 @@ Command.prototype.setValuesIfNeeded = function(options) {
 
 Command.prototype._parse = Command.prototype.parse;
 
-Command.prototype.parse = function(args, env) {
+Command.prototype.parse = function (args, env) {
   this._parse(args);
   // Parse the environment first
   const envOptions = parseEnvironment(env);
@@ -119,11 +121,13 @@ Command.prototype.parse = function(args, env) {
   this.setValuesIfNeeded(envOptions);
   // Load from file to override
   this.setValuesIfNeeded(fromFile);
+  // Scan for deprecated Parse Server options
+  Deprecator.scanParseServerOptions(this);
   // Last set the defaults
   this.setValuesIfNeeded(_defaults);
 };
 
-Command.prototype.getOptions = function() {
+Command.prototype.getOptions = function () {
   return Object.keys(_definitions).reduce((options, key) => {
     if (typeof this[key] !== 'undefined') {
       options[key] = this[key];

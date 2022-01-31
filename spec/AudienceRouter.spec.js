@@ -2,8 +2,7 @@ const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const rest = require('../lib/rest');
 const request = require('../lib/request');
-const AudiencesRouter = require('../lib/Routers/AudiencesRouter')
-  .AudiencesRouter;
+const AudiencesRouter = require('../lib/Routers/AudiencesRouter').AudiencesRouter;
 
 describe('AudiencesRouter', () => {
   it('uses find condition from request.body', done => {
@@ -32,12 +31,7 @@ describe('AudiencesRouter', () => {
     rest
       .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() => {
-        return rest.create(
-          config,
-          auth.nobody(config),
-          '_Audience',
-          iosAudienceRequest
-        );
+        return rest.create(config, auth.nobody(config), '_Audience', iosAudienceRequest);
       })
       .then(() => {
         return router.handleFind(request);
@@ -79,12 +73,7 @@ describe('AudiencesRouter', () => {
     rest
       .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() => {
-        return rest.create(
-          config,
-          auth.nobody(config),
-          '_Audience',
-          iosAudienceRequest
-        );
+        return rest.create(config, auth.nobody(config), '_Audience', iosAudienceRequest);
       })
       .then(() => {
         return router.handleFind(request);
@@ -125,12 +114,7 @@ describe('AudiencesRouter', () => {
     rest
       .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() => {
-        return rest.create(
-          config,
-          auth.nobody(config),
-          '_Audience',
-          iosAudienceRequest
-        );
+        return rest.create(config, auth.nobody(config), '_Audience', iosAudienceRequest);
       })
       .then(() => {
         return router.handleFind(request);
@@ -169,14 +153,7 @@ describe('AudiencesRouter', () => {
     const router = new AudiencesRouter();
     rest
       .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
-      .then(() =>
-        rest.create(
-          config,
-          auth.nobody(config),
-          '_Audience',
-          iosAudienceRequest
-        )
-      )
+      .then(() => rest.create(config, auth.nobody(config), '_Audience', iosAudienceRequest))
       .then(() => router.handleFind(request))
       .then(res => {
         const response = res.response;
@@ -190,60 +167,47 @@ describe('AudiencesRouter', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])(
-    'query installations with limit = 0 and count = 1',
-    done => {
-      const config = Config.get('test');
-      const androidAudienceRequest = {
-        name: 'Android Users',
-        query: '{ "test": "android" }',
-      };
-      const iosAudienceRequest = {
-        name: 'Iphone Users',
-        query: '{ "test": "ios" }',
-      };
-      const request = {
-        config: config,
-        auth: auth.master(config),
-        body: {},
-        query: {
-          limit: 0,
-          count: 1,
-        },
-        info: {},
-      };
+  it_exclude_dbs(['postgres'])('query installations with limit = 0 and count = 1', done => {
+    const config = Config.get('test');
+    const androidAudienceRequest = {
+      name: 'Android Users',
+      query: '{ "test": "android" }',
+    };
+    const iosAudienceRequest = {
+      name: 'Iphone Users',
+      query: '{ "test": "ios" }',
+    };
+    const request = {
+      config: config,
+      auth: auth.master(config),
+      body: {},
+      query: {
+        limit: 0,
+        count: 1,
+      },
+      info: {},
+    };
 
-      const router = new AudiencesRouter();
-      rest
-        .create(
-          config,
-          auth.nobody(config),
-          '_Audience',
-          androidAudienceRequest
-        )
-        .then(() => {
-          return rest.create(
-            config,
-            auth.nobody(config),
-            '_Audience',
-            iosAudienceRequest
-          );
-        })
-        .then(() => {
-          return router.handleFind(request);
-        })
-        .then(res => {
-          const response = res.response;
-          expect(response.results.length).toEqual(0);
-          expect(response.count).toEqual(2);
-          done();
-        })
-        .catch(err => {
-          fail(JSON.stringify(err));
-          done();
-        });
-    }
-  );
+    const router = new AudiencesRouter();
+    rest
+      .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
+      .then(() => {
+        return rest.create(config, auth.nobody(config), '_Audience', iosAudienceRequest);
+      })
+      .then(() => {
+        return router.handleFind(request);
+      })
+      .then(res => {
+        const response = res.response;
+        expect(response.results.length).toEqual(0);
+        expect(response.count).toEqual(2);
+        done();
+      })
+      .catch(err => {
+        fail(JSON.stringify(err));
+        done();
+      });
+  });
 
   it('should create, read, update and delete audiences throw api', done => {
     Parse._request(
@@ -252,54 +216,49 @@ describe('AudiencesRouter', () => {
       { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
       { useMasterKey: true }
     ).then(() => {
-      Parse._request('GET', 'push_audiences', {}, { useMasterKey: true }).then(
-        results => {
-          expect(results.results.length).toEqual(1);
-          expect(results.results[0].name).toEqual('My Audience');
-          expect(results.results[0].query.deviceType).toEqual('ios');
+      Parse._request('GET', 'push_audiences', {}, { useMasterKey: true }).then(results => {
+        expect(results.results.length).toEqual(1);
+        expect(results.results[0].name).toEqual('My Audience');
+        expect(results.results[0].query.deviceType).toEqual('ios');
+        Parse._request(
+          'GET',
+          `push_audiences/${results.results[0].objectId}`,
+          {},
+          { useMasterKey: true }
+        ).then(results => {
+          expect(results.name).toEqual('My Audience');
+          expect(results.query.deviceType).toEqual('ios');
           Parse._request(
-            'GET',
-            `push_audiences/${results.results[0].objectId}`,
-            {},
+            'PUT',
+            `push_audiences/${results.objectId}`,
+            { name: 'My Audience 2' },
             { useMasterKey: true }
-          ).then(results => {
-            expect(results.name).toEqual('My Audience');
-            expect(results.query.deviceType).toEqual('ios');
+          ).then(() => {
             Parse._request(
-              'PUT',
+              'GET',
               `push_audiences/${results.objectId}`,
-              { name: 'My Audience 2' },
+              {},
               { useMasterKey: true }
-            ).then(() => {
+            ).then(results => {
+              expect(results.name).toEqual('My Audience 2');
+              expect(results.query.deviceType).toEqual('ios');
               Parse._request(
-                'GET',
+                'DELETE',
                 `push_audiences/${results.objectId}`,
                 {},
                 { useMasterKey: true }
-              ).then(results => {
-                expect(results.name).toEqual('My Audience 2');
-                expect(results.query.deviceType).toEqual('ios');
-                Parse._request(
-                  'DELETE',
-                  `push_audiences/${results.objectId}`,
-                  {},
-                  { useMasterKey: true }
-                ).then(() => {
-                  Parse._request(
-                    'GET',
-                    'push_audiences',
-                    {},
-                    { useMasterKey: true }
-                  ).then(results => {
+              ).then(() => {
+                Parse._request('GET', 'push_audiences', {}, { useMasterKey: true }).then(
+                  results => {
                     expect(results.results.length).toEqual(0);
                     done();
-                  });
-                });
+                  }
+                );
               });
             });
           });
-        }
-      );
+        });
+      });
     });
   });
 
@@ -358,58 +317,54 @@ describe('AudiencesRouter', () => {
     );
   });
 
-  it_exclude_dbs(['postgres'])(
-    'should support legacy parse.com audience fields',
-    done => {
-      const database = Config.get(Parse.applicationId).database.adapter
-        .database;
-      const now = new Date();
-      Parse._request(
-        'POST',
-        'push_audiences',
-        { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
-        { useMasterKey: true }
-      ).then(audience => {
-        database.collection('test__Audience').updateOne(
-          { _id: audience.objectId },
-          {
-            $set: {
-              times_used: 1,
-              _last_used: now,
-            },
+  it_exclude_dbs(['postgres'])('should support legacy parse.com audience fields', done => {
+    const database = Config.get(Parse.applicationId).database.adapter.database;
+    const now = new Date();
+    Parse._request(
+      'POST',
+      'push_audiences',
+      { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
+      { useMasterKey: true }
+    ).then(audience => {
+      database.collection('test__Audience').updateOne(
+        { _id: audience.objectId },
+        {
+          $set: {
+            times_used: 1,
+            _last_used: now,
           },
-          {},
-          error => {
-            expect(error).toEqual(null);
-            database
-              .collection('test__Audience')
-              .find({ _id: audience.objectId })
-              .toArray((error, rows) => {
-                expect(error).toEqual(null);
-                expect(rows[0]['times_used']).toEqual(1);
-                expect(rows[0]['_last_used']).toEqual(now);
-                Parse._request(
-                  'GET',
-                  'push_audiences/' + audience.objectId,
-                  {},
-                  { useMasterKey: true }
-                )
-                  .then(audience => {
-                    expect(audience.name).toEqual('My Audience');
-                    expect(audience.query.deviceType).toEqual('ios');
-                    expect(audience.timesUsed).toEqual(1);
-                    expect(audience.lastUsed).toEqual(now.toISOString());
-                    done();
-                  })
-                  .catch(error => {
-                    done.fail(error);
-                  });
-              });
-          }
-        );
-      });
-    }
-  );
+        },
+        {},
+        error => {
+          expect(error).toEqual(null);
+          database
+            .collection('test__Audience')
+            .find({ _id: audience.objectId })
+            .toArray((error, rows) => {
+              expect(error).toEqual(null);
+              expect(rows[0]['times_used']).toEqual(1);
+              expect(rows[0]['_last_used']).toEqual(now);
+              Parse._request(
+                'GET',
+                'push_audiences/' + audience.objectId,
+                {},
+                { useMasterKey: true }
+              )
+                .then(audience => {
+                  expect(audience.name).toEqual('My Audience');
+                  expect(audience.query.deviceType).toEqual('ios');
+                  expect(audience.timesUsed).toEqual(1);
+                  expect(audience.lastUsed).toEqual(now.toISOString());
+                  done();
+                })
+                .catch(error => {
+                  done.fail(error);
+                });
+            });
+        }
+      );
+    });
+  });
 
   it('should be able to search on audiences', done => {
     Parse._request(

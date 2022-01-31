@@ -1,4 +1,5 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
+import { KeyPromiseQueue } from './KeyPromiseQueue';
 import { logger } from './logger';
 import rest from './rest';
 import Auth from './Auth';
@@ -6,7 +7,10 @@ import Auth from './Auth';
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
-const incrementOp = function(object = {}, key, amount = 1) {
+const pushPromiseQueue = new KeyPromiseQueue();
+const jobPromiseQueue = new KeyPromiseQueue();
+
+const incrementOp = function (object = {}, key, amount = 1) {
   if (!object[key]) {
     object[key] = { __op: 'Increment', amount: amount };
   } else {
@@ -28,22 +32,14 @@ export function flatten(array) {
 }
 
 function statusHandler(className, database) {
-  let lastPromise = Promise.resolve();
-
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return database.create(className, object).then(() => {
-        return Promise.resolve(object);
-      });
+    return database.create(className, object).then(() => {
+      return Promise.resolve(object);
     });
-    return lastPromise;
   }
 
   function update(where, object) {
-    lastPromise = lastPromise.then(() => {
-      return database.update(className, where, object);
-    });
-    return lastPromise;
+    return jobPromiseQueue.enqueue(where.objectId, () => database.update(className, where, object));
   }
 
   return Object.freeze({
@@ -53,31 +49,21 @@ function statusHandler(className, database) {
 }
 
 function restStatusHandler(className, config) {
-  let lastPromise = Promise.resolve();
   const auth = Auth.master(config);
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return rest
-        .create(config, auth, className, object)
-        .then(({ response }) => {
-          // merge the objects
-          return Promise.resolve(Object.assign({}, object, response));
-        });
+    return rest.create(config, auth, className, object).then(({ response }) => {
+      return { ...object, ...response };
     });
-    return lastPromise;
   }
 
   function update(where, object) {
-    // TODO: when we have updateWhere, use that for proper interfacing
-    lastPromise = lastPromise.then(() => {
-      return rest
+    return pushPromiseQueue.enqueue(where.objectId, () =>
+      rest
         .update(config, auth, className, { objectId: where.objectId }, object)
         .then(({ response }) => {
-          // merge the objects
-          return Promise.resolve(Object.assign({}, object, response));
-        });
-    });
-    return lastPromise;
+          return { ...object, ...response };
+        })
+    );
   }
 
   return Object.freeze({
@@ -91,7 +77,7 @@ export function jobStatusHandler(config) {
   const objectId = newObjectId(config.objectIdSize);
   const database = config.database;
   const handler = statusHandler(JOB_STATUS_COLLECTION, database);
-  const setRunning = function(jobName, params) {
+  const setRunning = function (jobName, params) {
     const now = new Date();
     jobStatus = {
       objectId,
@@ -107,26 +93,29 @@ export function jobStatusHandler(config) {
     return handler.create(jobStatus);
   };
 
-  const setMessage = function(message) {
+  const setMessage = function (message) {
     if (!message || typeof message !== 'string') {
       return Promise.resolve();
     }
     return handler.update({ objectId }, { message });
   };
 
-  const setSucceeded = function(message) {
+  const setSucceeded = function (message) {
     return setFinalStatus('succeeded', message);
   };
 
-  const setFailed = function(message) {
+  const setFailed = function (message) {
     return setFinalStatus('failed', message);
   };
 
-  const setFinalStatus = function(status, message = undefined) {
+  const setFinalStatus = function (status, message = undefined) {
     const finishedAt = new Date();
     const update = { status, finishedAt };
     if (message && typeof message === 'string') {
       update.message = message;
+    }
+    if (message instanceof Error && typeof message.message === 'string') {
+      update.message = message.message;
     }
     return handler.update({ objectId }, update);
   };
@@ -144,7 +133,7 @@ export function pushStatusHandler(config, existingObjectId) {
   const database = config.database;
   const handler = restStatusHandler(PUSH_STATUS_COLLECTION, config);
   let objectId = existingObjectId;
-  const setInitial = function(body = {}, where, options = { source: 'rest' }) {
+  const setInitial = function (body = {}, where, options = { source: 'rest' }) {
     const now = new Date();
     let pushTime = now.toISOString();
     let status = 'pending';
@@ -153,9 +142,7 @@ export function pushStatusHandler(config, existingObjectId) {
         pushTime = body.push_time;
         status = 'scheduled';
       } else {
-        logger.warn(
-          'Trying to schedule a push while server is not configured.'
-        );
+        logger.warn('Trying to schedule a push while server is not configured.');
         logger.warn('Push will be sent immediately');
       }
     }
@@ -193,7 +180,7 @@ export function pushStatusHandler(config, existingObjectId) {
     });
   };
 
-  const setRunning = function(batches) {
+  const setRunning = function (batches) {
     logger.verbose(
       `_PushStatus ${objectId}: sending push to installations with %d batches`,
       batches
@@ -210,11 +197,10 @@ export function pushStatusHandler(config, existingObjectId) {
     );
   };
 
-  const trackSent = function(
+  const trackSent = function (
     results,
     UTCOffset,
-    cleanupInstallations = process.env
-      .PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
+    cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
   ) {
     const update = {
       numSent: 0,
@@ -286,9 +272,7 @@ export function pushStatusHandler(config, existingObjectId) {
     });
 
     if (devicesToRemove.length > 0 && cleanupInstallations) {
-      logger.info(
-        `Removing device tokens on ${devicesToRemove.length} _Installations`
-      );
+      logger.info(`Removing device tokens on ${devicesToRemove.length} _Installations`);
       database.update(
         '_Installation',
         { deviceToken: { $in: devicesToRemove } },
@@ -299,9 +283,8 @@ export function pushStatusHandler(config, existingObjectId) {
         }
       );
     }
-
-    // indicate this batch is complete
     incrementOp(update, 'count', -1);
+    update.status = 'running';
 
     return handler.update({ objectId }, update).then(res => {
       if (res && res.count === 0) {
@@ -310,7 +293,7 @@ export function pushStatusHandler(config, existingObjectId) {
     });
   };
 
-  const complete = function() {
+  const complete = function () {
     return handler.update(
       { objectId },
       {
@@ -320,7 +303,7 @@ export function pushStatusHandler(config, existingObjectId) {
     );
   };
 
-  const fail = function(err) {
+  const fail = function (err) {
     if (typeof err === 'string') {
       err = { message: err };
     }

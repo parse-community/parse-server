@@ -4,17 +4,15 @@ const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills if this user mail is valid.
 function validateAuthData(authData) {
-  return request('me', authData.access_token).then(
-    response => {
-      if (response && response.id && response.id == authData.id) {
-        return;
-      }
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Microsoft Graph auth is invalid for this user.'
-      );
+  return request('me', authData.access_token).then(response => {
+    if (response && response.id && response.id == authData.id) {
+      return;
     }
-  );
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Microsoft Graph auth is invalid for this user.'
+    );
+  });
 }
 
 // Returns a promise that fulfills if this app id is valid.

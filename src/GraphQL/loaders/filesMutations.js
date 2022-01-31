@@ -14,7 +14,7 @@ const handleUpload = async (upload, config) => {
       const chunks = [];
       stream
         .on('error', reject)
-        .on('data', (chunk) => chunks.push(chunk))
+        .on('data', chunk => chunks.push(chunk))
         .on('end', () => resolve(Buffer.concat(chunks)));
     });
   }
@@ -28,35 +28,23 @@ const handleUpload = async (upload, config) => {
   }
 
   if (!filename.match(/^[_a-zA-Z0-9][a-zA-Z0-9@\.\ ~_-]*$/)) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_FILE_NAME,
-      'Filename contains invalid characters.'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename contains invalid characters.');
   }
 
   try {
     return {
-      fileInfo: await config.filesController.createFile(
-        config,
-        filename,
-        data,
-        mimetype
-      ),
+      fileInfo: await config.filesController.createFile(config, filename, data, mimetype),
     };
   } catch (e) {
     logger.error('Error creating a file: ', e);
-    throw new Parse.Error(
-      Parse.Error.FILE_SAVE_ERROR,
-      `Could not store file: ${filename}.`
-    );
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `Could not store file: ${filename}.`);
   }
 };
 
-const load = (parseGraphQLSchema) => {
+const load = parseGraphQLSchema => {
   const createMutation = mutationWithClientMutationId({
     name: 'CreateFile',
-    description:
-      'The createFile mutation can be used to create and upload a new file.',
+    description: 'The createFile mutation can be used to create and upload a new file.',
     inputFields: {
       upload: {
         description: 'This is the new file to be created and uploaded.',
@@ -80,18 +68,9 @@ const load = (parseGraphQLSchema) => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(
-    createMutation.args.input.type.ofType,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLType(createMutation.args.input.type.ofType, true, true);
   parseGraphQLSchema.addGraphQLType(createMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation(
-    'createFile',
-    createMutation,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLMutation('createFile', createMutation, true, true);
 };
 
 export { load, handleUpload };

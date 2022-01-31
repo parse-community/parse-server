@@ -14,20 +14,23 @@ const authData = {
 const { Parse } = require('parse/node');
 const crypto = require('crypto');
 const https = require('https');
-const url = require('url');
 
 const cache = {}; // (publicKey -> cert) cache
 
 function verifyPublicKeyUrl(publicKeyUrl) {
-  const parsedUrl = url.parse(publicKeyUrl);
-  if (parsedUrl.protocol !== 'https:') {
+  try {
+    const parsedUrl = new URL(publicKeyUrl);
+    if (parsedUrl.protocol !== 'https:') {
+      return false;
+    }
+    const hostnameParts = parsedUrl.hostname.split('.');
+    const length = hostnameParts.length;
+    const domainParts = hostnameParts.slice(length - 2, length);
+    const domain = domainParts.join('.');
+    return domain === 'apple.com';
+  } catch(error) {
     return false;
   }
-  const hostnameParts = parsedUrl.hostname.split('.');
-  const length = hostnameParts.length;
-  const domainParts = hostnameParts.slice(length - 2, length);
-  const domain = domainParts.join('.');
-  return domain === 'apple.com';
 }
 
 function convertX509CertToPEM(X509Cert) {
@@ -96,20 +99,14 @@ function verifySignature(publicKey, authData) {
   verifier.update(authData.salt, 'base64');
 
   if (!verifier.verify(publicKey, authData.signature, 'base64')) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Apple Game Center - invalid signature'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Apple Game Center - invalid signature');
   }
 }
 
 // Returns a promise that fulfills if this user id is valid.
 async function validateAuthData(authData) {
   if (!authData.id) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Apple Game Center - authData id missing'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Apple Game Center - authData id missing');
   }
   authData.playerId = authData.id;
   const publicKey = await getAppleCertificate(authData.publicKeyUrl);

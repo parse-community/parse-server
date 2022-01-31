@@ -1,12 +1,11 @@
 const request = require('../lib/request');
 const Config = require('../lib/Config');
-const defaultColumns = require('../lib/Controllers/SchemaController')
-  .defaultColumns;
+const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
   gpgames: { playerId: 'userId' },
-  instagram: { data: { id: 'userId' } },
+  instagram: { id: 'userId' },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
   janraincapture: { stat: 'ok', result: 'userId' },
   line: { userId: 'userId' },
@@ -49,10 +48,7 @@ describe('AuthenticationProviders', function () {
       jequal(typeof provider.validateAppId, 'function');
       const validateAuthDataPromise = provider.validateAuthData({}, {});
       const validateAppIdPromise = provider.validateAppId('app', 'key', {});
-      jequal(
-        validateAuthDataPromise.constructor,
-        Promise.prototype.constructor
-      );
+      jequal(validateAuthDataPromise.constructor, Promise.prototype.constructor);
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
       validateAuthDataPromise.then(
         () => {},
@@ -70,23 +66,20 @@ describe('AuthenticationProviders', function () {
       if (noResponse.includes(providerName)) {
         return;
       }
-      spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(
-        options => {
-          if (
-            options ===
-            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.59&grant_type=client_credentials'
-          ) {
-            return {
-              access_token: 'access_token',
-            };
-          }
-          return Promise.resolve(responses[providerName] || { id: 'userId' });
+      spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(options => {
+        if (
+          options ===
+            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
+          options ===
+            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
+        ) {
+          return {
+            access_token: 'access_token',
+          };
         }
-      );
-      spyOn(
-        require('../lib/Adapters/Auth/httpsRequest'),
-        'request'
-      ).and.callFake(() => {
+        return Promise.resolve(responses[providerName] || { id: 'userId' });
+      });
+      spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'request').and.callFake(() => {
         return Promise.resolve(responses[providerName] || { id: 'userId' });
       });
       const provider = require('../lib/Adapters/Auth/' + providerName);
@@ -96,6 +89,8 @@ describe('AuthenticationProviders', function () {
           appIds: 'appId',
           appSecret: 'appSecret',
         };
+        await provider.validateAuthData({ id: 'userId' }, params);
+        params.appVersion = '5.123';
       }
       await provider.validateAuthData({ id: 'userId' }, params);
     });
@@ -270,10 +265,7 @@ describe('AuthenticationProviders', function () {
     ok(model.extended(), 'Should have used the subclass.');
     strictEqual(provider.authData.id, provider.synchronizedUserId);
     strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-    strictEqual(
-      provider.authData.expiration_date,
-      provider.synchronizedExpiration
-    );
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
     ok(model._isLinked('myoauth'), 'User should be linked to myoauth');
 
     await model._unlinkFrom('myoauth');
@@ -286,11 +278,7 @@ describe('AuthenticationProviders', function () {
     const res = await config.database.adapter.find(
       '_User',
       {
-        fields: Object.assign(
-          {},
-          defaultColumns._Default,
-          defaultColumns._Installation
-        ),
+        fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
       },
       { objectId: model.id },
       {}
@@ -313,12 +301,8 @@ describe('AuthenticationProviders', function () {
 
   function validateAuthenticationHandler(authenticationHandler) {
     expect(authenticationHandler).not.toBeUndefined();
-    expect(typeof authenticationHandler.getValidatorForProvider).toBe(
-      'function'
-    );
-    expect(typeof authenticationHandler.getValidatorForProvider).toBe(
-      'function'
-    );
+    expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
+    expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
   }
 
   function validateAuthenticationAdapter(authAdapter) {
@@ -340,10 +324,7 @@ describe('AuthenticationProviders', function () {
         return Promise.resolve();
       },
       validateAuthData: function (authData) {
-        if (
-          authData.id == validAuthData.id &&
-          authData.token == validAuthData.token
-        ) {
+        if (authData.id == validAuthData.id && authData.token == validAuthData.token) {
           return Promise.resolve();
         }
         return Promise.reject();
@@ -358,9 +339,7 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
-    );
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator(validAuthData).then(
@@ -383,9 +362,7 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
-    );
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator({
@@ -410,9 +387,7 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
-    );
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator({
@@ -435,11 +410,10 @@ describe('AuthenticationProviders', function () {
         appSecret: 'secret',
       },
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('facebook', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.facebook);
@@ -459,15 +433,12 @@ describe('AuthenticationProviders', function () {
     const authData = {
       access_token: 'badtoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('facebook', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
     await adapter.validateAppId(appIds, authData, providerOptions);
-    expect(
-      httpsRequest.get.calls.first().args[0].includes('appsecret_proof')
-    ).toBe(true);
+    expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
   });
 
   it('should handle Facebook appSecret for validating auth data', async () => {
@@ -485,14 +456,9 @@ describe('AuthenticationProviders', function () {
       id: 'test',
       access_token: 'test',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebook',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('facebook', options);
     await adapter.validateAuthData(authData, providerOptions);
-    expect(
-      httpsRequest.get.calls.first().args[0].includes('appsecret_proof')
-    ).toBe(true);
+    expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
   });
 
   it('properly loads a custom adapter with options', () => {
@@ -503,11 +469,10 @@ describe('AuthenticationProviders', function () {
         appIds: ['a', 'b'],
       },
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('custom', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'custom',
+      options
+    );
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
@@ -522,15 +487,20 @@ describe('instagram auth adapter', () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
       return Promise.resolve({ data: { id: 'userId' } });
     });
-    await instagram.validateAuthData(
-      { id: 'userId', access_token: 'the_token' },
-      {}
-    );
+    await instagram.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
     expect(httpsRequest.get).toHaveBeenCalledWith(
       'https://graph.instagram.com/me?fields=id&access_token=the_token'
     );
   });
-
+  it('response object without data child', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'userId' });
+    });
+    await instagram.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://graph.instagram.com/me?fields=id&access_token=the_token'
+    );
+  });
   it('should pass in api url', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
       return Promise.resolve({ data: { id: 'userId' } });
@@ -564,10 +534,7 @@ describe('google auth adapter', () => {
 
   it('should not decode invalid id_token', async () => {
     try {
-      await google.validateAuthData(
-        { id: 'the_user_id', id_token: 'the_token' },
-        {}
-      );
+      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
       fail();
     } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
@@ -697,9 +664,7 @@ describe('google play games service auth', () => {
         access_token: 'access_token',
       });
     } catch (e) {
-      expect(e.message).toBe(
-        'Google Play Games Services - authData is invalid for this user.'
-      );
+      expect(e.message).toBe('Google Play Games Services - authData is invalid for this user.');
     }
   });
 });
@@ -742,10 +707,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -772,10 +734,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -802,10 +761,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -830,10 +786,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -866,10 +819,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -902,10 +852,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
@@ -938,10 +885,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'keycloak',
-      options
-    );
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     await adapter.validateAuthData(authData, providerOptions);
     expect(httpsRequest.get).toHaveBeenCalledWith({
       host: 'http://example.com',
@@ -963,10 +907,7 @@ describe('oauth2 auth adapter', () => {
         oauth2: true,
       },
     };
-    const loadedAuthAdapter = authenticationLoader.loadAuthAdapter(
-      'oauth2Authentication',
-      options
-    );
+    const loadedAuthAdapter = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
     expect(loadedAuthAdapter.adapter).toEqual(oauth2);
   });
 
@@ -982,21 +923,14 @@ describe('oauth2 auth adapter', () => {
         debug: true,
       },
     };
-    const loadedAuthAdapter = authenticationLoader.loadAuthAdapter(
-      'oauth2Authentication',
-      options
-    );
+    const loadedAuthAdapter = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
     const appIds = loadedAuthAdapter.appIds;
     const providerOptions = loadedAuthAdapter.providerOptions;
-    expect(providerOptions.tokenIntrospectionEndpointUrl).toEqual(
-      'https://example.com/introspect'
-    );
+    expect(providerOptions.tokenIntrospectionEndpointUrl).toEqual('https://example.com/introspect');
     expect(providerOptions.useridField).toEqual('sub');
     expect(providerOptions.appidField).toEqual('appId');
     expect(appIds).toEqual(['a', 'b']);
-    expect(providerOptions.authorizationHeader).toEqual(
-      'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
-    );
+    expect(providerOptions.authorizationHeader).toEqual('Basic dXNlcm5hbWU6cGFzc3dvcmQ=');
     expect(providerOptions.debug).toEqual(true);
   });
 
@@ -1012,11 +946,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
     } catch (e) {
@@ -1037,11 +970,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
     } catch (e) {
@@ -1062,11 +994,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
     } catch (e) {
@@ -1089,11 +1020,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
     } catch (e) {
@@ -1116,11 +1046,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     spyOn(httpsRequest, 'request').and.callFake(() => {
       return Promise.resolve({});
     });
@@ -1144,11 +1073,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     spyOn(httpsRequest, 'request').and.callFake(() => {
       return Promise.resolve({ active: true });
     });
@@ -1174,11 +1102,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     spyOn(httpsRequest, 'request').and.callFake(() => {
       return Promise.resolve({
         active: true,
@@ -1206,11 +1133,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     spyOn(httpsRequest, 'request').and.callFake(() => {
       return Promise.resolve({
         active: true,
@@ -1238,11 +1164,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
     spyOn(httpsRequest, 'request').and.callFake(() => {
       return Promise.resolve({
         active: true,
@@ -1471,9 +1396,7 @@ describe('apple signin auth adapter', () => {
       { clientId: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
-    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(
-      fakeDecodedToken.header.alg
-    );
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
   });
 
   it('should not verify invalid id_token', async () => {
@@ -1781,9 +1704,25 @@ describe('Apple Game Center Auth adapter', () => {
       await gcenter.validateAuthData(authData);
       fail();
     } catch (e) {
-      expect(e.message).toBe(
-        'Apple Game Center - invalid publicKeyUrl: invalid.com'
-      );
+      expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: invalid.com');
+    }
+  });
+
+  it('validateAuthData invalid public key http url', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'http://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: http://static.gc.apple.com/public-key/gc-prod-4.cer');
     }
   });
 });
@@ -1798,9 +1737,7 @@ describe('phant auth adapter', () => {
     };
     const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
 
-    spyOn(httpsRequest, 'get').and.callFake(() =>
-      Promise.resolve({ sub: 'invalidID' })
-    );
+    spyOn(httpsRequest, 'get').and.callFake(() => Promise.resolve({ sub: 'invalidID' }));
     try {
       await adapter.validateAuthData(authData);
       fail();
@@ -1831,11 +1768,393 @@ describe('microsoft graph auth adapter', () => {
       access_token: 'very.long.bad.token',
     };
     microsoft.validateAuthData(authData).then(done.fail, err => {
-      expect(err.code).toBe(101);
-      expect(err.message).toBe(
-        'Microsoft Graph auth is invalid for this user.'
-      );
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(err.message).toBe('Microsoft Graph auth is invalid for this user.');
       done();
     });
+  });
+});
+
+describe('facebook limited auth adapter', () => {
+  const facebook = require('../lib/Adapters/Auth/facebook');
+  const jwt = require('jsonwebtoken');
+  const util = require('util');
+
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as string) should throw error with missing id_token', async () => {
+    try {
+      await facebook.validateAuthData({}, { clientId: 'secret' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
+
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as array) should throw error with missing id_token', async () => {
+    try {
+      await facebook.validateAuthData({}, { clientId: ['secret'] });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
+
+  it('should not decode invalid id_token', async () => {
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('should throw error if public key used to encode token is not available', async () => {
+    const fakeDecodedToken = {
+      header: { kid: '789', alg: 'RS256' },
+    };
+    try {
+      spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
+      );
+    }
+  });
+
+  it('should use algorithm from key header to verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+  });
+
+  it('should not verify invalid id_token', async () => {
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt malformed');
+    }
+  });
+
+  it('(using client id as array) should not verify invalid id_token', async () => {
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('(using client id as string) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as array) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as array with multiple items) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret', 'secret 123'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as array) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: ['INSERT CLIENT ID HERE'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('should throw error with invalid user id', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'invalid user',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('should throw error with with invalid user id', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'invalid_client_id',
+      sub: 'a_different_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
   });
 });

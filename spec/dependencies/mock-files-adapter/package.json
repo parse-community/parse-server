@@ -1,0 +1,6 @@
+{
+  "name": "mock-files-adapter",
+  "version": "1.0.0",
+  "description": "Mock files adapter for tests.",
+  "main": "index.js"
+}

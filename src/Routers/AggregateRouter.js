@@ -3,45 +3,11 @@ import rest from '../rest';
 import * as middleware from '../middlewares';
 import Parse from 'parse/node';
 import UsersRouter from './UsersRouter';
-
-const BASE_KEYS = ['where', 'distinct', 'pipeline', 'hint', 'explain'];
-
-const PIPELINE_KEYS = [
-  'addFields',
-  'bucket',
-  'bucketAuto',
-  'collStats',
-  'count',
-  'currentOp',
-  'facet',
-  'geoNear',
-  'graphLookup',
-  'group',
-  'indexStats',
-  'limit',
-  'listLocalSessions',
-  'listSessions',
-  'lookup',
-  'match',
-  'out',
-  'project',
-  'redact',
-  'replaceRoot',
-  'sample',
-  'skip',
-  'sort',
-  'sortByCount',
-  'unwind',
-];
-
-const ALLOWED_KEYS = [...BASE_KEYS, ...PIPELINE_KEYS];
+import Deprecator from '../Deprecator/Deprecator';
 
 export class AggregateRouter extends ClassesRouter {
   handleFind(req) {
-    const body = Object.assign(
-      req.body,
-      ClassesRouter.JSONFromQuery(req.query)
-    );
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
     if (body.distinct) {
       options.distinct = String(body.distinct);
@@ -118,49 +84,44 @@ export class AggregateRouter extends ClassesRouter {
     return pipeline.map(stage => {
       const keys = Object.keys(stage);
       if (keys.length != 1) {
-        throw new Error(
-          `Pipeline stages should only have one key found ${keys.join(', ')}`
-        );
+        throw new Error(`Pipeline stages should only have one key found ${keys.join(', ')}`);
       }
       return AggregateRouter.transformStage(keys[0], stage);
     });
   }
 
   static transformStage(stageName, stage) {
-    if (ALLOWED_KEYS.indexOf(stageName) === -1) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        `Invalid parameter for query: ${stageName}`
-      );
-    }
     if (stageName === 'group') {
-      if (Object.prototype.hasOwnProperty.call(stage[stageName], '_id')) {
+      if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
+        Deprecator.logRuntimeDeprecation({
+          usage: 'The use of objectId in aggregation stage $group',
+          solution: 'Use _id instead.',
+        });
+        stage[stageName]._id = stage[stageName].objectId;
+        delete stage[stageName].objectId;
+      }
+      if (!Object.prototype.hasOwnProperty.call(stage[stageName], '_id')) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
-          `Invalid parameter for query: group. Please use objectId instead of _id`
+          `Invalid parameter for query: group. Missing key _id`
         );
       }
-      if (!Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Invalid parameter for query: group. objectId is required`
-        );
-      }
-      stage[stageName]._id = stage[stageName].objectId;
-      delete stage[stageName].objectId;
     }
-    return { [`$${stageName}`]: stage[stageName] };
+
+    if (stageName[0] !== '$') {
+      Deprecator.logRuntimeDeprecation({
+        usage: "Using aggregation stages without a leading '$'",
+        solution: `Try $${stageName} instead.`,
+      });
+    }
+    const key = stageName[0] === '$' ? stageName : `$${stageName}`;
+    return { [key]: stage[stageName] };
   }
 
   mountRoutes() {
-    this.route(
-      'GET',
-      '/aggregate/:className',
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.handleFind(req);
-      }
-    );
+    this.route('GET', '/aggregate/:className', middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.handleFind(req);
+    });
   }
 }
 
