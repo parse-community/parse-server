@@ -5,6 +5,7 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
+const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
 
 let config;
 
@@ -237,6 +238,52 @@ describe('schemas', () => {
           done();
         });
       });
+  });
+
+  it('ensure refresh cache after creating a class', async done => {
+    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'A',
+      },
+    });
+    const response = await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'GET',
+      headers: masterKeyHeaders,
+      json: true,
+    });
+    const expected = {
+      results: [
+        userSchema,
+        roleSchema,
+        {
+          className: 'A',
+          fields: {
+            //Default fields
+            ACL: { type: 'ACL' },
+            createdAt: { type: 'Date' },
+            updatedAt: { type: 'Date' },
+            objectId: { type: 'String' },
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+        },
+      ],
+    };
+    expect(
+      response.data.results
+        .sort((s1, s2) => s1.className.localeCompare(s2.className))
+        .map(s => {
+          const withoutIndexes = Object.assign({}, s);
+          delete withoutIndexes.indexes;
+          return withoutIndexes;
+        })
+    ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
+    done();
   });
 
   it('responds with a single schema', done => {
@@ -1505,6 +1552,46 @@ describe('schemas', () => {
       expect(response.data).toEqual({});
       done();
     });
+  });
+
+  it('ensure refresh cache after deleting a class', async done => {
+    config = Config.get('test');
+    spyOn(config.schemaCache, 'del').and.callFake(() => {});
+    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'A',
+      },
+    });
+    await request({
+      method: 'DELETE',
+      url: 'http://localhost:8378/1/schemas/A',
+      headers: masterKeyHeaders,
+      json: true,
+    });
+    const response = await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'GET',
+      headers: masterKeyHeaders,
+      json: true,
+    });
+    const expected = {
+      results: [userSchema, roleSchema],
+    };
+    expect(
+      response.data.results
+        .sort((s1, s2) => s1.className.localeCompare(s2.className))
+        .map(s => {
+          const withoutIndexes = Object.assign({}, s);
+          delete withoutIndexes.indexes;
+          return withoutIndexes;
+        })
+    ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
+    done();
   });
 
   it('deletes collections including join tables', done => {
