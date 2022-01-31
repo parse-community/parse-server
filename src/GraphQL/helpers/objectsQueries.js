@@ -12,9 +12,7 @@ const needToGetAllKeys = (fields, keys, parseClasses) =>
         if (fields[key[0]]) {
           if (fields[key[0]].type === 'Relation') return false;
           if (fields[key[0]].type === 'Pointer') {
-            const subClass = parseClasses.find(
-              ({ className: parseClassName }) => fields[key[0]].targetClass === parseClassName
-            );
+            const subClass = parseClasses[fields[key[0]].targetClass];
             if (subClass && subClass.fields[key[1]]) {
               // Current sub key is not custom
               return false;
@@ -47,14 +45,12 @@ const getObject = async (
   parseClasses
 ) => {
   const options = {};
-  if (
-    !needToGetAllKeys(
-      parseClasses.find(({ className: parseClassName }) => className === parseClassName).fields,
-      keys,
-      parseClasses
-    )
-  ) {
-    options.keys = keys;
+  try {
+    if (!needToGetAllKeys(parseClasses[className].fields, keys, parseClasses)) {
+      options.keys = keys;
+    }
+  } catch (e) {
+    console.log(e);
   }
   if (include) {
     options.include = include;
@@ -161,13 +157,7 @@ const findObjects = async (
         // Silently replace the limit on the query with the max configured
         options.limit = config.maxLimit;
       }
-      if (
-        !needToGetAllKeys(
-          parseClasses.find(({ className: parseClassName }) => className === parseClassName).fields,
-          keys,
-          parseClasses
-        )
-      ) {
+      if (!needToGetAllKeys(parseClasses[className].fields, keys, parseClasses)) {
         options.keys = keys;
       }
       if (includeAll === true) {
