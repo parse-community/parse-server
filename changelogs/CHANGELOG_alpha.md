@@ -1,3 +1,22 @@
+# [5.0.0-alpha.23](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.22...5.0.0-alpha.23) (2022-02-06)
+
+
+### Bug Fixes
+
+* server crash using GraphQL due to missing @apollo/client peer dependency ([#7787](https://github.com/parse-community/parse-server/issues/7787)) ([08089d6](https://github.com/parse-community/parse-server/commit/08089d6fcbb215412448ce7d92b21b9fe6c929f2))
+
+# [5.0.0-alpha.22](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.21...5.0.0-alpha.22) (2022-02-06)
+
+
+### Features
+
+* upgrade to MongoDB Node.js driver 4.x for MongoDB 5.0 support ([#7794](https://github.com/parse-community/parse-server/issues/7794)) ([f88aa2a](https://github.com/parse-community/parse-server/commit/f88aa2a62a533e5344d1c13dd38c5a0b283a480a))
+
+
+### BREAKING CHANGES
+
+* The MongoDB GridStore adapter has been removed. By default, Parse Server already uses GridFS, so if you do not manually use the GridStore adapter, you can ignore this change. ([f88aa2a](f88aa2a))
+
 # [5.0.0-alpha.21](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.20...5.0.0-alpha.21) (2022-01-25)
 
 
