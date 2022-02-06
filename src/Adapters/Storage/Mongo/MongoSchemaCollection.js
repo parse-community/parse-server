@@ -177,7 +177,7 @@ class MongoSchemaCollection {
   insertSchema(schema: any) {
     return this._collection
       .insertOne(schema)
-      .then(result => mongoSchemaToParseSchema(result.ops[0]))
+      .then(() => mongoSchemaToParseSchema(schema))
       .catch(error => {
         if (error.code === 11000) {
           //Mongo's duplicate key error
