@@ -1,3 +1,10 @@
+# [5.0.0-alpha.23](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.22...5.0.0-alpha.23) (2022-02-06)
+
+
+### Bug Fixes
+
+* server crash using GraphQL due to missing @apollo/client peer dependency ([#7787](https://github.com/parse-community/parse-server/issues/7787)) ([08089d6](https://github.com/parse-community/parse-server/commit/08089d6fcbb215412448ce7d92b21b9fe6c929f2))
+
 # [5.0.0-alpha.22](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.21...5.0.0-alpha.22) (2022-02-06)
 
 
