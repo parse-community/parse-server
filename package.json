@@ -34,7 +34,7 @@
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.17.1",
-    "follow-redirects": "1.13.0",
+    "follow-redirects": "1.14.8",
     "graphql": "15.4.0",
     "graphql-list-fields": "2.0.2",
     "graphql-relay": "0.6.0",
