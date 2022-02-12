@@ -1,7 +1,7 @@
 name: release-automated
 on:
   push:
-    branches: [ release, alpha, beta, next-major, release-[0-9].x.x ]
+    branches: [ release, alpha, beta, next-major, release-4.x.x ]
 jobs:
   release:
     runs-on: ubuntu-latest
