@@ -1,9 +1,7 @@
-# Parse Server Changelog
-
-## 4.10.4
+# 4.10.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.3...4.10.4)
 
-### Security Fixes
+## Security Fixes
 - Strip out sessionToken when LiveQuery is used on Parse.User (Daniel Blyth) [GHSA-7pr3-p5fm-8r9x](https://github.com/parse-community/parse-server/security/advisories/GHSA-7pr3-p5fm-8r9x)
 
 # 4.10.3
