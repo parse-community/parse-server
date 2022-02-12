@@ -1,5 +1,3 @@
-# Parse Server Changelog
-
 ## 4.10.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.10.3...4.10.4)
 
