@@ -1,3 +1,10 @@
+## [4.10.6](https://github.com/parse-community/parse-server/compare/4.10.5...4.10.6) (2022-02-12)
+
+
+### Bug Fixes
+
+* update graphql dependencies to work with Parse Dashboard ([#7658](https://github.com/parse-community/parse-server/issues/7658)) ([350ecde](https://github.com/parse-community/parse-server/commit/350ecdee590f1b9d721895b2c79306c01622c3fc))
+
 ## [4.10.5](https://github.com/parse-community/parse-server/compare/4.10.4...4.10.5) (2022-02-12)
 
 
