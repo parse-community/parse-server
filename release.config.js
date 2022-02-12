@@ -43,9 +43,9 @@ async function config() {
       // Long-Term-Support branches
       { name: 'release-4.x.x', range: '4.x.x', channel: '4.x.x' },
     ],
-    dryRun: true,
+    dryRun: false,
     debug: true,
-    ci: false,
+    ci: true,
     tagFormat: '${version}',
     plugins: [
       ['@semantic-release/commit-analyzer', {
