@@ -410,6 +410,56 @@ describe('Parse.Relation testing', () => {
     });
   });
 
+  it('or queries with base constraint on relation field', done => {
+    const ChildObject = Parse.Object.extend('ChildObject');
+    const childObjects = [];
+    for (let i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({ x: i }));
+    }
+
+    Parse.Object.saveAll(childObjects).then(() => {
+      const ParentObject = Parse.Object.extend('ParentObject');
+      const parent = new ParentObject();
+      parent.set('x', 4);
+      const relation = parent.relation('toChilds');
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
+
+      const parent2 = new ParentObject();
+      parent2.set('x', 3);
+      const relation2 = parent2.relation('toChilds');
+      relation2.add(childObjects[0]);
+      relation2.add(childObjects[1]);
+      relation2.add(childObjects[2]);
+
+      const parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      parents.push(new ParentObject());
+
+      return Parse.Object.saveAll(parents).then(() => {
+        const query1 = new Parse.Query(ParentObject);
+        query1.equalTo('x', 4);
+        const query2 = new Parse.Query(ParentObject);
+        query2.equalTo('x', 3);
+
+        const query = Parse.Query.or(query1, query2);
+        query.equalTo('toChilds', childObjects[2]);
+
+        return query.find().then(list => {
+          const objectIds = list.map(function (item) {
+            return item.id;
+          });
+          expect(objectIds.indexOf(parent.id)).not.toBe(-1);
+          expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
+          equal(list.length, 2, 'There should be 2 results');
+          done();
+        });
+      });
+    });
+  });
+
   it('Get query on relation using un-fetched parent object', done => {
     // Setup data model
     const Wheel = Parse.Object.extend('Wheel');
