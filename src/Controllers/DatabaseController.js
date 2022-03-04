@@ -14,6 +14,7 @@ import logger from '../logger';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
+import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
@@ -394,12 +395,14 @@ const relationSchema = {
 
 class DatabaseController {
   adapter: StorageAdapter;
+  idempotencyOptions: any;
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
 
-  constructor(adapter: StorageAdapter) {
+  constructor(adapter: StorageAdapter, idempotencyOptions?: Object = {}) {
     this.adapter = adapter;
+    this.idempotencyOptions = idempotencyOptions;
     // We don't want a mutable this.schema, because then you could have
     // one request that uses different schemas for different parts of
     // it. Instead, use loadSchema to get a schema.
@@ -894,7 +897,7 @@ class DatabaseController {
       if (object[field] && object[field].__op && object[field].__op === 'Delete') {
         return false;
       }
-      return schemaFields.indexOf(field) < 0;
+      return schemaFields.indexOf(getRootFieldName(field)) < 0;
     });
     if (newKeys.length > 0) {
       // adds a marker that new field is being adding during update
@@ -972,9 +975,9 @@ class DatabaseController {
       });
     }
     if (query['$and']) {
-      const ors = query['$and'];
+      const ands = query['$and'];
       return Promise.all(
-        ors.map((aQuery, index) => {
+        ands.map((aQuery, index) => {
           return this.reduceInRelation(className, aQuery, schema).then(aQuery => {
             query['$and'][index] = aQuery;
           });
@@ -1713,9 +1716,7 @@ class DatabaseController {
     };
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
-    if (this.adapter instanceof MongoStorageAdapter) {
-      await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
-    }
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
@@ -1751,18 +1752,28 @@ class DatabaseController {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
       throw error;
     });
-    if (this.adapter instanceof MongoStorageAdapter) {
-      await this.adapter
-        .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
-        .catch(error => {
-          logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
-          throw error;
-        });
 
-      await this.adapter
-        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, {
+    await this.adapter
+      .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
+      .catch(error => {
+        logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
+        throw error;
+      });
+
+    const isMongoAdapter = this.adapter instanceof MongoStorageAdapter;
+    const isPostgresAdapter = this.adapter instanceof PostgresStorageAdapter;
+    if (isMongoAdapter || isPostgresAdapter) {
+      let options = {};
+      if (isMongoAdapter) {
+        options = {
           ttl: 0,
-        })
+        };
+      } else if (isPostgresAdapter) {
+        options = this.idempotencyOptions;
+        options.setIdempotencyFunction = true;
+      }
+      await this.adapter
+        .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, options)
         .catch(error => {
           logger.warn('Unable to create TTL index for idempotency expire date: ', error);
           throw error;
