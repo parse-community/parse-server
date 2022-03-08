@@ -1,6 +1,7 @@
 import { GraphQLNonNull } from 'graphql';
 import { fromGlobalId, mutationWithClientMutationId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
+import deepcopy from 'deepcopy';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import { extractKeysAndInclude, getParseClassMutationConfig } from '../parseGraphQLUtils';
 import * as objectsMutations from '../helpers/objectsMutations';
@@ -8,6 +9,14 @@ import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformTypes } from '../transformers/mutation';
+
+const filterDeletedFields = fields =>
+  Object.keys(fields).reduce((acc, key) => {
+    if (typeof fields[key] === 'object' && fields[key]?.__op === 'Delete') {
+      acc[key] = null;
+    }
+    return acc;
+  }, fields);
 
 const getOnlyRequiredFields = (
   updatedFields,
@@ -66,7 +75,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       },
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
-          let { fields } = args;
+          let { fields } = deepcopy(args);
           if (!fields) fields = {};
           const { config, auth, info } = context;
 
@@ -130,7 +139,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             [getGraphQLQueryName]: {
               ...createdObject,
               updatedAt: createdObject.createdAt,
-              ...parseFields,
+              ...filterDeletedFields(parseFields),
               ...optimizedObject,
             },
           };
@@ -168,7 +177,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       },
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
-          let { id, fields } = args;
+          let { id, fields } = deepcopy(args);
           if (!fields) fields = {};
           const { config, auth, info } = context;
 
@@ -239,7 +248,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
             [getGraphQLQueryName]: {
               objectId: id,
               ...updatedObject,
-              ...parseFields,
+              ...filterDeletedFields(parseFields),
               ...optimizedObject,
             },
           };
@@ -273,7 +282,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       },
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
-          let { id } = args;
+          let { id } = deepcopy(args);
           const { config, auth, info } = context;
 
           const globalIdObject = fromGlobalId(id);

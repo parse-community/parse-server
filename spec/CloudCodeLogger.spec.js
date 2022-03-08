@@ -161,7 +161,7 @@ describe('Cloud Code Logger', () => {
         expect(log[0]).toEqual('error');
         const error = log[2].error;
         expect(error instanceof Parse.Error).toBeTruthy();
-        expect(error.code).toBe(141);
+        expect(error.code).toBe(Parse.Error.SCRIPT_FAILED);
         expect(error.message).toBe('uh oh!');
         done();
       });
@@ -199,7 +199,9 @@ describe('Cloud Code Logger', () => {
         expect(log[1]).toMatch(
           /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error:/
         );
-        const errorString = JSON.stringify(new Parse.Error(141, 'it failed!'));
+        const errorString = JSON.stringify(
+          new Parse.Error(Parse.Error.SCRIPT_FAILED, 'it failed!')
+        );
         expect(log[1].indexOf(errorString)).toBeGreaterThan(0);
         done();
       })

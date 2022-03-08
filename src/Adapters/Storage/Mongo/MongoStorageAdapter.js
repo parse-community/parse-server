@@ -108,6 +108,23 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (
   return mongoObject;
 };
 
+function validateExplainValue(explain) {
+  if (explain) {
+    // The list of allowed explain values is from node-mongodb-native/lib/explain.js
+    const explainAllowedValues = [
+      'queryPlanner',
+      'queryPlannerExtended',
+      'executionStats',
+      'allPlansExecution',
+      false,
+      true,
+    ];
+    if (!explainAllowedValues.includes(explain)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid value for explain');
+    }
+  }
+}
+
 export class MongoStorageAdapter implements StorageAdapter {
   // Private
   _uri: string;
@@ -163,10 +180,10 @@ export class MongoStorageAdapter implements StorageAdapter {
           delete this.connectionPromise;
           return;
         }
-        database.on('error', () => {
+        client.on('error', () => {
           delete this.connectionPromise;
         });
-        database.on('close', () => {
+        client.on('close', () => {
           delete this.connectionPromise;
         });
         this.client = client;
@@ -345,6 +362,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
+  async updateFieldOptions(className: string, fieldName: string, type: any) {
+    const schemaCollection = await this._schemaCollection();
+    await schemaCollection.updateFieldOptions(className, fieldName, type);
+  }
+
   addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void> {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type))
@@ -457,6 +479,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
     return this._adaptiveCollection(className)
       .then(collection => collection.insertOne(mongoObject, transactionalSession))
+      .then(() => ({ ops: [mongoObject] }))
       .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
@@ -500,8 +523,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       })
       .catch(err => this.handleError(err))
       .then(
-        ({ result }) => {
-          if (result.n === 0) {
+        ({ deletedCount }) => {
+          if (deletedCount === 0) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
           }
           return Promise.resolve();
@@ -543,7 +566,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this._adaptiveCollection(className)
       .then(collection =>
         collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
-          returnOriginal: false,
+          returnDocument: 'after',
           session: transactionalSession || undefined,
         })
       )
@@ -583,6 +606,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     query: QueryType,
     { skip, limit, sort, keys, readPreference, hint, caseInsensitive, explain }: QueryOptions
   ): Promise<any> {
+    validateExplainValue(explain);
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
     const mongoSort = _.mapKeys(sort, (value, fieldName) =>
@@ -761,6 +785,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     hint: ?mixed,
     explain?: boolean
   ) {
+    validateExplainValue(explain);
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
       if (stage.$group) {
