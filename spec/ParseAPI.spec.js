@@ -48,9 +48,18 @@ describe_only_db('mongo')('spatial index', () => {
   });
 
   it('invalid geometry fails (#7331)', async () => {
-    const obj = new Parse.Object('geojson_test');
+    let obj = new Parse.Object('geojson_test');
     obj.set('geometry', { foo: 'bar' });
     try {
+      await obj.save();
+      fail('Invalid geometry did not fail');
+    } catch (e) {
+      expect(e.code).toEqual(Parse.Error.INVALID_VALUE);
+    }
+    obj = new Parse.Object('geojson_test');
+    await obj.save();
+    try {
+      obj.set('geometry', { foo: 'bar' });
       await obj.save();
       fail('Invalid geometry did not fail');
     } catch (e) {
