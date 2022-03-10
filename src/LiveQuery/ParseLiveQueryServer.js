@@ -189,13 +189,7 @@ class ParseLiveQueryServer {
             client.pushDelete(requestId, deletedParseObject);
           } catch (e) {
             const error = resolveError(e);
-            Client.pushError(
-              client.parseWebSocket,
-              error.code || 141,
-              error.message || error,
-              false,
-              requestId
-            );
+            Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
             logger.error(
               `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                 JSON.stringify(error)
@@ -344,13 +338,7 @@ class ParseLiveQueryServer {
             }
           } catch (e) {
             const error = resolveError(e);
-            Client.pushError(
-              client.parseWebSocket,
-              error.code || 141,
-              error.message || error,
-              false,
-              requestId
-            );
+            Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
             logger.error(
               `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                 JSON.stringify(error)
@@ -668,7 +656,7 @@ class ParseLiveQueryServer {
       runLiveQueryEventHandlers(req);
     } catch (e) {
       const error = resolveError(e);
-      Client.pushError(parseWebsocket, error.code || 141, error.message || error, false);
+      Client.pushError(parseWebsocket, error.code, error.message, false);
       logger.error(
         `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(error)
@@ -783,13 +771,7 @@ class ParseLiveQueryServer {
       });
     } catch (e) {
       const error = resolveError(e);
-      Client.pushError(
-        parseWebsocket,
-        error.code || 141,
-        error.message || error,
-        false,
-        request.requestId
-      );
+      Client.pushError(parseWebsocket, error.code, error.message, false, request.requestId);
       logger.error(
         `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(error)
