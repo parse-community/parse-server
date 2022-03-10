@@ -612,7 +612,8 @@ export function resolveError(e, defaultOpts = {}) {
   if (typeof e === 'string') {
     return new Parse.Error(code, e);
   }
-  const error = new Parse.Error(code, e.message || message);
+  const error = new Parse.Error(e.code || code, e.message || message);
+  console.log(error);
   if (e instanceof Error) {
     error.stack = e.stack;
   }

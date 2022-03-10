@@ -618,6 +618,7 @@ describe('ParseLiveQuery', function () {
     });
     new Parse.Query(TestObject).subscribe();
     await new Promise(resolve => Parse.LiveQuery.on('error', resolve));
+    Parse.LiveQuery.removeAllListeners('error');
     expect(logger.error).toHaveBeenCalledWith(
       `Failed running beforeConnect for session undefined with:\n Error: {"message":"foo is not defined","code":141}`
     );

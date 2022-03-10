@@ -441,7 +441,7 @@ describe('Hooks', () => {
 
   it('should run the function on the test server (error handling)', done => {
     app.post('/SomeFunctionError', function (req, res) {
-      res.json({ error: { code: 1337, error: 'hacking that one!' } });
+      res.json({ error: { code: 1337, message: 'hacking that one!' } });
     });
     // The function is deleted as the DB is dropped between calls
     Parse.Hooks.createFunction('SOME_TEST_FUNCTION', hookServerURL + '/SomeFunctionError')
@@ -464,9 +464,8 @@ describe('Hooks', () => {
           expect(err).not.toBe(undefined);
           expect(err).not.toBe(null);
           if (err) {
-            expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
-            expect(err.message.code).toEqual(1337);
-            expect(err.message.error).toEqual('hacking that one!');
+            expect(err.code).toBe(1337);
+            expect(err.message).toEqual('hacking that one!');
           }
           done();
         }
