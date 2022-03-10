@@ -4,6 +4,13 @@ const Config = require('../lib/Config');
 const validatorFail = () => {
   throw 'you are not authorized';
 };
+const sessionToken = () => {
+  const current = Parse.User.current();
+  if (!current) {
+    return undefined;
+  }
+  return current.getSessionToken();
+};
 
 describe('ParseLiveQuery', function () {
   it('access user on onLiveQueryEvent disconnect', async done => {
@@ -348,7 +355,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
     await new Promise(resolve => subscription.on('error', resolve));
     expect(logger.error).toHaveBeenCalledWith(
-      `Failed running afterLiveQueryEvent on class TestObject for event update with session undefined with:\n Error: {"message":"foo is not defined","code":141}`
+      `Failed running afterLiveQueryEvent on class TestObject for event update with session ${sessionToken()} with:\n Error: {"message":"foo is not defined","code":141}`
     );
   });
 
@@ -620,7 +627,7 @@ describe('ParseLiveQuery', function () {
     await new Promise(resolve => Parse.LiveQuery.on('error', resolve));
     Parse.LiveQuery.removeAllListeners('error');
     expect(logger.error).toHaveBeenCalledWith(
-      `Failed running beforeConnect for session undefined with:\n Error: {"message":"foo is not defined","code":141}`
+      `Failed running beforeConnect for session ${sessionToken()} with:\n Error: {"message":"foo is not defined","code":141}`
     );
   });
 
