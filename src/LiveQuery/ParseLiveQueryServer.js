@@ -10,7 +10,7 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers, getTrigger, runTrigger } from '../triggers';
+import { runLiveQueryEventHandlers, getTrigger, runTrigger, resolveError } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -187,7 +187,8 @@ class ParseLiveQueryServer {
               deletedParseObject.className = className;
             }
             client.pushDelete(requestId, deletedParseObject);
-          } catch (error) {
+          } catch (e) {
+            const error = resolveError(e);
             Client.pushError(
               client.parseWebSocket,
               error.code || 141,
@@ -341,7 +342,8 @@ class ParseLiveQueryServer {
             if (client[functionName]) {
               client[functionName](requestId, currentParseObject, originalParseObject);
             }
-          } catch (error) {
+          } catch (e) {
+            const error = resolveError(e);
             Client.pushError(
               client.parseWebSocket,
               error.code || 141,
@@ -664,7 +666,8 @@ class ParseLiveQueryServer {
       logger.info(`Create new client: ${parseWebsocket.clientId}`);
       client.pushConnect();
       runLiveQueryEventHandlers(req);
-    } catch (error) {
+    } catch (e) {
+      const error = resolveError(e);
       Client.pushError(parseWebsocket, error.code || 141, error.message || error, false);
       logger.error(
         `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
@@ -779,10 +782,17 @@ class ParseLiveQueryServer {
         installationId: client.installationId,
       });
     } catch (e) {
-      Client.pushError(parseWebsocket, e.code || 141, e.message || e, false, request.requestId);
+      const error = resolveError(e);
+      Client.pushError(
+        parseWebsocket,
+        error.code || 141,
+        error.message || error,
+        false,
+        request.requestId
+      );
       logger.error(
         `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
-          JSON.stringify(e)
+          JSON.stringify(error)
       );
     }
   }
