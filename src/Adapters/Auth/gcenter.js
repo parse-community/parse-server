@@ -14,20 +14,23 @@ const authData = {
 const { Parse } = require('parse/node');
 const crypto = require('crypto');
 const https = require('https');
-const url = require('url');
 
 const cache = {}; // (publicKey -> cert) cache
 
 function verifyPublicKeyUrl(publicKeyUrl) {
-  const parsedUrl = url.parse(publicKeyUrl);
-  if (parsedUrl.protocol !== 'https:') {
+  try {
+    const parsedUrl = new URL(publicKeyUrl);
+    if (parsedUrl.protocol !== 'https:') {
+      return false;
+    }
+    const hostnameParts = parsedUrl.hostname.split('.');
+    const length = hostnameParts.length;
+    const domainParts = hostnameParts.slice(length - 2, length);
+    const domain = domainParts.join('.');
+    return domain === 'apple.com';
+  } catch(error) {
     return false;
   }
-  const hostnameParts = parsedUrl.hostname.split('.');
-  const length = hostnameParts.length;
-  const domainParts = hostnameParts.slice(length - 2, length);
-  const domain = domainParts.join('.');
-  return domain === 'apple.com';
 }
 
 function convertX509CertToPEM(X509Cert) {

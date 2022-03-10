@@ -16,7 +16,7 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 function getAllSchemas(req) {
   return req.config.database
     .loadSchema({ clearCache: true })
-    .then(schemaController => schemaController.getAllClasses(true))
+    .then(schemaController => schemaController.getAllClasses({ clearCache: true }))
     .then(schemas => ({ response: { results: schemas } }));
 }
 
@@ -35,7 +35,42 @@ function getOneSchema(req) {
     });
 }
 
-function createSchema(req) {
+const checkIfDefinedSchemasIsUsed = req => {
+  if (req.config?.schema?.lockSchemas === true) {
+    throw new Parse.Error(
+      Parse.Error.OPERATION_FORBIDDEN,
+      'Cannot perform this operation when schemas options is used.'
+    );
+  }
+};
+
+export const internalCreateSchema = async (className, body, config) => {
+  const controller = await config.database.loadSchema({ clearCache: true });
+  const response = await controller.addClassIfNotExists(
+    className,
+    body.fields,
+    body.classLevelPermissions,
+    body.indexes
+  );
+  return {
+    response,
+  };
+};
+
+export const internalUpdateSchema = async (className, body, config) => {
+  const controller = await config.database.loadSchema({ clearCache: true });
+  const response = await controller.updateClass(
+    className,
+    body.fields || {},
+    body.classLevelPermissions,
+    body.indexes,
+    config.database
+  );
+  return { response };
+};
+
+async function createSchema(req) {
+  checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -53,20 +88,11 @@ function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return req.config.database
-    .loadSchema({ clearCache: true })
-    .then(schema =>
-      schema.addClassIfNotExists(
-        className,
-        req.body.fields,
-        req.body.classLevelPermissions,
-        req.body.indexes
-      )
-    )
-    .then(schema => ({ response: schema }));
+  return await internalCreateSchema(className, req.body, req.config);
 }
 
 function modifySchema(req) {
+  checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -76,22 +102,9 @@ function modifySchema(req) {
   if (req.body.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
-
-  const submittedFields = req.body.fields || {};
   const className = req.params.className;
 
-  return req.config.database
-    .loadSchema({ clearCache: true })
-    .then(schema =>
-      schema.updateClass(
-        className,
-        submittedFields,
-        req.body.classLevelPermissions,
-        req.body.indexes,
-        req.config.database
-      )
-    )
-    .then(result => ({ response: result }));
+  return internalUpdateSchema(className, req.body, req.config);
 }
 
 const deleteSchema = req => {

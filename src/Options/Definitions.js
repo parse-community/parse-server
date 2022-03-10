@@ -154,6 +154,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
     help: 'Key for encrypting your files',
   },
+  enforcePrivateUsers: {
+    env: 'PARSE_SERVER_ENFORCE_PRIVATE_USERS',
+    help: 'Set to true if new users should be created without public read and write access.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
     help:
@@ -438,6 +444,45 @@ module.exports.SecurityOptions = {
       'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
     action: parsers.booleanParser,
     default: false,
+  },
+};
+module.exports.SchemaOptions = {
+  definitions: {
+    help: 'The schema definitions.',
+    default: [],
+  },
+  strict: {
+    env: 'PARSE_SERVER_SCHEMA_STRICT',
+    help: 'Is true if Parse Server should exit if schema update fail.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  deleteExtraFields: {
+    env: 'PARSE_SERVER_SCHEMA_DELETE_EXTRA_FIELDS',
+    help:
+      'Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  recreateModifiedFields: {
+    env: 'PARSE_SERVER_SCHEMA_RECREATE_MODIFIED_FIELDS',
+    help:
+      'Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  lockSchemas: {
+    env: 'PARSE_SERVER_SCHEMA_LOCK',
+    help:
+      'Is true if Parse Server will reject any attempts to modify the schema while the server is running.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  beforeMigration: {
+    help: 'Execute a callback before running schema migrations.',
+  },
+  afterMigration: {
+    help: 'Execute a callback after running schema migrations.',
   },
 };
 module.exports.PagesOptions = {

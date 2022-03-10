@@ -177,7 +177,7 @@ class MongoSchemaCollection {
   insertSchema(schema: any) {
     return this._collection
       .insertOne(schema)
-      .then(result => mongoSchemaToParseSchema(result.ops[0]))
+      .then(() => mongoSchemaToParseSchema(schema))
       .catch(error => {
         if (error.code === 11000) {
           //Mongo's duplicate key error
@@ -212,7 +212,7 @@ class MongoSchemaCollection {
       .then(
         schema => {
           // If a field with this name already exists, it will be handled elsewhere.
-          if (schema.fields[fieldName] != undefined) {
+          if (schema.fields[fieldName] !== undefined) {
             return;
           }
           // The schema exists. Check for existing GeoPoints.
@@ -273,6 +273,22 @@ class MongoSchemaCollection {
           );
         }
       });
+  }
+
+  async updateFieldOptions(className: string, fieldName: string, fieldType: any) {
+    const { ...fieldOptions } = fieldType;
+    delete fieldOptions.type;
+    delete fieldOptions.targetClass;
+
+    await this.upsertSchema(
+      className,
+      { [fieldName]: { $exists: true } },
+      {
+        $set: {
+          [`_metadata.fields_options.${fieldName}`]: fieldOptions,
+        },
+      }
+    );
   }
 }
 
