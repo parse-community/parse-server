@@ -670,9 +670,7 @@ describe('ParseLiveQuery', function () {
       foo.bar();
       /* eslint-enable no-undef */
     });
-    Parse.LiveQuery.on('error', error => {
-      expect(error).toBe('You shall not subscribe!');
-    });
+
     const query = new Parse.Query(TestObject);
     const subscription = await query.subscribe();
     await new Promise(resolve => subscription.on('error', resolve));
