@@ -81,6 +81,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
   // Once set the schemaData should be immutable
   this.validSchemaController = null;
+  this.pendingOps = {};
 }
 
 // A convenient method to perform all the steps of processing the
@@ -211,18 +212,11 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     return Promise.resolve();
   }
 
-  // Cloud code gets a bit of extra data for its objects
-  var extraData = { className: this.className };
-  if (this.query && this.query.objectId) {
-    extraData.objectId = this.query.objectId;
-  }
+  const { originalObject, updatedObject } = this.buildParseObjects();
 
-  let originalObject = null;
-  const updatedObject = this.buildUpdatedObject(extraData);
-  if (this.query && this.query.objectId) {
-    // This is an update for existing object.
-    originalObject = triggers.inflate(extraData, this.originalData);
-  }
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
+  this.pendingOps = { ...pending };
 
   return Promise.resolve()
     .then(() => {
@@ -1517,20 +1511,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     return Promise.resolve();
   }
 
-  var extraData = { className: this.className };
-  if (this.query && this.query.objectId) {
-    extraData.objectId = this.query.objectId;
-  }
-
-  // Build the original object, we only do this for a update write.
-  let originalObject;
-  if (this.query && this.query.objectId) {
-    originalObject = triggers.inflate(extraData, this.originalData);
-  }
-
-  // Build the inflated object, different from beforeSave, originalData is not empty
-  // since developers can change data in the beforeSave.
-  const updatedObject = this.buildUpdatedObject(extraData);
+  const { originalObject, updatedObject } = this.buildParseObjects();
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   this.config.database.loadSchema().then(schemaController => {
@@ -1556,7 +1537,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     )
     .then(result => {
       if (result && typeof result === 'object') {
-        this.response.response = result;
+        this.response.response = this._updateResponseWithData(result._toFullJSON(), this.data);
       }
     })
     .catch(function (err) {
@@ -1590,7 +1571,13 @@ RestWrite.prototype.sanitizedData = function () {
 };
 
 // Returns an updated copy of the object
-RestWrite.prototype.buildUpdatedObject = function (extraData) {
+RestWrite.prototype.buildParseObjects = function () {
+  const extraData = { className: this.className, objectId: this.query?.objectId };
+  let originalObject;
+  if (this.query && this.query.objectId) {
+    originalObject = triggers.inflate(extraData, this.originalData);
+  }
+
   const className = Parse.Object.fromJSON(extraData);
   const readOnlyAttributes = className.constructor.readOnlyAttributes
     ? className.constructor.readOnlyAttributes()
@@ -1628,7 +1615,7 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
     delete sanitized[attribute];
   }
   updatedObject.set(sanitized);
-  return updatedObject;
+  return { updatedObject, originalObject };
 };
 
 RestWrite.prototype.cleanUserAuthData = function () {
@@ -1648,6 +1635,15 @@ RestWrite.prototype.cleanUserAuthData = function () {
 };
 
 RestWrite.prototype._updateResponseWithData = function (response, data) {
+  const { updatedObject } = this.buildParseObjects();
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
+  for (const key in this.pendingOps) {
+    if (!pending[key]) {
+      data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
+      this.storage.fieldsChangedByTrigger.push(key);
+    }
+  }
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
     return response;
   }
