@@ -1685,7 +1685,7 @@ class DatabaseController {
     ]);
   }
 
-  _expandResultOnKeyPath(object, key, value) {
+  _expandResultOnKeyPath(object: any, key: string, value: any): any {
     if (key.indexOf('.') < 0) {
       object[key] = value[key];
       return object;
@@ -1717,7 +1717,7 @@ class DatabaseController {
     return object;
   }
 
-  _sanitizeDatabaseResult(originalObject, result): Promise<any> {
+  _sanitizeDatabaseResult(originalObject: any, result: any): Promise<any> {
     const response = {};
     if (!result) {
       return Promise.resolve(response);
