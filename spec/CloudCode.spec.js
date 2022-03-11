@@ -1553,23 +1553,16 @@ describe('Cloud Code', () => {
       if (!object.existed()) {
         object.set('secret', true);
       }
-      return object;
     });
 
-    Parse.Cloud.afterSave(
-      'TestObject',
-      ({ object }) => {
-        object.unset('secret');
-      },
-      {
-        skipWithMasterKey: true,
-      }
-    );
+    Parse.Cloud.afterSave('TestObject', ({ object }) => {
+      object.unset('secret');
+    });
 
     Parse.Cloud.afterFind(
       'TestObject',
       ({ objects }) => {
-        return objects.map(object => object.unset('secret'));
+        objects.map(object => object.unset('secret'));
       },
       {
         skipWithMasterKey: true,
