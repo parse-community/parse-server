@@ -33,7 +33,11 @@ export class Config {
           cacheInfo.schemaCacheTTL,
           cacheInfo.enableSingleSchemaCache
         );
-        config.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+        config.database = new DatabaseController(
+          cacheInfo.databaseController.adapter,
+          schemaCache,
+          config
+        );
       } else {
         config[key] = cacheInfo[key];
       }
@@ -71,6 +75,7 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     emailVerifyTokenReuseIfValid,
+    requestKeywordDenylist,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -105,6 +110,15 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
+    this.validateRequestKeywordDenylist(requestKeywordDenylist);
+  }
+
+  static validateRequestKeywordDenylist(requestKeywordDenylist) {
+    if (requestKeywordDenylist === undefined) {
+      requestKeywordDenylist = requestKeywordDenylist.default;
+    } else if (!Array.isArray(requestKeywordDenylist)) {
+      throw 'Parse Server option requestKeywordDenylist must be an array.';
+    }
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
