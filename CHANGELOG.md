@@ -3,7 +3,9 @@
 
 ### Bug Fixes
 
-* security vulnerability that allows remote code execution (ghsa p6h4 93qp jhcm) ([#7841](https://github.com/parse-community/parse-server/issues/7841)) ([886bfd7](https://github.com/parse-community/parse-server/commit/886bfd7cac69496e3f73d4bb536f0eec3cba0e4d))
+* security vulnerability that allows remote code execution ([GHSA-p6h4-93qp-jhcm](https://github.com/parse-community/parse-server/security/advisories/GHSA-p6h4-93qp-jhcm)) ([#7841](https://github.com/parse-community/parse-server/issues/7841)) ([886bfd7](https://github.com/parse-community/parse-server/commit/886bfd7cac69496e3f73d4bb536f0eec3cba0e4d))
+
+  Note that as part of the fix a new security feature scans for sensitive keywords in request data to prevent JavaScript prototype pollution. If such a keyword is found, the request is rejected with HTTP response code `400` and Parse Error `105` (`INVALID_KEY_NAME`). By default these keywords are: `{_bsontype: "Code"}`, `constructor`, `__proto__`. If you are using any of these keywords in your request data, you can override the default keywords by setting the new Parse Server option `requestKeywordDenylist` to `[]` and specify your own keywords as needed.
 
 ## [4.10.6](https://github.com/parse-community/parse-server/compare/4.10.5...4.10.6) (2022-02-12)
 
