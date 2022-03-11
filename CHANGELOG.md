@@ -1,3 +1,10 @@
+## [4.10.7](https://github.com/parse-community/parse-server/compare/4.10.6...4.10.7) (2022-03-11)
+
+
+### Bug Fixes
+
+* security vulnerability that allows remote code execution (ghsa p6h4 93qp jhcm) ([#7841](https://github.com/parse-community/parse-server/issues/7841)) ([886bfd7](https://github.com/parse-community/parse-server/commit/886bfd7cac69496e3f73d4bb536f0eec3cba0e4d))
+
 ## [4.10.6](https://github.com/parse-community/parse-server/compare/4.10.5...4.10.6) (2022-02-12)
 
 
