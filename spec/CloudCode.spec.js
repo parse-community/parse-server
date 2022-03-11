@@ -1495,8 +1495,6 @@ describe('Cloud Code', () => {
   });
 
   it('before save can revert fields', async () => {
-    await reconfigureServer({ silent: false });
-
     Parse.Cloud.beforeSave('TestObject', ({ object }) => {
       object.revert('foo');
       return object;
@@ -1518,8 +1516,6 @@ describe('Cloud Code', () => {
   });
 
   it('before save can revert fields with existing object', async () => {
-    await reconfigureServer({ silent: false });
-
     Parse.Cloud.beforeSave(
       'TestObject',
       ({ object }) => {
@@ -1550,6 +1546,43 @@ describe('Cloud Code', () => {
     obj.set('foo', 'yolo');
     await obj.save();
     expect(obj.get('foo')).toBe('bar');
+  });
+
+  it('can unset in afterSave', async () => {
+    Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+      if (!object.existed()) {
+        object.set('secret', true);
+      }
+      return object;
+    });
+
+    Parse.Cloud.afterSave(
+      'TestObject',
+      ({ object }) => {
+        object.unset('secret');
+      },
+      {
+        skipWithMasterKey: true,
+      }
+    );
+
+    Parse.Cloud.afterFind(
+      'TestObject',
+      ({ objects }) => {
+        return objects.map(object => object.unset('secret'));
+      },
+      {
+        skipWithMasterKey: true,
+      }
+    );
+
+    const obj = new TestObject();
+    await obj.save();
+    expect(obj.get('secret')).toBeUndefined();
+    await obj.fetch();
+    expect(obj.get('secret')).toBeUndefined();
+    await obj.fetch({ useMasterKey: true });
+    expect(obj.get('secret')).toBe(true);
   });
 
   it('should revert in beforeSave', async () => {
