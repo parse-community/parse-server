@@ -1536,7 +1536,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       this.context
     )
     .then(result => {
-      const object = result && typeof result === 'object' ? result : updatedObject;
+      const object = result?._toFullJSON ? result : updatedObject;
       this.response.response = this._updateResponseWithData(object._toFullJSON(), this.data);
     })
     .catch(function (err) {
