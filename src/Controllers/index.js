@@ -167,7 +167,8 @@ export function getDatabaseController(
   }
   return new DatabaseController(
     databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
+    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache),
+    options
   );
 }
 

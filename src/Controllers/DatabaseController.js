@@ -13,6 +13,7 @@ import deepcopy from 'deepcopy';
 import logger from '../logger';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
 
 function addWriteACL(query, acl) {
@@ -257,41 +258,6 @@ const isSpecialUpdateKey = key => {
   return specialKeysForUpdate.indexOf(key) >= 0;
 };
 
-function expandResultOnKeyPath(object, key, value) {
-  if (key.indexOf('.') < 0) {
-    object[key] = value[key];
-    return object;
-  }
-  const path = key.split('.');
-  const firstKey = path[0];
-  const nextPath = path.slice(1).join('.');
-  object[firstKey] = expandResultOnKeyPath(object[firstKey] || {}, nextPath, value[firstKey]);
-  delete object[key];
-  return object;
-}
-
-function sanitizeDatabaseResult(originalObject, result): Promise<any> {
-  const response = {};
-  if (!result) {
-    return Promise.resolve(response);
-  }
-  Object.keys(originalObject).forEach(key => {
-    const keyUpdate = originalObject[key];
-    // determine if that was an op
-    if (
-      keyUpdate &&
-      typeof keyUpdate === 'object' &&
-      keyUpdate.__op &&
-      ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1
-    ) {
-      // only valid ops that produce an actionable result
-      // the op may have happend on a keypath
-      expandResultOnKeyPath(response, key, result);
-    }
-  });
-  return Promise.resolve(response);
-}
-
 function joinTableName(className, key) {
   return `_Join:${key}:${className}`;
 }
@@ -397,8 +363,9 @@ class DatabaseController {
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
+  options: ParseServerOptions;
 
-  constructor(adapter: StorageAdapter, schemaCache: any) {
+  constructor(adapter: StorageAdapter, schemaCache: any, options: ParseServerOptions) {
     this.adapter = adapter;
     this.schemaCache = schemaCache;
     // We don't want a mutable this.schema, because then you could have
@@ -406,6 +373,7 @@ class DatabaseController {
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
     this._transactionalSession = null;
+    this.options = options;
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -644,7 +612,7 @@ class DatabaseController {
           if (skipSanitization) {
             return Promise.resolve(result);
           }
-          return sanitizeDatabaseResult(originalUpdate, result);
+          return this._sanitizeDatabaseResult(originalUpdate, result);
         });
     });
   }
@@ -871,7 +839,7 @@ class DatabaseController {
               object,
               relationUpdates
             ).then(() => {
-              return sanitizeDatabaseResult(originalObject, result.ops[0]);
+              return this._sanitizeDatabaseResult(originalObject, result.ops[0]);
             });
           });
       });
@@ -1715,6 +1683,60 @@ class DatabaseController {
       adapterInit,
       indexPromise,
     ]);
+  }
+
+  _expandResultOnKeyPath(object, key, value) {
+    if (key.indexOf('.') < 0) {
+      object[key] = value[key];
+      return object;
+    }
+    const path = key.split('.');
+    const firstKey = path[0];
+    const nextPath = path.slice(1).join('.');
+
+    // Scan request data for denied keywords
+    if (this.options && this.options.requestKeywordDenylist) {
+      // Scan request data for denied keywords
+      for (const keyword of this.options.requestKeywordDenylist) {
+        const isMatch = (a, b) => (typeof a === 'string' && new RegExp(a).test(b)) || a === b;
+        if (isMatch(firstKey, keyword.key)) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_KEY_NAME,
+            `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+          );
+        }
+      }
+    }
+
+    object[firstKey] = this._expandResultOnKeyPath(
+      object[firstKey] || {},
+      nextPath,
+      value[firstKey]
+    );
+    delete object[key];
+    return object;
+  }
+
+  _sanitizeDatabaseResult(originalObject, result): Promise<any> {
+    const response = {};
+    if (!result) {
+      return Promise.resolve(response);
+    }
+    Object.keys(originalObject).forEach(key => {
+      const keyUpdate = originalObject[key];
+      // determine if that was an op
+      if (
+        keyUpdate &&
+        typeof keyUpdate === 'object' &&
+        keyUpdate.__op &&
+        ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1
+      ) {
+        // only valid ops that produce an actionable result
+        // the op may have happened on a keypath
+        this._expandResultOnKeyPath(response, key, result);
+      }
+    });
+    return Promise.resolve(response);
   }
 
   static _validateQuery: any => void;

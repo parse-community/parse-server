@@ -12,6 +12,10 @@ type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
 type NumberOrString = number | string;
 type ProtectedFields = any;
+type RequestKeywordDenylist = {
+  key: string | any,
+  value: any,
+};
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -220,6 +224,9 @@ export interface ParseServerOptions {
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+  /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
+  :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
+  requestKeywordDenylist: ?(RequestKeywordDenylist[]);
 }
 
 export interface CustomPagesOptions {
