@@ -365,14 +365,16 @@ class DatabaseController {
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
   options: ParseServerOptions;
+  idempotencyOptions: any;
 
   constructor(adapter: StorageAdapter, options: ParseServerOptions) {
     this.adapter = adapter;
+    this.options = options || {};
+    this.idempotencyOptions = options.idempotencyOptions || {};
     // Prevent mutable this.schema, otherwise one request could use
     // multiple schemas, so instead use loadSchema to get a schema.
     this.schemaPromise = null;
     this._transactionalSession = null;
-    this.options = options;
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -1734,7 +1736,7 @@ class DatabaseController {
           ttl: 0,
         };
       } else if (isPostgresAdapter) {
-        options = (this.options || {}).idempotencyOptions || {};
+        options = this.idempotencyOptions;
         options.setIdempotencyFunction = true;
       }
       await this.adapter
