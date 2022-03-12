@@ -157,7 +157,7 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(databaseAdapter);
+  return new DatabaseController(databaseAdapter, options);
 }
 
 export function getHooksController(
