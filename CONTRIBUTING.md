@@ -305,7 +305,7 @@ For release automation, the title of pull requests needs to be written in a defi
 ```
 
 The _type_ is the category of change that is made, possible types are:
-- `feat` - add a new feature
+- `feat` - add a new feature or improve an existing feature
 - `fix` - fix a bug
 - `refactor` - refactor code without impact on features or performance
 - `docs` - add or edit code comments, documentation, GitHub pages
