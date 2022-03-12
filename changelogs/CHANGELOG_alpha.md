@@ -1,3 +1,15 @@
+# [5.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.28...5.0.0-alpha.29) (2022-03-12)
+
+
+### Features
+
+* bump required node engine to >=12.22.10 ([#7846](https://github.com/parse-community/parse-server/issues/7846)) ([5ace99d](https://github.com/parse-community/parse-server/commit/5ace99d542a11e422af46d9fd6b1d3d2513b34cf))
+
+
+### BREAKING CHANGES
+
+* This requires Node.js version >=12.22.10. ([5ace99d](5ace99d))
+
 # [5.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.27...5.0.0-alpha.28) (2022-03-12)
 
 
