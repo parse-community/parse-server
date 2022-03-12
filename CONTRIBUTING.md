@@ -22,6 +22,8 @@
 - [Pull Request](#pull-request)
   - [Breaking Change](#breaking-change)
 - [Merging](#merging)
+  - [Breaking Change](#breaking-change-1)
+  - [Reverting](#reverting)
 - [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
 
@@ -335,8 +337,13 @@ If a pull request contains a braking change, the description of the pull request
 
 The following guide is for anyone who merges a contributor pull request into the working branch, the working branch into a release branch, a release branch into another release branch, or any other direct commits such as hotfixes into release branches or the working branch.
 
-- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message.
-- If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
+- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
+- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
+- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message. See the following chapters for considerations in special scenarios, e.g. merging a breaking change or reverting a commit.
+
+### Breaking Change
+
+If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
 
   ```
   fix: remove handle from door
@@ -344,8 +351,16 @@ The following guide is for anyone who merges a contributor pull request into the
   BREAKING CHANGE: You cannot open the door anymore by using a handle. See the [#migration guide](http://example.com) for more details.
   ```
   Keep in mind that in a repository with release automation, merging such a commit message will trigger a release with a major version increment.
-- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
-- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
+
+### Reverting
+
+If the commit reverts a previous commit, use the prefix `revert:`, followed by the header of the reverted commit. In the body of the commit message add `This reverts commit <hash>.`, where the hash is the SHA of the commit being reverted. For example:
+
+  ```
+  revert: fix: remove handle from door
+  
+  This reverts commit 1234567890abcdef.
+  ```
 
 ## Versioning
 
