@@ -370,7 +370,7 @@ class DatabaseController {
   constructor(adapter: StorageAdapter, options: ParseServerOptions) {
     this.adapter = adapter;
     this.options = options || {};
-    this.idempotencyOptions = options.idempotencyOptions || {};
+    this.idempotencyOptions = this.options.idempotencyOptions || {};
     // Prevent mutable this.schema, otherwise one request could use
     // multiple schemas, so instead use loadSchema to get a schema.
     this.schemaPromise = null;
