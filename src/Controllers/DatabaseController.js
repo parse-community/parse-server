@@ -361,7 +361,6 @@ const relationSchema = {
 
 class DatabaseController {
   adapter: StorageAdapter;
-  idempotencyOptions: any;
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
@@ -369,10 +368,8 @@ class DatabaseController {
 
   constructor(adapter: StorageAdapter, options: ParseServerOptions) {
     this.adapter = adapter;
-    this.idempotencyOptions = options.idempotencyOptions || {};
-    // We don't want a mutable this.schema, because then you could have
-    // one request that uses different schemas for different parts of
-    // it. Instead, use loadSchema to get a schema.
+    // Prevent mutable this.schema, otherwise one request could use
+    // multiple schemas, so instead use loadSchema to get a schema.
     this.schemaPromise = null;
     this._transactionalSession = null;
     this.options = options;
@@ -1737,7 +1734,7 @@ class DatabaseController {
           ttl: 0,
         };
       } else if (isPostgresAdapter) {
-        options = this.idempotencyOptions;
+        options = (this.options || {}).idempotencyOptions || {};
         options.setIdempotencyFunction = true;
       }
       await this.adapter
