@@ -1,3 +1,29 @@
+# [5.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.28...5.0.0-alpha.29) (2022-03-12)
+
+
+### Features
+
+* bump required node engine to >=12.22.10 ([#7846](https://github.com/parse-community/parse-server/issues/7846)) ([5ace99d](https://github.com/parse-community/parse-server/commit/5ace99d542a11e422af46d9fd6b1d3d2513b34cf))
+
+
+### BREAKING CHANGES
+
+* This requires Node.js version >=12.22.10. ([5ace99d](5ace99d))
+
+# [5.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.27...5.0.0-alpha.28) (2022-03-12)
+
+
+### Bug Fixes
+
+* security vulnerability that allows remote code execution (GHSA-p6h4-93qp-jhcm) ([#7844](https://github.com/parse-community/parse-server/issues/7844)) ([e569f40](https://github.com/parse-community/parse-server/commit/e569f402b1fd8648fb0d1523b71b2a03273902a5))
+
+# [5.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.26...5.0.0-alpha.27) (2022-03-12)
+
+
+### Reverts
+
+* update node engine to 2.22.0 ([#7827](https://github.com/parse-community/parse-server/issues/7827)) ([f235412](https://github.com/parse-community/parse-server/commit/f235412c1b6c2b173b7531f285429ea7214b56a2))
+
 # [5.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.25...5.0.0-alpha.26) (2022-02-25)
 
 
