@@ -1,4 +1,4 @@
-# [5.0.0](https://github.com/parse-community/parse-server/compare/4.5.0...5.0.0) (2022-03-14)
+# [5.0.0](https://github.com/parse-community/parse-server/compare/4.10.7...5.0.0) (2022-03-14)
 
 
 ### BREAKING CHANGES
