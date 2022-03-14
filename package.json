@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "5.0.0-alpha.1",
+  "version": "5.0.0-beta.9",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -32,10 +32,10 @@
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.17.1",
-    "follow-redirects": "1.14.2",
+    "follow-redirects": "1.14.8",
     "graphql": "15.6.0",
     "graphql-list-fields": "2.0.2",
-    "graphql-relay": "0.9.0",
+    "graphql-relay": "0.7.0",
     "graphql-tag": "2.12.5",
     "graphql-upload": "11.0.0",
     "intersect": "1.0.1",
@@ -68,6 +68,12 @@
     "@babel/plugin-transform-flow-strip-types": "7.9.0",
     "@babel/preset-env": "7.10.0",
     "@parse/minami": "1.0.0",
+    "@semantic-release/changelog": "5.0.1",
+    "@semantic-release/commit-analyzer": "8.0.1",
+    "@semantic-release/git": "9.0.0",
+    "@semantic-release/github": "7.2.3",
+    "@semantic-release/npm": "7.1.3",
+    "@semantic-release/release-notes-generator": "9.0.3",
     "all-node-versions": "8.0.0",
     "apollo-cache-inmemory": "1.6.6",
     "apollo-client": "2.6.10",
@@ -86,7 +92,7 @@
     "form-data": "3.0.0",
     "husky": "4.2.5",
     "jasmine": "3.5.0",
-    "jasmine-spec-reporter": "6.0.0",
+    "jasmine-spec-reporter": "7.0.0",
     "jsdoc": "3.6.3",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
@@ -98,6 +104,7 @@
     "node-fetch": "2.6.1",
     "nyc": "15.1.0",
     "prettier": "2.0.5",
+    "semantic-release": "17.4.6",
     "yaml": "1.10.0"
   },
   "scripts": {
@@ -128,7 +135,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">=12.20.0"
+    "node": ">=12.22.10 <16"
   },
   "bin": {
     "parse-server": "bin/parse-server"

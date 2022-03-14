@@ -2284,8 +2284,7 @@ describe('ParseGraphQLServer', () => {
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
             expect(nodeResult.data.node2.someField).toBe('some value 2');
           });
-          // TODO: (moumouls, davimacedo) Fix flaky test
-          xit('Id inputs should work either with global id or object id', async () => {
+          it('Id inputs should work either with global id or object id', async () => {
             try {
               await apolloClient.mutate({
                 mutation: gql`
@@ -2592,9 +2591,12 @@ describe('ParseGraphQLServer', () => {
                   .map(value => value.node.someField)
                   .sort()
               ).toEqual(['some value 22', 'some value 44']);
-              expect(
-                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.id
-              ).toBeLessThan(findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.id);
+              // NOTE: Here @davimacedo tried to test RelayID order, but the test is wrong since
+              // "objectId1" < "objectId2" do not always keep the order when objectId is transformed
+              // to base64 by Relay
+              // "SecondaryObject:bBRgmzIRRM" < "SecondaryObject:nTMcuVbATY" true
+              // base64("SecondaryObject:bBRgmzIRRM"") < base64(""SecondaryObject:nTMcuVbATY"") false
+              // "U2Vjb25kYXJ5T2JqZWN0OmJCUmdteklSUk0=" < "U2Vjb25kYXJ5T2JqZWN0Om5UTWN1VmJBVFk=" false
               expect(
                 findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId
               ).toBeLessThan(
@@ -2759,6 +2761,23 @@ describe('ParseGraphQLServer', () => {
             } catch (e) {
               handleError(e);
             }
+          });
+          it('Id inputs should work either with global id or object id with objectId higher than 19', async () => {
+            await reconfigureServer({ objectIdSize: 20 });
+            const obj = new Parse.Object('SomeClass');
+            await obj.save({ name: 'aname', type: 'robot' });
+            const result = await apolloClient.query({
+              query: gql`
+                query getSomeClass($id: ID!) {
+                  someClass(id: $id) {
+                    objectId
+                    id
+                  }
+                }
+              `,
+              variables: { id: obj.id },
+            });
+            expect(result.data.someClass.objectId).toEqual(obj.id);
           });
         });
       });
@@ -6606,6 +6625,162 @@ describe('ParseGraphQLServer', () => {
             );
           });
         });
+
+        it('should unset fields when null used on update/create', async () => {
+          const customerSchema = new Parse.Schema('Customer');
+          customerSchema.addString('aString');
+          customerSchema.addBoolean('aBoolean');
+          customerSchema.addDate('aDate');
+          customerSchema.addArray('aArray');
+          customerSchema.addGeoPoint('aGeoPoint');
+          customerSchema.addPointer('aPointer', 'Customer');
+          customerSchema.addObject('aObject');
+          customerSchema.addPolygon('aPolygon');
+          await customerSchema.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+          const cus = new Parse.Object('Customer');
+          await cus.save({ aString: 'hello' });
+
+          const fields = {
+            aString: "i'm string",
+            aBoolean: true,
+            aDate: new Date().toISOString(),
+            aArray: ['hello', 1],
+            aGeoPoint: { latitude: 30, longitude: 30 },
+            aPointer: { link: cus.id },
+            aObject: { prop: { subprop: 1 }, prop2: 'test' },
+            aPolygon: [
+              { latitude: 30, longitude: 30 },
+              { latitude: 31, longitude: 31 },
+              { latitude: 32, longitude: 32 },
+              { latitude: 30, longitude: 30 },
+            ],
+          };
+          const nullFields = Object.keys(fields).reduce((acc, k) => ({ ...acc, [k]: null }), {});
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateCustomer($input: CreateCustomerInput!) {
+                createCustomer(input: $input) {
+                  customer {
+                    id
+                    aString
+                    aBoolean
+                    aDate
+                    aArray {
+                      ... on Element {
+                        value
+                      }
+                    }
+                    aGeoPoint {
+                      longitude
+                      latitude
+                    }
+                    aPointer {
+                      objectId
+                    }
+                    aObject
+                    aPolygon {
+                      longitude
+                      latitude
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: { fields },
+            },
+          });
+          const {
+            data: {
+              createCustomer: {
+                customer: { aPointer, aArray, id, ...otherFields },
+              },
+            },
+          } = result;
+          expect(id).toBeDefined();
+          delete otherFields.__typename;
+          delete otherFields.aGeoPoint.__typename;
+          otherFields.aPolygon.forEach(v => {
+            delete v.__typename;
+          });
+          expect({
+            ...otherFields,
+            aPointer: { link: aPointer.objectId },
+            aArray: aArray.map(({ value }) => value),
+          }).toEqual(fields);
+
+          const updated = await apolloClient.mutate({
+            mutation: gql`
+              mutation UpdateCustomer($input: UpdateCustomerInput!) {
+                updateCustomer(input: $input) {
+                  customer {
+                    aString
+                    aBoolean
+                    aDate
+                    aArray {
+                      ... on Element {
+                        value
+                      }
+                    }
+                    aGeoPoint {
+                      longitude
+                      latitude
+                    }
+                    aPointer {
+                      objectId
+                    }
+                    aObject
+                    aPolygon {
+                      longitude
+                      latitude
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: { fields: nullFields, id },
+            },
+          });
+          const {
+            data: {
+              updateCustomer: { customer },
+            },
+          } = updated;
+          delete customer.__typename;
+          expect(Object.keys(customer).length).toEqual(8);
+          Object.keys(customer).forEach(k => {
+            expect(customer[k]).toBeNull();
+          });
+          try {
+            const queryResult = await apolloClient.query({
+              query: gql`
+                query getEmptyCustomer($where: CustomerWhereInput!) {
+                  customers(where: $where) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: Object.keys(fields).reduce(
+                  (acc, k) => ({ ...acc, [k]: { exists: false } }),
+                  {}
+                ),
+              },
+            });
+
+            expect(queryResult.data.customers.edges.length).toEqual(1);
+          } catch (e) {
+            console.log(JSON.stringify(e));
+          }
+        });
       });
 
       describe('Files Mutations', () => {
@@ -9141,7 +9316,7 @@ describe('ParseGraphQLServer', () => {
             const mutationResult = await apolloClient.mutate({
               mutation: gql`
                 mutation UnlinkFile($id: ID!) {
-                  updateSomeClass(input: { id: $id, fields: { someField: { file: null } } }) {
+                  updateSomeClass(input: { id: $id, fields: { someField: null } }) {
                     someClass {
                       someField {
                         name
