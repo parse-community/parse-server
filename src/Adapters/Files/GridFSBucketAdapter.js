@@ -1,6 +1,6 @@
 /**
  GridFSBucketAdapter
- Stores files in Mongo using GridStore
+ Stores files in Mongo using GridFS
  Requires the database adapter to be based on mongoclient
 
  @flow weak
