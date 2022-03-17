@@ -24,6 +24,7 @@
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
   - [Reverting](#reverting)
+  - [Major Release / Long-Term-Support](#major-release--long-term-support)
 - [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
 
@@ -361,6 +362,23 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   
   This reverts commit 1234567890abcdef.
   ```
+
+### Major Release / Long-Term-Support
+
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch. 
+
+#### Preparing Release
+
+The following changes are done in the `alpha` branch, before publishing the last `beta` version that will eventually become the major release. This way the changes trickle naturally through all branches and code consistency is ensured among branches.
+
+- Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
+- Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
+
+#### Publishing Release
+
+1. Create LTS branch `release-#.x.x` off the latest version tag on `release` branch.
+2. Create temporary branch `build-release` off branch `beta` and create a pull request with `release` as the base branch.
+3. Merge branch `build-release` into `release`. Given that there will be breaking changes, a new major release will be created. In the unlikely case that there have been no breaking changes between the previous major release and the upcoming release, a major version increment has to be triggered manually. See the docs of the release automation framework for how to do that.
 
 ## Versioning
 
