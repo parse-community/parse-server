@@ -1,3 +1,10 @@
+## [5.1.1](https://github.com/parse-community/parse-server/compare/5.1.0...5.1.1) (2022-03-18)
+
+
+### Reverts
+
+* ci: temporarily disable breaking change detection ([#7861](https://github.com/parse-community/parse-server/issues/7861)) ([effed92](https://github.com/parse-community/parse-server/commit/effed92cabd88676fdf9eca2e079a4d8be017f1b))
+
 # [5.1.0](https://github.com/parse-community/parse-server/compare/5.0.0...5.1.0) (2022-03-18)
 
 
