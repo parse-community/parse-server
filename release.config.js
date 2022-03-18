@@ -58,7 +58,7 @@ async function config() {
           { scope: 'no-release', release: false },
         ],
         parserOpts: {
-          noteKeywords: [ 'BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING' ],
+          noteKeywords: ['BREAKING CHANGE DETECTION DISABLED'] //['BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING'],
         },
       }],
       ['@semantic-release/release-notes-generator', {
