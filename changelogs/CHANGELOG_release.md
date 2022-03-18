@@ -34,6 +34,14 @@
 * refactor: allow ES import for cloud string if package type is module ([b64640c](https://github.com/parse-community/parse-server/commit/b64640c5705f733798783e68d216e957044ef23c))
 * update node engine to 2.22.0 ([#7827](https://github.com/parse-community/parse-server/issues/7827)) ([f235412](https://github.com/parse-community/parse-server/commit/f235412c1b6c2b173b7531f285429ea7214b56a2))
 
+### ⚠️ NOTABLE CHANGES
+
+*The following changes would formally require a major version increment (Parse Server 6.0), but given their low relevance they are released as part of this minor version increment (Parse Server 5.1).*
+
+* The MongoDB GridStore adapter has been removed. By default, Parse Server already uses GridFS, so if you do not manually use the GridStore adapter, you can ignore this change. Parse Server uses the GridFSBucket adapter instead of GridStore adapter by default since 2018. ([f88aa2a](f88aa2a))
+* Removes official Node 15 support which has already reached it End-of-Life date. ([45cc58c](45cc58c))
+
+
 # [5.0.0](https://github.com/parse-community/parse-server/compare/4.10.7...5.0.0) (2022-03-14)
 
 
