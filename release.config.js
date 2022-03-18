@@ -64,7 +64,7 @@ async function config() {
       ['@semantic-release/release-notes-generator', {
         preset: 'angular',
         parserOpts: {
-          noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING']
+          noteKeywords: ['BREAKING CHANGE DETECTION DISABLED'] //['BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING']
         },
         writerOpts: {
           commitsSort: ['subject', 'scope'],
