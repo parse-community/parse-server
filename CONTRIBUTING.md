@@ -363,18 +363,20 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   This reverts commit 1234567890abcdef.
   ```
 
-> ⚠️ A `revert` prefix will *always* trigger a release. Generally, a commit that did not trigger a release when it was initially merged should also not trigger a release when it is reverted. For example, do not use the `revert` prefix when reverting a commit that has a `ci` prefix:
+⚠️ A `revert` prefix will *always* trigger a release. Generally, a commit that did not trigger a release when it was initially merged should also not trigger a release when it is reverted. For example, do not use the `revert` prefix when reverting a commit that has a `ci` prefix:
 
   ```
   ci: add something
   ```
-  should be reverted with:
+  is reverted with:
   ```
   ci: remove something
   ```
   instead of:
   ```
   revert: ci: add something
+  
+  This reverts commit 1234567890abcdef.
   ```
 
 ### Major Release / Long-Term-Support
