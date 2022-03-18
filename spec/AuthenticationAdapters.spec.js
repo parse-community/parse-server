@@ -1707,6 +1707,26 @@ describe('Apple Game Center Auth adapter', () => {
       expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: invalid.com');
     }
   });
+
+  it('validateAuthData invalid public key http url', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'http://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'Apple Game Center - invalid publicKeyUrl: http://static.gc.apple.com/public-key/gc-prod-4.cer'
+      );
+    }
+  });
 });
 
 describe('phant auth adapter', () => {

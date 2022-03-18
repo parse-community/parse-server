@@ -1,3 +1,186 @@
+# [5.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.28...5.0.0-alpha.29) (2022-03-12)
+
+
+### Features
+
+* bump required node engine to >=12.22.10 ([#7846](https://github.com/parse-community/parse-server/issues/7846)) ([5ace99d](https://github.com/parse-community/parse-server/commit/5ace99d542a11e422af46d9fd6b1d3d2513b34cf))
+
+
+### BREAKING CHANGES
+
+* This requires Node.js version >=12.22.10. ([5ace99d](5ace99d))
+
+# [5.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.27...5.0.0-alpha.28) (2022-03-12)
+
+
+### Bug Fixes
+
+* security vulnerability that allows remote code execution (GHSA-p6h4-93qp-jhcm) ([#7844](https://github.com/parse-community/parse-server/issues/7844)) ([e569f40](https://github.com/parse-community/parse-server/commit/e569f402b1fd8648fb0d1523b71b2a03273902a5))
+
+# [5.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.26...5.0.0-alpha.27) (2022-03-12)
+
+
+### Reverts
+
+* update node engine to 2.22.0 ([#7827](https://github.com/parse-community/parse-server/issues/7827)) ([f235412](https://github.com/parse-community/parse-server/commit/f235412c1b6c2b173b7531f285429ea7214b56a2))
+
+# [5.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.25...5.0.0-alpha.26) (2022-02-25)
+
+
+### Bug Fixes
+
+* package.json & package-lock.json to reduce vulnerabilities ([#7823](https://github.com/parse-community/parse-server/issues/7823)) ([5ca2288](https://github.com/parse-community/parse-server/commit/5ca228882332b65f3ac05407e6e4da1ee3ef3749))
+
+# [5.0.0-alpha.25](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.24...5.0.0-alpha.25) (2022-02-23)
+
+
+### Bug Fixes
+
+* upgrade winston from 3.5.0 to 3.5.1 ([#7820](https://github.com/parse-community/parse-server/issues/7820)) ([4af253d](https://github.com/parse-community/parse-server/commit/4af253d1f8654a6f57b5137ad310cdacadc922cc))
+
+# [5.0.0-alpha.24](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.23...5.0.0-alpha.24) (2022-02-10)
+
+
+### Bug Fixes
+
+* security upgrade follow-redirects from 1.14.7 to 1.14.8 ([#7801](https://github.com/parse-community/parse-server/issues/7801)) ([70088a9](https://github.com/parse-community/parse-server/commit/70088a95a78393da2a4ac68be81e63107747626a))
+
+# [5.0.0-alpha.23](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.22...5.0.0-alpha.23) (2022-02-06)
+
+
+### Bug Fixes
+
+* server crash using GraphQL due to missing @apollo/client peer dependency ([#7787](https://github.com/parse-community/parse-server/issues/7787)) ([08089d6](https://github.com/parse-community/parse-server/commit/08089d6fcbb215412448ce7d92b21b9fe6c929f2))
+
+# [5.0.0-alpha.22](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.21...5.0.0-alpha.22) (2022-02-06)
+
+
+### Features
+
+* upgrade to MongoDB Node.js driver 4.x for MongoDB 5.0 support ([#7794](https://github.com/parse-community/parse-server/issues/7794)) ([f88aa2a](https://github.com/parse-community/parse-server/commit/f88aa2a62a533e5344d1c13dd38c5a0b283a480a))
+
+
+### BREAKING CHANGES
+
+* The MongoDB GridStore adapter has been removed. By default, Parse Server already uses GridFS, so if you do not manually use the GridStore adapter, you can ignore this change. ([f88aa2a](f88aa2a))
+
+# [5.0.0-alpha.21](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.20...5.0.0-alpha.21) (2022-01-25)
+
+
+### Features
+
+* add Cloud Code context to `ParseObject.fetch` ([#7779](https://github.com/parse-community/parse-server/issues/7779)) ([315290d](https://github.com/parse-community/parse-server/commit/315290d16110110938f80a6b779cc2d1db58c552))
+
+# [5.0.0-alpha.20](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.19...5.0.0-alpha.20) (2022-01-22)
+
+
+### Bug Fixes
+
+* bump node-fetch from 2.6.1 to 3.1.1 ([#7782](https://github.com/parse-community/parse-server/issues/7782)) ([9082351](https://github.com/parse-community/parse-server/commit/90823514113a1a085ebc818f7109b3fd7591346f))
+
+# [5.0.0-alpha.19](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.18...5.0.0-alpha.19) (2022-01-22)
+
+
+### Bug Fixes
+
+* bump nanoid from 3.1.25 to 3.2.0 ([#7781](https://github.com/parse-community/parse-server/issues/7781)) ([f5f63bf](https://github.com/parse-community/parse-server/commit/f5f63bfc64d3481ed944ceb5e9f50b33dccd1ce9))
+
+# [5.0.0-alpha.18](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.17...5.0.0-alpha.18) (2022-01-13)
+
+
+### Bug Fixes
+
+* security upgrade follow-redirects from 1.14.6 to 1.14.7 ([#7769](https://github.com/parse-community/parse-server/issues/7769)) ([8f5a861](https://github.com/parse-community/parse-server/commit/8f5a8618cfa7ed9a2a239a095abffa8f3fd8d31a))
+
+# [5.0.0-alpha.17](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.16...5.0.0-alpha.17) (2022-01-13)
+
+
+### Bug Fixes
+
+* schema cache not cleared in some cases ([#7678](https://github.com/parse-community/parse-server/issues/7678)) ([5af6e5d](https://github.com/parse-community/parse-server/commit/5af6e5dfaa129b1a350afcba4fb381b21c4cc35d))
+
+# [5.0.0-alpha.16](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.15...5.0.0-alpha.16) (2022-01-02)
+
+
+### Features
+
+* add Idempotency to Postgres ([#7750](https://github.com/parse-community/parse-server/issues/7750)) ([0c3feaa](https://github.com/parse-community/parse-server/commit/0c3feaaa1751964c0db89f25674935c3354b1538))
+
+# [5.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.14...5.0.0-alpha.15) (2022-01-02)
+
+
+### Features
+
+* support `postgresql` protocol in database URI ([#7757](https://github.com/parse-community/parse-server/issues/7757)) ([caf4a23](https://github.com/parse-community/parse-server/commit/caf4a2341f554b28e3918c53e7e897a3ca47bf8b))
+
+# [5.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.13...5.0.0-alpha.14) (2022-01-02)
+
+
+### Features
+
+* support relativeTime query constraint on Postgres ([#7747](https://github.com/parse-community/parse-server/issues/7747)) ([16b1b2a](https://github.com/parse-community/parse-server/commit/16b1b2a19714535ca805f2dbb3b561d8f6a519a7))
+
+# [5.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.12...5.0.0-alpha.13) (2021-12-08)
+
+
+### Bug Fixes
+
+* node engine compatibility did not include node 16 ([#7739](https://github.com/parse-community/parse-server/issues/7739)) ([ea7c014](https://github.com/parse-community/parse-server/commit/ea7c01400f992a1263543706fe49b6174758a2d6))
+
+# [5.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.11...5.0.0-alpha.12) (2021-12-06)
+
+
+### Bug Fixes
+
+* adding or modifying a nested property requires addField permissions ([#7679](https://github.com/parse-community/parse-server/issues/7679)) ([6a6248b](https://github.com/parse-community/parse-server/commit/6a6248b6cb2e732d17131e18e659943b894ed2f1))
+
+# [5.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.10...5.0.0-alpha.11) (2021-11-29)
+
+
+### Bug Fixes
+
+* upgrade mime from 2.5.2 to 3.0.0 ([#7725](https://github.com/parse-community/parse-server/issues/7725)) ([f5ef98b](https://github.com/parse-community/parse-server/commit/f5ef98bde32083403c0e30a12162fcc1e52cac37))
+
+# [5.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.9...5.0.0-alpha.10) (2021-11-29)
+
+
+### Bug Fixes
+
+* upgrade parse from 3.3.1 to 3.4.0 ([#7723](https://github.com/parse-community/parse-server/issues/7723)) ([d4c1f47](https://github.com/parse-community/parse-server/commit/d4c1f473073764cb0570c633fc4a30669c2ce889))
+
+# [5.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.8...5.0.0-alpha.9) (2021-11-27)
+
+
+### Bug Fixes
+
+* unable to use objectId size higher than 19 on GraphQL API ([#7627](https://github.com/parse-community/parse-server/issues/7627)) ([ed86c80](https://github.com/parse-community/parse-server/commit/ed86c807721cc52a1a5a9dea0b768717eec269ed))
+
+# [5.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.7...5.0.0-alpha.8) (2021-11-18)
+
+
+### Features
+
+* add support for Node 16 ([#7707](https://github.com/parse-community/parse-server/issues/7707)) ([45cc58c](https://github.com/parse-community/parse-server/commit/45cc58c7e5e640a46c5d508019a3aa81242964b1))
+
+
+### BREAKING CHANGES
+
+* Removes official Node 15 support which has reached it end-of-life date. ([45cc58c](45cc58c))
+
+# [5.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.6...5.0.0-alpha.7) (2021-11-12)
+
+
+### Bug Fixes
+
+* node engine range has no upper limit to exclude incompatible node versions ([#7692](https://github.com/parse-community/parse-server/issues/7692)) ([573558d](https://github.com/parse-community/parse-server/commit/573558d3adcbcc6222c92003829867e1a73eef94))
+
+# [5.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.5...5.0.0-alpha.6) (2021-11-10)
+
+
+### Reverts
+
+* refactor: allow ES import for cloud string if package type is module ([b64640c](https://github.com/parse-community/parse-server/commit/b64640c5705f733798783e68d216e957044ef23c))
+
 # [5.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.4...5.0.0-alpha.5) (2021-11-01)
 
 

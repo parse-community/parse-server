@@ -89,10 +89,54 @@ describe('batch', () => {
     expect(internalURL).toEqual('/classes/Object');
   });
 
-  it('should handle a batch request without transaction', async done => {
+  it('should return the proper url with no url provided', () => {
+    const originalURL = '/parse/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      undefined,
+      publicServerURL
+    )('/parse/classes/Object');
+
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
+  it('should return the proper url with no public url provided', () => {
+    const originalURL = '/parse/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      serverURLNaked,
+      undefined
+    )('/parse/classes/Object');
+
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
+  it('should return the proper url with bad url provided', () => {
+    const originalURL = '/parse/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      'badurl.com',
+      publicServerURL
+    )('/parse/classes/Object');
+
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
+  it('should return the proper url with bad public url provided', () => {
+    const originalURL = '/parse/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      serverURLNaked,
+      'badurl.com'
+    )('/parse/classes/Object');
+
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
+  it('should handle a batch request without transaction', async () => {
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
-    request({
+    const response = await request({
       method: 'POST',
       headers: headers,
       url: 'http://localhost:8378/1/batch',
@@ -110,28 +154,25 @@ describe('batch', () => {
           },
         ],
       }),
-    }).then(response => {
-      expect(response.data.length).toEqual(2);
-      expect(response.data[0].success.objectId).toBeDefined();
-      expect(response.data[0].success.createdAt).toBeDefined();
-      expect(response.data[1].success.objectId).toBeDefined();
-      expect(response.data[1].success.createdAt).toBeDefined();
-      const query = new Parse.Query('MyObject');
-      query.find().then(results => {
-        expect(databaseAdapter.createObject.calls.count()).toBe(2);
-        expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
-        expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
-        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
-        done();
-      });
     });
+
+    expect(response.data.length).toEqual(2);
+    expect(response.data[0].success.objectId).toBeDefined();
+    expect(response.data[0].success.createdAt).toBeDefined();
+    expect(response.data[1].success.objectId).toBeDefined();
+    expect(response.data[1].success.createdAt).toBeDefined();
+    const query = new Parse.Query('MyObject');
+    const results = await query.find();
+    expect(databaseAdapter.createObject.calls.count()).toBe(2);
+    expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
+    expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
+    expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
   });
 
-  it('should handle a batch request with transaction = false', async done => {
-    await reconfigureServer();
+  it('should handle a batch request with transaction = false', async () => {
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
-    request({
+    const response = await request({
       method: 'POST',
       headers: headers,
       url: 'http://localhost:8378/1/batch',
@@ -150,21 +191,18 @@ describe('batch', () => {
         ],
         transaction: false,
       }),
-    }).then(response => {
-      expect(response.data.length).toEqual(2);
-      expect(response.data[0].success.objectId).toBeDefined();
-      expect(response.data[0].success.createdAt).toBeDefined();
-      expect(response.data[1].success.objectId).toBeDefined();
-      expect(response.data[1].success.createdAt).toBeDefined();
-      const query = new Parse.Query('MyObject');
-      query.find().then(results => {
-        expect(databaseAdapter.createObject.calls.count()).toBe(2);
-        expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
-        expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
-        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
-        done();
-      });
     });
+    expect(response.data.length).toEqual(2);
+    expect(response.data[0].success.objectId).toBeDefined();
+    expect(response.data[0].success.createdAt).toBeDefined();
+    expect(response.data[1].success.objectId).toBeDefined();
+    expect(response.data[1].success.createdAt).toBeDefined();
+    const query = new Parse.Query('MyObject');
+    const results = await query.find();
+    expect(databaseAdapter.createObject.calls.count()).toBe(2);
+    expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
+    expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
+    expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
   });
 
   if (
@@ -191,58 +229,45 @@ describe('batch', () => {
         }
       });
 
-      it('should handle a batch request with transaction = true', async done => {
-        await reconfigureServer();
+      it('should handle a batch request with transaction = true', async () => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        myObject
-          .save()
-          .then(() => {
-            return myObject.destroy();
-          })
-          .then(() => {
-            spyOn(databaseAdapter, 'createObject').and.callThrough();
-
-            request({
-              method: 'POST',
-              headers: headers,
-              url: 'http://localhost:8378/1/batch',
-              body: JSON.stringify({
-                requests: [
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject',
-                    body: { key: 'value2' },
-                  },
-                ],
-                transaction: true,
-              }),
-            }).then(response => {
-              expect(response.data.length).toEqual(2);
-              expect(response.data[0].success.objectId).toBeDefined();
-              expect(response.data[0].success.createdAt).toBeDefined();
-              expect(response.data[1].success.objectId).toBeDefined();
-              expect(response.data[1].success.createdAt).toBeDefined();
-              const query = new Parse.Query('MyObject');
-              query.find().then(results => {
-                expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
-                for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
-                  expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
-                    databaseAdapter.createObject.calls.argsFor(i + 1)[3]
-                  );
-                }
-                expect(results.map(result => result.get('key')).sort()).toEqual([
-                  'value1',
-                  'value2',
-                ]);
-                done();
-              });
-            });
-          });
+        await myObject.save();
+        await myObject.destroy();
+        spyOn(databaseAdapter, 'createObject').and.callThrough();
+        const response = await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/batch',
+          body: JSON.stringify({
+            requests: [
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value2' },
+              },
+            ],
+            transaction: true,
+          }),
+        });
+        expect(response.data.length).toEqual(2);
+        expect(response.data[0].success.objectId).toBeDefined();
+        expect(response.data[0].success.createdAt).toBeDefined();
+        expect(response.data[1].success.objectId).toBeDefined();
+        expect(response.data[1].success.createdAt).toBeDefined();
+        const query = new Parse.Query('MyObject');
+        const results = await query.find();
+        expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
+        for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
+          expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
+            databaseAdapter.createObject.calls.argsFor(i + 1)[3]
+          );
+        }
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
 
       it('should not save anything when one operation fails in a transaction', async () => {
@@ -350,6 +375,7 @@ describe('batch', () => {
               transaction: true,
             }),
           });
+          fail();
         } catch (error) {
           expect(error).toBeDefined();
           const query = new Parse.Query('MyObject');

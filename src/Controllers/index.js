@@ -2,7 +2,6 @@ import authDataManager from '../Adapters/Auth';
 import { ParseServerOptions } from '../Options';
 import { loadAdapter } from '../Adapters/AdapterLoader';
 import defaults from '../defaults';
-import url from 'url';
 // Controllers
 import { LoggerController } from './LoggerController';
 import { FilesController } from './FilesController';
@@ -220,13 +219,14 @@ export function getAuthDataManager(options: ParseServerOptions) {
 export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
   let protocol;
   try {
-    const parsedURI = url.parse(databaseURI);
+    const parsedURI = new URL(databaseURI);
     protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
   } catch (e) {
     /* */
   }
   switch (protocol) {
     case 'postgres:':
+    case 'postgresql:':
       return new PostgresStorageAdapter({
         uri: databaseURI,
         collectionPrefix,

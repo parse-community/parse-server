@@ -5,16 +5,15 @@
 [![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=alpha)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Aalpha)
 [![Snyk Badge](https://snyk.io/test/github/parse-community/parse-server/badge.svg)](https://snyk.io/test/github/parse-community/parse-server)
 [![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
+[![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_15-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
-[![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
 [![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
 [![npm alpha version](https://img.shields.io/npm/v/parse-server/alpha.svg)](https://www.npmjs.com/package/parse-server)
-
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
 [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)][open-collective-link]
@@ -30,11 +29,15 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 ---
 
-A big *thank you* to all our backers and sponsors who support the development of Parse Platform!
+A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform!
 
-### 💎 Diamond Sponsors
-    
-[![Sponsor](https://opencollective.com/parse-server/sponsor/0/avatar.svg)](https://opencollective.com/parse-server/sponsor/0/website)
+### Diamond Sponsors
+
+[![Diamond Sponsors](https://opencollective.com/parse-server/tiers/diamond-sponsor.svg?avatarHeight=70&button=false)](https://opencollective.com/parse-server/contribute/diamond-sponsor-10560)
+
+#### Bronze Sponsors
+
+[![Bronze Sponsors](https://opencollective.com/parse-server/tiers/bronze-sponsor.svg?avatarHeight=36&button=false)](https://opencollective.com/parse-server/contribute/bronze-sponsor-10559)
 
 ---
 
@@ -113,8 +116,8 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 |------------|----------------|-------------|---------------|
 | Node.js 12 | 12.22.7        | April 2022  | ✅ Yes        |
 | Node.js 14 | 14.18.1        | April 2023  | ✅ Yes        |
-| Node.js 15 | 15.14.0        | June 2021   | ✅ Yes        |
-| Node.js 16 | 16.x.x         | April 2024  | ❌ Not tested |
+| Node.js 16 | 16.13.0        | April 2024  | ✅ Yes        |
+| Node.js 17 | 17.x           | June 2022   | ❌ Not tested |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
@@ -131,10 +134,10 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 
 | Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
 |-------------|-----------------|---------------|--------------------------|------------|
-| Postgres 11 | 3.0, 3.1        | November 2023 | April 2022               | ✅ Yes     |
-| Postgres 12 | 3.1             | November 2024 | April 2023               | ✅ Yes     |
-| Postgres 13 | 3.1             | November 2025 | April 2024               | ✅ Yes     |
-| Postgres 14 | 3.1             | November 2026 | April 2025               | ✅ Yes     |
+| Postgres 11 | 3.0, 3.1, 3.2   | November 2023 | April 2022               | ✅ Yes     |
+| Postgres 12 | 3.2             | November 2024 | April 2023               | ✅ Yes     |
+| Postgres 13 | 3.2             | November 2025 | April 2024               | ✅ Yes     |
+| Postgres 14 | 3.2             | November 2026 | April 2025               | ✅ Yes     |
 
 ### Locally
 ```bash
@@ -486,11 +489,12 @@ You can also find more adapters maintained by the community by searching on [npm
 
 Parse Server allows developers to choose from several options when hosting files:
 
-* `GridFSBucketAdapter`, which is backed by MongoDB;
-* `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
-* `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+* `GridFSBucketAdapter` - which is backed by MongoDB
+* `S3Adapter` - which is backed by [Amazon S3](https://aws.amazon.com/s3/)
+* `GCSAdapter` - which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+* `FSAdapter` - local file storage
 
-`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using Amazon S3, Google Cloud Storage, or local file storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
 ## Idempotency Enforcement
  
@@ -521,9 +525,26 @@ let api = new ParseServer({
 | `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specify the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
 | `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                              |
 
-### Notes <!-- omit in toc -->
+### Postgres <!-- omit in toc -->
 
-- This feature is currently only available for MongoDB and not for Postgres.
+To use this feature in Postgres, you will need to create a cron job using [pgAdmin](https://www.pgadmin.org/docs/pgadmin4/development/pgagent_jobs.html) or similar to call the Postgres function `idempotency_delete_expired_records()` that deletes expired idempotency records. You can find an example script below. Make sure the script has the same privileges to log into Postgres as Parse Server.
+
+```bash
+#!/bin/bash
+
+set -e
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    SELECT idempotency_delete_expired_records();
+EOSQL
+
+exec "$@"
+```
+
+Assuming the script above is named, `parse_idempotency_delete_expired_records.sh`, a cron job that runs the script every 2 minutes may look like:
+
+```bash
+2 * * * * /root/parse_idempotency_delete_expired_records.sh >/dev/null 2>&1
+```
 
 ## Localization
 
