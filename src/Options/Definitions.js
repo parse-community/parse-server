@@ -385,12 +385,6 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  schema: {
-    env: 'PARSE_SERVER_SCHEMA',
-    help:
-      'Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema',
-    action: parsers.objectParser,
-  },
   security: {
     env: 'PARSE_SERVER_SECURITY',
     help: 'The security options to identify and report weak security settings.',
