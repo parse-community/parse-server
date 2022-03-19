@@ -253,12 +253,26 @@ export interface ParseServerOptions {
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
+  /* The slow query options to identify and report slow endpoints
+  :DEFAULT: {} */
+  slowQuery: ?SlowQueryOptions;
   /* Set to true if new users should be created without public read and write access.
   :DEFAULT: false */
   enforcePrivateUsers: ?boolean;
   /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
   :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
+}
+
+export interface SlowQueryOptions {
+  /* Is true if Parse Server should record slow endpoints
+  :DEFAULT: false */
+  enable: ?boolean;
+  /* The threshold for how long a query shoud take before it is considered slow
+  :DEFAULT: 3000 */
+  threshold: ?number;
+  /* Is true if Slow Queries should display in the console log */
+  log: ?boolean;
 }
 
 export interface SecurityOptions {

@@ -148,6 +148,13 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     reqId: { type: 'String' },
     expire: { type: 'Date' },
   },
+  _SlowQuery: {
+    method: { type: 'String' },
+    path: { type: 'String' },
+    body: { type: 'Object' },
+    query: { type: 'Object' },
+    duration: { type: 'Number' },
+  },
 });
 
 const requiredColumns = Object.freeze({
@@ -168,6 +175,7 @@ const systemClasses = Object.freeze([
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
+  '_SlowQuery',
 ]);
 
 const volatileClasses = Object.freeze([
@@ -179,6 +187,7 @@ const volatileClasses = Object.freeze([
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
+  '_SlowQuery',
 ]);
 
 // Anything that start with role
@@ -648,6 +657,13 @@ const _IdempotencySchema = convertSchemaToAdapterSchema(
     classLevelPermissions: {},
   })
 );
+const _SlowQuerySchema = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_SlowQuery',
+    fields: defaultColumns._SlowQuery,
+    classLevelPermissions: {},
+  })
+);
 const VolatileClassesSchemas = [
   _HooksSchema,
   _JobStatusSchema,
@@ -657,6 +673,7 @@ const VolatileClassesSchemas = [
   _GraphQLConfigSchema,
   _AudienceSchema,
   _IdempotencySchema,
+  _SlowQuerySchema,
 ];
 
 const dbTypeMatchesObjectType = (dbType: SchemaField | string, objectType: SchemaField) => {

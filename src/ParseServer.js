@@ -42,6 +42,7 @@ import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 import { SecurityRouter } from './Routers/SecurityRouter';
+import { registerSlowQueryListener } from './SlowQuery';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
@@ -256,6 +257,11 @@ class ParseServer {
    */
   start(options: ParseServerOptions, callback: ?() => void) {
     const app = express();
+
+    if (options.slowQuery?.enable) {
+      registerSlowQueryListener(app, options);
+    }
+
     if (options.middleware) {
       let middleware;
       if (typeof options.middleware == 'string') {

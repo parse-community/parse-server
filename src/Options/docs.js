@@ -68,17 +68,26 @@
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
+ * @property {SchemaOptions} schema Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema
  * @property {SecurityOptions} security The security options to identify and report weak security settings.
  * @property {Function} serverCloseComplete Callback when server has closed
  * @property {Function} serverStartComplete Callback when server has started
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
+ * @property {SlowQueryOptions} slowQuery The slow query options to identify and report slow endpoints
  * @property {Boolean} startLiveQueryServer Starts the liveQuery server
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
+ */
+
+/**
+ * @interface SlowQueryOptions
+ * @property {Boolean} enable Is true if Parse Server should record slow endpoints
+ * @property {Boolean} log Is true if Slow Queries should display in the console log
+ * @property {Number} threshold The threshold for how long a query shoud take before it is considered slow
  */
 
 /**

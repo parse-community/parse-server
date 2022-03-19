@@ -23,6 +23,7 @@ const nestedOptionTypes = [
   'PagesRoute',
   'PasswordPolicyOptions',
   'SecurityOptions',
+  'SlowQueryOptions'
 ];
 
 /** The prefix of environment variables for nested options. */
@@ -40,6 +41,7 @@ const nestedOptionEnvPrefix = {
   'ParseServerOptions' : 'PARSE_SERVER_',
   'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
   'SecurityOptions': 'PARSE_SERVER_SECURITY_',
+  'SlowQueryOptions': 'PARSE_SERVER_SLOW_QUERY_'
 };
 
 function last(array) {

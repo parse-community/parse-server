@@ -385,6 +385,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  schema: {
+    env: 'PARSE_SERVER_SCHEMA',
+    help:
+      'Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema',
+    action: parsers.objectParser,
+  },
   security: {
     env: 'PARSE_SERVER_SECURITY',
     help: 'The security options to identify and report weak security settings.',
@@ -415,6 +421,12 @@ module.exports.ParseServerOptions = {
     help: 'Disables console output',
     action: parsers.booleanParser,
   },
+  slowQuery: {
+    env: 'PARSE_SERVER_SLOW_QUERY',
+    help: 'The slow query options to identify and report slow endpoints',
+    action: parsers.objectParser,
+    default: {},
+  },
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
@@ -443,6 +455,25 @@ module.exports.ParseServerOptions = {
     help: 'Key sent with outgoing webhook calls',
   },
 };
+module.exports.SlowQueryOptions = {
+  enable: {
+    env: 'PARSE_SERVER_SLOW_QUERY_ENABLE',
+    help: 'Is true if Parse Server should record slow endpoints',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  log: {
+    env: 'PARSE_SERVER_SLOW_QUERY_LOG',
+    help: 'Is true if Slow Queries should display in the console log',
+    action: parsers.booleanParser,
+  },
+  threshold: {
+    env: 'PARSE_SERVER_SLOW_QUERY_THRESHOLD',
+    help: 'The threshold for how long a query shoud take before it is considered slow',
+    action: parsers.numberParser('threshold'),
+    default: 3000,
+  },
+};
 module.exports.SecurityOptions = {
   checkGroups: {
     env: 'PARSE_SERVER_SECURITY_CHECK_GROUPS',
@@ -462,45 +493,6 @@ module.exports.SecurityOptions = {
       'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
     action: parsers.booleanParser,
     default: false,
-  },
-};
-module.exports.SchemaOptions = {
-  definitions: {
-    help: 'The schema definitions.',
-    default: [],
-  },
-  strict: {
-    env: 'PARSE_SERVER_SCHEMA_STRICT',
-    help: 'Is true if Parse Server should exit if schema update fail.',
-    action: parsers.booleanParser,
-    default: true,
-  },
-  deleteExtraFields: {
-    env: 'PARSE_SERVER_SCHEMA_DELETE_EXTRA_FIELDS',
-    help:
-      'Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  recreateModifiedFields: {
-    env: 'PARSE_SERVER_SCHEMA_RECREATE_MODIFIED_FIELDS',
-    help:
-      'Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  lockSchemas: {
-    env: 'PARSE_SERVER_SCHEMA_LOCK',
-    help:
-      'Is true if Parse Server will reject any attempts to modify the schema while the server is running.',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  beforeMigration: {
-    help: 'Execute a callback before running schema migrations.',
-  },
-  afterMigration: {
-    help: 'Execute a callback after running schema migrations.',
   },
 };
 module.exports.PagesOptions = {
