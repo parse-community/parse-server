@@ -363,6 +363,22 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   This reverts commit 1234567890abcdef.
   ```
 
+⚠️ A `revert` prefix will *always* trigger a release. Generally, a commit that did not trigger a release when it was initially merged should also not trigger a release when it is reverted. For example, do not use the `revert` prefix when reverting a commit that has a `ci` prefix:
+
+  ```
+  ci: add something
+  ```
+  is reverted with:
+  ```
+  ci: remove something
+  ```
+  instead of:
+  ```
+  revert: ci: add something
+  
+  This reverts commit 1234567890abcdef.
+  ```
+
 ### Major Release / Long-Term-Support
 
 Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch. 
