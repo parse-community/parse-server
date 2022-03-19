@@ -42,8 +42,7 @@ Details:
 - Suitable environment: experimental
 
 
-[log_release]: https://github.com/parse-community/parse-server/blob/release/CHANGELOG.md
-<!--[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md -->
+[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
 [log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
 [log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
 [branch_release]: https://github.com/parse-community/parse-server/tree/release

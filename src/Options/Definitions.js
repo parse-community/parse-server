@@ -350,6 +350,24 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
+  requestKeywordDenylist: {
+    env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',
+    help:
+      'An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.',
+    action: parsers.arrayParser,
+    default: [
+      {
+        key: '_bsontype',
+        value: 'Code',
+      },
+      {
+        key: 'constructor',
+      },
+      {
+        key: '__proto__',
+      },
+    ],
+  },
   restAPIKey: {
     env: 'PARSE_SERVER_REST_API_KEY',
     help: 'Key for REST calls',
