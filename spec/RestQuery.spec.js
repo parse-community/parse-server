@@ -412,11 +412,12 @@ describe('RestQuery.each', () => {
     });
 
     Parse.Cloud.afterSave('TestObject2', function (req) {
-      expect(req.object.get('tobeaddbefore')).toBeTruthy();
-      expect(req.object.get('tobeaddbeforeandremoveafter')).toBeTruthy();
-      req.object.set('todelete', undefined);
-      req.object.set('tobeaddbeforeandremoveafter', undefined);
-      req.object.set('toadd', true);
+      const jsonObject = req.object.toJSON();
+      delete jsonObject.todelete;
+      delete jsonObject.tobeaddbeforeandremoveafter;
+      jsonObject.toadd = true;
+
+      return jsonObject;
     });
 
     rest.create(config, nobody, 'TestObject2', { todelete: true, tokeep: true }).then(response => {

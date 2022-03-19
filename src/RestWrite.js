@@ -1550,8 +1550,12 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       this.context
     )
     .then(result => {
-      const object = result?._toFullJSON ? result : updatedObject;
-      this.response.response = this._updateResponseWithData(object._toFullJSON(), this.data);
+      if (result && typeof result === 'object') {
+        if (!result._toFullJSON) {
+          this.pendingOps = {};
+        }
+        this.response.response = result;
+      }
     })
     .catch(function (err) {
       logger.warn('afterSave caught an error', err);
