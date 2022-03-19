@@ -1550,11 +1550,15 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       this.context
     )
     .then(result => {
-      if (result && typeof result === 'object') {
-        if (!result._toFullJSON) {
-          this.pendingOps = {};
-        }
+      const jsonReturned = result && !result._toFullJSON;
+      if (jsonReturned) {
+        this.pendingOps = true;
         this.response.response = result;
+      } else {
+        this.response.response = this._updateResponseWithData(
+          (result || updatedObject)._toFullJSON(),
+          this.data
+        );
       }
     })
     .catch(function (err) {

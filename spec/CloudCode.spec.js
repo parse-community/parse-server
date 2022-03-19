@@ -1962,6 +1962,36 @@ describe('afterSave hooks', () => {
     const myObject = new MyObject();
     myObject.save().then(() => done());
   });
+
+  it('should unset in afterSave', async () => {
+    Parse.Cloud.afterSave(
+      'MyObject',
+      ({ object }) => {
+        object.unset('secret');
+      },
+      {
+        skipWithMasterKey: true,
+      }
+    );
+    const obj = new Parse.Object('MyObject');
+    obj.set('secret', 'bar');
+    await obj.save();
+    expect(obj.get('secret')).toBeUndefined();
+    await obj.fetch();
+    expect(obj.get('secret')).toBe('bar');
+  });
+
+  it('should unset', async () => {
+    Parse.Cloud.beforeSave('MyObject', ({ object }) => {
+      object.set('secret', 'hidden');
+    });
+
+    Parse.Cloud.afterSave('MyObject', ({ object }) => {
+      object.unset('secret');
+    });
+    const obj = await new Parse.Object('MyObject').save();
+    expect(obj.get('secret')).toBeUndefined();
+  });
 });
 
 describe('beforeDelete hooks', () => {
