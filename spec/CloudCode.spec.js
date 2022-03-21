@@ -1552,17 +1552,19 @@ describe('Cloud Code', () => {
     Parse.Cloud.beforeSave('TestObject', ({ object }) => {
       if (!object.existed()) {
         object.set('secret', true);
+        return object;
       }
+      object.revert('secret');
     });
 
     Parse.Cloud.afterSave('TestObject', ({ object }) => {
       object.unset('secret');
     });
 
-    Parse.Cloud.afterFind(
+    Parse.Cloud.beforeFind(
       'TestObject',
-      ({ objects }) => {
-        objects.map(object => object.unset('secret'));
+      ({ query }) => {
+        query.exclude('secret');
       },
       {
         skipWithMasterKey: true,
