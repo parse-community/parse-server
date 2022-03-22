@@ -179,14 +179,14 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         {
           createdAt: {
             $eq: {
-              $relativeTime: '12 days ago'
-            }
-          }
+              $relativeTime: '12 days ago',
+            },
+          },
         },
-        { }
+        {}
       );
-      fail("Should have thrown error");
-    } catch(error) {
+      fail('Should have thrown error');
+    } catch (error) {
       expect(error.code).toBe(Parse.Error.INVALID_JSON);
     }
     await dropTable(client, tableName);
@@ -222,14 +222,14 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         {
           createdAt: {
             $ne: {
-              $relativeTime: '12 days ago'
-            }
-          }
+              $relativeTime: '12 days ago',
+            },
+          },
         },
-        { }
+        {}
       );
-      fail("Should have thrown error");
-    } catch(error) {
+      fail('Should have thrown error');
+    } catch (error) {
       expect(error.code).toBe(Parse.Error.INVALID_JSON);
     }
     await dropTable(client, tableName);
@@ -265,14 +265,14 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         {
           createdAt: {
             $exists: {
-              $relativeTime: '12 days ago'
-            }
-          }
+              $relativeTime: '12 days ago',
+            },
+          },
         },
-        { }
+        {}
       );
-      fail("Should have thrown error");
-    } catch(error) {
+      fail('Should have thrown error');
+    } catch (error) {
       expect(error.code).toBe(Parse.Error.INVALID_JSON);
     }
     await dropTable(client, tableName);
@@ -563,9 +563,10 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await reconfigureServer();
     const adapter = Config.get('test').database.adapter;
     const client = adapter._client;
-    const qs = "SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempotency_delete_expired_records'";
+    const qs =
+      "SELECT format('%I.%I(%s)', ns.nspname, p.proname, oidvectortypes(p.proargtypes)) FROM pg_proc p INNER JOIN pg_namespace ns ON (p.pronamespace = ns.oid) WHERE p.proname = 'idempotency_delete_expired_records'";
     const foundFunction = await client.one(qs);
-    expect(foundFunction.format).toBe("public.idempotency_delete_expired_records()");
+    expect(foundFunction.format).toBe('public.idempotency_delete_expired_records()');
     await adapter.deleteIdempotencyFunction();
     await client.none(qs);
   });
