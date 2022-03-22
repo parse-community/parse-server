@@ -83,6 +83,16 @@ async function config() {
       ['@semantic-release/git', {
         assets: [changelogFile, 'package.json', 'package-lock.json', 'npm-shrinkwrap.json'],
       }],
+      [
+        "@saithodev/semantic-release-backmerge",
+        {
+          "branches": [
+            { from: "beta", to: "alpha" },
+            { from: "release", to: "beta" },
+            { from: "release", to: "alpha" },
+          ]
+        }
+      ],
       ['@semantic-release/github', {
         successComment: getReleaseComment(),
         labels: ['type:ci'],
