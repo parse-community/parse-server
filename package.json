@@ -69,6 +69,7 @@
     "@babel/plugin-transform-flow-strip-types": "7.9.0",
     "@babel/preset-env": "7.10.0",
     "@parse/minami": "1.0.0",
+    "@saithodev/semantic-release-backmerge": "2.1.2",
     "@semantic-release/changelog": "5.0.1",
     "@semantic-release/commit-analyzer": "8.0.1",
     "@semantic-release/git": "9.0.0",
