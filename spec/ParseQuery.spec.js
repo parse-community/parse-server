@@ -4777,7 +4777,7 @@ describe('Parse.Query testing', () => {
       ttl: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago
     });
 
-    await Parse.Object.saveAll([obj1, obj2])
+    await Parse.Object.saveAll([obj1, obj2]);
     const q1 = new Parse.Query('MyCustomObject');
     q1.greaterThan('ttl', { $relativeTime: 'in 1 day' });
     const results1 = await q1.find({ useMasterKey: true });
@@ -4825,8 +4825,8 @@ describe('Parse.Query testing', () => {
     q.greaterThan('ttl', { $relativeTime: '-12 bananas ago' });
     try {
       await q.find({ useMasterKey: true });
-      fail("Should have thrown error");
-    } catch(error) {
+      fail('Should have thrown error');
+    } catch (error) {
       expect(error.code).toBe(Parse.Error.INVALID_JSON);
     }
   });
@@ -4842,8 +4842,8 @@ describe('Parse.Query testing', () => {
     q.greaterThan('nonDateField', { $relativeTime: '1 day ago' });
     try {
       await q.find({ useMasterKey: true });
-      fail("Should have thrown error");
-    } catch(error) {
+      fail('Should have thrown error');
+    } catch (error) {
       expect(error.code).toBe(Parse.Error.INVALID_JSON);
     }
   });
