@@ -375,6 +375,7 @@ class DatabaseController {
     // multiple schemas, so instead use loadSchema to get a schema.
     this.schemaPromise = null;
     this._transactionalSession = null;
+    this.options = options;
   }
 
   collectionExists(className: string): Promise<boolean> {

@@ -93,28 +93,31 @@ describe('Idempotency', () => {
     expect(counter).toBe(2);
   });
 
-  it_only_db('postgres')('should delete request entry when postgress ttl function is called', async () => {
-    const client = Config.get(Parse.applicationId).database.adapter._client;
-    let counter = 0;
-    Parse.Cloud.define('myFunction', () => {
-      counter++;
-    });
-    const params = {
-      method: 'POST',
-      url: 'http://localhost:8378/1/functions/myFunction',
-      headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-Master-Key': Parse.masterKey,
-        'X-Parse-Request-Id': 'abc-123',
-      },
-    };
-    await expectAsync(request(params)).toBeResolved();
-    await expectAsync(request(params)).toBeRejected();
-    await new Promise(resolve => setTimeout(resolve, maxTimeOut));
-    await client.one('SELECT idempotency_delete_expired_records()');
-    await expectAsync(request(params)).toBeResolved();
-    expect(counter).toBe(2);
-  });
+  it_only_db('postgres')(
+    'should delete request entry when postgress ttl function is called',
+    async () => {
+      const client = Config.get(Parse.applicationId).database.adapter._client;
+      let counter = 0;
+      Parse.Cloud.define('myFunction', () => {
+        counter++;
+      });
+      const params = {
+        method: 'POST',
+        url: 'http://localhost:8378/1/functions/myFunction',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+          'X-Parse-Request-Id': 'abc-123',
+        },
+      };
+      await expectAsync(request(params)).toBeResolved();
+      await expectAsync(request(params)).toBeRejected();
+      await new Promise(resolve => setTimeout(resolve, maxTimeOut));
+      await client.one('SELECT idempotency_delete_expired_records()');
+      await expectAsync(request(params)).toBeResolved();
+      expect(counter).toBe(2);
+    }
+  );
 
   it('should enforce idempotency for cloud code jobs', async () => {
     let counter = 0;
