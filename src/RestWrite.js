@@ -1552,7 +1552,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
-        this.pendingOps = true;
+        this.pendingOps = {};
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
