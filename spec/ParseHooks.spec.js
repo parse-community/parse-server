@@ -465,7 +465,9 @@ describe('Hooks', () => {
           expect(err).not.toBe(null);
           if (err) {
             expect(err.code).toBe(1337);
-            expect(err.message).toEqual('hacking that one!');
+            expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
+            expect(err.message.code).toEqual(1337);
+            expect(err.message.error).toEqual('hacking that one!');
           }
           done();
         }

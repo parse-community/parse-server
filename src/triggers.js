@@ -599,25 +599,28 @@ export function maybeRunQueryTrigger(
     );
 }
 
-export function resolveError(e, defaultOpts = {}) {
-  const { code = Parse.Error.SCRIPT_FAILED, message = 'Script failed.' } = defaultOpts;
-  if (!e) {
-    return new Parse.Error(code, message);
+export function resolveError(message, defaultOpts) {
+  if (!defaultOpts) {
+    defaultOpts = {};
   }
-  if (e instanceof Parse.Error) {
-    return e;
+  if (!message) {
+    return new Parse.Error(
+      defaultOpts.code || Parse.Error.SCRIPT_FAILED,
+      defaultOpts.message || 'Script failed.'
+    );
+  }
+  if (message instanceof Parse.Error) {
+    return message;
   }
 
+  const code = defaultOpts.code || Parse.Error.SCRIPT_FAILED;
   // If it's an error, mark it as a script failed
-  if (typeof e === 'string') {
-    return new Parse.Error(code, e);
+  if (typeof message === 'string') {
+    return new Parse.Error(code, message);
   }
-  const error = new Parse.Error(code, e.message || message);
-  if (e instanceof Error) {
-    error.stack = e.stack;
-  }
-  if (Number.isInteger(e.code)) {
-    error.code = e.code;
+  const error = new Parse.Error(code, message.message || message);
+  if (message instanceof Error) {
+    error.stack = message.stack;
   }
   return error;
 }
