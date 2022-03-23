@@ -1763,7 +1763,7 @@ class DatabaseController {
     if (this.options && this.options.requestKeywordDenylist) {
       // Scan request data for denied keywords
       for (const keyword of this.options.requestKeywordDenylist) {
-        const isMatch = (a, b) => (typeof a === 'string' && new RegExp(a).test(b)) || a === b;
+        const isMatch = (a, b) => (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
         if (isMatch(firstKey, keyword.key)) {
           throw new Parse.Error(
             Parse.Error.INVALID_KEY_NAME,

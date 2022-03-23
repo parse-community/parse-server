@@ -341,7 +341,7 @@ class Utils {
    * @returns {Boolean} True if a match was found, false otherwise.
    */
   static objectContainsKeyValue(obj, key, value) {
-    const isMatch = (a, b) => (typeof a === 'string' && new RegExp(a).test(b)) || a === b;
+    const isMatch = (a, b) => (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
     const isKeyMatch = k => isMatch(key, k);
     const isValueMatch = v => isMatch(value, v);
     for (const [k, v] of Object.entries(obj)) {
