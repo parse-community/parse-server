@@ -24,6 +24,8 @@
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
   - [Reverting](#reverting)
+- [Releasing](#releasing)
+  - [General Considerations](#general-considerations)
   - [Major Release / Long-Term-Support](#major-release--long-term-support)
 - [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
@@ -378,6 +380,12 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   
   This reverts commit 1234567890abcdef.
   ```
+
+## Releasing
+
+### General Considerations
+
+- The `package-lock.json` file has to be deleted and recreated by npm from scratch in regular intervals using the `npm i` command. It is not enough to only update the file via automated security pull requests (e.g. dependabot, snyk), that can create inconsistencies between sub-devependencies of a dependency and increase the chances of vulnerabilities. The file should be recreated once every release cycle which is usually monthly.
 
 ### Major Release / Long-Term-Support
 
