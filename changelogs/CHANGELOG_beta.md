@@ -1,3 +1,10 @@
+# [5.2.0-beta.1](https://github.com/parse-community/parse-server/compare/5.1.1...5.2.0-beta.1) (2022-03-23)
+
+
+### Features
+
+* improved LiveQuery error logging with additional information ([#7837](https://github.com/parse-community/parse-server/issues/7837)) ([443a509](https://github.com/parse-community/parse-server/commit/443a5099059538d379fe491793a5871fcbb4f377))
+
 # [5.0.0-beta.10](https://github.com/parse-community/parse-server/compare/5.0.0-beta.9...5.0.0-beta.10) (2022-03-15)
 
 
