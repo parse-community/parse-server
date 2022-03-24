@@ -11,6 +11,7 @@ import intersect from 'intersect';
 // @flow-disable-next
 import deepcopy from 'deepcopy';
 import logger from '../logger';
+import Utils from '../Utils';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import type { ParseServerOptions } from '../Options';
@@ -1698,8 +1699,8 @@ class DatabaseController {
     if (this.options && this.options.requestKeywordDenylist) {
       // Scan request data for denied keywords
       for (const keyword of this.options.requestKeywordDenylist) {
-        const isMatch = (a, b) => (typeof a === 'string' && new RegExp(a).test(b)) || a === b;
-        if (isMatch(firstKey, keyword.key)) {
+        const match = Utils.objectContainsKeyValue({ firstKey: undefined }, keyword.key, undefined);
+        if (match) {
           throw new Parse.Error(
             Parse.Error.INVALID_KEY_NAME,
             `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`

@@ -280,4 +280,18 @@ describe('Vulnerabilities', () => {
       expect(text.error).toBe('Prohibited keyword in request data: {"value":"aValue[123]*"}.');
     });
   });
+
+  describe('Ignore non-matches', () => {
+    it('ignores write request that contains only fraction of denied keyword', async () => {
+      await reconfigureServer({
+        requestKeywordDenylist: [{ key: 'abc' }],
+      });
+      // Initially saving an object executes the keyword detection in RestWrite.js
+      const obj = new TestObject({ a: { b: { c: 0 } } });
+      await expectAsync(obj.save()).toBeResolved();
+      // Modifying a nested key executes the keyword detection in DatabaseController.js
+      obj.increment('a.b.c');
+      await expectAsync(obj.save()).toBeResolved();
+    });
+  });
 });
