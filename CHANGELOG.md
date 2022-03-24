@@ -1,3 +1,10 @@
+## [4.10.8](https://github.com/parse-community/parse-server/compare/4.10.7...4.10.8) (2022-03-24)
+
+
+### Bug Fixes
+
+* sensitive keyword detection may produce false positives ([#7883](https://github.com/parse-community/parse-server/issues/7883)) ([d347613](https://github.com/parse-community/parse-server/commit/d34761369e3ad8358ef28abf3a3ec99467f1a958))
+
 ## [4.10.7](https://github.com/parse-community/parse-server/compare/4.10.6...4.10.7) (2022-03-11)
 
 
