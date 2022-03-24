@@ -342,8 +342,8 @@ class Utils {
    */
   static objectContainsKeyValue(obj, key, value) {
     const isMatch = (a, b) => (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
-    const isKeyMatch = k => isMatch(key, k);
-    const isValueMatch = v => isMatch(value, v);
+    const isKeyMatch = k => isMatch(k, key);
+    const isValueMatch = v => isMatch(v, value);
     for (const [k, v] of Object.entries(obj)) {
       if (key !== undefined && value === undefined && isKeyMatch(k)) {
         return true;
