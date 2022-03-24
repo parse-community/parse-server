@@ -142,7 +142,7 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
 }
 
 export function getDatabaseController(options: ParseServerOptions): DatabaseController {
-  const { databaseURI, collectionPrefix, databaseOptions, idempotencyOptions } = options;
+  const { databaseURI, collectionPrefix, databaseOptions } = options;
   let { databaseAdapter } = options;
   if (
     (databaseOptions ||
@@ -156,7 +156,7 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(databaseAdapter, idempotencyOptions);
+  return new DatabaseController(databaseAdapter, options);
 }
 
 export function getHooksController(
