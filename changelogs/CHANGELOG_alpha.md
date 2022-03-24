@@ -1,3 +1,10 @@
+# [5.2.0-alpha.3](https://github.com/parse-community/parse-server/compare/5.2.0-alpha.2...5.2.0-alpha.3) (2022-03-24)
+
+
+### Bug Fixes
+
+* security bump minimist from 1.2.5 to 1.2.6 ([#7884](https://github.com/parse-community/parse-server/issues/7884)) ([c5cf282](https://github.com/parse-community/parse-server/commit/c5cf282d11ffdc023764f8e7539a2bd6bc246fe1))
+
 # [5.2.0-alpha.2](https://github.com/parse-community/parse-server/compare/5.2.0-alpha.1...5.2.0-alpha.2) (2022-03-24)
 
 
