@@ -2,6 +2,7 @@ const core = require('@actions/core');
 const semver = require('semver');
 const fs = require('fs').promises;
 const path = require('path');
+const { createCipheriv } = require('crypto');
 
 /**
  * This checks whether any package dependency requires a minimum node engine
@@ -75,17 +76,20 @@ class NodeEngineCheck {
 
     // For each file
     for (const file of files) {
-
       // Get node version
       const contentString = await fs.readFile(file, 'utf-8');
-      const contentJson = JSON.parse(contentString);
-      const version = ((contentJson || {}).engines || {}).node;
+      try {
+        const contentJson = JSON.parse(contentString);
+        const version = ((contentJson || {}).engines || {}).node;
 
-      // Add response
-      response.push({
-        file: file,
-        nodeVersion: version
-      });
+        // Add response
+        response.push({
+          file: file,
+          nodeVersion: version
+        });
+      } catch(e) {
+        core.warning(`Ignoring file because it is not valid JSON: ${file}`);
+      }
     }
 
     // If results should be cleaned by removing undefined node versions
