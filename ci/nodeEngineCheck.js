@@ -2,7 +2,6 @@ const core = require('@actions/core');
 const semver = require('semver');
 const fs = require('fs').promises;
 const path = require('path');
-const { createCipheriv } = require('crypto');
 
 /**
  * This checks whether any package dependency requires a minimum node engine
