@@ -88,6 +88,7 @@ class NodeEngineCheck {
           nodeVersion: version
         });
       } catch(e) {
+        console.log(`Ignoring file because it is not valid JSON: ${file}`);
         core.warning(`Ignoring file because it is not valid JSON: ${file}`);
       }
     }
