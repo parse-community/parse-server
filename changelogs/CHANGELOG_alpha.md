@@ -1,3 +1,10 @@
+## [5.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.1...5.2.1-alpha.2) (2022-03-26)
+
+
+### Performance Improvements
+
+* reduce database operations when using the constant parameter in Cloud Function validation ([#7892](https://github.com/parse-community/parse-server/issues/7892)) ([48bd512](https://github.com/parse-community/parse-server/commit/48bd512eeb47666967dff8c5e723ddc5b7801daa))
+
 ## [5.2.1-alpha.1](https://github.com/parse-community/parse-server/compare/5.2.0...5.2.1-alpha.1) (2022-03-26)
 
 
