@@ -1,3 +1,4 @@
+// @flow
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
@@ -7,12 +8,16 @@ import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
+import type { SchemaOptions } from '../SchemaMigrations/Migrations';
 
-// @flow
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
 type NumberOrString = number | string;
 type ProtectedFields = any;
+type RequestKeywordDenylist = {
+  key: string | any,
+  value: any,
+};
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -170,7 +175,7 @@ export interface ParseServerOptions {
   sessionLength: ?number;
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
-  /* Sets wether we should expire the inactive sessions, defaults to true
+  /* Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
   :DEFAULT: true */
   expireInactiveSessions: ?boolean;
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
@@ -242,11 +247,19 @@ export interface ParseServerOptions {
   playgroundPath: ?string;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
+  /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema */
+  schema: ?SchemaOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
   /* The security options to identify and report weak security settings.
   :DEFAULT: {} */
   security: ?SecurityOptions;
+  /* Set to true if new users should be created without public read and write access.
+  :DEFAULT: false */
+  enforcePrivateUsers: ?boolean;
+  /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
+  :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
+  requestKeywordDenylist: ?(RequestKeywordDenylist[]);
 }
 
 export interface SecurityOptions {

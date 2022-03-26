@@ -172,6 +172,20 @@ function parseDefaultValue(elt, value, t) {
     literalValue = t.arrayExpression(array.map((value) => {
       if (typeof value == 'string') {
         return t.stringLiteral(value);
+      } else if (typeof value == 'number') {
+        return t.numericLiteral(value);
+      } else if (typeof value == 'object') {
+        const object = parsers.objectParser(value);
+        const props = Object.entries(object).map(([k, v]) => {
+          if (typeof v == 'string') {
+            return t.objectProperty(t.identifier(k), t.stringLiteral(v));
+          } else if (typeof v == 'number') {
+            return t.objectProperty(t.identifier(k), t.numericLiteral(v));
+          } else if (typeof v == 'boolean') {
+            return t.objectProperty(t.identifier(k), t.booleanLiteral(v));
+          }
+        });
+        return t.objectExpression(props);
       } else {
         throw new Error('Unable to parse array');
       }

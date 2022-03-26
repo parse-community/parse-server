@@ -74,7 +74,7 @@ export class Config {
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
       if (key == 'databaseController') {
-        config.database = new DatabaseController(cacheInfo.databaseController.adapter);
+        config.database = new DatabaseController(cacheInfo.databaseController.adapter, config);
       } else {
         config[key] = cacheInfo[key];
       }
@@ -113,6 +113,7 @@ export class Config {
       idempotencyOptions,
       emailVerifyTokenReuseIfValid,
       pages,
+      requestKeywordDenylist,
     } = serverOpts;
     validateTypes(serverOpts);
     if (masterKey === readOnlyMasterKey) {
@@ -144,6 +145,9 @@ export class Config {
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
+    if (requestKeywordDenylist === undefined) {
+      serverOpts.requestKeywordDenylist = requestKeywordDenylist.default;
+    }
   }
 
   static validatePagesOptions(pages) {
@@ -243,8 +247,6 @@ export class Config {
 
       if (accountLockout.unlockOnPasswordReset === undefined) {
         accountLockout.unlockOnPasswordReset = AccountLockoutOptions.unlockOnPasswordReset.default;
-      } else if (!isBoolean(accountLockout.unlockOnPasswordReset)) {
-        throw 'Parse Server option accountLockout.unlockOnPasswordReset must be a boolean.';
       }
     }
   }
@@ -272,20 +274,6 @@ export class Config {
         } else if (!(passwordPolicy.validatorPattern instanceof RegExp)) {
           throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
         }
-      }
-
-      if (
-        passwordPolicy.validatorCallback &&
-        typeof passwordPolicy.validatorCallback !== 'function'
-      ) {
-        throw 'passwordPolicy.validatorCallback must be a function.';
-      }
-
-      if (
-        passwordPolicy.doNotAllowUsername &&
-        typeof passwordPolicy.doNotAllowUsername !== 'boolean'
-      ) {
-        throw 'passwordPolicy.doNotAllowUsername must be a boolean value.';
       }
 
       if (
