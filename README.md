@@ -122,13 +122,13 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version     | Latest Version | End-of-Life  | Compatible |
-|-------------|----------------|--------------|------------|
-| MongoDB 4.0 | 4.0.27         | April 2022   | ✅ Yes      |
-| MongoDB 4.2 | 4.2.17         | TBD          | ✅ Yes      |
-| MongoDB 4.4 | 4.4.10         | TBD          | ✅ Yes      |
-| MongoDB 5.0 | 5.0.3          | January 2024 | ✅ Yes      |
-| MongoDB 5.1 | 5.1.0          | January 2024 | ✅ Yes      |
+| Version     | Latest Version | End-of-Life | Compatible |
+|-------------|----------------|-------------|------------|
+| MongoDB 4.0 | 4.0.27         | April 2022  | ✅ Yes      |
+| MongoDB 4.2 | 4.2.17         | TBD         | ✅ Yes      |
+| MongoDB 4.4 | 4.4.10         | TBD         | ✅ Yes      |
+| MongoDB 5.0 | 5.0.6          | TBD         | ✅ Yes      |
+| MongoDB 5.2 | 5.2.1          | TBD         | ✅ Yes      |
 
 #### PostgreSQL
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
