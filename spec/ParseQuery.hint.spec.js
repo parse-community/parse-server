@@ -146,7 +146,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
-  fit_only_mongodb_version('>=5.2')('query aggregate with hint string', async () => {
+  it_only_mongodb_version('>=5.2')('query aggregate with hint string', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
 
