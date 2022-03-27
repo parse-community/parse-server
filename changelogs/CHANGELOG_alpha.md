@@ -1,3 +1,10 @@
+# [5.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.2...5.3.0-alpha.1) (2022-03-27)
+
+
+### Features
+
+* add MongoDB 5.1 compatibility ([#7682](https://github.com/parse-community/parse-server/issues/7682)) ([90155cf](https://github.com/parse-community/parse-server/commit/90155cf1680e5e0499b0000e071c6cb0ce3aef96))
+
 ## [5.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.1...5.2.1-alpha.2) (2022-03-26)
 
 
