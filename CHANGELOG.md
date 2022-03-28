@@ -1,3 +1,10 @@
+## [4.10.9](https://github.com/parse-community/parse-server/compare/4.10.8...4.10.9) (2022-03-28)
+
+
+### Bug Fixes
+
+* security upgrade @parse/push-adapter from 3.4.1 to 4.1.2 ([#7897](https://github.com/parse-community/parse-server/issues/7897)) ([3d80ee5](https://github.com/parse-community/parse-server/commit/3d80ee5ec38169e16456a78932f3c38fcd225aae))
+
 ## [4.10.8](https://github.com/parse-community/parse-server/compare/4.10.7...4.10.8) (2022-03-24)
 
 
