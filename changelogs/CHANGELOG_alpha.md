@@ -1,3 +1,24 @@
+# [5.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.2...5.3.0-alpha.3) (2022-03-27)
+
+
+### Features
+
+* add MongoDB 5.2 support ([#7894](https://github.com/parse-community/parse-server/issues/7894)) ([6b4b358](https://github.com/parse-community/parse-server/commit/6b4b358f0842ae920e45652f5e8b2afebc6caf3a))
+
+# [5.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.1...5.3.0-alpha.2) (2022-03-27)
+
+
+### Bug Fixes
+
+* security upgrade parse push adapter from 4.1.0 to 4.1.2 ([#7893](https://github.com/parse-community/parse-server/issues/7893)) ([ef56e98](https://github.com/parse-community/parse-server/commit/ef56e98ef65041b4d3b7b82cce3473269c27f6fd))
+
+# [5.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.2...5.3.0-alpha.1) (2022-03-27)
+
+
+### Features
+
+* add MongoDB 5.1 compatibility ([#7682](https://github.com/parse-community/parse-server/issues/7682)) ([90155cf](https://github.com/parse-community/parse-server/commit/90155cf1680e5e0499b0000e071c6cb0ce3aef96))
+
 ## [5.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.1...5.2.1-alpha.2) (2022-03-26)
 
 
