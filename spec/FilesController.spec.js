@@ -43,7 +43,7 @@ describe('FilesController', () => {
     done();
   });
 
-  it('should pass databaseOptions to GridFSBucketAdapter', async () => {
+  it_only_db('mongo')('should pass databaseOptions to GridFSBucketAdapter', async () => {
     await reconfigureServer({
       databaseURI: 'mongodb://localhost:27017/parse',
       filesAdapter: null,
