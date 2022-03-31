@@ -83,36 +83,39 @@ class ParseServer {
     logging.setLogger(loggerController);
 
     // Note: Tests will start to fail if any validation happens after this is called.
-    databaseController
-      .performInitialization()
-      .then(() => hooksController.load())
-      .then(async () => {
+    (async () => {
+      try {
+        await databaseController.performInitialization();
+        await hooksController.load();
         if (schema) {
           await new DefinedSchemas(schema, this.config).execute();
+        }
+        if (cloud) {
+          addParseCloud();
+          if (typeof cloud === 'function') {
+            await cloud(Parse);
+          } else if (typeof cloud === 'string') {
+            if (process.env.npm_package_type === 'module') {
+              await import(path.resolve(process.cwd(), cloud));
+            } else {
+              require(path.resolve(process.cwd(), cloud));
+            }
+          } else {
+            throw "argument 'cloud' must either be a string or a function";
+          }
         }
         if (serverStartComplete) {
           serverStartComplete();
         }
-      })
-      .catch(error => {
+      } catch (error) {
         if (serverStartComplete) {
           serverStartComplete(error);
         } else {
           console.error(error);
           process.exit(1);
         }
-      });
-
-    if (cloud) {
-      addParseCloud();
-      if (typeof cloud === 'function') {
-        cloud(Parse);
-      } else if (typeof cloud === 'string') {
-        require(path.resolve(process.cwd(), cloud));
-      } else {
-        throw "argument 'cloud' must either be a string or a function";
       }
-    }
+    })();
 
     if (security && security.enableCheck && security.enableCheckLog) {
       new CheckRunner(options.security).run();
@@ -255,6 +258,9 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   start(options: ParseServerOptions, callback: ?() => void) {
+    if (!options) {
+      options = this.config;
+    }
     const app = express();
     if (options.middleware) {
       let middleware;
@@ -321,6 +327,25 @@ class ParseServer {
   static start(options: ParseServerOptions, callback: ?() => void) {
     const parseServer = new ParseServer(options);
     return parseServer.start(options, callback);
+  }
+
+  /**
+   * @static
+   * Create an async parse server
+   * @param {ParseServerOptions} options the parse server initialization options */
+  static createAsync(options) {
+    return new Promise((resolve, reject) => {
+      const parseServer = new ParseServer({
+        ...options,
+        serverStartComplete(error) {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(parseServer);
+          }
+        },
+      });
+    });
   }
 
   /**
