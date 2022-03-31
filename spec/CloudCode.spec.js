@@ -1,6 +1,7 @@
 'use strict';
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
+const ParseServer = require('../lib/index').ParseServer;
 const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
   .InMemoryCacheAdapter;
@@ -40,7 +41,10 @@ describe('Cloud Code', () => {
   });
 
   it('should wait for cloud code to load', async () => {
-    await reconfigureServer({
+    const config = Config.get('test');
+    const initiated = new Date();
+    const parseServer = await ParseServer.createAsync({
+      ...config,
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         Parse.Cloud.beforeSave('Test', () => {
@@ -48,6 +52,9 @@ describe('Cloud Code', () => {
         });
       },
     });
+    const now = new Date();
+    expect(now.getTime() - initiated.getTime() > 1000).toBeTrue();
+    parseServer.start({ port: 18380, mountPath: '/test2' });
     await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
       new Parse.Error(141, 'Cannot save.')
     );

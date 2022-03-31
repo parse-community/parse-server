@@ -142,32 +142,46 @@ let server;
 let didChangeConfiguration = false;
 
 // Allows testing specific configurations of Parse Server
-const reconfigureServer = async (changedConfiguration = {}) => {
-  if (server) {
-    await new Promise(resolve => server.close(resolve));
-    server = undefined;
-  }
-  let parseServer = undefined;
-  didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
-  const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-    mountPath: '/1',
-    port,
-  });
-  cache.clear();
-  parseServer = await ParseServer.createAsync(newConfiguration);
-  parseServer.start();
-  Parse.CoreManager.setRESTController(RESTController);
-  parseServer.expressApp.use('/1', err => {
-    console.error(err);
-    fail('should not call next');
-  });
-  server = parseServer.server;
-  server.on('connection', connection => {
-    const key = `${connection.remoteAddress}:${connection.remotePort}`;
-    openConnections[key] = connection;
-    connection.on('close', () => {
-      delete openConnections[key];
-    });
+const reconfigureServer = (changedConfiguration = {}) => {
+  return new Promise((resolve, reject) => {
+    if (server) {
+      return server.close(() => {
+        server = undefined;
+        reconfigureServer(changedConfiguration).then(resolve, reject);
+      });
+    }
+    try {
+      let parseServer = undefined;
+      didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
+      const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+        serverStartComplete: error => {
+          if (error) {
+            reject(error);
+          } else {
+            Parse.CoreManager.setRESTController(RESTController);
+            resolve(parseServer);
+          }
+        },
+        mountPath: '/1',
+        port,
+      });
+      cache.clear();
+      parseServer = ParseServer.start(newConfiguration);
+      parseServer.expressApp.use('/1', err => {
+        console.error(err);
+        fail('should not call next');
+      });
+      server = parseServer.server;
+      server.on('connection', connection => {
+        const key = `${connection.remoteAddress}:${connection.remotePort}`;
+        openConnections[key] = connection;
+        connection.on('close', () => {
+          delete openConnections[key];
+        });
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
