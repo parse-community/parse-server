@@ -1556,7 +1556,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
-          (result || updatedObject)._toFullJSON(),
+          (result || updatedObject).toJSON(),
           this.data
         );
       }
@@ -1663,6 +1663,12 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     if (!pending[key]) {
       data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
       this.storage.fieldsChangedByTrigger.push(key);
+    }
+  }
+  for (const key in response) {
+    const value = response[key];
+    if (value?.__type === 'Pointer') {
+      delete response[key];
     }
   }
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {

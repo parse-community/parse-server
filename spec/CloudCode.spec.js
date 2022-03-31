@@ -1598,6 +1598,32 @@ describe('Cloud Code', () => {
     expect(obj.get('count')).toBe(0);
   });
 
+  it('Pointer should not be cleared by triggers', async () => {
+    Parse.Cloud.afterSave('MyObject', () => {});
+    const foo = await new Parse.Object('Test', { foo: 'bar' }).save();
+    const obj = await new Parse.Object('MyObject', { foo }).save();
+    const foo2 = obj.get('foo');
+    expect(foo2.get('foo')).toBe('bar');
+  });
+
+  it('Can set a pointer in triggers', async () => {
+    Parse.Cloud.beforeSave('MyObject', () => {});
+    Parse.Cloud.afterSave(
+      'MyObject',
+      async ({ object }) => {
+        const foo = await new Parse.Object('Test', { foo: 'bar' }).save();
+        object.set({ foo });
+        await object.save(null, { useMasterKey: true });
+      },
+      {
+        skipWithMasterKey: true,
+      }
+    );
+    const obj = await new Parse.Object('MyObject').save();
+    const foo2 = obj.get('foo');
+    expect(foo2.get('foo')).toBe('bar');
+  });
+
   it('beforeSave should not sanitize database', async done => {
     const { adapter } = Config.get(Parse.applicationId).database;
     const spy = spyOn(adapter, 'findOneAndUpdate').and.callThrough();
