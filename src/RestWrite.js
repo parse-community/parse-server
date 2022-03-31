@@ -1666,7 +1666,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     }
   }
   for (const key in response) {
-    const skipKeys = ['objectId', 'createdAt', 'updatedAt'];
+    const skipKeys = ['objectId', 'createdAt', 'updatedAt', 'username'];
     if (skipKeys.includes(key)) {
       continue;
     }
