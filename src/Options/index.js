@@ -8,7 +8,28 @@ import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
-import type { SchemaOptions } from '../SchemaMigrations/Migrations';
+
+export interface SchemaOptions {
+  /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema
+  :DEFAULT: [] */
+  definitions: any;
+  /* Is true if Parse Server should exit if schema update fail.
+  :DEFAULT: false */
+  strict: ?boolean;
+  /* Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.
+  :DEFAULT: false */
+  deleteExtraFields: ?boolean;
+  /* Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.
+  :DEFAULT: false */
+  recreateModifiedFields: ?boolean;
+  /* Is true if Parse Server will reject any attempts to modify the schema while the server is running.
+  :DEFAULT: false */
+  lockSchemas: ?boolean;
+  /* Execute a callback before running schema migrations. */
+  beforeMigration: ?() => void | Promise<void>;
+  /* Execute a callback after running schema migrations. */
+  afterMigration: ?() => void | Promise<void>;
+}
 
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
@@ -246,7 +267,9 @@ export interface ParseServerOptions {
   playgroundPath: ?string;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
-  /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema */
+  /* Defined schema
+  :ENV: PARSE_SERVER_SCHEMA
+  */
   schema: ?SchemaOptions;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
