@@ -35,17 +35,6 @@ export interface IndexesInterface {
   [key: string]: IndexInterface;
 }
 
-export interface SchemaOptions {
-  definitions: JSONSchema[];
-  strict: ?boolean;
-  deleteExtraFields: ?boolean;
-  recreateModifiedFields: ?boolean;
-  lockSchemas: ?boolean;
-  /* Callback when server has started and before running schemas migration operations if schemas key provided */
-  beforeMigration: ?() => void | Promise<void>;
-  afterMigration: ?() => void | Promise<void>;
-}
-
 export type CLPOperation = 'find' | 'count' | 'get' | 'update' | 'create' | 'delete';
 // @Typescript 4.1+ // type CLPPermission = 'requiresAuthentication' | '*' |  `user:${string}` | `role:${string}`
 
