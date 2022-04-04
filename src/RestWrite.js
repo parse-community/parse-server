@@ -1671,7 +1671,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       continue;
     }
     const value = response[key];
-    if (value?.__type === 'Pointer' || data[key] === value) {
+    if ((value.__type && value.__type === 'Pointer') || data[key] === value) {
       delete response[key];
     }
   }
