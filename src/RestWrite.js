@@ -1667,11 +1667,11 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
   }
   for (const key in response) {
     const skipKeys = ['objectId', 'createdAt', 'updatedAt', 'username'];
-    const value = response[key];
-    if (skipKeys.includes(key) || value == null) {
+    if (skipKeys.includes(key)) {
       continue;
     }
-    if ((value.__type && value.__type === 'Pointer') || data[key] === value) {
+    const value = response[key];
+    if (value == null || (value.__type && value.__type === 'Pointer') || data[key] === value) {
       delete response[key];
     }
   }
