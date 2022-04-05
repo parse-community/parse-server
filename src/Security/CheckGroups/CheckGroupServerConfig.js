@@ -74,7 +74,7 @@ class CheckGroupServerConfig extends CheckGroup {
       }),
       new Check({
         title: 'Anonymous Users disabled',
-        warning: 'Anonymous users allows signup without a username or password .',
+        warning: 'Anonymous users allows signup without a username or password.',
         solution: "Change Parse Server configuration to 'enableAnonymousUsers: false'.",
         check: () => {
           if (config.enableAnonymousUsers || config.enableAnonymousUsers == null) {
