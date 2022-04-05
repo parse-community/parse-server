@@ -319,6 +319,41 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  it('can log on afterLiveQueryEvent throw', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+
+    let session = undefined;
+    Parse.Cloud.afterLiveQueryEvent('TestObject', ({ sessionToken }) => {
+      session = sessionToken;
+      /* eslint-disable no-undef */
+      foo.bar();
+      /* eslint-enable no-undef */
+    });
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+    object.set({ foo: 'bar' });
+    await object.save();
+    await new Promise(resolve => subscription.on('error', resolve));
+    expect(logger.error).toHaveBeenCalledWith(
+      `Failed running afterLiveQueryEvent on class TestObject for event update with session ${session} with:\n Error: {"message":"foo is not defined","code":141}`
+    );
+  });
+
   it('can handle afterEvent sendEvent to false', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -566,6 +601,33 @@ describe('ParseLiveQuery', function () {
     await query.subscribe();
   });
 
+  it('can log on beforeConnect throw', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    let token = undefined;
+    Parse.Cloud.beforeConnect(({ sessionToken }) => {
+      token = sessionToken;
+      /* eslint-disable no-undef */
+      foo.bar();
+      /* eslint-enable no-undef */
+    });
+    new Parse.Query(TestObject).subscribe();
+    await new Promise(resolve => Parse.LiveQuery.on('error', resolve));
+    Parse.LiveQuery.removeAllListeners('error');
+    expect(logger.error).toHaveBeenCalledWith(
+      `Failed running beforeConnect for session ${token} with:\n Error: {"message":"foo is not defined","code":141}`
+    );
+  });
+
   it('can handle beforeSubscribe error', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -592,6 +654,34 @@ describe('ParseLiveQuery', function () {
       expect(error).toBe('You shall not subscribe!');
       done();
     });
+  });
+
+  it('can log on beforeSubscribe error', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+
+    Parse.Cloud.beforeSubscribe(TestObject, () => {
+      /* eslint-disable no-undef */
+      foo.bar();
+      /* eslint-enable no-undef */
+    });
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    await new Promise(resolve => subscription.on('error', resolve));
+
+    expect(logger.error).toHaveBeenCalledWith(
+      `Failed running beforeSubscribe on TestObject for session undefined with:\n Error: {"message":"foo is not defined","code":141}`
+    );
   });
 
   it('can handle mutate beforeSubscribe query', async done => {

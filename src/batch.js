@@ -13,7 +13,7 @@ function mountOnto(router) {
 function parseURL(urlString) {
   try {
     return new URL(urlString);
-  } catch(error) {
+  } catch (error) {
     return undefined;
   }
 }

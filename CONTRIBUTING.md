@@ -22,6 +22,11 @@
 - [Pull Request](#pull-request)
   - [Breaking Change](#breaking-change)
 - [Merging](#merging)
+  - [Breaking Change](#breaking-change-1)
+  - [Reverting](#reverting)
+- [Releasing](#releasing)
+  - [General Considerations](#general-considerations)
+  - [Major Release / Long-Term-Support](#major-release--long-term-support)
 - [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
 
@@ -303,7 +308,7 @@ For release automation, the title of pull requests needs to be written in a defi
 ```
 
 The _type_ is the category of change that is made, possible types are:
-- `feat` - add a new feature
+- `feat` - add a new feature or improve an existing feature
 - `fix` - fix a bug
 - `refactor` - refactor code without impact on features or performance
 - `docs` - add or edit code comments, documentation, GitHub pages
@@ -335,8 +340,13 @@ If a pull request contains a braking change, the description of the pull request
 
 The following guide is for anyone who merges a contributor pull request into the working branch, the working branch into a release branch, a release branch into another release branch, or any other direct commits such as hotfixes into release branches or the working branch.
 
-- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message.
-- If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
+- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
+- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
+- For changelog generation, only the commit message set when merging the pull request is relevant. The title and description of the GitHub pull request as authored by the contributor have no influence on the changelog generation. However, the title of the GitHub pull request should be used as the commit message. See the following chapters for considerations in special scenarios, e.g. merging a breaking change or reverting a commit.
+
+### Breaking Change
+
+If the pull request contains a breaking change, the commit message must contain the phrase `BREAKING CHANGE`, capitalized and without any formatting, followed by a short description of the breaking change and ideally how the developer should address it, all in a single line. This line should contain more details focusing on the "breaking” aspect of the change and is intended to assist the developer in adapting. Keep it concise, as it will become part of the changelog entry, for example:
 
   ```
   fix: remove handle from door
@@ -344,8 +354,55 @@ The following guide is for anyone who merges a contributor pull request into the
   BREAKING CHANGE: You cannot open the door anymore by using a handle. See the [#migration guide](http://example.com) for more details.
   ```
   Keep in mind that in a repository with release automation, merging such a commit message will trigger a release with a major version increment.
-- A contributor pull request must be merged into the working branch using `Squash and Merge`, to create a single commit message that describes the change.
-- A release branch or the default branch must be merged into another release branch using `Merge Commit`, to preserve each individual commit message that describes its respective change.
+
+### Reverting
+
+If the commit reverts a previous commit, use the prefix `revert:`, followed by the header of the reverted commit. In the body of the commit message add `This reverts commit <hash>.`, where the hash is the SHA of the commit being reverted. For example:
+
+  ```
+  revert: fix: remove handle from door
+  
+  This reverts commit 1234567890abcdef.
+  ```
+
+⚠️ A `revert` prefix will *always* trigger a release. Generally, a commit that did not trigger a release when it was initially merged should also not trigger a release when it is reverted. For example, do not use the `revert` prefix when reverting a commit that has a `ci` prefix:
+
+  ```
+  ci: add something
+  ```
+  is reverted with:
+  ```
+  ci: remove something
+  ```
+  instead of:
+  ```
+  revert: ci: add something
+  
+  This reverts commit 1234567890abcdef.
+  ```
+
+## Releasing
+
+### General Considerations
+
+- The `package-lock.json` file has to be deleted and recreated by npm from scratch in regular intervals using the `npm i` command. It is not enough to only update the file via automated security pull requests (e.g. dependabot, snyk), that can create inconsistencies between sub-devependencies of a dependency and increase the chances of vulnerabilities. The file should be recreated once every release cycle which is usually monthly.
+
+### Major Release / Long-Term-Support
+
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch. 
+
+#### Preparing Release
+
+The following changes are done in the `alpha` branch, before publishing the last `beta` version that will eventually become the major release. This way the changes trickle naturally through all branches and code consistency is ensured among branches.
+
+- Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
+- Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
+
+#### Publishing Release
+
+1. Create LTS branch `release-#.x.x` off the latest version tag on `release` branch.
+2. Create temporary branch `build-release` off branch `beta` and create a pull request with `release` as the base branch.
+3. Merge branch `build-release` into `release`. Given that there will be breaking changes, a new major release will be created. In the unlikely case that there have been no breaking changes between the previous major release and the upcoming release, a major version increment has to be triggered manually. See the docs of the release automation framework for how to do that.
 
 ## Versioning
 
