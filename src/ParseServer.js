@@ -332,7 +332,8 @@ class ParseServer {
   /**
    * @static
    * Create an async parse server
-   * @param {ParseServerOptions} options the parse server initialization options */
+   * @param {ParseServerOptions} options the parse server initialization options 
+   */
   static createAsync(options) {
     return new Promise((resolve, reject) => {
       const parseServer = new ParseServer({
