@@ -640,7 +640,7 @@ RestQuery.prototype.replaceEquality = function () {
 
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
-RestQuery.prototype.runFind = function (options = {}) {
+RestQuery.prototype.runFind = async function (options = {}) {
   if (this.findOptions.limit === 0) {
     this.response = { results: [] };
     return Promise.resolve();
@@ -654,24 +654,25 @@ RestQuery.prototype.runFind = function (options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
-  return this.config.database
-    .find(this.className, this.restWhere, findOptions, this.auth)
-    .then(results => {
-      if (this.className === '_User' && !findOptions.explain) {
-        for (var result of results) {
-          cleanResultAuthData(result);
-        }
-      }
+  const results = await this.config.database.find(
+    this.className,
+    this.restWhere,
+    findOptions,
+    this.auth
+  );
+  if (this.className === '_User' && !findOptions.explain) {
+    for (var result of results) {
+      cleanResultAuthData(result);
+    }
+  }
+  await this.config.filesController.expandFilesInObject(this.config, results, this.auth);
 
-      this.config.filesController.expandFilesInObject(this.config, results);
-
-      if (this.redirectClassName) {
-        for (var r of results) {
-          r.className = this.redirectClassName;
-        }
-      }
-      this.response = { results: results };
-    });
+  if (this.redirectClassName) {
+    for (var r of results) {
+      r.className = this.redirectClassName;
+    }
+  }
+  this.response = { results: results };
 };
 
 // Returns a promise for whether it was successful.

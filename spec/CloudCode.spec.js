@@ -3375,8 +3375,72 @@ describe('afterLogin hook', () => {
   });
 });
 
+const str = 'Hello World!';
+const fileData = [];
+for (let i = 0; i < str.length; i++) {
+  fileData.push(str.charCodeAt(i));
+}
+
 describe('saveFile hooks', () => {
-  it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
+  it('file hooks should be called', async () => {
+    const triggers = {
+      beforeSave({ file }) {
+        file.setTags({ tagA: 'some-tag' });
+        file.setMetadata({ foo: 'bar' });
+      },
+      afterSave(req) {
+        expect(req.master).toBe(true);
+        expect(req.file._tags).toEqual({ tagA: 'some-tag' });
+        expect(req.file._metadata).toEqual({ foo: 'bar' });
+      },
+      beforeCreate(req) {
+        expect(req.file).toBeDefined();
+        expect(req.file._name.includes('hello.txt')).toBeTrue();
+        expect(req.master).toBeFalse();
+        expect(req.contentType).toBe('text/plain');
+      },
+      beforeFind(req) {
+        expect(req.file).toBeDefined();
+        expect(req.file._name.includes('hello.txt')).toBeTrue();
+        expect(req.master).toBeFalse();
+        expect(req.contentType).toBe('text/plain');
+      },
+      afterFind(req) {
+        expect(req.file).toBeDefined();
+        expect(req.fileSize).toBe(12);
+        expect(req.master).toBeFalse();
+        expect(req.download).toBeFalse();
+        expect(req.contentType).toBe('text/plain');
+        req.download = true;
+      },
+    };
+    for (const key in triggers) {
+      spyOn(triggers, key).and.callThrough();
+    }
+    Parse.Cloud.beforeCreate(Parse.File, triggers.beforeCreate);
+    Parse.Cloud.beforeSave(Parse.File, triggers.beforeSave);
+    Parse.Cloud.afterSave(Parse.File, triggers.afterSave);
+    Parse.Cloud.beforeFind(Parse.File, triggers.beforeFind);
+    Parse.Cloud.afterFind(Parse.File, triggers.afterFind);
+
+    const file = new Parse.File('hello.txt', fileData, 'text/plain');
+    await file.save({ useMasterKey: true });
+
+    const fileObject = await new Parse.Object('File', { file }).save();
+    await fileObject.fetch();
+
+    const response = await request({
+      url: file.url(),
+    });
+    expect(response.text).toBe('Hello World!');
+    expect(Object.keys(response.headers)).toContain('content-disposition');
+    await new Promise(resolve => setTimeout(resolve, 100));
+    for (const key in triggers) {
+      expect(triggers[key]).toHaveBeenCalled();
+    }
+  });
+
+  fit('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSaveFile(() => {

@@ -305,7 +305,7 @@ RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
   const extraData = { className: this.className };
 
   // Expand file objects
-  this.config.filesController.expandFilesInObject(this.config, userData);
+  await this.config.filesController.expandFilesInObject(this.config, userData, this.auth);
 
   const user = triggers.inflate(extraData, userData);
 
@@ -1306,7 +1306,11 @@ RestWrite.prototype.handleInstallation = function () {
 RestWrite.prototype.expandFilesForExistingObjects = function () {
   // Check whether we have a short-circuited response - only then run expansion.
   if (this.response && this.response.response) {
-    this.config.filesController.expandFilesInObject(this.config, this.response.response);
+    return this.config.filesController.expandFilesInObject(
+      this.config,
+      this.response.response,
+      this.auth
+    );
   }
 };
 

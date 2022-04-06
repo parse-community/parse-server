@@ -2,13 +2,10 @@
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
 import { validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import { maybeRunFileTrigger, Types } from '../triggers';
 import path from 'path';
 import mime from 'mime';
 const Parse = require('parse').Parse;
-
-const legacyFilesRegex = new RegExp(
-  '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*'
-);
 
 export class FilesController extends AdaptableController {
   getFileData(config, filename) {
@@ -55,36 +52,31 @@ export class FilesController extends AdaptableController {
    * with the current mount point and app id.
    * Object may be a single object or list of REST-format objects.
    */
-  expandFilesInObject(config, object) {
+  async expandFilesInObject(config, object, auth) {
     if (object instanceof Array) {
-      object.map(obj => this.expandFilesInObject(config, obj));
+      await Promise.all(object.map(async obj => await this.expandFilesInObject(config, obj, auth)));
       return;
     }
     if (typeof object !== 'object') {
       return;
     }
     for (const key in object) {
-      const fileObject = object[key];
+      let fileObject = object[key];
       if (fileObject && fileObject['__type'] === 'File') {
         if (fileObject['url']) {
           continue;
         }
         const filename = fileObject['name'];
-        // all filenames starting with "tfss-" should be from files.parsetfss.com
-        // all filenames starting with a "-" seperated UUID should be from files.parse.com
-        // all other filenames have been migrated or created from Parse Server
-        if (config.fileKey === undefined) {
-          fileObject['url'] = this.adapter.getFileLocation(config, filename);
-        } else {
-          if (filename.indexOf('tfss-') === 0) {
-            fileObject['url'] =
-              'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
-          } else if (legacyFilesRegex.test(filename)) {
-            fileObject['url'] =
-              'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
-          } else {
-            fileObject['url'] = this.adapter.getFileLocation(config, filename);
-          }
+        fileObject['url'] = this.adapter.getFileLocation(config, filename);
+        const contentType = mime.getType(filename);
+        const triggerResult = await maybeRunFileTrigger(
+          Types.beforeCreate,
+          { file: new Parse.File(filename, [], contentType), contentType },
+          config,
+          auth
+        );
+        if (triggerResult instanceof Parse.File) {
+          fileObject = triggerResult.toJSON();
         }
       }
     }

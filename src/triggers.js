@@ -12,10 +12,7 @@ export const Types = {
   afterDelete: 'afterDelete',
   beforeFind: 'beforeFind',
   afterFind: 'afterFind',
-  beforeSaveFile: 'beforeSaveFile',
-  afterSaveFile: 'afterSaveFile',
-  beforeDeleteFile: 'beforeDeleteFile',
-  afterDeleteFile: 'afterDeleteFile',
+  beforeCreate: 'beforeCreate',
   beforeConnect: 'beforeConnect',
   beforeSubscribe: 'beforeSubscribe',
   afterEvent: 'afterEvent',
@@ -49,6 +46,9 @@ const baseStore = function () {
 export function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
     return parseClass.className;
+  }
+  if (parseClass && parseClass.name) {
+    return parseClass.name.replace('Parse', '@');
   }
   return parseClass;
 }
@@ -138,11 +138,6 @@ export function addTrigger(type, className, handler, applicationId, validationHa
   validateClassNameForTriggers(className, type);
   add(Category.Triggers, `${type}.${className}`, handler, applicationId);
   add(Category.Validators, `${type}.${className}`, validationHandler, applicationId);
-}
-
-export function addFileTrigger(type, handler, applicationId, validationHandler) {
-  add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
-  add(Category.Validators, `${type}.${FileClassName}`, validationHandler, applicationId);
 }
 
 export function addConnectTrigger(type, handler, applicationId, validationHandler) {
@@ -970,6 +965,9 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         return fileObject;
       }
       const result = await fileTrigger(request);
+      if (request.download) {
+        fileObject.download = true;
+      }
       logTriggerSuccessBeforeHook(
         triggerType,
         'Parse.File',

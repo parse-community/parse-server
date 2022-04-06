@@ -64,31 +64,49 @@ export class FilesRouter {
     return router;
   }
 
-  getHandler(req, res) {
+  async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
     const contentType = mime.getType(filename);
-    if (isFileStreamable(req, filesController)) {
-      filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
-        res.status(404);
-        res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-      });
-    } else {
-      filesController
-        .getFileData(config, filename)
-        .then(data => {
-          res.status(200);
-          res.set('Content-Type', contentType);
-          res.set('Content-Length', data.length);
-          res.end(data);
-        })
-        .catch(() => {
-          res.status(404);
-          res.set('Content-Type', 'text/plain');
-          res.end('File not found.');
-        });
+    try {
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file: new Parse.File(filename, [], contentType), contentType },
+        config,
+        req.auth
+      );
+      if (isFileStreamable(req, filesController)) {
+        filesController.handleFileStream(config, filename, req, res, contentType);
+        return;
+      }
+      const data = await filesController.getFileData(config, filename);
+      const base64 = data.toString('base64');
+      const file = new Parse.File(filename, { base64 }, contentType);
+      const fileSize = Buffer.byteLength(data);
+      const fileObject = { file, fileSize, download: false, contentType };
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        fileObject,
+        config,
+        req.auth
+      );
+      if (triggerResult instanceof Parse.File) {
+        fileObject.file = triggerResult;
+      }
+      res.status(200);
+      res.set('Content-Type', fileObject.file.contentType);
+      if (fileObject.download) {
+        res.set('Content-Disposition', `attachment;filename=${fileObject.file.name()}`);
+      }
+      const bufferData = Buffer.from(fileObject.file._data, 'base64');
+      res.set('Content-Length', bufferData.length);
+      res.end(bufferData);
+    } catch (e) {
+      console.log(e);
+      res.status(404);
+      res.set('Content-Type', 'text/plain');
+      res.end((e && e.message) || 'File not found.');
     }
   }
 
@@ -141,7 +159,7 @@ export class FilesRouter {
     try {
       // run beforeSaveFile trigger
       const triggerResult = await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeSaveFile,
+        triggers.Types.beforeSave,
         fileObject,
         config,
         req.auth
@@ -194,12 +212,7 @@ export class FilesRouter {
         };
       }
       // run afterSaveFile trigger
-      await triggers.maybeRunFileTrigger(
-        triggers.Types.afterSaveFile,
-        fileObject,
-        config,
-        req.auth
-      );
+      await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
@@ -222,7 +235,7 @@ export class FilesRouter {
       file._url = filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeDeleteFile,
+        triggers.Types.beforeDelete,
         fileObject,
         req.config,
         req.auth
@@ -231,7 +244,7 @@ export class FilesRouter {
       await filesController.deleteFile(req.config, filename);
       // run afterDeleteFile trigger
       await triggers.maybeRunFileTrigger(
-        triggers.Types.afterDeleteFile,
+        triggers.Types.afterDelete,
         fileObject,
         req.config,
         req.auth
