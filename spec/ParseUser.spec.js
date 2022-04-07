@@ -14,20 +14,23 @@ const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 
 describe('Parse.User testing', () => {
-  it('retrieves original object when user logs in with third party auth', async done => {
+  it('retrieves original object when user logs in with third party auth', async () => {
     let counter = 0;
     Parse.Cloud.afterSave(Parse.User, async request => {
       if (!request.original) {
         const user = request.object;
+        expect(user.get('authData')).not.toBeUndefined();
+        expect(counter).not.toBeGreaterThan(0);
         if (user.get('authData') != null) {
-          if (counter > 0) {
-            done.fail();
-          }
           counter++;
         }
+      } else if (request.original && counter > 0) {
+        return;
       }
     });
-    Parse.User._registerAuthenticationProvider(getMockFacebookProvider());
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith('facebook');
     await Parse.User.logOut();
     await Parse.User._logInWith('facebook');
   });
