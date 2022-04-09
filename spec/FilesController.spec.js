@@ -43,6 +43,20 @@ describe('FilesController', () => {
     done();
   });
 
+  it_only_db('mongo')('should pass databaseOptions to GridFSBucketAdapter', async () => {
+    await reconfigureServer({
+      databaseURI: 'mongodb://localhost:27017/parse',
+      filesAdapter: null,
+      databaseAdapter: null,
+      databaseOptions: {
+        retryWrites: true,
+      },
+    });
+    const config = Config.get(Parse.applicationId);
+    expect(config.database.adapter._mongoOptions.retryWrites).toBeTrue();
+    expect(config.filesController.adapter._mongoOptions.retryWrites).toBeTrue();
+  });
+
   it('should create a server log on failure', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 

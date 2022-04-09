@@ -1,3 +1,17 @@
+# [5.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.4...5.3.0-alpha.5) (2022-04-09)
+
+
+### Bug Fixes
+
+* security upgrade moment from 2.29.1 to 2.29.2 ([#7931](https://github.com/parse-community/parse-server/issues/7931)) ([6b68593](https://github.com/parse-community/parse-server/commit/6b68593eaec17e8b183899d2b92699c9ede7625b))
+
+# [5.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.3...5.3.0-alpha.4) (2022-04-04)
+
+
+### Bug Fixes
+
+* custom database options are not passed to MongoDB GridFS ([#7911](https://github.com/parse-community/parse-server/issues/7911)) ([a72b384](https://github.com/parse-community/parse-server/commit/a72b384f76137a3d83ffb69f65cb25aff1bbab4f))
+
 # [5.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.2...5.3.0-alpha.3) (2022-03-27)
 
 
