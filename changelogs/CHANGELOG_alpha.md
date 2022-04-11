@@ -1,3 +1,10 @@
+# [5.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.5...5.3.0-alpha.6) (2022-04-11)
+
+
+### Bug Fixes
+
+* peer dependency mismatch for GraphQL dependencies ([#7934](https://github.com/parse-community/parse-server/issues/7934)) ([b7a1d76](https://github.com/parse-community/parse-server/commit/b7a1d7617b4bcac677cecedfeb6ac4a27447083b))
+
 # [5.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.4...5.3.0-alpha.5) (2022-04-09)
 
 
