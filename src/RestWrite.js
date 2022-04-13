@@ -1665,8 +1665,16 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
+  const defaultMandatoryColumnsInResponse = Object.freeze({
+    _User: ['username'],
+  });
+  const skipKeys = [
+    'objectId',
+    'createdAt',
+    'updatedAt',
+    ...(defaultMandatoryColumnsInResponse[this.className] || []),
+  ];
   for (const key in response) {
-    const skipKeys = ['objectId', 'createdAt', 'updatedAt', 'username'];
     if (skipKeys.includes(key)) {
       continue;
     }
