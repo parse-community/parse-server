@@ -30,9 +30,9 @@ describe('Parse.User testing', () => {
     });
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    await Parse.User._logInWith('facebook');
+    await Parse.User.logInWith('facebook');
     await Parse.User.logOut();
-    await Parse.User._logInWith('facebook');
+    await Parse.User.logInWith('facebook');
   });
 
   it('user sign up class method', async done => {
