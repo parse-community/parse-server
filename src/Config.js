@@ -7,6 +7,7 @@ import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import {
   IdempotencyOptions,
+  GraphQLConfig,
   FileUploadOptions,
   AccountLockoutOptions,
   PagesOptions,
@@ -72,6 +73,7 @@ export class Config {
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
+    graphQLConfig,
     emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
@@ -113,6 +115,7 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
+    this.validateGraphQLConfig(graphQLConfig);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
@@ -266,6 +269,28 @@ export class Config {
       idempotencyOptions.paths = IdempotencyOptions.paths.default;
     } else if (!(idempotencyOptions.paths instanceof Array)) {
       throw 'idempotency paths must be of an array of strings';
+    }
+  }
+
+  static validateGraphQLConfig(graphQLConfig: GraphQLConfig) {
+    if (!graphQLConfig) return;
+    if (Object.prototype.toString.call(graphQLConfig) !== '[object Object]') {
+      throw 'Parse Server option graphQLConfig must be an object.';
+    }
+    if (graphQLConfig.enabledForClasses === undefined) {
+      graphQLConfig.enabledForClasses = GraphQLConfig.enabledForClasses.default;
+    } else if (!Array.isArray(graphQLConfig.enabledForClasses)) {
+      throw 'Parse Server option graphQLConfig.enabledForClasses must be an array.';
+    }
+    if (graphQLConfig.disabledForClasses === undefined) {
+      graphQLConfig.disabledForClasses = GraphQLConfig.disabledForClasses.default;
+    } else if (!Array.isArray(graphQLConfig.disabledForClasses)) {
+      throw 'Parse Server option graphQLConfig.disabledForClasses must be an array.';
+    }
+    if (graphQLConfig.classConfigs === undefined) {
+      graphQLConfig.classConfigs = GraphQLConfig.classConfigs.default;
+    } else if (!Array.isArray(graphQLConfig.classConfigs)) {
+      throw 'Parse Server option graphQLConfig.classConfigs must be an array.';
     }
   }
 

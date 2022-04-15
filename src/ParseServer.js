@@ -292,6 +292,10 @@ class ParseServer {
       if (options.mountPlayground) {
         parseGraphQLServer.applyPlayground(app);
       }
+
+      if (options.graphQLConfig) {
+        parseGraphQLServer.setGraphQLConfig(options.graphQLConfig);
+      }
     }
 
     const server = app.listen(options.port, options.host, callback);

@@ -10,6 +10,13 @@
  */
 
 /**
+ * @interface GraphQLConfig
+ * @property {String[]} enabledForClasses All classes enabled by default, provide an empty array to disable all classes.
+ * @property {String[]} disabledForClasses Selectively disable specific classes.
+ * @property {Any} classConfigs Provide an array of per-class settings
+ */
+
+/**
  * @interface ParseServerOptions
  * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true

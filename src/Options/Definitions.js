@@ -50,6 +50,23 @@ module.exports.SchemaOptions = {
     default: false,
   },
 };
+module.exports.GraphQLConfig = {
+  enabledForClasses: {
+    env: 'PARSE_SERVER_GRAPHQL_CONFIG_ENABLED_FOR_CLASSES',
+    help: 'All classes enabled by default, provide an empty array to disable all classes',
+    action: parsers.arrayParser,
+  },
+  disabledForClasses: {
+    env: 'PARSE_SERVER_GRAPHQL_CONFIG_DISABLED_FOR_CLASSES',
+    help: 'Selectively disable specific classes',
+    action: parsers.arrayParser,
+  },
+  classConfigs: {
+    env: 'PARSE_SERVER_GRAPHQL_CONFIG_DISABLED_FOR_CLASSES',
+    help: 'Provide an array of per-class settings',
+    action: parsers.objectParser,
+  },
+};
 module.exports.ParseServerOptions = {
   accountLockout: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT',
@@ -226,6 +243,11 @@ module.exports.ParseServerOptions = {
     help: 'Options for file uploads',
     action: parsers.objectParser,
     default: {},
+  },
+  graphQLConfig: {
+    env: 'PARSE_SERVER_GRAPHQL_CONFIG',
+    help: 'Additional config for the GraphQL Server',
+    action: parsers.objectParser,
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
