@@ -7,7 +7,7 @@ import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import {
   IdempotencyOptions,
-  GraphQLConfig,
+  GraphqlConfig,
   FileUploadOptions,
   AccountLockoutOptions,
   PagesOptions,
@@ -73,7 +73,7 @@ export class Config {
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
-    graphQLConfig,
+    graphqlConfig,
     emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
@@ -115,7 +115,7 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
-    this.validateGraphQLConfig(graphQLConfig);
+    this.validateGraphqlConfig(graphqlConfig);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
@@ -272,25 +272,19 @@ export class Config {
     }
   }
 
-  static validateGraphQLConfig(graphQLConfig: GraphQLConfig) {
-    if (!graphQLConfig) return;
-    if (Object.prototype.toString.call(graphQLConfig) !== '[object Object]') {
-      throw 'Parse Server option graphQLConfig must be an object.';
+  static validateGraphqlConfig(graphqlConfig: GraphqlConfig) {
+    if (!graphqlConfig) return;
+    if (Object.prototype.toString.call(graphqlConfig) !== '[object Object]') {
+      throw 'Parse Server option graphqlConfig must be an object.';
     }
-    if (graphQLConfig.enabledForClasses === undefined) {
-      graphQLConfig.enabledForClasses = GraphQLConfig.enabledForClasses.default;
-    } else if (!Array.isArray(graphQLConfig.enabledForClasses)) {
-      throw 'Parse Server option graphQLConfig.enabledForClasses must be an array.';
+    if (graphqlConfig.enabledForClasses && !Array.isArray(graphqlConfig.enabledForClasses)) {
+      throw 'Parse Server option graphqlConfig.enabledForClasses must be an array.';
     }
-    if (graphQLConfig.disabledForClasses === undefined) {
-      graphQLConfig.disabledForClasses = GraphQLConfig.disabledForClasses.default;
-    } else if (!Array.isArray(graphQLConfig.disabledForClasses)) {
-      throw 'Parse Server option graphQLConfig.disabledForClasses must be an array.';
+    if (graphqlConfig.disabledForClasses && !Array.isArray(graphqlConfig.disabledForClasses)) {
+      throw 'Parse Server option graphqlConfig.disabledForClasses must be an array.';
     }
-    if (graphQLConfig.classConfigs === undefined) {
-      graphQLConfig.classConfigs = GraphQLConfig.classConfigs.default;
-    } else if (!Array.isArray(graphQLConfig.classConfigs)) {
-      throw 'Parse Server option graphQLConfig.classConfigs must be an array.';
+    if (graphqlConfig.classConfigs && !Array.isArray(graphqlConfig.classConfigs)) {
+      throw 'Parse Server option graphqlConfig.classConfigs must be an array.';
     }
   }
 

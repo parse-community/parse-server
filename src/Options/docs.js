@@ -10,10 +10,10 @@
  */
 
 /**
- * @interface GraphQLConfig
- * @property {String[]} enabledForClasses All classes enabled by default, provide an empty array to disable all classes.
- * @property {String[]} disabledForClasses Selectively disable specific classes.
+ * @interface GraphqlConfig
  * @property {Any} classConfigs Provide an array of per-class settings
+ * @property {String[]} disabledForClasses Selectively disable specific classes
+ * @property {String[]} enabledForClasses All classes enabled by default Provide an empty array to disable all classes
  */
 
 /**
@@ -51,6 +51,7 @@
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {FileUploadOptions} fileUpload Options for file uploads
+ * @property {GraphqlConfig} graphqlConfig GraphQL server configuration options
  * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0

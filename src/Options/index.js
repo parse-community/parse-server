@@ -40,73 +40,18 @@ type RequestKeywordDenylist = {
   value: any,
 };
 
-export interface GraphQLConfig {
-  // All classes enabled by default
-  // Provide an empty array to disable all classes
-  enabledForClasses: ?Array<string>;
+export interface GraphqlConfig {
+  /* All classes enabled by default Provide an empty array to disable all classes
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG_ENABLED_FOR_CLASSES */
+  enabledForClasses: ?(string[]);
 
-  // Selectively disable specific classes
-  disabledForClasses: ?Array<string>;
+  /* Selectively disable specific classes
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG_DISABLED_FOR_CLASSES */
+  disabledForClasses: ?(string[]);
 
-  // Provide an array of per-class settings
-  classConfigs: ?Array<{
-    // You must provide a className
-    // Only provide one config object per class
-    className: string,
-
-    type: ?{
-      // By default, all fields can be sent for
-      // a create or update mutation. Use this
-      // setting to limit to specific fields.
-      inputFields: ?{
-        create: ?Array<string>,
-        update: ?Array<string>,
-      },
-
-      // By default, all fields can be resolved
-      // on a get or find query. Use this to limit
-      // which fields can be selected.
-      outputFields: ?Array<string>,
-
-      // By default, all valid fields can be used
-      // to filter a query. Use this to limit
-      // which fields can be used to constrain a query.
-      constraintFields: ?Array<string>,
-
-      // By default, all valid fields can be used
-      // to sort the results of a query. Use this to
-      // limit which fields can be used to sort a query
-      // and which direction that sort can be set to.
-      sortFields: ?({
-        field: string,
-        asc: boolean,
-        desc: boolean,
-      }[]),
-    },
-
-    // By default, a get and find query type is created
-    // for all included classes. Use this to disable
-    // the available query types for this class.
-    query: ?{
-      get: ?boolean,
-      find: ?boolean,
-      getAlias: ?String,
-      findAlias: ?String,
-    },
-
-    // By default, all write mutation types are
-    // exposed for all included classes. Use this to disable
-    // the available mutation types for this class and optionally
-    // override the default generated name with aliases.
-    mutation: ?{
-      create: ?boolean,
-      update: ?boolean,
-      destroy: ?boolean,
-      createAlias: ?String,
-      updateAlias: ?String,
-      destroyAlias: ?String,
-    },
-  }>;
+  /* Provide an array of per-class settings
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG_CLASS_CONFIG */
+  classConfigs: ?any;
 }
 
 export interface ParseServerOptions {
@@ -316,8 +261,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
   :DEFAULT: {} */
   fileUpload: ?FileUploadOptions;
-  /* GraphQL server configuration options */
-  graphQLConfig: ?GraphQLConfig;
+  /* GraphQL server configuration options
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG
+  :DEFAULT: {} */
+  graphqlConfig: ?GraphqlConfig;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint

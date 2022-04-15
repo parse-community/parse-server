@@ -293,8 +293,8 @@ class ParseServer {
         parseGraphQLServer.applyPlayground(app);
       }
 
-      if (options.graphQLConfig) {
-        parseGraphQLServer.setGraphQLConfig(options.graphQLConfig);
+      if (options.graphqlConfig) {
+        parseGraphQLServer.setGraphqlConfig(options.graphqlConfig);
       }
     }
 

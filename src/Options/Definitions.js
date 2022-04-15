@@ -50,21 +50,21 @@ module.exports.SchemaOptions = {
     default: false,
   },
 };
-module.exports.GraphQLConfig = {
-  enabledForClasses: {
-    env: 'PARSE_SERVER_GRAPHQL_CONFIG_ENABLED_FOR_CLASSES',
-    help: 'All classes enabled by default, provide an empty array to disable all classes',
-    action: parsers.arrayParser,
+module.exports.GraphqlConfig = {
+  classConfigs: {
+    env: 'PARSE_SERVER_GRAPHQL_CONFIG_CLASS_CONFIG',
+    help: 'Provide an array of per-class settings',
+    action: parsers.objectParser,
   },
   disabledForClasses: {
     env: 'PARSE_SERVER_GRAPHQL_CONFIG_DISABLED_FOR_CLASSES',
     help: 'Selectively disable specific classes',
     action: parsers.arrayParser,
   },
-  classConfigs: {
-    env: 'PARSE_SERVER_GRAPHQL_CONFIG_DISABLED_FOR_CLASSES',
-    help: 'Provide an array of per-class settings',
-    action: parsers.objectParser,
+  enabledForClasses: {
+    env: 'PARSE_SERVER_GRAPHQL_CONFIG_ENABLED_FOR_CLASSES',
+    help: 'All classes enabled by default Provide an empty array to disable all classes',
+    action: parsers.arrayParser,
   },
 };
 module.exports.ParseServerOptions = {
@@ -244,10 +244,11 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     default: {},
   },
-  graphQLConfig: {
+  graphqlConfig: {
     env: 'PARSE_SERVER_GRAPHQL_CONFIG',
-    help: 'Additional config for the GraphQL Server',
+    help: 'GraphQL server configuration options',
     action: parsers.objectParser,
+    default: {},
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
