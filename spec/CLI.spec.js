@@ -2,6 +2,7 @@
 const commander = require('../lib/cli/utils/commander').default;
 const definitions = require('../lib/cli/definitions/parse-server').default;
 const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
+const graphqlConfig = require('../lib/Options/Definitions').GraphqlConfig;
 const path = require('path');
 const { spawn } = require('child_process');
 
@@ -205,6 +206,21 @@ describe('LiveQuery definitions', () => {
   });
 });
 
+describe('GraphqlConfig definitions', () => {
+  it('should have valid types', () => {
+    for (const key in graphqlConfig) {
+      const definition = graphqlConfig[key];
+      expect(typeof definition).toBe('object');
+      if (typeof definition.env !== 'undefined') {
+        expect(typeof definition.env).toBe('string');
+      }
+      if (typeof definition.action !== 'undefined') {
+        expect(typeof definition.action).toBe('function');
+      }
+    }
+  });
+});
+
 describe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
@@ -287,6 +303,41 @@ describe('execution', () => {
       if (data.includes('Playground running on')) {
         expect(output).toMatch('GraphQL running on');
         expect(output).toMatch('parse-server running on');
+        done();
+      }
+    });
+    childProcess.stderr.on('data', data => {
+      done.fail(data.toString());
+    });
+  });
+
+  it('should start Parse Server with GraphQL configuration', done => {
+    const config = {
+      enabledForClasses: ['MyEnabledClass'],
+      disabledForClasses: ['MyDisabledClass'],
+      classConfigs: [{ className: 'CustomClass', query: { find: false } }],
+    };
+
+    childProcess = spawn(binPath, [
+      '--appId',
+      'test',
+      '--masterKey',
+      'test',
+      '--databaseURI',
+      'mongodb://localhost/test',
+      '--port',
+      '1341',
+      '--mountGraphQL',
+      '--graphqlConfig',
+      JSON.stringify(config),
+    ]);
+
+    let output = '';
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      output += data;
+      if (data.includes('graphqlConfig')) {
+        expect(output).toContain(JSON.stringify(config));
         done();
       }
     });

@@ -294,7 +294,7 @@ class ParseServer {
       }
 
       if (options.graphqlConfig) {
-        parseGraphQLServer.setGraphqlConfig(options.graphqlConfig);
+        parseGraphQLServer.setGraphQLConfig(options.graphqlConfig);
       }
     }
 
