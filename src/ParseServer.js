@@ -189,8 +189,10 @@ class ParseServer {
       let middleware;
       if (typeof options.middleware == 'string') {
         middleware = require(path.resolve(process.cwd(), options.middleware));
-      } else {
+      } else if (typeof options.middleware == 'function') {
         middleware = options.middleware; // use as-is let express fail
+      } else {
+        throw "argument 'middleware' must either be a string or a function";
       }
       api.use(middleware);
     }
