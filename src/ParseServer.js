@@ -184,6 +184,17 @@ class ParseServer {
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
 
+    // add support of middlewares
+    if (options.middleware) {
+      let middleware;
+      if (typeof options.middleware == 'string') {
+        middleware = require(path.resolve(process.cwd(), options.middleware));
+      } else {
+        middleware = options.middleware; // use as-is let express fail
+      }
+      api.use(middleware);
+    }
+
     const appRouter = ParseServer.promiseRouter({ appId });
     api.use(appRouter.expressRouter());
 
