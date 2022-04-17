@@ -184,7 +184,6 @@ class ParseServer {
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
 
-    // add support of middlewares
     if (options.middleware) {
       let middleware;
       if (typeof options.middleware == 'string') {
