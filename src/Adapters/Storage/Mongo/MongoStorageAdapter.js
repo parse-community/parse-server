@@ -601,6 +601,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     query: QueryType,
     { skip, limit, sort, keys, readPreference, hint, caseInsensitive, explain }: QueryOptions
   ): Promise<any> {
+    caseInsensitive = false;
     validateExplainValue(explain);
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -661,6 +662,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     caseInsensitive: boolean = false,
     options?: Object = {}
   ): Promise<any> {
+    caseInsensitive = false;
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
     const mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));

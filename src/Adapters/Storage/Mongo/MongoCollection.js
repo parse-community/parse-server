@@ -17,6 +17,7 @@ export default class MongoCollection {
     query,
     { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
   ) {
+    caseInsensitive = false;
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
       delete keys.$score;
@@ -77,6 +78,7 @@ export default class MongoCollection {
     query,
     { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
   ) {
+    caseInsensitive = false;
     let findOperation = this._mongoCollection.find(query, {
       skip,
       limit,
