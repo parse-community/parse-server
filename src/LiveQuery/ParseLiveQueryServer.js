@@ -10,7 +10,13 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers, getTrigger, runTrigger, toJSONwithObjects } from '../triggers';
+import {
+  runLiveQueryEventHandlers,
+  getTrigger,
+  runTrigger,
+  resolveError,
+  toJSONwithObjects,
+} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -194,14 +200,9 @@ class ParseLiveQueryServer {
               delete deletedParseObject.authData;
             }
             client.pushDelete(requestId, deletedParseObject);
-          } catch (error) {
-            Client.pushError(
-              client.parseWebSocket,
-              error.code || Parse.Error.SCRIPT_FAILED,
-              error.message || error,
-              false,
-              requestId
-            );
+          } catch (e) {
+            const error = resolveError(e);
+            Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
             logger.error(
               `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                 JSON.stringify(error)
@@ -358,14 +359,9 @@ class ParseLiveQueryServer {
             if (client[functionName]) {
               client[functionName](requestId, currentParseObject, originalParseObject);
             }
-          } catch (error) {
-            Client.pushError(
-              client.parseWebSocket,
-              error.code || Parse.Error.SCRIPT_FAILED,
-              error.message || error,
-              false,
-              requestId
-            );
+          } catch (e) {
+            const error = resolveError(e);
+            Client.pushError(client.parseWebSocket, error.code, error.message, false, requestId);
             logger.error(
               `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                 JSON.stringify(error)
@@ -681,13 +677,9 @@ class ParseLiveQueryServer {
       logger.info(`Create new client: ${parseWebsocket.clientId}`);
       client.pushConnect();
       runLiveQueryEventHandlers(req);
-    } catch (error) {
-      Client.pushError(
-        parseWebsocket,
-        error.code || Parse.Error.SCRIPT_FAILED,
-        error.message || error,
-        false
-      );
+    } catch (e) {
+      const error = resolveError(e);
+      Client.pushError(parseWebsocket, error.code, error.message, false);
       logger.error(
         `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(error)
@@ -827,16 +819,11 @@ class ParseLiveQueryServer {
         installationId: client.installationId,
       });
     } catch (e) {
-      Client.pushError(
-        parseWebsocket,
-        e.code || Parse.Error.SCRIPT_FAILED,
-        e.message || e,
-        false,
-        request.requestId
-      );
+      const error = resolveError(e);
+      Client.pushError(parseWebsocket, error.code, error.message, false, request.requestId);
       logger.error(
         `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
-          JSON.stringify(e)
+          JSON.stringify(error)
       );
     }
   }

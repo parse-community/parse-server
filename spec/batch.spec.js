@@ -267,10 +267,7 @@ describe('batch', () => {
             databaseAdapter.createObject.calls.argsFor(i + 1)[3]
           );
         }
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
 
       it('should not save anything when one operation fails in a transaction', async () => {

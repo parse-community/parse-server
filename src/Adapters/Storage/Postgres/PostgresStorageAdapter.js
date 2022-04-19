@@ -2443,55 +2443,48 @@ export class PostgresStorageAdapter implements StorageAdapter {
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
-    const setIdempotencyFunction = options.setIdempotencyFunction !== undefined ? options.setIdempotencyFunction : false;
+    const setIdempotencyFunction =
+      options.setIdempotencyFunction !== undefined ? options.setIdempotencyFunction : false;
     if (setIdempotencyFunction) {
       await this.ensureIdempotencyFunctionExists(options);
     }
-    await conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
-      .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError &&
-          error.message.includes(indexNameOptions.name)
-        ) {
-          // Index already exists. Ignore error.
-        } else if (
-          error.code === PostgresUniqueIndexViolationError &&
-          error.message.includes(indexNameOptions.name)
-        ) {
-          // Cast the error into the proper parse error
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
-        } else {
-          throw error;
-        }
-      });
+    await conn.none(qs, [indexNameOptions.name, className, ...fieldNames]).catch(error => {
+      if (
+        error.code === PostgresDuplicateRelationError &&
+        error.message.includes(indexNameOptions.name)
+      ) {
+        // Index already exists. Ignore error.
+      } else if (
+        error.code === PostgresUniqueIndexViolationError &&
+        error.message.includes(indexNameOptions.name)
+      ) {
+        // Cast the error into the proper parse error
+        throw new Parse.Error(
+          Parse.Error.DUPLICATE_VALUE,
+          'A duplicate value for a field with unique values was provided'
+        );
+      } else {
+        throw error;
+      }
+    });
   }
 
-  async deleteIdempotencyFunction(
-    options?: Object = {}
-  ): Promise<any> {
+  async deleteIdempotencyFunction(options?: Object = {}): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const qs = 'DROP FUNCTION IF EXISTS idempotency_delete_expired_records()';
-    return conn
-      .none(qs)
-      .catch(error => {
-        throw error;
-      });
+    return conn.none(qs).catch(error => {
+      throw error;
+    });
   }
 
-  async ensureIdempotencyFunctionExists(
-    options?: Object = {}
-  ): Promise<any> {
+  async ensureIdempotencyFunctionExists(options?: Object = {}): Promise<any> {
     const conn = options.conn !== undefined ? options.conn : this._client;
     const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
-    const qs = 'CREATE OR REPLACE FUNCTION idempotency_delete_expired_records() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; END; $$;';
-    return conn
-      .none(qs, [ttlOptions])
-      .catch(error => {
-        throw error;
-      });
+    const qs =
+      'CREATE OR REPLACE FUNCTION idempotency_delete_expired_records() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; END; $$;';
+    return conn.none(qs, [ttlOptions]).catch(error => {
+      throw error;
+    });
   }
 }
 

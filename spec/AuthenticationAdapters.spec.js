@@ -1734,7 +1734,9 @@ describe('Apple Game Center Auth adapter', () => {
       await gcenter.validateAuthData(authData);
       fail();
     } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: http://static.gc.apple.com/public-key/gc-prod-4.cer');
+      expect(e.message).toBe(
+        'Apple Game Center - invalid publicKeyUrl: http://static.gc.apple.com/public-key/gc-prod-4.cer'
+      );
     }
   });
 });

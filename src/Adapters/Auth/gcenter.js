@@ -28,7 +28,7 @@ function verifyPublicKeyUrl(publicKeyUrl) {
     const domainParts = hostnameParts.slice(length - 2, length);
     const domain = domainParts.join('.');
     return domain === 'apple.com';
-  } catch(error) {
+  } catch (error) {
     return false;
   }
 }
