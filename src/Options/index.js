@@ -8,6 +8,7 @@ import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
+import { SchemaCacheAdapter } from '../Adapters/Cache/SchemaCacheAdapter';
 
 export interface SchemaOptions {
   /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema
@@ -178,6 +179,8 @@ export interface ParseServerOptions {
   passwordPolicy: ?PasswordPolicyOptions;
   /* Adapter module for the cache */
   cacheAdapter: ?Adapter<CacheAdapter>;
+  /* Adapter module for the schema cache */
+  schemaCacheAdapter: ?Adapter<SchemaCacheAdapter>;
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
   /* Public URL to your parse server with http:// or https://.

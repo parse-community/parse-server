@@ -63,7 +63,7 @@ export function getControllers(options: ParseServerOptions) {
     databaseController,
     hooksController,
     authDataManager,
-    schemaCache: SchemaCache,
+    schemaCache: databaseController.schemaCache,
   };
 }
 
@@ -151,7 +151,7 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
 
 export function getDatabaseController(options: ParseServerOptions): DatabaseController {
   const { databaseURI, collectionPrefix, databaseOptions } = options;
-  let { databaseAdapter } = options;
+  let { databaseAdapter, schemaCacheAdapter } = options;
   if (
     (databaseOptions ||
       (databaseURI && databaseURI !== defaults.databaseURI) ||
@@ -164,7 +164,9 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(databaseAdapter, options);
+
+  schemaCacheAdapter = loadAdapter(schemaCacheAdapter, SchemaCache);
+  return new DatabaseController(databaseAdapter, schemaCacheAdapter, options);
 }
 
 export function getHooksController(

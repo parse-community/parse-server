@@ -15,9 +15,10 @@
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
+import { SchemaCacheAdapter } from '../Adapters/Cache/SchemaCacheAdapter';
+
 const Parse = require('parse/node').Parse;
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
-import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
 // @flow-disable-next
@@ -685,10 +686,12 @@ export default class SchemaController {
   reloadDataPromise: ?Promise<any>;
   protectedFields: any;
   userIdRegEx: RegExp;
+  schemaCache: SchemaCacheAdapter;
 
-  constructor(databaseAdapter: StorageAdapter) {
+  constructor(databaseAdapter: StorageAdapter, schemaCacheAdapter: SchemaCacheAdapter) {
     this._dbAdapter = databaseAdapter;
-    this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
+    this.schemaCache = schemaCacheAdapter;
+    this.schemaData = new SchemaData([], this.protectedFields);
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
 
     const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
@@ -723,11 +726,11 @@ export default class SchemaController {
     return this.reloadDataPromise;
   }
 
-  getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
+  async getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
     if (options.clearCache) {
       return this.setAllClasses();
     }
-    const cached = SchemaCache.all();
+    const cached = await this.schemaCache.all();
     if (cached && cached.length) {
       return Promise.resolve(cached);
     }
@@ -738,19 +741,19 @@ export default class SchemaController {
     return this._dbAdapter
       .getAllClasses()
       .then(allSchemas => allSchemas.map(injectDefaultSchema))
-      .then(allSchemas => {
-        SchemaCache.put(allSchemas);
+      .then(async allSchemas => {
+        await this.schemaCache.put(allSchemas);
         return allSchemas;
       });
   }
 
-  getOneSchema(
+  async getOneSchema(
     className: string,
     allowVolatileClasses: boolean = false,
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<Schema> {
     if (options.clearCache) {
-      SchemaCache.clear();
+      await this.schemaCache.clear();
     }
     if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
       const data = this.schemaData[className];
@@ -761,7 +764,7 @@ export default class SchemaController {
         indexes: data.indexes,
       });
     }
-    const cached = SchemaCache.get(className);
+    const cached = await this.schemaCache.get(className);
     if (cached && !options.clearCache) {
       return Promise.resolve(cached);
     }
@@ -1051,7 +1054,7 @@ export default class SchemaController {
     }
     validateCLP(perms, newSchema, this.userIdRegEx);
     await this._dbAdapter.setClassLevelPermissions(className, perms);
-    const cached = SchemaCache.get(className);
+    const cached = await this.schemaCache.get(className);
     if (cached) {
       cached.classLevelPermissions = perms;
     }
@@ -1215,7 +1218,7 @@ export default class SchemaController {
         });
       })
       .then(() => {
-        SchemaCache.clear();
+        return this.schemaCache.clear();
       });
   }
 
@@ -1427,8 +1430,12 @@ export default class SchemaController {
 }
 
 // Returns a promise for a new Schema.
-const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
-  const schema = new SchemaController(dbAdapter);
+const load = (
+  dbAdapter: StorageAdapter,
+  schemaCacheAdapter: SchemaCacheAdapter,
+  options: any
+): Promise<SchemaController> => {
+  const schema = new SchemaController(dbAdapter, schemaCacheAdapter);
   return schema.reloadData(options).then(() => schema);
 };
 

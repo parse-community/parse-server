@@ -12,7 +12,6 @@ import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 import DatabaseController from '../Controllers/DatabaseController';
-import SchemaCache from '../Adapters/Cache/SchemaCache';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
 import * as schemaTypes from './loaders/schemaTypes';
@@ -88,7 +87,7 @@ class ParseGraphQLSchema {
     this.log = params.log || requiredParameter('You must provide a log instance!');
     this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
     this.appId = params.appId || requiredParameter('You must provide the appId!');
-    this.schemaCache = SchemaCache;
+    this.schemaCache = this.databaseController.schemaCache;
   }
 
   async load() {

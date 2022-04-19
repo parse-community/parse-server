@@ -16,10 +16,10 @@ import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
-import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import { SchemaCacheAdapter } from '../Adapters/Cache/SchemaCacheAdapter';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -368,8 +368,13 @@ class DatabaseController {
   options: ParseServerOptions;
   idempotencyOptions: any;
 
-  constructor(adapter: StorageAdapter, options: ParseServerOptions) {
+  constructor(
+    adapter: StorageAdapter,
+    schemaCache: SchemaCacheAdapter,
+    options: ParseServerOptions
+  ) {
     this.adapter = adapter;
+    this.schemaCache = schemaCache;
     this.options = options || {};
     this.idempotencyOptions = this.options.idempotencyOptions || {};
     // Prevent mutable this.schema, otherwise one request could use
@@ -405,7 +410,7 @@ class DatabaseController {
     if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
-    this.schemaPromise = SchemaController.load(this.adapter, options);
+    this.schemaPromise = SchemaController.load(this.adapter, this.schemaCache, options);
     this.schemaPromise.then(
       () => delete this.schemaPromise,
       () => delete this.schemaPromise
@@ -887,7 +892,7 @@ class DatabaseController {
    */
   deleteEverything(fast: boolean = false): Promise<any> {
     this.schemaPromise = null;
-    SchemaCache.clear();
+    this.schemaCache.clear();
     return this.adapter.deleteAllClasses(fast);
   }
 
@@ -1350,7 +1355,7 @@ class DatabaseController {
                   this.adapter.deleteClass(joinTableName(className, name))
                 )
               ).then(() => {
-                SchemaCache.del(className);
+                this.schemaCache.del(className);
                 return schemaController.reloadData();
               });
             } else {
