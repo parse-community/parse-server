@@ -875,6 +875,14 @@ describe('SchemaController', () => {
             addField: { '*': true },
             protectedFields: { '*': [] },
           },
+          indexes: {
+            _id_: {
+              _id: 1,
+            },
+            name_1: {
+              name: 1,
+            },
+          },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
         done();
@@ -1097,14 +1105,15 @@ describe('SchemaController', () => {
         })
         .then(() => schema.deleteField('relationField', 'NewClass', config.database))
         .then(() => schema.reloadData())
-        .then(() => {
+        .then(async () => {
           const expectedSchema = {
             objectId: { type: 'String' },
             updatedAt: { type: 'Date' },
             createdAt: { type: 'Date' },
             ACL: { type: 'ACL' },
           };
-          expect(dd(schema.schemaData.NewClass.fields, expectedSchema)).toEqual(undefined);
+          const schemaData = await schema.getSchemaData();
+          expect(dd(schemaData.NewClass.fields, expectedSchema)).toEqual(undefined);
         })
         .then(done)
         .catch(done.fail);
@@ -1331,14 +1340,16 @@ describe('SchemaController', () => {
         schema = s;
         return schema.getOneSchema('_User', false);
       })
-      .then(userSchema => {
+      .then(async userSchema => {
         validateSchemaStructure(userSchema);
-        validateSchemaDataStructure(schema.schemaData);
+        const schemaData = await schema.getSchemaData();
+        validateSchemaDataStructure(schemaData);
         return schema.getOneSchema('_PushStatus', true);
       })
-      .then(pushStatusSchema => {
+      .then(async pushStatusSchema => {
+        const schemaData = await schema.getSchemaData();
         validateSchemaStructure(pushStatusSchema);
-        validateSchemaDataStructure(schema.schemaData);
+        validateSchemaDataStructure(schemaData);
       })
       .then(done)
       .catch(done.fail);
@@ -1353,7 +1364,7 @@ describe('SchemaController', () => {
   it('ensureFields should throw when schema is not set', async () => {
     const schema = await config.database.loadSchema();
     try {
-      schema.ensureFields([
+      await schema.ensureFields([
         {
           className: 'NewClass',
           fieldName: 'fieldName',

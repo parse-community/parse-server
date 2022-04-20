@@ -1528,9 +1528,9 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   const { originalObject, updatedObject } = this.buildParseObjects();
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
-  this.config.database.loadSchema().then(schemaController => {
+  this.config.database.loadSchema().then(async schemaController => {
     // Notifiy LiveQueryServer if possible
-    const perms = schemaController.getClassLevelPermissions(updatedObject.className);
+    const perms = await schemaController.getClassLevelPermissions(updatedObject.className);
     this.config.liveQueryController.onAfterSave(
       updatedObject.className,
       updatedObject,

@@ -8,7 +8,7 @@ import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
-import { SchemaCacheAdapter } from '../Adapters/Cache/SchemaCacheAdapter';
+import SchemaCacheAdapter from '../Adapters/Schema/SchemaCacheAdapter';
 
 export interface SchemaOptions {
   /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema

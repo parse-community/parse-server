@@ -4,6 +4,7 @@ import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter';
 import NullCacheAdapter from './Adapters/Cache/NullCacheAdapter';
 import RedisCacheAdapter from './Adapters/Cache/RedisCacheAdapter';
 import LRUCacheAdapter from './Adapters/Cache/LRUCache.js';
+import SchemaCacheAdapter from './Adapters/Schema/SchemaCacheAdapter';
 import * as TestUtils from './TestUtils';
 import * as SchemaMigrations from './SchemaMigrations/Migrations';
 
@@ -38,6 +39,7 @@ export {
   NullCacheAdapter,
   RedisCacheAdapter,
   LRUCacheAdapter,
+  SchemaCacheAdapter,
   TestUtils,
   PushWorker,
   ParseGraphQLServer,

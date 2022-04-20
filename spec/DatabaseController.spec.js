@@ -69,16 +69,16 @@ describe('DatabaseController', function () {
       'getExpectedType',
     ]);
 
-    it('should not decorate query if no pointer CLPs are present', done => {
+    it('should not decorate query if no pointer CLPs are present', async done => {
       const clp = buildCLP();
       const query = { a: 'b' };
 
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(true);
-      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
+      await schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
 
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -91,7 +91,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if a pointer CLP entry is present', done => {
+    it('should decorate query if a pointer CLP entry is present', async done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
 
@@ -103,7 +103,7 @@ describe('DatabaseController', function () {
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
 
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -116,7 +116,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if an array CLP entry is present', done => {
+    it('should decorate query if an array CLP entry is present', async done => {
       const clp = buildCLP(['users']);
       const query = { a: 'b' };
 
@@ -128,7 +128,7 @@ describe('DatabaseController', function () {
         .withArgs(CLASS_NAME, 'users')
         .and.returnValue({ type: 'Array' });
 
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -144,7 +144,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if an object CLP entry is present', done => {
+    it('should decorate query if an object CLP entry is present', async done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
 
@@ -156,7 +156,7 @@ describe('DatabaseController', function () {
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Object' });
 
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -172,7 +172,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if a pointer CLP is present and the same field is part of the query', done => {
+    it('should decorate query if a pointer CLP is present and the same field is part of the query', async done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b', user: 'a' };
 
@@ -184,7 +184,7 @@ describe('DatabaseController', function () {
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
 
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -199,7 +199,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should transform the query to an $or query if multiple array/pointer CLPs are present', done => {
+    it('should transform the query to an $or query if multiple array/pointer CLPs are present', async done => {
       const clp = buildCLP(['user', 'users', 'userObject']);
       const query = { a: 'b' };
 
@@ -217,7 +217,7 @@ describe('DatabaseController', function () {
         .withArgs(CLASS_NAME, 'userObject')
         .and.returnValue({ type: 'Object' });
 
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -236,7 +236,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should not return a $or operation if the query involves one of the two fields also used as array/pointer permissions', done => {
+    it('should not return a $or operation if the query involves one of the two fields also used as array/pointer permissions', async done => {
       const clp = buildCLP(['users', 'user']);
       const query = { a: 'b', user: createUserPointer(USER_ID) };
       schemaController.testPermissionsForClassName
@@ -249,7 +249,7 @@ describe('DatabaseController', function () {
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'users')
         .and.returnValue({ type: 'Array' });
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -260,7 +260,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should not return a $or operation if the query involves one of the fields also used as array/pointer permissions', done => {
+    it('should not return a $or operation if the query involves one of the fields also used as array/pointer permissions', async done => {
       const clp = buildCLP(['user', 'users', 'userObject']);
       const query = { a: 'b', user: createUserPointer(USER_ID) };
       schemaController.testPermissionsForClassName
@@ -276,7 +276,7 @@ describe('DatabaseController', function () {
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'userObject')
         .and.returnValue({ type: 'Object' });
-      const output = databaseController.addPointerPermissions(
+      const output = await databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
         OPERATION,
@@ -287,7 +287,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should throw an error if for some unexpected reason the property specified in the CLP is neither a pointer nor an array', done => {
+    it('should throw an error if for some unexpected reason the property specified in the CLP is neither a pointer nor an array', async done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
 
@@ -299,15 +299,15 @@ describe('DatabaseController', function () {
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Number' });
 
-      expect(() => {
+      await expectAsync(
         databaseController.addPointerPermissions(
           schemaController,
           CLASS_NAME,
           OPERATION,
           query,
           ACL_GROUP
-        );
-      }).toThrow(
+        )
+      ).toBeRejectedWith(
         Error(
           `An unexpected condition occurred when resolving pointer permissions: ${CLASS_NAME} user`
         )
