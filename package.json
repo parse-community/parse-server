@@ -24,7 +24,7 @@
     "@graphql-tools/links": "8.2.8",
     "@graphql-tools/stitch": "6.2.4",
     "@graphql-tools/utils": "6.2.4",
-    "@parse/fs-files-adapter": "1.2.1",
+    "@parse/fs-files-adapter": "1.2.2",
     "@parse/push-adapter": "4.1.2",
     "apollo-server-express": "2.25.2",
     "bcryptjs": "2.4.3",
