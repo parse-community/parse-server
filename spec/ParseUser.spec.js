@@ -16,7 +16,6 @@ const cryptoUtils = require('../lib/cryptoUtils');
 describe('Parse.User testing', () => {
   it('retrieves original object when user logs in with third party auth', async () => {
     Parse.Cloud.afterSave(Parse.User, async request => {
-      console.log('After save trigger');
       original = request.original;
       user = request.object;
     });
