@@ -15,6 +15,8 @@ const cryptoUtils = require('../lib/cryptoUtils');
 
 describe('Parse.User testing', () => {
   it('retrieves original object when user logs in with third party auth', async () => {
+    let original;
+    let user;
     Parse.Cloud.afterSave(Parse.User, async request => {
       original = request.original;
       user = request.object;
@@ -24,8 +26,6 @@ describe('Parse.User testing', () => {
     Parse.User._registerAuthenticationProvider(provider);
     await Parse.User.logInWith('facebook');
     await Parse.User.logOut();
-    let original;
-    let user;
     await Parse.User.logInWith('facebook');
     expect(original).toBeDefined();
     expect(user.get('authData')).not.toBeUndefined();
