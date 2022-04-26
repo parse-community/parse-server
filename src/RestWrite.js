@@ -429,7 +429,8 @@ RestWrite.prototype.handleAuthDataValidation = function (authData) {
       return Promise.resolve();
     }
     const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
-    if (!validateAuthData) {
+    const authProvider = (this.config.auth || {})[provider] || {};
+    if (!validateAuthData || authProvider.enabled === false) {
       throw new Parse.Error(
         Parse.Error.UNSUPPORTED_SERVICE,
         'This authentication method is unsupported.'

@@ -1209,6 +1209,21 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  it('can disable provider', async () => {
+    await reconfigureServer({
+      auth: {
+        facebook: {
+          enabled: false,
+        },
+      },
+    });
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await expectAsync(Parse.User._logInWith('facebook')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+  });
+
   it('can not set authdata to null', async () => {
     try {
       const provider = getMockFacebookProvider();
