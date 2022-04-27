@@ -1,7 +1,7 @@
 const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
@@ -9,13 +9,16 @@ const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
-const { ApolloLink, split } = require('apollo-link');
-const { createHttpLink } = require('apollo-link-http');
-const { InMemoryCache } = require('apollo-cache-inmemory');
 const { createUploadLink } = require('apollo-upload-client');
 const { SubscriptionClient } = require('subscriptions-transport-ws');
-const { WebSocketLink } = require('apollo-link-ws');
-const ApolloClient = require('apollo-client').default;
+const { WebSocketLink } = require('@apollo/client/link/ws');
+const {
+  ApolloClient,
+  InMemoryCache,
+  ApolloLink,
+  split,
+  createHttpLink,
+} = require('@apollo/client/core');
 const gql = require('graphql-tag');
 const { toGlobalId } = require('graphql-relay');
 const {
@@ -29,7 +32,7 @@ const {
 } = require('graphql');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
-const ReadPreference = require('mongodb').ReadPreference;
+const { ReadPreference, Collection } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
 
 function handleError(e) {
@@ -2284,8 +2287,7 @@ describe('ParseGraphQLServer', () => {
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
             expect(nodeResult.data.node2.someField).toBe('some value 2');
           });
-          // TODO: (moumouls, davimacedo) Fix flaky test
-          xit('Id inputs should work either with global id or object id', async () => {
+          it('Id inputs should work either with global id or object id', async () => {
             try {
               await apolloClient.mutate({
                 mutation: gql`
@@ -2592,14 +2594,29 @@ describe('ParseGraphQLServer', () => {
                   .map(value => value.node.someField)
                   .sort()
               ).toEqual(['some value 22', 'some value 44']);
-              expect(
-                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.id
-              ).toBeLessThan(findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.id);
+              // NOTE: Here @davimacedo tried to test RelayID order, but the test is wrong since
+              // "objectId1" < "objectId2" do not always keep the order when objectId is transformed
+              // to base64 by Relay
+              // "SecondaryObject:bBRgmzIRRM" < "SecondaryObject:nTMcuVbATY" true
+              // base64("SecondaryObject:bBRgmzIRRM"") < base64(""SecondaryObject:nTMcuVbATY"") false
+              // "U2Vjb25kYXJ5T2JqZWN0OmJCUmdteklSUk0=" < "U2Vjb25kYXJ5T2JqZWN0Om5UTWN1VmJBVFk=" false
+              const originalIds = [
+                getSecondaryObjectsResult.data.secondaryObject2.objectId,
+                getSecondaryObjectsResult.data.secondaryObject4.objectId,
+              ];
               expect(
                 findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId
-              ).toBeLessThan(
-                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId
-              );
+              ).not.toBe(findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId);
+              expect(
+                originalIds.includes(
+                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node.objectId
+                )
+              ).toBeTrue();
+              expect(
+                originalIds.includes(
+                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node.objectId
+                )
+              ).toBeTrue();
 
               const createPrimaryObjectResult = await apolloClient.mutate({
                 mutation: gql`
@@ -2759,6 +2776,23 @@ describe('ParseGraphQLServer', () => {
             } catch (e) {
               handleError(e);
             }
+          });
+          it('Id inputs should work either with global id or object id with objectId higher than 19', async () => {
+            await reconfigureServer({ objectIdSize: 20 });
+            const obj = new Parse.Object('SomeClass');
+            await obj.save({ name: 'aname', type: 'robot' });
+            const result = await apolloClient.query({
+              query: gql`
+                query getSomeClass($id: ID!) {
+                  someClass(id: $id) {
+                    objectId
+                    id
+                  }
+                }
+              `,
+              variables: { id: obj.id },
+            });
+            expect(result.data.someClass.objectId).toEqual(obj.id);
           });
         });
       });
@@ -4439,8 +4473,7 @@ describe('ParseGraphQLServer', () => {
 
                 await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-                const databaseAdapter = parseServer.config.databaseController.adapter;
-                spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+                spyOn(Collection.prototype, 'find').and.callThrough();
 
                 await apolloClient.query({
                   query: gql`
@@ -4464,13 +4497,13 @@ describe('ParseGraphQLServer', () => {
 
                 let foundGraphQLClassReadPreference = false;
                 let foundUserClassReadPreference = false;
-                databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
-                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
+                Collection.prototype.find.calls.all().forEach(call => {
+                  if (call.object.s.namespace.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.PRIMARY);
-                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
+                    expect(call.object.s.readPreference.mode).toBe(ReadPreference.PRIMARY);
+                  } else if (call.object.s.namespace.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.PRIMARY);
+                    expect(call.object.s.readPreference.mode).toBe(ReadPreference.PRIMARY);
                   }
                 });
 
@@ -4486,8 +4519,7 @@ describe('ParseGraphQLServer', () => {
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const databaseAdapter = parseServer.config.databaseController.adapter;
-              spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -4511,13 +4543,13 @@ describe('ParseGraphQLServer', () => {
 
               let foundGraphQLClassReadPreference = false;
               let foundUserClassReadPreference = false;
-              databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
-                if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
+              Collection.prototype.find.calls.all().forEach(call => {
+                if (call.object.s.namespace.collection.indexOf('GraphQLClass') >= 0) {
                   foundGraphQLClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.SECONDARY);
-                } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
+                  expect(call.args[1].readPreference).toBe(ReadPreference.SECONDARY);
+                } else if (call.object.s.namespace.collection.indexOf('_User') >= 0) {
                   foundUserClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.SECONDARY);
+                  expect(call.args[1].readPreference).toBe(ReadPreference.SECONDARY);
                 }
               });
 
@@ -4530,8 +4562,7 @@ describe('ParseGraphQLServer', () => {
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const databaseAdapter = parseServer.config.databaseController.adapter;
-              spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -4558,13 +4589,13 @@ describe('ParseGraphQLServer', () => {
 
               let foundGraphQLClassReadPreference = false;
               let foundUserClassReadPreference = false;
-              databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
-                if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
+              Collection.prototype.find.calls.all().forEach(call => {
+                if (call.object.s.namespace.collection.indexOf('GraphQLClass') >= 0) {
                   foundGraphQLClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.SECONDARY);
-                } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
+                  expect(call.args[1].readPreference).toBe(ReadPreference.SECONDARY);
+                } else if (call.object.s.namespace.collection.indexOf('_User') >= 0) {
                   foundUserClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.NEAREST);
+                  expect(call.args[1].readPreference).toBe(ReadPreference.NEAREST);
                 }
               });
 
@@ -5422,8 +5453,7 @@ describe('ParseGraphQLServer', () => {
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const databaseAdapter = parseServer.config.databaseController.adapter;
-              spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -5448,13 +5478,13 @@ describe('ParseGraphQLServer', () => {
 
               let foundGraphQLClassReadPreference = false;
               let foundUserClassReadPreference = false;
-              databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
-                if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
+              Collection.prototype.find.calls.all().forEach(call => {
+                if (call.object.s.namespace.collection.indexOf('GraphQLClass') >= 0) {
                   foundGraphQLClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.PRIMARY);
-                } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
+                  expect(call.object.s.readPreference.mode).toBe(ReadPreference.PRIMARY);
+                } else if (call.object.s.namespace.collection.indexOf('_User') >= 0) {
                   foundUserClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.PRIMARY);
+                  expect(call.object.s.readPreference.mode).toBe(ReadPreference.PRIMARY);
                 }
               });
 
@@ -5467,8 +5497,7 @@ describe('ParseGraphQLServer', () => {
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const databaseAdapter = parseServer.config.databaseController.adapter;
-              spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -5493,13 +5522,13 @@ describe('ParseGraphQLServer', () => {
 
               let foundGraphQLClassReadPreference = false;
               let foundUserClassReadPreference = false;
-              databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
-                if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
+              Collection.prototype.find.calls.all().forEach(call => {
+                if (call.object.s.namespace.collection.indexOf('GraphQLClass') >= 0) {
                   foundGraphQLClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.SECONDARY);
-                } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
+                  expect(call.args[1].readPreference).toBe(ReadPreference.SECONDARY);
+                } else if (call.object.s.namespace.collection.indexOf('_User') >= 0) {
                   foundUserClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.SECONDARY);
+                  expect(call.args[1].readPreference).toBe(ReadPreference.SECONDARY);
                 }
               });
 
@@ -5512,8 +5541,7 @@ describe('ParseGraphQLServer', () => {
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const databaseAdapter = parseServer.config.databaseController.adapter;
-              spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -5540,13 +5568,13 @@ describe('ParseGraphQLServer', () => {
 
               let foundGraphQLClassReadPreference = false;
               let foundUserClassReadPreference = false;
-              databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
-                if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
+              Collection.prototype.find.calls.all().forEach(call => {
+                if (call.object.s.namespace.collection.indexOf('GraphQLClass') >= 0) {
                   foundGraphQLClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.SECONDARY);
-                } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
+                  expect(call.args[1].readPreference).toBe(ReadPreference.SECONDARY);
+                } else if (call.object.s.namespace.collection.indexOf('_User') >= 0) {
                   foundUserClassReadPreference = true;
-                  expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.NEAREST);
+                  expect(call.args[1].readPreference).toBe(ReadPreference.NEAREST);
                 }
               });
 
@@ -5560,8 +5588,7 @@ describe('ParseGraphQLServer', () => {
 
                 await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-                const databaseAdapter = parseServer.config.databaseController.adapter;
-                spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+                spyOn(Collection.prototype, 'find').and.callThrough();
 
                 await apolloClient.query({
                   query: gql`
@@ -5598,13 +5625,13 @@ describe('ParseGraphQLServer', () => {
 
                 let foundGraphQLClassReadPreference = false;
                 let foundUserClassReadPreference = false;
-                databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
-                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
+                Collection.prototype.find.calls.all().forEach(call => {
+                  if (call.object.s.namespace.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.SECONDARY);
-                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
+                    expect(call.args[1].readPreference).toBe(ReadPreference.SECONDARY);
+                  } else if (call.object.s.namespace.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.NEAREST);
+                    expect(call.args[1].readPreference).toBe(ReadPreference.NEAREST);
                   }
                 });
 
@@ -6605,6 +6632,162 @@ describe('ParseGraphQLServer', () => {
               jasmine.stringMatching('Object not found')
             );
           });
+        });
+
+        it('should unset fields when null used on update/create', async () => {
+          const customerSchema = new Parse.Schema('Customer');
+          customerSchema.addString('aString');
+          customerSchema.addBoolean('aBoolean');
+          customerSchema.addDate('aDate');
+          customerSchema.addArray('aArray');
+          customerSchema.addGeoPoint('aGeoPoint');
+          customerSchema.addPointer('aPointer', 'Customer');
+          customerSchema.addObject('aObject');
+          customerSchema.addPolygon('aPolygon');
+          await customerSchema.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+          const cus = new Parse.Object('Customer');
+          await cus.save({ aString: 'hello' });
+
+          const fields = {
+            aString: "i'm string",
+            aBoolean: true,
+            aDate: new Date().toISOString(),
+            aArray: ['hello', 1],
+            aGeoPoint: { latitude: 30, longitude: 30 },
+            aPointer: { link: cus.id },
+            aObject: { prop: { subprop: 1 }, prop2: 'test' },
+            aPolygon: [
+              { latitude: 30, longitude: 30 },
+              { latitude: 31, longitude: 31 },
+              { latitude: 32, longitude: 32 },
+              { latitude: 30, longitude: 30 },
+            ],
+          };
+          const nullFields = Object.keys(fields).reduce((acc, k) => ({ ...acc, [k]: null }), {});
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateCustomer($input: CreateCustomerInput!) {
+                createCustomer(input: $input) {
+                  customer {
+                    id
+                    aString
+                    aBoolean
+                    aDate
+                    aArray {
+                      ... on Element {
+                        value
+                      }
+                    }
+                    aGeoPoint {
+                      longitude
+                      latitude
+                    }
+                    aPointer {
+                      objectId
+                    }
+                    aObject
+                    aPolygon {
+                      longitude
+                      latitude
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: { fields },
+            },
+          });
+          const {
+            data: {
+              createCustomer: {
+                customer: { aPointer, aArray, id, ...otherFields },
+              },
+            },
+          } = result;
+          expect(id).toBeDefined();
+          delete otherFields.__typename;
+          delete otherFields.aGeoPoint.__typename;
+          otherFields.aPolygon.forEach(v => {
+            delete v.__typename;
+          });
+          expect({
+            ...otherFields,
+            aPointer: { link: aPointer.objectId },
+            aArray: aArray.map(({ value }) => value),
+          }).toEqual(fields);
+
+          const updated = await apolloClient.mutate({
+            mutation: gql`
+              mutation UpdateCustomer($input: UpdateCustomerInput!) {
+                updateCustomer(input: $input) {
+                  customer {
+                    aString
+                    aBoolean
+                    aDate
+                    aArray {
+                      ... on Element {
+                        value
+                      }
+                    }
+                    aGeoPoint {
+                      longitude
+                      latitude
+                    }
+                    aPointer {
+                      objectId
+                    }
+                    aObject
+                    aPolygon {
+                      longitude
+                      latitude
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: { fields: nullFields, id },
+            },
+          });
+          const {
+            data: {
+              updateCustomer: { customer },
+            },
+          } = updated;
+          delete customer.__typename;
+          expect(Object.keys(customer).length).toEqual(8);
+          Object.keys(customer).forEach(k => {
+            expect(customer[k]).toBeNull();
+          });
+          try {
+            const queryResult = await apolloClient.query({
+              query: gql`
+                query getEmptyCustomer($where: CustomerWhereInput!) {
+                  customers(where: $where) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: Object.keys(fields).reduce(
+                  (acc, k) => ({ ...acc, [k]: { exists: false } }),
+                  {}
+                ),
+              },
+            });
+
+            expect(queryResult.data.customers.edges.length).toEqual(1);
+          } catch (e) {
+            console.log(JSON.stringify(e));
+          }
         });
       });
 
@@ -9141,7 +9324,7 @@ describe('ParseGraphQLServer', () => {
             const mutationResult = await apolloClient.mutate({
               mutation: gql`
                 mutation UnlinkFile($id: ID!) {
-                  updateSomeClass(input: { id: $id, fields: { someField: { file: null } } }) {
+                  updateSomeClass(input: { id: $id, fields: { someField: null } }) {
                     someClass {
                       someField {
                         name

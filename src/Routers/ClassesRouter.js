@@ -83,7 +83,8 @@ export class ClassesRouter extends PromiseRouter {
         this.className(req),
         req.params.objectId,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {

@@ -223,9 +223,8 @@ describe('Parse.Query Aggregate testing', () => {
     const obj3 = new TestObject();
     const pipeline = [
       {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: {
-          objectId: {
+        $group: {
+          _id: {
             day: { $dayOfMonth: '$_updated_at' },
             month: { $month: '$_created_at' },
             year: { $year: '$_created_at' },
@@ -254,9 +253,8 @@ describe('Parse.Query Aggregate testing', () => {
     const obj3 = new TestObject();
     const pipeline = [
       {
-        // TODO: update to new syntax. See [#7339](https://bit.ly/3incnWx)
-        group: {
-          objectId: {
+        $group: {
+          _id: {
             day: { $dayOfMonth: '$updatedAt' },
             month: { $month: '$createdAt' },
             year: { $year: '$createdAt' },

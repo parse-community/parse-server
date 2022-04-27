@@ -249,7 +249,7 @@ describe('PushWorker', () => {
             // should not be deleted
             transmitted: false,
             device: {
-              deviceToken: 101,
+              deviceToken: Parse.Error.OBJECT_NOT_FOUND,
               deviceType: 'ios',
             },
             response: { error: 'invalid error...' },

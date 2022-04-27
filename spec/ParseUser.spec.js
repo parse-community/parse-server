@@ -72,7 +72,9 @@ describe('Parse.User testing', () => {
       })
       .catch(err => {
         expect(err.status).toBe(404);
-        expect(err.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(err.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       });
   });
@@ -99,7 +101,9 @@ describe('Parse.User testing', () => {
       })
       .catch(err => {
         expect(err.status).toBe(404);
-        expect(err.text).toMatch('{"code":101,"error":"Invalid username/password."}');
+        expect(err.text).toMatch(
+          `{"code":${Parse.Error.OBJECT_NOT_FOUND},"error":"Invalid username/password."}`
+        );
         done();
       });
   });
@@ -4019,7 +4023,6 @@ describe('Parse.User testing', () => {
       subscription.on(key, calls[key]);
     }
     const user = await Parse.User._logInWith('facebook');
-
     user.set('foo', 'bar');
     await user.save();
     user.unset('foo');
@@ -4027,13 +4030,14 @@ describe('Parse.User testing', () => {
     user.set('yolo', 'bar');
     await user.save();
     await user.destroy();
-    await new Promise(resolve => process.nextTick(resolve));
+    await new Promise(resolve => setTimeout(resolve, 10));
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
+    subscription.unsubscribe();
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();
-    await new Promise(resolve => process.nextTick(resolve));
+    await new Promise(resolve => setTimeout(resolve, 10));
   });
 });
 
