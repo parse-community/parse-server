@@ -1,12 +1,12 @@
 const fs = require('fs').promises;
 const { exec } = require('child_process');
 (async () => {
+  const dir = await fs.readdir('./');
+  console.log(dir);
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('./src/options/Definitions.js', 'utf8'),
     fs.readFile('./src/options/Docs.js', 'utf8'),
   ]);
-  const dir = await fs.readdir('./');
-  console.log(dir);
   exec('npm run definitions');
   await new Promise(resolve => setTimeout(resolve, 2000));
   const [nowDefinitions, nowDocs] = await Promise.all([
