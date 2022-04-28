@@ -349,7 +349,7 @@ class ParseServer {
             if (serverStartCallback) {
               serverStartCallback();
             }
-            resolve(parseServer);
+            resolve(parseServer.app);
           }
         },
       });
