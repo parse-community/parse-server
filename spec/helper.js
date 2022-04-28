@@ -198,7 +198,9 @@ beforeAll(async () => {
     }
   }
   await reconfigureServer();
+});
 
+beforeEach(() => {
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = 'http://localhost:' + port + '/1';
 });

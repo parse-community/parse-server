@@ -46,6 +46,7 @@ describe('Cloud Code', () => {
       appId: 'test2',
       masterKey: 'abc',
       serverURL: 'http://localhost:12668/parse',
+      silent: true,
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         Parse.Cloud.beforeSave('Test', () => {
@@ -63,7 +64,7 @@ describe('Cloud Code', () => {
     await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
       new Parse.Error(141, 'Cannot save.')
     );
-    await server.close();
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('can call startApp twice', async () => {
@@ -71,6 +72,7 @@ describe('Cloud Code', () => {
       appId: 'test2',
       masterKey: 'abc',
       serverURL: 'http://localhost:12668/parse',
+      silent: true,
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         Parse.Cloud.beforeSave('Test', () => {

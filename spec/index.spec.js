@@ -531,16 +531,9 @@ describe('server', () => {
       .catch(done.fail);
   });
 
-  it('create should not override server start complete', async () => {
-    const config = Config.get('test');
-    const spy = spyOn(config, 'serverStartComplete').and.callFake(() => {});
-    await new ParseServer.ParseServer(config).startApp();
-    expect(spy).toHaveBeenCalled();
-  });
-
   it('should wait for schemas to load', async () => {
     const spy = spyOn(process.stdout, 'write');
-    const parseServer = await new ParseServer.ParseServer({
+    const config = {
       appId: 'aTestApp',
       masterKey: 'aTestMasterKey',
       serverURL: 'http://localhost:12669/parse',
@@ -550,7 +543,11 @@ describe('server', () => {
           { className: 'Test', classLevelPermissions: { addField: { '*': true } } },
         ],
       },
-    }).startApp();
+      serverStartComplete() {},
+    };
+    const startSpy = spyOn(config, 'serverStartComplete').and.callFake(() => {});
+    const parseServer = await new ParseServer.ParseServer(config).startApp();
+    expect(startSpy).toHaveBeenCalled();
     expect(Parse.applicationId).toEqual('aTestApp');
     expect(spy).toHaveBeenCalledWith('info: Running Migrations Completed\n');
     const app = express();
@@ -558,7 +555,7 @@ describe('server', () => {
     const server = app.listen(12669);
     const schema = await Parse.Schema.all();
     expect(schema.length).toBeGreaterThanOrEqual(3);
-    await server.close();
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
