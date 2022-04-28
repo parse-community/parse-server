@@ -56,10 +56,6 @@ jobs:
      runs-on: ubuntu-18.04
      steps:
        - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v2
-         with:
-           node-version: ${{ matrix.node-version }}
        - run: npm run definitions:test
   check-circular:
      name: Circular Dependencies
