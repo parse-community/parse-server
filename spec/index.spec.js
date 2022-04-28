@@ -304,7 +304,7 @@ describe('server', () => {
         serverStartComplete: () => {
           expect(Parse.applicationId).toEqual('aTestApp');
           const app = express();
-          app.use('/parse', parseServer);
+          app.use('/parse', parseServer.app);
 
           const server = app.listen(12666);
           const obj = new Parse.Object('AnObject');
