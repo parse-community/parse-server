@@ -6,6 +6,7 @@ Do not edit manually, but update Options/index.js
 var parsers = require('./parsers');
 
 module.exports.SchemaOptions = {
+  manuallyEditedOption: true,
   afterMigration: {
     env: 'PARSE_SERVER_SCHEMA_AFTER_MIGRATION',
     help: 'Execute a callback after running schema migrations.',

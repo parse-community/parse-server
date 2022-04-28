@@ -50,6 +50,17 @@ jobs:
        - name: Install dependencies
          run: npm ci
        - run: npm run lint
+  check-definitions:
+     name: Check Defintions
+     timeout-minutes: 5
+     runs-on: ubuntu-18.04
+     steps:
+       - uses: actions/checkout@v2
+       - name: Use Node.js ${{ matrix.NODE_VERSION }}
+         uses: actions/setup-node@v2
+         with:
+           node-version: ${{ matrix.node-version }}
+       - run: npm run definitions:test
   check-circular:
      name: Circular Dependencies
      timeout-minutes: 5
@@ -161,7 +172,7 @@ jobs:
         image: redis
         ports:
             - 6379:6379
-    env:      
+    env:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}

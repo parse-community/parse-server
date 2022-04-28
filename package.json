@@ -108,6 +108,7 @@
     "ci:check": "node ./ci/ciCheck.js",
     "ci:checkNodeEngine": "node ./ci/nodeEngineCheck.js",
     "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
+    "definitions:test": "node ./resources/checkDefinitions.js",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
     "lint-fix": "eslint --fix --cache ./",
