@@ -65,12 +65,33 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('can call startApp twice', async () => {
+    const server = await new ParseServer({
+      appId: 'test2',
+      masterKey: 'abc',
+      serverURL: 'http://localhost:12668/parse',
+      async cloud() {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        Parse.Cloud.beforeSave('Test', () => {
+          throw 'Cannot save.';
+        });
+      },
+    }).startApp();
+    await server.startApp();
+  });
+
   it('can load cloud code as a module', async () => {
     process.env.npm_package_type = 'module';
     await reconfigureServer({ cloud: './spec/cloud/cloudCodeModuleFile.js' });
     const result = await Parse.Cloud.run('cloudCodeInFile');
     expect(result).toEqual('It is possible to define cloud code in a file.');
     delete process.env.npm_package_type;
+  });
+
+  it('cloud code must be valid type', async () => {
+    await expectAsync(reconfigureServer({ cloud: true })).toBeRejectedWith(
+      "argument 'cloud' must either be a string or a function"
+    );
   });
 
   it('can create functions', done => {

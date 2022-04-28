@@ -137,7 +137,7 @@ class ParseServer {
   startApp() {
     return new Promise((resolve, reject) => {
       if (this.started) {
-        reject('startApp has already been called.');
+        resolve(this.app);
         return;
       }
       this.startCallbackSuccess = resolve;
