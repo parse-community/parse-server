@@ -21,7 +21,6 @@ const _ParseServer = function (options: ParseServerOptions) {
 // Mount the create liveQueryServer
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 _ParseServer.start = ParseServer.start;
-_ParseServer.create = ParseServer.create;
 
 const S3Adapter = useExternal('S3Adapter', '@parse/s3-files-adapter');
 const GCSAdapter = useExternal('GCSAdapter', '@parse/gcs-files-adapter');
