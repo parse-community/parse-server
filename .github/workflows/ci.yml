@@ -51,7 +51,7 @@ jobs:
          run: npm ci
        - run: npm run lint
   check-definitions:
-     name: Check Defintions
+     name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-18.04
      steps:

@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const { exec } = require('child_process');
 (async () => {
+  console.log(__dirname);
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('././src/options/Definitions.js', 'utf8'),
     fs.readFile('././src/options/Docs.js', 'utf8'),
