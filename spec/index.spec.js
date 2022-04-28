@@ -565,6 +565,24 @@ describe('server', () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  it('cannot create middleware with invalid type', async () => {
+    await expectAsync(new Promise((resolve, reject) => {
+      const server = ParseServer.ParseServer({
+        ...defaultConfiguration,
+        ...{
+          serverStartComplete(error) {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(server);
+            }
+          },
+          middleware: true
+        },
+      });
+    })).toBeRejectedWith("argument 'middleware' must either be a string or a function");
+  });
+
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');
 
