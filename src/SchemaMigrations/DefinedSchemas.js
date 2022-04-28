@@ -11,7 +11,7 @@ import Auth from '../Auth';
 import rest from '../rest';
 
 export class DefinedSchemas {
-  config: ParseServerOptions;
+  config: any;
   schemaOptions: Migrations.SchemaOptions;
   localSchemas: Migrations.JSONSchema[];
   retries: number;
