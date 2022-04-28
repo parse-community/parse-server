@@ -42,7 +42,7 @@ describe('Cloud Code', () => {
 
   it('should wait for cloud code to load', async () => {
     const initiated = new Date();
-    const server = await new ParseServer({
+    const parseServer = await new ParseServer({
       appId: 'test2',
       masterKey: 'abc',
       serverURL: 'http://localhost:12668/parse',
@@ -55,14 +55,15 @@ describe('Cloud Code', () => {
     }).startApp();
     const express = require('express');
     const app = express();
-    app.use('/parse', server);
-    await new Promise(resolve => app.listen(12668, resolve));
+    app.use('/parse', parseServer);
+    const server = app.listen(12668);
 
     const now = new Date();
     expect(now.getTime() - initiated.getTime() > 1000).toBeTrue();
     await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
       new Parse.Error(141, 'Cannot save.')
     );
+    await server.close();
   });
 
   it('can call startApp twice', async () => {

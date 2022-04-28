@@ -543,7 +543,7 @@ describe('server', () => {
     const parseServer = await new ParseServer.ParseServer({
       appId: 'aTestApp',
       masterKey: 'aTestMasterKey',
-      serverURL: 'http://localhost:12667/parse',
+      serverURL: 'http://localhost:12669/parse',
       schema: {
         definitions: [
           { className: '_User' },
@@ -555,9 +555,10 @@ describe('server', () => {
     expect(spy).toHaveBeenCalledWith('info: Running Migrations Completed\n');
     const app = express();
     app.use('/parse', parseServer);
-    await new Promise(resolve => app.listen(12667, resolve));
+    const server = app.listen(12669);
     const schema = await Parse.Schema.all();
     expect(schema.length).toBeGreaterThanOrEqual(3);
+    await server.close();
   });
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
