@@ -40,6 +40,20 @@ type RequestKeywordDenylist = {
   value: any,
 };
 
+export interface GraphqlConfig {
+  /* All classes enabled by default Provide an empty array to disable all classes
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG_ENABLED_FOR_CLASSES */
+  enabledForClasses: ?(string[]);
+
+  /* Selectively disable specific classes
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG_DISABLED_FOR_CLASSES */
+  disabledForClasses: ?(string[]);
+
+  /* Provide an array of per-class settings
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG_CLASS_CONFIG */
+  classConfigs: ?any;
+}
+
 export interface ParseServerOptions {
   /* Your Parse Application ID
   :ENV: PARSE_SERVER_APPLICATION_ID */
@@ -247,6 +261,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
   :DEFAULT: {} */
   fileUpload: ?FileUploadOptions;
+  /* GraphQL server configuration options
+  :ENV: PARSE_SERVER_GRAPHQL_CONFIG
+  :DEFAULT: {} */
+  graphqlConfig: ?GraphqlConfig;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint

@@ -7,6 +7,7 @@ import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import {
   IdempotencyOptions,
+  GraphqlConfig,
   FileUploadOptions,
   AccountLockoutOptions,
   PagesOptions,
@@ -72,6 +73,7 @@ export class Config {
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
+    graphqlConfig,
     emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
@@ -113,6 +115,7 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
+    this.validateGraphqlConfig(graphqlConfig);
     this.validatePagesOptions(pages);
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
@@ -266,6 +269,22 @@ export class Config {
       idempotencyOptions.paths = IdempotencyOptions.paths.default;
     } else if (!(idempotencyOptions.paths instanceof Array)) {
       throw 'idempotency paths must be of an array of strings';
+    }
+  }
+
+  static validateGraphqlConfig(graphqlConfig: GraphqlConfig) {
+    if (!graphqlConfig) return;
+    if (Object.prototype.toString.call(graphqlConfig) !== '[object Object]') {
+      throw 'Parse Server option graphqlConfig must be an object.';
+    }
+    if (graphqlConfig.enabledForClasses && !Array.isArray(graphqlConfig.enabledForClasses)) {
+      throw 'Parse Server option graphqlConfig.enabledForClasses must be an array.';
+    }
+    if (graphqlConfig.disabledForClasses && !Array.isArray(graphqlConfig.disabledForClasses)) {
+      throw 'Parse Server option graphqlConfig.disabledForClasses must be an array.';
+    }
+    if (graphqlConfig.classConfigs && !Array.isArray(graphqlConfig.classConfigs)) {
+      throw 'Parse Server option graphqlConfig.classConfigs must be an array.';
     }
   }
 
