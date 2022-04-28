@@ -552,12 +552,12 @@ describe('server', () => {
       },
     }).startApp();
     expect(Parse.applicationId).toEqual('aTestApp');
-    expect(spy).toHaveBeenCalledWith('info: Running Migrations\n');
+    expect(spy).toHaveBeenCalledWith('info: Running Migrations Completed\n');
     const app = express();
     app.use('/parse', parseServer);
     await new Promise(resolve => app.listen(12667, resolve));
     const schema = await Parse.Schema.all();
-    expect(schema.length).toBeGreaterThan(3);
+    expect(schema.length).toBeGreaterThanOrEqual(3);
   });
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
