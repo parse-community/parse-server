@@ -331,17 +331,24 @@ class ParseServer {
 
   /**
    * @static
-   * Create an async parse server
-   * @param {ParseServerOptions} options the parse server initialization options 
+   * Creates an async parse server
+   * @param {ParseServerOptions} options the parse server initialization options
    */
-  static createAsync(options) {
+  static create(options) {
+    const serverStartCallback = options.serverStartComplete;
     return new Promise((resolve, reject) => {
       const parseServer = new ParseServer({
         ...options,
         serverStartComplete(error) {
           if (error) {
             reject(error);
+            if (serverStartCallback) {
+              serverStartCallback(error);
+            }
           } else {
+            if (serverStartCallback) {
+              serverStartCallback();
+            }
             resolve(parseServer);
           }
         },

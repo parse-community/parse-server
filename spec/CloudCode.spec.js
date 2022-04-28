@@ -43,7 +43,7 @@ describe('Cloud Code', () => {
   it('should wait for cloud code to load', async () => {
     const config = Config.get('test');
     const initiated = new Date();
-    const parseServer = await ParseServer.createAsync({
+    const parseServer = await ParseServer.create({
       ...config,
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
