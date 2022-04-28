@@ -41,20 +41,25 @@ describe('Cloud Code', () => {
   });
 
   it('should wait for cloud code to load', async () => {
-    const config = Config.get('test');
     const initiated = new Date();
-    const parseServer = await ParseServer.create({
-      ...config,
+    const server = await new ParseServer({
+      appId: 'test2',
+      masterKey: 'abc',
+      serverURL: 'http://localhost:12668/parse',
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         Parse.Cloud.beforeSave('Test', () => {
           throw 'Cannot save.';
         });
       },
-    });
+    }).startApp();
+    const express = require('express');
+    const app = express();
+    app.use('/parse', server);
+    await new Promise(resolve => app.listen(12668, resolve));
+
     const now = new Date();
     expect(now.getTime() - initiated.getTime() > 1000).toBeTrue();
-    parseServer.start({ port: 18380, mountPath: '/test2' });
     await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
       new Parse.Error(141, 'Cannot save.')
     );

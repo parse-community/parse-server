@@ -534,12 +534,13 @@ describe('server', () => {
   it('create should not override server start complete', async () => {
     const config = Config.get('test');
     const spy = spyOn(config, 'serverStartComplete').and.callFake(() => {});
-    await ParseServer.ParseServer.create(config);
+    await new ParseServer.ParseServer(config).startApp();
     expect(spy).toHaveBeenCalled();
   });
 
   it('should wait for schemas to load', async () => {
-    const parseServer = await ParseServer.ParseServer.create({
+    const spy = spyOn(process.stdout, 'write');
+    const parseServer = await new ParseServer.ParseServer({
       appId: 'aTestApp',
       masterKey: 'aTestMasterKey',
       serverURL: 'http://localhost:12667/parse',
@@ -549,13 +550,14 @@ describe('server', () => {
           { className: 'Test', classLevelPermissions: { addField: { '*': true } } },
         ],
       },
-    });
+    }).startApp();
     expect(Parse.applicationId).toEqual('aTestApp');
+    expect(spy).toHaveBeenCalledWith('info: Running Migrations\n');
     const app = express();
     app.use('/parse', parseServer);
-    app.listen(12667);
+    await new Promise(resolve => app.listen(12667, resolve));
     const schema = await Parse.Schema.all();
-    expect(schema.length).toBe(3);
+    expect(schema.length).toBeGreaterThan(3);
   });
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {

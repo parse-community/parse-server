@@ -107,7 +107,14 @@ class ParseServer {
         if (serverStartComplete) {
           serverStartComplete();
         }
+        if (this.startCallbackSuccess) {
+          this.startCallbackSuccess(this.app);
+        }
+        this.started = true;
       } catch (error) {
+        if (this.startCallbackError) {
+          this.startCallbackError(error);
+        }
         if (serverStartComplete) {
           serverStartComplete(error);
         } else {
@@ -122,9 +129,26 @@ class ParseServer {
     }
   }
 
+  /**
+   * Starts the Parse Server to be served as an express app
+   * @returns {Promise<function>} express middleware
+   */
+
+  startApp() {
+    return new Promise((resolve, reject) => {
+      if (this.started) {
+        reject('startApp has already been called.');
+        return;
+      }
+      this.startCallbackSuccess = resolve;
+      this.startCallbackError = reject;
+    });
+  }
+
   get app() {
     if (!this._app) {
       this._app = ParseServer.app(this.config);
+      this._app.startApp = async () => await this.startApp();
     }
     return this._app;
   }
@@ -258,9 +282,6 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   start(options: ParseServerOptions, callback: ?() => void) {
-    if (!options) {
-      options = this.config;
-    }
     const app = express();
     if (options.middleware) {
       let middleware;
@@ -327,33 +348,6 @@ class ParseServer {
   static start(options: ParseServerOptions, callback: ?() => void) {
     const parseServer = new ParseServer(options);
     return parseServer.start(options, callback);
-  }
-
-  /**
-   * @static
-   * Creates an async parse server
-   * @param {ParseServerOptions} options the parse server initialization options
-   */
-  static create(options) {
-    const serverStartCallback = options.serverStartComplete;
-    return new Promise((resolve, reject) => {
-      const parseServer = new ParseServer({
-        ...options,
-        serverStartComplete(error) {
-          if (error) {
-            reject(error);
-            if (serverStartCallback) {
-              serverStartCallback(error);
-            }
-          } else {
-            if (serverStartCallback) {
-              serverStartCallback();
-            }
-            resolve(parseServer.app);
-          }
-        },
-      });
-    });
   }
 
   /**
