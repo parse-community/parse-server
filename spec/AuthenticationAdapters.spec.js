@@ -1652,7 +1652,7 @@ describe('apple signin auth adapter', () => {
 
 describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
-
+  const testCert = `-----BEGIN CERTIFICATE-----\nMIIEvDCCA6SgAwIBAgIQXRHxNXkw1L9z5/3EZ/T/hDANBgkqhkiG9w0BAQsFADB/\nMQswCQYDVQQGEwJVUzEdMBsGA1UEChMUU3ltYW50ZWMgQ29ycG9yYXRpb24xHzAd\nBgNVBAsTFlN5bWFudGVjIFRydXN0IE5ldHdvcmsxMDAuBgNVBAMTJ1N5bWFudGVj\nIENsYXNzIDMgU0hBMjU2IENvZGUgU2lnbmluZyBDQTAeFw0xODA5MTcwMDAwMDBa\nFw0xOTA5MTcyMzU5NTlaMHMxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9y\nbmlhMRIwEAYDVQQHDAlDdXBlcnRpbm8xFDASBgNVBAoMC0FwcGxlLCBJbmMuMQ8w\nDQYDVQQLDAZHQyBTUkUxFDASBgNVBAMMC0FwcGxlLCBJbmMuMIIBIjANBgkqhkiG\n9w0BAQEFAAOCAQ8AMIIBCgKCAQEA06fwIi8fgKrTQu7cBcFkJVF6+Tqvkg7MKJTM\nIOYPPQtPF3AZYPsbUoRKAD7/JXrxxOSVJ7vU1mP77tYG8TcUteZ3sAwvt2dkRbm7\nZO6DcmSggv1Dg4k3goNw4GYyCY4Z2/8JSmsQ80Iv/UOOwynpBziEeZmJ4uck6zlA\n17cDkH48LBpKylaqthym5bFs9gj11pto7mvyb5BTcVuohwi6qosvbs/4VGbC2Nsz\nie416nUZfv+xxoXH995gxR2mw5cDdeCew7pSKxEhvYjT2nVdQF0q/hnPMFnOaEyT\nq79n3gwFXyt0dy8eP6KBF7EW9J6b7ubu/j7h+tQfxPM+gTXOBQIDAQABo4IBPjCC\nATowCQYDVR0TBAIwADAOBgNVHQ8BAf8EBAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUH\nAwMwYQYDVR0gBFowWDBWBgZngQwBBAEwTDAjBggrBgEFBQcCARYXaHR0cHM6Ly9k\nLnN5bWNiLmNvbS9jcHMwJQYIKwYBBQUHAgIwGQwXaHR0cHM6Ly9kLnN5bWNiLmNv\nbS9ycGEwHwYDVR0jBBgwFoAUljtT8Hkzl699g+8uK8zKt4YecmYwKwYDVR0fBCQw\nIjAgoB6gHIYaaHR0cDovL3N2LnN5bWNiLmNvbS9zdi5jcmwwVwYIKwYBBQUHAQEE\nSzBJMB8GCCsGAQUFBzABhhNodHRwOi8vc3Yuc3ltY2QuY29tMCYGCCsGAQUFBzAC\nhhpodHRwOi8vc3Yuc3ltY2IuY29tL3N2LmNydDANBgkqhkiG9w0BAQsFAAOCAQEA\nI/j/PcCNPebSAGrcqSFBSa2mmbusOX01eVBg8X0G/z8Z+ZWUfGFzDG0GQf89MPxV\nwoec+nZuqui7o9Bg8s8JbHV0TC52X14CbTj9w/qBF748WbH9gAaTkrJYPm+MlNhu\ntjEuQdNl/YXVMvQW4O8UMHTi09GyJQ0NC4q92Wxvx1m/qzjvTLvrXHGQ9pEHhPyz\nvfBLxQkWpNoCNKU7UeESyH06XOrGc9MsII9deeKsDJp9a0jtx+pP4MFVtFME9SSQ\ntMBs0It7WwEf7qcRLpialxKwY2EzQ9g4WnANHqo18PrDBE10TFpZPzUh7JhMViVr\nEEbl0YdElmF8Hlamah/yNw==\n-----END CERTIFICATE-----\n`;
   it('validateAuthData should validate', async () => {
     // real token is used
     const authData = {
@@ -1664,30 +1664,22 @@ describe('Apple Game Center Auth adapter', () => {
       salt: 'DzqqrQ==',
       bundleId: 'cloud.xtralife.gamecenterauth',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-    } catch (e) {
-      fail();
-    }
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    await gcenter.validateAuthData(authData);
   });
 
   it('validateAuthData invalid signature id', async () => {
     const authData = {
       id: 'G:1965586982',
-      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-6.cer',
       timestamp: 1565257031287,
       signature: '1234',
       salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
+      bundleId: 'com.example.com',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid signature');
-    }
+    await expectAsync(gcenter.validateAuthData(authData)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Apple Game Center - invalid signature')
+    );
   });
 
   it('validateAuthData invalid public key url', async () => {
