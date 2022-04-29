@@ -105,7 +105,7 @@ class ParseServer {
           }
         }
         if (serverStartComplete) {
-          serverStartComplete();
+          await Promise.resolve(serverStartComplete());
         }
         if (this.startCallbackSuccess) {
           this.startCallbackSuccess(this.app);
@@ -130,7 +130,7 @@ class ParseServer {
   }
 
   /**
-   * Starts the Parse Server to be served as an express app
+   * Starts the Parse Server to be served as an express. Resolves when parse-server is ready to accept external traffic
    * @returns {Promise<function>} express middleware
    */
 
