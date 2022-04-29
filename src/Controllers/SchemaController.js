@@ -15,13 +15,12 @@
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
-import { SchemaCacheAccess } from '../Adapters/Schema/SchemaCacheAccess';
-
 const Parse = require('parse/node').Parse;
+// @flow-disable-next
+import { SchemaCacheAccess } from '../Adapters/Schema/SchemaCacheAccess';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import DatabaseController from './DatabaseController';
-// @flow-disable-next
-import deepcopy from 'deepcopy';
+
 import type {
   Schema,
   SchemaFields,
@@ -30,126 +29,12 @@ import type {
   LoadSchemaOptions,
 } from './types';
 import type { ParseServerOptions } from '../Options';
-
-const defaultColumns: { [string]: SchemaFields } = Object.freeze({
-  // Contain the default columns for every parse object type (except _Join collection)
-  _Default: {
-    objectId: { type: 'String' },
-    createdAt: { type: 'Date' },
-    updatedAt: { type: 'Date' },
-    ACL: { type: 'ACL' },
-  },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
-  _User: {
-    username: { type: 'String' },
-    password: { type: 'String' },
-    email: { type: 'String' },
-    emailVerified: { type: 'Boolean' },
-    authData: { type: 'Object' },
-  },
-  // The additional default columns for the _Installation collection (in addition to DefaultCols)
-  _Installation: {
-    installationId: { type: 'String' },
-    deviceToken: { type: 'String' },
-    channels: { type: 'Array' },
-    deviceType: { type: 'String' },
-    pushType: { type: 'String' },
-    GCMSenderId: { type: 'String' },
-    timeZone: { type: 'String' },
-    localeIdentifier: { type: 'String' },
-    badge: { type: 'Number' },
-    appVersion: { type: 'String' },
-    appName: { type: 'String' },
-    appIdentifier: { type: 'String' },
-    parseVersion: { type: 'String' },
-  },
-  // The additional default columns for the _Role collection (in addition to DefaultCols)
-  _Role: {
-    name: { type: 'String' },
-    users: { type: 'Relation', targetClass: '_User' },
-    roles: { type: 'Relation', targetClass: '_Role' },
-  },
-  // The additional default columns for the _Session collection (in addition to DefaultCols)
-  _Session: {
-    user: { type: 'Pointer', targetClass: '_User' },
-    installationId: { type: 'String' },
-    sessionToken: { type: 'String' },
-    expiresAt: { type: 'Date' },
-    createdWith: { type: 'Object' },
-  },
-  _Product: {
-    productIdentifier: { type: 'String' },
-    download: { type: 'File' },
-    downloadName: { type: 'String' },
-    icon: { type: 'File' },
-    order: { type: 'Number' },
-    title: { type: 'String' },
-    subtitle: { type: 'String' },
-  },
-  _PushStatus: {
-    pushTime: { type: 'String' },
-    source: { type: 'String' }, // rest or webui
-    query: { type: 'String' }, // the stringified JSON query
-    payload: { type: 'String' }, // the stringified JSON payload,
-    title: { type: 'String' },
-    expiry: { type: 'Number' },
-    expiration_interval: { type: 'Number' },
-    status: { type: 'String' },
-    numSent: { type: 'Number' },
-    numFailed: { type: 'Number' },
-    pushHash: { type: 'String' },
-    errorMessage: { type: 'Object' },
-    sentPerType: { type: 'Object' },
-    failedPerType: { type: 'Object' },
-    sentPerUTCOffset: { type: 'Object' },
-    failedPerUTCOffset: { type: 'Object' },
-    count: { type: 'Number' }, // tracks # of batches queued and pending
-  },
-  _JobStatus: {
-    jobName: { type: 'String' },
-    source: { type: 'String' },
-    status: { type: 'String' },
-    message: { type: 'String' },
-    params: { type: 'Object' }, // params received when calling the job
-    finishedAt: { type: 'Date' },
-  },
-  _JobSchedule: {
-    jobName: { type: 'String' },
-    description: { type: 'String' },
-    params: { type: 'String' },
-    startAfter: { type: 'String' },
-    daysOfWeek: { type: 'Array' },
-    timeOfDay: { type: 'String' },
-    lastRun: { type: 'Number' },
-    repeatMinutes: { type: 'Number' },
-  },
-  _Hooks: {
-    functionName: { type: 'String' },
-    className: { type: 'String' },
-    triggerName: { type: 'String' },
-    url: { type: 'String' },
-  },
-  _GlobalConfig: {
-    objectId: { type: 'String' },
-    params: { type: 'Object' },
-    masterKeyOnly: { type: 'Object' },
-  },
-  _GraphQLConfig: {
-    objectId: { type: 'String' },
-    config: { type: 'Object' },
-  },
-  _Audience: {
-    objectId: { type: 'String' },
-    name: { type: 'String' },
-    query: { type: 'String' }, //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
-    lastUsed: { type: 'Date' },
-    timesUsed: { type: 'Number' },
-  },
-  _Idempotency: {
-    reqId: { type: 'String' },
-    expire: { type: 'Date' },
-  },
-});
+import {
+  injectDefaultSchema,
+  volatileClasses,
+  defaultColumns,
+  SchemaData,
+} from '../Schema/SchemaData';
 
 const requiredColumns = Object.freeze({
   _Product: ['productIdentifier', 'icon', 'order', 'title', 'subtitle'],
@@ -166,17 +51,6 @@ const systemClasses = Object.freeze([
   '_Product',
   '_PushStatus',
   '_JobStatus',
-  '_JobSchedule',
-  '_Audience',
-  '_Idempotency',
-]);
-
-const volatileClasses = Object.freeze([
-  '_JobStatus',
-  '_PushStatus',
-  '_Hooks',
-  '_GlobalConfig',
-  '_GraphQLConfig',
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
@@ -530,81 +404,6 @@ const convertAdapterSchemaToParseSchema = ({ ...schema }) => {
   return schema;
 };
 
-class SchemaData {
-  __data: any;
-  __protectedFields: any;
-  constructor(allSchemas = [], protectedFields = {}) {
-    this.__data = {};
-    this.__protectedFields = protectedFields;
-    allSchemas.forEach(schema => {
-      if (volatileClasses.includes(schema.className)) {
-        return;
-      }
-      Object.defineProperty(this, schema.className, {
-        get: () => {
-          if (!this.__data[schema.className]) {
-            const data = {};
-            data.fields = injectDefaultSchema(schema).fields;
-            data.classLevelPermissions = deepcopy(schema.classLevelPermissions);
-            data.indexes = schema.indexes;
-
-            const classProtectedFields = this.__protectedFields[schema.className];
-            if (classProtectedFields) {
-              for (const key in classProtectedFields) {
-                const unq = new Set([
-                  ...(data.classLevelPermissions.protectedFields[key] || []),
-                  ...classProtectedFields[key],
-                ]);
-                data.classLevelPermissions.protectedFields[key] = Array.from(unq);
-              }
-            }
-
-            this.__data[schema.className] = data;
-          }
-          return this.__data[schema.className];
-        },
-      });
-    });
-
-    // Inject the in-memory classes
-    volatileClasses.forEach(className => {
-      Object.defineProperty(this, className, {
-        get: () => {
-          if (!this.__data[className]) {
-            const schema = injectDefaultSchema({
-              className,
-              fields: {},
-              classLevelPermissions: {},
-            });
-            const data = {};
-            data.fields = schema.fields;
-            data.classLevelPermissions = schema.classLevelPermissions;
-            data.indexes = schema.indexes;
-            this.__data[className] = data;
-          }
-          return this.__data[className];
-        },
-      });
-    });
-  }
-}
-
-const injectDefaultSchema = ({ className, fields, classLevelPermissions, indexes }: Schema) => {
-  const defaultSchema: Schema = {
-    className,
-    fields: {
-      ...defaultColumns._Default,
-      ...(defaultColumns[className] || {}),
-      ...fields,
-    },
-    classLevelPermissions,
-  };
-  if (indexes && Object.keys(indexes).length !== 0) {
-    defaultSchema.indexes = indexes;
-  }
-  return defaultSchema;
-};
-
 const _HooksSchema = { className: '_Hooks', fields: defaultColumns._Hooks };
 const _GlobalConfigSchema = {
   className: '_GlobalConfig',
@@ -682,7 +481,6 @@ const typeToString = (type: SchemaField | string): string => {
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 export default class SchemaController {
   _dbAdapter: StorageAdapter;
-  protectedFields: any;
   userIdRegEx: RegExp;
   schemaCache: SchemaCacheAccess;
 
@@ -693,7 +491,6 @@ export default class SchemaController {
   ) {
     this._dbAdapter = databaseAdapter;
     this.schemaCache = schemaCache;
-    this.protectedFields = options.protectedFields;
 
     const customIds = options.allowCustomObjectId;
 
@@ -701,7 +498,13 @@ export default class SchemaController {
     const autoIdRegEx = /^[a-zA-Z0-9]{1,}$/;
 
     this.userIdRegEx = customIds ? customIdRegEx : autoIdRegEx;
+    if (this._dbAdapter) {
+      this._dbAdapter.watch(() => {
+        this.reloadData({ clearCache: true });
+      });
+    }
   }
+
   async getSchemaData() {
     return this.schemaCache.getSchemaData();
   }
@@ -717,21 +520,6 @@ export default class SchemaController {
       await this.schemaCache.clear();
     }
     return this.schemaCache.all();
-  }
-
-  async getSchemaObjects(): Promise<{
-    allClasses: Array<Schema>,
-    schemaData: SchemaData,
-  }> {
-    const rawAllSchemas = await this._dbAdapter.getAllClasses();
-    const allSchemas = rawAllSchemas.map(injectDefaultSchema);
-
-    const schemaData = new SchemaData(allSchemas, this.protectedFields);
-
-    return {
-      schemaData,
-      allClasses: allSchemas,
-    };
   }
 
   async getOneSchema(
@@ -869,10 +657,11 @@ export default class SchemaController {
         return (
           deletePromise // Delete Everything
             .then(() => this.schemaCache.clear()) // Reload our Schema, so we have all the new values
-            .then(() => {
+            .then(async () => {
+              const schemaData = await this.getSchemaData();
               const promises = insertedFields.map(fieldName => {
                 const type = submittedFields[fieldName];
-                return this.enforceFieldExists(className, fieldName, type);
+                return this.enforceFieldExistsSync(className, fieldName, type, false, schemaData);
               });
               return Promise.all(promises);
             })
@@ -1057,15 +846,27 @@ export default class SchemaController {
     }
   }
 
-  // Returns a promise that resolves successfully to the new schema
-  // object if the provided className-fieldName-type tuple is valid.
-  // The className must already be validated.
-  // If 'freeze' is true, refuse to update the schema for this field.
   async enforceFieldExists(
     className: string,
     fieldName: string,
     type: string | SchemaField,
     isValidation?: boolean
+  ): Promise<any> {
+    const schemaData = await this.getSchemaData();
+
+    return this.enforceFieldExistsSync(className, fieldName, type, isValidation, schemaData);
+  }
+
+  // Returns a promise that resolves successfully to the new schema
+  // object if the provided className-fieldName-type tuple is valid.
+  // The className must already be validated.
+  // If 'freeze' is true, refuse to update the schema for this field.
+  enforceFieldExistsSync(
+    className: string,
+    fieldName: string,
+    type: string | SchemaField,
+    isValidation: boolean,
+    schemaData: SchemaData
   ): Promise<any> {
     if (fieldName.indexOf('.') > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
@@ -1081,7 +882,7 @@ export default class SchemaController {
       return undefined;
     }
 
-    const expectedType = await this.getExpectedType(className, fieldName);
+    const expectedType = this.getExpectedTypeSync(className, fieldName, schemaData);
     if (typeof type === 'string') {
       type = ({ type }: SchemaField);
     }
@@ -1417,6 +1218,14 @@ export default class SchemaController {
   // or undefined if the schema is not set
   async getExpectedType(className: string, fieldName: string): Promise<?(SchemaField | string)> {
     const schemaData = await this.schemaCache.getSchemaData();
+    return this.getExpectedTypeSync(className, fieldName, schemaData);
+  }
+
+  getExpectedTypeSync(
+    className: string,
+    fieldName: string,
+    schemaData: SchemaData
+  ): Promise<?(SchemaField | string)> {
     if (schemaData[className]) {
       const expectedType = schemaData[className].fields[fieldName];
       return expectedType === 'map' ? 'Object' : expectedType;
@@ -1597,5 +1406,4 @@ export {
   convertSchemaToAdapterSchema,
   VolatileClassesSchemas,
   SchemaController,
-  SchemaData,
 };

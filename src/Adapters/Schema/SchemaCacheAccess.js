@@ -3,25 +3,39 @@
  * @module Adapters
  */
 import type { Schema } from '../../Controllers/types';
-import { SchemaData } from '../../Controllers/SchemaController';
 import SchemaCacheAdapter from './SchemaCacheAdapter';
+import { injectDefaultSchema, SchemaData } from '../../Schema/SchemaData';
+import { StorageAdapter } from '../Storage/StorageAdapter';
+import type { ParseServerOptions } from '../../Options';
+import { SchemaAndData } from './types';
 
 /**
  * @interface SchemaCacheAccess
  */
 export class SchemaCacheAccess {
-  constructor(schemaCacheAdapter: SchemaCacheAdapter) {
+  schemaCacheAdapter: SchemaCacheAdapter;
+  dbAdapter: StorageAdapter;
+  protectedFields: any;
+
+  constructor(schemaCacheAdapter: SchemaCacheAdapter, dbAdapter, options: ParseServerOptions) {
     this.schemaCacheAdapter = schemaCacheAdapter;
+    this.dbAdapter = dbAdapter;
+    this.protectedFields = options ? options.protectedFields : undefined;
   }
 
-  setDataProvider(
-    dataProvider: () => Promise<{ allClasses: Array<Schema>, schemaData: SchemaData }>
-  ) {
-    this.schemaCacheAdapter.setDataProvider(dataProvider);
-  }
+  async getSchemaAndData(): Promise<SchemaAndData> {
+    const that = this;
+    return this.schemaCacheAdapter.fetchSchema(async () => {
+      const rawAllSchemas = await that.dbAdapter.getAllClasses();
+      const allSchemas = rawAllSchemas.map(injectDefaultSchema);
 
-  async getSchemaAndData(): Promise<{ allClasses: Array<Schema>, schemaData: SchemaData }> {
-    return this.schemaCacheAdapter.fetchSchema();
+      const schemaData = new SchemaData(allSchemas, that.protectedFields);
+
+      return {
+        schemaData,
+        allClasses: allSchemas,
+      };
+    });
   }
 
   async all(): Promise<Array<Schema>> {
@@ -37,7 +51,7 @@ export class SchemaCacheAccess {
   }
 
   clear(): Promise<void> {
-    this.schemaCacheAdapter.clear();
+    return this.schemaCacheAdapter.clear();
   }
 
   async getSchemaData(): Promise<SchemaData> {

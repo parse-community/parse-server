@@ -169,7 +169,7 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
   schemaCacheAdapter = loadAdapter(schemaCacheAdapter, InMemorySchemaCache);
   return new DatabaseController(
     databaseAdapter,
-    new SchemaCacheAccess(schemaCacheAdapter),
+    new SchemaCacheAccess(schemaCacheAdapter, databaseAdapter, options),
     options
   );
 }

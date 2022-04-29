@@ -364,7 +364,7 @@ const relationSchema = {
 class DatabaseController {
   adapter: StorageAdapter;
   schemaCache: SchemaCacheAccess;
-  schemaController: SchemaController;
+  schemaController: any;
   _transactionalSession: ?any;
   options: ParseServerOptions;
   idempotencyOptions: any;
@@ -375,7 +375,8 @@ class DatabaseController {
     options: ParseServerOptions
   ) {
     this.adapter = adapter;
-    this.schemaCache = schemaCache || new InMemorySchemaCache();
+    this.schemaCache =
+      schemaCache || new SchemaCacheAccess(new InMemorySchemaCache(), adapter, options);
     this.options = options || {};
     this.idempotencyOptions = this.options.idempotencyOptions || {};
     // Prevent mutable this.schema, otherwise one request could use
@@ -386,7 +387,6 @@ class DatabaseController {
       this.schemaCache,
       this.options
     );
-    this.schemaCache.setDataProvider(() => this.schemaController.getSchemaObjects());
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -891,9 +891,8 @@ class DatabaseController {
    * @param {boolean} fast set to true if it's ok to just delete rows and not indexes
    * @returns {Promise<void>} when the deletions completes
    */
-  deleteEverything(fast: boolean = false): Promise<any> {
-    this.schemaPromise = null;
-    this.schemaCache.clear();
+  async deleteEverything(fast: boolean = false): Promise<any> {
+    await this.schemaCache.clear();
     return this.adapter.deleteAllClasses(fast);
   }
 

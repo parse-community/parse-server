@@ -1,18 +1,10 @@
-import type { Schema } from '../../Controllers/types';
-import { SchemaData } from '../../Controllers/SchemaController';
+import { SchemaAndData } from './types';
 
 export default class InMemorySchemaCache {
-  dataProvider: () => Promise<{ allClasses: Array<Schema>, schemaData: SchemaData }>;
   fetchingSchemaPromise: any;
   cache = {};
 
-  setDataProvider(
-    dataProvider: () => Promise<{ allClasses: Array<Schema>, schemaData: SchemaData }>
-  ) {
-    this.dataProvider = dataProvider;
-  }
-
-  async fetchSchema(): Promise<{ allClasses: Array<Schema>, schemaData: SchemaData }> {
+  async fetchSchema(getDataFromDb: () => Promise<SchemaAndData>): Promise<SchemaAndData> {
     if (this.cache.isCached) {
       return {
         allClasses: this.cache.allClasses,
@@ -20,7 +12,7 @@ export default class InMemorySchemaCache {
       };
     }
     if (!this.fetchingSchemaPromise) {
-      this.fetchingSchemaPromise = this.dataProvider();
+      this.fetchingSchemaPromise = await getDataFromDb();
     }
     const result = await this.fetchingSchemaPromise;
     this.cache.isCached = true;
