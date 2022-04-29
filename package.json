@@ -19,7 +19,7 @@
   ],
   "license": "BSD-3-Clause",
   "dependencies": {
-    "@apollo/client": "3.5.9",
+    "@apollo/client": "3.5.10",
     "@apollographql/graphql-playground-html": "1.6.29",
     "@graphql-tools/links": "8.2.8",
     "@graphql-tools/stitch": "6.2.4",
