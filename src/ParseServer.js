@@ -130,7 +130,8 @@ class ParseServer {
   }
 
   /**
-   * Starts the Parse Server to be served as an express. Resolves when parse-server is ready to accept external traffic
+   * Starts the Parse Server to be served as an express. Resolves when parse-server is ready to accept external traffic.
+   * Note: when using `await startApp()`, server JS SDK methods will not be available until expressApp.listen(port) is called.
    * @returns {Promise<function>} express middleware
    */
 
