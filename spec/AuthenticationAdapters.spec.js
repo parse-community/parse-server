@@ -1652,7 +1652,8 @@ describe('apple signin auth adapter', () => {
 
 describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
-
+  const fs = require('fs');
+  const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
   it('validateAuthData should validate', async () => {
     // real token is used
     const authData = {
@@ -1664,68 +1665,51 @@ describe('Apple Game Center Auth adapter', () => {
       salt: 'DzqqrQ==',
       bundleId: 'cloud.xtralife.gamecenterauth',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-    } catch (e) {
-      fail();
-    }
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    await gcenter.validateAuthData(authData);
   });
 
   it('validateAuthData invalid signature id', async () => {
     const authData = {
       id: 'G:1965586982',
-      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-6.cer',
       timestamp: 1565257031287,
       signature: '1234',
       salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
+      bundleId: 'com.example.com',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid signature');
-    }
-  });
-
-  it('validateAuthData invalid public key url', async () => {
-    const authData = {
-      id: 'G:1965586982',
-      publicKeyUrl: 'invalid.com',
-      timestamp: 1565257031287,
-      signature: '1234',
-      salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
-    };
-
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: invalid.com');
-    }
+    await expectAsync(gcenter.validateAuthData(authData)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Apple Game Center - invalid signature')
+    );
   });
 
   it('validateAuthData invalid public key http url', async () => {
-    const authData = {
-      id: 'G:1965586982',
-      publicKeyUrl: 'http://static.gc.apple.com/public-key/gc-prod-4.cer',
-      timestamp: 1565257031287,
-      signature: '1234',
-      salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
-    };
-
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe(
-        'Apple Game Center - invalid publicKeyUrl: http://static.gc.apple.com/public-key/gc-prod-4.cer'
-      );
-    }
+    const publicKeyUrls = [
+      'example.com',
+      'http://static.gc.apple.com/public-key/gc-prod-4.cer',
+      'https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg',
+      'https://example.com/ \\.apple.com/public_key.cer',
+      'https://example.com/ &.apple.com/public_key.cer',
+    ];
+    await Promise.all(
+      publicKeyUrls.map(publicKeyUrl =>
+        expectAsync(
+          gcenter.validateAuthData({
+            id: 'G:1965586982',
+            timestamp: 1565257031287,
+            publicKeyUrl,
+            signature: '1234',
+            salt: 'DzqqrQ==',
+            bundleId: 'com.example.com',
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.SCRIPT_FAILED,
+            `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+          )
+        )
+      )
+    );
   });
 });
 
