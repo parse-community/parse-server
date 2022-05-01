@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollo/client": "3.5.10",
     "@apollographql/graphql-playground-html": "1.6.29",
-    "@graphql-tools/links": "8.2.8",
+    "@graphql-tools/links": "8.2.9",
     "@graphql-tools/stitch": "6.2.4",
     "@graphql-tools/utils": "6.2.4",
     "@parse/fs-files-adapter": "1.2.2",
