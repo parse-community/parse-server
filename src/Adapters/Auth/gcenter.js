@@ -19,15 +19,12 @@ const url = require('url');
 const cache = {}; // (publicKey -> cert) cache
 
 function verifyPublicKeyUrl(publicKeyUrl) {
-  const parsedUrl = url.parse(publicKeyUrl);
-  if (parsedUrl.protocol !== 'https:') {
+  try {
+    const regex = /^https:\/\/(?:[-_A-Za-z0-9]+\.){0,}apple\.com\/.*\.cer$/;
+    return regex.test(publicKeyUrl);
+  } catch (error) {
     return false;
   }
-  const hostnameParts = parsedUrl.hostname.split('.');
-  const length = hostnameParts.length;
-  const domainParts = hostnameParts.slice(length - 2, length);
-  const domain = domainParts.join('.');
-  return domain === 'apple.com';
 }
 
 function convertX509CertToPEM(X509Cert) {
@@ -40,7 +37,7 @@ function convertX509CertToPEM(X509Cert) {
   return pemPreFix + certBody + pemPostFix;
 }
 
-function getAppleCertificate(publicKeyUrl) {
+async function getAppleCertificate(publicKeyUrl) {
   if (!verifyPublicKeyUrl(publicKeyUrl)) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -49,6 +46,25 @@ function getAppleCertificate(publicKeyUrl) {
   }
   if (cache[publicKeyUrl]) {
     return cache[publicKeyUrl];
+  }
+  const url = new URL(publicKeyUrl);
+  const headOptions = {
+    hostname: url.hostname,
+    path: url.pathname,
+    method: 'HEAD',
+  };
+  const headers = await new Promise((resolve, reject) =>
+    https.get(headOptions, res => resolve(res.headers)).on('error', reject)
+  );
+  if (
+    headers['content-type'] !== 'application/pkix-cert' ||
+    headers['content-length'] == null ||
+    headers['content-length'] > 10000
+  ) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+    );
   }
   return new Promise((resolve, reject) => {
     https
