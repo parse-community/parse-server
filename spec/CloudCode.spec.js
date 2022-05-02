@@ -3695,7 +3695,8 @@ describe('saveFile hooks', () => {
 
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
-    await file.destroy({ useMasterKey: true });
+    const file2 = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file2.destroy({ useMasterKey: true });
     await new Promise(resolve => setTimeout(resolve, 100));
     for (const key in triggers) {
       expect(triggers[key]).toHaveBeenCalled();
