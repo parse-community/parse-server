@@ -473,39 +473,6 @@ ParseCloud.afterDeleteFile = function (handler, validationHandler) {
 };
 
 /**
- *
- * Registers a before create function
- *
- * **Available in Cloud Code only.**
- *
- * ```
- * Parse.Cloud.beforeCreate(Parse.File, (request) => {
- *   // code here
- * }, (request) => {
- *   // validation code here
- * });
- *
- * ```
- *
- * @method beforeCreate
- * @name Parse.Cloud.beforeCreate
- * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.
- * @param {Function} func The function to run before a save. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
- */
-ParseCloud.beforeCreate = function (_, handler, validationHandler) {
-  const className = triggers.getClassName(Parse.File);
-  validateValidator(validationHandler);
-  triggers.addTrigger(
-    triggers.Types.beforeCreate,
-    className,
-    handler,
-    Parse.applicationId,
-    validationHandler
-  );
-};
-
-/**
  * Registers a before live query server connect function.
  *
  * **Available in Cloud Code only.**
