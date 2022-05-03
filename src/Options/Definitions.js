@@ -5,6 +5,51 @@ Do not edit manually, but update Options/index.js
 */
 var parsers = require('./parsers');
 
+module.exports.SchemaOptions = {
+  afterMigration: {
+    env: 'PARSE_SERVER_SCHEMA_AFTER_MIGRATION',
+    help: 'Execute a callback after running schema migrations.',
+  },
+  beforeMigration: {
+    env: 'PARSE_SERVER_SCHEMA_BEFORE_MIGRATION',
+    help: 'Execute a callback before running schema migrations.',
+  },
+  definitions: {
+    env: 'PARSE_SERVER_SCHEMA_DEFINITIONS',
+    help:
+      'Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema',
+    required: true,
+    action: parsers.objectParser,
+    default: [],
+  },
+  deleteExtraFields: {
+    env: 'PARSE_SERVER_SCHEMA_DELETE_EXTRA_FIELDS',
+    help:
+      'Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  lockSchemas: {
+    env: 'PARSE_SERVER_SCHEMA_LOCK_SCHEMAS',
+    help:
+      'Is true if Parse Server will reject any attempts to modify the schema while the server is running.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  recreateModifiedFields: {
+    env: 'PARSE_SERVER_SCHEMA_RECREATE_MODIFIED_FIELDS',
+    help:
+      'Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  strict: {
+    env: 'PARSE_SERVER_SCHEMA_STRICT',
+    help: 'Is true if Parse Server should exit if schema update fail.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+};
 module.exports.ParseServerOptions = {
   accountLockout: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT',
@@ -385,6 +430,11 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  schema: {
+    env: 'PARSE_SERVER_SCHEMA',
+    help: 'Defined schema',
+    action: parsers.objectParser,
+  },
   security: {
     env: 'PARSE_SERVER_SECURITY',
     help: 'The security options to identify and report weak security settings.',
@@ -462,45 +512,6 @@ module.exports.SecurityOptions = {
       'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
     action: parsers.booleanParser,
     default: false,
-  },
-};
-module.exports.SchemaOptions = {
-  definitions: {
-    help: 'The schema definitions.',
-    default: [],
-  },
-  strict: {
-    env: 'PARSE_SERVER_SCHEMA_STRICT',
-    help: 'Is true if Parse Server should exit if schema update fail.',
-    action: parsers.booleanParser,
-    default: true,
-  },
-  deleteExtraFields: {
-    env: 'PARSE_SERVER_SCHEMA_DELETE_EXTRA_FIELDS',
-    help:
-      'Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  recreateModifiedFields: {
-    env: 'PARSE_SERVER_SCHEMA_RECREATE_MODIFIED_FIELDS',
-    help:
-      'Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  lockSchemas: {
-    env: 'PARSE_SERVER_SCHEMA_LOCK',
-    help:
-      'Is true if Parse Server will reject any attempts to modify the schema while the server is running.',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  beforeMigration: {
-    help: 'Execute a callback before running schema migrations.',
-  },
-  afterMigration: {
-    help: 'Execute a callback after running schema migrations.',
   },
 };
 module.exports.PagesOptions = {
