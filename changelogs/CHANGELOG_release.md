@@ -1,3 +1,10 @@
+## [5.2.1](https://github.com/parse-community/parse-server/compare/5.2.0...5.2.1) (2022-05-01)
+
+
+### Bug Fixes
+
+* authentication bypass and denial of service (DoS) vulnerabilities in Apple Game Center auth adapter (GHSA-qf8x-vqjv-92gr) ([#7962](https://github.com/parse-community/parse-server/issues/7962)) ([af4a041](https://github.com/parse-community/parse-server/commit/af4a0417a9f3c1e99b3793806b4b18e04d9fa999))
+
 # [5.2.0](https://github.com/parse-community/parse-server/compare/5.1.1...5.2.0) (2022-03-24)
 
 
