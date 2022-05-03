@@ -236,6 +236,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
     help: 'Full path to your GraphQL custom schema.graphql file',
   },
+  holdPublicRoutes: {
+    env: 'PARSE_SERVER_HOLD_PUBLIC_ROUTES',
+    help:
+      'Set to true if Parse Server should require masterKey access before `mountRoutes()` is called.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   host: {
     env: 'PARSE_SERVER_HOST',
     help: 'The host to serve ParseServer on, defaults to 0.0.0.0',

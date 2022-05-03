@@ -79,6 +79,7 @@ export class Config {
     enforcePrivateUsers,
     schema,
     requestKeywordDenylist,
+    holdPublicRoutes,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -101,6 +102,10 @@ export class Config {
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
+    }
+
+    if (typeof holdPublicRoutes !== 'boolean') {
+      throw 'holdPublicRoutes must be a boolean value';
     }
 
     if (publicServerURL) {

@@ -146,10 +146,20 @@ class ParseServer {
     });
   }
 
+  /**
+   * Method that is called when Parse Server is ready to
+   * @returns {Promise<function>} express middleware
+   */
+
+  mountPublicRoutes() {
+    this.config.publicRoutesAvailable = true;
+  }
+
   get app() {
     if (!this._app) {
       this._app = ParseServer.app(this.config);
       this._app.startApp = async () => await this.startApp();
+      this._app.mountPublicRoutes = () => this.mountPublicRoutes();
     }
     return this._app;
   }
@@ -180,7 +190,7 @@ class ParseServer {
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
   static app(options) {
-    const { maxUploadSize = '20mb', appId, directAccess, pages } = options;
+    const { maxUploadSize = '20mb', appId, directAccess, pages, holdPublicRoutes } = options;
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
@@ -211,6 +221,17 @@ class ParseServer {
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
+
+    if (holdPublicRoutes) {
+      options.publicRoutesAvailable = false;
+      api.use((req, res, next) => {
+        if (options.publicRoutesAvailable) {
+          next();
+          return;
+        }
+        middlewares.enforceMasterKeyAccess(req, res, next);
+      });
+    }
 
     const appRouter = ParseServer.promiseRouter({ appId });
     api.use(appRouter.expressRouter());

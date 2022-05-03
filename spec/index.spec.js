@@ -558,6 +558,30 @@ describe('server', () => {
     await new Promise(resolve => server.close(resolve));
   });
 
+  it('call call startApp with mountPublicRoutes', async () => {
+    const config = {
+      appId: 'aTestApp',
+      masterKey: 'aTestMasterKey',
+      serverURL: 'http://localhost:12701/parse',
+      holdPublicRoutes: true,
+    };
+    const parseServer = await new ParseServer.ParseServer(config).startApp();
+    expect(Parse.applicationId).toEqual('aTestApp');
+    expect(Parse.serverURL).toEqual('http://localhost:12701/parse');
+    const app = express();
+    app.use('/parse', parseServer);
+    const server = app.listen(12701);
+    const testObject = new Parse.Object('TestObject');
+    // api usage requires masterKey until mountPublicRoutes is called
+    await expectAsync(testObject.save(null, { useMasterKey: true })).toBeResolved();
+    await expectAsync(testObject.save()).toBeRejectedWith(
+      new Parse.Error(undefined, 'unauthorized: master key is required')
+    );
+    parseServer.mountPublicRoutes();
+    await expectAsync(testObject.save()).toBeResolved();
+    await new Promise(resolve => server.close(resolve));
+  });
+
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');
 
