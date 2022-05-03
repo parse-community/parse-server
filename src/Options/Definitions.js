@@ -239,7 +239,7 @@ module.exports.ParseServerOptions = {
   holdPublicRoutes: {
     env: 'PARSE_SERVER_HOLD_PUBLIC_ROUTES',
     help:
-      'Set to true if Parse Server should require masterKey access before `mountRoutes()` is called.',
+      'Set to true if Parse Server should require masterKey access before `mountPublicRoutes()` is called.',
     action: parsers.booleanParser,
     default: false,
   },
