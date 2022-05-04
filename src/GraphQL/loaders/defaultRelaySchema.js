@@ -39,7 +39,7 @@ const load = parseGraphQLSchema => {
       }
     },
     obj => {
-      return parseGraphQLSchema.parseClassTypes[obj.className].classGraphQLOutputType;
+      return parseGraphQLSchema.parseClassTypes[obj.className].classGraphQLOutputType.name;
     }
   );
 

@@ -1,7 +1,7 @@
 import corsMiddleware from 'cors';
 import bodyParser from 'body-parser';
 import { graphqlUploadExpress } from 'graphql-upload';
-import { graphqlExpress } from 'apollo-server-express/dist/expressApollo';
+import { ApolloServer } from 'apollo-server-express';
 import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
@@ -65,7 +65,7 @@ class ParseGraphQLServer {
     );
   }
 
-  applyGraphQL(app) {
+  async applyGraphQL(app) {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
@@ -82,10 +82,12 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, bodyParser.json());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseErrors);
-    app.use(
-      this.config.graphQLPath,
-      graphqlExpress(async req => await this._getGraphQLOptions(req))
-    );
+    const server = new ApolloServer({ typeDefs: 'type Query { tmp: Boolean }' });
+    server.createGraphQLServerOptions = req => {
+      return this._getGraphQLOptions(req);
+    };
+    await server.start();
+    app.use(server.getMiddleware({ path: this.config.graphQLPath }));
   }
 
   applyPlayground(app) {

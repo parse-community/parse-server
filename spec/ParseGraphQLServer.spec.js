@@ -12,6 +12,7 @@ const { getMainDefinition } = require('apollo-utilities');
 const { createUploadLink } = require('apollo-upload-client');
 const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('@apollo/client/link/ws');
+const { mergeSchemas } = require('@graphql-tools/schema');
 const {
   ApolloClient,
   InMemoryCache,
@@ -133,28 +134,31 @@ describe('ParseGraphQLServer', () => {
   });
 
   describe('applyGraphQL', () => {
-    it('should require an Express.js app instance', () => {
-      expect(() => parseGraphQLServer.applyGraphQL()).toThrow(
+    it('should require an Express.js app instance', async () => {
+      await expectAsync(parseGraphQLServer.applyGraphQL()).toBeRejectedWith(
         'You must provide an Express.js app instance!'
       );
-      expect(() => parseGraphQLServer.applyGraphQL({})).toThrow(
+      await expectAsync(parseGraphQLServer.applyGraphQL({})).toBeRejectedWith(
         'You must provide an Express.js app instance!'
       );
-      expect(() => parseGraphQLServer.applyGraphQL(new express())).not.toThrow();
+      await expectAsync(parseGraphQLServer.applyGraphQL(new express())).toBeResolved();
     });
 
-    it('should apply middlewares at config.graphQLPath', () => {
+    it('should apply middlewares at config.graphQLPath', async () => {
       let useCount = 0;
-      expect(() =>
-        new ParseGraphQLServer(parseServer, {
-          graphQLPath: 'somepath',
-        }).applyGraphQL({
-          use: path => {
-            useCount++;
-            expect(path).toEqual('somepath');
-          },
-        })
-      ).not.toThrow();
+      const gqlServer = new ParseGraphQLServer(parseServer, {
+        graphQLPath: 'somepath',
+      });
+      gqlServer.applyGraphQL({
+        use: server => {
+          useCount++;
+          if (typeof server === 'string') {
+            expect(server).toEqual('somepath');
+          } else {
+            expect(server.stack[1].regexp.toString()).toEqual('/^somepath\\/?(?=\\/|$)/i');
+          }
+        },
+      });
       expect(useCount).toBeGreaterThan(0);
     });
   });
@@ -7697,8 +7701,8 @@ describe('ParseGraphQLServer', () => {
                 .map(call => call.args[0])
                 .sort()
             ).toEqual([
-              'Function 1NumberInTheBeggning could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.',
-              'Function double-barrelled could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.',
+              'Function 1NumberInTheBeggning could not be added to the auto schema because GraphQL names must match /^ [_a - zA - Z][_a - zA - Z0 - 9] * $ /.',
+              'Function double-barrelled could not be added to the auto schema because GraphQL names must match /^ [_a - zA - Z][_a - zA - Z0 - 9] * $ /.',
             ]);
           } catch (e) {
             handleError(e);
@@ -10381,7 +10385,7 @@ describe('ParseGraphQLServer', () => {
   });
 
   describe('Custom API', () => {
-    describe('GraphQL Schema Based', () => {
+    describe('SDL based', () => {
       let httpServer;
       const headers = {
         'X-Parse-Application-Id': 'test',
@@ -10504,7 +10508,7 @@ describe('ParseGraphQLServer', () => {
       });
     });
 
-    describe('SDL Based', () => {
+    describe('GraphQL Schema Based', () => {
       let httpServer;
       const headers = {
         'X-Parse-Application-Id': 'test',
@@ -10801,8 +10805,7 @@ describe('ParseGraphQLServer', () => {
           httpServer = http.createServer(expressApp);
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
             graphQLPath: '/graphql',
-            graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
-              stitchSchemas({ subschemas: [autoSchema] }),
+            graphQLCustomTypeDefs: ({ autoSchema }) => mergeSchemas({ schemas: [autoSchema] }),
           });
 
           parseGraphQLServer.applyGraphQL(expressApp);
