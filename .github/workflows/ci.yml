@@ -56,7 +56,7 @@ jobs:
      runs-on: ubuntu-18.04
      steps:
        - uses: actions/checkout@v2
-       - run: npm run definitions:test
+       - run: npm run ci:definitionsCheck
   check-circular:
      name: Circular Dependencies
      timeout-minutes: 5
