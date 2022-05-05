@@ -6,7 +6,6 @@ import logger from '../../logger';
 
 const handleUpload = async (upload, config) => {
   const data = Buffer.from(await upload.arrayBuffer());
-  console.log(data.length);
   const fileName = upload.name;
   const type = upload.type;
 
