@@ -23,7 +23,7 @@
     "@apollographql/graphql-playground-html": "1.6.29",
     "@graphql-tools/links": "8.2.11",
     "@graphql-tools/stitch": "6.2.4",
-    "@graphql-tools/utils": "6.2.4",
+    "@graphql-tools/utils": "8.6.7",
     "@parse/fs-files-adapter": "1.2.2",
     "@parse/push-adapter": "4.1.2",
     "apollo-server-express": "2.25.2",
