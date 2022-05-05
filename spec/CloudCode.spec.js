@@ -3703,7 +3703,7 @@ describe('saveFile hooks', () => {
         `DeprecationWarning: Parse.Cloud.${key} is deprecated and will be removed in a future version. Use Parse.Cloud.${key.replace(
           'File',
           ''
-        )}(Parse.File, (req) => {})`
+        )}(Parse.File, (request) => {})`
       );
     }
   });
