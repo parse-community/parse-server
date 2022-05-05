@@ -17,7 +17,6 @@ export const Types = {
   afterEvent: 'afterEvent',
 };
 
-const FileClassName = '@File';
 const ConnectClassName = '@Connect';
 
 const baseStore = function () {
@@ -951,6 +950,7 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
 }
 
 export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
+  const FileClassName = getClassName(Parse.File);
   const fileTrigger = getTrigger(FileClassName, triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
     try {
