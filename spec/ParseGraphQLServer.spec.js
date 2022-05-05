@@ -1,7 +1,7 @@
 const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
