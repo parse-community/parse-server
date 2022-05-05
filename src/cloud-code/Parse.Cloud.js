@@ -443,7 +443,7 @@ ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
 ParseCloud.beforeSaveFile = function (handler, validationHandler) {
   Deprecator.logRuntimeDeprecation({
     usage: 'Parse.Cloud.beforeSaveFile',
-    solution: 'Use Parse.Cloud.beforeSave(Parse.File, (req) => {})',
+    solution: 'Use Parse.Cloud.beforeSave(Parse.File, (request) => {})',
   });
   ParseCloud.beforeSave(Parse.File, handler, validationHandler);
 };
@@ -451,7 +451,7 @@ ParseCloud.beforeSaveFile = function (handler, validationHandler) {
 ParseCloud.afterSaveFile = function (handler, validationHandler) {
   Deprecator.logRuntimeDeprecation({
     usage: 'Parse.Cloud.afterSaveFile',
-    solution: 'Use Parse.Cloud.afterSave(Parse.File, (req) => {})',
+    solution: 'Use Parse.Cloud.afterSave(Parse.File, (request) => {})',
   });
   ParseCloud.afterSave(Parse.File, handler, validationHandler);
 };
@@ -459,7 +459,7 @@ ParseCloud.afterSaveFile = function (handler, validationHandler) {
 ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
   Deprecator.logRuntimeDeprecation({
     usage: 'Parse.Cloud.beforeDeleteFile',
-    solution: 'Use Parse.Cloud.beforeDelete(Parse.File, (req) => {})',
+    solution: 'Use Parse.Cloud.beforeDelete(Parse.File, (request) => {})',
   });
   ParseCloud.beforeDelete(Parse.File, handler, validationHandler);
 };
@@ -467,7 +467,7 @@ ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
 ParseCloud.afterDeleteFile = function (handler, validationHandler) {
   Deprecator.logRuntimeDeprecation({
     usage: 'Parse.Cloud.afterDeleteFile',
-    solution: 'Use Parse.Cloud.afterDelete(Parse.File, (req) => {})',
+    solution: 'Use Parse.Cloud.afterDelete(Parse.File, (request) => {})',
   });
   ParseCloud.afterDelete(Parse.File, handler, validationHandler);
 };
