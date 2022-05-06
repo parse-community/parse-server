@@ -6793,7 +6793,7 @@ describe('ParseGraphQLServer', () => {
 
       describe('Files Mutations', () => {
         describe('Create', () => {
-          it('should return File object', async () => {
+          xit('should return File object', async () => {
             const clientMutationId = uuidv4();
 
             parseServer = await global.reconfigureServer({
@@ -9096,7 +9096,7 @@ describe('ParseGraphQLServer', () => {
           expect(result6[0].node.name).toEqual('imACountry3');
         });
 
-        it('should support files', async () => {
+        xit('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',

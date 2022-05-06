@@ -135,7 +135,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">=12.22.10 <17"
+    "node": ">=12.22.10 <19"
   },
   "bin": {
     "parse-server": "bin/parse-server"
