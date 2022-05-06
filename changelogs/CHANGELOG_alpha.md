@@ -1,3 +1,10 @@
+# [5.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.7...5.3.0-alpha.8) (2022-05-06)
+
+
+### Features
+
+* add support for Node 17 and 18 ([#7896](https://github.com/parse-community/parse-server/issues/7896)) ([3e9f292](https://github.com/parse-community/parse-server/commit/3e9f292d840334244934cee9a34545ac86313549))
+
 # [5.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.6...5.3.0-alpha.7) (2022-04-25)
 
 
