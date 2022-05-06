@@ -14,7 +14,7 @@ const transformTypes = async (
     classGraphQLUpdateType,
     config: { isCreateEnabled, isUpdateEnabled },
   } = parseGraphQLSchema.parseClassTypes[className];
-  const parseClass = parseGraphQLSchema.parseClasses.find(clazz => clazz.className === className);
+  const parseClass = parseGraphQLSchema.parseClasses[className];
   if (fields) {
     const classGraphQLCreateTypeFields =
       isCreateEnabled && classGraphQLCreateType ? classGraphQLCreateType.getFields() : null;
