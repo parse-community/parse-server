@@ -1,3 +1,10 @@
+# [5.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.8...5.3.0-alpha.9) (2022-05-07)
+
+
+### Bug Fixes
+
+* depreciate allowClientClassCreation defaulting to true ([#7925](https://github.com/parse-community/parse-server/issues/7925)) ([38ed96a](https://github.com/parse-community/parse-server/commit/38ed96ace534d639db007aa7dd5387b2da8f03ae))
+
 # [5.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.7...5.3.0-alpha.8) (2022-05-06)
 
 
