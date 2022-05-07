@@ -7,8 +7,8 @@
 [![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16-green.svg?logo=node.js&style=flat)](https://nodejs.org)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16,_17,_18-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0,_5.1,_5.2-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
@@ -112,32 +112,35 @@ Before you start make sure you have installed:
 #### Node.js
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Version | End-of-Life | Compatible    |
-|------------|----------------|-------------|---------------|
-| Node.js 12 | 12.22.7        | April 2022  | ✅ Yes        |
-| Node.js 14 | 14.18.1        | April 2023  | ✅ Yes        |
-| Node.js 16 | 16.13.0        | April 2024  | ✅ Yes        |
-| Node.js 17 | 17.x           | June 2022   | ❌ Not tested |
+| Version    | Latest Version | End-of-Life | Compatible |
+|------------|----------------|-------------|------------|
+| Node.js 12 | 12.22.11       | April 2022  | ✅ Yes      |
+| Node.js 14 | 14.19.1        | April 2023  | ✅ Yes      |
+| Node.js 16 | 16.14.2        | April 2024  | ✅ Yes      |
+| Node.js 17 | 17.9.0         | June 2022   | ✅ Yes      |
+| Node.js 18 | 18.1.0         | April 2025  | ✅ Yes      |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version     | Latest Version | End-of-Life  | Compatible |
-|-------------|----------------|--------------|------------|
-| MongoDB 4.0 | 4.0.27         | April 2022   | ✅ Yes     |
-| MongoDB 4.2 | 4.2.17         | TBD          | ✅ Yes     |
-| MongoDB 4.4 | 4.4.10         | TBD          | ✅ Yes     |
-| MongoDB 5.0 | 5.0.3          | January 2024 | ✅ Yes     |
-  
+| Version     | Latest Version | End-of-Life | Compatible |
+|-------------|----------------|-------------|------------|
+| MongoDB 4.0 | 4.0.28         | April 2022  | ✅ Yes      |
+| MongoDB 4.2 | 4.2.19         | TBD         | ✅ Yes      |
+| MongoDB 4.4 | 4.4.13         | TBD         | ✅ Yes      |
+| MongoDB 5.0 | 5.0.6          | TBD         | ✅ Yes      |
+| MongoDB 5.1 | 5.1.1          | TBD         | ✅ Yes      |
+| MongoDB 5.2 | 5.2.1          | TBD         | ✅ Yes      |
+
 #### PostgreSQL
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
 
 | Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
 |-------------|-----------------|---------------|--------------------------|------------|
-| Postgres 11 | 3.0, 3.1, 3.2   | November 2023 | April 2022               | ✅ Yes     |
-| Postgres 12 | 3.2             | November 2024 | April 2023               | ✅ Yes     |
-| Postgres 13 | 3.2             | November 2025 | April 2024               | ✅ Yes     |
-| Postgres 14 | 3.2             | November 2026 | April 2025               | ✅ Yes     |
+| Postgres 11 | 3.0, 3.1, 3.2   | November 2023 | April 2022               | ✅ Yes      |
+| Postgres 12 | 3.2             | November 2024 | April 2023               | ✅ Yes      |
+| Postgres 13 | 3.2             | November 2025 | April 2024               | ✅ Yes      |
+| Postgres 14 | 3.2             | November 2026 | April 2025               | ✅ Yes      |
 
 ### Locally
 ```bash

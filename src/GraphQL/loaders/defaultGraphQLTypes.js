@@ -1190,8 +1190,8 @@ const ELEMENT = new GraphQLObjectType({
 // Default static union type, we update types and resolveType function later
 let ARRAY_RESULT;
 
-const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
-  const classTypes = parseClasses
+const loadArrayResult = (parseGraphQLSchema, parseClassesArray) => {
+  const classTypes = parseClassesArray
     .filter(parseClass =>
       parseGraphQLSchema.parseClassTypes[parseClass.className].classGraphQLOutputType ? true : false
     )

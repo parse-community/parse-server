@@ -6,13 +6,13 @@ on:
     branches:
       - '**'
 env:
-  NODE_VERSION: 16.13.0
+  NODE_VERSION: 16.14.2
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-ci:
     name: Node Engine Check
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -33,7 +33,7 @@ jobs:
   check-lint:
      name: Lint
      timeout-minutes: 15
-     runs-on: ubuntu-18.04
+     runs-on: ubuntu-20.04
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -53,7 +53,7 @@ jobs:
   check-circular:
      name: Circular Dependencies
      timeout-minutes: 5
-     runs-on: ubuntu-18.04
+     runs-on: ubuntu-20.04
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -73,7 +73,7 @@ jobs:
   check-docker:
     name: Docker Build
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -90,7 +90,7 @@ jobs:
   check-lock-file-version:
     name: NPM Lock File Version
     timeout-minutes: 5
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Check NPM lock file version
@@ -101,51 +101,71 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: MongoDB 5.2, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 5.2.1
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 14.19.1
+          - name: MongoDB 5.1, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 5.1.1
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 14.19.1
           - name: MongoDB 5.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 5.0.3
+            MONGODB_VERSION: 5.0.6
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: MongoDB 4.4, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.4.10
+            MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: MongoDB 4.2, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.2.17
+            MONGODB_VERSION: 4.2.19
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: MongoDB 4.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.27
+            MONGODB_VERSION: 4.0.28
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: MongoDB 4.0, Standalone, MMAPv1
-            MONGODB_VERSION: 4.0.27
+            MONGODB_VERSION: 4.0.28
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 4.4.10
+            MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: Node 12
-            MONGODB_VERSION: 4.4.10
+            MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 12.22.7
+            NODE_VERSION: 12.22.11
           - name: Node 14
-            MONGODB_VERSION: 4.4.10
+            MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.18.1
+            NODE_VERSION: 14.19.1
+          - name: Node 17
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 17.9.0
+          - name: Node 18
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 18.1.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     services:
       redis:
         image: redis
@@ -183,26 +203,26 @@ jobs:
         include:
           - name: PostgreSQL 11, PostGIS 3.0
             POSTGRES_IMAGE: postgis/postgis:11-3.0
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: PostgreSQL 11, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:11-3.2
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: PostgreSQL 12, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:12-3.2
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: PostgreSQL 13, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:13-3.2
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
           - name: PostgreSQL 14, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:14-3.2
-            NODE_VERSION: 16.13.0
+            NODE_VERSION: 16.14.2
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     services:
       redis:
         image: redis

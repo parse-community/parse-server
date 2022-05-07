@@ -1,3 +1,66 @@
+# [5.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.8...5.3.0-alpha.9) (2022-05-07)
+
+
+### Bug Fixes
+
+* depreciate allowClientClassCreation defaulting to true ([#7925](https://github.com/parse-community/parse-server/issues/7925)) ([38ed96a](https://github.com/parse-community/parse-server/commit/38ed96ace534d639db007aa7dd5387b2da8f03ae))
+
+# [5.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.7...5.3.0-alpha.8) (2022-05-06)
+
+
+### Features
+
+* add support for Node 17 and 18 ([#7896](https://github.com/parse-community/parse-server/issues/7896)) ([3e9f292](https://github.com/parse-community/parse-server/commit/3e9f292d840334244934cee9a34545ac86313549))
+
+# [5.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.6...5.3.0-alpha.7) (2022-04-25)
+
+
+### Bug Fixes
+
+* security upgrade @parse/fs-files-adapter from 1.2.1 to 1.2.2 ([#7948](https://github.com/parse-community/parse-server/issues/7948)) ([20fc4e2](https://github.com/parse-community/parse-server/commit/20fc4e23b53c91aac657f894bd70d049b7525c37))
+
+# [5.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.5...5.3.0-alpha.6) (2022-04-11)
+
+
+### Bug Fixes
+
+* peer dependency mismatch for GraphQL dependencies ([#7934](https://github.com/parse-community/parse-server/issues/7934)) ([b7a1d76](https://github.com/parse-community/parse-server/commit/b7a1d7617b4bcac677cecedfeb6ac4a27447083b))
+
+# [5.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.4...5.3.0-alpha.5) (2022-04-09)
+
+
+### Bug Fixes
+
+* security upgrade moment from 2.29.1 to 2.29.2 ([#7931](https://github.com/parse-community/parse-server/issues/7931)) ([6b68593](https://github.com/parse-community/parse-server/commit/6b68593eaec17e8b183899d2b92699c9ede7625b))
+
+# [5.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.3...5.3.0-alpha.4) (2022-04-04)
+
+
+### Bug Fixes
+
+* custom database options are not passed to MongoDB GridFS ([#7911](https://github.com/parse-community/parse-server/issues/7911)) ([a72b384](https://github.com/parse-community/parse-server/commit/a72b384f76137a3d83ffb69f65cb25aff1bbab4f))
+
+# [5.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.2...5.3.0-alpha.3) (2022-03-27)
+
+
+### Features
+
+* add MongoDB 5.2 support ([#7894](https://github.com/parse-community/parse-server/issues/7894)) ([6b4b358](https://github.com/parse-community/parse-server/commit/6b4b358f0842ae920e45652f5e8b2afebc6caf3a))
+
+# [5.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.1...5.3.0-alpha.2) (2022-03-27)
+
+
+### Bug Fixes
+
+* security upgrade parse push adapter from 4.1.0 to 4.1.2 ([#7893](https://github.com/parse-community/parse-server/issues/7893)) ([ef56e98](https://github.com/parse-community/parse-server/commit/ef56e98ef65041b4d3b7b82cce3473269c27f6fd))
+
+# [5.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.2...5.3.0-alpha.1) (2022-03-27)
+
+
+### Features
+
+* add MongoDB 5.1 compatibility ([#7682](https://github.com/parse-community/parse-server/issues/7682)) ([90155cf](https://github.com/parse-community/parse-server/commit/90155cf1680e5e0499b0000e071c6cb0ce3aef96))
+
 ## [5.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.1...5.2.1-alpha.2) (2022-03-26)
 
 
