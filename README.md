@@ -29,7 +29,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 ---
 
-A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform!
+A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform !
 
 ### Diamond Sponsors
 
@@ -214,7 +214,7 @@ $ curl -X GET \
 }
 ```
 
-Keeping tracks of individual object ids is not ideal, however. In most cases you will want to run a query over the collection, like so:
+Keeping tracks of individual objects ids is not ideal, however. In most cases you will want to run a query over the collection, like so:
 
 ```bash
 $ curl -X GET \
@@ -959,9 +959,9 @@ You should receive the following response:
 
 ## Using automatically generated operations
 
-Parse Server learned from the first class that you created and now you have the `GameScore` class in your schema. You can now start using the automatically generated operations!
+Parse Server learned from the first class that you created and now you have the `GameScore` class in your schema. You can now start using the automatically generated operations !
 
-Run the following to create your first object:
+Run the following code to create your first object:
 
 ```graphql
 mutation CreateGameScore {
@@ -1043,7 +1043,7 @@ You should receive a response similar to this:
 
 ## Customizing your GraphQL Schema
 
-Parse GraphQL Server allows you to create a custom GraphQL schema with own queries and mutations to be merged with the auto-generated ones. You can resolve these operations using your regular cloud code functions.
+Parse GraphQL Server allows you to create a custom GraphQL schema with your own queries and mutations to be merged with the auto-generated ones. You can resolve these operations using your regular cloud code functions.
 
 To start creating your custom schema, you need to code a `schema.graphql` file and initialize Parse Server with `--graphQLSchema` and `--cloud` options:
 
