@@ -558,11 +558,12 @@ describe('server', () => {
     });
     const app = express();
     app.use('/parse', parseServer);
-    await new Promise(resolve => app.listen(12667, resolve));
+    const httpServer = app.listen(12667, resolve);
     expect(Parse.applicationId).toEqual('anOtherTestApp');
     expect(Parse.serverURL).toEqual('http://localhost:12667/parse');
     await new Parse.Query('AnObject').find();
     expect(spy).toHaveBeenCalled();
+    httpServer.close();
   });
 
   it('cannot create middleware with invalid type', async () => {
