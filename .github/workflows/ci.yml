@@ -112,7 +112,7 @@ jobs:
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.19.1
           - name: MongoDB 5.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 5.0.6
+            MONGODB_VERSION: 5.0.8
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 16.14.2
