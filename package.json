@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "5.3.0-alpha.7",
+  "version": "5.3.0-alpha.9",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -132,7 +132,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">=12.22.10 <17"
+    "node": ">=12.22.10 <19"
   },
   "bin": {
     "parse-server": "bin/parse-server"
