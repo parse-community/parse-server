@@ -1,7 +1,7 @@
 const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
@@ -9377,7 +9377,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should not upload if file is too large', async () => {
+        it_only_node_version('<17')('should not upload if file is too large', async () => {
           parseGraphQLServer.parseServer.config.maxUploadSize = '1kb';
 
           const body = new FormData();
