@@ -462,7 +462,7 @@ global.it_only_postgres_version = version => {
 };
 
 global.it_only_node_version = version => {
-  const envVersion = process.env.NODE_VERSION;
+  const envVersion = process.version;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
   } else {
@@ -480,7 +480,7 @@ global.fit_only_mongodb_version = version => {
 };
 
 global.fit_only_node_version = version => {
-  const envVersion = process.env.NODE_VERSION;
+  const envVersion = process.version;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return fit;
   } else {
