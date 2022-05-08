@@ -118,7 +118,7 @@
     "test:mongodb": "npm run test:mongodb:runnerstart --dbversion=$npm_config_dbversion && npm run test:mongodb:testonly --dbversion=$npm_config_dbversion",
     "test:mongodb:4.0.28": "npm run test:mongodb --dbversion=4.0.28",
     "test:mongodb:4.2.19": "npm run test:mongodb --dbversion=4.2.19",
-    "test:mongodb:4.4.13": "npm run test:mongodb --dbversion=4.4.13",
+    "test:mongodb:4.4.14": "npm run test:mongodb --dbversion=4.4.14",
     "test:mongodb:5.0.8": "npm run test:mongodb --dbversion=5.0.8",
     "test:mongodb:5.1.1": "npm run test:mongodb --dbversion=5.1.1",
     "test:mongodb:5.2.1": "npm run test:mongodb --dbversion=5.2.1",
