@@ -1,8 +1,14 @@
 'use strict';
+const dns = require('dns');
 const semver = require('semver');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
+
+// Ensure localhost resolves to ipv4 address first on node v17+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
@@ -455,8 +461,26 @@ global.it_only_postgres_version = version => {
   }
 };
 
+global.it_only_node_version = version => {
+  const envVersion = process.env.NODE_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
 global.fit_only_mongodb_version = version => {
   const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_node_version = version => {
+  const envVersion = process.env.NODE_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return fit;
   } else {
@@ -482,8 +506,26 @@ global.it_exclude_postgres_version = version => {
   }
 };
 
+global.it_exclude_node_version = version => {
+  const envVersion = process.env.NODE_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
 global.fit_exclude_mongodb_version = version => {
   const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_exclude_node_version = version => {
+  const envVersion = process.env.NODE_VERSION;
   if (!envVersion || !semver.satisfies(envVersion, version)) {
     return fit;
   } else {
