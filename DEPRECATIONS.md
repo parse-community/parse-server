@@ -8,7 +8,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS2 | Config option `directAccess` defaults to `true` | [#6636](https://github.com/parse-community/parse-server/pull/6636)   | 5.0.0 (2022)                    | 6.0.0 (2023)                    | deprecated            | -     |
 | DEPPS3 | Config option `enforcePrivateUsers` defaults to `true` | [#7319](https://github.com/parse-community/parse-server/pull/7319)   | 5.0.0 (2022)                    | 6.0.0 (2023)                    | deprecated            | -     |
 | DEPPS4 | Remove convenience method for http request `Parse.Cloud.httpRequest` | [#7589](https://github.com/parse-community/parse-server/pull/7589)   | 5.0.0 (2022)                    | 6.0.0 (2023)                    | deprecated            | -     |
-| DEPPS5 | Config option `allowClientClassCreation` defaults to `false` | [#7925](https://github.com/parse-community/parse-server/pull/7925)   | 5.3.0 (2023)                    | 7.0.0 (2024)                    | deprecated            | -     |
+| DEPPS5 | Config option `allowClientClassCreation` defaults to `false` | [#7925](https://github.com/parse-community/parse-server/pull/7925)   | 5.3.0 (2022)                    | 7.0.0 (2024)                    | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_removal]: ## "The version and date of the planned removal."
