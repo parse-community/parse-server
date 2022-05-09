@@ -42,7 +42,7 @@
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
     "jwks-rsa": "2.0.5",
-    "ldapjs": "2.3.1",
+    "ldapjs": "2.3.2",
     "lodash": "4.17.21",
     "lru-cache": "6.0.0",
     "mime": "3.0.0",
@@ -59,7 +59,7 @@
     "uuid": "8.3.2",
     "winston": "3.7.2",
     "winston-daily-rotate-file": "4.6.0",
-    "ws": "8.2.3"
+    "ws": "8.5.0"
   },
   "devDependencies": {
     "@actions/core": "1.2.6",
