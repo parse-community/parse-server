@@ -498,7 +498,7 @@ describe('ParseGraphQLServer', () => {
               const {
                 response: { headers },
               } = context;
-              expect(headers.get('access-control-allow-origin')).toEqual('http://someorigin.com');
+              expect(headers.get('access-control-allow-origin')).toEqual('http://example.com');
               checked = true;
               return response;
             });
@@ -508,7 +508,7 @@ describe('ParseGraphQLServer', () => {
               fetch,
               headers: {
                 ...headers,
-                Origin: 'http://someorigin.com',
+                Origin: 'http://example.com',
               },
             })
           ),
