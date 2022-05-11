@@ -151,6 +151,7 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
 });
 
 const requiredColumns = Object.freeze({
+  _User: 'username',
   _Product: ['productIdentifier', 'icon', 'order', 'title', 'subtitle'],
   _Role: ['name', 'ACL'],
 });
@@ -1600,4 +1601,5 @@ export {
   convertSchemaToAdapterSchema,
   VolatileClassesSchemas,
   SchemaController,
+  requiredColumns,
 };
