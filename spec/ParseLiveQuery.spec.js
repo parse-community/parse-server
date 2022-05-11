@@ -20,10 +20,11 @@ describe('ParseLiveQuery', function () {
     requestedUser.setUsername('username');
     requestedUser.setPassword('password');
     Parse.Cloud.onLiveQueryEvent(req => {
-      const { event, sessionToken } = req;
+      const { event, sessionToken, clientId } = req;
       if (event === 'ws_disconnect') {
         Parse.Cloud._removeAllHooks();
         expect(sessionToken).toBeDefined();
+        expect(clientId).toBeDefined();
         expect(sessionToken).toBe(requestedUser.getSessionToken());
         done();
       }
