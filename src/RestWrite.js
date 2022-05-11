@@ -15,7 +15,7 @@ var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
-import { requiredColumns } from './Controllers/SchemaController';
+import { requiredColumnsForRead } from './Controllers/SchemaController';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -1670,7 +1670,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     'objectId',
     'createdAt',
     'updatedAt',
-    ...(requiredColumns[this.className] || []),
+    ...(requiredColumnsForRead[this.className] || []),
   ];
   for (const key in response) {
     if (skipKeys.includes(key)) {
