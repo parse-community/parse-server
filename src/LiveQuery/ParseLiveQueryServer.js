@@ -445,7 +445,7 @@ class ParseLiveQueryServer {
       logger.verbose('Current subscriptions %d', this.subscriptions.size);
       runLiveQueryEventHandlers({
         event: 'ws_disconnect',
-        client,
+        clientId,
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
         useMasterKey: client.hasMasterKey,
