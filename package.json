@@ -21,7 +21,7 @@
   "dependencies": {
     "@graphql-tools/stitch": "6.2.4",
     "@graphql-tools/utils": "6.2.4",
-    "@graphql-yoga/node": "2.5.0",
+    "@graphql-yoga/node": "2.6.0",
     "@parse/fs-files-adapter": "1.2.2",
     "@parse/push-adapter": "4.1.2",
     "bcryptjs": "2.4.3",
