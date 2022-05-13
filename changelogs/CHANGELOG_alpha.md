@@ -1,3 +1,10 @@
+# [5.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.9...5.3.0-alpha.10) (2022-05-09)
+
+
+### Features
+
+* upgrade mongodb from 4.4.1 to 4.5.0 ([#7991](https://github.com/parse-community/parse-server/issues/7991)) ([e692b5d](https://github.com/parse-community/parse-server/commit/e692b5dd8214cdb0ce79bedd30d9aa3cf4de76a5))
+
 # [5.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.8...5.3.0-alpha.9) (2022-05-07)
 
 
