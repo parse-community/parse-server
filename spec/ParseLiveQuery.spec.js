@@ -6,7 +6,7 @@ const validatorFail = () => {
 };
 
 describe('ParseLiveQuery', function () {
-  fit('access user on onLiveQueryEvent disconnect', async done => {
+  it('access user on onLiveQueryEvent disconnect', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
