@@ -93,10 +93,14 @@ class ParseGraphQLSchema {
 
   async load() {
     const { parseGraphQLConfig } = await this._initializeSchemaAndConfig();
-    const parseClasses = await this._getClassesForSchema(parseGraphQLConfig);
+    const parseClassesArray = await this._getClassesForSchema(parseGraphQLConfig);
     const functionNames = await this._getFunctionNames();
     const functionNamesString = JSON.stringify(functionNames);
 
+    const parseClasses = parseClassesArray.reduce((acc, clazz) => {
+      acc[clazz.className] = clazz;
+      return acc;
+    }, {});
     if (
       !this._hasSchemaInputChanged({
         parseClasses,
@@ -127,7 +131,7 @@ class ParseGraphQLSchema {
     defaultRelaySchema.load(this);
     schemaTypes.load(this);
 
-    this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(
+    this._getParseClassesWithConfig(parseClassesArray, parseGraphQLConfig).forEach(
       ([parseClass, parseClassConfig]) => {
         // Some times schema return the _auth_data_ field
         // it will lead to unstable graphql generation order
@@ -155,7 +159,7 @@ class ParseGraphQLSchema {
       }
     );
 
-    defaultGraphQLTypes.loadArrayResult(this, parseClasses);
+    defaultGraphQLTypes.loadArrayResult(this, parseClassesArray);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
@@ -500,29 +504,17 @@ class ParseGraphQLSchema {
     const { parseClasses, parseGraphQLConfig, functionNamesString } = params;
 
     // First init
-    if (!this.parseCachedClasses || !this.graphQLSchema) {
-      const thisParseClassesObj = parseClasses.reduce((acc, clzz) => {
-        acc[clzz.className] = clzz;
-        return acc;
-      }, {});
-      this.parseCachedClasses = thisParseClassesObj;
+    if (!this.graphQLSchema) {
       return true;
     }
-
-    const newParseCachedClasses = parseClasses.reduce((acc, clzz) => {
-      acc[clzz.className] = clzz;
-      return acc;
-    }, {});
 
     if (
       isDeepStrictEqual(this.parseGraphQLConfig, parseGraphQLConfig) &&
       this.functionNamesString === functionNamesString &&
-      isDeepStrictEqual(this.parseCachedClasses, newParseCachedClasses)
+      isDeepStrictEqual(this.parseClasses, parseClasses)
     ) {
       return false;
     }
-
-    this.parseCachedClasses = newParseCachedClasses;
     return true;
   }
 }

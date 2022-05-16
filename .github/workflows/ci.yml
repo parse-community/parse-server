@@ -12,7 +12,7 @@ jobs:
   check-ci:
     name: Node Engine Check
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -33,7 +33,7 @@ jobs:
   check-lint:
      name: Lint
      timeout-minutes: 15
-     runs-on: ubuntu-18.04
+     runs-on: ubuntu-20.04
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -53,7 +53,7 @@ jobs:
   check-circular:
      name: Circular Dependencies
      timeout-minutes: 5
-     runs-on: ubuntu-18.04
+     runs-on: ubuntu-20.04
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -73,7 +73,7 @@ jobs:
   check-docker:
     name: Docker Build
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -90,7 +90,7 @@ jobs:
   check-lock-file-version:
     name: NPM Lock File Version
     timeout-minutes: 5
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Check NPM lock file version
@@ -152,10 +152,20 @@ jobs:
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.19.1
+          - name: Node 17
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 17.9.0
+          - name: Node 18
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 18.1.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     services:
       redis:
         image: redis
@@ -212,7 +222,7 @@ jobs:
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     services:
       redis:
         image: redis
