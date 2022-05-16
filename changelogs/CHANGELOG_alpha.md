@@ -1,3 +1,134 @@
+# [5.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.9...5.3.0-alpha.10) (2022-05-09)
+
+
+### Features
+
+* upgrade mongodb from 4.4.1 to 4.5.0 ([#7991](https://github.com/parse-community/parse-server/issues/7991)) ([e692b5d](https://github.com/parse-community/parse-server/commit/e692b5dd8214cdb0ce79bedd30d9aa3cf4de76a5))
+
+# [5.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.8...5.3.0-alpha.9) (2022-05-07)
+
+
+### Bug Fixes
+
+* depreciate allowClientClassCreation defaulting to true ([#7925](https://github.com/parse-community/parse-server/issues/7925)) ([38ed96a](https://github.com/parse-community/parse-server/commit/38ed96ace534d639db007aa7dd5387b2da8f03ae))
+
+# [5.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.7...5.3.0-alpha.8) (2022-05-06)
+
+
+### Features
+
+* add support for Node 17 and 18 ([#7896](https://github.com/parse-community/parse-server/issues/7896)) ([3e9f292](https://github.com/parse-community/parse-server/commit/3e9f292d840334244934cee9a34545ac86313549))
+
+# [5.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.6...5.3.0-alpha.7) (2022-04-25)
+
+
+### Bug Fixes
+
+* security upgrade @parse/fs-files-adapter from 1.2.1 to 1.2.2 ([#7948](https://github.com/parse-community/parse-server/issues/7948)) ([20fc4e2](https://github.com/parse-community/parse-server/commit/20fc4e23b53c91aac657f894bd70d049b7525c37))
+
+# [5.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.5...5.3.0-alpha.6) (2022-04-11)
+
+
+### Bug Fixes
+
+* peer dependency mismatch for GraphQL dependencies ([#7934](https://github.com/parse-community/parse-server/issues/7934)) ([b7a1d76](https://github.com/parse-community/parse-server/commit/b7a1d7617b4bcac677cecedfeb6ac4a27447083b))
+
+# [5.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.4...5.3.0-alpha.5) (2022-04-09)
+
+
+### Bug Fixes
+
+* security upgrade moment from 2.29.1 to 2.29.2 ([#7931](https://github.com/parse-community/parse-server/issues/7931)) ([6b68593](https://github.com/parse-community/parse-server/commit/6b68593eaec17e8b183899d2b92699c9ede7625b))
+
+# [5.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.3...5.3.0-alpha.4) (2022-04-04)
+
+
+### Bug Fixes
+
+* custom database options are not passed to MongoDB GridFS ([#7911](https://github.com/parse-community/parse-server/issues/7911)) ([a72b384](https://github.com/parse-community/parse-server/commit/a72b384f76137a3d83ffb69f65cb25aff1bbab4f))
+
+# [5.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.2...5.3.0-alpha.3) (2022-03-27)
+
+
+### Features
+
+* add MongoDB 5.2 support ([#7894](https://github.com/parse-community/parse-server/issues/7894)) ([6b4b358](https://github.com/parse-community/parse-server/commit/6b4b358f0842ae920e45652f5e8b2afebc6caf3a))
+
+# [5.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.1...5.3.0-alpha.2) (2022-03-27)
+
+
+### Bug Fixes
+
+* security upgrade parse push adapter from 4.1.0 to 4.1.2 ([#7893](https://github.com/parse-community/parse-server/issues/7893)) ([ef56e98](https://github.com/parse-community/parse-server/commit/ef56e98ef65041b4d3b7b82cce3473269c27f6fd))
+
+# [5.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.2...5.3.0-alpha.1) (2022-03-27)
+
+
+### Features
+
+* add MongoDB 5.1 compatibility ([#7682](https://github.com/parse-community/parse-server/issues/7682)) ([90155cf](https://github.com/parse-community/parse-server/commit/90155cf1680e5e0499b0000e071c6cb0ce3aef96))
+
+## [5.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/5.2.1-alpha.1...5.2.1-alpha.2) (2022-03-26)
+
+
+### Performance Improvements
+
+* reduce database operations when using the constant parameter in Cloud Function validation ([#7892](https://github.com/parse-community/parse-server/issues/7892)) ([48bd512](https://github.com/parse-community/parse-server/commit/48bd512eeb47666967dff8c5e723ddc5b7801daa))
+
+## [5.2.1-alpha.1](https://github.com/parse-community/parse-server/compare/5.2.0...5.2.1-alpha.1) (2022-03-26)
+
+
+### Bug Fixes
+
+* return correct response when revert is used in beforeSave ([#7839](https://github.com/parse-community/parse-server/issues/7839)) ([f63fb2b](https://github.com/parse-community/parse-server/commit/f63fb2b338c908f0e7a648d338c26b9daa50c8f2))
+
+# [5.2.0-alpha.3](https://github.com/parse-community/parse-server/compare/5.2.0-alpha.2...5.2.0-alpha.3) (2022-03-24)
+
+
+### Bug Fixes
+
+* security bump minimist from 1.2.5 to 1.2.6 ([#7884](https://github.com/parse-community/parse-server/issues/7884)) ([c5cf282](https://github.com/parse-community/parse-server/commit/c5cf282d11ffdc023764f8e7539a2bd6bc246fe1))
+
+# [5.2.0-alpha.2](https://github.com/parse-community/parse-server/compare/5.2.0-alpha.1...5.2.0-alpha.2) (2022-03-24)
+
+
+### Bug Fixes
+
+* sensitive keyword detection may produce false positives ([#7881](https://github.com/parse-community/parse-server/issues/7881)) ([0d6f9e9](https://github.com/parse-community/parse-server/commit/0d6f9e951d9e186e95e96d8869066ce7022bad02))
+
+# [5.2.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.1.1...5.2.0-alpha.1) (2022-03-23)
+
+
+### Features
+
+* improved LiveQuery error logging with additional information ([#7837](https://github.com/parse-community/parse-server/issues/7837)) ([443a509](https://github.com/parse-community/parse-server/commit/443a5099059538d379fe491793a5871fcbb4f377))
+
+# [5.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.28...5.0.0-alpha.29) (2022-03-12)
+
+
+### Features
+
+* bump required node engine to >=12.22.10 ([#7846](https://github.com/parse-community/parse-server/issues/7846)) ([5ace99d](https://github.com/parse-community/parse-server/commit/5ace99d542a11e422af46d9fd6b1d3d2513b34cf))
+
+
+### BREAKING CHANGES
+
+* This requires Node.js version >=12.22.10. ([5ace99d](5ace99d))
+
+# [5.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.27...5.0.0-alpha.28) (2022-03-12)
+
+
+### Bug Fixes
+
+* security vulnerability that allows remote code execution (GHSA-p6h4-93qp-jhcm) ([#7844](https://github.com/parse-community/parse-server/issues/7844)) ([e569f40](https://github.com/parse-community/parse-server/commit/e569f402b1fd8648fb0d1523b71b2a03273902a5))
+
+# [5.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.26...5.0.0-alpha.27) (2022-03-12)
+
+
+### Reverts
+
+* update node engine to 2.22.0 ([#7827](https://github.com/parse-community/parse-server/issues/7827)) ([f235412](https://github.com/parse-community/parse-server/commit/f235412c1b6c2b173b7531f285429ea7214b56a2))
+
 # [5.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/5.0.0-alpha.25...5.0.0-alpha.26) (2022-02-25)
 
 

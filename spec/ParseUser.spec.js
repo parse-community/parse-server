@@ -2926,7 +2926,7 @@ describe('Parse.User testing', () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
-    reconfigureServer({
+    await reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,

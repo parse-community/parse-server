@@ -432,7 +432,12 @@ export function promiseEnforceMasterKeyAccess(request) {
  */
 export function promiseEnsureIdempotency(req) {
   // Enable feature only for MongoDB
-  if (!((req.config.database.adapter instanceof MongoStorageAdapter) || (req.config.database.adapter instanceof PostgresStorageAdapter))) {
+  if (
+    !(
+      req.config.database.adapter instanceof MongoStorageAdapter ||
+      req.config.database.adapter instanceof PostgresStorageAdapter
+    )
+  ) {
     return Promise.resolve();
   }
   // Get parameters

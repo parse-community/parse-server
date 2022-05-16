@@ -738,7 +738,7 @@ async function builtInTriggerValidator(options, request, auth) {
         }
         if (opt.constant && request.object) {
           if (request.original) {
-            request.object.set(key, request.original.get(key));
+            request.object.revert(key);
           } else if (opt.default != null) {
             request.object.set(key, opt.default);
           }

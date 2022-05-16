@@ -24,7 +24,6 @@ const GameScore = Parse.Object.extend({
 });
 
 describe_only_db('postgres')('Postgres database init options', () => {
-
   it('should create server with public schema databaseOptions', async () => {
     const adapter = new PostgresStorageAdapter({
       uri: postgresURI,
@@ -71,8 +70,8 @@ describe_only_db('postgres')('Postgres database init options', () => {
       await reconfigureServer({
         databaseAdapter: adapter,
       });
-      fail("Should have thrown error");
-    } catch(error) {
+      fail('Should have thrown error');
+    } catch (error) {
       expect(error).toBeDefined();
     }
   });
