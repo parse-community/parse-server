@@ -6,7 +6,7 @@ const validatorFail = () => {
 };
 
 describe('ParseLiveQuery', function () {
-  it('access user on onLiveQueryEvent disconnect', async done => {
+  fit('access user on onLiveQueryEvent disconnect', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -20,20 +20,54 @@ describe('ParseLiveQuery', function () {
     requestedUser.setUsername('username');
     requestedUser.setPassword('password');
     Parse.Cloud.onLiveQueryEvent(req => {
-      const { event, sessionToken, clientId } = req;
+      const {
+        event,
+        clientId,
+        clients,
+        installationId,
+        sessionToken,
+        subscriptions,
+        useMasterKey,
+      } = req;
       if (event === 'ws_disconnect') {
         Parse.Cloud._removeAllHooks();
-        expect(sessionToken).toBeDefined();
         expect(clientId).toBeDefined();
+        expect(clients).toBeDefined();
+        expect(installationId).toBeDefined();
         expect(sessionToken).toBe(requestedUser.getSessionToken());
+        expect(useMasterKey).toBeDefined();
         done();
+      }
+      if (event === 'ws_connect') {
+        expect(clients).toBeDefined();
+        expect(subscriptions).toBeDefined();
+      }
+      if (event === 'connect') {
+        expect(client).toBeDefined();
+        expect(clientId).toBeDefined();
+        expect(event).toBeDefined();
+        expect(clients).toBeDefined();
+        expect(subscriptions).toBeDefined();
+        expect(sessionToken).toBeDefined();
+        expect(useMasterKey).toBeDefined();
+        expect(installationId).toBeDefined();
+      }
+      if (event === 'subscribe') {
+        expect(client).toBeDefined();
+        expect(clientId).toBeDefined();
+        expect(event).toBeDefined();
+        expect(clients).toBeDefined();
+        expect(subscriptions).toBeDefined();
+        expect(sessionToken).toBeDefined();
+        expect(useMasterKey).toBeDefined();
+        expect(installationId).toBeDefined();
       }
     });
     await requestedUser.signUp();
     const query = new Parse.Query(TestObject);
     await query.subscribe();
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.close();
+    await client.close();
   });
 
   it('can subscribe to query', async done => {
