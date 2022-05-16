@@ -67,7 +67,7 @@ describe('ParseLiveQuery', function () {
     const query = new Parse.Query(TestObject);
     await query.subscribe();
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    await client.close();
+    client.close();
   });
 
   it('can subscribe to query', async done => {
