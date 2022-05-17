@@ -1556,7 +1556,7 @@ describe('schemas', () => {
 
   it('ensure refresh cache after deleting a class', async done => {
     config = Config.get('test');
-    spyOn(config.schemaCache, 'del').and.callFake(() => {});
+    spyOn(config.schemaCache, 'clear').and.callFake(() => {});
     spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
     await request({
       url: 'http://localhost:8378/1/schemas',

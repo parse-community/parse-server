@@ -16,10 +16,11 @@ import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
-import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import { SchemaCacheAccess } from '../Adapters/Schema/SchemaCacheAccess';
+import InMemorySchemaCache from '../Adapters/Schema/InMemorySchemaCache';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -122,7 +123,7 @@ const validateQuery = (query: any): void => {
 };
 
 // Filters out any data that shouldn't be on this REST-formatted object.
-const filterSensitiveData = (
+const filterSensitiveData = async (
   isMaster: boolean,
   aclGroup: any[],
   auth: any,
@@ -136,7 +137,7 @@ const filterSensitiveData = (
   if (auth && auth.user) userId = auth.user.id;
 
   // replace protectedFields when using pointer-permissions
-  const perms = schema.getClassLevelPermissions(className);
+  const perms = await schema.getClassLevelPermissions(className);
   if (perms) {
     const isReadOperation = ['get', 'find'].indexOf(operation) > -1;
 
@@ -362,21 +363,30 @@ const relationSchema = {
 
 class DatabaseController {
   adapter: StorageAdapter;
-  schemaCache: any;
-  schemaPromise: ?Promise<SchemaController.SchemaController>;
+  schemaCache: SchemaCacheAccess;
+  schemaController: any;
   _transactionalSession: ?any;
   options: ParseServerOptions;
   idempotencyOptions: any;
 
-  constructor(adapter: StorageAdapter, options: ParseServerOptions) {
+  constructor(
+    adapter: StorageAdapter,
+    schemaCache: SchemaCacheAccess,
+    options: ParseServerOptions
+  ) {
     this.adapter = adapter;
+    this.schemaCache =
+      schemaCache || new SchemaCacheAccess(new InMemorySchemaCache(), adapter, options);
     this.options = options || {};
     this.idempotencyOptions = this.options.idempotencyOptions || {};
     // Prevent mutable this.schema, otherwise one request could use
     // multiple schemas, so instead use loadSchema to get a schema.
-    this.schemaPromise = null;
     this._transactionalSession = null;
-    this.options = options;
+    this.schemaController = new SchemaController.SchemaController(
+      adapter,
+      this.schemaCache,
+      this.options
+    );
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -402,15 +412,10 @@ class DatabaseController {
   loadSchema(
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<SchemaController.SchemaController> {
-    if (this.schemaPromise != null) {
-      return this.schemaPromise;
+    if (options.clearCache) {
+      this.schemaCache.clear();
     }
-    this.schemaPromise = SchemaController.load(this.adapter, options);
-    this.schemaPromise.then(
-      () => delete this.schemaPromise,
-      () => delete this.schemaPromise
-    );
-    return this.loadSchema(options);
+    return Promise.resolve(this.schemaController);
   }
 
   loadSchemaIfNeeded(
@@ -424,8 +429,8 @@ class DatabaseController {
   // classname through the key.
   // TODO: make this not in the DatabaseController interface
   redirectClassNameForKey(className: string, key: string): Promise<?string> {
-    return this.loadSchema().then(schema => {
-      var t = schema.getExpectedType(className, key);
+    return this.loadSchema().then(async schema => {
+      var t = await schema.getExpectedType(className, key);
       if (t != null && typeof t !== 'string' && t.type === 'Relation') {
         return t.targetClass;
       }
@@ -477,15 +482,15 @@ class DatabaseController {
     var isMaster = acl === undefined;
     var aclGroup = acl || [];
 
-    return this.loadSchemaIfNeeded(validSchemaController).then(schemaController => {
+    return this.loadSchemaIfNeeded(validSchemaController).then(async schemaController => {
       return (isMaster
         ? Promise.resolve()
         : schemaController.validatePermission(className, aclGroup, 'update')
       )
-        .then(() => {
+        .then(async () => {
           relationUpdates = this.collectRelationUpdates(className, originalQuery.objectId, update);
           if (!isMaster) {
-            query = this.addPointerPermissions(
+            query = await this.addPointerPermissions(
               schemaController,
               className,
               'update',
@@ -497,7 +502,7 @@ class DatabaseController {
               query = {
                 $and: [
                   query,
-                  this.addPointerPermissions(
+                  await this.addPointerPermissions(
                     schemaController,
                     className,
                     'addField',
@@ -739,13 +744,13 @@ class DatabaseController {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
 
-    return this.loadSchemaIfNeeded(validSchemaController).then(schemaController => {
+    return this.loadSchemaIfNeeded(validSchemaController).then(async schemaController => {
       return (isMaster
         ? Promise.resolve()
         : schemaController.validatePermission(className, aclGroup, 'delete')
-      ).then(() => {
+      ).then(async () => {
         if (!isMaster) {
-          query = this.addPointerPermissions(
+          query = await this.addPointerPermissions(
             schemaController,
             className,
             'delete',
@@ -812,7 +817,7 @@ class DatabaseController {
 
     return this.validateClassName(className)
       .then(() => this.loadSchemaIfNeeded(validSchemaController))
-      .then(schemaController => {
+      .then(async schemaController => {
         return (isMaster
           ? Promise.resolve()
           : schemaController.validatePermission(className, aclGroup, 'create')
@@ -848,14 +853,15 @@ class DatabaseController {
       });
   }
 
-  canAddField(
+  async canAddField(
     schema: SchemaController.SchemaController,
     className: string,
     object: any,
     aclGroup: string[],
     runOptions: QueryOptions
   ): Promise<void> {
-    const classSchema = schema.schemaData[className];
+    const schemaData = await this.schemaCache.getSchemaData();
+    const classSchema = schemaData[className];
     if (!classSchema) {
       return Promise.resolve();
     }
@@ -885,9 +891,8 @@ class DatabaseController {
    * @param {boolean} fast set to true if it's ok to just delete rows and not indexes
    * @returns {Promise<void>} when the deletions completes
    */
-  deleteEverything(fast: boolean = false): Promise<any> {
-    this.schemaPromise = null;
-    SchemaCache.clear();
+  async deleteEverything(fast: boolean = false): Promise<any> {
+    await this.schemaCache.clear();
     return this.adapter.deleteAllClasses(fast);
   }
 
@@ -956,8 +961,8 @@ class DatabaseController {
       });
     }
 
-    const promises = Object.keys(query).map(key => {
-      const t = schema.getExpectedType(className, key);
+    const promises = Object.keys(query).map(async key => {
+      const t = await schema.getExpectedType(className, key);
       if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
       }
@@ -1176,7 +1181,7 @@ class DatabaseController {
           }
           throw error;
         })
-        .then(schema => {
+        .then(async schema => {
           // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
           // so duplicate that behavior here. If both are specified, the correct behavior to match Parse.com is to
           // use the one that appears first in the sort list.
@@ -1216,10 +1221,10 @@ class DatabaseController {
           )
             .then(() => this.reduceRelationKeys(className, query, queryOptions))
             .then(() => this.reduceInRelation(className, query, schemaController))
-            .then(() => {
+            .then(async () => {
               let protectedFields;
               if (!isMaster) {
-                query = this.addPointerPermissions(
+                query = await this.addPointerPermissions(
                   schemaController,
                   className,
                   op,
@@ -1229,7 +1234,7 @@ class DatabaseController {
                 /* Don't use projections to optimize the protectedFields since the protectedFields
                   based on pointer-permissions are determined after querying. The filtering can
                   overwrite the protected fields. */
-                protectedFields = this.addProtectedFields(
+                protectedFields = await this.addProtectedFields(
                   schemaController,
                   className,
                   query,
@@ -1290,20 +1295,22 @@ class DatabaseController {
               } else {
                 return this.adapter
                   .find(className, schema, query, queryOptions)
-                  .then(objects =>
-                    objects.map(object => {
-                      object = untransformObjectACL(object);
-                      return filterSensitiveData(
-                        isMaster,
-                        aclGroup,
-                        auth,
-                        op,
-                        schemaController,
-                        className,
-                        protectedFields,
-                        object
-                      );
-                    })
+                  .then(async objects =>
+                    Promise.all(
+                      objects.map(object => {
+                        object = untransformObjectACL(object);
+                        return filterSensitiveData(
+                          isMaster,
+                          aclGroup,
+                          auth,
+                          op,
+                          schemaController,
+                          className,
+                          protectedFields,
+                          object
+                        );
+                      })
+                    )
                   )
                   .catch(error => {
                     throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
@@ -1350,8 +1357,7 @@ class DatabaseController {
                   this.adapter.deleteClass(joinTableName(className, name))
                 )
               ).then(() => {
-                SchemaCache.del(className);
-                return schemaController.reloadData();
+                this.schemaCache.clear();
               });
             } else {
               return Promise.resolve();
@@ -1442,19 +1448,19 @@ class DatabaseController {
   // 2. Exctract a list of field names that are PP for target collection and operation;
   // 3. Constraint the original query so that each PP field must
   // point to caller's id (or contain it in case of PP field being an array)
-  addPointerPermissions(
+  async addPointerPermissions(
     schema: SchemaController.SchemaController,
     className: string,
     operation: string,
     query: any,
     aclGroup: any[] = []
-  ): any {
+  ): Promise<any> {
     // Check if class has public permission for operation
     // If the BaseCLP pass, let go through
-    if (schema.testPermissionsForClassName(className, aclGroup, operation)) {
+    if (await schema.testPermissionsForClassName(className, aclGroup, operation)) {
       return query;
     }
-    const perms = schema.getClassLevelPermissions(className);
+    const perms = await schema.getClassLevelPermissions(className);
 
     const userACL = aclGroup.filter(acl => {
       return acl.indexOf('role:') != 0 && acl != '*';
@@ -1491,40 +1497,42 @@ class DatabaseController {
         objectId: userId,
       };
 
-      const queries = permFields.map(key => {
-        const fieldDescriptor = schema.getExpectedType(className, key);
-        const fieldType =
-          fieldDescriptor &&
-          typeof fieldDescriptor === 'object' &&
-          Object.prototype.hasOwnProperty.call(fieldDescriptor, 'type')
-            ? fieldDescriptor.type
-            : null;
+      const queries = await Promise.all(
+        permFields.map(async key => {
+          const fieldDescriptor = await schema.getExpectedType(className, key);
+          const fieldType =
+            fieldDescriptor &&
+            typeof fieldDescriptor === 'object' &&
+            Object.prototype.hasOwnProperty.call(fieldDescriptor, 'type')
+              ? fieldDescriptor.type
+              : null;
 
-        let queryClause;
+          let queryClause;
 
-        if (fieldType === 'Pointer') {
-          // constraint for single pointer setup
-          queryClause = { [key]: userPointer };
-        } else if (fieldType === 'Array') {
-          // constraint for users-array setup
-          queryClause = { [key]: { $all: [userPointer] } };
-        } else if (fieldType === 'Object') {
-          // constraint for object setup
-          queryClause = { [key]: userPointer };
-        } else {
-          // This means that there is a CLP field of an unexpected type. This condition should not happen, which is
-          // why is being treated as an error.
-          throw Error(
-            `An unexpected condition occurred when resolving pointer permissions: ${className} ${key}`
-          );
-        }
-        // if we already have a constraint on the key, use the $and
-        if (Object.prototype.hasOwnProperty.call(query, key)) {
-          return this.reduceAndOperation({ $and: [queryClause, query] });
-        }
-        // otherwise just add the constaint
-        return Object.assign({}, query, queryClause);
-      });
+          if (fieldType === 'Pointer') {
+            // constraint for single pointer setup
+            queryClause = { [key]: userPointer };
+          } else if (fieldType === 'Array') {
+            // constraint for users-array setup
+            queryClause = { [key]: { $all: [userPointer] } };
+          } else if (fieldType === 'Object') {
+            // constraint for object setup
+            queryClause = { [key]: userPointer };
+          } else {
+            // This means that there is a CLP field of an unexpected type. This condition should not happen, which is
+            // why is being treated as an error.
+            throw Error(
+              `An unexpected condition occurred when resolving pointer permissions: ${className} ${key}`
+            );
+          }
+          // if we already have a constraint on the key, use the $and
+          if (Object.prototype.hasOwnProperty.call(query, key)) {
+            return this.reduceAndOperation({ $and: [queryClause, query] });
+          }
+          // otherwise just add the constaint
+          return Object.assign({}, query, queryClause);
+        })
+      );
 
       return queries.length === 1 ? queries[0] : this.reduceOrOperation({ $or: queries });
     } else {
@@ -1532,15 +1540,15 @@ class DatabaseController {
     }
   }
 
-  addProtectedFields(
+  async addProtectedFields(
     schema: SchemaController.SchemaController,
     className: string,
     query: any = {},
     aclGroup: any[] = [],
     auth: any = {},
     queryOptions: FullQueryOptions = {}
-  ): null | string[] {
-    const perms = schema.getClassLevelPermissions(className);
+  ): Promise<null | string[]> {
+    const perms = await schema.getClassLevelPermissions(className);
     if (!perms) return null;
 
     const protectedFields = perms.protectedFields;

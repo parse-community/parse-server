@@ -24,7 +24,8 @@ import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
-import SchemaCache from '../Adapters/Cache/SchemaCache';
+import InMemorySchemaCache from '../Adapters/Schema/InMemorySchemaCache';
+import { SchemaCacheAccess } from '../Adapters/Schema/SchemaCacheAccess';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -63,7 +64,7 @@ export function getControllers(options: ParseServerOptions) {
     databaseController,
     hooksController,
     authDataManager,
-    schemaCache: SchemaCache,
+    schemaCache: databaseController.schemaCache,
   };
 }
 
@@ -151,7 +152,7 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
 
 export function getDatabaseController(options: ParseServerOptions): DatabaseController {
   const { databaseURI, collectionPrefix, databaseOptions } = options;
-  let { databaseAdapter } = options;
+  let { databaseAdapter, schemaCacheAdapter } = options;
   if (
     (databaseOptions ||
       (databaseURI && databaseURI !== defaults.databaseURI) ||
@@ -164,7 +165,13 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(databaseAdapter, options);
+
+  schemaCacheAdapter = loadAdapter(schemaCacheAdapter, InMemorySchemaCache);
+  return new DatabaseController(
+    databaseAdapter,
+    new SchemaCacheAccess(schemaCacheAdapter, databaseAdapter, options),
+    options
+  );
 }
 
 export function getHooksController(

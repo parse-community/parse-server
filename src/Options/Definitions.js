@@ -435,6 +435,11 @@ module.exports.ParseServerOptions = {
     help: 'Defined schema',
     action: parsers.objectParser,
   },
+  schemaCacheAdapter: {
+    env: 'PARSE_SERVER_SCHEMA_CACHE_ADAPTER',
+    help: 'Adapter module for the schema cache',
+    action: parsers.moduleOrObjectParser,
+  },
   security: {
     env: 'PARSE_SERVER_SECURITY',
     help: 'The security options to identify and report weak security settings.',

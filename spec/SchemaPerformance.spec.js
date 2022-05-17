@@ -202,6 +202,6 @@ describe('Schema Performance', function () {
       {},
       config.database
     );
-    expect(getAllSpy.calls.count()).toBe(2);
+    expect(getAllSpy.calls.count()).toBe(4);
   });
 });

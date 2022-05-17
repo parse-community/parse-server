@@ -161,9 +161,9 @@ function del(config, auth, className, objectId, context) {
         schemaController
       );
     })
-    .then(() => {
+    .then(async () => {
       // Notify LiveQuery server if possible
-      const perms = schemaController.getClassLevelPermissions(className);
+      const perms = await schemaController.getClassLevelPermissions(className);
       config.liveQueryController.onAfterDelete(className, inflatedObject, null, perms);
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
