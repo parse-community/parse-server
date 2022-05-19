@@ -1,3 +1,10 @@
+# [5.3.0-alpha.11](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.10...5.3.0-alpha.11) (2022-05-18)
+
+
+### Features
+
+* replace GraphQL Apollo with GraphQL Yoga ([#7967](https://github.com/parse-community/parse-server/issues/7967)) ([1aa2204](https://github.com/parse-community/parse-server/commit/1aa2204aebfdbe273d54d6d56c6029f7c34aab14))
+
 # [5.3.0-alpha.10](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.9...5.3.0-alpha.10) (2022-05-09)
 
 
