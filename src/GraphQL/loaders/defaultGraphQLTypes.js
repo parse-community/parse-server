@@ -15,7 +15,6 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
-import { GraphQLUpload } from '@graphql-tools/links';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -221,6 +220,11 @@ const DATE = new GraphQLScalarType({
 
     throw new TypeValidationError(ast.kind, 'Date');
   },
+});
+
+const GraphQLUpload = new GraphQLScalarType({
+  name: 'Upload',
+  description: 'The Upload scalar type represents a file upload.',
 });
 
 const BYTES = new GraphQLScalarType({
@@ -1190,8 +1194,8 @@ const ELEMENT = new GraphQLObjectType({
 // Default static union type, we update types and resolveType function later
 let ARRAY_RESULT;
 
-const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
-  const classTypes = parseClasses
+const loadArrayResult = (parseGraphQLSchema, parseClassesArray) => {
+  const classTypes = parseClassesArray
     .filter(parseClass =>
       parseGraphQLSchema.parseClassTypes[parseClass.className].classGraphQLOutputType ? true : false
     )
@@ -1265,6 +1269,7 @@ const load = parseGraphQLSchema => {
 };
 
 export {
+  GraphQLUpload,
   TypeValidationError,
   parseStringValue,
   parseIntValue,
