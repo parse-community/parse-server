@@ -1598,7 +1598,7 @@ describe('Cloud Code', () => {
     expect(obj.get('count')).toBe(0);
   });
 
-  it('Pointer should not be cleared by triggers', async () => {
+  it('pointer should not be cleared by triggers', async () => {
     Parse.Cloud.afterSave('MyObject', () => {});
     const foo = await new Parse.Object('Test', { foo: 'bar' }).save();
     const obj = await new Parse.Object('MyObject', { foo }).save();
@@ -1606,7 +1606,7 @@ describe('Cloud Code', () => {
     expect(foo2.get('foo')).toBe('bar');
   });
 
-  it('Can set a pointer in triggers', async () => {
+  it('can set a pointer in triggers', async () => {
     Parse.Cloud.beforeSave('MyObject', () => {});
     Parse.Cloud.afterSave(
       'MyObject',
