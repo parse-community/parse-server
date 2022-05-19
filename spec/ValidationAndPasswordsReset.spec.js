@@ -1097,6 +1097,21 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     expect(result).toEqual({});
   });
 
+fit('validate resetPasswordSuccessonInvalidEmail', async () => {
+  await expectAsync(reconfigureServer({
+    appName: 'coolapp',
+    publicServerURL: 'http://localhost:1337/1',
+    emailAdapter: MockEmailAdapterWithOptions({
+      fromAddress: 'parse@example.com',
+      apiKey: 'k',
+      domain: 'd',
+    }),
+    passwordPolicy: {
+      resetPasswordSuccessOnInvalidEmail: [],
+    },
+  })).toBeRejectedWith('resetPasswordSuccessOnInvalidEmail must be a boolean value');
+});
+
   it('should throw on an invalid reset password with resetPasswordSuccessOnInvalidEmail', async () => {
     await reconfigureServer({
       appName: 'coolapp',
