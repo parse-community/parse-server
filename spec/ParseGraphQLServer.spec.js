@@ -166,21 +166,18 @@ describe('ParseGraphQLServer', () => {
       expect(() => parseGraphQLServer.applyGraphQL(new express())).not.toThrow();
     });
 
-    it('should apply middlewares at config.graphQLPath', async () => {
+    it('should apply middlewares at config.graphQLPath', () => {
       let useCount = 0;
-      const gqlServer = new ParseGraphQLServer(parseServer, {
-        graphQLPath: 'somepath',
-      });
-      gqlServer.applyGraphQL({
-        use: server => {
-          useCount++;
-          if (typeof server === 'string') {
-            expect(server).toEqual('somepath');
-          } else {
-            expect(server.stack[1].regexp.toString()).toEqual('/^somepath\\/?(?=\\/|$)/i');
-          }
-        },
-      });
+      expect(() =>
+        new ParseGraphQLServer(parseServer, {
+          graphQLPath: 'somepath',
+        }).applyGraphQL({
+          use: path => {
+            useCount++;
+            expect(path).toEqual('somepath');
+          },
+        })
+      ).not.toThrow();
       expect(useCount).toBeGreaterThan(0);
     });
   });
