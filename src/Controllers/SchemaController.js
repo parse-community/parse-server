@@ -150,6 +150,7 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   },
 });
 
+// fields required for read or write operations on their respective classes.
 const requiredColumns = Object.freeze({
   read: {
     _User: ['username'],
@@ -159,7 +160,6 @@ const requiredColumns = Object.freeze({
     _Role: ['name', 'ACL'],
   }
 });
-
 
 const invalidColumns = ['length'];
 
