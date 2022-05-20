@@ -1,3 +1,10 @@
+# [5.3.0-alpha.12](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.11...5.3.0-alpha.12) (2022-05-20)
+
+
+### Bug Fixes
+
+* afterSave trigger removes pointer in Parse object ([#7913](https://github.com/parse-community/parse-server/issues/7913)) ([47d796e](https://github.com/parse-community/parse-server/commit/47d796ea58f65e71612ce37149be692abc9ea97f))
+
 # [5.3.0-alpha.11](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.10...5.3.0-alpha.11) (2022-05-18)
 
 
