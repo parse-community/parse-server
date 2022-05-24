@@ -44,6 +44,7 @@
     "mime": "3.0.0",
     "mongodb": "4.5.0",
     "mustache": "4.2.0",
+    "oracledb": "^5.3.0",
     "parse": "3.4.1",
     "pg-monitor": "1.4.1",
     "pg-promise": "10.11.1",

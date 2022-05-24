@@ -25,6 +25,7 @@ import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorage
 import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
+import OracleStorageAdapter from '../../lib/Adapters/Storage/Oracle/OracleStorageAdapter';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -236,6 +237,12 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
     case 'postgres:':
     case 'postgresql:':
       return new PostgresStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        databaseOptions,
+      });
+    case 'oracle:':
+      return new OracleStorageAdapter({
         uri: databaseURI,
         collectionPrefix,
         databaseOptions,
