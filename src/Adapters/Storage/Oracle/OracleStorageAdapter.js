@@ -29,7 +29,7 @@ export class OracleStorageAdapter implements StorageAdapter {
   }
 
   _schemaCollection(): Promise<OracleSchemaCollection> {
-    return this.connect()
+    return this.connect() // returns a promise containing a pool
       .then(() => this._adaptiveCollection(OracleSchemaCollectionName))
       .then(collection => {
         if (!this._stream && this.enableSchemaHooks) {
@@ -40,11 +40,22 @@ export class OracleStorageAdapter implements StorageAdapter {
       });
   }
 
-  _adaptiveCollection(name: string) {
-    return this.connect()
+  async _adaptiveCollection(name: string) {
+    return await this.connect() // promise<pool>
       .then(pool => pool.getConnection())
-      .then(conn => conn.getSodaDatabase().openCollection(this._collectionPrefix + name))
-      .then(rawCollection => new OracleCollection(rawCollection))
+      .then(conn => conn.getSodaDatabase().openCollection(this._collectionPrefix + name)) // ret ?
+      .then(rawCollection => {
+        if (!rawCollection) {
+          // collection does not exist, so create it
+          return this.connect()
+            .then(pool => pool.getConnection())
+            .then(conn => conn.getSodaDatabase().createCollection(this._collectionPrefix + name))
+            .then(coll => new OracleCollection(coll))
+            .catch(err => this.handleError(err));
+        } else {
+          return new OracleCollection(rawCollection);
+        }
+      }) // name/str, not coll?
       .catch(err => this.handleError(err));
   }
 
