@@ -15,6 +15,7 @@ var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
+import Deprecator from './Deprecator/Deprecator';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -430,6 +431,12 @@ RestWrite.prototype.handleAuthDataValidation = function (authData) {
     }
     const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
     const authProvider = (this.config.auth || {})[provider] || {};
+    if (authProvider.enabled == null) {
+      Deprecator.logRuntimeDeprecation({
+        usage: `auth.${provider}`,
+        solution: `auth.${provider}.enabled: true`,
+      });
+    }
     if (!validateAuthData || authProvider.enabled === false) {
       throw new Parse.Error(
         Parse.Error.UNSUPPORTED_SERVICE,
