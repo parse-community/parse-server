@@ -41,22 +41,43 @@ export class OracleStorageAdapter implements StorageAdapter {
   }
 
   async _adaptiveCollection(name: string) {
-    return await this.connect() // promise<pool>
+    console.log('MARK: _adaptiveCollection(' + name + ')');
+    let soda;
+    let collection;
+    await this.connect() // promise<pool>
       .then(pool => pool.getConnection())
-      .then(conn => conn.getSodaDatabase().openCollection(this._collectionPrefix + name)) // ret ?
-      .then(rawCollection => {
-        if (!rawCollection) {
-          // collection does not exist, so create it
-          return this.connect()
-            .then(pool => pool.getConnection())
-            .then(conn => conn.getSodaDatabase().createCollection(this._collectionPrefix + name))
-            .then(coll => new OracleCollection(coll))
-            .catch(err => this.handleError(err));
-        } else {
-          return new OracleCollection(rawCollection);
-        }
-      }) // name/str, not coll?
+      .then(conn => conn.getSodaDatabase())
+      .then(s => (soda = s))
       .catch(err => this.handleError(err));
+    await soda
+      .openCollection(this._collectionPrefix + name)
+      .then(rawCollection => {
+        // openCollection() does not return an error if the
+        // collection does not exist - so we need to check
+        // if the return value is undefined to know if we
+        // got the collection, or whether we did not, and
+        // therefore need to create it
+        if (rawCollection) {
+          collection = new OracleCollection(rawCollection);
+        }
+      })
+      .catch(err => this.handleError(err));
+
+    if (collection === undefined) {
+      // the collection did not exist, so we need to create it
+      console.log('collection did not exist, need to create it');
+      await soda
+        .createCollection(this._collectionPrefix + name)
+        .catch(err => this.handleError(err));
+
+      await soda
+        .openCollection(this._collectionPrefix + name)
+        .then(coll => (collection = new OracleCollection(coll)))
+        .catch(err => this.handleError(err));
+    }
+
+    console.log('MARK: collection = ' + JSON.stringify(collection));
+    return collection;
   }
 
   connect() {
