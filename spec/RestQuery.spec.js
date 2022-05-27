@@ -429,4 +429,26 @@ describe('RestQuery.each', () => {
       done();
     });
   });
+
+  it('test afterSave should not affect save response', async () => {
+    Parse.Cloud.beforeSave('TestObject2', ({ object }) => {
+      object.set('addedBeforeSave', true);
+    });
+    Parse.Cloud.afterSave('TestObject2', ({ object }) => {
+      object.set('addedAfterSave', true);
+      object.unset('initialToRemove');
+    });
+    const { response } = await rest.create(config, nobody, 'TestObject2', {
+      initialSave: true,
+      initialToRemove: true,
+    });
+    expect(Object.keys(response).sort()).toEqual([
+      'addedAfterSave',
+      'addedBeforeSave',
+      'createdAt',
+      'initialToRemove',
+      'objectId',
+      'updatedAt',
+    ]);
+  });
 });
