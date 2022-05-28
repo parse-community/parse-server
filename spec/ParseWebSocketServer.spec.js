@@ -76,7 +76,7 @@ describe('ParseWebSocketServer', function () {
     expect(wssError).toBe('Invalid Packet');
   });
 
-  fit('can handle broken connection', function (done) {
+  it('can handle broken connection', function (done) {
     const onConnectCallback = jasmine.createSpy('onConnectCallback');
     const http = require('http');
     const server = http.createServer();
