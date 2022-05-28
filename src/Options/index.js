@@ -509,6 +509,8 @@ export interface DatabaseOptions {
 
 export interface AuthAdapter {
   /* Is `true` if the auth adapter is enabled, `false` otherwise.
-  :DEFAULT: true */
+  :DEFAULT: true
+  :ENV:
+  */
   enabled: ?boolean;
 }

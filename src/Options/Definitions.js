@@ -878,7 +878,6 @@ module.exports.DatabaseOptions = {
 };
 module.exports.AuthAdapter = {
   enabled: {
-    env: 'undefinedENABLED',
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
     default: true,
