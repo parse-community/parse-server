@@ -76,7 +76,7 @@ describe('ParseWebSocketServer', function () {
     expect(wssError).toBe('Invalid Packet');
   });
 
-  it('closes interrupted connection', function (done) {
+  it('closes interrupted connection', async () => {
     const onConnectCallback = jasmine.createSpy('onConnectCallback');
     const http = require('http');
     const server = http.createServer();
@@ -93,16 +93,13 @@ describe('ParseWebSocketServer', function () {
 
     // Make sure callback is called
     expect(onConnectCallback).toHaveBeenCalled();
+    await new Promise(resolve => setTimeout(resolve, 10));
     // Make sure we ping to the client
-    setTimeout(function () {
-      expect(ws.ping).toHaveBeenCalled();
-      setTimeout(function () {
-        //make sure we close the connection after timeout cause we don't answer the ping
-        expect(ws.terminate).toHaveBeenCalled();
-        server.close();
-        done();
-      }, 10);
-    }, 10);
+    expect(ws.ping).toHaveBeenCalled();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    // make sure connection close after we didn't answer the ping on time
+    expect(ws.terminate).toHaveBeenCalled();
+    server.close();
   });
 
   afterEach(function () {
