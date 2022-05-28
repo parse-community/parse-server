@@ -23,6 +23,7 @@ describe('ParseWebSocketServer', function () {
     ws.readyState = 0;
     ws.OPEN = 0;
     ws.ping = jasmine.createSpy('ping');
+    ws.terminate = () => {};
 
     parseWebSocketServer.onConnection(ws);
 
@@ -73,6 +74,35 @@ describe('ParseWebSocketServer', function () {
     const wssAdapter = server.liveQueryServer.parseWebSocketServer.server;
     wssAdapter.wss.emit('error', 'Invalid Packet');
     expect(wssError).toBe('Invalid Packet');
+  });
+
+  fit('can handle broken connection', function (done) {
+    const onConnectCallback = jasmine.createSpy('onConnectCallback');
+    const http = require('http');
+    const server = http.createServer();
+    const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
+      websocketTimeout: 5,
+    }).server;
+    const ws = new EventEmitter();
+    ws.readyState = 0;
+    ws.OPEN = 0;
+    ws.ping = jasmine.createSpy('ping');
+    ws.terminate = jasmine.createSpy('terminate');
+
+    parseWebSocketServer.onConnection(ws);
+
+    // Make sure callback is called
+    expect(onConnectCallback).toHaveBeenCalled();
+    // Make sure we ping to the client
+    setTimeout(function () {
+      expect(ws.ping).toHaveBeenCalled();
+      setTimeout(function () {
+        //make sure we close the connection after timeout cause we don't answer the ping
+        expect(ws.terminate).toHaveBeenCalled();
+        server.close();
+        done();
+      }, 10);
+    }, 10);
   });
 
   afterEach(function () {
