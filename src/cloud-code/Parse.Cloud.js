@@ -134,7 +134,7 @@ ParseCloud.job = function (functionName, handler) {
  *
  * **Available in Cloud Code only.**
  *
- * If you want to use beforeSave for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * If you want to use beforeSave for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  *
  * ```
  * Parse.Cloud.beforeSave('MyCustomClass', (request) => {
@@ -171,7 +171,7 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
  *
  * **Available in Cloud Code only.**
  *
- * If you want to use beforeDelete for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * If you want to use beforeDelete for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  * ```
  * Parse.Cloud.beforeDelete('MyCustomClass', (request) => {
  *   // code here
@@ -300,7 +300,7 @@ ParseCloud.afterLogout = function (handler) {
  *
  * **Available in Cloud Code only.**
  *
- * If you want to use afterSave for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * If you want to use afterSave for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  *
  * ```
  * Parse.Cloud.afterSave('MyCustomClass', async function(request) {
@@ -337,7 +337,7 @@ ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
  *
  * **Available in Cloud Code only.**
  *
- * If you want to use afterDelete for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * If you want to use afterDelete for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  * ```
  * Parse.Cloud.afterDelete('MyCustomClass', async (request) => {
  *   // code here
@@ -373,7 +373,7 @@ ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
  *
  * **Available in Cloud Code only.**
  *
- * If you want to use beforeFind for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * If you want to use beforeFind for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  * ```
  * Parse.Cloud.beforeFind('MyCustomClass', async (request) => {
  *   // code here
@@ -409,7 +409,7 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
  *
  * **Available in Cloud Code only.**
  *
- * If you want to use afterFind for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * If you want to use afterFind for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  * ```
  * Parse.Cloud.afterFind('MyCustomClass', async (request) => {
  *   // code here
@@ -632,7 +632,7 @@ ParseCloud.sendEmail = function (data) {
  *
  * **Available in Cloud Code only.**
  *
- * If you want to use beforeSubscribe for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * If you want to use beforeSubscribe for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User} or {@link Parse.File}), you should pass the class itself and not the String for arg1.
  * ```
  * Parse.Cloud.beforeSubscribe('MyCustomClass', (request) => {
  *   // code here
