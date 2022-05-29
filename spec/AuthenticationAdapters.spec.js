@@ -477,6 +477,32 @@ describe('AuthenticationProviders', function () {
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
   });
+
+  it('can disable provider', async () => {
+    await reconfigureServer({
+      auth: {
+        myoauth: {
+          enabled: false,
+          module: path.resolve(__dirname, 'support/myoauth'), // relative path as it's run from src
+        },
+      },
+    });
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await expectAsync(Parse.User._logInWith('myoauth')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+  });
+
+  it('can depreciate', async () => {
+    const Deprecator = require('../lib/Deprecator/Deprecator');
+    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith('myoauth');
+    expect(spy).toHaveBeenCalledWith({ usage: 'auth.myoauth', solution: 'auth.myoauth.enabled: true' });
+  });
+
 });
 
 describe('instagram auth adapter', () => {
