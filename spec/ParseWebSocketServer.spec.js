@@ -94,10 +94,8 @@ describe('ParseWebSocketServer', function () {
     // Make sure callback is called
     expect(onConnectCallback).toHaveBeenCalled();
     await new Promise(resolve => setTimeout(resolve, 10));
-    // Make sure we ping to the client
     expect(ws.ping).toHaveBeenCalled();
     await new Promise(resolve => setTimeout(resolve, 10));
-    // make sure connection close after we didn't answer the ping on time
     expect(ws.terminate).toHaveBeenCalled();
     server.close();
   });
