@@ -1,3 +1,10 @@
+# [5.3.0-alpha.14](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.13...5.3.0-alpha.14) (2022-05-29)
+
+
+### Features
+
+* align file trigger syntax with class trigger; use the new syntax `Parse.Cloud.beforeSave(Parse.File, (request) => {})`, the old syntax `Parse.Cloud.beforeSaveFile((request) => {})` has been deprecated ([#7966](https://github.com/parse-community/parse-server/issues/7966)) ([c6dcad8](https://github.com/parse-community/parse-server/commit/c6dcad8d167d44912dbd416d328519314c0809bd))
+
 # [5.3.0-alpha.13](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.12...5.3.0-alpha.13) (2022-05-28)
 
 
