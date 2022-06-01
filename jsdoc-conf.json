@@ -17,7 +17,7 @@
     "monospaceLinks": false
   },
   "opts": {
-    "template": "node_modules/@parse/minami",
+    "template": "node_modules/clean-jsdoc-theme",
     "recurse": true
   }
 }
