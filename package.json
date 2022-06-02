@@ -42,7 +42,7 @@
     "lodash": "4.17.21",
     "lru-cache": "6.0.0",
     "mime": "3.0.0",
-    "mongodb": "4.5.0",
+    "mongodb": "4.6.0",
     "mustache": "4.2.0",
     "parse": "3.4.2",
     "pg-monitor": "1.4.1",
