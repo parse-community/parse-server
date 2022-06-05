@@ -1,3 +1,10 @@
+# [5.3.0-alpha.15](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.14...5.3.0-alpha.15) (2022-06-05)
+
+
+### Bug Fixes
+
+* interrupted WebSocket connection not closed by LiveQuery server ([#8012](https://github.com/parse-community/parse-server/issues/8012)) ([2d5221e](https://github.com/parse-community/parse-server/commit/2d5221e48012fb7781c0406d543a922d313075ea))
+
 # [5.3.0-alpha.14](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.13...5.3.0-alpha.14) (2022-05-29)
 
 
