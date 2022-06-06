@@ -118,7 +118,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
-    this.validateallowExpiredAuthDataToken(allowExpiredAuthDataToken);
+    this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
   }
 
@@ -136,7 +136,7 @@ export class Config {
     }
   }
 
-  static validateallowExpiredAuthDataToken(allowExpiredAuthDataToken) {
+  static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
     }

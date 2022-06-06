@@ -105,7 +105,7 @@ function authDataValidator(provider, adapter, appIds, options) {
     }
     throw new Parse.Error(
       Parse.Error.OTHER_CAUSE,
-      'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
+      'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
     );
   };
 }

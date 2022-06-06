@@ -2567,7 +2567,7 @@ describe('Auth Adapter features', () => {
     await expectAsync(
       user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } })
     ).toBeRejectedWithError(
-      'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
+      'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
     );
   });
 
@@ -2577,7 +2577,7 @@ describe('Auth Adapter features', () => {
     await expectAsync(
       user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } })
     ).toBeRejectedWithError(
-      'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
+      'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
     );
   });
 
