@@ -204,7 +204,7 @@ class ParseGraphQLSchema {
     if (this.graphQLCustomTypeDefs) {
       schemaDirectives.load(this);
       if (typeof this.graphQLCustomTypeDefs.getTypeMap === 'function') {
-        // In following code we use underscore attr to avoid js var un ref
+        // In following code we use underscore attr to keep the direct variable reference
         const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs._typeMap;
         const findAndReplaceLastType = (parent, key) => {
           if (parent[key].name) {
