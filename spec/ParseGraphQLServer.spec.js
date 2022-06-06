@@ -1,5 +1,6 @@
 const http = require('http');
 const express = require('express');
+const Config = require('../lib/Config');
 const req = require('../lib/request');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const FormData = require('form-data');
@@ -908,8 +909,7 @@ describe('ParseGraphQLServer', () => {
           ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
-
-          expect(inputFields).toEqual(['clientMutationId', 'password', 'username']);
+          expect(inputFields).toEqual(['authData', 'clientMutationId', 'password', 'username']);
         });
 
         it('should have clientMutationId in log in mutation payload', async () => {
@@ -6993,7 +6993,61 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Users Mutations', () => {
+        const challengeAdapter = {
+          validateAuthData: () => Promise.resolve({ response: { someData: true } }),
+          validateAppId: () => Promise.resolve(),
+          challenge: () => Promise.resolve({ someData: true }),
+          options: { anOption: true },
+        };
+
+        it('should create user and return authData response', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
+          const clientMutationId = uuidv4();
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation createUser($input: CreateUserInput!) {
+                createUser(input: $input) {
+                  clientMutationId
+                  user {
+                    id
+                    authDataResponse
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                fields: {
+                  authData: {
+                    challengeAdapter: {
+                      id: 'challengeAdapter',
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          expect(result.data.createUser.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.createUser.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
+        });
+
         it('should sign user up', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
           const clientMutationId = uuidv4();
           const userSchema = new Parse.Schema('_User');
           userSchema.addString('someField');
@@ -7010,6 +7064,7 @@ describe('ParseGraphQLServer', () => {
                     sessionToken
                     user {
                       someField
+                      authDataResponse
                       aPointer {
                         id
                         username
@@ -7025,6 +7080,11 @@ describe('ParseGraphQLServer', () => {
                 fields: {
                   username: 'user1',
                   password: 'user1',
+                  authData: {
+                    challengeAdapter: {
+                      id: 'challengeAdapter',
+                    },
+                  },
                   aPointer: {
                     createAndLink: {
                       username: 'user2',
@@ -7044,6 +7104,9 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.signUp.viewer.user.aPointer.id).toBeDefined();
           expect(result.data.signUp.viewer.user.aPointer.username).toEqual('user2');
           expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
+          expect(result.data.signUp.viewer.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
         });
 
         it('should login with user', async () => {
@@ -7052,6 +7115,7 @@ describe('ParseGraphQLServer', () => {
           parseServer = await global.reconfigureServer({
             publicServerURL: 'http://localhost:13377/parse',
             auth: {
+              challengeAdapter,
               myAuth: {
                 module: global.mockCustomAuthenticator('parse', 'graphql'),
               },
@@ -7071,6 +7135,7 @@ describe('ParseGraphQLServer', () => {
                     sessionToken
                     user {
                       someField
+                      authDataResponse
                       aPointer {
                         id
                         username
@@ -7084,6 +7149,7 @@ describe('ParseGraphQLServer', () => {
               input: {
                 clientMutationId,
                 authData: {
+                  challengeAdapter: { id: 'challengeAdapter' },
                   myAuth: {
                     id: 'parse',
                     password: 'graphql',
@@ -7109,9 +7175,93 @@ describe('ParseGraphQLServer', () => {
           expect(typeof result.data.logInWith.viewer.sessionToken).toBe('string');
           expect(result.data.logInWith.viewer.user.aPointer.id).toBeDefined();
           expect(result.data.logInWith.viewer.user.aPointer.username).toEqual('user2');
+          expect(result.data.logInWith.viewer.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
+        });
+
+        it('should handle challenge', async () => {
+          const clientMutationId = uuidv4();
+
+          spyOn(challengeAdapter, 'challenge').and.callThrough();
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
+
+          const user = new Parse.User();
+          await user.save({ username: 'username', password: 'password' });
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation Challenge($input: ChallengeInput!) {
+                challenge(input: $input) {
+                  clientMutationId
+                  challengeData
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                username: 'username',
+                password: 'password',
+                challengeData: {
+                  challengeAdapter: { someChallengeData: true },
+                },
+              },
+            },
+          });
+
+          const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
+          expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
+          expect(challengeCall[0]).toEqual({ someChallengeData: true });
+          expect(challengeCall[1]).toEqual(undefined);
+          expect(challengeCall[2]).toEqual(challengeAdapter);
+          expect(challengeCall[3].object instanceof Parse.User).toBeTruthy();
+          expect(challengeCall[3].original instanceof Parse.User).toBeTruthy();
+          expect(challengeCall[3].isChallenge).toBeTruthy();
+          expect(challengeCall[3].object.id).toEqual(user.id);
+          expect(challengeCall[3].original.id).toEqual(user.id);
+          expect(challengeCall[4] instanceof Config).toBeTruthy();
+          expect(result.data.challenge.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.challenge.challengeData).toEqual({
+            challengeAdapter: { someData: true },
+          });
+
+          await expectAsync(
+            apolloClient.mutate({
+              mutation: gql`
+                mutation Challenge($input: ChallengeInput!) {
+                  challenge(input: $input) {
+                    clientMutationId
+                    challengeData
+                  }
+                }
+              `,
+              variables: {
+                input: {
+                  clientMutationId,
+                  username: 'username',
+                  password: 'wrongPassword',
+                  challengeData: {
+                    challengeAdapter: { someChallengeData: true },
+                  },
+                },
+              },
+            })
+          ).toBeRejected();
         });
 
         it('should log the user in', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
           const clientMutationId = uuidv4();
           const user = new Parse.User();
           user.setUsername('user1');
@@ -7128,6 +7278,7 @@ describe('ParseGraphQLServer', () => {
                   viewer {
                     sessionToken
                     user {
+                      authDataResponse
                       someField
                     }
                   }
@@ -7139,6 +7290,7 @@ describe('ParseGraphQLServer', () => {
                 clientMutationId,
                 username: 'user1',
                 password: 'user1',
+                authData: { challengeAdapter: { token: true } },
               },
             },
           });
@@ -7147,6 +7299,9 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.logIn.viewer.sessionToken).toBeDefined();
           expect(result.data.logIn.viewer.user.someField).toEqual('someValue');
           expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
+          expect(result.data.logIn.viewer.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
         });
 
         it('should log the user out', async () => {

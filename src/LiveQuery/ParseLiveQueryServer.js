@@ -10,7 +10,13 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers, getTrigger, runTrigger, resolveError, toJSONwithObjects } from '../triggers';
+import {
+  runLiveQueryEventHandlers,
+  getTrigger,
+  runTrigger,
+  resolveError,
+  toJSONwithObjects,
+} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';

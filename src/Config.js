@@ -79,6 +79,7 @@ export class Config {
     enforcePrivateUsers,
     schema,
     requestKeywordDenylist,
+    allowExpiredAuthDataToken,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -117,6 +118,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateallowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
   }
 
@@ -131,6 +133,12 @@ export class Config {
   static validateEnforcePrivateUsers(enforcePrivateUsers) {
     if (typeof enforcePrivateUsers !== 'boolean') {
       throw 'Parse Server option enforcePrivateUsers must be a boolean.';
+    }
+  }
+
+  static validateallowExpiredAuthDataToken(allowExpiredAuthDataToken) {
+    if (typeof allowExpiredAuthDataToken !== 'boolean') {
+      throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
     }
   }
 
