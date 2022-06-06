@@ -1,6 +1,7 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject } from './triggers';
+import Deprecator from './Deprecator/Deprecator';
 
 const reducePromise = async (arr, fn, acc, index = 0) => {
   if (arr[index]) {
@@ -428,7 +429,14 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         return acc;
       }
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
-      if (!validator) {
+      const authProvider = (req.config.auth || {})[provider] || {};
+      if (authProvider.enabled == null) {
+        Deprecator.logRuntimeDeprecation({
+          usage: `auth.${provider}`,
+          solution: `auth.${provider}.enabled: true`,
+        });
+      }
+      if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(
           Parse.Error.UNSUPPORTED_SERVICE,
           'This authentication method is unsupported.'

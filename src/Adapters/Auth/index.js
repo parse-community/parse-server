@@ -25,7 +25,6 @@ const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
 const keycloak = require('./keycloak');
 const ldap = require('./ldap');
-const webauthn = require('./webauthn');
 
 const anonymous = {
   validateAuthData: () => {
@@ -61,7 +60,6 @@ const providers = {
   microsoft,
   keycloak,
   ldap,
-  webauthn,
 };
 
 function authDataValidator(provider, adapter, appIds, options) {
