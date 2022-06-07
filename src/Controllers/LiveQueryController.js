@@ -57,7 +57,6 @@ export class LiveQueryController {
   }
 
   clearCachedRoles(user: any) {
-    console.log('clear cache =>', user);
     if (!user) {
       return;
     }
