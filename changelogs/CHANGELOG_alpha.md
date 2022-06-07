@@ -1,3 +1,24 @@
+# [5.3.0-alpha.14](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.13...5.3.0-alpha.14) (2022-05-29)
+
+
+### Features
+
+* align file trigger syntax with class trigger; use the new syntax `Parse.Cloud.beforeSave(Parse.File, (request) => {})`, the old syntax `Parse.Cloud.beforeSaveFile((request) => {})` has been deprecated ([#7966](https://github.com/parse-community/parse-server/issues/7966)) ([c6dcad8](https://github.com/parse-community/parse-server/commit/c6dcad8d167d44912dbd416d328519314c0809bd))
+
+# [5.3.0-alpha.13](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.12...5.3.0-alpha.13) (2022-05-28)
+
+
+### Features
+
+* selectively enable / disable default authentication adapters ([#7953](https://github.com/parse-community/parse-server/issues/7953)) ([c1e808f](https://github.com/parse-community/parse-server/commit/c1e808f9e807fc49508acbde0d8b3f2b901a1638))
+
+# [5.3.0-alpha.12](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.11...5.3.0-alpha.12) (2022-05-20)
+
+
+### Bug Fixes
+
+* afterSave trigger removes pointer in Parse object ([#7913](https://github.com/parse-community/parse-server/issues/7913)) ([47d796e](https://github.com/parse-community/parse-server/commit/47d796ea58f65e71612ce37149be692abc9ea97f))
+
 # [5.3.0-alpha.11](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.10...5.3.0-alpha.11) (2022-05-18)
 
 
