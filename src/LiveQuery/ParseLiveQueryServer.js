@@ -609,6 +609,7 @@ class ParseLiveQueryServer {
         }
 
         const roleNames = await auth.getUserRoles();
+        console.log({ roleNames });
         // Finally, see if any of the user's roles allow them read access
         for (const role of roleNames) {
           // We use getReadAccess as `role` is in the form `role:roleName`
