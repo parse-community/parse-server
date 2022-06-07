@@ -89,14 +89,19 @@ class ParseGraphQLSchema {
     this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
     this.appId = params.appId || requiredParameter('You must provide the appId!');
     this.schemaCache = SchemaCache;
+    this.logCache = {};
   }
 
   async load() {
     const { parseGraphQLConfig } = await this._initializeSchemaAndConfig();
-    const parseClasses = await this._getClassesForSchema(parseGraphQLConfig);
+    const parseClassesArray = await this._getClassesForSchema(parseGraphQLConfig);
     const functionNames = await this._getFunctionNames();
-    const functionNamesString = JSON.stringify(functionNames);
+    const functionNamesString = functionNames.join();
 
+    const parseClasses = parseClassesArray.reduce((acc, clazz) => {
+      acc[clazz.className] = clazz;
+      return acc;
+    }, {});
     if (
       !this._hasSchemaInputChanged({
         parseClasses,
@@ -127,7 +132,7 @@ class ParseGraphQLSchema {
     defaultRelaySchema.load(this);
     schemaTypes.load(this);
 
-    this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(
+    this._getParseClassesWithConfig(parseClassesArray, parseGraphQLConfig).forEach(
       ([parseClass, parseClassConfig]) => {
         // Some times schema return the _auth_data_ field
         // it will lead to unstable graphql generation order
@@ -155,7 +160,7 @@ class ParseGraphQLSchema {
       }
     );
 
-    defaultGraphQLTypes.loadArrayResult(this, parseClasses);
+    defaultGraphQLTypes.loadArrayResult(this, parseClassesArray);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
@@ -327,6 +332,14 @@ class ParseGraphQLSchema {
     return this.graphQLSchema;
   }
 
+  _logOnce(severity, message) {
+    if (this.logCache[message]) {
+      return;
+    }
+    this.log[severity](message);
+    this.logCache[message] = true;
+  }
+
   addGraphQLType(type, throwError = false, ignoreReserved = false, ignoreConnection = false) {
     if (
       (!ignoreReserved && RESERVED_GRAPHQL_TYPE_NAMES.includes(type.name)) ||
@@ -337,7 +350,7 @@ class ParseGraphQLSchema {
       if (throwError) {
         throw new Error(message);
       }
-      this.log.warn(message);
+      this._logOnce('warn', message);
       return undefined;
     }
     this.graphQLTypes.push(type);
@@ -353,7 +366,7 @@ class ParseGraphQLSchema {
       if (throwError) {
         throw new Error(message);
       }
-      this.log.warn(message);
+      this._logOnce('warn', message);
       return undefined;
     }
     this.graphQLQueries[fieldName] = field;
@@ -369,7 +382,7 @@ class ParseGraphQLSchema {
       if (throwError) {
         throw new Error(message);
       }
-      this.log.warn(message);
+      this._logOnce('warn', message);
       return undefined;
     }
     this.graphQLMutations[fieldName] = field;
@@ -478,7 +491,8 @@ class ParseGraphQLSchema {
       if (/^[_a-zA-Z][_a-zA-Z0-9]*$/.test(functionName)) {
         return true;
       } else {
-        this.log.warn(
+        this._logOnce(
+          'warn',
           `Function ${functionName} could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.`
         );
         return false;
@@ -500,29 +514,17 @@ class ParseGraphQLSchema {
     const { parseClasses, parseGraphQLConfig, functionNamesString } = params;
 
     // First init
-    if (!this.parseCachedClasses || !this.graphQLSchema) {
-      const thisParseClassesObj = parseClasses.reduce((acc, clzz) => {
-        acc[clzz.className] = clzz;
-        return acc;
-      }, {});
-      this.parseCachedClasses = thisParseClassesObj;
+    if (!this.graphQLSchema) {
       return true;
     }
-
-    const newParseCachedClasses = parseClasses.reduce((acc, clzz) => {
-      acc[clzz.className] = clzz;
-      return acc;
-    }, {});
 
     if (
       isDeepStrictEqual(this.parseGraphQLConfig, parseGraphQLConfig) &&
       this.functionNamesString === functionNamesString &&
-      isDeepStrictEqual(this.parseCachedClasses, newParseCachedClasses)
+      isDeepStrictEqual(this.parseClasses, parseClasses)
     ) {
       return false;
     }
-
-    this.parseCachedClasses = newParseCachedClasses;
     return true;
   }
 }
