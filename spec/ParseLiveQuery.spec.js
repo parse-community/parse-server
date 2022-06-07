@@ -866,7 +866,7 @@ describe('ParseLiveQuery', function () {
 
     role.getUsers().add(user);
     await role.save();
-
+    await new Promise(resolve => setTimeout(resolve, 500));
     object.set('foo', 'yolo');
     await Promise.all([
       new Promise(resolve => {
