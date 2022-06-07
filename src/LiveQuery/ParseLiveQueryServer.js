@@ -10,7 +10,13 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers, getTrigger, runTrigger, resolveError, toJSONwithObjects } from '../triggers';
+import {
+  runLiveQueryEventHandlers,
+  getTrigger,
+  runTrigger,
+  resolveError,
+  toJSONwithObjects,
+} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -242,6 +248,11 @@ class ParseLiveQueryServer {
           continue;
         }
         requestIds.forEach(async requestId => {
+          const updatedFields = this._checkFields(client, requestId, message);
+          if (!updatedFields) {
+            return;
+          }
+
           // Set orignal ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let originalACLCheckingPromise;
@@ -606,6 +617,17 @@ class ParseLiveQueryServer {
     }
     const { auth } = await this.getAuthForSessionToken(sessionToken);
     return auth;
+  }
+
+  _checkFields(client: any, requestId: any, message: any) {
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    const fields = subscriptionInfo?.fields;
+    if (!fields) {
+      return true;
+    }
+    const object = message.currentParseObject;
+    const original = message.originalParseObject;
+    return fields.some(field => object.get(field) != original?.get(field));
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
