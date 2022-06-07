@@ -10,7 +10,13 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers, getTrigger, runTrigger, resolveError, toJSONwithObjects } from '../triggers';
+import {
+  runLiveQueryEventHandlers,
+  getTrigger,
+  runTrigger,
+  resolveError,
+  toJSONwithObjects,
+} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -71,6 +77,7 @@ class ParseLiveQueryServer {
     this.subscriber = ParsePubSub.createSubscriber(config);
     this.subscriber.subscribe(Parse.applicationId + 'afterSave');
     this.subscriber.subscribe(Parse.applicationId + 'afterDelete');
+    this.subscriber.subscribe(Parse.applicationId + 'clearCache');
     // Register message handler for subscriber. When publisher get messages, it will publish message
     // to the subscribers and the handler will be called.
     this.subscriber.on('message', (channel, messageStr) => {
@@ -80,6 +87,10 @@ class ParseLiveQueryServer {
         message = JSON.parse(messageStr);
       } catch (e) {
         logger.error('unable to parse message', messageStr, e);
+        return;
+      }
+      if (channel === Parse.applicationId + 'clearCache') {
+        this._clearCachedRoles(message.userId);
         return;
       }
       this._inflateParseObject(message);
@@ -466,6 +477,28 @@ class ParseLiveQueryServer {
       return false;
     }
     return matchesQuery(parseObject, subscription.query);
+  }
+
+  async _clearCachedRoles(userId: string) {
+    try {
+      const validTokens = await new Parse.Query(Parse.Session)
+        .equalTo('user', Parse.User.createWithoutData(userId))
+        .find({ useMasterKey: true });
+      await Promise.all(
+        validTokens.map(async token => {
+          const sessionToken = token.get('sessionToken');
+          const authPromise = this.authCache.get(sessionToken);
+          if (!authPromise) {
+            return;
+          }
+          const { auth } = await authPromise;
+          auth.clearRoleCache();
+          this.authCache.del(sessionToken);
+        })
+      );
+    } catch (e) {
+      logger.verbose(`Could not clear role cache. ${e}`);
+    }
   }
 
   getAuthForSessionToken(sessionToken: ?string): Promise<{ auth: ?Auth, userId: ?string }> {

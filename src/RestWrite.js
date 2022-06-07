@@ -1326,6 +1326,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
   if (this.className === '_Role') {
     this.config.cacheController.role.clear();
+    this.config.liveQueryController.clearCachedRoles(this.auth.user);
   }
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
