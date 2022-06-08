@@ -492,7 +492,7 @@ class ParseLiveQueryServer {
             return;
           }
           const { auth } = await authPromise;
-          auth.clearRoleCache();
+          auth.clearRoleCache(sessionToken);
           this.authCache.del(sessionToken);
           console.log('did clear', this.authCache.get(sessionToken));
         })
