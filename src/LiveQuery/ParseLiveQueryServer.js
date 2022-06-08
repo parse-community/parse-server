@@ -504,7 +504,6 @@ class ParseLiveQueryServer {
         })
       );
     } catch (e) {
-      console.log(e);
       logger.verbose(`Could not clear role cache. ${e}`);
     }
   }
