@@ -91,6 +91,7 @@ class ParseLiveQueryServer {
       }
       if (channel === Parse.applicationId + 'clearCache') {
         this._clearCachedRoles(message.userId);
+        console.log('did clear cache...');
         return;
       }
       this._inflateParseObject(message);
@@ -491,13 +492,17 @@ class ParseLiveQueryServer {
           if (!authPromise) {
             return;
           }
-          const { auth } = await authPromise;
-          auth.clearRoleCache(sessionToken);
+          const [auth1, auth2] = await Promise.all([
+            authPromise,
+            getAuthForSessionToken({ cacheController: this.cacheController, sessionToken }),
+          ]);
+          auth1.auth?.clearRoleCache(sessionToken);
+          auth2.auth?.clearRoleCache(sessionToken);
           this.authCache.del(sessionToken);
-          console.log('did clear', this.authCache.get(sessionToken));
         })
       );
     } catch (e) {
+      console.log(e);
       logger.verbose(`Could not clear role cache. ${e}`);
     }
   }
@@ -608,8 +613,8 @@ class ParseLiveQueryServer {
         if (!acl_has_roles) {
           return false;
         }
-
         const roleNames = await auth.getUserRoles();
+        console.log({ roleNames, token });
         // Finally, see if any of the user's roles allow them read access
         for (const role of roleNames) {
           // We use getReadAccess as `role` is in the form `role:roleName`

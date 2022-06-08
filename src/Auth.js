@@ -231,13 +231,14 @@ Auth.prototype.cacheRoles = function () {
   return true;
 };
 
-Auth.prototype.clearRoleCache = function (sessionToken) {
+Auth.prototype.clearRoleCache = async function (sessionToken) {
   if (!this.cacheController) {
     return false;
   }
   this.cacheController.role.del(this.user.id);
   this.cacheController.user.del(sessionToken);
   console.log('clear', this.user.id);
+  console.log(await this.cacheController.role.get(this.user.id));
   return true;
 };
 
