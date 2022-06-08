@@ -90,7 +90,7 @@ function authDataValidator(provider, adapter, appIds, options) {
         if (hasAuthDataConfigured) {
           return adapter.validateUpdate(authData, options, requestObject, req.config);
         }
-        // Let's setup if the user does not have the provider configured
+        // Set up if the user does not have the provider configured
         return adapter.validateSetUp(authData, options, requestObject, req.config);
       }
 
