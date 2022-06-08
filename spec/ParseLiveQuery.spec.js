@@ -393,7 +393,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('can handle live query with fields', async () => {
+  xit('can handle live query with fields - enable upon JS SDK support', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['Test'],
@@ -401,7 +401,7 @@ describe('ParseLiveQuery', function () {
       startLiveQueryServer: true,
     });
     const query = new Parse.Query('Test');
-    query.triggerFields = ['yolo']
+    query.triggerFields('yolo');
     const subscription = await query.subscribe();
     const spy = {
       create(obj) {
