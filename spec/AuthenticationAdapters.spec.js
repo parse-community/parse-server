@@ -20,8 +20,6 @@ const responses = {
   microsoft: { id: 'userId', mail: 'userMail' },
 };
 
-// A simple wrapper to allow usage of
-// expectAsync().toBeRejectedWithError(errorMessage)
 const requestWithExpectedError = async params => {
   try {
     return await request(params);
@@ -2342,10 +2340,10 @@ describe('Auth Adapter features', () => {
         return originalFn(...params);
       }
       // Second call is triggered after beforeSave. A developer can modify authData during beforeSave.
-      // To perform a determinist login, parse need to ensure uniqueness of the authData.id into the database.
+      // To perform a determinist login, the uniqueness of `auth.id` needs to be ensured.
       // A developer with a direct access to the database could break something and duplicate authData.id.
-      // In this case, if parse detect 2 matching users for a singe authData.id; login/register will be canceled.
-      // Promise.resolve([true, true]) simulate this case with 2 matching users.
+      // In this case, if 2 matching users are detected for a single authData.id, then the login/register will be canceled.
+      // Promise.resolve([true, true]) simulates this case with 2 matching users.
       return Promise.resolve([true, true]);
     });
     const user2 = new Parse.User();
@@ -2483,11 +2481,9 @@ describe('Auth Adapter features', () => {
     await reconfigureServer({ auth: { modernAdapter }, allowExpiredAuthDataToken: false });
     const user = new Parse.User();
 
-    // Signup
     await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
 
     expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
-    // Login
     const user2 = new Parse.User();
     await user2.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
 
@@ -2517,7 +2513,6 @@ describe('Auth Adapter features', () => {
     await reconfigureServer({ auth: { modernAdapter } });
     const user = new Parse.User();
 
-    // Signup
     await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
     expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
 

@@ -1873,7 +1873,7 @@ describe('Parse.User testing', () => {
     await Parse.User._logInWith('shortLivedAuth', {});
     // Simulate a remotely expired token (like a short lived one)
     // In this case, we want success as it was valid once.
-    // If the client needs an updated one, do lock the user out
+    // If the client needs an updated token, do lock the user out
     defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
     await Parse.User._logInWith('shortLivedAuth', {});
   });
@@ -1903,7 +1903,7 @@ describe('Parse.User testing', () => {
     await Parse.User._logInWith('shortLivedAuth', {});
     // Simulate a remotely expired token (like a short lived one)
     // In this case, we want success as it was valid once.
-    // If the client needs an updated one, do lock the user out
+    // If the client needs an updated token, do lock the user out
     defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
     expectAsync(Parse.User._logInWith('shortLivedAuth', {})).toBeRejected();
   });
