@@ -500,7 +500,6 @@ class ParseLiveQueryServer {
           auth1.auth?.clearRoleCache(sessionToken);
           auth2.auth?.clearRoleCache(sessionToken);
           this.authCache.del(sessionToken);
-          console.log('DID Clear', sessionToken);
         })
       );
     } catch (e) {
