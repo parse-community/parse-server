@@ -248,8 +248,8 @@ class ParseLiveQueryServer {
           continue;
         }
         requestIds.forEach(async requestId => {
-          const updatedFields = this._checkFields(client, requestId, message);
-          if (!updatedFields) {
+          const triggerFieldsChanged = this._checkTriggerFields(client, requestId, message);
+          if (!triggerFieldsChanged) {
             return;
           }
 
@@ -619,15 +619,15 @@ class ParseLiveQueryServer {
     return auth;
   }
 
-  _checkFields(client: any, requestId: any, message: any) {
+  _checkTriggerFields(client: any, requestId: any, message: any) {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
-    const fields = subscriptionInfo?.fields;
-    if (!fields) {
+    const triggerFields = subscriptionInfo?.triggerFields;
+    if (!triggerFields) {
       return true;
     }
     const object = message.currentParseObject;
     const original = message.originalParseObject;
-    return fields.some(field => object.get(field) != original?.get(field));
+    return triggerFields.some(field => !_.isEqual(object.get(field), original?.get(field)));
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
@@ -810,6 +810,9 @@ class ParseLiveQueryServer {
       // Add selected fields, sessionToken and installationId for this subscription if necessary
       if (request.query.fields) {
         subscriptionInfo.fields = request.query.fields;
+      }
+      if (request.query.triggerFields) {
+        subscriptionInfo.triggerFields = request.query.triggerFields;
       }
       if (request.sessionToken) {
         subscriptionInfo.sessionToken = request.sessionToken;

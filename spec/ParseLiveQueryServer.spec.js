@@ -977,7 +977,6 @@ describe('ParseLiveQueryServer', function () {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
     const message = generateMockMessage(true);
-    message.currentParseObject.set('test', 'bar');
 
     const clientId = 1;
     const parseWebSocket = {
@@ -1073,7 +1072,7 @@ describe('ParseLiveQueryServer', function () {
       where: {
         key: 'value',
       },
-      fields: ['key'],
+      fields: ['test'],
     };
     await addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
     // Mock _matchesSubscription to return matching

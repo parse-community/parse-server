@@ -401,7 +401,7 @@ describe('ParseLiveQuery', function () {
       startLiveQueryServer: true,
     });
     const query = new Parse.Query('Test');
-    query.select('yolo');
+    query.triggerFields = ['yolo']
     const subscription = await query.subscribe();
     const spy = {
       create(obj) {
