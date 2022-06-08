@@ -865,8 +865,8 @@ describe('ParseLiveQuery', function () {
     await object.save(null, { useMasterKey: true });
 
     role.getUsers().add(user);
-    await role.save();
     await new Promise(resolve => setTimeout(resolve, 2000));
+    await role.save();
     object.set('foo', 'yolo');
     await Promise.all([
       new Promise(resolve => {
