@@ -481,32 +481,33 @@ class ParseLiveQueryServer {
   }
 
   async _clearCachedRoles(userId: string) {
-    try {
-      const validTokens = await new Parse.Query(Parse.Session)
-        .equalTo('user', Parse.User.createWithoutData(userId))
-        .find({ useMasterKey: true });
-      console.log('clearing', userId);
-      await Promise.all(
-        validTokens.map(async token => {
-          const sessionToken = token.get('sessionToken');
-          const authPromise = this.authCache.get(sessionToken);
-          if (!authPromise) {
-            return;
-          }
-          const [auth1, auth2] = await Promise.all([
-            authPromise,
-            getAuthForSessionToken({ cacheController: this.cacheController, sessionToken }),
-          ]);
-          auth1.auth?.clearRoleCache(sessionToken);
-          auth2.auth?.clearRoleCache(sessionToken);
-          this.authCache.del(sessionToken);
-          console.log('DID Clear', sessionToken);
-        })
-      );
-    } catch (e) {
-      console.log(e);
-      logger.verbose(`Could not clear role cache. ${e}`);
-    }
+    this.authCache.clear();
+    // try {
+    //   const validTokens = await new Parse.Query(Parse.Session)
+    //     .equalTo('user', Parse.User.createWithoutData(userId))
+    //     .find({ useMasterKey: true });
+    //   console.log('clearing', userId);
+    //   await Promise.all(
+    //     validTokens.map(async token => {
+    //       const sessionToken = token.get('sessionToken');
+    //       const authPromise = this.authCache.get(sessionToken);
+    //       if (!authPromise) {
+    //         return;
+    //       }
+    //       const [auth1, auth2] = await Promise.all([
+    //         authPromise,
+    //         getAuthForSessionToken({ cacheController: this.cacheController, sessionToken }),
+    //       ]);
+    //       auth1.auth?.clearRoleCache(sessionToken);
+    //       auth2.auth?.clearRoleCache(sessionToken);
+    //       this.authCache.del(sessionToken);
+    //       console.log('DID Clear', sessionToken);
+    //     })
+    //   );
+    // } catch (e) {
+    //   console.log(e);
+    //   logger.verbose(`Could not clear role cache. ${e}`);
+    // }
   }
 
   getAuthForSessionToken(sessionToken: ?string): Promise<{ auth: ?Auth, userId: ?string }> {
