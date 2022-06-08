@@ -485,6 +485,7 @@ class ParseLiveQueryServer {
       const validTokens = await new Parse.Query(Parse.Session)
         .equalTo('user', Parse.User.createWithoutData(userId))
         .find({ useMasterKey: true });
+      console.log('clearing', userId);
       await Promise.all(
         validTokens.map(async token => {
           const sessionToken = token.get('sessionToken');
@@ -499,6 +500,7 @@ class ParseLiveQueryServer {
           auth1.auth?.clearRoleCache(sessionToken);
           auth2.auth?.clearRoleCache(sessionToken);
           this.authCache.del(sessionToken);
+          console.log('DID Clear', sessionToken);
         })
       );
     } catch (e) {
