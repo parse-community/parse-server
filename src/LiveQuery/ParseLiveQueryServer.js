@@ -248,11 +248,6 @@ class ParseLiveQueryServer {
           continue;
         }
         requestIds.forEach(async requestId => {
-          const triggerFieldsChanged = this._checkTriggerFields(client, requestId, message);
-          if (!triggerFieldsChanged) {
-            return;
-          }
-
           // Set orignal ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let originalACLCheckingPromise;
@@ -312,6 +307,10 @@ class ParseLiveQueryServer {
               }
             } else {
               return null;
+            }
+            const triggerFieldsChanged = this._checkTriggerFields(client, requestId, message);
+            if (!triggerFieldsChanged && (type === 'update' || type === 'create')) {
+              return;
             }
             res = {
               event: type,
