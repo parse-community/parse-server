@@ -485,7 +485,6 @@ class ParseLiveQueryServer {
       const validTokens = await new Parse.Query(Parse.Session)
         .equalTo('user', Parse.User.createWithoutData(userId))
         .find({ useMasterKey: true });
-      console.log('clearing', userId);
       await Promise.all(
         validTokens.map(async token => {
           const sessionToken = token.get('sessionToken');
