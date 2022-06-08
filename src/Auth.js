@@ -183,9 +183,7 @@ Auth.prototype.getRolesForUser = async function () {
 // Iterates through the role tree and compiles a user's roles
 Auth.prototype._loadRoles = async function () {
   if (this.cacheController) {
-    console.log(this.cacheController.role);
     const cachedRoles = await this.cacheController.role.get(this.user.id);
-    console.log({ cachedRoles });
     if (cachedRoles != null) {
       this.fetchedRoles = true;
       this.userRoles = cachedRoles;
@@ -238,7 +236,6 @@ Auth.prototype.clearRoleCache = function (sessionToken) {
   }
   this.cacheController.role.del(this.user.id);
   this.cacheController.user.del(sessionToken);
-  console.log('clear', this.user.id);
   return true;
 };
 

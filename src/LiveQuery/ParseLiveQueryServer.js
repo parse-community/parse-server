@@ -91,7 +91,6 @@ class ParseLiveQueryServer {
       }
       if (channel === Parse.applicationId + 'clearCache') {
         this._clearCachedRoles(message.userId);
-        console.log('did clear cache...');
         return;
       }
       this._inflateParseObject(message);
