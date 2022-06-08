@@ -622,6 +622,7 @@ class ParseLiveQueryServer {
   _checkTriggerFields(client: any, requestId: any, message: any) {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const triggerFields = subscriptionInfo?.triggerFields;
+    console.log({triggerFields})
     if (!triggerFields) {
       return true;
     }
@@ -811,6 +812,7 @@ class ParseLiveQueryServer {
       if (request.query.fields) {
         subscriptionInfo.fields = request.query.fields;
       }
+      console.log(request.query)
       if (request.query.triggerFields) {
         subscriptionInfo.triggerFields = request.query.triggerFields;
       }
