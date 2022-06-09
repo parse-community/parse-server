@@ -9516,6 +9516,126 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should support where argument on object field that contains false boolean value or 0 number value', async () => {
+          try {
+            const someObjectFieldValue = {
+              foo: { bar: 'baz', qux: true, quux: 100 },
+              number: 10,
+            };
+
+            const object = new Parse.Object('SomeClass');
+            await object.save({
+              someObjectField: someObjectFieldValue,
+            });
+
+            const whereWithQuxFalse = {
+              someObjectField: {
+                notEqualTo: { key: 'foo.bar', value: 'bat' },
+                greaterThan: { key: 'number', value: 9 },
+                lessThan: { key: 'number', value: 11 },
+                equalTo: { key: 'foo.qux', value: false },
+              },
+            };
+            const whereWithQuxTrue = {
+              someObjectField: {
+                ...whereWithQuxFalse.someObjectField,
+                equalTo: { key: 'foo.qux', value: true },
+              },
+            };
+            const whereWithQuux0 = {
+              someObjectField: {
+                notEqualTo: { key: 'foo.bar', value: 'bat' },
+                greaterThan: { key: 'number', value: 9 },
+                lessThan: { key: 'number', value: 11 },
+                equalTo: { key: 'foo.quux', value: 0 },
+              },
+            };
+            const whereWithQuux100 = {
+              someObjectField: {
+                notEqualTo: { key: 'foo.bar', value: 'bat' },
+                greaterThan: { key: 'number', value: 9 },
+                lessThan: { key: 'number', value: 11 },
+                equalTo: { key: 'foo.quux', value: 100 },
+              },
+            };
+            const queryResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject(
+                  $id: ID!
+                  $whereWithQuxFalse: SomeClassWhereInput
+                  $whereWithQuxTrue: SomeClassWhereInput
+                  $whereWithQuux0: SomeClassWhereInput
+                  $whereWithQuux100: SomeClassWhereInput
+                ) {
+                  someClass(id: $id) {
+                    id
+                    someObjectField
+                  }
+                  someClasses(where: $whereWithQuxFalse) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                  someClassesWithQuxTrue: someClasses(where: $whereWithQuxTrue) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                  someClassesWithQuux0: someClasses(where: $whereWithQuux0) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                  someClassesWithQuux100: someClasses(where: $whereWithQuux100) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                id: object.id,
+                whereWithQuxFalse,
+                whereWithQuxTrue,
+                whereWithQuux0,
+                whereWithQuux100,
+              },
+            });
+
+            const {
+              someClass: getResult,
+              someClasses,
+              someClassesWithQuxTrue,
+              someClassesWithQuux0,
+              someClassesWithQuux100,
+            } = queryResult.data;
+
+            const { someObjectField } = getResult;
+            expect(someObjectField).toEqual(someObjectFieldValue);
+
+            // Checks class query results
+            expect(someClasses.edges.length).toEqual(0);
+            expect(someClassesWithQuxTrue.edges.length).toEqual(1);
+
+            expect(someClassesWithQuux0.edges.length).toEqual(0);
+            expect(someClassesWithQuux100.edges.length).toEqual(1);
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
         it('should support object composed queries', async () => {
           try {
             const someObjectFieldValue1 = {
