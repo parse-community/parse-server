@@ -863,10 +863,10 @@ describe('ParseLiveQuery', function () {
     object.setACL(acl);
     object.set({ foo: 'bar' });
     await object.save(null, { useMasterKey: true });
-
     role.getUsers().add(user);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await role.save();
+    await new Promise(resolve => setTimeout(resolve, 1000));
     object.set('foo', 'yolo');
     await Promise.all([
       new Promise(resolve => {
