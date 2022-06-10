@@ -76,7 +76,7 @@ export class AuthAdapter {
 
   /**
    * Triggered when user provide authData related to this provider
-   * he is logged in and has already set this provider before
+   * the user is logged in and has already set this provider before
    * @param {Object} authData The client provided authData
    * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
