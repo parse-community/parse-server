@@ -500,9 +500,11 @@ describe('AuthenticationProviders', function () {
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
     await Parse.User._logInWith('myoauth');
-    expect(spy).toHaveBeenCalledWith({ usage: 'auth.myoauth', solution: 'auth.myoauth.enabled: true' });
+    expect(spy).toHaveBeenCalledWith({
+      usage: 'auth.myoauth',
+      solution: 'auth.myoauth.enabled: true',
+    });
   });
-
 });
 
 describe('instagram auth adapter', () => {
