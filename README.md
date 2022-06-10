@@ -7,8 +7,8 @@
 [![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16-green.svg?logo=node.js&style=flat)](https://nodejs.org)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16,_17,_18-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0,_5.1,_5.2-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
@@ -20,6 +20,7 @@
 [![License][license-svg]][license-link]
 [![Forum](https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg)](https://community.parseplatform.org/c/parse-server)
 [![Twitter](https://img.shields.io/twitter/follow/ParsePlatform.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=ParsePlatform)
+[![Chat](https://img.shields.io/badge/Chat-Join!-%23fff?style=social&logo=slack)](https://chat.parseplatform.org)
 
 ---
 
@@ -110,16 +111,19 @@ Before you start make sure you have installed:
 ### Compatibility
 
 #### Node.js
+
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Version | End-of-Life | Compatible   |
-|------------|----------------|-------------|--------------|
-| Node.js 12 | 12.22.11        | April 2022  | ✅ Yes        |
-| Node.js 14 | 14.19.1        | April 2023  | ✅ Yes        |
-| Node.js 16 | 16.14.2        | April 2024  | ✅ Yes        |
-| Node.js 17 | 17.x           | June 2022   | ❌ Not tested |
+| Version    | Latest Version | End-of-Life | Compatible |
+|------------|----------------|-------------|------------|
+| Node.js 12 | 12.22.11       | April 2022  | ✅ Yes      |
+| Node.js 14 | 14.19.1        | April 2023  | ✅ Yes      |
+| Node.js 16 | 16.14.2        | April 2024  | ✅ Yes      |
+| Node.js 17 | 17.9.0         | June 2022   | ✅ Yes      |
+| Node.js 18 | 18.1.0         | April 2025  | ✅ Yes      |
 
 #### MongoDB
+
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
 | Version     | Latest Version | End-of-Life | Compatible |
@@ -132,6 +136,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 5.2 | 5.2.1          | TBD         | ✅ Yes      |
 
 #### PostgreSQL
+
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
 
 | Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
@@ -142,6 +147,7 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 | Postgres 14 | 3.2             | November 2026 | April 2025               | ✅ Yes      |
 
 ### Locally
+
 ```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
@@ -234,7 +240,6 @@ $ curl -X GET \
     }
   ]
 }
-
 ```
 
 To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](http://docs.parseplatform.org).
@@ -384,6 +389,7 @@ const server = ParseServer({
 ```
 
 ## Custom Routes
+
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
 Custom routes allow to build user flows with webpages, similar to the existing password reset and email verification features. Custom routes are defined with the `pages` option in the Parse Server configuration:
@@ -416,6 +422,7 @@ The above route can be invoked by sending a `GET` request to:
 The `handler` receives the `request` and returns a `custom_page.html` webpage from the `pages.pagesPath` directory as response. The advantage of building a custom route this way is that it automatically makes use of Parse Server's built-in capabilities, such as [page localization](#pages) and [dynamic placeholders](#dynamic-placeholders).
 
 ### Reserved Paths
+
 The following paths are already used by Parse Server's built-in features and are therefore not available for custom routes. Custom routes with an identical combination of `path` and `method` are ignored.
 
 | Path                        | HTTP Method | Feature            |
@@ -511,6 +518,7 @@ Identical requests are identified by their request header `X-Parse-Request-Id`. 
 Deduplication is only done for object creation and update (`POST` and `PUT` requests). Deduplication is not done for object finding and deletion (`GET` and `DELETE` requests), as these operations are already idempotent by definition.
 
 ### Configuration example <!-- omit in toc -->
+
 ```
 let api = new ParseServer({
     idempotencyOptions: {
@@ -519,6 +527,7 @@ let api = new ParseServer({
     }
 }
 ```
+
 ### Parameters <!-- omit in toc -->
 
 | Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -551,6 +560,7 @@ Assuming the script above is named, `parse_idempotency_delete_expired_records.sh
 ## Localization
 
 ### Pages
+
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
 Custom pages as well as feature pages (e.g. password reset, email verification) can be localized with the `pages` option in the Parse Server configuration:

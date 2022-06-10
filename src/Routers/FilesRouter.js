@@ -141,7 +141,7 @@ export class FilesRouter {
     try {
       // run beforeSaveFile trigger
       const triggerResult = await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeSaveFile,
+        triggers.Types.beforeSave,
         fileObject,
         config,
         req.auth
@@ -194,12 +194,7 @@ export class FilesRouter {
         };
       }
       // run afterSaveFile trigger
-      await triggers.maybeRunFileTrigger(
-        triggers.Types.afterSaveFile,
-        fileObject,
-        config,
-        req.auth
-      );
+      await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
@@ -222,7 +217,7 @@ export class FilesRouter {
       file._url = filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeDeleteFile,
+        triggers.Types.beforeDelete,
         fileObject,
         req.config,
         req.auth
@@ -231,7 +226,7 @@ export class FilesRouter {
       await filesController.deleteFile(req.config, filename);
       // run afterDeleteFile trigger
       await triggers.maybeRunFileTrigger(
-        triggers.Types.afterDeleteFile,
+        triggers.Types.afterDelete,
         fileObject,
         req.config,
         req.auth

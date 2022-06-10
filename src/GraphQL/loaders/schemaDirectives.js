@@ -1,8 +1,7 @@
-import gql from 'graphql-tag';
-import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
+import { mapSchema, getDirective, MapperKind } from '@graphql-tools/utils';
 import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 
-export const definitions = gql`
+export const definitions = `
   directive @resolve(to: String) on FIELD_DEFINITION
   directive @mock(with: Any!) on FIELD_DEFINITION
 `;
@@ -10,46 +9,48 @@ export const definitions = gql`
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLSchemaDirectivesDefinitions = definitions;
 
-  class ResolveDirectiveVisitor extends SchemaDirectiveVisitor {
-    visitFieldDefinition(field) {
-      field.resolve = async (_source, args, context) => {
-        try {
-          const { config, auth, info } = context;
-
-          let functionName = field.name;
-          if (this.args.to) {
-            functionName = this.args.to;
-          }
-
-          return (
-            await FunctionsRouter.handleCloudFunction({
-              params: {
-                functionName,
-              },
-              config,
-              auth,
-              info,
-              body: args,
-            })
-          ).response.result;
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
+  const resolveDirective = schema =>
+    mapSchema(schema, {
+      [MapperKind.OBJECT_FIELD]: fieldConfig => {
+        const directive = getDirective(schema, fieldConfig, 'resolve')?.[0];
+        if (directive) {
+          const { to: targetCloudFunction } = directive;
+          fieldConfig.resolve = async (_source, args, context, gqlInfo) => {
+            try {
+              const { config, auth, info } = context;
+              const functionName = targetCloudFunction || gqlInfo.fieldName;
+              return (
+                await FunctionsRouter.handleCloudFunction({
+                  params: {
+                    functionName,
+                  },
+                  config,
+                  auth,
+                  info,
+                  body: args,
+                })
+              ).response.result;
+            } catch (e) {
+              parseGraphQLSchema.handleError(e);
+            }
+          };
         }
-      };
-    }
-  }
+        return fieldConfig;
+      },
+    });
 
-  parseGraphQLSchema.graphQLSchemaDirectives.resolve = ResolveDirectiveVisitor;
+  const mockDirective = schema =>
+    mapSchema(schema, {
+      [MapperKind.OBJECT_FIELD]: fieldConfig => {
+        const directive = getDirective(schema, fieldConfig, 'mock')?.[0];
+        if (directive) {
+          const { with: mockValue } = directive;
+          fieldConfig.resolve = async () => mockValue;
+        }
+        return fieldConfig;
+      },
+    });
 
-  class MockDirectiveVisitor extends SchemaDirectiveVisitor {
-    visitFieldDefinition(field) {
-      field.resolve = () => {
-        return this.args.with;
-      };
-    }
-  }
-
-  parseGraphQLSchema.graphQLSchemaDirectives.mock = MockDirectiveVisitor;
+  parseGraphQLSchema.graphQLSchemaDirectives = schema => mockDirective(resolveDirective(schema));
 };
-
 export { load };
