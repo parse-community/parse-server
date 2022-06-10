@@ -24,7 +24,7 @@ export class AuthAdapter {
     this.policy = 'default';
   }
   /**
-   * @param appIds The specified app ids in the configuration
+   * @param appIds The specified app IDs in the configuration
    * @param {Object} authData The client provided authData
    * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
