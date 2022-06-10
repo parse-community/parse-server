@@ -537,7 +537,7 @@ export class UsersRouter extends ClassesRouter {
       try {
         if (!results[0] || results.length > 1) {
           throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
-}
+        }
         // Find the provider used to find the user
         const provider = Object.keys(authData).find(key => authData[key].id);
 
