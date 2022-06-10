@@ -1885,16 +1885,16 @@ describe('Parse.User testing', () => {
         id: '12345',
         access_token: 'token',
       },
-      restoreAuthentication: function () {
+      restoreAuthentication() {
         return true;
       },
-      deauthenticate: function () {
+      deauthenticate() {
         provider.authData = {};
       },
-      authenticate: function (options) {
+      authenticate(options) {
         options.success(this, provider.authData);
       },
-      getAuthType: function () {
+      getAuthType() {
         return 'shortLivedAuth';
       },
     };

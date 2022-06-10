@@ -3,8 +3,8 @@
 /**
  * @interface ParseAuthResponse
  * @property {Boolean} [doNotSave] If true, Parse Server will do not save provided authData.
- * @property {Object} [response] If set, parse server will send the provided response to the client under authDataResponse
- * @property {Object} [save] If set, parse server will save the object provided into this key, instead of client provided authData
+ * @property {Object} [response] If set, Parse Server will send the provided response to the client under authDataResponse
+ * @property {Object} [save] If set, Parse Server will save the object provided into this key, instead of client provided authData
  */
 
 /**
@@ -63,7 +63,7 @@ export class AuthAdapter {
 
   /**
    * Triggered when user provide authData related to this provider
-   * he is not logged in and has already set this provider before
+   * The user is not logged in and has already set this provider before
    * @param {Object} authData The client provided authData
    * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request

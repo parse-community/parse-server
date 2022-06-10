@@ -1307,7 +1307,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         return;
       }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
-      const authDataAlreadyExists = !!object['authData'];
+      const authDataAlreadyExists = !!object.authData;
       if (authDataMatch) {
         var provider = authDataMatch[1];
         object['authData'] = object['authData'] || {};
@@ -1321,7 +1321,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
 
       columnsArray.push(fieldName);
-
       if (!schema.fields[fieldName] && className === '_User') {
         if (
           fieldName === '_email_verify_token' ||
