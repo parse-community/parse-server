@@ -93,7 +93,7 @@ export class AuthAdapter {
    * @param {(Object|undefined)} authData Auth data provided by the client, can be used for validation
    * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config
+   * @param {Object} config Parse Server config object
    * @returns {Promise<Object>} A promise that resolves, resolved value will be added to challenge response under challenge key
    */
   challenge(challengeData, authData, options, req, user) {
