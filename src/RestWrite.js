@@ -15,6 +15,8 @@ var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
+import Deprecator from './Deprecator/Deprecator';
+import { requiredColumns } from './Controllers/SchemaController';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -429,7 +431,14 @@ RestWrite.prototype.handleAuthDataValidation = function (authData) {
       return Promise.resolve();
     }
     const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
-    if (!validateAuthData) {
+    const authProvider = (this.config.auth || {})[provider] || {};
+    if (authProvider.enabled == null) {
+      Deprecator.logRuntimeDeprecation({
+        usage: `auth.${provider}`,
+        solution: `auth.${provider}.enabled: true`,
+      });
+    }
+    if (!validateAuthData || authProvider.enabled === false) {
       throw new Parse.Error(
         Parse.Error.UNSUPPORTED_SERVICE,
         'This authentication method is unsupported.'
@@ -1556,7 +1565,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
-          (result || updatedObject)._toFullJSON(),
+          (result || updatedObject).toJSON(),
           this.data
         );
       }
@@ -1663,6 +1672,21 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     if (!pending[key]) {
       data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
       this.storage.fieldsChangedByTrigger.push(key);
+    }
+  }
+  const skipKeys = [
+    'objectId',
+    'createdAt',
+    'updatedAt',
+    ...(requiredColumns.read[this.className] || []),
+  ];
+  for (const key in response) {
+    if (skipKeys.includes(key)) {
+      continue;
+    }
+    const value = response[key];
+    if (value == null || (value.__type && value.__type === 'Pointer') || data[key] === value) {
+      delete response[key];
     }
   }
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
