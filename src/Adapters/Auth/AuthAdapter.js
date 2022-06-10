@@ -54,7 +54,7 @@ export class AuthAdapter {
    * @param {Object} authData The client provided authData
    * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config
+   * @param {Object} config Parse Server config object
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
   validateSetUp(authData, options, req, user) {
