@@ -20,9 +20,9 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "@graphql-yoga/node": "2.6.0",
+    "@graphql-tools/utils": "8.6.12",
     "@graphql-tools/merge": "8.2.13",
     "@graphql-tools/schema": "8.3.13",
-    "@graphql-tools/utils": "8.6.10",
     "@parse/fs-files-adapter": "1.2.2",
     "@parse/push-adapter": "4.1.2",
     "bcryptjs": "2.4.3",
