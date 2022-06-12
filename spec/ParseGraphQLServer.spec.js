@@ -13,6 +13,7 @@ const { getMainDefinition } = require('apollo-utilities');
 const { createUploadLink } = require('apollo-upload-client');
 const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('@apollo/client/link/ws');
+const { mergeSchemas } = require('@graphql-tools/schema');
 const {
   ApolloClient,
   InMemoryCache,
@@ -10614,7 +10615,7 @@ describe('ParseGraphQLServer', () => {
   });
 
   describe('Custom API', () => {
-    describe('GraphQL Schema Based', () => {
+    describe('SDL based', () => {
       let httpServer;
       const headers = {
         'X-Parse-Application-Id': 'test',
@@ -10737,7 +10738,7 @@ describe('ParseGraphQLServer', () => {
       });
     });
 
-    describe('SDL Based', () => {
+    describe('GraphQL Schema Based', () => {
       let httpServer;
       const headers = {
         'X-Parse-Application-Id': 'test',
@@ -11034,8 +11035,7 @@ describe('ParseGraphQLServer', () => {
           httpServer = http.createServer(expressApp);
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
             graphQLPath: '/graphql',
-            graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
-              stitchSchemas({ subschemas: [autoSchema] }),
+            graphQLCustomTypeDefs: ({ autoSchema }) => mergeSchemas({ schemas: [autoSchema] }),
           });
 
           parseGraphQLServer.applyGraphQL(expressApp);

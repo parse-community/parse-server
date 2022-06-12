@@ -1,3 +1,10 @@
+# [5.3.0-alpha.16](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.15...5.3.0-alpha.16) (2022-06-11)
+
+
+### Bug Fixes
+
+* live query role cache does not clear when a user is added to a role ([#8026](https://github.com/parse-community/parse-server/issues/8026)) ([199dfc1](https://github.com/parse-community/parse-server/commit/199dfc17226d85a78ab85f24362cce740f4ada39))
+
 # [5.3.0-alpha.15](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.14...5.3.0-alpha.15) (2022-06-05)
 
 
