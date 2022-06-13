@@ -94,6 +94,12 @@ export interface ParseServerOptions {
   databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database */
   databaseAdapter: ?Adapter<StorageAdapter>;
+  /* Disable case insensitivity (collation) on queries and indexes, needed if the you use mongodb serverless
+  :ENV: PARSE_SERVER_DISABLE_DEFAULT_CASE_INSENSITIVITY */
+  disableCaseInsensitivity: ?boolean;
+  /* Force username and email to lowercase on create/update/login/signup. On queries client needs to ensure to send lowercase email/username
+  :ENV: PARSE_SERVER_FORCE_EMAIL_AND_USERNAME_TO_LOWER_CASE */
+  forceEmailAndUsernameToLowerCase: ?boolean;
   /* Full path to your cloud code main.js */
   cloud: ?string;
   /* A collection prefix for the classes
