@@ -367,40 +367,54 @@ describe('DatabaseController', () => {
       expect(spy.calls.all()[0].args[3].caseInsensitive).toEqual(true);
     });
 
-    it('should create insensitive indexes without disableCaseInsensitivity', async () => {
-      await reconfigureServer({
-        databaseURI: 'mongodb://localhost:27017/disableCaseInsensitivityFalse',
-        databaseAdapter: undefined,
-      });
-      const user = new Parse.User();
-      await user.save({ username: 'example', password: 'password', email: 'example@example.com' });
-      const schemas = await Parse.Schema.all();
-      const UserSchema = schemas.find(({ className }) => className === '_User');
-      expect(UserSchema.indexes).toEqual({
-        _id_: { _id: 1 },
-        username_1: { username: 1 },
-        case_insensitive_username: { username: 1 },
-        case_insensitive_email: { email: 1 },
-        email_1: { email: 1 },
-      });
-    });
+    it_only_db('mongo')(
+      'should create insensitive indexes without disableCaseInsensitivity',
+      async () => {
+        await reconfigureServer({
+          databaseURI: 'mongodb://localhost:27017/disableCaseInsensitivityFalse',
+          databaseAdapter: undefined,
+        });
+        const user = new Parse.User();
+        await user.save({
+          username: 'example',
+          password: 'password',
+          email: 'example@example.com',
+        });
+        const schemas = await Parse.Schema.all();
+        const UserSchema = schemas.find(({ className }) => className === '_User');
+        expect(UserSchema.indexes).toEqual({
+          _id_: { _id: 1 },
+          username_1: { username: 1 },
+          case_insensitive_username: { username: 1 },
+          case_insensitive_email: { email: 1 },
+          email_1: { email: 1 },
+        });
+      }
+    );
 
-    it('should not create insensitive indexes with disableCaseInsensitivity', async () => {
-      await reconfigureServer({
-        disableCaseInsensitivity: true,
-        databaseURI: 'mongodb://localhost:27017/disableCaseInsensitivityTrue',
-        databaseAdapter: undefined,
-      });
-      const user = new Parse.User();
-      await user.save({ username: 'example', password: 'password', email: 'example@example.com' });
-      const schemas = await Parse.Schema.all();
-      const UserSchema = schemas.find(({ className }) => className === '_User');
-      expect(UserSchema.indexes).toEqual({
-        _id_: { _id: 1 },
-        username_1: { username: 1 },
-        email_1: { email: 1 },
-      });
-    });
+    it_only_db('mongo')(
+      'should not create insensitive indexes with disableCaseInsensitivity',
+      async () => {
+        await reconfigureServer({
+          disableCaseInsensitivity: true,
+          databaseURI: 'mongodb://localhost:27017/disableCaseInsensitivityTrue',
+          databaseAdapter: undefined,
+        });
+        const user = new Parse.User();
+        await user.save({
+          username: 'example',
+          password: 'password',
+          email: 'example@example.com',
+        });
+        const schemas = await Parse.Schema.all();
+        const UserSchema = schemas.find(({ className }) => className === '_User');
+        expect(UserSchema.indexes).toEqual({
+          _id_: { _id: 1 },
+          username_1: { username: 1 },
+          email_1: { email: 1 },
+        });
+      }
+    );
   });
 
   describe('forceEmailAndUsernameToLowerCase', () => {
