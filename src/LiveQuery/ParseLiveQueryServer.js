@@ -64,7 +64,7 @@ class ParseLiveQueryServer {
     // The main benefit is to be able to reuse the same user / session token resolution.
     this.authCache = new LRU({
       max: 500, // 500 concurrent
-      maxAge: config.cacheTimeout,
+      ttl: config.cacheTimeout,
     });
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
