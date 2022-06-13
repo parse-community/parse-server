@@ -161,6 +161,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  disableCaseInsensitivity: {
+    env: 'PARSE_SERVER_DISABLE_DEFAULT_CASE_INSENSITIVITY',
+    help:
+      'Disable case insensitivity (collation) on queries and indexes, needed if the you use mongodb serverless',
+    action: parsers.booleanParser,
+  },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',
     help: 'Key for Unity and .Net SDK',
@@ -226,6 +232,12 @@ module.exports.ParseServerOptions = {
     help: 'Options for file uploads',
     action: parsers.objectParser,
     default: {},
+  },
+  forceEmailAndUsernameToLowerCase: {
+    env: 'PARSE_SERVER_FORCE_EMAIL_AND_USERNAME_TO_LOWER_CASE',
+    help:
+      'Force username and email to lowercase on create/update/login/signup. On queries client needs to ensure to send lowercase email/username',
+    action: parsers.booleanParser,
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
