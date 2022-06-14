@@ -497,7 +497,7 @@ class ParseLiveQueryServer {
           ]);
           auth1.auth?.clearRoleCache(sessionToken);
           auth2.auth?.clearRoleCache(sessionToken);
-          this.authCache.del(sessionToken);
+          this.authCache.delete(sessionToken);
         })
       );
     } catch (e) {
@@ -527,7 +527,7 @@ class ParseLiveQueryServer {
           result.error = error;
           this.authCache.set(sessionToken, Promise.resolve(result), this.config.cacheTimeout);
         } else {
-          this.authCache.del(sessionToken);
+          this.authCache.delete(sessionToken);
         }
         return result;
       });
