@@ -10646,6 +10646,12 @@ describe('ParseGraphQLServer', () => {
                     },
                     resolve: (p, { message }) => message,
                   },
+                  errorQuery: {
+                    type: new GraphQLNonNull(GraphQLString),
+                    resolve: () => {
+                      throw new Error('A test error');
+                    },
+                  },
                   customQueryWithAutoTypeReturn: {
                     type: SomeClassType,
                     args: {
@@ -10732,6 +10738,18 @@ describe('ParseGraphQLServer', () => {
           `,
         });
         expect(result.data.customQuery).toEqual('hello');
+      });
+
+      it('can forward original error of a custom query', async () => {
+        await expectAsync(
+          apolloClient.query({
+            query: gql`
+              query ErrorQuery {
+                errorQuery
+              }
+            `,
+          })
+        ).toBeRejectedWithError('A test error');
       });
 
       it('can resolve a custom query with auto type return', async () => {
