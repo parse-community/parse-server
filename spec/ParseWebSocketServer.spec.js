@@ -85,6 +85,11 @@ describe('ParseWebSocketServer', function () {
     }).server;
 
     const ws = new EventEmitter();
+    ws.readyState = 0;
+    ws.OPEN = 0;
+    ws.ping = jasmine.createSpy('ping');
+    ws.terminate = jasmine.createSpy('terminate');
+
     parseWebSocketServer.onConnection(ws);
 
     // Make sure callback is called
@@ -112,13 +117,13 @@ describe('ParseWebSocketServer', function () {
     ws.readyState = 0;
     ws.OPEN = 0;
     ws.ping = jasmine.createSpy('ping');
-    ws.waitingForPong = false;
     ws.terminate = jasmine.createSpy('terminate');
 
     parseWebSocketServer.onConnection(ws);
 
     // Make sure callback is called
     expect(onConnectCallback).toHaveBeenCalled();
+    expect(ws.waitingForPong).toBe(false);
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(ws.ping).toHaveBeenCalled();
     expect(ws.waitingForPong).toBe(true);
