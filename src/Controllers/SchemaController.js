@@ -158,7 +158,7 @@ const requiredColumns = Object.freeze({
   write: {
     _Product: ['productIdentifier', 'icon', 'order', 'title', 'subtitle'],
     _Role: ['name', 'ACL'],
-  }
+  },
 });
 
 const invalidColumns = ['length'];

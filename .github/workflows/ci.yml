@@ -178,6 +178,8 @@ jobs:
       PARSE_SERVER_TEST_CACHE: ${{ matrix.PARSE_SERVER_TEST_CACHE }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
+      - name: Fix usage of insecure GitHub protocol
+        run: sudo git config --system url."https://github".insteadOf "git://github"
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
         uses: actions/setup-node@v2

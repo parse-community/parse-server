@@ -10,7 +10,13 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers, getTrigger, runTrigger, resolveError, toJSONwithObjects } from '../triggers';
+import {
+  runLiveQueryEventHandlers,
+  getTrigger,
+  runTrigger,
+  resolveError,
+  toJSONwithObjects,
+} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -58,7 +64,7 @@ class ParseLiveQueryServer {
     // The main benefit is to be able to reuse the same user / session token resolution.
     this.authCache = new LRU({
       max: 500, // 500 concurrent
-      maxAge: config.cacheTimeout,
+      ttl: config.cacheTimeout,
     });
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
@@ -71,6 +77,7 @@ class ParseLiveQueryServer {
     this.subscriber = ParsePubSub.createSubscriber(config);
     this.subscriber.subscribe(Parse.applicationId + 'afterSave');
     this.subscriber.subscribe(Parse.applicationId + 'afterDelete');
+    this.subscriber.subscribe(Parse.applicationId + 'clearCache');
     // Register message handler for subscriber. When publisher get messages, it will publish message
     // to the subscribers and the handler will be called.
     this.subscriber.on('message', (channel, messageStr) => {
@@ -80,6 +87,10 @@ class ParseLiveQueryServer {
         message = JSON.parse(messageStr);
       } catch (e) {
         logger.error('unable to parse message', messageStr, e);
+        return;
+      }
+      if (channel === Parse.applicationId + 'clearCache') {
+        this._clearCachedRoles(message.userId);
         return;
       }
       this._inflateParseObject(message);
@@ -468,6 +479,32 @@ class ParseLiveQueryServer {
     return matchesQuery(parseObject, subscription.query);
   }
 
+  async _clearCachedRoles(userId: string) {
+    try {
+      const validTokens = await new Parse.Query(Parse.Session)
+        .equalTo('user', Parse.User.createWithoutData(userId))
+        .find({ useMasterKey: true });
+      await Promise.all(
+        validTokens.map(async token => {
+          const sessionToken = token.get('sessionToken');
+          const authPromise = this.authCache.get(sessionToken);
+          if (!authPromise) {
+            return;
+          }
+          const [auth1, auth2] = await Promise.all([
+            authPromise,
+            getAuthForSessionToken({ cacheController: this.cacheController, sessionToken }),
+          ]);
+          auth1.auth?.clearRoleCache(sessionToken);
+          auth2.auth?.clearRoleCache(sessionToken);
+          this.authCache.del(sessionToken);
+        })
+      );
+    } catch (e) {
+      logger.verbose(`Could not clear role cache. ${e}`);
+    }
+  }
+
   getAuthForSessionToken(sessionToken: ?string): Promise<{ auth: ?Auth, userId: ?string }> {
     if (!sessionToken) {
       return Promise.resolve({});
@@ -574,7 +611,6 @@ class ParseLiveQueryServer {
         if (!acl_has_roles) {
           return false;
         }
-
         const roleNames = await auth.getUserRoles();
         // Finally, see if any of the user's roles allow them read access
         for (const role of roleNames) {
