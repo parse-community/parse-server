@@ -624,25 +624,37 @@ describe('Parse.File testing', () => {
   });
 
   describe('getting files', () => {
-    it('can get invalid file', async () => {
+    it('does not crash on file request with invalid app ID', async () => {
       const res1 = await request({
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
       }).catch(e => e);
       expect(res1.status).toBe(403);
       expect(res1.data).toEqual({ code: 119, error: 'Invalid application ID.' });
-      // Check whether server did not crash
+      // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);
       expect(res2.data).toEqual({ status: 'ok' });
     });
 
-    it('can get invalid metadata', async () => {
+    it('does not crash on file request with invalid path', async () => {
+      const res1 = await request({
+        url: 'http://localhost:8378/1/files/invalid-id//invalid-path/%20/invalid-file.txt',
+      }).catch(e => e);
+      expect(res1.status).toBe(403);
+      expect(res1.data).toEqual({ error: 'unauthorized' });
+      // Ensure server did not crash
+      const res2 = await request({ url: 'http://localhost:8378/1/health' });
+      expect(res2.status).toEqual(200);
+      expect(res2.data).toEqual({ status: 'ok' });
+    });
+
+    it('does not crash on file metadata request with invalid app ID', async () => {
       const res1 = await request({
         url: `http://localhost:8378/1/files/invalid-id/metadata/invalid-file.txt`,
       });
       expect(res1.status).toBe(200);
       expect(res1.data).toEqual({});
-      // Check whether server did not crash
+      // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);
       expect(res2.data).toEqual({ status: 'ok' });
