@@ -91,12 +91,20 @@ export function getLoggerController(options: ParseServerOptions): LoggerControll
 }
 
 export function getFilesController(options: ParseServerOptions): FilesController {
-  const { appId, databaseURI, filesAdapter, databaseAdapter, preserveFileName, fileKey } = options;
+  const {
+    appId,
+    databaseURI,
+    databaseOptions = {},
+    filesAdapter,
+    databaseAdapter,
+    preserveFileName,
+    fileKey,
+  } = options;
   if (!filesAdapter && databaseAdapter) {
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-    return new GridFSBucketAdapter(databaseURI, {}, fileKey);
+    return new GridFSBucketAdapter(databaseURI, databaseOptions, fileKey);
   });
   return new FilesController(filesControllerAdapter, appId, {
     preserveFileName,

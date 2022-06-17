@@ -1,4 +1,15 @@
 /**
+ * @interface SchemaOptions
+ * @property {Function} afterMigration Execute a callback after running schema migrations.
+ * @property {Function} beforeMigration Execute a callback before running schema migrations.
+ * @property {Any} definitions Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema
+ * @property {Boolean} deleteExtraFields Is true if Parse Server should delete any fields not defined in a schema definition. This should only be used during development.
+ * @property {Boolean} lockSchemas Is true if Parse Server will reject any attempts to modify the schema while the server is running.
+ * @property {Boolean} recreateModifiedFields Is true if Parse Server should recreate any fields that are different between the current database schema and theschema definition. This should only be used during development.
+ * @property {Boolean} strict Is true if Parse Server should exit if schema update fail.
+ */
+
+/**
  * @interface ParseServerOptions
  * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
@@ -8,7 +19,7 @@
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
- * @property {Any} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
+ * @property {AuthAdapter[]} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
  * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
@@ -68,6 +79,7 @@
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
+ * @property {SchemaOptions} schema Defined schema
  * @property {SecurityOptions} security The security options to identify and report weak security settings.
  * @property {Function} serverCloseComplete Callback when server has closed
  * @property {Function} serverStartComplete Callback when server has started
@@ -195,4 +207,9 @@
 /**
  * @interface DatabaseOptions
  * @property {Boolean} enableSchemaHooks Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
+ */
+
+/**
+ * @interface AuthAdapter
+ * @property {Boolean} enabled Is `true` if the auth adapter is enabled, `false` otherwise.
  */
