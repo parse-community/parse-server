@@ -112,7 +112,7 @@ describe('ParseWebSocketServer', function () {
     const http = require('http');
     const server = http.createServer();
     const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
-      websocketTimeout: 10,
+      websocketTimeout: 5,
     }).server;
     const ws = new EventEmitter();
     ws.readyState = 0;
