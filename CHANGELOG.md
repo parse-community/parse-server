@@ -1,3 +1,10 @@
+## [4.10.11](https://github.com/parse-community/parse-server/compare/4.10.10...4.10.11) (2022-06-17)
+
+
+### Bug Fixes
+
+* certificate in Apple Game Center auth adapter not validated; this fixes a security vulnerability in which authentication could be bypassed using a fake certificate; if you are using the Apple Gamer Center auth adapter it is your responsibility to keep its root certificate up-to-date and we advice you read the security advisory ([GHSA-rh9j-f5f8-rvgc](https://github.com/parse-community/parse-server/security/advisories/GHSA-rh9j-f5f8-rvgc)) ([145838d](https://github.com/parse-community/parse-server/commit/145838d2d9c1ecf76412a962a4ef61c712bcb0a7))
+
 ## [4.10.10](https://github.com/parse-community/parse-server/compare/4.10.9...4.10.10) (2022-05-01)
 
 
