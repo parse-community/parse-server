@@ -76,12 +76,12 @@ describe('ParseWebSocketServer', function () {
     expect(wssError).toBe('Invalid Packet');
   });
 
-  it('responds to pong', async () => {
+  it('can handle ping/pong', async () => {
     const onConnectCallback = jasmine.createSpy('onConnectCallback');
     const http = require('http');
     const server = http.createServer();
     const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
-      websocketTimeout: 5,
+      websocketTimeout: 10,
     }).server;
 
     const ws = new EventEmitter();
@@ -102,6 +102,7 @@ describe('ParseWebSocketServer', function () {
     ws.emit('pong');
     expect(ws.waitingForPong).toBe(false);
     await new Promise(resolve => setTimeout(resolve, 10));
+    expect(ws.waitingForPong).toBe(true);
     expect(ws.terminate).not.toHaveBeenCalled();
     server.close();
   });
@@ -111,7 +112,7 @@ describe('ParseWebSocketServer', function () {
     const http = require('http');
     const server = http.createServer();
     const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
-      websocketTimeout: 5,
+      websocketTimeout: 10,
     }).server;
     const ws = new EventEmitter();
     ws.readyState = 0;
