@@ -623,6 +623,35 @@ describe('Parse.File testing', () => {
     });
   });
 
+  describe('getting files', () => {
+    it('can get invalid file', async () => {
+      const getFile = async () => {
+        try {
+          await request({ url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt' });
+        } catch (e) {
+          throw new Parse.Error(e.data.code, e.data.error);
+        }
+      };
+      await expectAsync(getFile()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid appId.')
+      );
+      const { status, data } = await request({ url: 'http://localhost:8378/1/health' });
+      expect(status).toEqual(200);
+      expect(data).toEqual({ status: 'ok' });
+    });
+
+    it('can get invalid metadata', async () => {
+      const metadata = await request({
+        url: `http://localhost:8378/1/files/invalid-id/metadata/invalid-file.txt`,
+      });
+      expect(metadata.status).toBe(200);
+      expect(metadata.data).toEqual({});
+      const { status, data } = await request({ url: 'http://localhost:8378/1/health' });
+      expect(status).toEqual(200);
+      expect(data).toEqual({ status: 'ok' });
+    });
+  });
+
   xdescribe('Gridstore Range tests', () => {
     it('supports range requests', done => {
       const headers = {
