@@ -92,9 +92,7 @@ describe('ParseWebSocketServer', function () {
 
     parseWebSocketServer.onConnection(ws);
 
-    // Make sure callback is called
     expect(onConnectCallback).toHaveBeenCalled();
-    // Check that `waitingForPong` toggles
     expect(ws.waitingForPong).toBe(false);
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(ws.ping).toHaveBeenCalled();
