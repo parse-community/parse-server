@@ -230,6 +230,15 @@ Auth.prototype.cacheRoles = function () {
   return true;
 };
 
+Auth.prototype.clearRoleCache = function (sessionToken) {
+  if (!this.cacheController) {
+    return false;
+  }
+  this.cacheController.role.del(this.user.id);
+  this.cacheController.user.del(sessionToken);
+  return true;
+};
+
 Auth.prototype.getRolesByIds = async function (ins) {
   const results = [];
   // Build an OR query across all parentRoles

@@ -1,5 +1,15 @@
 // @flow
 
+export interface SchemaOptions {
+  definitions: JSONSchema[];
+  strict: ?boolean;
+  deleteExtraFields: ?boolean;
+  recreateModifiedFields: ?boolean;
+  lockSchemas: ?boolean;
+  beforeMigration: ?() => void | Promise<void>;
+  afterMigration: ?() => void | Promise<void>;
+}
+
 export type FieldValueType =
   | 'String'
   | 'Boolean'
@@ -33,17 +43,6 @@ export interface IndexInterface {
 
 export interface IndexesInterface {
   [key: string]: IndexInterface;
-}
-
-export interface SchemaOptions {
-  definitions: JSONSchema[];
-  strict: ?boolean;
-  deleteExtraFields: ?boolean;
-  recreateModifiedFields: ?boolean;
-  lockSchemas: ?boolean;
-  /* Callback when server has started and before running schemas migration operations if schemas key provided */
-  beforeMigration: ?() => void | Promise<void>;
-  afterMigration: ?() => void | Promise<void>;
 }
 
 export type CLPOperation = 'find' | 'count' | 'get' | 'update' | 'create' | 'delete';
