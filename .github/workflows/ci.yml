@@ -43,6 +43,8 @@ jobs:
       PARSE_SERVER_TEST_CACHE: ${{ matrix.PARSE_SERVER_TEST_CACHE }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
+      - name: Fix usage of insecure GitHub protocol
+        run: sudo git config --system url."https://github".insteadOf "git://github"
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
         uses: actions/setup-node@v1
@@ -89,6 +91,8 @@ jobs:
       POSTGRES_MAJOR_VERSION: 11
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
     steps:
+      - name: Fix usage of insecure GitHub protocol
+        run: sudo git config --system url."https://github".insteadOf "git://github"
       - uses: actions/checkout@v2
       - name: Use Node.js 10
         uses: actions/setup-node@v1
