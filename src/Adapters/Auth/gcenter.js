@@ -14,7 +14,8 @@ const authData = {
 const { Parse } = require('parse/node');
 const crypto = require('crypto');
 const https = require('https');
-
+const { pki } = require('node-forge');
+const ca = { cert: null, url: null };
 const cache = {}; // (publicKey -> cert) cache
 
 function verifyPublicKeyUrl(publicKeyUrl) {
@@ -52,39 +53,53 @@ async function getAppleCertificate(publicKeyUrl) {
     path: url.pathname,
     method: 'HEAD',
   };
-  const headers = await new Promise((resolve, reject) =>
+  const cert_headers = await new Promise((resolve, reject) =>
     https.get(headOptions, res => resolve(res.headers)).on('error', reject)
   );
+  const validContentTypes = ['application/x-x509-ca-cert', 'application/pkix-cert'];
   if (
-    headers['content-type'] !== 'application/pkix-cert' ||
-    headers['content-length'] == null ||
-    headers['content-length'] > 10000
+    !validContentTypes.includes(cert_headers['content-type']) ||
+    cert_headers['content-length'] == null ||
+    cert_headers['content-length'] > 10000
   ) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
     );
   }
+  const { certificate, headers } = await getCertificate(publicKeyUrl);
+  if (headers['cache-control']) {
+    const expire = headers['cache-control'].match(/max-age=([0-9]+)/);
+    if (expire) {
+      cache[publicKeyUrl] = certificate;
+      // we'll expire the cache entry later, as per max-age
+      setTimeout(() => {
+        delete cache[publicKeyUrl];
+      }, parseInt(expire[1], 10) * 1000);
+    }
+  }
+  return verifyPublicKeyIssuer(certificate, publicKeyUrl);
+}
+
+function getCertificate(url, buffer) {
   return new Promise((resolve, reject) => {
     https
-      .get(publicKeyUrl, res => {
-        let data = '';
+      .get(url, res => {
+        const data = [];
         res.on('data', chunk => {
-          data += chunk.toString('base64');
+          data.push(chunk);
         });
         res.on('end', () => {
-          const cert = convertX509CertToPEM(data);
-          if (res.headers['cache-control']) {
-            var expire = res.headers['cache-control'].match(/max-age=([0-9]+)/);
-            if (expire) {
-              cache[publicKeyUrl] = cert;
-              // we'll expire the cache entry later, as per max-age
-              setTimeout(() => {
-                delete cache[publicKeyUrl];
-              }, parseInt(expire[1], 10) * 1000);
-            }
+          if (buffer) {
+            resolve({ certificate: Buffer.concat(data), headers: res.headers });
+            return;
           }
-          resolve(cert);
+          let cert = '';
+          for (const chunk of data) {
+            cert += chunk.toString('base64');
+          }
+          const certificate = convertX509CertToPEM(cert);
+          resolve({ certificate, headers: res.headers });
         });
       })
       .on('error', reject);
@@ -115,6 +130,30 @@ function verifySignature(publicKey, authData) {
   }
 }
 
+function verifyPublicKeyIssuer(cert, publicKeyUrl) {
+  const publicKeyCert = pki.certificateFromPem(cert);
+  if (!ca.cert) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Apple Game Center auth adapter parameter `rootCertificateURL` is invalid.'
+    );
+  }
+  try {
+    if (!ca.cert.verify(publicKeyCert)) {
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+      );
+    }
+  } catch (e) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+    );
+  }
+  return cert;
+}
+
 // Returns a promise that fulfills if this user id is valid.
 async function validateAuthData(authData) {
   if (!authData.id) {
@@ -126,11 +165,31 @@ async function validateAuthData(authData) {
 }
 
 // Returns a promise that fulfills if this app id is valid.
-function validateAppId() {
-  return Promise.resolve();
+async function validateAppId(appIds, authData, options = {}) {
+  if (!options.rootCertificateUrl) {
+    options.rootCertificateUrl =
+      'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem';
+  }
+  if (ca.url === options.rootCertificateUrl) {
+    return;
+  }
+  const { certificate, headers } = await getCertificate(options.rootCertificateUrl, true);
+  if (
+    headers['content-type'] !== 'application/x-pem-file' ||
+    headers['content-length'] == null ||
+    headers['content-length'] > 10000
+  ) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Apple Game Center auth adapter parameter `rootCertificateURL` is invalid.'
+    );
+  }
+  ca.cert = pki.certificateFromPem(certificate);
+  ca.url = options.rootCertificateUrl;
 }
 
 module.exports = {
   validateAppId,
   validateAuthData,
+  cache,
 };
