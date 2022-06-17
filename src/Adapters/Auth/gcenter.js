@@ -133,4 +133,5 @@ function validateAppId() {
 module.exports = {
   validateAppId,
   validateAuthData,
+  cache,
 };

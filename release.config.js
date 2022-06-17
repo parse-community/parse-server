@@ -83,21 +83,21 @@ async function config() {
       ['@semantic-release/git', {
         assets: [changelogFile, 'package.json', 'package-lock.json', 'npm-shrinkwrap.json'],
       }],
+      ['@semantic-release/github', {
+        successComment: getReleaseComment(),
+        labels: ['type:ci'],
+        releasedLabels: ['state:released<%= nextRelease.channel ? `-\${nextRelease.channel}` : "" %>']
+      }],
+      // Back-merge module runs last because if it fails it should not impede the release process
       [
         "@saithodev/semantic-release-backmerge",
         {
           "branches": [
             { from: "beta", to: "alpha" },
             { from: "release", to: "beta" },
-            { from: "release", to: "alpha" },
           ]
         }
       ],
-      ['@semantic-release/github', {
-        successComment: getReleaseComment(),
-        labels: ['type:ci'],
-        releasedLabels: ['state:released<%= nextRelease.channel ? `-\${nextRelease.channel}` : "" %>']
-      }],
     ],
   };
 

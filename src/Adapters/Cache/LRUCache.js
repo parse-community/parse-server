@@ -5,7 +5,7 @@ export class LRUCache {
   constructor({ ttl = defaults.cacheTTL, maxSize = defaults.cacheMaxSize }) {
     this.cache = new LRU({
       max: maxSize,
-      maxAge: ttl,
+      ttl,
     });
   }
 

@@ -477,6 +477,34 @@ describe('AuthenticationProviders', function () {
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
   });
+
+  it('can disable provider', async () => {
+    await reconfigureServer({
+      auth: {
+        myoauth: {
+          enabled: false,
+          module: path.resolve(__dirname, 'support/myoauth'), // relative path as it's run from src
+        },
+      },
+    });
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await expectAsync(Parse.User._logInWith('myoauth')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+  });
+
+  it('can depreciate', async () => {
+    const Deprecator = require('../lib/Deprecator/Deprecator');
+    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith('myoauth');
+    expect(spy).toHaveBeenCalledWith({
+      usage: 'auth.myoauth',
+      solution: 'auth.myoauth.enabled: true',
+    });
+  });
 });
 
 describe('instagram auth adapter', () => {
@@ -1652,7 +1680,8 @@ describe('apple signin auth adapter', () => {
 
 describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
-
+  const fs = require('fs');
+  const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
   it('validateAuthData should validate', async () => {
     // real token is used
     const authData = {
@@ -1664,26 +1693,22 @@ describe('Apple Game Center Auth adapter', () => {
       salt: 'DzqqrQ==',
       bundleId: 'cloud.xtralife.gamecenterauth',
     };
-
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
     await gcenter.validateAuthData(authData);
   });
 
   it('validateAuthData invalid signature id', async () => {
     const authData = {
       id: 'G:1965586982',
-      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-6.cer',
       timestamp: 1565257031287,
       signature: '1234',
       salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
+      bundleId: 'com.example.com',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid signature');
-    }
+    await expectAsync(gcenter.validateAuthData(authData)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Apple Game Center - invalid signature')
+    );
   });
 
   it('validateAuthData invalid public key http url', async () => {
