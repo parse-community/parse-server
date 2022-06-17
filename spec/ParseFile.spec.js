@@ -625,30 +625,27 @@ describe('Parse.File testing', () => {
 
   describe('getting files', () => {
     it('can get invalid file', async () => {
-      const getFile = async () => {
-        try {
-          await request({ url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt' });
-        } catch (e) {
-          throw new Parse.Error(e.data.code, e.data.error);
-        }
-      };
-      await expectAsync(getFile()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid appId.')
-      );
-      const { status, data } = await request({ url: 'http://localhost:8378/1/health' });
-      expect(status).toEqual(200);
-      expect(data).toEqual({ status: 'ok' });
+      const res1 = await request({
+        url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
+      }).catch(e => e);
+      expect(res1.status).toBe(403);
+      expect(res1.data).toEqual({ code: 119, error: 'Invalid application ID.' });
+      // Check whether server did not crash
+      const res2 = await request({ url: 'http://localhost:8378/1/health' });
+      expect(res2.status).toEqual(200);
+      expect(res2.data).toEqual({ status: 'ok' });
     });
 
     it('can get invalid metadata', async () => {
-      const metadata = await request({
+      const res1 = await request({
         url: `http://localhost:8378/1/files/invalid-id/metadata/invalid-file.txt`,
       });
-      expect(metadata.status).toBe(200);
-      expect(metadata.data).toEqual({});
-      const { status, data } = await request({ url: 'http://localhost:8378/1/health' });
-      expect(status).toEqual(200);
-      expect(data).toEqual({ status: 'ok' });
+      expect(res1.status).toBe(200);
+      expect(res1.data).toEqual({});
+      // Check whether server did not crash
+      const res2 = await request({ url: 'http://localhost:8378/1/health' });
+      expect(res2.status).toEqual(200);
+      expect(res2.data).toEqual({ status: 'ok' });
     });
   });
 
