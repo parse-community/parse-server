@@ -16,7 +16,7 @@ export class ParseWebSocketServer {
     wss.onConnection = ws => {
       ws.waitingForPong = false;
       ws.on('pong', () => {
-        this.waitingForPong = false;
+        ws.waitingForPong = false;
       });
       ws.on('error', error => {
         logger.error(error.message);
