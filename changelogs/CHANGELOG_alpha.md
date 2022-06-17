@@ -1,3 +1,10 @@
+# [5.3.0-alpha.18](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.17...5.3.0-alpha.18) (2022-06-17)
+
+
+### Bug Fixes
+
+* auto-release process may fail if optional back-merging task fails ([#8051](https://github.com/parse-community/parse-server/issues/8051)) ([cf925e7](https://github.com/parse-community/parse-server/commit/cf925e75e87a6989f41e2e2abb2aba4332b1e79f))
+
 # [5.3.0-alpha.17](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.16...5.3.0-alpha.17) (2022-06-17)
 
 
