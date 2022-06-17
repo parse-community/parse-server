@@ -1,3 +1,10 @@
+## [4.10.12](https://github.com/parse-community/parse-server/compare/4.10.11...4.10.12) (2022-06-17)
+
+
+### Bug Fixes
+
+* invalid file request not properly handled; this fixes a security vulnerability in which an invalid file request can crash the server ([GHSA-xw6g-jjvf-wwf9](https://github.com/parse-community/parse-server/security/advisories/GHSA-xw6g-jjvf-wwf9)) ([#8059](https://github.com/parse-community/parse-server/issues/8059)) ([5f42322](https://github.com/parse-community/parse-server/commit/5f423224bda8df32affc4ed829eaddd87e4cb622))
+
 ## [4.10.11](https://github.com/parse-community/parse-server/compare/4.10.10...4.10.11) (2022-06-17)
 
 
