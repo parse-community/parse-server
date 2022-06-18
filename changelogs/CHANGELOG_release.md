@@ -1,3 +1,17 @@
+## [5.2.3](https://github.com/parse-community/parse-server/compare/5.2.2...5.2.3) (2022-06-17)
+
+
+### Bug Fixes
+
+* invalid file request not properly handled; this fixes a security vulnerability in which an invalid file request can crash the server ([GHSA-xw6g-jjvf-wwf9](https://github.com/parse-community/parse-server/security/advisories/GHSA-xw6g-jjvf-wwf9)) ([#8060](https://github.com/parse-community/parse-server/issues/8060)) ([5be375d](https://github.com/parse-community/parse-server/commit/5be375dec2fa35425c1003ae81c55995ac72af92))
+
+## [5.2.2](https://github.com/parse-community/parse-server/compare/5.2.1...5.2.2) (2022-06-17)
+
+
+### Bug Fixes
+
+* certificate in Apple Game Center auth adapter not validated; this fixes a security vulnerability in which authentication could be bypassed using a fake certificate; if you are using the Apple Gamer Center auth adapter it is your responsibility to keep its root certificate up-to-date and we advice you read the security advisory ([GHSA-rh9j-f5f8-rvgc](https://github.com/parse-community/parse-server/security/advisories/GHSA-rh9j-f5f8-rvgc)) ([ba2b0a9](https://github.com/parse-community/parse-server/commit/ba2b0a9cb9a568817a114b132a4c2e0911d76df1))
+
 ## [5.2.1](https://github.com/parse-community/parse-server/compare/5.2.0...5.2.1) (2022-05-01)
 
 
