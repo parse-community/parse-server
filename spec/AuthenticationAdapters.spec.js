@@ -1742,7 +1742,41 @@ describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
   const fs = require('fs');
   const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+
+  it('can load adapter', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+  });
+
   it('validateAuthData should validate', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
     // real token is used
     const authData = {
       id: 'G:1965586982',
@@ -1758,6 +1792,15 @@ describe('Apple Game Center Auth adapter', () => {
   });
 
   it('validateAuthData invalid signature id', async () => {
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      {}
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
     const authData = {
       id: 'G:1965586982',
       publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-6.cer',
@@ -1772,6 +1815,21 @@ describe('Apple Game Center Auth adapter', () => {
   });
 
   it('validateAuthData invalid public key http url', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
     const publicKeyUrls = [
       'example.com',
       'http://static.gc.apple.com/public-key/gc-prod-4.cer',
@@ -1796,6 +1854,78 @@ describe('Apple Game Center Auth adapter', () => {
             `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
           )
         )
+      )
+    );
+  });
+
+  it('should not validate Symantec Cert', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    expect(() =>
+      gcenter.verifyPublicKeyIssuer(
+        testCert,
+        'https://static.gc.apple.com/public-key/gc-prod-4.cer'
+      )
+    );
+  });
+
+  it('adapter should load default cert', async () => {
+    const options = {
+      gcenter: {},
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    const previous = new Date();
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+
+    const duration = new Date().getTime() - previous.getTime();
+    expect(duration).toEqual(0);
+  });
+
+  it('adapter should throw', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl: 'https://example.com',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await expectAsync(
+      adapter.validateAppId(
+        appIds,
+        { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+        providerOptions
+      )
+    ).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Apple Game Center auth adapter parameter `rootCertificateURL` is invalid.'
       )
     );
   });
@@ -2591,6 +2721,31 @@ describe('Auth Adapter features', () => {
     await user.fetch({ useMasterKey: true });
 
     expect(user.get('authData')).toEqual({ baseAdapter: { id: 'baseAdapter' } });
+  });
+
+  it('should loginWith user with auth Adapter with do not save option, mutated authData and no additional auth adapter', async () => {
+    const spy = spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: false });
+    await reconfigureServer({
+      auth: { doNotSaveAdapter, baseAdapter },
+    });
+
+    const user = new Parse.User();
+
+    await user.save({
+      authData: { doNotSaveAdapter: { id: 'doNotSaveAdapter' } },
+    });
+
+    await user.fetch({ useMasterKey: true });
+
+    expect(user.get('authData')).toEqual({ doNotSaveAdapter: { id: 'doNotSaveAdapter' } });
+
+    spy.and.resolveTo({ doNotSave: true });
+
+    const user2 = await Parse.User.logInWith('doNotSaveAdapter', {
+      authData: { id: 'doNotSaveAdapter', example: 'example' },
+    });
+    expect(user2.getSessionToken()).toBeDefined();
+    expect(user2.id).toEqual(user.id);
   });
 
   it('should perform authData validation only when its required', async () => {

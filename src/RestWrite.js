@@ -584,15 +584,18 @@ RestWrite.prototype.handleAuthData = async function (authData) {
           this.response.response.authData[provider] = mutatedAuthData[provider];
         });
 
-        // Run the DB update directly, as 'master'
-        // Just update the authData part
+        // Run the DB update directly, as 'master' only if authData contains some keys
+        // authData could not contains keys after validation if the authAdapter
+        // uses the `doNotSave` option. Just update the authData part
         // Then we're good for the user, early exit of sorts
-        await this.config.database.update(
-          this.className,
-          { objectId: this.data.objectId },
-          { authData: this.data.authData },
-          {}
-        );
+        if (Object.keys(this.data.authData).length) {
+          await this.config.database.update(
+            this.className,
+            { objectId: this.data.objectId },
+            { authData: this.data.authData },
+            {}
+          );
+        }
       }
     }
   }
