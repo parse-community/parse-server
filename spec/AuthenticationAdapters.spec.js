@@ -2723,6 +2723,31 @@ describe('Auth Adapter features', () => {
     expect(user.get('authData')).toEqual({ baseAdapter: { id: 'baseAdapter' } });
   });
 
+  it('should loginWith user with auth Adapter with do not save option, mutated authData and no additional auth adapter', async () => {
+    const spy = spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: false });
+    await reconfigureServer({
+      auth: { doNotSaveAdapter, baseAdapter },
+    });
+
+    const user = new Parse.User();
+
+    await user.save({
+      authData: { doNotSaveAdapter: { id: 'doNotSaveAdapter' } },
+    });
+
+    await user.fetch({ useMasterKey: true });
+
+    expect(user.get('authData')).toEqual({ doNotSaveAdapter: { id: 'doNotSaveAdapter' } });
+
+    spy.and.resolveTo({ doNotSave: true });
+
+    const user2 = await Parse.User.logInWith('doNotSaveAdapter', {
+      authData: { id: 'doNotSaveAdapter', example: 'example' },
+    });
+    expect(user2.getSessionToken()).toBeDefined();
+    expect(user2.id).toEqual(user.id);
+  });
+
   it('should perform authData validation only when its required', async () => {
     spyOn(baseAdapter2, 'validateAuthData').and.resolveTo({});
     spyOn(baseAdapter2, 'validateAppId').and.resolveTo({});
