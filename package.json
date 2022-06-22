@@ -27,7 +27,7 @@
     "@parse/push-adapter": "4.1.2",
     "@parse/s3-files-adapter": "1.6.2",
     "@parse/simple-mailgun-adapter": "1.1.0",
-    "apollo-server-express": "2.19.0",
+    "apollo-server-express": "3.0.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
     "commander": "5.1.0",
