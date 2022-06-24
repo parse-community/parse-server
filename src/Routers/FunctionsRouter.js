@@ -67,6 +67,7 @@ export class FunctionsRouter extends PromiseRouter {
       headers: req.config.headers,
       ip: req.config.ip,
       jobName,
+      config: req.config,
       message: jobHandler.setMessage.bind(jobHandler),
     };
 
@@ -123,6 +124,7 @@ export class FunctionsRouter extends PromiseRouter {
     params = parseParams(params);
     const request = {
       params: params,
+      config: req.config,
       master: req.auth && req.auth.isMaster,
       user: req.auth && req.auth.user,
       installationId: req.info.installationId,
