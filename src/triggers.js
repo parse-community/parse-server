@@ -260,6 +260,7 @@ export function getRequestObject(
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
+    config,
   };
 
   if (originalParseObject) {
@@ -304,6 +305,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
     headers: config.headers,
     ip: config.ip,
     context: context || {},
+    config,
   };
 
   if (!auth) {
@@ -932,6 +934,7 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
+    config,
   };
 
   if (!auth) {
