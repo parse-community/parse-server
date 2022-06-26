@@ -1066,6 +1066,52 @@ describe('ParseLiveQuery', function () {
     }
   });
 
+  it('should strip out protected fields', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['Test'] },
+      startLiveQueryServer: true,
+    });
+    const obj1 = new Parse.Object('Test');
+    obj1.set('foo', 'foo');
+    obj1.set('bar', 'bar');
+    obj1.set('qux', 'qux');
+    await obj1.save();
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'Test',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        update: { '*': true },
+        protectedFields: {
+          '*': ['foo'],
+        },
+      }
+    );
+    const object = await obj1.fetch();
+    expect(object.get('foo')).toBe(undefined);
+    expect(object.get('bar')).toBeDefined();
+    expect(object.get('qux')).toBeDefined();
+
+    const subscription = await new Parse.Query('Test').subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', (obj, original) => {
+          expect(obj.get('foo')).toBe(undefined);
+          expect(obj.get('bar')).toBeDefined();
+          expect(obj.get('qux')).toBeDefined();
+          expect(original.get('foo')).toBe(undefined);
+          expect(original.get('bar')).toBeDefined();
+          expect(original.get('qux')).toBeDefined();
+          resolve();
+        });
+      }),
+      obj1.save({ foo: 'abc' }),
+    ]);
+  });
+
   afterEach(async function (done) {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();
