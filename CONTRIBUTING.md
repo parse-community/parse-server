@@ -27,6 +27,10 @@
 - [Releasing](#releasing)
   - [General Considerations](#general-considerations)
   - [Major Release / Long-Term-Support](#major-release--long-term-support)
+  - [Preparing Release](#preparing-release)
+  - [Publishing Release (forward-merge):](#publishing-release-forward-merge)
+  - [Publishing Hotfix (back-merge):](#publishing-hotfix-back-merge)
+  - [Publishing Major Release (Yearly Release)](#publishing-major-release-yearly-release)
 - [Versioning](#versioning)
 - [Code of Conduct](#code-of-conduct)
 
@@ -385,20 +389,66 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
 
 ### General Considerations
 
-- The `package-lock.json` file has to be deleted and recreated by npm from scratch in regular intervals using the `npm i` command. It is not enough to only update the file via automated security pull requests (e.g. dependabot, snyk), that can create inconsistencies between sub-devependencies of a dependency and increase the chances of vulnerabilities. The file should be recreated once every release cycle which is usually monthly.
+- The `package-lock.json` file has to be deleted and recreated by npm from scratch in regular intervals using the `npm i` command. It is not enough to only update the file via automated security pull requests (e.g. dependabot, snyk), that can create inconsistencies between sub-dependencies of a dependency and increase the chances of vulnerabilities. The file should be recreated once every release cycle which is usually monthly.
 
 ### Major Release / Long-Term-Support
 
 Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch. 
 
-#### Preparing Release
+### Preparing Release
 
 The following changes are done in the `alpha` branch, before publishing the last `beta` version that will eventually become the major release. This way the changes trickle naturally through all branches and code consistency is ensured among branches.
 
 - Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
 - Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
 
-#### Publishing Release
+
+### Publishing Release (forward-merge):
+
+1. Create new temporary branch `build` on branch `beta`.
+2. Create PR to merge `build` into `release`:
+   - PR title: `build: release`
+   - PR description: (leave empty)
+3. Resolve any conflicts:
+   - For conflicts regarding the package version in `package.json` and `package-lock.json` it doesn't matter which version is chosen, as the version will be set by auto-release in a commit after merging. However, for both files the same version should be chosen when resolving the conflict.
+4. Merge PR with a "merge commit", do not "squash and merge":
+   - Commit message: (use PR title)
+   - Description: (leave empty)
+5. Wait for GitHub Action `release-automated` to finish:
+   - If GitHub Action fails, investigate why; manual correction may be needed.
+6. Pull all remote branches into local branches.
+7. Delete temporary branch `build`.
+8. Create new temporary branch `build` on branch `alpha`.
+9. Create PR to merge `build` into `beta`:
+   - PR title: `build: release`
+   - PR description: (leave empty)
+8. Repeat steps 3-7 for PR from step 9.
+
+### Publishing Hotfix (back-merge):
+
+1. Create PR to merge hotfix PR into `release`:
+   - Merge PR following the same rules as any PR would be merged into the working branch `alpha`.
+2. Wait for GitHub Action `release-automated` to finish:
+   - GitHub Action will fail with error `! [rejected] HEAD -> beta (non-fast-forward)`; this is expected as auto-release currently cannot fully handle back-merging; docker will not publish the new release, so this has to be done manually using the GitHub workflow `release-manual-docker` and entering the version tag that has been created by auto-release.
+3. Pull all remote branches into local branches.
+4. Create a new temporary branch `backmerge` on branch `release`.
+5. Create PR to merge `backmerge` into `beta`:
+   - PR title: `<pr-name> [skip release]` where `<pr-name>` is the PR title of step 1.
+   - PR description: (leave empty)
+6. Resolve any conflicts:
+   - During back-merging, usually all changes are preserved; current changes come from the hotfix in the `release` branch, the incoming changes come from the `beta` branch usually being ahead of the `release` branch. This makes back-merging so complex and bug-prone and is the main reason why it should be avoided if possible.
+7. Merge PR with "squash and merge", do not do a "merge commit":
+   - Commit message: (use PR title)
+   - Description: (leave empty)
+  
+   ℹ️ Merging this PR will not trigger a release; the back-merge will not appear in changelogs of the `beta`, `alpha` branches; the back-merged fix will be an undocumented change of these branches' next releases; if necessary, the change needs to be added manually to the pre-release changelogs *after* the next pre-releases.
+8. Delete temporary branch `backmerge`.
+10. Create a new temporary branch `backmerge` on branch `beta`.
+11. Repeat steps 4-8 to merge PR into `alpha`.
+
+⚠️ Long-term-support branches are excluded from the processes above and handled individually as they do not have pre-releases branches and are not considered part of the current codebase anymore. It may be necessary to significantly adapt a PR for a LTS branch due to the differences in codebase and CI tests. This adaption should be done in advance before merging any related PR, especially for security fixes, as to not publish a vulnerability while it may still take significant time to adapt the fix for the older codebase of a LTS branch.
+
+### Publishing Major Release (Yearly Release)
 
 1. Create LTS branch `release-#.x.x` off the latest version tag on `release` branch.
 2. Create temporary branch `build-release` off branch `beta` and create a pull request with `release` as the base branch.

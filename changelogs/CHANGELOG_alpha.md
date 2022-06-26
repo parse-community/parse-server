@@ -1,3 +1,32 @@
+# [5.3.0-alpha.18](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.17...5.3.0-alpha.18) (2022-06-17)
+
+
+### Bug Fixes
+
+* auto-release process may fail if optional back-merging task fails ([#8051](https://github.com/parse-community/parse-server/issues/8051)) ([cf925e7](https://github.com/parse-community/parse-server/commit/cf925e75e87a6989f41e2e2abb2aba4332b1e79f))
+
+# [5.3.0-alpha.17](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.16...5.3.0-alpha.17) (2022-06-17)
+
+
+### Bug Fixes
+
+* errors in GraphQL do not show the original error but a general `Unexpected Error` ([#8045](https://github.com/parse-community/parse-server/issues/8045)) ([0d81887](https://github.com/parse-community/parse-server/commit/0d818879c217f9c56100a5f59868fa37e6d24b71))
+* websocket connection of LiveQuery interrupts frequently ([#8048](https://github.com/parse-community/parse-server/issues/8048)) ([03caae1](https://github.com/parse-community/parse-server/commit/03caae1e611f28079cdddbbe433daaf69e3f595c))
+
+# [5.3.0-alpha.16](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.15...5.3.0-alpha.16) (2022-06-11)
+
+
+### Bug Fixes
+
+* live query role cache does not clear when a user is added to a role ([#8026](https://github.com/parse-community/parse-server/issues/8026)) ([199dfc1](https://github.com/parse-community/parse-server/commit/199dfc17226d85a78ab85f24362cce740f4ada39))
+
+# [5.3.0-alpha.15](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.14...5.3.0-alpha.15) (2022-06-05)
+
+
+### Bug Fixes
+
+* interrupted WebSocket connection not closed by LiveQuery server ([#8012](https://github.com/parse-community/parse-server/issues/8012)) ([2d5221e](https://github.com/parse-community/parse-server/commit/2d5221e48012fb7781c0406d543a922d313075ea))
+
 # [5.3.0-alpha.14](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.13...5.3.0-alpha.14) (2022-05-29)
 
 

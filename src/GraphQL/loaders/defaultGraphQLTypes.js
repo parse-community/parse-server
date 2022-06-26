@@ -1210,12 +1210,12 @@ const loadArrayResult = (parseGraphQLSchema, parseClassesArray) => {
     resolveType: value => {
       if (value.__type === 'Object' && value.className && value.objectId) {
         if (parseGraphQLSchema.parseClassTypes[value.className]) {
-          return parseGraphQLSchema.parseClassTypes[value.className].classGraphQLOutputType;
+          return parseGraphQLSchema.parseClassTypes[value.className].classGraphQLOutputType.name;
         } else {
-          return ELEMENT;
+          return ELEMENT.name;
         }
       } else {
-        return ELEMENT;
+        return ELEMENT.name;
       }
     },
   });
