@@ -123,16 +123,28 @@ const filterSensitiveData = (
   aclGroup: any[],
   auth: any,
   operation: any,
-  schema: SchemaController.SchemaController,
+  schema: SchemaController.SchemaController | any,
   className: string,
   protectedFields: null | Array<any>,
-  object: any
+  object: any,
+  query: any = {}
 ) => {
+  if (!isMaster && !Array.isArray(protectedFields)) {
+    protectedFields = new DatabaseController().addProtectedFields(
+      schema,
+      className,
+      query,
+      aclGroup,
+      auth
+    );
+  }
+
   let userId = null;
   if (auth && auth.user) userId = auth.user.id;
 
   // replace protectedFields when using pointer-permissions
-  const perms = schema.getClassLevelPermissions(className);
+  const perms =
+    schema && schema.getClassLevelPermissions ? schema.getClassLevelPermissions(className) : {};
   if (perms) {
     const isReadOperation = ['get', 'find'].indexOf(operation) > -1;
 
@@ -1430,14 +1442,17 @@ class DatabaseController {
   }
 
   addProtectedFields(
-    schema: SchemaController.SchemaController,
+    schema: SchemaController.SchemaController | any,
     className: string,
     query: any = {},
     aclGroup: any[] = [],
     auth: any = {},
     queryOptions: FullQueryOptions = {}
   ): null | string[] {
-    const perms = schema.getClassLevelPermissions(className);
+    const perms =
+      schema && schema.getClassLevelPermissions
+        ? schema.getClassLevelPermissions(className)
+        : schema;
     if (!perms) return null;
 
     const protectedFields = perms.protectedFields;
@@ -1746,3 +1761,4 @@ class DatabaseController {
 module.exports = DatabaseController;
 // Expose validateQuery for tests
 module.exports._validateQuery = validateQuery;
+module.exports.filterSensitiveData = filterSensitiveData;
