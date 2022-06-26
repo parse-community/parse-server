@@ -558,7 +558,7 @@ describe('server', () => {
     });
     const app = express();
     app.use('/parse', parseServer);
-    const httpServer = app.listen(12667, resolve);
+    const httpServer = app.listen(12667);
     expect(Parse.applicationId).toEqual('anOtherTestApp');
     expect(Parse.serverURL).toEqual('http://localhost:12667/parse');
     await new Parse.Query('AnObject').find();
