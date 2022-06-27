@@ -207,10 +207,6 @@ const transformDotFieldToComponents = fieldName => {
     if (index === 0) {
       return `"${cmpt}"`;
     }
-    if (parseInt(cmpt).toString() === cmpt) {
-      return `${cmpt}`;
-    }
-
     return `'${cmpt}'`;
   });
 };
@@ -841,7 +837,6 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     }
   }
   values = values.map(transformValue);
-
   return { pattern: patterns.join(' AND '), values, sorts };
 };
 
