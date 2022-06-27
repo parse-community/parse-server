@@ -9518,60 +9518,68 @@ describe('ParseGraphQLServer', () => {
 
         it('should support where argument on object field that contains false boolean value or 0 number value', async () => {
           try {
-            const someObjectFieldValue = {
-              foo: { bar: 'baz', qux: true, quux: 100 },
-              number: 10,
+            const someObjectFieldValue1 = {
+              foo: { bar: true, baz: 100 },
             };
 
-            const object = new Parse.Object('SomeClass');
-            await object.save({
-              someObjectField: someObjectFieldValue,
+            const someObjectFieldValue2 = {
+              foo: { bar: false, baz: 0 },
+            };
+
+            const object1 = new Parse.Object('SomeClass');
+            await object1.save({
+              someObjectField: someObjectFieldValue1,
+            });
+            const object2 = new Parse.Object('SomeClass');
+            await object2.save({
+              someObjectField: someObjectFieldValue2,
             });
 
-            const whereWithQuxFalse = {
+            const whereToObject1 = {
               someObjectField: {
-                notEqualTo: { key: 'foo.bar', value: 'bat' },
-                greaterThan: { key: 'number', value: 9 },
-                lessThan: { key: 'number', value: 11 },
-                equalTo: { key: 'foo.qux', value: false },
+                equalTo: { key: 'foo.bar', value: true },
+                notEqualTo: { key: 'foo.baz', value: 0 },
               },
             };
-            const whereWithQuxTrue = {
+            const whereToObject2 = {
               someObjectField: {
-                ...whereWithQuxFalse.someObjectField,
-                equalTo: { key: 'foo.qux', value: true },
+                notEqualTo: { key: 'foo.bar', value: true },
+                equalTo: { key: 'foo.baz', value: 0 },
               },
             };
-            const whereWithQuux0 = {
+
+            const whereToAll = {
               someObjectField: {
-                notEqualTo: { key: 'foo.bar', value: 'bat' },
-                greaterThan: { key: 'number', value: 9 },
-                lessThan: { key: 'number', value: 11 },
-                equalTo: { key: 'foo.quux', value: 0 },
+                lessThan: { key: 'foo.baz', value: 101 },
               },
             };
-            const whereWithQuux100 = {
+
+            const whereToNone = {
               someObjectField: {
-                notEqualTo: { key: 'foo.bar', value: 'bat' },
-                greaterThan: { key: 'number', value: 9 },
-                lessThan: { key: 'number', value: 11 },
-                equalTo: { key: 'foo.quux', value: 100 },
+                notEqualTo: { key: 'foo.bar', value: true },
+                equalTo: { key: 'foo.baz', value: 1 },
               },
             };
+
             const queryResult = await apolloClient.query({
               query: gql`
                 query GetSomeObject(
-                  $id: ID!
-                  $whereWithQuxFalse: SomeClassWhereInput
-                  $whereWithQuxTrue: SomeClassWhereInput
-                  $whereWithQuux0: SomeClassWhereInput
-                  $whereWithQuux100: SomeClassWhereInput
+                  $id1: ID!
+                  $id2: ID!
+                  $whereToObject1: SomeClassWhereInput
+                  $whereToObject2: SomeClassWhereInput
+                  $whereToAll: SomeClassWhereInput
+                  $whereToNone: SomeClassWhereInput
                 ) {
-                  someClass(id: $id) {
+                  obj1: someClass(id: $id1) {
                     id
                     someObjectField
                   }
-                  someClasses(where: $whereWithQuxFalse) {
+                  obj2: someClass(id: $id2) {
+                    id
+                    someObjectField
+                  }
+                  onlyObj1: someClasses(where: $whereToObject1) {
                     edges {
                       node {
                         id
@@ -9579,7 +9587,7 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  someClassesWithQuxTrue: someClasses(where: $whereWithQuxTrue) {
+                  onlyObj2: someClasses(where: $whereToObject2) {
                     edges {
                       node {
                         id
@@ -9587,7 +9595,7 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  someClassesWithQuux0: someClasses(where: $whereWithQuux0) {
+                  all: someClasses(where: $whereToAll) {
                     edges {
                       node {
                         id
@@ -9595,7 +9603,7 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  someClassesWithQuux100: someClasses(where: $whereWithQuux100) {
+                  none: someClasses(where: $whereToNone) {
                     edges {
                       node {
                         id
@@ -9606,31 +9614,27 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                id: object.id,
-                whereWithQuxFalse,
-                whereWithQuxTrue,
-                whereWithQuux0,
-                whereWithQuux100,
+                id1: object1.id,
+                id2: object2.id,
+                whereToObject1,
+                whereToObject2,
+                whereToAll,
+                whereToNone,
               },
             });
 
-            const {
-              someClass: getResult,
-              someClasses,
-              someClassesWithQuxTrue,
-              someClassesWithQuux0,
-              someClassesWithQuux100,
-            } = queryResult.data;
+            const { obj1, obj2, onlyObj1, onlyObj2, all, none } = queryResult.data;
 
-            const { someObjectField } = getResult;
-            expect(someObjectField).toEqual(someObjectFieldValue);
+            expect(obj1.someObjectField).toEqual(someObjectFieldValue1);
+            expect(obj2.someObjectField).toEqual(someObjectFieldValue2);
 
             // Checks class query results
-            expect(someClasses.edges.length).toEqual(0);
-            expect(someClassesWithQuxTrue.edges.length).toEqual(1);
-
-            expect(someClassesWithQuux0.edges.length).toEqual(0);
-            expect(someClassesWithQuux100.edges.length).toEqual(1);
+            expect(onlyObj1.edges.length).toEqual(1);
+            expect(onlyObj1.edges[0].node.someObjectField).toEqual(someObjectFieldValue1);
+            expect(onlyObj2.edges.length).toEqual(1);
+            expect(onlyObj2.edges[0].node.someObjectField).toEqual(someObjectFieldValue2);
+            expect(all.edges.length).toEqual(2);
+            expect(none.edges.length).toEqual(0);
           } catch (e) {
             handleError(e);
           }
