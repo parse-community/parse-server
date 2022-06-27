@@ -393,7 +393,7 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
 
 ### Major Release / Long-Term-Support
 
-Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch. 
+While the current major version is published on branch `release`, a Long-Term-Support (LTS) version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
 
 ### Preparing Release
 
