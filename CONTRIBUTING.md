@@ -20,6 +20,7 @@
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
 - [Pull Request](#pull-request)
+  - [Commit Message](#commit-message)
   - [Breaking Change](#breaking-change)
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
@@ -305,6 +306,8 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 
 ## Pull Request
 
+### Commit Message
+
 For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
 
 ```
@@ -393,7 +396,7 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
 
 ### Major Release / Long-Term-Support
 
-Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch. 
+While the current major version is published on branch `release`, a Long-Term-Support (LTS) version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
 
 ### Preparing Release
 
