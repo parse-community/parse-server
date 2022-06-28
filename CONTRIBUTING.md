@@ -20,6 +20,7 @@
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
 - [Pull Request](#pull-request)
+  - [Commit Message](#commit-message)
   - [Breaking Change](#breaking-change)
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
@@ -304,6 +305,8 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
 ## Pull Request
+
+### Commit Message
 
 For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
 
