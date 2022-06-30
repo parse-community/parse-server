@@ -1,3 +1,10 @@
+## [5.2.4](https://github.com/parse-community/parse-server/compare/5.2.3...5.2.4) (2022-06-30)
+
+
+### Bug Fixes
+
+* protected fields exposed via LiveQuery; this removes protected fields from the client response; this may be a breaking change if your app is currently expecting to receive these protected fields ([GHSA-crrq-vr9j-fxxh](https://github.com/parse-community/parse-server/security/advisories/GHSA-crrq-vr9j-fxxh)) (https://github.com/parse-community/parse-server/pull/8074) ([#8073](https://github.com/parse-community/parse-server/issues/8073)) ([309f64c](https://github.com/parse-community/parse-server/commit/309f64ced8700321df056fb3cc97f15007a00df1))
+
 ## [5.2.3](https://github.com/parse-community/parse-server/compare/5.2.2...5.2.3) (2022-06-17)
 
 
