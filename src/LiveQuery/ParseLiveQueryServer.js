@@ -18,7 +18,7 @@ import {
   toJSONwithObjects,
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
-import { getCacheController } from '../Controllers';
+import { getCacheController, getDatabaseController } from '../Controllers';
 import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
@@ -598,6 +598,16 @@ class ParseLiveQueryServer {
       if (!obj) {
         return;
       }
+      let protectedFields = classLevelPermissions?.protectedFields || [];
+      if (!client.hasMasterKey && !Array.isArray(protectedFields)) {
+        protectedFields = getDatabaseController(this.config).addProtectedFields(
+          classLevelPermissions,
+          res.object.className,
+          query,
+          aclGroup,
+          clientAuth
+        );
+      }
       return DatabaseController.filterSensitiveData(
         client.hasMasterKey,
         aclGroup,
@@ -605,7 +615,7 @@ class ParseLiveQueryServer {
         op,
         classLevelPermissions,
         res.object.className,
-        classLevelPermissions?.protectedFields,
+        protectedFields,
         obj,
         query
       );
