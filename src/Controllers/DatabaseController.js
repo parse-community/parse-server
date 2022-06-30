@@ -126,19 +126,8 @@ const filterSensitiveData = (
   schema: SchemaController.SchemaController | any,
   className: string,
   protectedFields: null | Array<any>,
-  object: any,
-  query: any = {}
+  object: any
 ) => {
-  if (!isMaster && !Array.isArray(protectedFields)) {
-    protectedFields = new DatabaseController().addProtectedFields(
-      schema,
-      className,
-      query,
-      aclGroup,
-      auth
-    );
-  }
-
   let userId = null;
   if (auth && auth.user) userId = auth.user.id;
 
@@ -1756,6 +1745,7 @@ class DatabaseController {
   }
 
   static _validateQuery: any => void;
+  static filterSensitiveData: (boolean, any[], any, any, any, string, any[], any) => void;
 }
 
 module.exports = DatabaseController;
