@@ -33,6 +33,9 @@ class ParseCloudCodePublisher {
     if (request.original) {
       message.originalParseObject = request.original._toFullJSON();
     }
+    if (request.classLevelPermissions) {
+      message.classLevelPermissions = request.classLevelPermissions;
+    }
     this.parsePublisher.publish(type, JSON.stringify(message));
   }
 }
