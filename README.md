@@ -42,6 +42,8 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 
 ---
 
+- [Flavors & Branches](#flavors--branches)
+  - [Long Term Support](#long-term-support)
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
@@ -89,12 +91,24 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Using automatically generated operations](#using-automatically-generated-operations)
   - [Customizing your GraphQL Schema](#customizing-your-graphql-schema)
   - [Learning more](#learning-more)
-- [Upgrading to 3.0.0](#upgrading-to-300)
-- [Want to ride the bleeding edge?](#want-to-ride-the-bleeding-edge)
+- [Upgrading to Parse Server 3.0](#upgrading-to-parse-server-30)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Sponsors](#sponsors)
 - [Backers](#backers)
+
+# Flavors & Branches
+
+Parse Server is available in different flavors on different branches:
+
+- The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
+- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-4.x.x`. LTS branches do not have pre-release branches.
+
+## Long Term Support
+
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
+
+⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-4.x.x) to see the current open vulnerabilities for that LTS branch.
 
 # Getting Started
 
@@ -1104,37 +1118,15 @@ You also have a very powerful tool inside your GraphQL Playground. Please look a
 
 Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to learn more about the power of the GraphQL language.
 
-# Upgrading to 3.0.0
+# Upgrading to Parse Server 3.0
 
-Starting 3.0.0, parse-server uses the JS SDK version 2.0.
-In short, parse SDK v2.0 removes the backbone style callbacks as well as the Parse.Promise object in favor of native promises.
-All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
+Starting Parse Server 3.0, Parse Server uses the Parse JavaScript SDK 2.0. In short, the Parse JavaScript SDK 2.0 removes the backbone style callbacks as well as the `Parse.Promise` object in favor of native promises. All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by promise style resolution.
 
-We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
-
-# Want to ride the bleeding edge?
-
-It is recommend to use builds deployed npm for many reasons, but if you want to use
-the latest not-yet-released version of parse-server, you can do so by depending
-directly on this branch:
-
-```
-npm install parse-community/parse-server.git#master
-```
-
-## Experimenting <!-- omit in toc -->
-
-You can also use your own forks, and work in progress branches by specifying them:
-
-```
-npm install github:myUsername/parse-server#my-awesome-feature
-```
-
-And don't forget, if you plan to deploy it remotely, you should run `npm install` with the `--save` option.
+We have written up a [migration guide](3.0.0.md) to help you transition to the next major release.
 
 # Contributing
 
-We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
+Please see the [Contributing Guide](CONTRIBUTING.md).
 
 # Contributors
 
@@ -1190,3 +1182,6 @@ As of April 5, 2017, Parse, LLC has transferred this code to the parse-community
 [license-svg]: https://img.shields.io/badge/license-BSD-lightgrey.svg
 [license-link]: LICENSE
 [open-collective-link]: https://opencollective.com/parse-server
+[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
+[log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
+[log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
