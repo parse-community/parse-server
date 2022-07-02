@@ -521,7 +521,7 @@ export class UsersRouter extends ClassesRouter {
       if (user) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          'You cant provide username/email and authData, only use one identification method.'
+          'You cannot provide username/email and authData, only use one identification method.'
         );
       }
 
