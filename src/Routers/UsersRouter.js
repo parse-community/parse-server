@@ -528,7 +528,7 @@ export class UsersRouter extends ClassesRouter {
       if (Object.keys(authData).filter(key => authData[key].id).length > 1) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          'You cant provide more than one authData provider with an id.'
+          'You cannot provide more than one authData provider with an id.'
         );
       }
 
