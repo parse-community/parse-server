@@ -108,7 +108,7 @@ const transformQueryConstraintInputToParse = (
      *      }
      *   }
      */
-    if (fieldValue.key && fieldValue.value && parentConstraints && parentFieldName) {
+    if (fieldValue.key && fieldValue.value !== undefined && parentConstraints && parentFieldName) {
       delete parentConstraints[parentFieldName];
       parentConstraints[`${parentFieldName}.${fieldValue.key}`] = {
         ...parentConstraints[`${parentFieldName}.${fieldValue.key}`],
