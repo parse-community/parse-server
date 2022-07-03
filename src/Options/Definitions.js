@@ -164,7 +164,7 @@ module.exports.ParseServerOptions = {
   disableCaseInsensitivity: {
     env: 'PARSE_SERVER_DISABLE_DEFAULT_CASE_INSENSITIVITY',
     help:
-      'Disable case insensitivity (collation) on queries and indexes, needed if the you use mongodb serverless',
+      'Disable case insensitivity (collation) on queries and indexes, required for serverless deployments',
     action: parsers.booleanParser,
   },
   dotNetKey: {
