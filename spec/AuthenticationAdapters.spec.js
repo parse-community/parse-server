@@ -3254,7 +3254,7 @@ describe('Auth Adapter features', () => {
         }),
       })
     ).toBeRejectedWithError(
-      'You cant provide username/email and authData, only use one identification method.'
+      'You cannot provide username/email and authData, only use one identification method.'
     );
 
     const res = await request({
@@ -3338,7 +3338,7 @@ describe('Auth Adapter features', () => {
           },
         }),
       })
-    ).toBeRejectedWithError('You cant provide more than one authData provider with an id.');
+    ).toBeRejectedWithError('You cannot provide more than one authData provider with an id.');
 
     const res = await request({
       headers: headers,
