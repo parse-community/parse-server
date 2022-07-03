@@ -62,11 +62,24 @@ const providers = {
   ldap,
 };
 
+// Indexed auth policies
+const authAdapterPolicies = {
+  default: true,
+  solo: true,
+  additional: true,
+};
+
 function authDataValidator(provider, adapter, appIds, options) {
   return async function (authData, req, user, requestObject) {
     if (appIds && typeof adapter.validateAppId === 'function') {
       await Promise.resolve(
         adapter.validateAppId(appIds, authData, options, requestObject, req.config)
+      );
+    }
+    if (adapter.policy && !authAdapterPolicies[adapter.policy]) {
+      throw new Parse.Error(
+        Parse.Error.OTHER_CAUSE,
+        'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
       );
     }
     if (typeof adapter.validateAuthData === 'function') {

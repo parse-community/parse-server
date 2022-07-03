@@ -2696,6 +2696,21 @@ describe('Auth Adapter features', () => {
     );
   });
 
+  it('should throw if policy does not match one of default/solo/additional', async () => {
+    const adapterWithBadPolicy = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+      policy: 'bad',
+    };
+    await reconfigureServer({ auth: { adapterWithBadPolicy } });
+    const user = new Parse.User();
+    await expectAsync(
+      user.save({ authData: { adapterWithBadPolicy: { id: 'adapterWithBadPolicy' } } })
+    ).toBeRejectedWithError(
+      'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
+    );
+  });
+
   it('should throw if no triggers found', async () => {
     await reconfigureServer({ auth: { wrongAdapter } });
     const user = new Parse.User();
