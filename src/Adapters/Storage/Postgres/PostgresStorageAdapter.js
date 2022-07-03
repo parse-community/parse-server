@@ -91,6 +91,22 @@ const toPostgresValue = value => {
   return value;
 };
 
+const toPostgresValueCastType = value => {
+  const postgresValue = toPostgresValue(value);
+  let castType;
+  switch (typeof postgresValue) {
+    case 'number':
+      castType = 'double precision';
+      break;
+    case 'boolean':
+      castType = 'boolean';
+      break;
+    default:
+      castType = undefined;
+  }
+  return castType;
+};
+
 const transformValue = value => {
   if (typeof value === 'object' && value.__type === 'Pointer') {
     return value.objectId;
@@ -369,9 +385,12 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             );
           } else {
             if (fieldName.indexOf('.') >= 0) {
-              const constraintFieldName = transformDotField(fieldName);
+              const castType = toPostgresValueCastType(fieldValue.$ne);
+              const constraintFieldName = castType
+                ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+                : transformDotField(fieldName);
               patterns.push(
-                `(${constraintFieldName} <> $${index} OR ${constraintFieldName} IS NULL)`
+                `(${constraintFieldName} <> $${index + 1} OR ${constraintFieldName} IS NULL)`
               );
             } else if (typeof fieldValue.$ne === 'object' && fieldValue.$ne.$relativeTime) {
               throw new Parse.Error(
@@ -401,8 +420,12 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         index += 1;
       } else {
         if (fieldName.indexOf('.') >= 0) {
+          const castType = toPostgresValueCastType(fieldValue.$eq);
+          const constraintFieldName = castType
+            ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+            : transformDotField(fieldName);
           values.push(fieldValue.$eq);
-          patterns.push(`${transformDotField(fieldName)} = $${index++}`);
+          patterns.push(`${constraintFieldName} = $${index++}`);
         } else if (typeof fieldValue.$eq === 'object' && fieldValue.$eq.$relativeTime) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
@@ -771,20 +794,11 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp] || fieldValue[cmp] === 0) {
         const pgComparator = ParseToPosgresComparator[cmp];
-        let postgresValue = toPostgresValue(fieldValue[cmp]);
         let constraintFieldName;
+        let postgresValue = toPostgresValue(fieldValue[cmp]);
+
         if (fieldName.indexOf('.') >= 0) {
-          let castType;
-          switch (typeof postgresValue) {
-            case 'number':
-              castType = 'double precision';
-              break;
-            case 'boolean':
-              castType = 'boolean';
-              break;
-            default:
-              castType = undefined;
-          }
+          const castType = toPostgresValueCastType(fieldValue[cmp]);
           constraintFieldName = castType
             ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
             : transformDotField(fieldName);
