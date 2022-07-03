@@ -365,7 +365,9 @@ const maybeTransformUsernameAndEmailToLowerCase = (object, className, options) =
   if (className === '_User' && options.forceEmailAndUsernameToLowerCase) {
     const toLowerCaseFields = ['email', 'username'];
     toLowerCaseFields.forEach(key => {
-      if (typeof object[key] === 'string') object[key] = object[key].toLowerCase();
+      if (typeof object[key] === 'string') {
+        object[key] = object[key].toLowerCase();
+      }
     });
   }
 };
