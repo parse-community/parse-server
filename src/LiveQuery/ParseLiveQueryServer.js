@@ -18,9 +18,10 @@ import {
   toJSONwithObjects,
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
-import { getCacheController } from '../Controllers';
+import { getCacheController, getDatabaseController } from '../Controllers';
 import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
+import DatabaseController from '../Controllers/DatabaseController';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -196,14 +197,14 @@ class ParseLiveQueryServer {
             if (res.object && typeof res.object.toJSON === 'function') {
               deletedParseObject = toJSONwithObjects(res.object, res.object.className || className);
             }
-            if (
-              (deletedParseObject.className === '_User' ||
-                deletedParseObject.className === '_Session') &&
-              !client.hasMasterKey
-            ) {
-              delete deletedParseObject.sessionToken;
-              delete deletedParseObject.authData;
-            }
+            await this._filterSensitiveData(
+              classLevelPermissions,
+              res,
+              client,
+              requestId,
+              op,
+              subscription.query
+            );
             client.pushDelete(requestId, deletedParseObject);
           } catch (e) {
             const error = resolveError(e);
@@ -350,16 +351,14 @@ class ParseLiveQueryServer {
                 res.original.className || className
               );
             }
-            if (
-              (currentParseObject.className === '_User' ||
-                currentParseObject.className === '_Session') &&
-              !client.hasMasterKey
-            ) {
-              delete currentParseObject.sessionToken;
-              delete originalParseObject?.sessionToken;
-              delete currentParseObject.authData;
-              delete originalParseObject?.authData;
-            }
+            await this._filterSensitiveData(
+              classLevelPermissions,
+              res,
+              client,
+              requestId,
+              op,
+              subscription.query
+            );
             const functionName = 'push' + res.event.charAt(0).toUpperCase() + res.event.slice(1);
             if (client[functionName]) {
               client[functionName](requestId, currentParseObject, originalParseObject);
@@ -575,6 +574,54 @@ class ParseLiveQueryServer {
     // var rolesQuery = new Parse.Query(Parse.Role);
     // rolesQuery.equalTo("users", user);
     // return rolesQuery.find({useMasterKey:true});
+  }
+
+  async _filterSensitiveData(
+    classLevelPermissions: ?any,
+    res: any,
+    client: any,
+    requestId: number,
+    op: string,
+    query: any
+  ) {
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    const aclGroup = ['*'];
+    let clientAuth;
+    if (typeof subscriptionInfo !== 'undefined') {
+      const { userId, auth } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      if (userId) {
+        aclGroup.push(userId);
+      }
+      clientAuth = auth;
+    }
+    const filter = obj => {
+      if (!obj) {
+        return;
+      }
+      let protectedFields = classLevelPermissions?.protectedFields || [];
+      if (!client.hasMasterKey && !Array.isArray(protectedFields)) {
+        protectedFields = getDatabaseController(this.config).addProtectedFields(
+          classLevelPermissions,
+          res.object.className,
+          query,
+          aclGroup,
+          clientAuth
+        );
+      }
+      return DatabaseController.filterSensitiveData(
+        client.hasMasterKey,
+        aclGroup,
+        clientAuth,
+        op,
+        classLevelPermissions,
+        res.object.className,
+        protectedFields,
+        obj,
+        query
+      );
+    };
+    res.object = filter(res.object);
+    res.original = filter(res.original);
   }
 
   _getCLPOperation(query: any) {
