@@ -2,11 +2,81 @@ import defaults from '../../../defaults';
 import OracleSchemaCollection from './OracleSchemaCollection';
 import OracleCollection from './OracleCollection';
 import { StorageAdapter } from '../StorageAdapter';
-import type { StorageClass } from '../StorageAdapter';
+import type { SchemaType, StorageClass } from '../StorageAdapter';
 import Parse from 'parse/node';
+import marklog from '../../../marklog';
 
 const oracledb = require('oracledb');
 const OracleSchemaCollectionName = '_SCHEMA';
+
+const convertParseSchemaToOracleSchema = ({ ...schema }) => {
+  delete schema.fields._rperm;
+  delete schema.fields._wperm;
+
+  if (schema.className === '_User') {
+    // Legacy mongo adapter knows about the difference between password and _hashed_password.
+    // Future database adapters will only know about _hashed_password.
+    // Note: Parse Server will bring back password with injectDefaultSchema, so we don't need
+    // to add _hashed_password back ever.
+    delete schema.fields._hashed_password;
+  }
+
+  return schema;
+};
+
+// Returns { code, error } if invalid, or { result }, an object
+// suitable for inserting into _SCHEMA collection, otherwise.
+const oracleSchemaFromFieldsAndClassNameAndCLP = (
+  fields,
+  className,
+  classLevelPermissions,
+  indexes
+) => {
+  marklog('enter oracleSchemaFromFieldsAndClassNameAndCLP');
+  const oracleObject = {
+    _id: className,
+    objectId: 'string',
+    updatedAt: 'string',
+    createdAt: 'string',
+    _metadata: undefined,
+  };
+
+  for (const fieldName in fields) {
+    const { type, targetClass, ...fieldOptions } = fields[fieldName];
+    marklog('about to call parseFieldTypeToOracleFieldType(' + type + ', ' + targetClass + ')');
+    oracleObject[fieldName] = OracleSchemaCollection.parseFieldTypeToOracleFieldType({
+      type,
+      targetClass,
+    });
+    marklog('back from parseFieldTypeToOracleFieldType');
+    if (fieldOptions && Object.keys(fieldOptions).length > 0) {
+      oracleObject._metadata = oracleObject._metadata || {};
+      oracleObject._metadata.fields_options = oracleObject._metadata.fields_options || {};
+      oracleObject._metadata.fields_options[fieldName] = fieldOptions;
+    }
+  }
+
+  if (typeof classLevelPermissions !== 'undefined') {
+    oracleObject._metadata = oracleObject._metadata || {};
+    if (!classLevelPermissions) {
+      delete oracleObject._metadata.class_permissions;
+    } else {
+      oracleObject._metadata.class_permissions = classLevelPermissions;
+    }
+  }
+
+  if (indexes && typeof indexes === 'object' && Object.keys(indexes).length > 0) {
+    oracleObject._metadata = oracleObject._metadata || {};
+    oracleObject._metadata.indexes = indexes;
+  }
+
+  if (!oracleObject._metadata) {
+    // cleanup the unused _metadata
+    delete oracleObject._metadata;
+  }
+
+  return oracleObject;
+};
 
 export class OracleStorageAdapter implements StorageAdapter {
   // private
@@ -41,7 +111,7 @@ export class OracleStorageAdapter implements StorageAdapter {
   }
 
   async _adaptiveCollection(name: string) {
-    console.log('MARK: _adaptiveCollection(' + name + ')');
+    marklog('_adaptiveCollection(' + name + ')');
     let soda;
     let collection;
     await this.connect() // promise<pool>
@@ -76,7 +146,7 @@ export class OracleStorageAdapter implements StorageAdapter {
         .catch(err => this.handleError(err));
     }
 
-    console.log('MARK: collection = ' + JSON.stringify(collection));
+    marklog('collection = ' + JSON.stringify(collection));
     return collection;
   }
 
@@ -116,7 +186,25 @@ export class OracleStorageAdapter implements StorageAdapter {
 
   // classExists(className: string): Promise<boolean>;
   // setClassLevelPermissions(className: string, clps: any): Promise<void>;
-  // createClass(className: string, schema: SchemaType): Promise<void>;
+
+  createClass(className: string, schema: SchemaType): Promise<void> {
+    marklog('entered createClass');
+    schema = convertParseSchemaToOracleSchema(schema);
+    marklog('got schema');
+    const oracleObject = oracleSchemaFromFieldsAndClassNameAndCLP(
+      schema.fields,
+      className,
+      schema.classLevelPermissions,
+      schema.indexes
+    );
+    marklog('got oracleObject');
+    oracleObject._id = className;
+    return this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields)
+      .then(() => this._schemaCollection())
+      .then(schemaCollection => schemaCollection.insertSchema(oracleObject))
+      .catch(err => this.handleError(err));
+  }
+
   // addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void>;
   // updateFieldOptions(className: string, fieldName: string, type: any): Promise<void>;
   // deleteClass(className: string): Promise<void>;

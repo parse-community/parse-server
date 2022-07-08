@@ -29,6 +29,7 @@ import type {
   SchemaField,
   LoadSchemaOptions,
 } from './types';
+import marklog from '../marklog';
 
 const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -158,7 +159,7 @@ const requiredColumns = Object.freeze({
   write: {
     _Product: ['productIdentifier', 'icon', 'order', 'title', 'subtitle'],
     _Role: ['name', 'ACL'],
-  }
+  },
 });
 
 const invalidColumns = ['length'];
@@ -503,6 +504,7 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
 };
 
 const convertSchemaToAdapterSchema = (schema: any) => {
+  marklog('entered convertSchemaToAdapterSchema()');
   schema = injectDefaultSchema(schema);
   delete schema.fields.ACL;
   schema.fields._rperm = { type: 'Array' };
@@ -513,6 +515,7 @@ const convertSchemaToAdapterSchema = (schema: any) => {
     schema.fields._hashed_password = { type: 'String' };
   }
 
+  marklog('returning from convertSchemaToAdapterSchema()');
   return schema;
 };
 
@@ -710,6 +713,7 @@ export default class SchemaController {
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
+    marklog('entereed reLoadData and options = ' + JSON.stringify(options));
     if (this.reloadDataPromise && !options.clearCache) {
       return this.reloadDataPromise;
     }
@@ -793,6 +797,7 @@ export default class SchemaController {
     classLevelPermissions: any,
     indexes: any = {}
   ): Promise<void | Schema> {
+    marklog('enter addClassIfNotExists');
     var validationError = this.validateNewClass(className, fields, classLevelPermissions);
     if (validationError) {
       if (validationError instanceof Parse.Error) {
@@ -803,6 +808,7 @@ export default class SchemaController {
       return Promise.reject(validationError);
     }
     try {
+      marklog('about to call createClass');
       const adapterSchema = await this._dbAdapter.createClass(
         className,
         convertSchemaToAdapterSchema({
@@ -813,10 +819,14 @@ export default class SchemaController {
         })
       );
       // TODO: Remove by updating schema cache directly
+      marklog('about to call reloadData()');
       await this.reloadData({ clearCache: true });
+      marklog('about to call convertAdapterSchemaToParseSchema()');
       const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
       return parseSchema;
     } catch (error) {
+      marklog('in error block');
+      marklog('error = ' + JSON.stringify(error));
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
       } else {
@@ -950,6 +960,9 @@ export default class SchemaController {
           return this.reloadData({ clearCache: true });
         })
         .then(() => {
+          marklog('this.schemaData = ' + JSON.stringify(this.schemaData));
+          marklog('className = ' + className);
+          marklog('this.schemaData[className] = ' + this.schemaData[className]);
           // Ensure that the schema now validates
           if (this.schemaData[className]) {
             return this;

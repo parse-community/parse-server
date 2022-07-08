@@ -20,6 +20,7 @@ import SchemaCache from '../Adapters/Cache/SchemaCache';
 import type { LoadSchemaOptions } from './types';
 import type { ParseServerOptions } from '../Options';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
+import marklog from '../marklog';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -405,6 +406,9 @@ class DatabaseController {
     if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
+    marklog('about to call SchemaController.Load');
+    marklog('this.adapter = ' + JSON.stringify(this.adapter));
+    marklog('options = ' + JSON.stringify(options));
     this.schemaPromise = SchemaController.load(this.adapter, options);
     this.schemaPromise.then(
       () => delete this.schemaPromise,
@@ -1683,6 +1687,7 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
+    marklog('about to load schemas');
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));

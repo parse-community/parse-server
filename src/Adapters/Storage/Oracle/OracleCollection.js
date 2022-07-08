@@ -1,3 +1,5 @@
+import marklog from '../../../marklog';
+
 const oracledb = require('oracledb');
 const Collection = oracledb.SodaCollection;
 
@@ -70,27 +72,46 @@ export default class OracleCollection {
     query,
     { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
   ) {
-    console.log('MARK _rawFind: collection = ' + JSON.stringify(this._oracleCollection));
-    let findOperation = this._oracleCollection.find(query, {
-      skip,
-      limit,
-      sort,
-      readPreference,
-      hint,
-    });
+    marklog('_rawFind: collection = ' + JSON.stringify(this._oracleCollection));
+    marklog('query = ' + JSON.stringify(query));
+    marklog('limit = ' + limit);
+    // use these so the linter will not complain - until i actually use them properly
+    marklog('TODO: not using these: ' + sort, maxTimeMS, readPreference, caseInsensitive, explain);
+    let findOperation = this._oracleCollection.find().filter(query);
+
+    if (skip) {
+      findOperation = findOperation.skip(Number(skip));
+    }
+
+    if (limit) {
+      findOperation = findOperation.limit(Number(limit));
+    }
+
+    if (hint) {
+      findOperation = findOperation.hint(String(hint));
+    }
+    // TODO need to handle sort and readPreference
+    // let findOperation = this._oracleCollection.find(query, {
+    //   skip,
+    //   limit,
+    //   sort,
+    //   readPreference,
+    //   hint,
+    // });
 
     if (keys) {
-      findOperation = findOperation.project(keys);
+      findOperation = findOperation.keys(keys);
     }
 
-    if (caseInsensitive) {
-      findOperation = findOperation.collation(OracleCollection.caseInsensitiveCollation());
-    }
+    // if (caseInsensitive) {
+    //   findOperation = findOperation.collation(OracleCollection.caseInsensitiveCollation());
+    // }
 
-    if (maxTimeMS) {
-      findOperation = findOperation.maxTimeMS(maxTimeMS);
-    }
+    // if (maxTimeMS) {
+    //   findOperation = findOperation.maxTimeMS(maxTimeMS);
+    // }
 
-    return explain ? findOperation.explain(explain) : findOperation.toArray();
+    return findOperation.getDocuments();
+    //return explain ? findOperation.explain(explain) : findOperation.toArray();
   }
 }

@@ -60,6 +60,37 @@ function oracleFieldToParseSchemaField(type) {
   }
 }
 
+// Returns a type suitable for inserting into mongo _SCHEMA collection.
+// Does no validation. That is expected to be done in Parse Server.
+function parseFieldTypeToOracleFieldType({ type, targetClass }) {
+  switch (type) {
+    case 'Pointer':
+      return `*${targetClass}`;
+    case 'Relation':
+      return `relation<${targetClass}>`;
+    case 'Number':
+      return 'number';
+    case 'String':
+      return 'string';
+    case 'Boolean':
+      return 'boolean';
+    case 'Date':
+      return 'date';
+    case 'Object':
+      return 'object';
+    case 'Array':
+      return 'array';
+    case 'GeoPoint':
+      return 'geopoint';
+    case 'File':
+      return 'file';
+    case 'Bytes':
+      return 'bytes';
+    case 'Polygon':
+      return 'polygon';
+  }
+}
+
 const nonFieldSchemaKeys = ['_id', '_metadata', '_client_permissions'];
 function oracleSchemaFieldsToParseSchemaFields(schema) {
   var fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
@@ -115,5 +146,7 @@ class OracleSchemaCollection {
     return this._collection._rawFind({}).then(schemas => schemas.map(oracleSchemaToParseSchema));
   }
 }
+
+OracleSchemaCollection.parseFieldTypeToOracleFieldType = parseFieldTypeToOracleFieldType;
 
 export default OracleSchemaCollection;
