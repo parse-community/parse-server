@@ -131,18 +131,30 @@ export default class OracleCollection {
 
   _ensureSparseUniqueIndexInBackground(indexRequest) {
     // TODO rewrite params to suit oracle soda
+    marklog(
+      'entered _ensureSparseUniqueIndexInBackground with indexRequest = ' +
+        JSON.stringify(indexRequest)
+    );
+    if (Object.keys(indexRequest).length !== 1) {
+      // TODO make this less brittle
+      return null;
+    }
+    const fieldName = Object.keys(indexRequest)[0];
+    const maxLength = indexRequest[Object.keys(indexRequest)[0]];
+    const request = {
+      name: 'index_' + Object.keys(indexRequest)[0],
+      fields: [{ path: fieldName, maxlength: maxLength }],
+      unique: true,
+    };
+    marklog('request = ' + JSON.stringify(request));
     return new Promise((resolve, reject) => {
-      this._oracleCollection.createIndex(
-        indexRequest,
-        { unique: true, background: true, sparse: true },
-        error => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve();
-          }
+      this._oracleCollection.createIndex(request, error => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
         }
-      );
+      });
     });
   }
 }
