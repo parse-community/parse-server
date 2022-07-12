@@ -5,6 +5,7 @@ import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, StorageClass } from '../StorageAdapter';
 import Parse from 'parse/node';
 import marklog from '../../../marklog';
+import { transformKey } from './OracleTransform';
 
 const oracledb = require('oracledb');
 const OracleSchemaCollectionName = '_SCHEMA';
@@ -270,6 +271,36 @@ export class OracleStorageAdapter implements StorageAdapter {
   //   options?: Object
   // ): Promise<any>;
   // ensureUniqueness(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void>;
+
+  // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
+  // currently know which fields are nullable and which aren't, we ignore that criteria.
+  // As such, we shouldn't expose this function to users of parse until we have an out-of-band
+  // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
+  // which is why we use sparse indexes.
+  ensureUniqueness(className: string, schema: SchemaType, fieldNames: string[]) {
+    schema = convertParseSchemaToOracleSchema(schema);
+    const indexCreationRequest = {};
+    const oracleFieldNames = fieldNames.map(fieldName =>
+      transformKey(className, fieldName, schema)
+    );
+    oracleFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = 1;
+    });
+    return this._adaptiveCollection(className)
+      .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
+      .catch(error => {
+        if (error.code === 11000) {
+          // TODO change to oracle error
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'Tried to ensure field uniqueness for a class that already has duplicates.'
+          );
+        }
+        throw error;
+      })
+      .catch(err => this.handleError(err));
+  }
+
   // count(
   //   className: string,
   //   schema: SchemaType,

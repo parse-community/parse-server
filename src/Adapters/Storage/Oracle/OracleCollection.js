@@ -128,4 +128,21 @@ export default class OracleCollection {
       .insertOne(object)
       .catch(error => marklog('insertOne got error ' + error));
   }
+
+  _ensureSparseUniqueIndexInBackground(indexRequest) {
+    // TODO rewrite params to suit oracle soda
+    return new Promise((resolve, reject) => {
+      this._oracleCollection.createIndex(
+        indexRequest,
+        { unique: true, background: true, sparse: true },
+        error => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        }
+      );
+    });
+  }
 }
