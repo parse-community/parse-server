@@ -741,13 +741,19 @@ export default class SchemaController {
   }
 
   getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
+    marklog('entered getAllClasses');
     if (options.clearCache) {
+      marklog('clearCache=true so reloading');
       return this.setAllClasses();
     }
+    marklog('getting cached schemas');
     const cached = SchemaCache.all();
+    marklog('cached = ' + JSON.stringify(cached));
     if (cached && cached.length) {
+      marklog('returning from inside the if');
       return Promise.resolve(cached);
     }
+    marklog('returning from end of block');
     return this.setAllClasses();
   }
 
@@ -756,9 +762,10 @@ export default class SchemaController {
       .getAllClasses()
       .then(allSchemas => {
         marklog('allSchemas is ' + JSON.stringify(allSchemas));
-        allSchemas.map(injectDefaultSchema);
+        return allSchemas.map(injectDefaultSchema);
       })
       .then(allSchemas => {
+        marklog('second allSchemas is ' + JSON.stringify(allSchemas));
         SchemaCache.put(allSchemas);
         return allSchemas;
       });

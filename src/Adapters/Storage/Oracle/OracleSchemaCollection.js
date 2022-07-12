@@ -143,11 +143,13 @@ class OracleSchemaCollection {
     this._collection = collection;
   }
 
-  _fetchAllSchemasFrom_SCHEMA() {
-    return this._collection._rawFind({}).then(schemas => {
-      //marklog("schemas = " + JSON.stringify(schemas))
-      schemas.map(oracleSchemaToParseSchema);
+  async _fetchAllSchemasFrom_SCHEMA() {
+    let theSchemas;
+    await this._collection._rawFind({}).then(schemas => {
+      marklog('schemas = ' + JSON.stringify(schemas));
+      theSchemas = schemas.map(oracleSchemaToParseSchema);
     });
+    return theSchemas;
   }
 
   insertSchema(schema: any) {
