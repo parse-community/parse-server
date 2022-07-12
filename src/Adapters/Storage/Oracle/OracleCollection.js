@@ -1,6 +1,7 @@
 import marklog from '../../../marklog';
 
 const oracledb = require('oracledb');
+oracledb.autoCommit = true;
 const Collection = oracledb.SodaCollection;
 
 export default class OracleCollection {
@@ -113,5 +114,12 @@ export default class OracleCollection {
 
     return findOperation.getDocuments();
     //return explain ? findOperation.explain(explain) : findOperation.toArray();
+  }
+
+  insertOne(object) {
+    marklog('entered insertOne');
+    return this._oracleCollection
+      .insertOne(object)
+      .catch(error => marklog('insertOne got error ' + error));
   }
 }

@@ -1,3 +1,4 @@
+import marklog from '../../../marklog';
 import OracleCollection from './OracleCollection';
 
 const emptyCLPS = Object.freeze({
@@ -144,6 +145,20 @@ class OracleSchemaCollection {
 
   _fetchAllSchemasFrom_SCHEMA() {
     return this._collection._rawFind({}).then(schemas => schemas.map(oracleSchemaToParseSchema));
+  }
+
+  insertSchema(schema: any) {
+    marklog('entered insertSchema for ' + JSON.stringify(schema));
+    return this._collection
+      .insertOne(schema)
+      .then(() => {
+        //marklog("in the then block");
+        oracleSchemaToParseSchema(schema);
+      })
+      .catch(error => {
+        marklog('got error ' + error);
+        throw error;
+      });
   }
 }
 

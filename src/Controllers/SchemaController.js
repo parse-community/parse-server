@@ -713,7 +713,7 @@ export default class SchemaController {
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
-    marklog('entereed reLoadData and options = ' + JSON.stringify(options));
+    marklog('entered reLoadData and options = ' + JSON.stringify(options));
     if (this.reloadDataPromise && !options.clearCache) {
       return this.reloadDataPromise;
     }

@@ -43,12 +43,12 @@ const oracleSchemaFromFieldsAndClassNameAndCLP = (
 
   for (const fieldName in fields) {
     const { type, targetClass, ...fieldOptions } = fields[fieldName];
-    marklog('about to call parseFieldTypeToOracleFieldType(' + type + ', ' + targetClass + ')');
+    //marklog('about to call parseFieldTypeToOracleFieldType(' + type + ', ' + targetClass + ')');
     oracleObject[fieldName] = OracleSchemaCollection.parseFieldTypeToOracleFieldType({
       type,
       targetClass,
     });
-    marklog('back from parseFieldTypeToOracleFieldType');
+    //marklog('back from parseFieldTypeToOracleFieldType');
     if (fieldOptions && Object.keys(fieldOptions).length > 0) {
       oracleObject._metadata = oracleObject._metadata || {};
       oracleObject._metadata.fields_options = oracleObject._metadata.fields_options || {};
@@ -304,13 +304,72 @@ export class OracleStorageAdapter implements StorageAdapter {
   // createIndexes(className: string, indexes: any, conn: ?any): Promise<void>;
   // getIndexes(className: string, connection: ?any): Promise<void>;
   // updateSchemaWithIndexes(): Promise<void>;
-  // setIndexesWithSchemaFormat(
-  //   className: string,
-  //   submittedIndexes: any,
-  //   existingIndexes: any,
-  //   fields: any,
-  //   conn: ?any
-  // ): Promise<void>;
+
+  setIndexesWithSchemaFormat(
+    className: string,
+    submittedIndexes: any,
+    existingIndexes: any = {},
+    fields: any
+  ): Promise<void> {
+    if (submittedIndexes === undefined) {
+      return Promise.resolve();
+    }
+    if (Object.keys(existingIndexes).length === 0) {
+      existingIndexes = { _id_: { _id: 1 } };
+    }
+    const deletePromises = [];
+    const insertedIndexes = [];
+    Object.keys(submittedIndexes).forEach(name => {
+      const field = submittedIndexes[name];
+      if (existingIndexes[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+      }
+      if (!existingIndexes[name] && field.__op === 'Delete') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          `Index ${name} does not exist, cannot delete.`
+        );
+      }
+      if (field.__op === 'Delete') {
+        const promise = this.dropIndex(className, name);
+        deletePromises.push(promise);
+        delete existingIndexes[name];
+      } else {
+        Object.keys(field).forEach(key => {
+          if (
+            !Object.prototype.hasOwnProperty.call(
+              fields,
+              key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
+            )
+          ) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_QUERY,
+              `Field ${key} does not exist, cannot add index.`
+            );
+          }
+        });
+        existingIndexes[name] = field;
+        insertedIndexes.push({
+          key: field,
+          name,
+        });
+      }
+    });
+    let insertPromise = Promise.resolve();
+    if (insertedIndexes.length > 0) {
+      insertPromise = this.createIndexes(className, insertedIndexes);
+    }
+    return Promise.all(deletePromises)
+      .then(() => insertPromise)
+      .then(() => this._schemaCollection())
+      .then(schemaCollection =>
+        schemaCollection.updateSchema(className, {
+          $set: { '_metadata.indexes': existingIndexes },
+        })
+      )
+      .catch(err => this.handleError(err));
+  }
+
   // createTransactionalSession(): Promise<any>;
   // commitTransactionalSession(transactionalSession: any): Promise<void>;
   // abortTransactionalSession(transactionalSession: any): Promise<void>;
