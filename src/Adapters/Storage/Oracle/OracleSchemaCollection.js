@@ -144,7 +144,10 @@ class OracleSchemaCollection {
   }
 
   _fetchAllSchemasFrom_SCHEMA() {
-    return this._collection._rawFind({}).then(schemas => schemas.map(oracleSchemaToParseSchema));
+    return this._collection._rawFind({}).then(schemas => {
+      //marklog("schemas = " + JSON.stringify(schemas))
+      schemas.map(oracleSchemaToParseSchema);
+    });
   }
 
   insertSchema(schema: any) {

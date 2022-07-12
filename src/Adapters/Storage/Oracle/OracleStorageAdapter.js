@@ -127,6 +127,7 @@ export class OracleStorageAdapter implements StorageAdapter {
         // if the return value is undefined to know if we
         // got the collection, or whether we did not, and
         // therefore need to create it
+        marklog('opened the collection ' + rawCollection.name);
         if (rawCollection) {
           collection = new OracleCollection(rawCollection);
         }

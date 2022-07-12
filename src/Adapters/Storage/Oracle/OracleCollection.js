@@ -69,7 +69,7 @@ export default class OracleCollection {
     });
   }
 
-  _rawFind(
+  async _rawFind(
     query,
     { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
   ) {
@@ -78,6 +78,8 @@ export default class OracleCollection {
     marklog('limit = ' + limit);
     // use these so the linter will not complain - until i actually use them properly
     marklog('TODO: not using these: ' + sort, maxTimeMS, readPreference, caseInsensitive, explain);
+    marklog('sodaCollection.name = ' + this._oracleCollection.name);
+
     let findOperation = this._oracleCollection.find().filter(query);
 
     if (skip) {
@@ -112,7 +114,11 @@ export default class OracleCollection {
     //   findOperation = findOperation.maxTimeMS(maxTimeMS);
     // }
 
-    return findOperation.getDocuments();
+    //marklog("findOperation = " + JSON.stringify(findOperation))
+    let docs;
+    await findOperation.getDocuments().then(d => (docs = d.map(i => i.getContent())));
+    marklog('about to return docs = ' + JSON.stringify(docs));
+    return docs;
     //return explain ? findOperation.explain(explain) : findOperation.toArray();
   }
 

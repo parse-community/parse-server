@@ -520,6 +520,7 @@ const convertSchemaToAdapterSchema = (schema: any) => {
 };
 
 const convertAdapterSchemaToParseSchema = ({ ...schema }) => {
+  marklog('in convertAdapterSchemaToParseSchema');
   delete schema.fields._rperm;
   delete schema.fields._wperm;
 
@@ -696,8 +697,11 @@ export default class SchemaController {
   userIdRegEx: RegExp;
 
   constructor(databaseAdapter: StorageAdapter) {
+    marklog('about to set databaseAdapter');
     this._dbAdapter = databaseAdapter;
+    marklog('about to set schemaData');
     this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
+    marklog('about to set protectedFields');
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
 
     const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
@@ -720,7 +724,9 @@ export default class SchemaController {
     this.reloadDataPromise = this.getAllClasses(options)
       .then(
         allSchemas => {
+          marklog('allSchemas = ' + JSON.stringify(allSchemas));
           this.schemaData = new SchemaData(allSchemas, this.protectedFields);
+          marklog('finished setting schemaData');
           delete this.reloadDataPromise;
         },
         err => {
@@ -730,6 +736,7 @@ export default class SchemaController {
         }
       )
       .then(() => {});
+    marklog('about to return reloadDataPromise');
     return this.reloadDataPromise;
   }
 
@@ -747,7 +754,10 @@ export default class SchemaController {
   setAllClasses(): Promise<Array<Schema>> {
     return this._dbAdapter
       .getAllClasses()
-      .then(allSchemas => allSchemas.map(injectDefaultSchema))
+      .then(allSchemas => {
+        marklog('allSchemas is ' + JSON.stringify(allSchemas));
+        allSchemas.map(injectDefaultSchema);
+      })
       .then(allSchemas => {
         SchemaCache.put(allSchemas);
         return allSchemas;
