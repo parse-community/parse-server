@@ -262,14 +262,6 @@ export class OracleStorageAdapter implements StorageAdapter {
   //   query: QueryType,
   //   options: QueryOptions
   // ): Promise<[any]>;
-  // ensureIndex(
-  //   className: string,
-  //   schema: SchemaType,
-  //   fieldNames: string[],
-  //   indexName?: string,
-  //   caseSensitive?: boolean,
-  //   options?: Object
-  // ): Promise<any>;
 
   ensureIndex(
     className: string,
@@ -440,6 +432,12 @@ export class OracleStorageAdapter implements StorageAdapter {
   // createTransactionalSession(): Promise<any>;
   // commitTransactionalSession(transactionalSession: any): Promise<void>;
   // abortTransactionalSession(transactionalSession: any): Promise<void>;
+
+  dropIndex(className: string, index: any) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._oracleCollection.dropIndex(index))
+      .catch(err => this.handleError(err));
+  }
 }
 
 export default OracleStorageAdapter;
