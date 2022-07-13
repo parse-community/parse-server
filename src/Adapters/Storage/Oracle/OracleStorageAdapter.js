@@ -270,7 +270,42 @@ export class OracleStorageAdapter implements StorageAdapter {
   //   caseSensitive?: boolean,
   //   options?: Object
   // ): Promise<any>;
-  // ensureUniqueness(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void>;
+
+  ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName: ?string,
+    caseInsensitive: boolean = false,
+    options?: Object = {}
+  ): Promise<any> {
+    schema = convertParseSchemaToOracleSchema(schema);
+    const indexCreationRequest = {};
+    const oracleFieldNames = fieldNames.map(fieldName =>
+      transformKey(className, fieldName, schema)
+    );
+    oracleFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = options.indexType !== undefined ? options.indexType : 1;
+    });
+
+    marklog(
+      'use these to make linter happy ' +
+        JSON.stringify(indexName) +
+        ' ' +
+        JSON.stringify(caseInsensitive)
+    );
+    marklog('about to create index');
+    return this._adaptiveCollection(className)
+      .then(
+        collection =>
+          new Promise((resolve, reject) =>
+            collection._createIndex(indexCreationRequest, error =>
+              error ? reject(error) : resolve()
+            )
+          )
+      )
+      .catch(err => this.handleError(err));
+  }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
   // currently know which fields are nullable and which aren't, we ignore that criteria.

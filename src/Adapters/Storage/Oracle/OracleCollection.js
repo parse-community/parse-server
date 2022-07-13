@@ -135,14 +135,19 @@ export default class OracleCollection {
       'entered _ensureSparseUniqueIndexInBackground with indexRequest = ' +
         JSON.stringify(indexRequest)
     );
-    if (Object.keys(indexRequest).length !== 1) {
-      // TODO make this less brittle
+    this._createIndex(indexRequest);
+  }
+
+  _createIndex(indexRequest) {
+    if (Object.keys(indexRequest).length == 0) {
+      // no columns to index
       return null;
     }
+    const cols = Object.keys(indexRequest).join('_');
     const fieldName = Object.keys(indexRequest)[0];
     const maxLength = indexRequest[Object.keys(indexRequest)[0]];
     const request = {
-      name: 'index_' + Object.keys(indexRequest)[0],
+      name: 'index_' + cols,
       fields: [{ path: fieldName, maxlength: maxLength }],
       unique: true,
     };
@@ -150,6 +155,11 @@ export default class OracleCollection {
     return new Promise((resolve, reject) => {
       this._oracleCollection.createIndex(request, error => {
         if (error) {
+          if (error.errorNum === 40733) {
+            // ORA-40733: An index with the specified name already exists in the schema.
+            // not an error - index is already there, nothing to do
+            resolve();
+          }
           reject(error);
         } else {
           resolve();
