@@ -62,3 +62,5 @@ dump.rdb
 src/cloud
 run.sh
 parse-dashboard.sh
+parse-server-config.json
+test.js

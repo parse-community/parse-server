@@ -11,6 +11,46 @@ export default class OracleCollection {
     this._oracleCollection = oracleCollection;
   }
 
+  // Atomically updates data in the database for a single (first) object that matched the query
+  // If there is nothing that matches the query - does insert
+  // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
+  async upsertOne(query, update, session) {
+    marklog('in upsertOne');
+    marklog('query = ' + JSON.stringify(query));
+    // TODO need to use save(), which is the SODA equivalent of upsert() andit takes a SodaDocument
+    let docs;
+    await this._rawFind(query)
+      .then(d => (docs = d))
+      .catch(error => marklog(error));
+    marklog('use session to make linter happy ' + JSON.stringify(session));
+    marklog('docs content = ' + JSON.stringify(docs.map(i => i.getContent())));
+
+    if (docs && docs.length == 1) {
+      // found the doc, so we need to update it
+      const key = docs[0].key;
+      marklog('key = ' + key);
+      const oldContent = docs[0].getContent();
+      marklog('oldContent = ' + JSON.stringify(oldContent));
+      marklog('update = ' + JSON.stringify(update));
+      const theUpdate = { [update.fieldName]: update.theFieldType };
+      marklog('theUpdate = ' + JSON.stringify(theUpdate));
+      const newContent = { ...oldContent, ...theUpdate };
+      marklog('newContent = ' + JSON.stringify(newContent));
+
+      await this._oracleCollection.find().key(key).replaceOne(newContent);
+    } else {
+      // otherwise we just need to insert
+      marklog('update = ' + JSON.stringify(update));
+      const theUpdate = { [update.fieldName]: update.theFieldType };
+      marklog('theUpdate = ' + JSON.stringify(theUpdate));
+      const newContent = { ...theUpdate };
+      marklog('newContent = ' + JSON.stringify(newContent));
+      await this._oracleCollection.insertOne(newContent);
+    }
+
+    return;
+  }
+
   // Does a find with "smart indexing".
   // Currently this just means, if it needs a geoindex and there is
   // none, then build the geoindex.
@@ -116,8 +156,12 @@ export default class OracleCollection {
 
     //marklog("findOperation = " + JSON.stringify(findOperation))
     let docs;
-    await findOperation.getDocuments().then(d => (docs = d.map(i => i.getContent())));
-    marklog('about to return docs = ' + JSON.stringify(docs));
+    let contentOfDocs;
+    await findOperation
+      .getDocuments()
+      .then(d => (docs = d))
+      .then(d => (contentOfDocs = d.map(i => i.getContent())));
+    marklog('about to return docs = ' + JSON.stringify(contentOfDocs));
     return docs;
     //return explain ? findOperation.explain(explain) : findOperation.toArray();
   }

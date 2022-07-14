@@ -758,6 +758,7 @@ export default class SchemaController {
   }
 
   setAllClasses(): Promise<Array<Schema>> {
+    marklog('entered setAllClasses');
     return this._dbAdapter
       .getAllClasses()
       .then(allSchemas => {

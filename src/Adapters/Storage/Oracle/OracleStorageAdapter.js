@@ -207,7 +207,13 @@ export class OracleStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  // addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void>;
+  addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void> {
+    return this._schemaCollection()
+      .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type))
+      .then(() => this.createIndexesIfNeeded(className, fieldName, type))
+      .catch(err => this.handleError(err));
+  }
+
   // updateFieldOptions(className: string, fieldName: string, type: any): Promise<void>;
   // deleteClass(className: string): Promise<void>;
   // deleteAllClasses(fast: boolean): Promise<void>;
