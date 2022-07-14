@@ -5,7 +5,7 @@ import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, StorageClass } from '../StorageAdapter';
 import Parse from 'parse/node';
 import marklog from '../../../marklog';
-import { transformKey } from './OracleTransform';
+import { transformKey, parseObjectToOracleObjectForCreate } from './OracleTransform';
 
 const oracledb = require('oracledb');
 const OracleSchemaCollectionName = '_SCHEMA';
@@ -229,12 +229,38 @@ export class OracleStorageAdapter implements StorageAdapter {
   }
 
   // getClass(className: string): Promise<StorageClass>;
-  // createObject(
-  //   className: string,
-  //   schema: SchemaType,
-  //   object: any,
-  //   transactionalSession: ?any
-  // ): Promise<any>;
+
+  // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
+  // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
+  // the schema only for the legacy mongo format. We'll figure that out later.
+  createObject(className: string, schema: SchemaType, object: any, transactionalSession: ?any) {
+    schema = convertParseSchemaToOracleSchema(schema);
+    const oracleObject = parseObjectToOracleObjectForCreate(className, object, schema);
+    return this._adaptiveCollection(className)
+      .then(collection => collection.insertOne(oracleObject, transactionalSession))
+      .then(() => ({ ops: [oracleObject] }))
+      .catch(error => {
+        if (error.code === 11000) {
+          //TODO make this and oracle error code
+          // Duplicate value
+          const err = new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+          err.underlyingError = error;
+          if (error.message) {
+            const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
+            if (matches && Array.isArray(matches)) {
+              err.userInfo = { duplicated_field: matches[1] };
+            }
+          }
+          throw err;
+        }
+        throw error;
+      })
+      .catch(err => this.handleError(err));
+  }
+
   // deleteObjectsByQuery(
   //   className: string,
   //   schema: SchemaType,
