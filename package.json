@@ -41,7 +41,7 @@
     "jwks-rsa": "2.1.4",
     "ldapjs": "2.3.2",
     "lodash": "4.17.21",
-    "lru-cache": "7.10.1",
+    "lru-cache": "7.10.2",
     "mime": "3.0.0",
     "mongodb": "4.6.0",
     "mustache": "4.2.0",
