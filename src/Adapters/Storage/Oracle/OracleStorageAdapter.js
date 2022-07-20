@@ -96,6 +96,7 @@ export class OracleStorageAdapter implements StorageAdapter {
         'oracleOptions = ' +
         oracleOptions
     );
+    this._uri = uri;
     this._collectionPrefix = collectionPrefix;
   }
 
@@ -157,22 +158,56 @@ export class OracleStorageAdapter implements StorageAdapter {
       return this.connectionPromise;
     }
 
-    // parsing and re-formatting causes the auth value (if there) to get URI
-    // encoded
-    //const encodedUri = formatUrl(parseUrl(this._uri));
+    const wallet_location = process.env.ORACLE_WALLET_LOCATION;
+    if (typeof wallet_location === 'undefined') {
+      throw 'Required Environment Variable, ORACLE_WALLET_LOCATION, is not defined';
+    }
 
-    oracledb.initOracleClient({});
+    const client_location = process.env.ORACLE_CLIENT_LOCATION;
+    if (typeof client_location === 'undefined') {
+      throw 'Required Environment Variable, ORACLE_CLIENT_LOCATION, is not defined';
+    }
+
+    console.log(process.env.ORACLE_WALLET_LOCATION);
+    console.log(process.env.ORACLE_CLIENT_LOCATION);
+
+    var re = new RegExp('oracledb://[a-zA-Z0-9_]*:[^@:]*@[a-zA-Z0-9_:/]*$');
+    if (!re.test(this._uri)) {
+      throw 'Incorrect Connection String Format.  Format is oracledb://user:password@tnsname';
+    }
+
+    const user = this.getUserFromUri(this._uri);
+    const pw = this.getPasswordFromUri(this._uri);
+    const tnsname = this.getTnsNameFromUri(this._uri);
+
+    oracledb.initOracleClient({ libDir: client_location, configDir: wallet_location });
     this.connectionPromise = oracledb.createPool({
       // TODO read these from config!!!
-      user: 'pdbadmin',
-      password: 'Welcome123##',
-      connectString: 'localhost:1521/pdb1',
-    });
-
-    // TODO this is not right.. what we want to do is connect if we are not already connected
+      user: user,
+      password: pw,
+      connectString: tnsname,
+    }); // TODO this is not right.. what we want to do is connect if we are not already connected
     // then return something... we don't have a "client" as such - closest thing might be a
     // connection or a pool.. maybe we need to invent a client wrapper over oracledb ..
+
     return this.connectionPromise;
+  }
+
+  getUserFromUri(uri) {
+    const myArray = uri.split('//');
+    const myArray2 = myArray[1].split(':');
+    return myArray2[0];
+  }
+
+  getPasswordFromUri(uri) {
+    const myArray = uri.split(':');
+    const myArray2 = myArray[2].split('@');
+    return myArray2[0];
+  }
+
+  getTnsNameFromUri(uri) {
+    const myArray = uri.split('@');
+    return myArray[1];
   }
 
   handleError<T>(error: ?(Error | Parse.Error)): Promise<T> {

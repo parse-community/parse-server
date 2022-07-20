@@ -241,7 +241,7 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
         collectionPrefix,
         databaseOptions,
       });
-    case 'oracle:':
+    case 'oracledb:':
       return new OracleStorageAdapter({
         uri: databaseURI,
         collectionPrefix,
