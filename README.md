@@ -96,6 +96,25 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 - [Sponsors](#sponsors)
 - [Backers](#backers)
 
+# Using Oracle DB Adapter
+
+Configure Parse Database URI to
+```bash
+Connecting to ADB
+oracledb://user:password@tnsname
+
+Connecting to local Oracle Docker Container
+oracledb://user:password@localhost:port/tnsname
+```
+
+Configure 2 Environmet Variables, ORACLE_WALLET_LOCATION and ORACLE_CLIENT_LOCATION
+for example
+```bash
+export ORACLE_WALLET_LOCATION=/home/usr/oracle-files/wallet
+export ORACLE_CLIENT_LOCATION=/home/usr/oracle-files/instantclient_19_8
+```
+
+
 # Getting Started
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
