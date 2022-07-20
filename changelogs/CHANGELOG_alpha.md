@@ -1,3 +1,13 @@
+# [5.3.0-alpha.19](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.18...5.3.0-alpha.19) (2022-07-03)
+
+
+### Bug Fixes
+
+* certificate in Apple Game Center auth adapter not validated [skip release] ([#8058](https://github.com/parse-community/parse-server/issues/8058)) ([75af9a2](https://github.com/parse-community/parse-server/commit/75af9a26cc8e9e88a33d1e452c93a0ee6e509f17))
+* graphQL query ignores condition `equalTo` with value `false` ([#8032](https://github.com/parse-community/parse-server/issues/8032)) ([7f5a15d](https://github.com/parse-community/parse-server/commit/7f5a15d5df0dfa3515e9f73709d6a49663545f9b))
+* invalid file request not properly handled [skip release] ([#8062](https://github.com/parse-community/parse-server/issues/8062)) ([4c9e956](https://github.com/parse-community/parse-server/commit/4c9e95674ad081f13062e8cd30b77b1962d5df57))
+* protected fields exposed via LiveQuery (GHSA-crrq-vr9j-fxxh) [skip release] ([#8076](https://github.com/parse-community/parse-server/issues/8076)) ([9fd4516](https://github.com/parse-community/parse-server/commit/9fd4516cde5c742f9f29dd05468b4a43a85639a6))
+
 # [5.3.0-alpha.18](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.17...5.3.0-alpha.18) (2022-06-17)
 
 
