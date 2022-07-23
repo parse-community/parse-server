@@ -1,3 +1,10 @@
+# [5.3.0-alpha.20](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.19...5.3.0-alpha.20) (2022-07-22)
+
+
+### Bug Fixes
+
+* security upgrade undici from 5.6.0 to 5.8.0 ([#8108](https://github.com/parse-community/parse-server/issues/8108)) ([4aa016b](https://github.com/parse-community/parse-server/commit/4aa016b7322467422b9fdf05d8e29b9ecf910da7))
+
 # [5.3.0-alpha.19](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.18...5.3.0-alpha.19) (2022-07-03)
 
 
