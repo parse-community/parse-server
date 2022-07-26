@@ -136,15 +136,14 @@ export class FilesRouter {
       next(error);
       return;
     }
-
-    const base64 = req.body.toString('base64');
-    const file = new Parse.File(filename, { base64 }, contentType);
-    const { metadata = {}, tags = {} } = req.fileData || {};
-    file.setTags(tags);
-    file.setMetadata(metadata);
-    const fileSize = Buffer.byteLength(req.body);
-    const fileObject = { file, fileSize };
     try {
+      const {data} = req.body.toJSON();
+      const file = new Parse.File(filename, data, contentType);
+      const { metadata = {}, tags = {} } = req.fileData || {};
+      file.setTags(tags);
+      file.setMetadata(metadata);
+      const fileSize = Buffer.byteLength(req.body);
+      const fileObject = { file, fileSize };
       // run beforeSaveFile trigger
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeSave,
@@ -208,7 +207,7 @@ export class FilesRouter {
       logger.error('Error creating a file: ', e);
       const error = triggers.resolveError(e, {
         code: Parse.Error.FILE_SAVE_ERROR,
-        message: `Could not store file: ${fileObject.file._name}.`,
+        message: `Could not store file: ${filename}.`,
       });
       next(error);
     }
