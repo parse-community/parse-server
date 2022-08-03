@@ -2,6 +2,7 @@
 
 ## Table of Contents <!-- omit in toc -->
 - [Contributing](#contributing)
+  - [Templates](#templates)
 - [Why Contributing?](#why-contributing)
 - [Environment Setup](#environment-setup)
   - [Recommended Tools](#recommended-tools)
@@ -20,6 +21,7 @@
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
 - [Pull Request](#pull-request)
+  - [Commit Message](#commit-message)
   - [Breaking Change](#breaking-change)
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
@@ -47,6 +49,22 @@ Together we will plan out the best conceptual approach for your contribution, so
 When you are ready to code, you can find more information about opening a pull request in the [GitHub docs](https://help.github.com/articles/creating-a-pull-request/).
 
 Whether this is your first contribution or you are already an experienced contributor, the Parse Community has your back – don't hesitate to ask for help!
+
+### Issue vs. Pull Request
+
+An issue is required to be linked in every pull request. We understand that no-one likes to create an issue for something that appears to be a simple pull request, but here is why this is beneficial for everyone:
+
+- An issue get more visibility than a pull request as issues can be pinned, receive bounties and it is primarily the issue list that people browse through rather than the more technical pull request list. Visibility is a key aspect so others can weigh in on issues and contribute their opinion.
+- The discussion in the issue is different from the discussion in the pull request. The issue discussion is focused on the issue and how to address it, whereas the discussion in the pull request is focused on a specific implemention. An issue may even have multiple pull requests because either the issue requires multiple implementations or multiple pull requests are opened to compare and test different approaches to later decide for one.
+- High-level conceptual discussions about the issue should be still available, even if a pull request is closed because its appraoch was discarded. If these discussions are in the pull request instead, they can easily become fragmented over multiple pull requests and issues, which can make it very hard to make sense of all aspects of an issue.
+
+### Templates
+
+You are required to use and completely fill out the templates for new issues and pull requests. We understand that no-one enjoys filling out forms, but here is why this is beneficial for everyone:
+
+- It may take you 30 seconds longer, but will save even more time for everyone else trying to understand your issue.
+- It helps to fix issues and merge pull requests faster as reviewers spend less time trying to understand your issue.
+- It makes investigations easier when others try to understand your issue and code changes made even years later.
 
 ## Why Contributing?
 
@@ -305,6 +323,8 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
 
 ## Pull Request
 
+### Commit Message
+
 For release automation, the title of pull requests needs to be written in a defined syntax. We loosely follow the [Conventional Commits](https://www.conventionalcommits.org) specification, which defines this syntax:
 
 ```
@@ -393,7 +413,7 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
 
 ### Major Release / Long-Term-Support
 
-Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch. 
+While the current major version is published on branch `release`, a Long-Term-Support (LTS) version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
 
 ### Preparing Release
 
