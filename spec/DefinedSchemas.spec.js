@@ -441,6 +441,7 @@ describe('DefinedSchemas', () => {
       });
       expect(definedSchema.isProtectedIndex('_User', 'test')).toEqual(false);
     });
+
     it('should detect protected indexes for _Role class', () => {
       const definedSchema = new DefinedSchemas({}, {});
       expect(definedSchema.isProtectedIndex('_Role', 'name_1')).toEqual(true);
