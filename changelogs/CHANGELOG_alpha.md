@@ -1,3 +1,10 @@
+# [5.3.0-alpha.21](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.20...5.3.0-alpha.21) (2022-08-05)
+
+
+### Bug Fixes
+
+* internal indices for classes `_Idempotency` and `_Role` are not protected in defined schema ([#8121](https://github.com/parse-community/parse-server/issues/8121)) ([c16f529](https://github.com/parse-community/parse-server/commit/c16f529f74f92154401bf662f634b3c5fa45e18e))
+
 # [5.3.0-alpha.20](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.19...5.3.0-alpha.20) (2022-07-22)
 
 
