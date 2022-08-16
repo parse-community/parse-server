@@ -432,6 +432,42 @@ describe('DefinedSchemas', () => {
       expect(testSchema.indexes).toBeUndefined();
       expect(userSchema.indexes).toEqual(expectedIndexes);
     });
+
+    it('should detect protected indexes for _User class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      const protectedUserIndexes = ['_id_', 'case_insensitive_email', 'username_1', 'email_1'];
+      protectedUserIndexes.forEach(field => {
+        expect(definedSchema.isProtectedIndex('_User', field)).toEqual(true);
+      });
+      expect(definedSchema.isProtectedIndex('_User', 'test')).toEqual(false);
+    });
+
+    it('should detect protected indexes for _Role class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      expect(definedSchema.isProtectedIndex('_Role', 'name_1')).toEqual(true);
+      expect(definedSchema.isProtectedIndex('_Role', 'test')).toEqual(false);
+    });
+
+    it('should detect protected indexes for _Idempotency class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'reqId_1')).toEqual(true);
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'test')).toEqual(false);
+    });
+
+    it('should not detect protected indexes on user defined class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      const protectedIndexes = [
+        'case_insensitive_email',
+        'username_1',
+        'email_1',
+        'reqId_1',
+        'name_1',
+      ];
+      protectedIndexes.forEach(field => {
+        expect(definedSchema.isProtectedIndex('ExampleClass', field)).toEqual(false);
+      });
+      expect(definedSchema.isProtectedIndex('ExampleClass', '_id_')).toEqual(true);
+    });
   });
 
   describe('ClassLevelPermissions', () => {

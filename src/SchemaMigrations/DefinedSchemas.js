@@ -399,15 +399,23 @@ export class DefinedSchemas {
   }
 
   isProtectedIndex(className: string, indexName: string) {
-    let indexes = ['_id_'];
-    if (className === '_User') {
-      indexes = [
-        ...indexes,
-        'case_insensitive_username',
-        'case_insensitive_email',
-        'username_1',
-        'email_1',
-      ];
+    const indexes = ['_id_'];
+    switch (className) {
+      case '_User':
+        indexes.push(
+          'case_insensitive_username',
+          'case_insensitive_email',
+          'username_1',
+          'email_1'
+        );
+        break;
+      case '_Role':
+        indexes.push('name_1');
+        break;
+
+      case '_Idempotency':
+        indexes.push('reqId_1');
+        break;
     }
 
     return indexes.indexOf(indexName) !== -1;
