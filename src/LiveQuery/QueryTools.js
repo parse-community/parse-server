@@ -105,6 +105,11 @@ function contains(haystack: Array, needle: any): boolean {
     }
     return false;
   }
+
+  if (Array.isArray(needle)) {
+    return needle.map(need => contains(haystack, need));
+  }
+
   return haystack.indexOf(needle) > -1;
 }
 /**

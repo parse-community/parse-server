@@ -581,6 +581,19 @@ describe('matchesQuery', function () {
       Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' }),
     ]);
     expect(matchesQuery(message, q)).toBe(false);
+
+    const messageWithKeyAsArray = {
+      id: new Id('Message', 'O1'),
+      profiles: [pointer('Profile', 'abc'), pointer('Profile', 'def')],
+    };
+
+    const qWithKeyAsArray = new Parse.Query('Message');
+    qWithKeyAsArray.containedIn('profiles', [
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' }),
+    ]);
+
+    expect(matchesQuery(messageWithKeyAsArray, qWithKeyAsArray)).toBe(true);
   });
 
   it('should support notContainedIn with pointers', () => {
