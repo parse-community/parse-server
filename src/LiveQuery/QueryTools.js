@@ -103,11 +103,16 @@ function contains(haystack: Array, needle: any): boolean {
         return true;
       }
     }
+
     return false;
   }
 
   if (Array.isArray(needle)) {
-    return needle.map(need => contains(haystack, need));
+    for (const need of needle) {
+      if (contains(haystack, need)) {
+        return true;
+      }
+    }
   }
 
   return haystack.indexOf(needle) > -1;

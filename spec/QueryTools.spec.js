@@ -581,19 +581,29 @@ describe('matchesQuery', function () {
       Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' }),
     ]);
     expect(matchesQuery(message, q)).toBe(false);
+  });
 
-    const messageWithKeyAsArray = {
-      id: new Id('Message', 'O1'),
-      profiles: [pointer('Profile', 'abc'), pointer('Profile', 'def')],
+  it('should support containedIn in with array of pointers', () => {
+    const message = {
+      id: new Id('Message', 'O2'),
+      profiles: [pointer('Profile', 'yeahaw'), pointer('Profile', 'yes')],
     };
 
-    const qWithKeyAsArray = new Parse.Query('Message');
-    qWithKeyAsArray.containedIn('profiles', [
-      Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
-      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' }),
+    let q = new Parse.Query('Message');
+    q.containedIn('profiles', [
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'no' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'yes' }),
     ]);
 
-    expect(matchesQuery(messageWithKeyAsArray, qWithKeyAsArray)).toBe(true);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.containedIn('profiles', [
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'no' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'nope' }),
+    ]);
+
+    expect(matchesQuery(message, q)).toBe(false);
   });
 
   it('should support notContainedIn with pointers', () => {
