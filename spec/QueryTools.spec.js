@@ -583,7 +583,7 @@ describe('matchesQuery', function () {
     expect(matchesQuery(message, q)).toBe(false);
   });
 
-  it('should support containedIn in with array of pointers', () => {
+  it('should support containedIn with array of pointers', () => {
     const message = {
       id: new Id('Message', 'O2'),
       profiles: [pointer('Profile', 'yeahaw'), pointer('Profile', 'yes')],
