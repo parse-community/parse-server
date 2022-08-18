@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "graphql-tag": "2.12.6",
-    "@actions/core": "1.2.6",
+    "@actions/core": "1.9.1",
     "@apollo/client": "3.6.1",
     "@babel/cli": "7.10.0",
     "@babel/core": "7.10.0",
