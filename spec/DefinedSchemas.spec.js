@@ -441,11 +441,13 @@ describe('DefinedSchemas', () => {
       });
       expect(definedSchema.isProtectedIndex('_User', 'test')).toEqual(false);
     });
+
     it('should detect protected indexes for _Role class', () => {
       const definedSchema = new DefinedSchemas({}, {});
       expect(definedSchema.isProtectedIndex('_Role', 'name_1')).toEqual(true);
       expect(definedSchema.isProtectedIndex('_Role', 'test')).toEqual(false);
     });
+
     it('should detect protected indexes for _Idempotency class', () => {
       const definedSchema = new DefinedSchemas({}, {});
       expect(definedSchema.isProtectedIndex('_Idempotency', 'reqId_1')).toEqual(true);
