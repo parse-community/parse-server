@@ -21,7 +21,7 @@
   "dependencies": {
     "@graphql-yoga/node": "2.6.0",
     "@graphql-tools/utils": "8.9.0",
-    "@graphql-tools/merge": "8.3.1",
+    "@graphql-tools/merge": "8.3.2",
     "@graphql-tools/schema": "8.5.1",
     "@parse/fs-files-adapter": "1.2.2",
     "@parse/push-adapter": "4.1.2",
