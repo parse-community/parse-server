@@ -191,6 +191,79 @@ describe('rest query', () => {
     expect(result.results.length).toEqual(0);
   });
 
+  it('query internal field', async () => {
+    const internalFields = [
+      '_email_verify_token',
+      '_perishable_token',
+      '_tombstone',
+      '_email_verify_token_expires_at',
+      '_failed_login_count',
+      '_account_lockout_expires_at',
+      '_password_changed_at',
+      '_password_history',
+    ];
+    await Promise.all([
+      ...internalFields.map(field =>
+        expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
+          new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
+        )
+      ),
+      ...internalFields.map(field =>
+        new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true })
+      ),
+    ]);
+  });
+
+  it('query protected field', async () => {
+    const user = new Parse.User();
+    user.setUsername('username1');
+    user.setPassword('password');
+    await user.signUp();
+    const config = Config.get(Parse.applicationId);
+    const obj = new Parse.Object('Test');
+
+    obj.set('owner', user);
+    obj.set('test', 'test');
+    obj.set('zip', 1234);
+    await obj.save();
+
+    const schema = await config.database.loadSchema();
+    await schema.updateClass(
+      'Test',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        protectedFields: { [user.id]: ['zip'] },
+      }
+    );
+    await Promise.all([
+      new Parse.Query('Test').exists('test').find(),
+      expectAsync(new Parse.Query('Test').exists('zip').find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.OPERATION_FORBIDDEN,
+          'This user is not allowed to query zip on class Test'
+        )
+      ),
+    ]);
+  });
+
+  it('query protected field with matchesQuery', async () => {
+    const user = new Parse.User();
+    user.setUsername('username1');
+    user.setPassword('password');
+    await user.signUp();
+    const test = new Parse.Object('TestObject', { user });
+    await test.save();
+    const subQuery = new Parse.Query(Parse.User);
+    subQuery.exists('_perishable_token');
+    await expectAsync(
+      new Parse.Query('TestObject').matchesQuery('user', subQuery).find()
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: _perishable_token')
+    );
+  });
+
   it('query with wrongly encoded parameter', done => {
     rest
       .create(config, nobody, 'TestParameterEncode', { foo: 'bar' })
