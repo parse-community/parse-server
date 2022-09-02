@@ -378,7 +378,7 @@ describe_only(() => {
 
     const query = new Parse.Query(TestObject);
     await query.get(object.id);
-    expect(getSpy.calls.count()).toBe(3);
+    expect(getSpy.calls.count()).toBe(4);
     expect(putSpy.calls.count()).toBe(1);
     expect(delSpy.calls.count()).toBe(2);
 
@@ -397,7 +397,7 @@ describe_only(() => {
 
     const query = new Parse.Query(TestObject);
     await query.get(object.id);
-    expect(getSpy.calls.count()).toBe(2);
+    expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(1);
     expect(delSpy.calls.count()).toBe(1);
 
@@ -420,7 +420,7 @@ describe_only(() => {
     query.include('child');
     await query.get(object.id);
 
-    expect(getSpy.calls.count()).toBe(4);
+    expect(getSpy.calls.count()).toBe(6);
     expect(putSpy.calls.count()).toBe(1);
     expect(delSpy.calls.count()).toBe(3);
 
@@ -444,7 +444,7 @@ describe_only(() => {
     expect(objects.length).toBe(1);
     expect(objects[0].id).toBe(child.id);
 
-    expect(getSpy.calls.count()).toBe(2);
+    expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(1);
     expect(delSpy.calls.count()).toBe(3);
 
