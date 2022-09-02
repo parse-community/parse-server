@@ -1,3 +1,10 @@
+## [5.2.5](https://github.com/parse-community/parse-server/compare/5.2.4...5.2.5) (2022-09-02)
+
+
+### Bug Fixes
+
+* brute force guessing of user sensitive data via search patterns; this fixes a security vulnerability in which internal and protected fields may be used as query constraints to guess the value of these fields and obtain sensitive data (GHSA-2m6g-crv8-p3c6) ([#8144](https://github.com/parse-community/parse-server/issues/8144)) ([e39d51b](https://github.com/parse-community/parse-server/commit/e39d51bd329cd978589983bd659db46e1d45aad4))
+
 ## [5.2.4](https://github.com/parse-community/parse-server/compare/5.2.3...5.2.4) (2022-06-30)
 
 
