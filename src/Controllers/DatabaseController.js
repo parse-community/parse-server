@@ -55,31 +55,27 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 };
 
-const specialQuerykeys = [
-  '$and',
-  '$or',
-  '$nor',
-  '_rperm',
-  '_wperm',
-  '_perishable_token',
+const specialQueryKeys = ['$and', '$or', '$nor', '_rperm', '_wperm'];
+const specialMasterQueryKeys = [
+  ...specialQueryKeys,
   '_email_verify_token',
+  '_perishable_token',
+  '_tombstone',
   '_email_verify_token_expires_at',
-  '_account_lockout_expires_at',
   '_failed_login_count',
+  '_account_lockout_expires_at',
+  '_password_changed_at',
+  '_password_history',
 ];
 
-const isSpecialQueryKey = key => {
-  return specialQuerykeys.indexOf(key) >= 0;
-};
-
-const validateQuery = (query: any): void => {
+const validateQuery = (query: any, isMaster: boolean, update: boolean): void => {
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
 
   if (query.$or) {
     if (query.$or instanceof Array) {
-      query.$or.forEach(validateQuery);
+      query.$or.forEach(value => validateQuery(value, isMaster, update));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
@@ -87,7 +83,7 @@ const validateQuery = (query: any): void => {
 
   if (query.$and) {
     if (query.$and instanceof Array) {
-      query.$and.forEach(validateQuery);
+      query.$and.forEach(value => validateQuery(value, isMaster, update));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
     }
@@ -95,7 +91,7 @@ const validateQuery = (query: any): void => {
 
   if (query.$nor) {
     if (query.$nor instanceof Array && query.$nor.length > 0) {
-      query.$nor.forEach(validateQuery);
+      query.$nor.forEach(value => validateQuery(value, isMaster, update));
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -115,7 +111,11 @@ const validateQuery = (query: any): void => {
         }
       }
     }
-    if (!isSpecialQueryKey(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+    if (
+      !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/) &&
+      ((!specialQueryKeys.includes(key) && !isMaster && !update) ||
+        (update && isMaster && !specialMasterQueryKeys.includes(key)))
+    ) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
   });
@@ -208,27 +208,24 @@ const filterSensitiveData = (
       perms.protectedFields.temporaryKeys.forEach(k => delete object[k]);
   }
 
-  if (!isUserClass) {
-    return object;
+  if (isUserClass) {
+    object.password = object._hashed_password;
+    delete object._hashed_password;
+    delete object.sessionToken;
   }
-
-  object.password = object._hashed_password;
-  delete object._hashed_password;
-
-  delete object.sessionToken;
 
   if (isMaster) {
     return object;
   }
-  delete object._email_verify_token;
-  delete object._perishable_token;
-  delete object._perishable_token_expires_at;
-  delete object._tombstone;
-  delete object._email_verify_token_expires_at;
-  delete object._failed_login_count;
-  delete object._account_lockout_expires_at;
-  delete object._password_changed_at;
-  delete object._password_history;
+  for (const key in object) {
+    if (key.charAt(0) === '_') {
+      delete object[key];
+    }
+  }
+
+  if (!isUserClass) {
+    return object;
+  }
 
   if (aclGroup.indexOf(object.objectId) > -1) {
     return object;
@@ -515,7 +512,7 @@ class DatabaseController {
           if (acl) {
             query = addWriteACL(query, acl);
           }
-          validateQuery(query);
+          validateQuery(query, isMaster, true);
           return schemaController
             .getOneSchema(className, true)
             .catch(error => {
@@ -761,7 +758,7 @@ class DatabaseController {
         if (acl) {
           query = addWriteACL(query, acl);
         }
-        validateQuery(query);
+        validateQuery(query, isMaster, false);
         return schemaController
           .getOneSchema(className)
           .catch(error => {
@@ -1253,7 +1250,7 @@ class DatabaseController {
                   query = addReadACL(query, aclGroup);
                 }
               }
-              validateQuery(query);
+              validateQuery(query, isMaster, false);
               if (count) {
                 if (!classExists) {
                   return 0;
@@ -1809,7 +1806,7 @@ class DatabaseController {
     return Promise.resolve(response);
   }
 
-  static _validateQuery: any => void;
+  static _validateQuery: (any, boolean, boolean) => void;
   static filterSensitiveData: (boolean, any[], any, any, any, string, any[], any) => void;
 }
 
