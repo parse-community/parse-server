@@ -63,6 +63,7 @@ export class Config {
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
+    defaultLimit,
     maxLimit,
     emailVerifyTokenValidityDuration,
     accountLockout,
@@ -110,7 +111,8 @@ export class Config {
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateMasterKeyIps(masterKeyIps);
-    this.validateMaxLimit(maxLimit);
+    this.validateDefaultLimit(defaultLimit);
+    this.validateMaxLimit(maxLimit, defaultLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
@@ -453,9 +455,18 @@ export class Config {
     }
   }
 
-  static validateMaxLimit(maxLimit) {
+  static validateDefaultLimit(defaultLimit) {
+    if (defaultLimit <= 0) {
+      throw 'Default limit must be a value greater than 0.';
+    }
+  }
+
+  static validateMaxLimit(maxLimit, defaultLimit) {
     if (maxLimit <= 0) {
       throw 'Max limit must be a value greater than 0.';
+    }
+    if (maxLimit < defaultLimit) {
+      throw 'Max limit must be greater than the default limit.';
     }
   }
 

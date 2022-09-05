@@ -314,9 +314,36 @@ describe('Parse.Query testing', () => {
     equal(results.length, 0);
   });
 
+  it('query without limit respects default limit', async done => {
+    const baz = new TestObject({ foo: 'baz' });
+    const qux = new TestObject({ foo: 'qux' });
+    await reconfigureServer({ defaultLimit: 1 });
+    Parse.Object.saveAll([baz, qux]).then(function () {
+      const query = new Parse.Query(TestObject);
+      query.find().then(function (results) {
+        equal(results.length, 1);
+        done();
+      });
+    });
+  });
+
   it('query with limit', function (done) {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
+    Parse.Object.saveAll([baz, qux]).then(function () {
+      const query = new Parse.Query(TestObject);
+      query.limit(1);
+      query.find().then(function (results) {
+        equal(results.length, 1);
+        done();
+      });
+    });
+  });
+
+  it('query with limit overrides default limit', async done => {
+    const baz = new TestObject({ foo: 'baz' });
+    const qux = new TestObject({ foo: 'qux' });
+    await reconfigureServer({ defaultLimit: 2 });
     Parse.Object.saveAll([baz, qux]).then(function () {
       const query = new Parse.Query(TestObject);
       query.limit(1);

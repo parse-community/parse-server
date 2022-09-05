@@ -462,9 +462,23 @@ describe('server', () => {
       .then(done);
   });
 
+  it('fails if default limit is negative', done => {
+    reconfigureServer({ defaultLimit: -1 }).catch(error => {
+      expect(error).toEqual('Default limit must be a value greater than 0.');
+      done();
+    });
+  });
+
   it('fails if maxLimit is negative', done => {
     reconfigureServer({ maxLimit: -100 }).catch(error => {
       expect(error).toEqual('Max limit must be a value greater than 0.');
+      done();
+    });
+  });
+
+  it('fails if maxLimit is smaller than the default limit', done => {
+    reconfigureServer({ defaultLimit: 101, maxLimit: 100 }).catch(error => {
+      expect(error).toEqual('Max limit must be greater than the default limit.');
       done();
     });
   });
