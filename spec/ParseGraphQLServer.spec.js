@@ -9574,7 +9574,7 @@ describe('ParseGraphQLServer', () => {
           });
 
           const result = JSON.parse(await res.text());
-          expect(res.status).toEqual(500);
+          expect(res.status).toEqual(413);
           expect(result.errors[0].message).toEqual('File size limit exceeded: 1024 bytes');
         });
 

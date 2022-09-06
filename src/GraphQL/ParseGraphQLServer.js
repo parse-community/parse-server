@@ -1,5 +1,6 @@
 import corsMiddleware from 'cors';
-import { createServer, renderGraphiQL } from '@graphql-yoga/node';
+import { createServer } from '@graphql-yoga/node';
+import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders } from '../middlewares';
