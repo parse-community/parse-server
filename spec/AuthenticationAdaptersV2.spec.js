@@ -832,9 +832,7 @@ describe('Auth Adapter features', () => {
         }),
       })
     ).toBeRejectedWithError('Invalid challenge data: yolo');
-    expect(
-      logger.error
-    ).toHaveBeenCalledWith(
+    expect(logger.error).toHaveBeenCalledWith(
       `Failed running auth step challenge for challengeAdapter for user undefined with Error: {"message":"Invalid challenge data: yolo","code":${Parse.Error.SCRIPT_FAILED}}`,
       {
         authenticationStep: 'challenge',
@@ -853,9 +851,7 @@ describe('Auth Adapter features', () => {
     ).toBeRejectedWith(
       new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot signup with that setup data.')
     );
-    expect(
-      logger.error
-    ).toHaveBeenCalledWith(
+    expect(logger.error).toHaveBeenCalledWith(
       `Failed running auth step validateSetUp for modernAdapter for user undefined with Error: {"message":"You cannot signup with that setup data.","code":${Parse.Error.SCRIPT_FAILED}}`,
       {
         authenticationStep: 'validateSetUp',
@@ -882,9 +878,7 @@ describe('Auth Adapter features', () => {
       new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot update with that update data.')
     );
 
-    expect(
-      logger.error
-    ).toHaveBeenCalledWith(
+    expect(logger.error).toHaveBeenCalledWith(
       `Failed running auth step validateUpdate for modernAdapter for user ${user.id} with Error: {"message":"You cannot update with that update data.","code":${Parse.Error.SCRIPT_FAILED}}`,
       {
         authenticationStep: 'validateUpdate',
@@ -911,9 +905,7 @@ describe('Auth Adapter features', () => {
     ).toBeRejectedWith(
       new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot login with that login data.')
     );
-    expect(
-      logger.error
-    ).toHaveBeenCalledWith(
+    expect(logger.error).toHaveBeenCalledWith(
       `Failed running auth step validateLogin for modernAdapter for user ${user.id} with Error: {"message":"You cannot login with that login data.","code":${Parse.Error.SCRIPT_FAILED}}`,
       {
         authenticationStep: 'validateLogin',
