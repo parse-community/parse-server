@@ -438,7 +438,7 @@ describe_only_db('mongo')('GridFSBucket', () => {
       await db.admin().serverStatus();
       expect(false).toBe(true);
     } catch (e) {
-      expect(e.message).toEqual('MongoClient must be connected to perform this operation');
+      expect(e.message).toEqual('Client must be connected before running operations');
     }
   });
 });
