@@ -659,7 +659,7 @@ RestQuery.prototype.runFind = function (options = {}) {
     .then(results => {
       if (this.className === '_User' && !findOptions.explain) {
         for (var result of results) {
-          this.cleanResultAuthData(result, this.auth, this.config);
+          this.cleanResultAuthData(result);
         }
       }
 

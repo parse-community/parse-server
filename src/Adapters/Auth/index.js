@@ -72,9 +72,7 @@ const authAdapterPolicies = {
 function authDataValidator(provider, adapter, appIds, options) {
   return async function (authData, req, user, requestObject) {
     if (appIds && typeof adapter.validateAppId === 'function') {
-      await Promise.resolve(
-        adapter.validateAppId(appIds, authData, options, requestObject, req.config)
-      );
+      await Promise.resolve(adapter.validateAppId(appIds, authData, options, requestObject));
     }
     if (adapter.policy && !authAdapterPolicies[adapter.policy]) {
       throw new Parse.Error(
@@ -83,43 +81,56 @@ function authDataValidator(provider, adapter, appIds, options) {
       );
     }
     if (typeof adapter.validateAuthData === 'function') {
-      return adapter.validateAuthData(authData, options, requestObject, req.config);
-    } else if (
-      typeof adapter.validateSetUp === 'function' &&
-      typeof adapter.validateLogin === 'function' &&
-      typeof adapter.validateUpdate === 'function'
-    ) {
-      // When masterKey is detected, we should trigger a logged in user
-      const isLoggedIn =
-        (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
-      let hasAuthDataConfigured = false;
-
-      if (user && user.get('authData') && user.get('authData')[provider]) {
-        hasAuthDataConfigured = true;
-      }
-
-      if (isLoggedIn) {
-        // User is updating their authData
-        if (hasAuthDataConfigured) {
-          return adapter.validateUpdate(authData, options, requestObject, req.config);
-        }
-        // Set up if the user does not have the provider configured
-        return adapter.validateSetUp(authData, options, requestObject, req.config);
-      }
-
-      // Not logged in and authData is configured on the user
-      if (hasAuthDataConfigured) {
-        return adapter.validateLogin(authData, options, requestObject, req.config);
-      }
-
-      // User not logged in and the provider is not set up, for example when a new user
-      // signs up or an existing user uses a new auth provider
-      return adapter.validateSetUp(authData, options, requestObject, req.config);
+      return adapter.validateAuthData(authData, options, requestObject);
     }
-    throw new Parse.Error(
-      Parse.Error.OTHER_CAUSE,
-      'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
-    );
+    if (
+      typeof adapter.validateSetUp !== 'function' ||
+      typeof adapter.validateLogin !== 'function' ||
+      typeof adapter.validateUpdate !== 'function'
+    ) {
+      throw new Parse.Error(
+        Parse.Error.OTHER_CAUSE,
+        'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
+      );
+    }
+    // When masterKey is detected, we should trigger a logged in user
+    const isLoggedIn =
+      (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
+    let hasAuthDataConfigured = false;
+
+    if (user && user.get('authData') && user.get('authData')[provider]) {
+      hasAuthDataConfigured = true;
+    }
+
+    if (isLoggedIn) {
+      // User is updating their authData
+      if (hasAuthDataConfigured) {
+        return {
+          method: 'validateUpdate',
+          validator: () => adapter.validateUpdate(authData, requestObject),
+        };
+      }
+      // Set up if the user does not have the provider configured
+      return {
+        method: 'validateSetUp',
+        validator: () => adapter.validateSetUp(authData, requestObject),
+      };
+    }
+
+    // Not logged in and authData is configured on the user
+    if (hasAuthDataConfigured) {
+      return {
+        method: 'validateLogin',
+        validator: () => adapter.validateLogin(authData, requestObject),
+      };
+    }
+
+    // User not logged in and the provider is not set up, for example when a new user
+    // signs up or an existing user uses a new auth provider
+    return {
+      method: 'validateSetUp',
+      validator: () => adapter.validateSetUp(authData, requestObject),
+    };
   };
 }
 

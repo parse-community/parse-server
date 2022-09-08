@@ -7,10 +7,15 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
-import { maybeRunTrigger, Types as TriggerTypes, getRequestObject } from '../triggers';
+import {
+  maybeRunTrigger,
+  Types as TriggerTypes,
+  getRequestObject,
+  resolveError,
+} from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
-import { logger } from '../../lib/Adapters/Logger/WinstonLogger';
+import { logger } from '../logger';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -497,18 +502,22 @@ export class UsersRouter extends ClassesRouter {
     // if username or email provided with password try to authenticate the user by username
     let user;
     if (username || email) {
-      if (!password)
+      if (!password) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
           'You provided username or email, you need to also provide password.'
         );
+      }
       user = await this._authenticateUserFromRequest(req);
     }
 
-    if (!challengeData) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge.');
+    if (!challengeData) {
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge.');
+    }
 
-    if (typeof challengeData !== 'object')
+    if (typeof challengeData !== 'object') {
       throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'challengeData should be an object.');
+    }
 
     let request;
     let parseUser;
@@ -536,7 +545,7 @@ export class UsersRouter extends ClassesRouter {
 
       try {
         if (!results[0] || results.length > 1) {
-          throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
         }
         // Find the provider used to find the user
         const provider = Object.keys(authData).find(key => authData[key].id);
@@ -546,11 +555,14 @@ export class UsersRouter extends ClassesRouter {
         request.isChallenge = true;
         // Validate authData used to identify the user to avoid brute-force attack on `id`
         const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
-        await validator(authData[provider], req, parseUser, request);
+        const validatorResponse = await validator(authData[provider], req, parseUser, request);
+        if (validatorResponse && validatorResponse.validator) {
+          await validatorResponse.validator();
+        }
       } catch (e) {
         // Rewrite the error to avoid guess id attack
         logger.error(e);
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
       }
     }
 
@@ -562,14 +574,15 @@ export class UsersRouter extends ClassesRouter {
       request = getRequestObject(undefined, req.auth, parseUser, parseUser, req.config);
       request.isChallenge = true;
     }
-
+    const acc = {};
     // Execute challenge step-by-step with consistent order for better error feedback
     // and to avoid to trigger others challenges if one of them fails
-    const challenge = await Auth.reducePromise(
-      Object.keys(challengeData).sort(),
-      async (acc, provider) => {
+    for (const provider of Object.keys(challengeData).sort()) {
+      try {
         const authAdapter = req.config.authDataManager.getValidatorForProvider(provider);
-        if (!authAdapter) return acc;
+        if (!authAdapter) {
+          continue;
+        }
         const {
           adapter: { challenge },
         } = authAdapter;
@@ -577,18 +590,30 @@ export class UsersRouter extends ClassesRouter {
           const providerChallengeResponse = await challenge(
             challengeData[provider],
             authData && authData[provider],
-            req.config.auth[provider],
-            request,
-            req.config
+            request
           );
           acc[provider] = providerChallengeResponse || true;
-          return acc;
         }
-      },
-      {}
-    );
-
-    return { response: { challengeData: challenge } };
+      } catch (err) {
+        const e = resolveError(err, {
+          code: Parse.Error.SCRIPT_FAILED,
+          message: 'Challenge failed. Unknown error.',
+        });
+        const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
+        logger.error(
+          `Failed running auth step challenge for ${provider} for user ${userString} with Error: ` +
+            JSON.stringify(e),
+          {
+            authenticationStep: 'challenge',
+            error: e,
+            user: userString,
+            provider,
+          }
+        );
+        throw e;
+      }
+    }
+    return { response: { challengeData: acc } };
   }
 
   mountRoutes() {

@@ -1,15 +1,8 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
-import { getRequestObject } from './triggers';
+import { getRequestObject, resolveError } from './triggers';
 import Deprecator from './Deprecator/Deprecator';
-
-const reducePromise = async (arr, fn, acc, index = 0) => {
-  if (arr[index]) {
-    const newAcc = await Promise.resolve(fn(acc, arr[index]));
-    return reducePromise(arr, fn, newAcc, index + 1);
-  }
-  return acc;
-};
+import { logger } from './logger';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -429,10 +422,10 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
   );
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
-  return reducePromise(
-    // apply sort to run the pipeline each time in the same order
-    Object.keys(authData).sort(),
-    async (acc, provider) => {
+  const acc = { authData: {}, authDataResponse: {} };
+  for (const provider of Object.keys(authData).sort()) {
+    let method = '';
+    try {
       if (authData[provider] === null) {
         acc.authData[provider] = null;
         return acc;
@@ -451,23 +444,48 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
           'This authentication method is unsupported.'
         );
       }
-      const validationResult = await validator(authData[provider], req, user, requestObject);
-      if (validationResult) {
-        if (!Object.keys(validationResult).length) acc.authData[provider] = authData[provider];
-
-        if (validationResult.response) acc.authDataResponse[provider] = validationResult.response;
-        // Some auth providers after initialization will avoid to replace authData already stored
-        if (!validationResult.doNotSave) {
-          acc.authData[provider] = validationResult.save || authData[provider];
-        }
-      } else {
-        // Support current authData behavior no result store the new AuthData
+      let validationResult = await validator(authData[provider], req, user, requestObject);
+      method = validationResult && validationResult.method;
+      requestObject.triggerName = method;
+      if (validationResult && validationResult.validator) {
+        validationResult = await validationResult.validator();
+      }
+      if (!validationResult) {
+        acc.authData[provider] = authData[provider];
+        continue;
+      }
+      if (!Object.keys(validationResult).length) {
         acc.authData[provider] = authData[provider];
       }
-      return acc;
-    },
-    { authData: {}, authDataResponse: {} }
-  );
+
+      if (validationResult.response) {
+        acc.authDataResponse[provider] = validationResult.response;
+      }
+      // Some auth providers after initialization will avoid to replace authData already stored
+      if (!validationResult.doNotSave) {
+        acc.authData[provider] = validationResult.save || authData[provider];
+      }
+    } catch (err) {
+      const e = resolveError(err, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Auth failed. Unknown error.',
+      });
+      const userString =
+        req.auth && req.auth.user ? req.auth.user.id : req.data.objectId || undefined;
+      logger.error(
+        `Failed running auth step ${method} for ${provider} for user ${userString} with Error: ` +
+          JSON.stringify(e),
+        {
+          authenticationStep: method,
+          error: e,
+          user: userString,
+          provider,
+        }
+      );
+      throw e;
+    }
+  }
+  return acc;
 };
 
 module.exports = {
@@ -480,6 +498,5 @@ module.exports = {
   findUsersWithAuthData,
   hasMutatedAuthData,
   checkIfUserHasProvidedConfiguredProvidersForLogin,
-  reducePromise,
   handleAuthDataValidation,
 };

@@ -26,12 +26,10 @@ export class AuthAdapter {
   /**
    * @param appIds The specified app IDs in the configuration
    * @param {Object} authData The client provided authData
-   * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config
    * @returns {(Promise<undefined|void>|void|undefined)} resolves or returns if the applicationId is valid
    */
-  validateAppId(appIds, authData, options, request) {
+  validateAppId(appIds, authData) {
     return Promise.resolve({});
   }
 
@@ -39,12 +37,10 @@ export class AuthAdapter {
    * Legacy usage, if provided it will be triggered when authData related to this provider is touched (signup/update/login)
    * otherwise you should implement validateSetup, validateLogin and validateUpdate
    * @param {Object} authData The client provided authData
-   * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config Parse Server config object
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateAuthData(authData, options, request, config) {
+  validateAuthData(authData, request) {
     return Promise.resolve({});
   }
 
@@ -52,12 +48,10 @@ export class AuthAdapter {
    * Triggered when user provide for the first time this auth provider
    * could be a register or the user adding a new auth service
    * @param {Object} authData The client provided authData
-   * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config Parse Server config object
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateSetUp(authData, options, req, user) {
+  validateSetUp(authData, req) {
     return Promise.resolve({});
   }
 
@@ -65,12 +59,10 @@ export class AuthAdapter {
    * Triggered when user provide authData related to this provider
    * The user is not logged in and has already set this provider before
    * @param {Object} authData The client provided authData
-   * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateLogin(authData, options, req, user) {
+  validateLogin(authData, req) {
     return Promise.resolve({});
   }
 
@@ -78,12 +70,10 @@ export class AuthAdapter {
    * Triggered when user provide authData related to this provider
    * the user is logged in and has already set this provider before
    * @param {Object} authData The client provided authData
-   * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateUpdate(authData, options, req, user) {
+  validateUpdate(authData, req) {
     return Promise.resolve({});
   }
 
@@ -91,12 +81,10 @@ export class AuthAdapter {
    * Triggered in pre authentication process if needed (like webauthn, SMS OTP)
    * @param {Object} challengeData Data provided by the client
    * @param {(Object|undefined)} authData Auth data provided by the client, can be used for validation
-   * @param {Object} options Additional options
    * @param {Parse.Cloud.TriggerRequest} request
-   * @param {Object} config Parse Server config object
    * @returns {Promise<Object>} A promise that resolves, resolved value will be added to challenge response under challenge key
    */
-  challenge(challengeData, authData, options, req, user) {
+  challenge(challengeData, authData, req) {
     return Promise.resolve({});
   }
 }
