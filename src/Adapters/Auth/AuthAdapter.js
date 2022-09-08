@@ -2,7 +2,7 @@
 
 /**
  * @interface ParseAuthResponse
- * @property {Boolean} [doNotSave] If true, Parse Server will do not save provided authData.
+ * @property {Boolean} [doNotSave] If true, Parse Server will not save provided authData.
  * @property {Object} [response] If set, Parse Server will send the provided response to the client under authDataResponse
  * @property {Object} [save] If set, Parse Server will save the object provided into this key, instead of client provided authData
  */

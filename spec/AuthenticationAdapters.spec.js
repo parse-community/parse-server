@@ -3,7 +3,6 @@ const Config = require('../lib/Config');
 const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
-
 const responses = {
   gpgames: { playerId: 'userId' },
   instagram: { id: 'userId' },

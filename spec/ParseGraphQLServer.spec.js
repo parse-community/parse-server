@@ -1,6 +1,5 @@
 const http = require('http');
 const express = require('express');
-const Config = require('../lib/Config');
 const req = require('../lib/request');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const FormData = require('form-data');
@@ -7253,13 +7252,12 @@ describe('ParseGraphQLServer', () => {
           expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
           expect(challengeCall[0]).toEqual({ someChallengeData: true });
           expect(challengeCall[1]).toEqual(undefined);
-          expect(challengeCall[2]).toEqual(challengeAdapter);
-          expect(challengeCall[3].object instanceof Parse.User).toBeTruthy();
-          expect(challengeCall[3].original instanceof Parse.User).toBeTruthy();
-          expect(challengeCall[3].isChallenge).toBeTruthy();
-          expect(challengeCall[3].object.id).toEqual(user.id);
-          expect(challengeCall[3].original.id).toEqual(user.id);
-          expect(challengeCall[4] instanceof Config).toBeTruthy();
+          expect(challengeCall[2].object instanceof Parse.User).toBeTruthy();
+          expect(challengeCall[2].original instanceof Parse.User).toBeTruthy();
+          expect(challengeCall[2].isChallenge).toBeTruthy();
+          expect(challengeCall[2].object.id).toEqual(user.id);
+          expect(challengeCall[2].original.id).toEqual(user.id);
+          expect(challengeCall.length).toBe(3);
           expect(result.data.challenge.clientMutationId).toEqual(clientMutationId);
           expect(result.data.challenge.challengeData).toEqual({
             challengeAdapter: { someData: true },
