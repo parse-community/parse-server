@@ -1207,7 +1207,7 @@ class DatabaseController {
                 `Invalid field name: ${fieldName}.`
               );
             }
-            if (this.adapter instanceof PostgresStorageAdapter && !schema.fields[fieldName]) {
+            if (!schema.fields[fieldName.split('.')[0]]) {
               delete sort[fieldName];
             }
           });
