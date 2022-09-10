@@ -194,7 +194,7 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
-  /* Default limit for the size of results set on queries, defaults to 100 */
+  /* Default limit for the size of results set on queries, defaults to `100`. */
   defaultLimit: ?number;
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
