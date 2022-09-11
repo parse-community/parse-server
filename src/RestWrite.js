@@ -12,6 +12,7 @@ var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
+const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
@@ -1688,7 +1689,11 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       continue;
     }
     const value = response[key];
-    if (value == null || (value.__type && value.__type === 'Pointer') || _.isEqual(data[key], value)) {
+    if (
+      value == null ||
+      (value.__type && value.__type === 'Pointer') ||
+      util.isDeepStrictEqual(data[key], value)
+    ) {
       delete response[key];
     }
   }
