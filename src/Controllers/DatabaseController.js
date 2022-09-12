@@ -1207,7 +1207,7 @@ class DatabaseController {
                 `Invalid field name: ${fieldName}.`
               );
             }
-            if (!schema.fields[fieldName.split('.')[0]]) {
+            if (!schema.fields[fieldName.split('.')[0]] && fieldName.charAt(0) !== '$') {
               delete sort[fieldName];
             }
           });
