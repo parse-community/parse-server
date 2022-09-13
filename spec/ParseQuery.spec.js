@@ -5247,4 +5247,14 @@ describe('Parse.Query testing', () => {
     // Validate
     expect(result.executionStats).not.toBeUndefined();
   });
+  it_only_db('mongo')('should correctly throw on invalid transform', async () => {
+    await expectAsync(
+      new Parse.Query('SomeObject').equalTo('users', new Parse.Query(Parse.User)).first()
+    ).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `You cannot use {"className":"_User","_where":{},"_include":[],"_exclude":[],"_count":false,"_limit":-1,"_skip":0,"_readPreference":null,"_includeReadPreference":null,"_subqueryReadPreference":null,"_queriesLocalDatastore":false,"_localDatastorePinName":null,"_extraOptions":{},"_xhrRequest":{"task":null}} as a query parameter.`
+      )
+    );
+  });
 });

@@ -341,7 +341,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   } else {
     throw new Parse.Error(
       Parse.Error.INVALID_JSON,
-      `You cannot use ${value} as a query parameter.`
+      `You cannot use ${JSON.stringify(value)} as a query parameter.`
     );
   }
 }
