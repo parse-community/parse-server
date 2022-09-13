@@ -202,6 +202,7 @@
  * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
+ * @property {String} fileTypes If set, allowed content types of files
  */
 
 /**

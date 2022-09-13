@@ -24,4 +24,5 @@ module.exports = [
   },
   { optionKey: 'enforcePrivateUsers', changeNewDefault: 'true' },
   { optionKey: 'allowClientClassCreation', changeNewDefault: 'false' },
+  { optionKey: 'fileUpload.fileTypes', changeNewDefault: '^(.(?!.*html?))*$' },
 ];
