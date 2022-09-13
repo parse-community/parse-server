@@ -124,7 +124,7 @@ export class FilesRouter {
     }
     const filesController = config.filesController;
     const { filename } = req.params;
-    const contentType = req.get('Content-type') || mime.getType(filename);
+    const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));
@@ -135,25 +135,6 @@ export class FilesRouter {
     if (error) {
       next(error);
       return;
-    }
-
-    const fileTypes = config.fileUpload && config.fileUpload.fileTypes;
-    if (!isMaster && fileTypes) {
-      try {
-        if (Array.isArray(fileTypes)) {
-          if (!fileTypes.includes(contentType)) {
-            throw `File upload of type ${contentType} is disabled.`;
-          }
-        } else if (typeof fileTypes === 'string') {
-          const regex = new RegExp(fileTypes);
-          if (!regex.test(contentType)) {
-            throw `File upload of type ${contentType} is disabled.`;
-          }
-        }
-      } catch (e) {
-        next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, e));
-        return;
-      }
     }
 
     const base64 = req.body.toString('base64');

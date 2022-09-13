@@ -866,11 +866,6 @@ module.exports.FileUploadOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  fileTypes: {
-    env: 'PARSE_SERVER_FILE_UPLOAD_FILE_TYPES',
-    help: 'If set, allowed content types of files',
-    default: '.*',
-  },
 };
 module.exports.DatabaseOptions = {
   enableSchemaHooks: {
