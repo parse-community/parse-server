@@ -1287,7 +1287,6 @@ describe('Installations', () => {
     expect(installation.get('badge')).toEqual(3);
     expect(functions.beforeSave).not.toHaveBeenCalled();
     expect(functions.afterSave).not.toHaveBeenCalled();
-
   });
 
   // TODO: Look at additional tests from installation_collection_test.go:882
