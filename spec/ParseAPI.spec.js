@@ -1000,7 +1000,7 @@ describe('miscellaneous', function () {
       }),
     });
     const body = response.data;
-    expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'objectId', 'updatedAt']);
+    expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'updatedAt']);
     expect(body.a).toBeUndefined();
     expect(body.c).toEqual(3); // 2+1
     expect(body.d.length).toBe(2);

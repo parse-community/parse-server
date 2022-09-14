@@ -1418,7 +1418,6 @@ RestWrite.prototype.runDatabaseOperation = function () {
         )
         .then(response => {
           response.updatedAt = this.updatedAt;
-          this._updateResponseWithData(response, this.data);
           this.response = { response };
         });
     });
@@ -1678,7 +1677,10 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
-  const skipKeys = ['objectId', 'updatedAt', ...(requiredColumns.read[this.className] || [])];
+  const skipKeys = ['updatedAt', ...(requiredColumns.read[this.className] || [])];
+  if (!this.query) {
+    skipKeys.push('objectId', 'createdAt');
+  }
   for (const key in response) {
     if (skipKeys.includes(key)) {
       continue;
