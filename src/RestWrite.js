@@ -1678,12 +1678,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
-  const skipKeys = [
-    'objectId',
-    'createdAt',
-    'updatedAt',
-    ...(requiredColumns.read[this.className] || []),
-  ];
+  const skipKeys = ['objectId', 'updatedAt', ...(requiredColumns.read[this.className] || [])];
   for (const key in response) {
     if (skipKeys.includes(key)) {
       continue;
@@ -1691,6 +1686,7 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     const value = response[key];
     if (
       value == null ||
+      data[key] == null ||
       (value.__type && value.__type === 'Pointer') ||
       util.isDeepStrictEqual(data[key], value)
     ) {
