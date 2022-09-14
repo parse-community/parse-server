@@ -1539,7 +1539,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-  const frozenJSON = Object.freeze(updatedObject.toJSON())
+  const frozenJSON = Object.freeze(updatedObject.toJSON());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   this.config.database.loadSchema().then(schemaController => {
@@ -1578,10 +1578,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
             delete json[key];
           }
         }
-        this.response.response = this._updateResponseWithData(
-          json,
-          this.data
-        );
+        this.response.response = this._updateResponseWithData(json, this.data);
       }
     })
     .catch(function (err) {
@@ -1688,10 +1685,11 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
-  const skipKeys = ['updatedAt', ...(requiredColumns.read[this.className] || [])];
+  const skipKeys = [...(requiredColumns.read[this.className] || [])];
   if (!this.query) {
     skipKeys.push('objectId', 'createdAt');
   } else {
+    skipKeys.push('updatedAt');
     delete response.objectId;
   }
   for (const key in response) {
