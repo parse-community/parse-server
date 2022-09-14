@@ -1418,6 +1418,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
         )
         .then(response => {
           response.updatedAt = this.updatedAt;
+          this._updateResponseWithData(response, this.data);
           this.response = { response };
         });
     });
