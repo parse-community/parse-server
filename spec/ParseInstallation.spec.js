@@ -1239,7 +1239,7 @@ describe('Installations', () => {
     });
   });
 
-  it('can use  push with beforeSave', async () => {
+  it('can use push with beforeSave', async () => {
     const input = {
       deviceToken: '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306',
       deviceType: 'ios',
