@@ -5,6 +5,7 @@ import MailAdapter from '../Adapters/Email/MailAdapter';
 import rest from '../rest';
 import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
+import Config from '../Config';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -12,6 +13,10 @@ var Auth = require('../Auth');
 export class UserController extends AdaptableController {
   constructor(adapter, appId, options = {}) {
     super(adapter, appId, options);
+  }
+
+  get config() {
+    return Config.get(this.appId);
   }
 
   validateAdapter(adapter) {
@@ -308,15 +313,17 @@ export class UserController extends AdaptableController {
 
 // Mark this private
 function updateUserPassword(user, password, config) {
-  return rest.update(
-    config,
-    Auth.master(config),
-    '_User',
-    { objectId: user.objectId },
-    {
-      password: password,
-    }
-  ).then(() => user);
+  return rest
+    .update(
+      config,
+      Auth.master(config),
+      '_User',
+      { objectId: user.objectId },
+      {
+        password: password,
+      }
+    )
+    .then(() => user);
 }
 
 function buildEmailLink(destination, username, token, config) {

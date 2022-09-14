@@ -2,7 +2,6 @@ import authDataManager from '../Adapters/Auth';
 import { ParseServerOptions } from '../Options';
 import { loadAdapter } from '../Adapters/AdapterLoader';
 import defaults from '../defaults';
-import url from 'url';
 // Controllers
 import { LoggerController } from './LoggerController';
 import { FilesController } from './FilesController';
@@ -15,7 +14,6 @@ import { PushController } from './PushController';
 import { PushQueue } from '../Push/PushQueue';
 import { PushWorker } from '../Push/PushWorker';
 import DatabaseController from './DatabaseController';
-import SchemaCache from './SchemaCache';
 
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
@@ -26,6 +24,7 @@ import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -41,7 +40,7 @@ export function getControllers(options: ParseServerOptions) {
   const cacheController = getCacheController(options);
   const analyticsController = getAnalyticsController(options);
   const liveQueryController = getLiveQueryController(options);
-  const databaseController = getDatabaseController(options, cacheController);
+  const databaseController = getDatabaseController(options);
   const hooksController = getHooksController(options, databaseController);
   const authDataManager = getAuthDataManager(options);
   const parseGraphQLController = getParseGraphQLController(options, {
@@ -64,6 +63,7 @@ export function getControllers(options: ParseServerOptions) {
     databaseController,
     hooksController,
     authDataManager,
+    schemaCache: SchemaCache,
   };
 }
 
@@ -91,12 +91,20 @@ export function getLoggerController(options: ParseServerOptions): LoggerControll
 }
 
 export function getFilesController(options: ParseServerOptions): FilesController {
-  const { appId, databaseURI, filesAdapter, databaseAdapter, preserveFileName, fileKey } = options;
+  const {
+    appId,
+    databaseURI,
+    databaseOptions = {},
+    filesAdapter,
+    databaseAdapter,
+    preserveFileName,
+    fileKey,
+  } = options;
   if (!filesAdapter && databaseAdapter) {
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-    return new GridFSBucketAdapter(databaseURI, {}, fileKey);
+    return new GridFSBucketAdapter(databaseURI, databaseOptions, fileKey);
   });
   return new FilesController(filesControllerAdapter, appId, {
     preserveFileName,
@@ -141,17 +149,8 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
   return new LiveQueryController(options.liveQuery);
 }
 
-export function getDatabaseController(
-  options: ParseServerOptions,
-  cacheController: CacheController
-): DatabaseController {
-  const {
-    databaseURI,
-    databaseOptions,
-    collectionPrefix,
-    schemaCacheTTL,
-    enableSingleSchemaCache,
-  } = options;
+export function getDatabaseController(options: ParseServerOptions): DatabaseController {
+  const { databaseURI, collectionPrefix, databaseOptions } = options;
   let { databaseAdapter } = options;
   if (
     (databaseOptions ||
@@ -165,10 +164,7 @@ export function getDatabaseController(
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(
-    databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
-  );
+  return new DatabaseController(databaseAdapter, options);
 }
 
 export function getHooksController(
@@ -231,13 +227,14 @@ export function getAuthDataManager(options: ParseServerOptions) {
 export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
   let protocol;
   try {
-    const parsedURI = url.parse(databaseURI);
+    const parsedURI = new URL(databaseURI);
     protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
   } catch (e) {
     /* */
   }
   switch (protocol) {
     case 'postgres:':
+    case 'postgresql:':
       return new PostgresStorageAdapter({
         uri: databaseURI,
         collectionPrefix,

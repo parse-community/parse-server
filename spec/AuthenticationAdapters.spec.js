@@ -5,7 +5,7 @@ const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
   gpgames: { playerId: 'userId' },
-  instagram: { data: { id: 'userId' } },
+  instagram: { id: 'userId' },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
   janraincapture: { stat: 'ok', result: 'userId' },
   line: { userId: 'userId' },
@@ -477,6 +477,34 @@ describe('AuthenticationProviders', function () {
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
   });
+
+  it('can disable provider', async () => {
+    await reconfigureServer({
+      auth: {
+        myoauth: {
+          enabled: false,
+          module: path.resolve(__dirname, 'support/myoauth'), // relative path as it's run from src
+        },
+      },
+    });
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await expectAsync(Parse.User._logInWith('myoauth')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+  });
+
+  it('can depreciate', async () => {
+    const Deprecator = require('../lib/Deprecator/Deprecator');
+    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith('myoauth');
+    expect(spy).toHaveBeenCalledWith({
+      usage: 'auth.myoauth',
+      solution: 'auth.myoauth.enabled: true',
+    });
+  });
 });
 
 describe('instagram auth adapter', () => {
@@ -492,7 +520,15 @@ describe('instagram auth adapter', () => {
       'https://graph.instagram.com/me?fields=id&access_token=the_token'
     );
   });
-
+  it('response object without data child', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'userId' });
+    });
+    await instagram.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://graph.instagram.com/me?fields=id&access_token=the_token'
+    );
+  });
   it('should pass in api url', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
       return Promise.resolve({ data: { id: 'userId' } });
@@ -1644,8 +1680,43 @@ describe('apple signin auth adapter', () => {
 
 describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
+  const fs = require('fs');
+  const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+
+  it('can load adapter', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+  });
 
   it('validateAuthData should validate', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
     // real token is used
     const authData = {
       id: 'G:1965586982',
@@ -1656,48 +1727,147 @@ describe('Apple Game Center Auth adapter', () => {
       salt: 'DzqqrQ==',
       bundleId: 'cloud.xtralife.gamecenterauth',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-    } catch (e) {
-      fail();
-    }
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    await gcenter.validateAuthData(authData);
   });
 
   it('validateAuthData invalid signature id', async () => {
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      {}
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
     const authData = {
       id: 'G:1965586982',
-      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-6.cer',
       timestamp: 1565257031287,
       signature: '1234',
       salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
+      bundleId: 'com.example.com',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid signature');
-    }
+    await expectAsync(gcenter.validateAuthData(authData)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Apple Game Center - invalid signature')
+    );
   });
 
-  it('validateAuthData invalid public key url', async () => {
-    const authData = {
-      id: 'G:1965586982',
-      publicKeyUrl: 'invalid.com',
-      timestamp: 1565257031287,
-      signature: '1234',
-      salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
+  it('validateAuthData invalid public key http url', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
     };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    const publicKeyUrls = [
+      'example.com',
+      'http://static.gc.apple.com/public-key/gc-prod-4.cer',
+      'https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg',
+      'https://example.com/ \\.apple.com/public_key.cer',
+      'https://example.com/ &.apple.com/public_key.cer',
+    ];
+    await Promise.all(
+      publicKeyUrls.map(publicKeyUrl =>
+        expectAsync(
+          gcenter.validateAuthData({
+            id: 'G:1965586982',
+            timestamp: 1565257031287,
+            publicKeyUrl,
+            signature: '1234',
+            salt: 'DzqqrQ==',
+            bundleId: 'com.example.com',
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.SCRIPT_FAILED,
+            `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+          )
+        )
+      )
+    );
+  });
 
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: invalid.com');
-    }
+  it('should not validate Symantec Cert', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    expect(() =>
+      gcenter.verifyPublicKeyIssuer(
+        testCert,
+        'https://static.gc.apple.com/public-key/gc-prod-4.cer'
+      )
+    );
+  });
+
+  it('adapter should load default cert', async () => {
+    const options = {
+      gcenter: {},
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    const previous = new Date();
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+
+    const duration = new Date().getTime() - previous.getTime();
+    expect(duration).toEqual(0);
+  });
+
+  it('adapter should throw', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl: 'https://example.com',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await expectAsync(
+      adapter.validateAppId(
+        appIds,
+        { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+        providerOptions
+      )
+    ).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Apple Game Center auth adapter parameter `rootCertificateURL` is invalid.'
+      )
+    );
   });
 });
 
@@ -1742,9 +1912,393 @@ describe('microsoft graph auth adapter', () => {
       access_token: 'very.long.bad.token',
     };
     microsoft.validateAuthData(authData).then(done.fail, err => {
-      expect(err.code).toBe(101);
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       expect(err.message).toBe('Microsoft Graph auth is invalid for this user.');
       done();
     });
+  });
+});
+
+describe('facebook limited auth adapter', () => {
+  const facebook = require('../lib/Adapters/Auth/facebook');
+  const jwt = require('jsonwebtoken');
+  const util = require('util');
+
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as string) should throw error with missing id_token', async () => {
+    try {
+      await facebook.validateAuthData({}, { clientId: 'secret' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
+
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as array) should throw error with missing id_token', async () => {
+    try {
+      await facebook.validateAuthData({}, { clientId: ['secret'] });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Facebook auth is not configured.');
+    }
+  });
+
+  it('should not decode invalid id_token', async () => {
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('should throw error if public key used to encode token is not available', async () => {
+    const fakeDecodedToken = {
+      header: { kid: '789', alg: 'RS256' },
+    };
+    try {
+      spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
+      );
+    }
+  });
+
+  it('should use algorithm from key header to verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+  });
+
+  it('should not verify invalid id_token', async () => {
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt malformed');
+    }
+  });
+
+  it('(using client id as array) should not verify invalid id_token', async () => {
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('(using client id as string) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as array) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as array with multiple items) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await facebook.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret', 'secret 123'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as array) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: ['INSERT CLIENT ID HERE'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.facebook.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+      );
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
+  // and a private key
+  xit('should throw error with invalid user id', async () => {
+    try {
+      await facebook.validateAuthData(
+        {
+          id: 'invalid user',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+
+  it('should throw error with with invalid user id', async () => {
+    const fakeClaim = {
+      iss: 'https://facebook.com',
+      aud: 'invalid_client_id',
+      sub: 'a_different_user_id',
+    };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
   });
 });

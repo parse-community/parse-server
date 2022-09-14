@@ -5,6 +5,7 @@ const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
+const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
 
 let config;
 
@@ -140,13 +141,9 @@ const masterKeyHeaders = {
 };
 
 describe('schemas', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await reconfigureServer();
     config = Config.get('test');
-  });
-
-  afterEach(async () => {
-    await config.database.schemaCache.clear();
-    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('requires the master key to get all schemas', done => {
@@ -241,6 +238,52 @@ describe('schemas', () => {
           done();
         });
       });
+  });
+
+  it('ensure refresh cache after creating a class', async done => {
+    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'A',
+      },
+    });
+    const response = await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'GET',
+      headers: masterKeyHeaders,
+      json: true,
+    });
+    const expected = {
+      results: [
+        userSchema,
+        roleSchema,
+        {
+          className: 'A',
+          fields: {
+            //Default fields
+            ACL: { type: 'ACL' },
+            createdAt: { type: 'Date' },
+            updatedAt: { type: 'Date' },
+            objectId: { type: 'String' },
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+        },
+      ],
+    };
+    expect(
+      response.data.results
+        .sort((s1, s2) => s1.className.localeCompare(s2.className))
+        .map(s => {
+          const withoutIndexes = Object.assign({}, s);
+          delete withoutIndexes.indexes;
+          return withoutIndexes;
+        })
+    ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
+    done();
   });
 
   it('responds with a single schema', done => {
@@ -763,7 +806,7 @@ describe('schemas', () => {
     });
   });
 
-  it('refuses to put to existing fields, even if it would not be a change', done => {
+  it('refuses to put to existing fields with different type, even if it would not be a change', done => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
@@ -773,7 +816,7 @@ describe('schemas', () => {
         json: true,
         body: {
           fields: {
-            aString: { type: 'String' },
+            aString: { type: 'Number' },
           },
         },
       }).then(fail, response => {
@@ -1274,6 +1317,7 @@ describe('schemas', () => {
           },
         },
       }).then(response => {
+        delete response.data.indexes;
         expect(
           dd(response.data, {
             className: '_User',
@@ -1302,6 +1346,7 @@ describe('schemas', () => {
           headers: masterKeyHeaders,
           json: true,
         }).then(response => {
+          delete response.data.indexes;
           expect(
             dd(response.data, {
               className: '_User',
@@ -1507,6 +1552,46 @@ describe('schemas', () => {
       expect(response.data).toEqual({});
       done();
     });
+  });
+
+  it('ensure refresh cache after deleting a class', async done => {
+    config = Config.get('test');
+    spyOn(config.schemaCache, 'del').and.callFake(() => {});
+    spyOn(SchemaController.prototype, 'reloadData').and.callFake(() => Promise.resolve());
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'A',
+      },
+    });
+    await request({
+      method: 'DELETE',
+      url: 'http://localhost:8378/1/schemas/A',
+      headers: masterKeyHeaders,
+      json: true,
+    });
+    const response = await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'GET',
+      headers: masterKeyHeaders,
+      json: true,
+    });
+    const expected = {
+      results: [userSchema, roleSchema],
+    };
+    expect(
+      response.data.results
+        .sort((s1, s2) => s1.className.localeCompare(s2.className))
+        .map(s => {
+          const withoutIndexes = Object.assign({}, s);
+          delete withoutIndexes.indexes;
+          return withoutIndexes;
+        })
+    ).toEqual(expected.results.sort((s1, s2) => s1.className.localeCompare(s2.className)));
+    done();
   });
 
   it('deletes collections including join tables', done => {
@@ -1778,6 +1863,34 @@ describe('schemas', () => {
           done();
         }
       );
+    });
+  });
+
+  describe('Nested documents', () => {
+    beforeAll(async () => {
+      const testSchema = new Parse.Schema('test_7371');
+      testSchema.setCLP({
+        create: { ['*']: true },
+        update: { ['*']: true },
+        addField: {},
+      });
+      testSchema.addObject('a');
+      await testSchema.save();
+    });
+
+    it('addField permission not required for adding a nested property', async () => {
+      const obj = new Parse.Object('test_7371');
+      obj.set('a', {});
+      await obj.save();
+      obj.set('a.b', 2);
+      await obj.save();
+    });
+    it('addField permission not required for modifying a nested property', async () => {
+      const obj = new Parse.Object('test_7371');
+      obj.set('a', { b: 1 });
+      await obj.save();
+      obj.set('a.b', 2);
+      await obj.save();
     });
   });
 
@@ -2816,7 +2929,11 @@ describe('schemas', () => {
   });
 
   describe('index management', () => {
-    beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
+    beforeEach(async () => {
+      await TestUtils.destroyAllDataPermanently(false);
+      await config.database.adapter.performInitialization({ VolatileClassesSchemas: [] });
+    });
+
     it('cannot create index if field does not exist', done => {
       request({
         url: 'http://localhost:8378/1/schemas/NewClass',

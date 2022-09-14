@@ -1,10 +1,12 @@
 import { GraphQLNonNull, GraphQLString, GraphQLBoolean, GraphQLInputObjectType } from 'graphql';
 import { mutationWithClientMutationId } from 'graphql-relay';
+import deepcopy from 'deepcopy';
 import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from '../helpers/objectsMutations';
 import { OBJECT } from './defaultGraphQLTypes';
 import { getUserFromSessionToken } from './usersQueries';
 import { transformTypes } from '../transformers/mutation';
+import Parse from 'parse/node';
 
 const usersRouter = new UsersRouter();
 
@@ -30,7 +32,7 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { fields } = args;
+        const { fields } = deepcopy(args);
         const { config, auth, info } = context;
 
         const parseFields = await transformTypes('create', fields, {
@@ -100,7 +102,7 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { fields, authData } = args;
+        const { fields, authData } = deepcopy(args);
         const { config, auth, info } = context;
 
         const parseFields = await transformTypes('create', fields, {
@@ -153,7 +155,7 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { username, password } = args;
+        const { username, password } = deepcopy(args);
         const { config, auth, info } = context;
 
         const { sessionToken, objectId } = (
@@ -249,6 +251,61 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(resetPasswordMutation.args.input.type.ofType, true, true);
   parseGraphQLSchema.addGraphQLType(resetPasswordMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation('resetPassword', resetPasswordMutation, true, true);
+
+  const confirmResetPasswordMutation = mutationWithClientMutationId({
+    name: 'ConfirmResetPassword',
+    description:
+      'The confirmResetPassword mutation can be used to reset the password of an existing user.',
+    inputFields: {
+      username: {
+        descriptions: 'Username of the user that have received the reset email',
+        type: new GraphQLNonNull(GraphQLString),
+      },
+      password: {
+        descriptions: 'New password of the user',
+        type: new GraphQLNonNull(GraphQLString),
+      },
+      token: {
+        descriptions: 'Reset token that was emailed to the user',
+        type: new GraphQLNonNull(GraphQLString),
+      },
+    },
+    outputFields: {
+      ok: {
+        description: "It's always true.",
+        type: new GraphQLNonNull(GraphQLBoolean),
+      },
+    },
+    mutateAndGetPayload: async ({ username, password, token }, context) => {
+      const { config } = context;
+      if (!username) {
+        throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'you must provide a username');
+      }
+      if (!password) {
+        throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'you must provide a password');
+      }
+      if (!token) {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'you must provide a token');
+      }
+
+      const userController = config.userController;
+      await userController.updatePassword(username, token, password);
+      return { ok: true };
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    confirmResetPasswordMutation.args.input.type.ofType,
+    true,
+    true
+  );
+  parseGraphQLSchema.addGraphQLType(confirmResetPasswordMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation(
+    'confirmResetPassword',
+    confirmResetPasswordMutation,
+    true,
+    true
+  );
 
   const sendVerificationEmailMutation = mutationWithClientMutationId({
     name: 'SendVerificationEmail',

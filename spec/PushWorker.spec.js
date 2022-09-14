@@ -249,7 +249,7 @@ describe('PushWorker', () => {
             // should not be deleted
             transmitted: false,
             device: {
-              deviceToken: 101,
+              deviceToken: Parse.Error.OBJECT_NOT_FOUND,
               deviceType: 'ios',
             },
             response: { error: 'invalid error...' },
@@ -314,6 +314,7 @@ describe('PushWorker', () => {
               amount: 1,
             },
             count: { __op: 'Increment', amount: -1 },
+            status: 'running',
           });
           const query = new Parse.Query('_PushStatus');
           return query.get(handler.objectId, { useMasterKey: true });
@@ -409,6 +410,7 @@ describe('PushWorker', () => {
               amount: 1,
             },
             count: { __op: 'Increment', amount: -1 },
+            status: 'running',
           });
           done();
         });

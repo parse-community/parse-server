@@ -28,42 +28,39 @@ describe('ParseGraphQLController', () => {
     return graphQLConfigRecord;
   };
 
-  beforeAll(async () => {
-    parseServer = await global.reconfigureServer({
-      schemaCacheTTL: 100,
-    });
-    databaseController = parseServer.config.databaseController;
-    cacheController = parseServer.config.cacheController;
+  beforeEach(async () => {
+    if (!parseServer) {
+      parseServer = await global.reconfigureServer();
+      databaseController = parseServer.config.databaseController;
+      cacheController = parseServer.config.cacheController;
 
-    const defaultFind = databaseController.find.bind(databaseController);
-    databaseController.find = async (className, query, ...args) => {
-      if (className === GraphQLConfigClassName && isEqual(query, { objectId: GraphQLConfigId })) {
-        const graphQLConfigRecord = getConfigFromDb();
-        return graphQLConfigRecord ? [graphQLConfigRecord] : [];
-      } else {
-        return defaultFind(className, query, ...args);
-      }
-    };
+      const defaultFind = databaseController.find.bind(databaseController);
+      databaseController.find = async (className, query, ...args) => {
+        if (className === GraphQLConfigClassName && isEqual(query, { objectId: GraphQLConfigId })) {
+          const graphQLConfigRecord = getConfigFromDb();
+          return graphQLConfigRecord ? [graphQLConfigRecord] : [];
+        } else {
+          return defaultFind(className, query, ...args);
+        }
+      };
 
-    const defaultUpdate = databaseController.update.bind(databaseController);
-    databaseController.update = async (className, query, update, fullQueryOptions) => {
-      databaseUpdateArgs = [className, query, update, fullQueryOptions];
-      if (
-        className === GraphQLConfigClassName &&
-        isEqual(query, { objectId: GraphQLConfigId }) &&
-        update &&
-        !!update[GraphQLConfigKey] &&
-        fullQueryOptions &&
-        isEqual(fullQueryOptions, { upsert: true })
-      ) {
-        setConfigOnDb(update[GraphQLConfigKey]);
-      } else {
-        return defaultUpdate(...databaseUpdateArgs);
-      }
-    };
-  });
-
-  beforeEach(() => {
+      const defaultUpdate = databaseController.update.bind(databaseController);
+      databaseController.update = async (className, query, update, fullQueryOptions) => {
+        databaseUpdateArgs = [className, query, update, fullQueryOptions];
+        if (
+          className === GraphQLConfigClassName &&
+          isEqual(query, { objectId: GraphQLConfigId }) &&
+          update &&
+          !!update[GraphQLConfigKey] &&
+          fullQueryOptions &&
+          isEqual(fullQueryOptions, { upsert: true })
+        ) {
+          setConfigOnDb(update[GraphQLConfigKey]);
+        } else {
+          return defaultUpdate(...databaseUpdateArgs);
+        }
+      };
+    }
     databaseUpdateArgs = null;
   });
 

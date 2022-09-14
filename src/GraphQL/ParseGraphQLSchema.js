@@ -1,7 +1,8 @@
 import Parse from 'parse/node';
 import { GraphQLSchema, GraphQLObjectType, DocumentNode, GraphQLNamedType } from 'graphql';
-import { stitchSchemas } from '@graphql-tools/stitch';
-import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
+import { mergeSchemas } from '@graphql-tools/schema';
+import { mergeTypeDefs } from '@graphql-tools/merge';
+import { isDeepStrictEqual } from 'util';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -11,6 +12,7 @@ import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 import DatabaseController from '../Controllers/DatabaseController';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
 import * as schemaTypes from './loaders/schemaTypes';
@@ -66,6 +68,7 @@ class ParseGraphQLSchema {
   log: any;
   appId: string;
   graphQLCustomTypeDefs: ?(string | GraphQLSchema | DocumentNode | GraphQLNamedType[]);
+  schemaCache: any;
 
   constructor(
     params: {
@@ -85,20 +88,23 @@ class ParseGraphQLSchema {
     this.log = params.log || requiredParameter('You must provide a log instance!');
     this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
     this.appId = params.appId || requiredParameter('You must provide the appId!');
+    this.schemaCache = SchemaCache;
+    this.logCache = {};
   }
 
   async load() {
     const { parseGraphQLConfig } = await this._initializeSchemaAndConfig();
-    const parseClasses = await this._getClassesForSchema(parseGraphQLConfig);
-    const parseClassesString = JSON.stringify(parseClasses);
+    const parseClassesArray = await this._getClassesForSchema(parseGraphQLConfig);
     const functionNames = await this._getFunctionNames();
-    const functionNamesString = JSON.stringify(functionNames);
+    const functionNamesString = functionNames.join();
 
+    const parseClasses = parseClassesArray.reduce((acc, clazz) => {
+      acc[clazz.className] = clazz;
+      return acc;
+    }, {});
     if (
-      this.graphQLSchema &&
       !this._hasSchemaInputChanged({
         parseClasses,
-        parseClassesString,
         parseGraphQLConfig,
         functionNamesString,
       })
@@ -107,7 +113,6 @@ class ParseGraphQLSchema {
     }
 
     this.parseClasses = parseClasses;
-    this.parseClassesString = parseClassesString;
     this.parseGraphQLConfig = parseGraphQLConfig;
     this.functionNames = functionNames;
     this.functionNamesString = functionNamesString;
@@ -127,15 +132,35 @@ class ParseGraphQLSchema {
     defaultRelaySchema.load(this);
     schemaTypes.load(this);
 
-    this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(
+    this._getParseClassesWithConfig(parseClassesArray, parseGraphQLConfig).forEach(
       ([parseClass, parseClassConfig]) => {
+        // Some times schema return the _auth_data_ field
+        // it will lead to unstable graphql generation order
+        if (parseClass.className === '_User') {
+          Object.keys(parseClass.fields).forEach(fieldName => {
+            if (fieldName.startsWith('_auth_data_')) {
+              delete parseClass.fields[fieldName];
+            }
+          });
+        }
+
+        // Fields order inside the schema seems to not be consistent across
+        // restart so we need to ensure an alphabetical order
+        // also it's better for the playground documentation
+        const orderedFields = {};
+        Object.keys(parseClass.fields)
+          .sort()
+          .forEach(fieldName => {
+            orderedFields[fieldName] = parseClass.fields[fieldName];
+          });
+        parseClass.fields = orderedFields;
         parseClassTypes.load(this, parseClass, parseClassConfig);
         parseClassQueries.load(this, parseClass, parseClassConfig);
         parseClassMutations.load(this, parseClass, parseClassConfig);
       }
     );
 
-    defaultGraphQLTypes.loadArrayResult(this, parseClasses);
+    defaultGraphQLTypes.loadArrayResult(this, parseClassesArray);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
@@ -178,18 +203,18 @@ class ParseGraphQLSchema {
 
     if (this.graphQLCustomTypeDefs) {
       schemaDirectives.load(this);
-
       if (typeof this.graphQLCustomTypeDefs.getTypeMap === 'function') {
-        const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs.getTypeMap();
+        // In following code we use underscore attr to keep the direct variable reference
+        const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs._typeMap;
         const findAndReplaceLastType = (parent, key) => {
           if (parent[key].name) {
             if (
-              this.graphQLAutoSchema.getType(parent[key].name) &&
-              this.graphQLAutoSchema.getType(parent[key].name) !== parent[key]
+              this.graphQLAutoSchema._typeMap[parent[key].name] &&
+              this.graphQLAutoSchema._typeMap[parent[key].name] !== parent[key]
             ) {
               // To avoid unresolved field on overloaded schema
               // replace the final type with the auto schema one
-              parent[key] = this.graphQLAutoSchema.getType(parent[key].name);
+              parent[key] = this.graphQLAutoSchema._typeMap[parent[key].name];
             }
           } else {
             if (parent[key].ofType) {
@@ -197,100 +222,88 @@ class ParseGraphQLSchema {
             }
           }
         };
-        Object.values(customGraphQLSchemaTypeMap).forEach(customGraphQLSchemaType => {
-          if (
-            !customGraphQLSchemaType ||
-            !customGraphQLSchemaType.name ||
-            customGraphQLSchemaType.name.startsWith('__')
-          ) {
-            return;
-          }
-          const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
-            customGraphQLSchemaType.name
-          );
-          if (!autoGraphQLSchemaType) {
-            this.graphQLAutoSchema._typeMap[customGraphQLSchemaType.name] = customGraphQLSchemaType;
-          }
-        });
-        Object.values(customGraphQLSchemaTypeMap).forEach(customGraphQLSchemaType => {
-          if (
-            !customGraphQLSchemaType ||
-            !customGraphQLSchemaType.name ||
-            customGraphQLSchemaType.name.startsWith('__')
-          ) {
-            return;
-          }
-          const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
-            customGraphQLSchemaType.name
-          );
+        // Add non shared types from custom schema to auto schema
+        // note: some non shared types can use some shared types
+        // so this code need to be ran before the shared types addition
+        // we use sort to ensure schema consistency over restarts
+        Object.keys(customGraphQLSchemaTypeMap)
+          .sort()
+          .forEach(customGraphQLSchemaTypeKey => {
+            const customGraphQLSchemaType = customGraphQLSchemaTypeMap[customGraphQLSchemaTypeKey];
+            if (
+              !customGraphQLSchemaType ||
+              !customGraphQLSchemaType.name ||
+              customGraphQLSchemaType.name.startsWith('__')
+            ) {
+              return;
+            }
+            const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
+              customGraphQLSchemaType.name
+            ];
+            if (!autoGraphQLSchemaType) {
+              this.graphQLAutoSchema._typeMap[
+                customGraphQLSchemaType.name
+              ] = customGraphQLSchemaType;
+            }
+          });
+        // Handle shared types
+        // We pass through each type and ensure that all sub field types are replaced
+        // we use sort to ensure schema consistency over restarts
+        Object.keys(customGraphQLSchemaTypeMap)
+          .sort()
+          .forEach(customGraphQLSchemaTypeKey => {
+            const customGraphQLSchemaType = customGraphQLSchemaTypeMap[customGraphQLSchemaTypeKey];
+            if (
+              !customGraphQLSchemaType ||
+              !customGraphQLSchemaType.name ||
+              customGraphQLSchemaType.name.startsWith('__')
+            ) {
+              return;
+            }
+            const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
+              customGraphQLSchemaType.name
+            ];
 
-          if (autoGraphQLSchemaType && typeof customGraphQLSchemaType.getFields === 'function') {
-            Object.values(customGraphQLSchemaType.getFields()).forEach(field => {
-              findAndReplaceLastType(field, 'type');
-            });
-            autoGraphQLSchemaType._fields = {
-              ...autoGraphQLSchemaType.getFields(),
-              ...customGraphQLSchemaType.getFields(),
-            };
-          }
-        });
-        this.graphQLSchema = stitchSchemas({
-          schemas: [this.graphQLSchemaDirectivesDefinitions, this.graphQLAutoSchema],
-          mergeDirectives: true,
-        });
+            if (autoGraphQLSchemaType && typeof customGraphQLSchemaType.getFields === 'function') {
+              Object.keys(customGraphQLSchemaType._fields)
+                .sort()
+                .forEach(fieldKey => {
+                  const field = customGraphQLSchemaType._fields[fieldKey];
+                  findAndReplaceLastType(field, 'type');
+                  autoGraphQLSchemaType._fields[field.name] = field;
+                });
+            }
+          });
+        this.graphQLSchema = this.graphQLAutoSchema;
       } else if (typeof this.graphQLCustomTypeDefs === 'function') {
         this.graphQLSchema = await this.graphQLCustomTypeDefs({
           directivesDefinitionsSchema: this.graphQLSchemaDirectivesDefinitions,
           autoSchema: this.graphQLAutoSchema,
-          stitchSchemas,
+          graphQLSchemaDirectives: this.graphQLSchemaDirectives,
         });
       } else {
-        this.graphQLSchema = stitchSchemas({
-          schemas: [
-            this.graphQLSchemaDirectivesDefinitions,
-            this.graphQLAutoSchema,
+        this.graphQLSchema = mergeSchemas({
+          schemas: [this.graphQLAutoSchema],
+          typeDefs: mergeTypeDefs([
             this.graphQLCustomTypeDefs,
-          ],
-          mergeDirectives: true,
+            this.graphQLSchemaDirectivesDefinitions,
+          ]),
         });
+        this.graphQLSchema = this.graphQLSchemaDirectives(this.graphQLSchema);
       }
-
-      const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
-      Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
-        const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
-        if (
-          typeof graphQLSchemaType.getFields === 'function' &&
-          this.graphQLCustomTypeDefs.definitions
-        ) {
-          const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
-            definition => definition.name.value === graphQLSchemaTypeName
-          );
-          if (graphQLCustomTypeDef) {
-            const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
-            Object.keys(graphQLSchemaTypeFieldMap).forEach(graphQLSchemaTypeFieldName => {
-              const graphQLSchemaTypeField = graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
-              if (!graphQLSchemaTypeField.astNode) {
-                const astNode = graphQLCustomTypeDef.fields.find(
-                  field => field.name.value === graphQLSchemaTypeFieldName
-                );
-                if (astNode) {
-                  graphQLSchemaTypeField.astNode = astNode;
-                }
-              }
-            });
-          }
-        }
-      });
-
-      SchemaDirectiveVisitor.visitSchemaDirectives(
-        this.graphQLSchema,
-        this.graphQLSchemaDirectives
-      );
     } else {
       this.graphQLSchema = this.graphQLAutoSchema;
     }
 
     return this.graphQLSchema;
+  }
+
+  _logOnce(severity, message) {
+    if (this.logCache[message]) {
+      return;
+    }
+    this.log[severity](message);
+    this.logCache[message] = true;
   }
 
   addGraphQLType(type, throwError = false, ignoreReserved = false, ignoreConnection = false) {
@@ -303,7 +316,7 @@ class ParseGraphQLSchema {
       if (throwError) {
         throw new Error(message);
       }
-      this.log.warn(message);
+      this._logOnce('warn', message);
       return undefined;
     }
     this.graphQLTypes.push(type);
@@ -319,7 +332,7 @@ class ParseGraphQLSchema {
       if (throwError) {
         throw new Error(message);
       }
-      this.log.warn(message);
+      this._logOnce('warn', message);
       return undefined;
     }
     this.graphQLQueries[fieldName] = field;
@@ -335,7 +348,7 @@ class ParseGraphQLSchema {
       if (throwError) {
         throw new Error(message);
       }
-      this.log.warn(message);
+      this._logOnce('warn', message);
       return undefined;
     }
     this.graphQLMutations[fieldName] = field;
@@ -444,7 +457,8 @@ class ParseGraphQLSchema {
       if (/^[_a-zA-Z][_a-zA-Z0-9]*$/.test(functionName)) {
         return true;
       } else {
-        this.log.warn(
+        this._logOnce(
+          'warn',
           `Function ${functionName} could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.`
         );
         return false;
@@ -460,26 +474,23 @@ class ParseGraphQLSchema {
    */
   _hasSchemaInputChanged(params: {
     parseClasses: any,
-    parseClassesString: string,
     parseGraphQLConfig: ?ParseGraphQLConfig,
     functionNamesString: string,
   }): boolean {
-    const { parseClasses, parseClassesString, parseGraphQLConfig, functionNamesString } = params;
+    const { parseClasses, parseGraphQLConfig, functionNamesString } = params;
 
-    if (
-      JSON.stringify(this.parseGraphQLConfig) === JSON.stringify(parseGraphQLConfig) &&
-      this.functionNamesString === functionNamesString
-    ) {
-      if (this.parseClasses === parseClasses) {
-        return false;
-      }
-
-      if (this.parseClassesString === parseClassesString) {
-        this.parseClasses = parseClasses;
-        return false;
-      }
+    // First init
+    if (!this.graphQLSchema) {
+      return true;
     }
 
+    if (
+      isDeepStrictEqual(this.parseGraphQLConfig, parseGraphQLConfig) &&
+      this.functionNamesString === functionNamesString &&
+      isDeepStrictEqual(this.parseClasses, parseClasses)
+    ) {
+      return false;
+    }
     return true;
   }
 }

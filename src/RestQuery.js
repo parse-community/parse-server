@@ -38,7 +38,6 @@ function RestQuery(
   this.response = null;
   this.findOptions = {};
   this.context = context || {};
-
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
@@ -69,11 +68,22 @@ function RestQuery(
   // For example, passing an arg of include=foo.bar,foo.baz could lead to
   // this.include = [['foo'], ['foo', 'baz'], ['foo', 'bar']]
   this.include = [];
+  let keysForInclude = '';
 
   // If we have keys, we probably want to force some includes (n-1 level)
   // See issue: https://github.com/parse-community/parse-server/issues/3185
   if (Object.prototype.hasOwnProperty.call(restOptions, 'keys')) {
-    const keysForInclude = restOptions.keys
+    keysForInclude = restOptions.keys;
+  }
+
+  // If we have keys, we probably want to force some includes (n-1 level)
+  // in order to exclude specific keys.
+  if (Object.prototype.hasOwnProperty.call(restOptions, 'excludeKeys')) {
+    keysForInclude += ',' + restOptions.excludeKeys;
+  }
+
+  if (keysForInclude.length > 0) {
+    keysForInclude = keysForInclude
       .split(',')
       .filter(key => {
         // At least 2 components
@@ -100,7 +110,10 @@ function RestQuery(
   for (var option in restOptions) {
     switch (option) {
       case 'keys': {
-        const keys = restOptions.keys.split(',').filter(key => key.length > 0).concat(AlwaysSelectedKeys);
+        const keys = restOptions.keys
+          .split(',')
+          .filter(key => key.length > 0)
+          .concat(AlwaysSelectedKeys);
         this.keys = Array.from(new Set(keys));
         break;
       }
@@ -130,7 +143,7 @@ function RestQuery(
         var fields = restOptions.order.split(',');
         this.findOptions.sort = fields.reduce((sortMap, field) => {
           field = field.trim();
-          if (field === '$score') {
+          if (field === '$score' || field === '-$score') {
             sortMap.score = { $meta: 'textScore' };
           } else if (field[0] == '-') {
             sortMap[field.slice(1)] = -1;
@@ -188,6 +201,9 @@ RestQuery.prototype.execute = function (executeOptions) {
   return Promise.resolve()
     .then(() => {
       return this.buildRestWhere();
+    })
+    .then(() => {
+      return this.denyProtectedFields();
     })
     .then(() => {
       return this.handleIncludeAll();
@@ -644,7 +660,7 @@ RestQuery.prototype.runFind = function (options = {}) {
   return this.config.database
     .find(this.className, this.restWhere, findOptions, this.auth)
     .then(results => {
-      if (this.className === '_User' && findOptions.explain !== true) {
+      if (this.className === '_User' && !findOptions.explain) {
         for (var result of results) {
           cleanResultAuthData(result);
         }
@@ -673,6 +689,30 @@ RestQuery.prototype.runCount = function () {
   return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
     this.response.count = c;
   });
+};
+
+RestQuery.prototype.denyProtectedFields = async function () {
+  if (this.auth.isMaster) {
+    return;
+  }
+  const schemaController = await this.config.database.loadSchema();
+  const protectedFields =
+    this.config.database.addProtectedFields(
+      schemaController,
+      this.className,
+      this.restWhere,
+      this.findOptions.acl,
+      this.auth,
+      this.findOptions
+    ) || [];
+  for (const key of protectedFields) {
+    if (this.restWhere[key]) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `This user is not allowed to query ${key} on class ${this.className}`
+      );
+    }
+  }
 };
 
 // Augments this.response with all pointers on an object
@@ -840,6 +880,26 @@ function includePath(config, auth, response, path, restOptions = {}) {
     }, new Set());
     if (keySet.size > 0) {
       includeRestOptions.keys = Array.from(keySet).join(',');
+    }
+  }
+
+  if (restOptions.excludeKeys) {
+    const excludeKeys = new Set(restOptions.excludeKeys.split(','));
+    const excludeKeySet = Array.from(excludeKeys).reduce((set, key) => {
+      const keyPath = key.split('.');
+      let i = 0;
+      for (i; i < path.length; i++) {
+        if (path[i] != keyPath[i]) {
+          return set;
+        }
+      }
+      if (i == keyPath.length - 1) {
+        set.add(keyPath[i]);
+      }
+      return set;
+    }, new Set());
+    if (excludeKeySet.size > 0) {
+      includeRestOptions.excludeKeys = Array.from(excludeKeySet).join(',');
     }
   }
 

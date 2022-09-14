@@ -1,5 +1,4 @@
 const Parse = require('parse/node').Parse;
-const url = require('url');
 const path = require('path');
 // These methods handle batch requests.
 const batchPath = '/batch';
@@ -11,11 +10,12 @@ function mountOnto(router) {
   });
 }
 
-function parseURL(URL) {
-  if (typeof URL === 'string') {
-    return url.parse(URL);
+function parseURL(urlString) {
+  try {
+    return new URL(urlString);
+  } catch (error) {
+    return undefined;
   }
-  return undefined;
 }
 
 function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
@@ -33,9 +33,9 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     return path.posix.join('/', requestPath.slice(apiPrefix.length));
   };
 
-  if (serverURL && publicServerURL && serverURL.path != publicServerURL.path) {
-    const localPath = serverURL.path;
-    const publicPath = publicServerURL.path;
+  if (serverURL && publicServerURL && serverURL.pathname != publicServerURL.pathname) {
+    const localPath = serverURL.pathname;
+    const publicPath = publicServerURL.pathname;
 
     // Override the api prefix
     apiPrefix = localPath;
@@ -83,49 +83,66 @@ function handleBatch(router, req) {
     req.config.publicServerURL
   );
 
-  let initialPromise = Promise.resolve();
-  if (req.body.transaction === true) {
-    initialPromise = req.config.database.createTransactionalSession();
-  }
+  const batch = transactionRetries => {
+    let initialPromise = Promise.resolve();
+    if (req.body.transaction === true) {
+      initialPromise = req.config.database.createTransactionalSession();
+    }
 
-  return initialPromise.then(() => {
-    const promises = req.body.requests.map(restRequest => {
-      const routablePath = makeRoutablePath(restRequest.path);
+    return initialPromise.then(() => {
+      const promises = req.body.requests.map(restRequest => {
+        const routablePath = makeRoutablePath(restRequest.path);
 
-      // Construct a request that we can send to a handler
-      const request = {
-        body: restRequest.body,
-        config: req.config,
-        auth: req.auth,
-        info: req.info,
-      };
+        // Construct a request that we can send to a handler
+        const request = {
+          body: restRequest.body,
+          config: req.config,
+          auth: req.auth,
+          info: req.info,
+        };
 
-      return router.tryRouteRequest(restRequest.method, routablePath, request).then(
-        response => {
-          return { success: response.response };
-        },
-        error => {
-          return { error: { code: error.code, error: error.message } };
-        }
-      );
-    });
+        return router.tryRouteRequest(restRequest.method, routablePath, request).then(
+          response => {
+            return { success: response.response };
+          },
+          error => {
+            return { error: { code: error.code, error: error.message } };
+          }
+        );
+      });
 
-    return Promise.all(promises).then(results => {
-      if (req.body.transaction === true) {
-        if (results.find(result => typeof result.error === 'object')) {
-          return req.config.database.abortTransactionalSession().then(() => {
-            return Promise.reject({ response: results });
-          });
-        } else {
-          return req.config.database.commitTransactionalSession().then(() => {
+      return Promise.all(promises)
+        .then(results => {
+          if (req.body.transaction === true) {
+            if (results.find(result => typeof result.error === 'object')) {
+              return req.config.database.abortTransactionalSession().then(() => {
+                return Promise.reject({ response: results });
+              });
+            } else {
+              return req.config.database.commitTransactionalSession().then(() => {
+                return { response: results };
+              });
+            }
+          } else {
             return { response: results };
-          });
-        }
-      } else {
-        return { response: results };
-      }
+          }
+        })
+        .catch(error => {
+          if (
+            error &&
+            error.response &&
+            error.response.find(
+              errorItem => typeof errorItem.error === 'object' && errorItem.error.code === 251
+            ) &&
+            transactionRetries > 0
+          ) {
+            return batch(transactionRetries - 1);
+          }
+          throw error;
+        });
     });
-  });
+  };
+  return batch(5);
 }
 
 module.exports = {

@@ -2,8 +2,8 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
   .ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
-const TestUtils = require('../lib/TestUtils');
 const semver = require('semver');
+const TestUtils = require('../lib/TestUtils');
 
 let RESTController;
 
@@ -15,35 +15,18 @@ describe('ParseServerRESTController', () => {
     );
   });
 
-  it('should handle a get request', done => {
-    RESTController.request('GET', '/classes/MyObject').then(
-      res => {
-        expect(res.results.length).toBe(0);
-        done();
-      },
-      err => {
-        console.log(err);
-        jfail(err);
-        done();
-      }
-    );
+  it('should handle a get request', async () => {
+    const res = await RESTController.request('GET', '/classes/MyObject');
+    expect(res.results.length).toBe(0);
   });
 
-  it('should handle a get request with full serverURL mount path', done => {
-    RESTController.request('GET', '/1/classes/MyObject').then(
-      res => {
-        expect(res.results.length).toBe(0);
-        done();
-      },
-      err => {
-        jfail(err);
-        done();
-      }
-    );
+  it('should handle a get request with full serverURL mount path', async () => {
+    const res = await RESTController.request('GET', '/1/classes/MyObject');
+    expect(res.results.length).toBe(0);
   });
 
-  it('should handle a POST batch without transaction', done => {
-    RESTController.request('POST', 'batch', {
+  it('should handle a POST batch without transaction', async () => {
+    const res = await RESTController.request('POST', 'batch', {
       requests: [
         {
           method: 'GET',
@@ -59,20 +42,12 @@ describe('ParseServerRESTController', () => {
           path: '/classes/MyObject',
         },
       ],
-    }).then(
-      res => {
-        expect(res.length).toBe(3);
-        done();
-      },
-      err => {
-        jfail(err);
-        done();
-      }
-    );
+    });
+    expect(res.length).toBe(3);
   });
 
-  it('should handle a POST batch with transaction=false', done => {
-    RESTController.request('POST', 'batch', {
+  it('should handle a POST batch with transaction=false', async () => {
+    const res = await RESTController.request('POST', 'batch', {
       requests: [
         {
           method: 'GET',
@@ -89,16 +64,8 @@ describe('ParseServerRESTController', () => {
         },
       ],
       transaction: false,
-    }).then(
-      res => {
-        expect(res.length).toBe(3);
-        done();
-      },
-      err => {
-        jfail(err);
-        done();
-      }
-    );
+    });
+    expect(res.length).toBe(3);
   });
 
   it('should handle response status', async () => {
@@ -169,7 +136,8 @@ describe('ParseServerRESTController', () => {
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
+        await TestUtils.destroyAllDataPermanently(true);
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
@@ -180,173 +148,158 @@ describe('ParseServerRESTController', () => {
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
+        } else {
+          await reconfigureServer();
         }
       });
 
-      beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
+      it('should handle a batch request with transaction = true', async () => {
+        const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
+        await myObject.save();
+        await myObject.destroy();
+        spyOn(databaseAdapter, 'createObject').and.callThrough();
+        const response = await RESTController.request('POST', 'batch', {
+          requests: [
+            {
+              method: 'POST',
+              path: '/1/classes/MyObject',
+              body: { key: 'value1' },
+            },
+            {
+              method: 'POST',
+              path: '/1/classes/MyObject',
+              body: { key: 'value2' },
+            },
+          ],
+          transaction: true,
+        });
+        expect(response.length).toEqual(2);
+        expect(response[0].success.objectId).toBeDefined();
+        expect(response[0].success.createdAt).toBeDefined();
+        expect(response[1].success.objectId).toBeDefined();
+        expect(response[1].success.createdAt).toBeDefined();
+        const query = new Parse.Query('MyObject');
+        const results = await query.find();
+        expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
+        for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
+          expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
+            databaseAdapter.createObject.calls.argsFor(i + 1)[3]
+          );
+        }
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
 
-      it('should handle a batch request with transaction = true', done => {
+      it('should not save anything when one operation fails in a transaction', async () => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        myObject
-          .save()
-          .then(() => {
-            return myObject.destroy();
-          })
-          .then(() => {
-            spyOn(databaseAdapter, 'createObject').and.callThrough();
-
-            RESTController.request('POST', 'batch', {
-              requests: [
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value2' },
-                },
-              ],
-              transaction: true,
-            }).then(response => {
-              expect(response.length).toEqual(2);
-              expect(response[0].success.objectId).toBeDefined();
-              expect(response[0].success.createdAt).toBeDefined();
-              expect(response[1].success.objectId).toBeDefined();
-              expect(response[1].success.createdAt).toBeDefined();
-              const query = new Parse.Query('MyObject');
-              query.find().then(results => {
-                expect(databaseAdapter.createObject.calls.count()).toBe(2);
-                expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
-                  databaseAdapter.createObject.calls.argsFor(1)[3]
-                );
-                expect(results.map(result => result.get('key')).sort()).toEqual([
-                  'value1',
-                  'value2',
-                ]);
-                done();
-              });
-            });
+        await myObject.save();
+        await myObject.destroy();
+        try {
+          await RESTController.request('POST', 'batch', {
+            requests: [
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+            ],
+            transaction: true,
           });
-      });
-
-      it('should not save anything when one operation fails in a transaction', done => {
-        const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        myObject
-          .save()
-          .then(() => {
-            return myObject.destroy();
-          })
-          .then(() => {
-            RESTController.request('POST', 'batch', {
-              requests: [
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 'value1' },
-                },
-                {
-                  method: 'POST',
-                  path: '/1/classes/MyObject',
-                  body: { key: 10 },
-                },
-              ],
-              transaction: true,
-            }).catch(error => {
-              expect(error).toBeDefined();
-              const query = new Parse.Query('MyObject');
-              query.find().then(results => {
-                expect(results.length).toBe(0);
-                done();
-              });
-            });
-          });
+          fail();
+        } catch (error) {
+          expect(error).toBeDefined();
+          const query = new Parse.Query('MyObject');
+          const results = await query.find();
+          expect(results.length).toBe(0);
+        }
       });
 
       it('should generate separate session for each call', async () => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
@@ -513,18 +466,18 @@ describe('ParseServerRESTController', () => {
         const results3 = await query3.find();
         expect(results3.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
-        expect(databaseAdapter.createObject.calls.count()).toBe(13);
+        expect(databaseAdapter.createObject.calls.count() >= 13).toEqual(true);
         let transactionalSession;
         let transactionalSession2;
         let myObjectDBCalls = 0;
         let myObject2DBCalls = 0;
         let myObject3DBCalls = 0;
-        for (let i = 0; i < 13; i++) {
+        for (let i = 0; i < databaseAdapter.createObject.calls.count(); i++) {
           const args = databaseAdapter.createObject.calls.argsFor(i);
           switch (args[0]) {
             case 'MyObject':
               myObjectDBCalls++;
-              if (!transactionalSession) {
+              if (!transactionalSession || (myObjectDBCalls - 1) % 2 === 0) {
                 transactionalSession = args[3];
               } else {
                 expect(transactionalSession).toBe(args[3]);
@@ -535,7 +488,7 @@ describe('ParseServerRESTController', () => {
               break;
             case 'MyObject2':
               myObject2DBCalls++;
-              if (!transactionalSession2) {
+              if (!transactionalSession2 || (myObject2DBCalls - 1) % 9 === 0) {
                 transactionalSession2 = args[3];
               } else {
                 expect(transactionalSession2).toBe(args[3]);
@@ -550,28 +503,21 @@ describe('ParseServerRESTController', () => {
               break;
           }
         }
-        expect(myObjectDBCalls).toEqual(2);
-        expect(myObject2DBCalls).toEqual(9);
-        expect(myObject3DBCalls).toEqual(2);
+        expect(myObjectDBCalls % 2).toEqual(0);
+        expect(myObjectDBCalls > 0).toEqual(true);
+        expect(myObject2DBCalls % 9).toEqual(0);
+        expect(myObject2DBCalls > 0).toEqual(true);
+        expect(myObject3DBCalls % 2).toEqual(0);
+        expect(myObject3DBCalls > 0).toEqual(true);
       });
     });
   }
 
-  it('should handle a POST request', done => {
-    RESTController.request('POST', '/classes/MyObject', { key: 'value' })
-      .then(() => {
-        return RESTController.request('GET', '/classes/MyObject');
-      })
-      .then(res => {
-        expect(res.results.length).toBe(1);
-        expect(res.results[0].key).toEqual('value');
-        done();
-      })
-      .catch(err => {
-        console.log(err);
-        jfail(err);
-        done();
-      });
+  it('should handle a POST request', async () => {
+    await RESTController.request('POST', '/classes/MyObject', { key: 'value' });
+    const res = await RESTController.request('GET', '/classes/MyObject');
+    expect(res.results.length).toBe(1);
+    expect(res.results[0].key).toEqual('value');
   });
 
   it('should handle a POST request with context', async () => {
@@ -590,125 +536,76 @@ describe('ParseServerRESTController', () => {
     );
   });
 
-  it('ensures sessionTokens are properly handled', done => {
-    let userId;
-    Parse.User.signUp('user', 'pass')
-      .then(user => {
-        userId = user.id;
-        const sessionToken = user.getSessionToken();
-        return RESTController.request('GET', '/users/me', undefined, {
-          sessionToken,
-        });
-      })
-      .then(res => {
-        // Result is in JSON format
-        expect(res.objectId).toEqual(userId);
-        done();
-      })
-      .catch(err => {
-        console.log(err);
-        jfail(err);
-        done();
+  it('ensures sessionTokens are properly handled', async () => {
+    const user = await Parse.User.signUp('user', 'pass');
+    const sessionToken = user.getSessionToken();
+    const res = await RESTController.request('GET', '/users/me', undefined, {
+      sessionToken,
+    });
+    // Result is in JSON format
+    expect(res.objectId).toEqual(user.id);
+  });
+
+  it('ensures masterKey is properly handled', async () => {
+    const user = await Parse.User.signUp('user', 'pass');
+    const userId = user.id;
+    await Parse.User.logOut();
+    const res = await RESTController.request('GET', '/classes/_User', undefined, {
+      useMasterKey: true,
+    });
+    expect(res.results.length).toBe(1);
+    expect(res.results[0].objectId).toEqual(userId);
+  });
+
+  it('ensures no user is created when passing an empty username', async () => {
+    try {
+      await RESTController.request('POST', '/classes/_User', {
+        username: '',
+        password: 'world',
       });
+      fail('Success callback should not be called when passing an empty username.');
+    } catch (err) {
+      expect(err.code).toBe(Parse.Error.USERNAME_MISSING);
+      expect(err.message).toBe('bad or missing username');
+    }
   });
 
-  it('ensures masterKey is properly handled', done => {
-    let userId;
-    Parse.User.signUp('user', 'pass')
-      .then(user => {
-        userId = user.id;
-        return Parse.User.logOut().then(() => {
-          return RESTController.request('GET', '/classes/_User', undefined, {
-            useMasterKey: true,
-          });
-        });
-      })
-      .then(
-        res => {
-          expect(res.results.length).toBe(1);
-          expect(res.results[0].objectId).toEqual(userId);
-          done();
-        },
-        err => {
-          jfail(err);
-          done();
-        }
-      );
+  it('ensures no user is created when passing an empty password', async () => {
+    try {
+      await RESTController.request('POST', '/classes/_User', {
+        username: 'hello',
+        password: '',
+      });
+      fail('Success callback should not be called when passing an empty password.');
+    } catch (err) {
+      expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
+      expect(err.message).toBe('password is required');
+    }
   });
 
-  it('ensures no user is created when passing an empty username', done => {
-    RESTController.request('POST', '/classes/_User', {
-      username: '',
-      password: 'world',
-    }).then(
-      () => {
-        jfail(new Error('Success callback should not be called when passing an empty username.'));
-        done();
-      },
-      err => {
-        expect(err.code).toBe(Parse.Error.USERNAME_MISSING);
-        expect(err.message).toBe('bad or missing username');
-        done();
-      }
-    );
-  });
-
-  it('ensures no user is created when passing an empty password', done => {
-    RESTController.request('POST', '/classes/_User', {
-      username: 'hello',
-      password: '',
-    }).then(
-      () => {
-        jfail(new Error('Success callback should not be called when passing an empty password.'));
-        done();
-      },
-      err => {
-        expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
-        expect(err.message).toBe('password is required');
-        done();
-      }
-    );
-  });
-
-  it('ensures no session token is created on creating users', done => {
-    RESTController.request('POST', '/classes/_User', {
+  it('ensures no session token is created on creating users', async () => {
+    const user = await RESTController.request('POST', '/classes/_User', {
       username: 'hello',
       password: 'world',
-    })
-      .then(user => {
-        expect(user.sessionToken).toBeUndefined();
-        const query = new Parse.Query('_Session');
-        return query.find({ useMasterKey: true });
-      })
-      .then(sessions => {
-        expect(sessions.length).toBe(0);
-        done();
-      }, done.fail);
+    });
+    expect(user.sessionToken).toBeUndefined();
+    const query = new Parse.Query('_Session');
+    const sessions = await query.find({ useMasterKey: true });
+    expect(sessions.length).toBe(0);
   });
 
-  it('ensures a session token is created when passing installationId != cloud', done => {
-    RESTController.request(
+  it('ensures a session token is created when passing installationId != cloud', async () => {
+    const user = await RESTController.request(
       'POST',
       '/classes/_User',
       { username: 'hello', password: 'world' },
       { installationId: 'my-installation' }
-    )
-      .then(user => {
-        expect(user.sessionToken).not.toBeUndefined();
-        const query = new Parse.Query('_Session');
-        return query.find({ useMasterKey: true });
-      })
-      .then(
-        sessions => {
-          expect(sessions.length).toBe(1);
-          expect(sessions[0].get('installationId')).toBe('my-installation');
-          done();
-        },
-        err => {
-          jfail(err);
-          done();
-        }
-      );
+    );
+    expect(user.sessionToken).not.toBeUndefined();
+    const query = new Parse.Query('_Session');
+    const sessions = await query.find({ useMasterKey: true });
+    expect(sessions.length).toBe(1);
+    expect(sessions[0].get('installationId')).toBe('my-installation');
   });
 
   it('ensures logIn is saved with installationId', async () => {

@@ -6,6 +6,58 @@ const RestQuery = require('../lib/RestQuery');
 const Auth = require('../lib/Auth').Auth;
 const Config = require('../lib/Config');
 
+function testLoadRoles(config, done) {
+  const rolesNames = ['FooRole', 'BarRole', 'BazRole'];
+  const roleIds = {};
+  createTestUser()
+    .then(user => {
+      // Put the user on the 1st role
+      return createRole(rolesNames[0], null, user)
+        .then(aRole => {
+          roleIds[aRole.get('name')] = aRole.id;
+          // set the 1st role as a sibling of the second
+          // user will should have 2 role now
+          return createRole(rolesNames[1], aRole, null);
+        })
+        .then(anotherRole => {
+          roleIds[anotherRole.get('name')] = anotherRole.id;
+          // set this role as a sibling of the last
+          // the user should now have 3 roles
+          return createRole(rolesNames[2], anotherRole, null);
+        })
+        .then(lastRole => {
+          roleIds[lastRole.get('name')] = lastRole.id;
+          const auth = new Auth({ config, isMaster: true, user: user });
+          return auth._loadRoles();
+        });
+    })
+    .then(
+      roles => {
+        expect(roles.length).toEqual(3);
+        rolesNames.forEach(name => {
+          expect(roles.indexOf('role:' + name)).not.toBe(-1);
+        });
+        done();
+      },
+      function () {
+        fail('should succeed');
+        done();
+      }
+    );
+}
+
+const createRole = function (name, sibling, user) {
+  const role = new Parse.Role(name, new Parse.ACL());
+  if (user) {
+    const users = role.relation('users');
+    users.add(user);
+  }
+  if (sibling) {
+    role.relation('roles').add(sibling);
+  }
+  return role.save({}, { useMasterKey: true });
+};
+
 describe('Parse Role testing', () => {
   it('Do a bunch of basic role testing', done => {
     let user;
@@ -73,18 +125,6 @@ describe('Parse Role testing', () => {
         }
       );
   });
-
-  const createRole = function (name, sibling, user) {
-    const role = new Parse.Role(name, new Parse.ACL());
-    if (user) {
-      const users = role.relation('users');
-      users.add(user);
-    }
-    if (sibling) {
-      role.relation('roles').add(sibling);
-    }
-    return role.save({}, { useMasterKey: true });
-  };
 
   it('should not recursively load the same role multiple times', done => {
     const rootRole = 'RootRole';
@@ -157,46 +197,6 @@ describe('Parse Role testing', () => {
       });
   });
 
-  function testLoadRoles(config, done) {
-    const rolesNames = ['FooRole', 'BarRole', 'BazRole'];
-    const roleIds = {};
-    createTestUser()
-      .then(user => {
-        // Put the user on the 1st role
-        return createRole(rolesNames[0], null, user)
-          .then(aRole => {
-            roleIds[aRole.get('name')] = aRole.id;
-            // set the 1st role as a sibling of the second
-            // user will should have 2 role now
-            return createRole(rolesNames[1], aRole, null);
-          })
-          .then(anotherRole => {
-            roleIds[anotherRole.get('name')] = anotherRole.id;
-            // set this role as a sibling of the last
-            // the user should now have 3 roles
-            return createRole(rolesNames[2], anotherRole, null);
-          })
-          .then(lastRole => {
-            roleIds[lastRole.get('name')] = lastRole.id;
-            const auth = new Auth({ config, isMaster: true, user: user });
-            return auth._loadRoles();
-          });
-      })
-      .then(
-        roles => {
-          expect(roles.length).toEqual(3);
-          rolesNames.forEach(name => {
-            expect(roles.indexOf('role:' + name)).not.toBe(-1);
-          });
-          done();
-        },
-        function () {
-          fail('should succeed');
-          done();
-        }
-      );
-  }
-
   it('should recursively load roles', done => {
     testLoadRoles(Config.get('test'), done);
   });
@@ -227,7 +227,8 @@ describe('Parse Role testing', () => {
     );
   });
 
-  it('Different _Role objects cannot have the same name.', done => {
+  it('Different _Role objects cannot have the same name.', async done => {
+    await reconfigureServer();
     const roleName = 'MyRole';
     let aUser;
     createTestUser()
@@ -427,7 +428,7 @@ describe('Parse Role testing', () => {
         },
         e => {
           if (e) {
-            expect(e.code).toEqual(101);
+            expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
           } else {
             fail('should return an error');
           }

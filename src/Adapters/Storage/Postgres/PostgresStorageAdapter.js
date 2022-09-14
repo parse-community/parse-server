@@ -4,13 +4,17 @@ import { createClient } from './PostgresClient';
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
+// @flow-disable-next
+import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
+import { StorageAdapter } from '../StorageAdapter';
+import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
+const Utils = require('../../../Utils');
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
-const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
 const logger = require('../../../logger');
 
@@ -19,9 +23,6 @@ const debug = function (...args: any) {
   const log = logger.getLogger();
   log.debug.apply(log, args);
 };
-
-import { StorageAdapter } from '../StorageAdapter';
-import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
 
 const parseTypeToPostgresType = type => {
   switch (type.type) {
@@ -88,6 +89,22 @@ const toPostgresValue = value => {
     }
   }
   return value;
+};
+
+const toPostgresValueCastType = value => {
+  const postgresValue = toPostgresValue(value);
+  let castType;
+  switch (typeof postgresValue) {
+    case 'number':
+      castType = 'double precision';
+      break;
+    case 'boolean':
+      castType = 'boolean';
+      break;
+    default:
+      castType = undefined;
+  }
+  return castType;
 };
 
 const transformValue = value => {
@@ -368,9 +385,17 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             );
           } else {
             if (fieldName.indexOf('.') >= 0) {
-              const constraintFieldName = transformDotField(fieldName);
+              const castType = toPostgresValueCastType(fieldValue.$ne);
+              const constraintFieldName = castType
+                ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+                : transformDotField(fieldName);
               patterns.push(
-                `(${constraintFieldName} <> $${index} OR ${constraintFieldName} IS NULL)`
+                `(${constraintFieldName} <> $${index + 1} OR ${constraintFieldName} IS NULL)`
+              );
+            } else if (typeof fieldValue.$ne === 'object' && fieldValue.$ne.$relativeTime) {
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
               );
             } else {
               patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
@@ -395,8 +420,17 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         index += 1;
       } else {
         if (fieldName.indexOf('.') >= 0) {
+          const castType = toPostgresValueCastType(fieldValue.$eq);
+          const constraintFieldName = castType
+            ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+            : transformDotField(fieldName);
           values.push(fieldValue.$eq);
-          patterns.push(`${transformDotField(fieldName)} = $${index++}`);
+          patterns.push(`${constraintFieldName} = $${index++}`);
+        } else if (typeof fieldValue.$eq === 'object' && fieldValue.$eq.$relativeTime) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
+          );
         } else {
           values.push(fieldName, fieldValue.$eq);
           patterns.push(`$${index}:name = $${index + 1}`);
@@ -511,7 +545,12 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     }
 
     if (typeof fieldValue.$exists !== 'undefined') {
-      if (fieldValue.$exists) {
+      if (typeof fieldValue.$exists === 'object' && fieldValue.$exists.$relativeTime) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
+        );
+      } else if (fieldValue.$exists) {
         patterns.push(`$${index}:name IS NOT NULL`);
       } else {
         patterns.push(`$${index}:name IS NULL`);
@@ -755,24 +794,33 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp] || fieldValue[cmp] === 0) {
         const pgComparator = ParseToPosgresComparator[cmp];
-        const postgresValue = toPostgresValue(fieldValue[cmp]);
         let constraintFieldName;
+        let postgresValue = toPostgresValue(fieldValue[cmp]);
+
         if (fieldName.indexOf('.') >= 0) {
-          let castType;
-          switch (typeof postgresValue) {
-            case 'number':
-              castType = 'double precision';
-              break;
-            case 'boolean':
-              castType = 'boolean';
-              break;
-            default:
-              castType = undefined;
-          }
+          const castType = toPostgresValueCastType(fieldValue[cmp]);
           constraintFieldName = castType
             ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
             : transformDotField(fieldName);
         } else {
+          if (typeof postgresValue === 'object' && postgresValue.$relativeTime) {
+            if (schema.fields[fieldName].type !== 'Date') {
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                '$relativeTime can only be used with Date field'
+              );
+            }
+            const parserResult = Utils.relativeTimeToDate(postgresValue.$relativeTime);
+            if (parserResult.status === 'success') {
+              postgresValue = toPostgresValue(parserResult.result);
+            } else {
+              console.error('Error while parsing relative date', parserResult);
+              throw new Parse.Error(
+                Parse.Error.INVALID_JSON,
+                `bad $relativeTime (${postgresValue.$relativeTime}) value. ${parserResult.info}`
+              );
+            }
+          }
           constraintFieldName = `$${index++}:name`;
           values.push(fieldName);
         }
@@ -794,18 +842,31 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
 
 export class PostgresStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
+  enableSchemaHooks: boolean;
 
   // Private
   _collectionPrefix: string;
   _client: any;
+  _onchange: any;
   _pgp: any;
+  _stream: any;
+  _uuid: any;
 
-  constructor({ uri, collectionPrefix = '', databaseOptions }: any) {
+  constructor({ uri, collectionPrefix = '', databaseOptions = {} }: any) {
     this._collectionPrefix = collectionPrefix;
+    this.enableSchemaHooks = !!databaseOptions.enableSchemaHooks;
+    delete databaseOptions.enableSchemaHooks;
+
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;
+    this._onchange = () => {};
     this._pgp = pgp;
+    this._uuid = uuidv4();
     this.canSortOnJoinTables = false;
+  }
+
+  watch(callback: () => void): void {
+    this._onchange = callback;
   }
 
   //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
@@ -818,10 +879,37 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   handleShutdown() {
+    if (this._stream) {
+      this._stream.done();
+      delete this._stream;
+    }
     if (!this._client) {
       return;
     }
     this._client.$pool.end();
+  }
+
+  async _listenToSchema() {
+    if (!this._stream && this.enableSchemaHooks) {
+      this._stream = await this._client.connect({ direct: true });
+      this._stream.client.on('notification', data => {
+        const payload = JSON.parse(data.payload);
+        if (payload.senderId !== this._uuid) {
+          this._onchange();
+        }
+      });
+      await this._stream.none('LISTEN $1~', 'schema.change');
+    }
+  }
+
+  _notifySchemaChange() {
+    if (this._stream) {
+      this._stream
+        .none('NOTIFY $1~, $2', ['schema.change', { senderId: this._uuid }])
+        .catch(error => {
+          console.log('Failed to Notify:', error); // unlikely to ever happen
+        });
+    }
   }
 
   async _ensureSchemaCollectionExists(conn: any) {
@@ -831,15 +919,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         'CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )'
       )
       .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError ||
-          error.code === PostgresUniqueIndexViolationError ||
-          error.code === PostgresDuplicateObjectError
-        ) {
-          // Table already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
+        throw error;
       });
   }
 
@@ -852,15 +932,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async setClassLevelPermissions(className: string, CLPs: any) {
-    const self = this;
     await this._client.task('set-class-level-permissions', async t => {
-      await self._ensureSchemaCollectionExists(t);
       const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
       await t.none(
         `UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className" = $1`,
         values
       );
     });
+    this._notifySchemaChange();
   }
 
   async setIndexesWithSchemaFormat(
@@ -917,17 +996,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (deletedIndexes.length > 0) {
         await self.dropIndexes(className, deletedIndexes, t);
       }
-      await self._ensureSchemaCollectionExists(t);
       await t.none(
         'UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className" = $1',
         [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
       );
     });
+    this._notifySchemaChange();
   }
 
   async createClass(className: string, schema: SchemaType, conn: ?any) {
     conn = conn || this._client;
-    return conn
+    const parseSchema = await conn
       .tx('create-class', async t => {
         await this.createTable(className, schema, t);
         await t.none(
@@ -943,13 +1022,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         throw err;
       });
+    this._notifySchemaChange();
+    return parseSchema;
   }
 
   // Just create a table, do not insert in schema
   async createTable(className: string, schema: SchemaType, conn: any) {
     conn = conn || this._client;
-    const self = this;
-    debug('createTable', className, schema);
+    debug('createTable');
     const valuesArray = [];
     const patternsArray = [];
     const fields = Object.assign({}, schema.fields);
@@ -987,10 +1067,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join()})`;
     const values = [className, ...valuesArray];
 
-    debug(qs, values);
     return conn.task('create-table', async t => {
       try {
-        await self._ensureSchemaCollectionExists(t);
         await t.none(qs, values);
       } catch (error) {
         if (error.code !== PostgresDuplicateRelationError) {
@@ -1012,11 +1090,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async schemaUpgrade(className: string, schema: SchemaType, conn: any) {
-    debug('schemaUpgrade', { className, schema });
+    debug('schemaUpgrade');
     conn = conn || this._client;
     const self = this;
 
-    await conn.tx('schema-upgrade', async t => {
+    await conn.task('schema-upgrade', async t => {
       const columns = await t.map(
         'SELECT column_name FROM information_schema.columns WHERE table_name = $<className>',
         { className },
@@ -1024,20 +1102,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
       );
       const newColumns = Object.keys(schema.fields)
         .filter(item => columns.indexOf(item) === -1)
-        .map(fieldName =>
-          self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t)
-        );
+        .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName]));
 
       await t.batch(newColumns);
     });
   }
 
-  async addFieldIfNotExists(className: string, fieldName: string, type: any, conn: any) {
+  async addFieldIfNotExists(className: string, fieldName: string, type: any) {
     // TODO: Must be revised for invalid logic...
-    debug('addFieldIfNotExists', { className, fieldName, type });
-    conn = conn || this._client;
+    debug('addFieldIfNotExists');
     const self = this;
-    await conn.tx('add-field-if-not-exists', async t => {
+    await this._client.tx('add-field-if-not-exists', async t => {
       if (type.type !== 'Relation') {
         try {
           await t.none(
@@ -1079,6 +1154,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
         );
       }
     });
+    this._notifySchemaChange();
+  }
+
+  async updateFieldOptions(className: string, fieldName: string, type: any) {
+    await this._client.tx('update-schema-field-options', async t => {
+      const path = `{fields,${fieldName}}`;
+      await t.none(
+        'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
+        { path, type, className }
+      );
+    });
   }
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
@@ -1091,9 +1177,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
         values: [className],
       },
     ];
-    return this._client
+    const response = await this._client
       .tx(t => t.none(this._pgp.helpers.concat(operations)))
       .then(() => className.indexOf('_Join:') != 0); // resolves with false when _Join table
+
+    this._notifySchemaChange();
+    return response;
   }
 
   // Delete all data known to this adapter. Used for testing.
@@ -1153,7 +1242,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   // Returns a Promise.
   async deleteFields(className: string, schema: SchemaType, fieldNames: string[]): Promise<void> {
-    debug('deleteFields', className, fieldNames);
+    debug('deleteFields');
     fieldNames = fieldNames.reduce((list: Array<string>, fieldName: string) => {
       const field = schema.fields[fieldName];
       if (field.type !== 'Relation') {
@@ -1179,15 +1268,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
         await t.none(`ALTER TABLE $1:name DROP COLUMN IF EXISTS ${columns}`, values);
       }
     });
+    this._notifySchemaChange();
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   async getAllClasses() {
-    const self = this;
     return this._client.task('get-all-classes', async t => {
-      await self._ensureSchemaCollectionExists(t);
       return await t.map('SELECT * FROM "_SCHEMA"', null, row =>
         toParseSchema({ className: row.className, ...row.schema })
       );
@@ -1198,7 +1286,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
   async getClass(className: string) {
-    debug('getClass', className);
+    debug('getClass');
     return this._client
       .any('SELECT * FROM "_SCHEMA" WHERE "className" = $<className>', {
         className,
@@ -1219,7 +1307,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     object: any,
     transactionalSession: ?any
   ) {
-    debug('createObject', className, object);
+    debug('createObject');
     let columnsArray = [];
     const valuesArray = [];
     schema = toPostgresSchema(schema);
@@ -1340,7 +1428,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`;
     const values = [className, ...columnsArray, ...valuesArray];
-    debug(qs, values);
     const promise = (transactionalSession ? transactionalSession.t : this._client)
       .none(qs, values)
       .then(() => ({ ops: [object] }))
@@ -1376,7 +1463,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     query: QueryType,
     transactionalSession: ?any
   ) {
-    debug('deleteObjectsByQuery', className, query);
+    debug('deleteObjectsByQuery');
     const values = [className];
     const index = 2;
     const where = buildWhereClause({
@@ -1390,7 +1477,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       where.pattern = 'TRUE';
     }
     const qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
-    debug(qs, values);
     const promise = (transactionalSession ? transactionalSession.t : this._client)
       .one(qs, values, a => +a.count)
       .then(count => {
@@ -1419,7 +1505,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     update: any,
     transactionalSession: ?any
   ): Promise<any> {
-    debug('findOneAndUpdate', className, query, update);
+    debug('findOneAndUpdate');
     return this.updateObjectsByQuery(className, schema, query, update, transactionalSession).then(
       val => val[0]
     );
@@ -1433,7 +1519,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     update: any,
     transactionalSession: ?any
   ): Promise<[any]> {
-    debug('updateObjectsByQuery', className, query, update);
+    debug('updateObjectsByQuery');
     const updatePatterns = [];
     const values = [className];
     let index = 2;
@@ -1658,7 +1744,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           index += 2;
         }
       } else {
-        debug('Not supported update', fieldName, fieldValue);
+        debug('Not supported update', { fieldName, fieldValue });
         return Promise.reject(
           new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
@@ -1678,7 +1764,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
-    debug('update: ', qs, values);
     const promise = (transactionalSession ? transactionalSession.t : this._client).any(qs, values);
     if (transactionalSession) {
       transactionalSession.batch.push(promise);
@@ -1694,7 +1779,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     update: any,
     transactionalSession: ?any
   ) {
-    debug('upsertOneObject', { className, query, update });
+    debug('upsertOneObject');
     const createValue = Object.assign({}, query, update);
     return this.createObject(className, schema, createValue, transactionalSession).catch(error => {
       // ignore duplicate value errors as it's upsert
@@ -1711,14 +1796,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     query: QueryType,
     { skip, limit, sort, keys, caseInsensitive, explain }: QueryOptions
   ) {
-    debug('find', className, query, {
-      skip,
-      limit,
-      sort,
-      keys,
-      caseInsensitive,
-      explain,
-    });
+    debug('find');
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
     let values = [className];
@@ -1767,7 +1845,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
         if (key === 'ACL') {
           memo.push('_rperm');
           memo.push('_wperm');
-        } else if (key.length > 0) {
+        } else if (
+          key.length > 0 &&
+          // Remove selected field not referenced in the schema
+          // Relation is not a column in postgres
+          // $score is a Parse special field and is also not a column
+          ((schema.fields[key] && schema.fields[key].type !== 'Relation') || key === '$score')
+        ) {
           memo.push(key);
         }
         return memo;
@@ -1785,7 +1869,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const originalQuery = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
     const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
-    debug(qs, values);
     return this._client
       .any(qs, values)
       .catch(error => {
@@ -1933,7 +2016,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     readPreference?: string,
     estimate?: boolean = true
   ) {
-    debug('count', className, query, readPreference, estimate);
+    debug('count');
     const values = [className];
     const where = buildWhereClause({
       schema,
@@ -1954,10 +2037,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     return this._client
       .one(qs, values, a => {
-        if (a.approximate_row_count != null) {
-          return +a.approximate_row_count;
+        if (a.approximate_row_count == null || a.approximate_row_count == -1) {
+          return !isNaN(+a.count) ? +a.count : 0;
         } else {
-          return +a.count;
+          return +a.approximate_row_count;
         }
       })
       .catch(error => {
@@ -1969,7 +2052,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
-    debug('distinct', className, query);
+    debug('distinct');
     let field = fieldName;
     let column = fieldName;
     const isNested = fieldName.indexOf('.') >= 0;
@@ -1996,7 +2079,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (isNested) {
       qs = `SELECT DISTINCT ${transformer}($1:raw) $2:raw FROM $3:name ${wherePattern}`;
     }
-    debug(qs, values);
     return this._client
       .any(qs, values)
       .catch(error => {
@@ -2035,7 +2117,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     hint: ?mixed,
     explain?: boolean
   ) {
-    debug('aggregate', className, pipeline, readPreference, hint, explain);
+    debug('aggregate');
     const values = [className];
     let index: number = 2;
     let columns: string[] = [];
@@ -2083,7 +2165,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
                   columns.push(
                     `EXTRACT(${
                       mongoAggregateToPostgres[operation]
-                    } FROM $${index}:name AT TIME ZONE 'UTC') AS $${index + 1}:name`
+                    } FROM $${index}:name AT TIME ZONE 'UTC')::integer AS $${index + 1}:name`
                   );
                   values.push(source, alias);
                   index += 2;
@@ -2216,7 +2298,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .filter(Boolean)
       .join()} FROM $1:name ${wherePattern} ${skipPattern} ${groupPattern} ${sortPattern} ${limitPattern}`;
     const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
-    debug(qs, values);
     return this._client.any(qs, values).then(a => {
       if (explain) {
         return a;
@@ -2244,6 +2325,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   async performInitialization({ VolatileClassesSchemas }: any) {
     // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
+    await this._ensureSchemaCollectionExists();
     const promises = VolatileClassesSchemas.map(schema => {
       return this.createTable(schema.className, schema)
         .catch(err => {
@@ -2257,6 +2339,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         })
         .then(() => this.schemaUpgrade(schema.className, schema));
     });
+    promises.push(this._listenToSchema());
     return Promise.all(promises)
       .then(() => {
         return this._client.tx('perform-initialization', async t => {
@@ -2371,6 +2454,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
+    const setIdempotencyFunction =
+      options.setIdempotencyFunction !== undefined ? options.setIdempotencyFunction : false;
+    if (setIdempotencyFunction) {
+      await this.ensureIdempotencyFunctionExists(options);
+    }
     await conn.none(qs, [indexNameOptions.name, className, ...fieldNames]).catch(error => {
       if (
         error.code === PostgresDuplicateRelationError &&
@@ -2389,6 +2477,24 @@ export class PostgresStorageAdapter implements StorageAdapter {
       } else {
         throw error;
       }
+    });
+  }
+
+  async deleteIdempotencyFunction(options?: Object = {}): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const qs = 'DROP FUNCTION IF EXISTS idempotency_delete_expired_records()';
+    return conn.none(qs).catch(error => {
+      throw error;
+    });
+  }
+
+  async ensureIdempotencyFunctionExists(options?: Object = {}): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
+    const qs =
+      'CREATE OR REPLACE FUNCTION idempotency_delete_expired_records() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; END; $$;';
+    return conn.none(qs, [ttlOptions]).catch(error => {
+      throw error;
     });
   }
 }

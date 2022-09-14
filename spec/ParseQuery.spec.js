@@ -18,6 +18,10 @@ const masterKeyOptions = {
   headers: masterKeyHeaders,
 };
 
+const BoxedNumber = Parse.Object.extend({
+  className: 'BoxedNumber',
+});
+
 describe('Parse.Query testing', () => {
   it('basic query', function (done) {
     const baz = new TestObject({ foo: 'baz' });
@@ -31,6 +35,54 @@ describe('Parse.Query testing', () => {
         done();
       });
     });
+  });
+
+  it_only_db('mongo')('gracefully handles invalid explain values', async () => {
+    // Note that anything that is not truthy (like 0) does not cause an exception, as they get swallowed up by ClassesRouter::optionsFromBody
+    const values = [1, 'yolo', { a: 1 }, [1, 2, 3]];
+    for (const value of values) {
+      try {
+        await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+          json: true,
+          headers: masterKeyHeaders,
+        });
+        fail('request did not throw');
+      } catch (e) {
+        // Expect that Parse Server did not crash
+        expect(e.code).not.toEqual('ECONNRESET');
+        // Expect that Parse Server validates the explain value and does not crash;
+        // see https://jira.mongodb.org/browse/NODE-3463
+        equal(e.data.code, Parse.Error.INVALID_QUERY);
+        equal(e.data.error, 'Invalid value for explain');
+      }
+      // get queries (of the form '/classes/:className/:objectId' cannot have the explain key, see ClassesRouter.js)
+      // so it is enough that we test find queries
+    }
+  });
+
+  it_only_db('mongo')('supports valid explain values', async () => {
+    const values = [
+      false,
+      true,
+      'queryPlanner',
+      'executionStats',
+      'allPlansExecution',
+      // 'queryPlannerExtended' is excluded as it only applies to MongoDB Data Lake which is currently not available in our CI environment
+    ];
+    for (const value of values) {
+      const response = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+        json: true,
+        headers: masterKeyHeaders,
+      });
+      expect(response.status).toBe(200);
+      if (value) {
+        expect(response.data.results.ok).toBe(1);
+      }
+    }
   });
 
   it('searching for null', function (done) {
@@ -275,32 +327,26 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('query with limit equal to maxlimit', function (done) {
+  it('query with limit equal to maxlimit', async () => {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
-    reconfigureServer({ maxLimit: 1 });
-    Parse.Object.saveAll([baz, qux]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.limit(1);
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+    await reconfigureServer({ maxLimit: 1 });
+    await Parse.Object.saveAll([baz, qux]);
+    const query = new Parse.Query(TestObject);
+    query.limit(1);
+    const results = await query.find();
+    equal(results.length, 1);
   });
 
-  it('query with limit exceeding maxlimit', function (done) {
+  it('query with limit exceeding maxlimit', async () => {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
-    reconfigureServer({ maxLimit: 1 });
-    Parse.Object.saveAll([baz, qux]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.limit(2);
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+    await reconfigureServer({ maxLimit: 1 });
+    await Parse.Object.saveAll([baz, qux]);
+    const query = new Parse.Query(TestObject);
+    query.limit(2);
+    const results = await query.find();
+    equal(results.length, 1);
   });
 
   it('containedIn object array queries', function (done) {
@@ -937,10 +983,6 @@ describe('Parse.Query testing', () => {
         equal(response.data.error, 'bad $containedBy: should be an array');
         done();
       });
-  });
-
-  const BoxedNumber = Parse.Object.extend({
-    className: 'BoxedNumber',
   });
 
   it('equalTo queries', function (done) {
@@ -2048,9 +2090,9 @@ describe('Parse.Query testing', () => {
       const query = new Parse.Query(TestObject);
       query.matches(
         'myString',
-        'parse # First fragment. We\'ll write this in one case but match insensitively\n' +
-        '.com  # Second fragment. This can be separated by any character, including newline;' +
-        'however, this comment must end with a newline to recognize it as a comment\n',
+        "parse # First fragment. We'll write this in one case but match insensitively\n" +
+          '.com  # Second fragment. This can be separated by any character, including newline;' +
+          'however, this comment must end with a newline to recognize it as a comment\n',
         'mixs'
       );
       query.find().then(
@@ -2933,10 +2975,10 @@ describe('Parse.Query testing', () => {
     const saves = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (x) {
       const obj = new Parse.Object('TestObject');
       obj.set('x', x + 1);
-      return obj.save();
+      return obj;
     });
 
-    Promise.all(saves)
+    Parse.Object.saveAll(saves)
       .then(function () {
         const query = new Parse.Query('TestObject');
         query.ascending('x');
@@ -3139,78 +3181,394 @@ describe('Parse.Query testing', () => {
       );
   });
 
-  it('select keys query', function (done) {
-    const obj = new TestObject({ foo: 'baz', bar: 1 });
+  it('select keys query JS SDK', async () => {
+    const obj = new TestObject({ foo: 'baz', bar: 1, qux: 2 });
+    await obj.save();
+    obj._clearServerData();
+    const query1 = new Parse.Query(TestObject);
+    query1.select('foo');
+    const result1 = await query1.first();
+    ok(result1.id, 'expected object id to be set');
+    ok(result1.createdAt, 'expected object createdAt to be set');
+    ok(result1.updatedAt, 'expected object updatedAt to be set');
+    ok(!result1.dirty(), 'expected result not to be dirty');
+    strictEqual(result1.get('foo'), 'baz');
+    strictEqual(result1.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result1.get('qux'), undefined, "expected 'qux' field to be unset");
 
-    obj
-      .save()
-      .then(function () {
-        obj._clearServerData();
-        const query = new Parse.Query(TestObject);
-        query.select('foo');
-        return query.first();
-      })
-      .then(function (result) {
-        ok(result.id, 'expected object id to be set');
-        ok(result.createdAt, 'expected object createdAt to be set');
-        ok(result.updatedAt, 'expected object updatedAt to be set');
-        ok(!result.dirty(), 'expected result not to be dirty');
-        strictEqual(result.get('foo'), 'baz');
-        strictEqual(result.get('bar'), undefined, "expected 'bar' field to be unset");
-        return result.fetch();
-      })
-      .then(function (result) {
-        strictEqual(result.get('foo'), 'baz');
-        strictEqual(result.get('bar'), 1);
-      })
-      .then(function () {
-        obj._clearServerData();
-        const query = new Parse.Query(TestObject);
-        query.select([]);
-        return query.first();
-      })
-      .then(function (result) {
-        ok(result.id, 'expected object id to be set');
-        ok(!result.dirty(), 'expected result not to be dirty');
-        strictEqual(result.get('foo'), undefined, "expected 'foo' field to be unset");
-        strictEqual(result.get('bar'), undefined, "expected 'bar' field to be unset");
-      })
-      .then(function () {
-        obj._clearServerData();
-        const query = new Parse.Query(TestObject);
-        query.select(['foo', 'bar']);
-        return query.first();
-      })
-      .then(function (result) {
-        ok(result.id, 'expected object id to be set');
-        ok(!result.dirty(), 'expected result not to be dirty');
-        strictEqual(result.get('foo'), 'baz');
-        strictEqual(result.get('bar'), 1);
-      })
-      .then(function () {
-        obj._clearServerData();
-        const query = new Parse.Query(TestObject);
-        query.select('foo', 'bar');
-        return query.first();
-      })
-      .then(function (result) {
-        ok(result.id, 'expected object id to be set');
-        ok(!result.dirty(), 'expected result not to be dirty');
-        strictEqual(result.get('foo'), 'baz');
-        strictEqual(result.get('bar'), 1);
-      })
-      .then(
-        function () {
-          done();
-        },
-        function (err) {
-          ok(false, 'other error: ' + JSON.stringify(err));
-          done();
-        }
-      );
+    const result2 = await result1.fetch();
+    strictEqual(result2.get('foo'), 'baz');
+    strictEqual(result2.get('bar'), 1);
+    strictEqual(result2.get('qux'), 2);
+
+    obj._clearServerData();
+    const query2 = new Parse.Query(TestObject);
+    query2.select();
+    const result3 = await query2.first();
+    ok(result3.id, 'expected object id to be set');
+    ok(result3.createdAt, 'expected object createdAt to be set');
+    ok(result3.updatedAt, 'expected object updatedAt to be set');
+    ok(!result3.dirty(), 'expected result not to be dirty');
+    strictEqual(result3.get('foo'), undefined, "expected 'foo' field to be unset");
+    strictEqual(result3.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result3.get('qux'), undefined, "expected 'qux' field to be unset");
+
+    obj._clearServerData();
+    const query3 = new Parse.Query(TestObject);
+    query3.select([]);
+    const result4 = await query3.first();
+    ok(result4.id, 'expected object id to be set');
+    ok(result4.createdAt, 'expected object createdAt to be set');
+    ok(result4.updatedAt, 'expected object updatedAt to be set');
+    ok(!result4.dirty(), 'expected result not to be dirty');
+    strictEqual(result4.get('foo'), undefined, "expected 'foo' field to be unset");
+    strictEqual(result4.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result4.get('qux'), undefined, "expected 'qux' field to be unset");
+
+    obj._clearServerData();
+    const query4 = new Parse.Query(TestObject);
+    query4.select(['foo']);
+    const result5 = await query4.first();
+    ok(result5.id, 'expected object id to be set');
+    ok(result5.createdAt, 'expected object createdAt to be set');
+    ok(result5.updatedAt, 'expected object updatedAt to be set');
+    ok(!result5.dirty(), 'expected result not to be dirty');
+    strictEqual(result5.get('foo'), 'baz');
+    strictEqual(result5.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result5.get('qux'), undefined, "expected 'qux' field to be unset");
+
+    obj._clearServerData();
+    const query5 = new Parse.Query(TestObject);
+    query5.select(['foo', 'bar']);
+    const result6 = await query5.first();
+    ok(result6.id, 'expected object id to be set');
+    ok(!result6.dirty(), 'expected result not to be dirty');
+    strictEqual(result6.get('foo'), 'baz');
+    strictEqual(result6.get('bar'), 1);
+    strictEqual(result6.get('qux'), undefined, "expected 'qux' field to be unset");
+
+    obj._clearServerData();
+    const query6 = new Parse.Query(TestObject);
+    query6.select(['foo', 'bar', 'qux']);
+    const result7 = await query6.first();
+    ok(result7.id, 'expected object id to be set');
+    ok(!result7.dirty(), 'expected result not to be dirty');
+    strictEqual(result7.get('foo'), 'baz');
+    strictEqual(result7.get('bar'), 1);
+    strictEqual(result7.get('qux'), 2);
+
+    obj._clearServerData();
+    const query7 = new Parse.Query(TestObject);
+    query7.select('foo', 'bar');
+    const result8 = await query7.first();
+    ok(result8.id, 'expected object id to be set');
+    ok(!result8.dirty(), 'expected result not to be dirty');
+    strictEqual(result8.get('foo'), 'baz');
+    strictEqual(result8.get('bar'), 1);
+    strictEqual(result8.get('qux'), undefined, "expected 'qux' field to be unset");
+
+    obj._clearServerData();
+    const query8 = new Parse.Query(TestObject);
+    query8.select('foo', 'bar', 'qux');
+    const result9 = await query8.first();
+    ok(result9.id, 'expected object id to be set');
+    ok(!result9.dirty(), 'expected result not to be dirty');
+    strictEqual(result9.get('foo'), 'baz');
+    strictEqual(result9.get('bar'), 1);
+    strictEqual(result9.get('qux'), 2);
   });
 
-  it('exclude keys', async () => {
+  it('select keys (arrays)', async () => {
+    const obj = new TestObject({ foo: 'baz', bar: 1, hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: 'hello',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].bar).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+
+    const response2 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: ['foo', 'hello'],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response2.data.results[0].foo).toBe('baz');
+    expect(response2.data.results[0].bar).toBeUndefined();
+    expect(response2.data.results[0].hello).toBe('world');
+
+    const response3 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: ['foo', 'bar', 'hello'],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response3.data.results[0].foo).toBe('baz');
+    expect(response3.data.results[0].bar).toBe(1);
+    expect(response3.data.results[0].hello).toBe('world');
+
+    const response4 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: [''],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response4.data.results[0].objectId, 'expected objectId to be set');
+    ok(response4.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response4.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response4.data.results[0].foo).toBeUndefined();
+    expect(response4.data.results[0].bar).toBeUndefined();
+    expect(response4.data.results[0].hello).toBeUndefined();
+
+    const response5 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: [],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response5.data.results[0].objectId, 'expected objectId to be set');
+    ok(response5.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response5.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response5.data.results[0].foo).toBe('baz');
+    expect(response5.data.results[0].bar).toBe(1);
+    expect(response5.data.results[0].hello).toBe('world');
+  });
+
+  it('select keys (strings)', async () => {
+    const obj = new TestObject({ foo: 'baz', bar: 1, hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: '',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response.data.results[0].objectId, 'expected objectId to be set');
+    ok(response.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].bar).toBeUndefined();
+    expect(response.data.results[0].hello).toBeUndefined();
+
+    const response2 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: '["foo", "hello"]',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response2.data.results[0].objectId, 'expected objectId to be set');
+    ok(response2.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response2.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response2.data.results[0].foo).toBe('baz');
+    expect(response2.data.results[0].bar).toBeUndefined();
+    expect(response2.data.results[0].hello).toBe('world');
+
+    const response3 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: '["foo", "bar", "hello"]',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response3.data.results[0].objectId, 'expected objectId to be set');
+    ok(response3.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response3.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response3.data.results[0].foo).toBe('baz');
+    expect(response3.data.results[0].bar).toBe(1);
+    expect(response3.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys query JS SDK', async () => {
+    const obj = new TestObject({ foo: 'baz', bar: 1, qux: 2 });
+
+    await obj.save();
+    obj._clearServerData();
+    const query1 = new Parse.Query(TestObject);
+    query1.exclude('foo');
+    const result1 = await query1.first();
+    ok(result1.id, 'expected object id to be set');
+    ok(result1.createdAt, 'expected object createdAt to be set');
+    ok(result1.updatedAt, 'expected object updatedAt to be set');
+    ok(!result1.dirty(), 'expected result not to be dirty');
+    strictEqual(result1.get('foo'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result1.get('bar'), 1);
+    strictEqual(result1.get('qux'), 2);
+
+    const result2 = await result1.fetch();
+    strictEqual(result2.get('foo'), 'baz');
+    strictEqual(result2.get('bar'), 1);
+    strictEqual(result2.get('qux'), 2);
+
+    obj._clearServerData();
+    const query2 = new Parse.Query(TestObject);
+    query2.exclude();
+    const result3 = await query2.first();
+    ok(result3.id, 'expected object id to be set');
+    ok(result3.createdAt, 'expected object createdAt to be set');
+    ok(result3.updatedAt, 'expected object updatedAt to be set');
+    ok(!result3.dirty(), 'expected result not to be dirty');
+    strictEqual(result3.get('foo'), 'baz');
+    strictEqual(result3.get('bar'), 1);
+    strictEqual(result3.get('qux'), 2);
+
+    obj._clearServerData();
+    const query3 = new Parse.Query(TestObject);
+    query3.exclude([]);
+    const result4 = await query3.first();
+    ok(result4.id, 'expected object id to be set');
+    ok(result4.createdAt, 'expected object createdAt to be set');
+    ok(result4.updatedAt, 'expected object updatedAt to be set');
+    ok(!result4.dirty(), 'expected result not to be dirty');
+    strictEqual(result4.get('foo'), 'baz');
+    strictEqual(result4.get('bar'), 1);
+    strictEqual(result4.get('qux'), 2);
+
+    obj._clearServerData();
+    const query4 = new Parse.Query(TestObject);
+    query4.exclude(['foo']);
+    const result5 = await query4.first();
+    ok(result5.id, 'expected object id to be set');
+    ok(result5.createdAt, 'expected object createdAt to be set');
+    ok(result5.updatedAt, 'expected object updatedAt to be set');
+    ok(!result5.dirty(), 'expected result not to be dirty');
+    strictEqual(result5.get('foo'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result5.get('bar'), 1);
+    strictEqual(result5.get('qux'), 2);
+
+    obj._clearServerData();
+    const query5 = new Parse.Query(TestObject);
+    query5.exclude(['foo', 'bar']);
+    const result6 = await query5.first();
+    ok(result6.id, 'expected object id to be set');
+    ok(!result6.dirty(), 'expected result not to be dirty');
+    strictEqual(result6.get('foo'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result6.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result6.get('qux'), 2);
+
+    obj._clearServerData();
+    const query6 = new Parse.Query(TestObject);
+    query6.exclude(['foo', 'bar', 'qux']);
+    const result7 = await query6.first();
+    ok(result7.id, 'expected object id to be set');
+    ok(!result7.dirty(), 'expected result not to be dirty');
+    strictEqual(result7.get('foo'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result7.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result7.get('qux'), undefined, "expected 'bar' field to be unset");
+
+    obj._clearServerData();
+    const query7 = new Parse.Query(TestObject);
+    query7.exclude('foo');
+    const result8 = await query7.first();
+    ok(result8.id, 'expected object id to be set');
+    ok(!result8.dirty(), 'expected result not to be dirty');
+    strictEqual(result8.get('foo'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result8.get('bar'), 1);
+    strictEqual(result8.get('qux'), 2);
+
+    obj._clearServerData();
+    const query8 = new Parse.Query(TestObject);
+    query8.exclude('foo', 'bar');
+    const result9 = await query8.first();
+    ok(result9.id, 'expected object id to be set');
+    ok(!result9.dirty(), 'expected result not to be dirty');
+    strictEqual(result9.get('foo'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result9.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result9.get('qux'), 2);
+
+    obj._clearServerData();
+    const query9 = new Parse.Query(TestObject);
+    query9.exclude('foo', 'bar', 'qux');
+    const result10 = await query9.first();
+    ok(result10.id, 'expected object id to be set');
+    ok(!result10.dirty(), 'expected result not to be dirty');
+    strictEqual(result10.get('foo'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result10.get('bar'), undefined, "expected 'bar' field to be unset");
+    strictEqual(result10.get('qux'), undefined, "expected 'bar' field to be unset");
+  });
+
+  it('exclude keys (arrays)', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: ['foo'],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response.data.results[0].objectId, 'expected objectId to be set');
+    ok(response.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+
+    const response2 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: ['foo', 'hello'],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response2.data.results[0].objectId, 'expected objectId to be set');
+    ok(response2.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response2.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response2.data.results[0].foo).toBeUndefined();
+    expect(response2.data.results[0].hello).toBeUndefined();
+
+    const response3 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: [],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response3.data.results[0].objectId, 'expected objectId to be set');
+    ok(response3.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response3.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response3.data.results[0].foo).toBe('baz');
+    expect(response3.data.results[0].hello).toBe('world');
+
+    const response4 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: [''],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response4.data.results[0].objectId, 'expected objectId to be set');
+    ok(response4.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response4.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response4.data.results[0].foo).toBe('baz');
+    expect(response4.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys (strings)', async () => {
     const obj = new TestObject({ foo: 'baz', hello: 'world' });
     await obj.save();
 
@@ -3222,8 +3580,53 @@ describe('Parse.Query testing', () => {
       },
       headers: masterKeyHeaders,
     });
+    ok(response.data.results[0].objectId, 'expected objectId to be set');
+    ok(response.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response.data.results[0].foo).toBeUndefined();
     expect(response.data.results[0].hello).toBe('world');
+
+    const response2 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: '',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response2.data.results[0].objectId, 'expected objectId to be set');
+    ok(response2.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response2.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response2.data.results[0].foo).toBe('baz');
+    expect(response2.data.results[0].hello).toBe('world');
+
+    const response3 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: '["hello"]',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response3.data.results[0].objectId, 'expected objectId to be set');
+    ok(response3.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response3.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response3.data.results[0].foo).toBe('baz');
+    expect(response3.data.results[0].hello).toBeUndefined();
+
+    const response4 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: '["foo", "hello"]',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response4.data.results[0].objectId, 'expected objectId to be set');
+    ok(response4.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response4.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response4.data.results[0].foo).toBeUndefined();
+    expect(response4.data.results[0].hello).toBeUndefined();
   });
 
   it('exclude keys with select same key', async () => {
@@ -3850,7 +4253,6 @@ describe('Parse.Query testing', () => {
       })
       .then(function (savedFoobar) {
         const foobarQuery = new Parse.Query('Foobar');
-        foobarQuery.include('barBaz');
         foobarQuery.select(['fizz', 'barBaz.key']);
         foobarQuery.get(savedFoobar.id).then(function (foobarObj) {
           equal(foobarObj.get('fizz'), 'buzz');
@@ -3888,8 +4290,6 @@ describe('Parse.Query testing', () => {
       })
       .then(function (savedFoobar) {
         const foobarQuery = new Parse.Query('Foobar');
-        foobarQuery.include('barBaz');
-        foobarQuery.include('barBaz.bazoo');
         foobarQuery.select(['fizz', 'barBaz.key', 'barBaz.bazoo.some']);
         foobarQuery.get(savedFoobar.id).then(function (foobarObj) {
           equal(foobarObj.get('fizz'), 'buzz');
@@ -3905,6 +4305,65 @@ describe('Parse.Query testing', () => {
           done();
         });
       });
+  });
+
+  it('exclude nested keys', async () => {
+    const Foobar = new Parse.Object('Foobar');
+    const BarBaz = new Parse.Object('Barbaz');
+    BarBaz.set('key', 'value');
+    BarBaz.set('otherKey', 'value');
+    await BarBaz.save();
+
+    Foobar.set('foo', 'bar');
+    Foobar.set('fizz', 'buzz');
+    Foobar.set('barBaz', BarBaz);
+    const savedFoobar = await Foobar.save();
+
+    const foobarQuery = new Parse.Query('Foobar');
+    foobarQuery.exclude(['foo', 'barBaz.otherKey']);
+    const foobarObj = await foobarQuery.get(savedFoobar.id);
+    equal(foobarObj.get('fizz'), 'buzz');
+    equal(foobarObj.get('foo'), undefined);
+    if (foobarObj.has('barBaz')) {
+      equal(foobarObj.get('barBaz').get('key'), 'value');
+      equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+    } else {
+      fail('barBaz should be set');
+    }
+  });
+
+  it('exclude nested keys 2 level', async () => {
+    const Foobar = new Parse.Object('Foobar');
+    const BarBaz = new Parse.Object('Barbaz');
+    const Bazoo = new Parse.Object('Bazoo');
+
+    Bazoo.set('some', 'thing');
+    Bazoo.set('otherSome', 'value');
+    await Bazoo.save();
+
+    BarBaz.set('key', 'value');
+    BarBaz.set('otherKey', 'value');
+    BarBaz.set('bazoo', Bazoo);
+    await BarBaz.save();
+
+    Foobar.set('foo', 'bar');
+    Foobar.set('fizz', 'buzz');
+    Foobar.set('barBaz', BarBaz);
+    const savedFoobar = await Foobar.save();
+
+    const foobarQuery = new Parse.Query('Foobar');
+    foobarQuery.exclude(['foo', 'barBaz.otherKey', 'barBaz.bazoo.otherSome']);
+    const foobarObj = await foobarQuery.get(savedFoobar.id);
+    equal(foobarObj.get('fizz'), 'buzz');
+    equal(foobarObj.get('foo'), undefined);
+    if (foobarObj.has('barBaz')) {
+      equal(foobarObj.get('barBaz').get('key'), 'value');
+      equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+      equal(foobarObj.get('barBaz').get('bazoo').get('some'), 'thing');
+      equal(foobarObj.get('barBaz').get('bazoo').get('otherSome'), undefined);
+    } else {
+      fail('barBaz should be set');
+    }
   });
 
   it('include with *', async () => {
@@ -3931,6 +4390,30 @@ describe('Parse.Query testing', () => {
     equal(result.child3.name, 'mo');
   });
 
+  it('include with ["*"]', async () => {
+    const child1 = new TestObject({ foo: 'bar', name: 'ac' });
+    const child2 = new TestObject({ foo: 'baz', name: 'flo' });
+    const child3 = new TestObject({ foo: 'bad', name: 'mo' });
+    const parent = new Container({ child1, child2, child3 });
+    await Parse.Object.saveAll([parent, child1, child2, child3]);
+    const options = Object.assign({}, masterKeyOptions, {
+      qs: {
+        where: JSON.stringify({ objectId: parent.id }),
+        include: '["*"]',
+      },
+    });
+    const resp = await request(
+      Object.assign({ url: Parse.serverURL + '/classes/Container' }, options)
+    );
+    const result = resp.data.results[0];
+    equal(result.child1.foo, 'bar');
+    equal(result.child2.foo, 'baz');
+    equal(result.child3.foo, 'bad');
+    equal(result.child1.name, 'ac');
+    equal(result.child2.name, 'flo');
+    equal(result.child3.name, 'mo');
+  });
+
   it('include with * overrides', async () => {
     const child1 = new TestObject({ foo: 'bar', name: 'ac' });
     const child2 = new TestObject({ foo: 'baz', name: 'flo' });
@@ -3941,6 +4424,30 @@ describe('Parse.Query testing', () => {
       qs: {
         where: JSON.stringify({ objectId: parent.id }),
         include: 'child2,*',
+      },
+    });
+    const resp = await request(
+      Object.assign({ url: Parse.serverURL + '/classes/Container' }, options)
+    );
+    const result = resp.data.results[0];
+    equal(result.child1.foo, 'bar');
+    equal(result.child2.foo, 'baz');
+    equal(result.child3.foo, 'bad');
+    equal(result.child1.name, 'ac');
+    equal(result.child2.name, 'flo');
+    equal(result.child3.name, 'mo');
+  });
+
+  it('include with ["*"] overrides', async () => {
+    const child1 = new TestObject({ foo: 'bar', name: 'ac' });
+    const child2 = new TestObject({ foo: 'baz', name: 'flo' });
+    const child3 = new TestObject({ foo: 'bad', name: 'mo' });
+    const parent = new Container({ child1, child2, child3 });
+    await Parse.Object.saveAll([parent, child1, child2, child3]);
+    const options = Object.assign({}, masterKeyOptions, {
+      qs: {
+        where: JSON.stringify({ objectId: parent.id }),
+        include: '["child2","*"]',
       },
     });
     const resp = await request(
@@ -4259,7 +4766,7 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
-  it_only_db('mongo')('should handle relative times correctly', function (done) {
+  it('should handle relative times correctly', async () => {
     const now = Date.now();
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
@@ -4270,94 +4777,75 @@ describe('Parse.Query testing', () => {
       ttl: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago
     });
 
-    Parse.Object.saveAll([obj1, obj2])
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: 'in 1 day' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: '1 day ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.lessThan('ttl', { $relativeTime: '5 days ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(0);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: '3 days ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(2);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: 'now' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: 'now' });
-        q.lessThan('ttl', { $relativeTime: 'in 1 day' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(0);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: '1 year 3 weeks ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(2);
-      })
-      .then(done, done.fail);
+    await Parse.Object.saveAll([obj1, obj2]);
+    const q1 = new Parse.Query('MyCustomObject');
+    q1.greaterThan('ttl', { $relativeTime: 'in 1 day' });
+    const results1 = await q1.find({ useMasterKey: true });
+    expect(results1.length).toBe(1);
+
+    const q2 = new Parse.Query('MyCustomObject');
+    q2.greaterThan('ttl', { $relativeTime: '1 day ago' });
+    const results2 = await q2.find({ useMasterKey: true });
+    expect(results2.length).toBe(1);
+
+    const q3 = new Parse.Query('MyCustomObject');
+    q3.lessThan('ttl', { $relativeTime: '5 days ago' });
+    const results3 = await q3.find({ useMasterKey: true });
+    expect(results3.length).toBe(0);
+
+    const q4 = new Parse.Query('MyCustomObject');
+    q4.greaterThan('ttl', { $relativeTime: '3 days ago' });
+    const results4 = await q4.find({ useMasterKey: true });
+    expect(results4.length).toBe(2);
+
+    const q5 = new Parse.Query('MyCustomObject');
+    q5.greaterThan('ttl', { $relativeTime: 'now' });
+    const results5 = await q5.find({ useMasterKey: true });
+    expect(results5.length).toBe(1);
+
+    const q6 = new Parse.Query('MyCustomObject');
+    q6.greaterThan('ttl', { $relativeTime: 'now' });
+    q6.lessThan('ttl', { $relativeTime: 'in 1 day' });
+    const results6 = await q6.find({ useMasterKey: true });
+    expect(results6.length).toBe(0);
+
+    const q7 = new Parse.Query('MyCustomObject');
+    q7.greaterThan('ttl', { $relativeTime: '1 year 3 weeks ago' });
+    const results7 = await q7.find({ useMasterKey: true });
+    expect(results7.length).toBe(2);
   });
 
-  it_only_db('mongo')('should error on invalid relative time', function (done) {
+  it('should error on invalid relative time', async () => {
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
       ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
     });
-
+    await obj1.save({ useMasterKey: true });
     const q = new Parse.Query('MyCustomObject');
     q.greaterThan('ttl', { $relativeTime: '-12 bananas ago' });
-    obj1
-      .save({ useMasterKey: true })
-      .then(() => q.find({ useMasterKey: true }))
-      .then(done.fail, () => done());
+    try {
+      await q.find({ useMasterKey: true });
+      fail('Should have thrown error');
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    }
   });
 
-  it_only_db('mongo')('should error when using $relativeTime on non-Date field', function (done) {
+  it('should error when using $relativeTime on non-Date field', async () => {
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
       nonDateField: 'abcd',
       ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
     });
-
+    await obj1.save({ useMasterKey: true });
     const q = new Parse.Query('MyCustomObject');
     q.greaterThan('nonDateField', { $relativeTime: '1 day ago' });
-    obj1
-      .save({ useMasterKey: true })
-      .then(() => q.find({ useMasterKey: true }))
-      .then(done.fail, () => done());
+    try {
+      await q.find({ useMasterKey: true });
+      fail('Should have thrown error');
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    }
   });
 
   it('should match complex structure with dot notation when using matchesKeyInQuery', function (done) {
@@ -4724,19 +5212,6 @@ describe('Parse.Query testing', () => {
 
     const results = await query.find();
     equal(results[0].get('array').length, 105);
-  });
-
-  it('exclude keys (sdk query)', async done => {
-    const obj = new TestObject({ foo: 'baz', hello: 'world' });
-    await obj.save();
-
-    const query = new Parse.Query('TestObject');
-    query.exclude('foo');
-
-    const object = await query.get(obj.id);
-    expect(object.get('foo')).toBeUndefined();
-    expect(object.get('hello')).toBe('world');
-    done();
   });
 
   xit('todo: exclude keys with select key (sdk query get)', async done => {

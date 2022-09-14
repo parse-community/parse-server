@@ -3,7 +3,6 @@ const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapte
   .WinstonLoggerAdapter;
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
-const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
 const databaseURI = 'mongodb://localhost:27017/parse';
@@ -24,8 +23,8 @@ const mockAdapter = {
 describe('FilesController', () => {
   it('should properly expand objects', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
-    const filesController = new FilesController(gridStoreAdapter);
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const filesController = new FilesController(gridFSAdapter);
     const result = filesController.expandFilesInObject(config, function () {});
 
     expect(result).toBeUndefined();
@@ -42,6 +41,20 @@ describe('FilesController', () => {
     expect(anObject.aFile.url).toEqual('http://an.url');
 
     done();
+  });
+
+  it_only_db('mongo')('should pass databaseOptions to GridFSBucketAdapter', async () => {
+    await reconfigureServer({
+      databaseURI: 'mongodb://localhost:27017/parse',
+      filesAdapter: null,
+      databaseAdapter: null,
+      databaseOptions: {
+        retryWrites: true,
+      },
+    });
+    const config = Config.get(Parse.applicationId);
+    expect(config.database.adapter._mongoOptions.retryWrites).toBeTrue();
+    expect(config.filesController.adapter._mongoOptions.retryWrites).toBeTrue();
   });
 
   it('should create a server log on failure', done => {
@@ -80,24 +93,27 @@ describe('FilesController', () => {
     expect(typeof error).toBe('object');
     expect(error.message.indexOf('biscuit')).toBe(13);
     expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+    mockAdapter.validateFilename = () => {
+      return null;
+    };
     done();
   });
 
   it('should add a unique hash to the file name when the preserveFileName option is false', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
-    spyOn(gridStoreAdapter, 'createFile');
-    gridStoreAdapter.createFile.and.returnValue(Promise.resolve());
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    spyOn(gridFSAdapter, 'createFile');
+    gridFSAdapter.createFile.and.returnValue(Promise.resolve());
     const fileName = 'randomFileName.pdf';
     const regexEscapedFileName = fileName.replace(/\./g, '\\$&');
-    const filesController = new FilesController(gridStoreAdapter, null, {
+    const filesController = new FilesController(gridFSAdapter, null, {
       preserveFileName: false,
     });
 
     filesController.createFile(config, fileName);
 
-    expect(gridStoreAdapter.createFile).toHaveBeenCalledTimes(1);
-    expect(gridStoreAdapter.createFile.calls.mostRecent().args[0]).toMatch(
+    expect(gridFSAdapter.createFile).toHaveBeenCalledTimes(1);
+    expect(gridFSAdapter.createFile.calls.mostRecent().args[0]).toMatch(
       `^.{32}_${regexEscapedFileName}$`
     );
 
@@ -106,42 +122,42 @@ describe('FilesController', () => {
 
   it('should not add a unique hash to the file name when the preserveFileName option is true', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
-    spyOn(gridStoreAdapter, 'createFile');
-    gridStoreAdapter.createFile.and.returnValue(Promise.resolve());
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    spyOn(gridFSAdapter, 'createFile');
+    gridFSAdapter.createFile.and.returnValue(Promise.resolve());
     const fileName = 'randomFileName.pdf';
-    const filesController = new FilesController(gridStoreAdapter, null, {
+    const filesController = new FilesController(gridFSAdapter, null, {
       preserveFileName: true,
     });
 
     filesController.createFile(config, fileName);
 
-    expect(gridStoreAdapter.createFile).toHaveBeenCalledTimes(1);
-    expect(gridStoreAdapter.createFile.calls.mostRecent().args[0]).toEqual(fileName);
+    expect(gridFSAdapter.createFile).toHaveBeenCalledTimes(1);
+    expect(gridFSAdapter.createFile.calls.mostRecent().args[0]).toEqual(fileName);
 
     done();
   });
 
   it('should handle adapter without getMetadata', async () => {
-    const gridStoreAdapter = new GridFSBucketAdapter(databaseURI);
-    gridStoreAdapter.getMetadata = null;
-    const filesController = new FilesController(gridStoreAdapter);
+    const gridFSAdapter = new GridFSBucketAdapter(databaseURI);
+    gridFSAdapter.getMetadata = null;
+    const filesController = new FilesController(gridFSAdapter);
 
     const result = await filesController.getMetadata();
     expect(result).toEqual({});
   });
 
   it('should reject slashes in file names', done => {
-    const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     const fileName = 'foo/randomFileName.pdf';
-    expect(gridStoreAdapter.validateFilename(fileName)).not.toBe(null);
+    expect(gridFSAdapter.validateFilename(fileName)).not.toBe(null);
     done();
   });
 
   it('should also reject slashes in file names', done => {
-    const gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     const fileName = 'foo/randomFileName.pdf';
-    expect(gridStoreAdapter.validateFilename(fileName)).not.toBe(null);
+    expect(gridFSAdapter.validateFilename(fileName)).not.toBe(null);
     done();
   });
 });

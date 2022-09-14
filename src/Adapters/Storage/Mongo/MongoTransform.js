@@ -2,6 +2,7 @@ import log from '../../../logger';
 import _ from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
+const Utils = require('../../../Utils');
 
 const transformKey = (className, fieldName, schema) => {
   // Check if the schema is known since it's a built-in field.
@@ -99,7 +100,10 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 
   if (
     (parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') ||
-    (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')
+    (!key.includes('.') &&
+      !parseFormatSchema.fields[key] &&
+      restValue &&
+      restValue.__type == 'Pointer') // Do not use the _p_ prefix for pointers inside nested documents
   ) {
     key = '_p_' + key;
   }
@@ -305,7 +309,10 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
     schema && schema.fields[key] && schema.fields[key].type === 'Pointer';
 
   const field = schema && schema.fields[key];
-  if (expectedTypeIsPointer || (!schema && value && value.__type === 'Pointer')) {
+  if (
+    expectedTypeIsPointer ||
+    (!schema && !key.includes('.') && value && value.__type === 'Pointer')
+  ) {
     key = '_p_' + key;
   }
 
@@ -326,8 +333,11 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   }
 
   // Handle atomic values
-  if (transformTopLevelAtom(value) !== CannotTransform) {
-    return { key, value: transformTopLevelAtom(value) };
+  const transformRes = key.includes('.')
+    ? transformInteriorAtom(value)
+    : transformTopLevelAtom(value);
+  if (transformRes !== CannotTransform) {
+    return { key, value: transformRes };
   } else {
     throw new Parse.Error(
       Parse.Error.INVALID_JSON,
@@ -625,133 +635,6 @@ function transformTopLevelAtom(atom, field) {
   }
 }
 
-function relativeTimeToDate(text, now = new Date()) {
-  text = text.toLowerCase();
-
-  let parts = text.split(' ');
-
-  // Filter out whitespace
-  parts = parts.filter(part => part !== '');
-
-  const future = parts[0] === 'in';
-  const past = parts[parts.length - 1] === 'ago';
-
-  if (!future && !past && text !== 'now') {
-    return {
-      status: 'error',
-      info: "Time should either start with 'in' or end with 'ago'",
-    };
-  }
-
-  if (future && past) {
-    return {
-      status: 'error',
-      info: "Time cannot have both 'in' and 'ago'",
-    };
-  }
-
-  // strip the 'ago' or 'in'
-  if (future) {
-    parts = parts.slice(1);
-  } else {
-    // past
-    parts = parts.slice(0, parts.length - 1);
-  }
-
-  if (parts.length % 2 !== 0 && text !== 'now') {
-    return {
-      status: 'error',
-      info: 'Invalid time string. Dangling unit or number.',
-    };
-  }
-
-  const pairs = [];
-  while (parts.length) {
-    pairs.push([parts.shift(), parts.shift()]);
-  }
-
-  let seconds = 0;
-  for (const [num, interval] of pairs) {
-    const val = Number(num);
-    if (!Number.isInteger(val)) {
-      return {
-        status: 'error',
-        info: `'${num}' is not an integer.`,
-      };
-    }
-
-    switch (interval) {
-      case 'yr':
-      case 'yrs':
-      case 'year':
-      case 'years':
-        seconds += val * 31536000; // 365 * 24 * 60 * 60
-        break;
-
-      case 'wk':
-      case 'wks':
-      case 'week':
-      case 'weeks':
-        seconds += val * 604800; // 7 * 24 * 60 * 60
-        break;
-
-      case 'd':
-      case 'day':
-      case 'days':
-        seconds += val * 86400; // 24 * 60 * 60
-        break;
-
-      case 'hr':
-      case 'hrs':
-      case 'hour':
-      case 'hours':
-        seconds += val * 3600; // 60 * 60
-        break;
-
-      case 'min':
-      case 'mins':
-      case 'minute':
-      case 'minutes':
-        seconds += val * 60;
-        break;
-
-      case 'sec':
-      case 'secs':
-      case 'second':
-      case 'seconds':
-        seconds += val;
-        break;
-
-      default:
-        return {
-          status: 'error',
-          info: `Invalid interval: '${interval}'`,
-        };
-    }
-  }
-
-  const milliseconds = seconds * 1000;
-  if (future) {
-    return {
-      status: 'success',
-      info: 'future',
-      result: new Date(now.valueOf() + milliseconds),
-    };
-  } else if (past) {
-    return {
-      status: 'success',
-      info: 'past',
-      result: new Date(now.valueOf() - milliseconds),
-    };
-  } else {
-    return {
-      status: 'success',
-      info: 'present',
-      result: new Date(now.valueOf()),
-    };
-  }
-}
-
 // Transforms a query constraint from REST API format to Mongo format.
 // A constraint is something with fields like $lt.
 // If it is not a valid constraint but it could be a valid something
@@ -804,7 +687,7 @@ function transformConstraint(constraint, field, count = false) {
               );
           }
 
-          const parserResult = relativeTimeToDate(val.$relativeTime);
+          const parserResult = Utils.relativeTimeToDate(val.$relativeTime);
           if (parserResult.status === 'success') {
             answer[key] = parserResult.result;
             break;
@@ -1547,7 +1430,6 @@ module.exports = {
   transformUpdate,
   transformWhere,
   mongoObjectToParseObject,
-  relativeTimeToDate,
   transformConstraint,
   transformPointerString,
 };

@@ -8,7 +8,8 @@ function validateAuthData(authData) {
   const apiURL = authData.apiURL || defaultURL;
   const path = `${apiURL}me?fields=id&access_token=${authData.access_token}`;
   return httpsRequest.get(path).then(response => {
-    if (response && response.data && response.data.id == authData.id) {
+    const user = response.data ? response.data : response;
+    if (user && user.id == authData.id) {
       return;
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Instagram auth is invalid for this user.');

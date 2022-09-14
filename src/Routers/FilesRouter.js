@@ -66,6 +66,12 @@ export class FilesRouter {
 
   getHandler(req, res) {
     const config = Config.get(req.params.appId);
+    if (!config) {
+      res.status(403);
+      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
+      res.json({ code: err.code, error: err.message });
+      return;
+    }
     const filesController = config.filesController;
     const filename = req.params.filename;
     const contentType = mime.getType(filename);
@@ -98,17 +104,18 @@ export class FilesRouter {
     const isMaster = req.auth.isMaster;
     const isLinked = user && Parse.AnonymousUtils.isLinked(user);
     if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
-      next(new Parse.Error(
-        Parse.Error.FILE_SAVE_ERROR,
-        'File upload by anonymous user is disabled.'
-      ));
+      next(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+      );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
-      next(new Parse.Error(
-        Parse.Error.FILE_SAVE_ERROR,
-        'File upload by authenticated user is disabled.'
-      ));
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
+      );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForPublic && !user) {
@@ -140,7 +147,7 @@ export class FilesRouter {
     try {
       // run beforeSaveFile trigger
       const triggerResult = await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeSaveFile,
+        triggers.Types.beforeSave,
         fileObject,
         config,
         req.auth
@@ -165,16 +172,22 @@ export class FilesRouter {
         // update fileSize
         const bufferData = Buffer.from(fileObject.file._data, 'base64');
         fileObject.fileSize = Buffer.byteLength(bufferData);
+        // prepare file options
+        const fileOptions = {
+          metadata: fileObject.file._metadata,
+        };
+        // some s3-compatible providers (DigitalOcean, Linode) do not accept tags
+        // so we do not include the tags option if it is empty.
+        const fileTags =
+          Object.keys(fileObject.file._tags).length > 0 ? { tags: fileObject.file._tags } : {};
+        Object.assign(fileOptions, fileTags);
         // save file
         const createFileResult = await filesController.createFile(
           config,
           fileObject.file._name,
           bufferData,
           fileObject.file._source.type,
-          {
-            tags: fileObject.file._tags,
-            metadata: fileObject.file._metadata,
-          }
+          fileOptions
         );
         // update file with new data
         fileObject.file._name = createFileResult.name;
@@ -187,12 +200,7 @@ export class FilesRouter {
         };
       }
       // run afterSaveFile trigger
-      await triggers.maybeRunFileTrigger(
-        triggers.Types.afterSaveFile,
-        fileObject,
-        config,
-        req.auth
-      );
+      await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
@@ -215,7 +223,7 @@ export class FilesRouter {
       file._url = filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeDeleteFile,
+        triggers.Types.beforeDelete,
         fileObject,
         req.config,
         req.auth
@@ -224,7 +232,7 @@ export class FilesRouter {
       await filesController.deleteFile(req.config, filename);
       // run afterDeleteFile trigger
       await triggers.maybeRunFileTrigger(
-        triggers.Types.afterDeleteFile,
+        triggers.Types.afterDelete,
         fileObject,
         req.config,
         req.auth
@@ -243,10 +251,10 @@ export class FilesRouter {
   }
 
   async metadataHandler(req, res) {
-    const config = Config.get(req.params.appId);
-    const { filesController } = config;
-    const { filename } = req.params;
     try {
+      const config = Config.get(req.params.appId);
+      const { filesController } = config;
+      const { filename } = req.params;
       const data = await filesController.getMetadata(filename);
       res.status(200);
       res.json(data);

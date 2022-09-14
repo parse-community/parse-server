@@ -8,17 +8,20 @@ const bodyParser = require('body-parser');
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 
-const port = 12345;
+const port = 34567;
 const hookServerURL = 'http://localhost:' + port;
-const AppCache = require('../lib/cache').AppCache;
 
 describe('Hooks', () => {
   let server;
   let app;
-  beforeAll(done => {
-    app = express();
-    app.use(bodyParser.json({ type: '*/*' }));
-    server = app.listen(12345, undefined, done);
+  beforeEach(done => {
+    if (!app) {
+      app = express();
+      app.use(bodyParser.json({ type: '*/*' }));
+      server = app.listen(port, undefined, done);
+    } else {
+      done();
+    }
   });
 
   afterAll(done => {
@@ -379,7 +382,7 @@ describe('Hooks', () => {
           }
           const hooksController = new HooksController(
             Parse.applicationId,
-            AppCache.get('test').databaseController
+            Config.get('test').database
           );
           return hooksController.load();
         },
@@ -461,7 +464,7 @@ describe('Hooks', () => {
           expect(err).not.toBe(undefined);
           expect(err).not.toBe(null);
           if (err) {
-            expect(err.code).toBe(141);
+            expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
             expect(err.message.code).toEqual(1337);
             expect(err.message.error).toEqual('hacking that one!');
           }
@@ -533,7 +536,7 @@ describe('Hooks', () => {
             expect(err).not.toBe(undefined);
             expect(err).not.toBe(null);
             if (err) {
-              expect(err.code).toBe(141);
+              expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
               expect(err.message).toEqual('incorrect key provided');
             }
             done();

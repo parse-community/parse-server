@@ -19,6 +19,13 @@ class ParseCloudCodePublisher {
     this._onCloudCodeMessage(Parse.applicationId + 'afterDelete', request);
   }
 
+  onClearCachedRoles(user: Parse.Object) {
+    this.parsePublisher.publish(
+      Parse.applicationId + 'clearCache',
+      JSON.stringify({ userId: user.id })
+    );
+  }
+
   // Request is the request object from cloud code functions. request.object is a ParseObject.
   _onCloudCodeMessage(type: string, request: any): void {
     logger.verbose(
@@ -32,6 +39,9 @@ class ParseCloudCodePublisher {
     };
     if (request.original) {
       message.originalParseObject = request.original._toFullJSON();
+    }
+    if (request.classLevelPermissions) {
+      message.classLevelPermissions = request.classLevelPermissions;
     }
     this.parsePublisher.publish(type, JSON.stringify(message));
   }

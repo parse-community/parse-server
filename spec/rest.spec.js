@@ -557,11 +557,7 @@ describe('rest create', () => {
         const actual = new Date(session.expiresAt.iso);
         const expected = new Date(now.getTime() + 1000 * 3600 * 24 * 365);
 
-        expect(actual.getFullYear()).toEqual(expected.getFullYear());
-        expect(actual.getMonth()).toEqual(expected.getMonth());
-        expect(actual.getDate()).toEqual(expected.getDate());
-        // less than a minute, if test happen at the wrong time :/
-        expect(actual.getMinutes() - expected.getMinutes() <= 1).toBe(true);
+        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
 
         done();
       });
@@ -595,11 +591,7 @@ describe('rest create', () => {
         const actual = new Date(session.expiresAt.iso);
         const expected = new Date(now.getTime() + sessionLength * 1000);
 
-        expect(actual.getFullYear()).toEqual(expected.getFullYear());
-        expect(actual.getMonth()).toEqual(expected.getMonth());
-        expect(actual.getDate()).toEqual(expected.getDate());
-        expect(actual.getHours()).toEqual(expected.getHours());
-        expect(actual.getMinutes()).toEqual(expected.getMinutes());
+        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
 
         done();
       })
@@ -829,42 +821,42 @@ describe('read-only masterKey', () => {
     }).toThrow();
   });
 
-  it('properly blocks writes', done => {
-    reconfigureServer({
+  it('properly blocks writes', async () => {
+    await reconfigureServer({
       readOnlyMasterKey: 'yolo-read-only',
-    })
-      .then(() => {
-        return request({
-          url: `${Parse.serverURL}/classes/MyYolo`,
-          method: 'POST',
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-Master-Key': 'yolo-read-only',
-            'Content-Type': 'application/json',
-          },
-          body: { foo: 'bar' },
-        });
-      })
-      .then(done.fail)
-      .catch(res => {
-        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe(
-          "read-only masterKey isn't allowed to perform the create operation."
-        );
-        done();
+    });
+    try {
+      await request({
+        url: `${Parse.serverURL}/classes/MyYolo`,
+        method: 'POST',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'yolo-read-only',
+          'Content-Type': 'application/json',
+        },
+        body: { foo: 'bar' },
       });
+      fail();
+    } catch (res) {
+      expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.data.error).toBe(
+        "read-only masterKey isn't allowed to perform the create operation."
+      );
+    }
+    await reconfigureServer();
   });
 
-  it('should throw when masterKey and readOnlyMasterKey are the same', done => {
-    reconfigureServer({
-      masterKey: 'yolo',
-      readOnlyMasterKey: 'yolo',
-    })
-      .then(done.fail)
-      .catch(err => {
-        expect(err).toEqual(new Error('masterKey and readOnlyMasterKey should be different'));
-        done();
+  it('should throw when masterKey and readOnlyMasterKey are the same', async () => {
+    try {
+      await reconfigureServer({
+        masterKey: 'yolo',
+        readOnlyMasterKey: 'yolo',
       });
+      fail();
+    } catch (err) {
+      expect(err).toEqual(new Error('masterKey and readOnlyMasterKey should be different'));
+    }
+    await reconfigureServer();
   });
 
   it('should throw when trying to create RestWrite', () => {
@@ -880,7 +872,7 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create schema', done => {
-    return request({
+    request({
       method: 'POST',
       url: `${Parse.serverURL}/schemas`,
       headers: {
@@ -899,7 +891,7 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create schema with a name', done => {
-    return request({
+    request({
       url: `${Parse.serverURL}/schemas/MyClass`,
       method: 'POST',
       headers: {
@@ -918,7 +910,7 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to update schema', done => {
-    return request({
+    request({
       url: `${Parse.serverURL}/schemas/MyClass`,
       method: 'PUT',
       headers: {
@@ -937,7 +929,7 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to delete schema', done => {
-    return request({
+    request({
       url: `${Parse.serverURL}/schemas/MyClass`,
       method: 'DELETE',
       headers: {
@@ -956,7 +948,7 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to update the global config', done => {
-    return request({
+    request({
       url: `${Parse.serverURL}/config`,
       method: 'PUT',
       headers: {
@@ -975,7 +967,7 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to send push', done => {
-    return request({
+    request({
       url: `${Parse.serverURL}/push`,
       method: 'POST',
       headers: {

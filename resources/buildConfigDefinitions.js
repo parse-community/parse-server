@@ -11,6 +11,39 @@
  */
 const parsers = require('../src/Options/parsers');
 
+/** The types of nested options. */
+const nestedOptionTypes = [
+  'CustomPagesOptions',
+  'DatabaseOptions',
+  'FileUploadOptions',
+  'IdempotencyOptions',
+  'Object',
+  'PagesCustomUrlsOptions',
+  'PagesOptions',
+  'PagesRoute',
+  'PasswordPolicyOptions',
+  'SecurityOptions',
+  'SchemaOptions',
+];
+
+/** The prefix of environment variables for nested options. */
+const nestedOptionEnvPrefix = {
+  'AccountLockoutOptions': 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
+  'CustomPagesOptions': 'PARSE_SERVER_CUSTOM_PAGES_',
+  'DatabaseOptions': 'PARSE_SERVER_DATABASE_',
+  'FileUploadOptions': 'PARSE_SERVER_FILE_UPLOAD_',
+  'IdempotencyOptions': 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
+  'LiveQueryOptions': 'PARSE_SERVER_LIVEQUERY_',
+  'LiveQueryServerOptions': 'PARSE_LIVE_QUERY_SERVER_',
+  'PagesCustomUrlsOptions': 'PARSE_SERVER_PAGES_CUSTOM_URL_',
+  'PagesOptions': 'PARSE_SERVER_PAGES_',
+  'PagesRoute': 'PARSE_SERVER_PAGES_ROUTE_',
+  'ParseServerOptions': 'PARSE_SERVER_',
+  'PasswordPolicyOptions': 'PARSE_SERVER_PASSWORD_POLICY_',
+  'SecurityOptions': 'PARSE_SERVER_SECURITY_',
+  'SchemaOptions': 'PARSE_SERVER_SCHEMA_',
+};
+
 function last(array) {
   return array[array.length - 1];
 }
@@ -19,7 +52,7 @@ const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 function toENV(key) {
   let str = '';
   let previousIsUpper = false;
-  for(let i = 0; i < key.length; i++) {
+  for (let i = 0; i < key.length; i++) {
     const char = key[i];
     if (letters.indexOf(char) >= 0) {
       if (!previousIsUpper) {
@@ -40,20 +73,8 @@ function getCommentValue(comment) {
 }
 
 function getENVPrefix(iface) {
-  const options = {
-    'ParseServerOptions' : 'PARSE_SERVER_',
-    'PagesOptions' : 'PARSE_SERVER_PAGES_',
-    'PagesCustomUrlsOptions' : 'PARSE_SERVER_PAGES_CUSTOM_URL_',
-    'CustomPagesOptions' : 'PARSE_SERVER_CUSTOM_PAGES_',
-    'LiveQueryServerOptions' : 'PARSE_LIVE_QUERY_SERVER_',
-    'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
-    'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
-    'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
-    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
-    'FileUploadOptions' : 'PARSE_SERVER_FILE_UPLOAD_',
-  }
-  if (options[iface.id.name]) {
-    return options[iface.id.name]
+  if (nestedOptionEnvPrefix[iface.id.name]) {
+    return nestedOptionEnvPrefix[iface.id.name]
   }
 }
 
@@ -153,6 +174,20 @@ function parseDefaultValue(elt, value, t) {
     literalValue = t.arrayExpression(array.map((value) => {
       if (typeof value == 'string') {
         return t.stringLiteral(value);
+      } else if (typeof value == 'number') {
+        return t.numericLiteral(value);
+      } else if (typeof value == 'object') {
+        const object = parsers.objectParser(value);
+        const props = Object.entries(object).map(([k, v]) => {
+          if (typeof v == 'string') {
+            return t.objectProperty(t.identifier(k), t.stringLiteral(v));
+          } else if (typeof v == 'number') {
+            return t.objectProperty(t.identifier(k), t.numericLiteral(v));
+          } else if (typeof v == 'boolean') {
+            return t.objectProperty(t.identifier(k), t.booleanLiteral(v));
+          }
+        });
+        return t.objectExpression(props);
       } else {
         throw new Error('Unable to parse array');
       }
@@ -166,8 +201,8 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    const literalTypes = ['Object', 'IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions'];
-    if (literalTypes.includes(type)) {
+
+    if (nestedOptionTypes.includes(type)) {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
         return t.objectProperty(key, object[value]);
@@ -217,7 +252,9 @@ function inject(t, list) {
       type = elt.typeAnnotation.id.name;
     }
     if (type === 'Array') {
-      type = `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
+      type = elt.typeAnnotation.elementType.id
+        ? `${elt.typeAnnotation.elementType.id.name}[]`
+        : `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
     }
     if (type === 'NumberOrBoolean') {
       type = 'Number|Boolean';
@@ -238,8 +275,8 @@ function inject(t, list) {
   return { results, comments };
 }
 
-const makeRequire = function(variableName, module, t) {
-  const decl = t.variableDeclarator(t.identifier(variableName),  t.callExpression(t.identifier('require'), [t.stringLiteral(module)]));
+const makeRequire = function (variableName, module, t) {
+  const decl = t.variableDeclarator(t.identifier(variableName), t.callExpression(t.identifier('require'), [t.stringLiteral(module)]));
   return t.variableDeclaration('var', [decl])
 }
 let docs = ``;
@@ -248,14 +285,14 @@ const plugin = function (babel) {
   const moduleExports = t.memberExpression(t.identifier('module'), t.identifier('exports'));
   return {
     visitor: {
-      ImportDeclaration: function(path) {
+      ImportDeclaration: function (path) {
         path.remove();
       },
-      Program: function(path) {
+      Program: function (path) {
         // Inject the parser's loader
         path.unshiftContainer('body', makeRequire('parsers', './parsers', t));
       },
-      ExportDeclaration: function(path) {
+      ExportDeclaration: function (path) {
         // Export declaration on an interface
         if (path.node && path.node.declaration && path.node.declaration.type == 'InterfaceDeclaration') {
           const { results, comments } = inject(t, doInterface(path.node.declaration));
@@ -278,6 +315,6 @@ Do not edit manually, but update Options/index.js
 `
 
 const babel = require("@babel/core");
-const res = babel.transformFileSync('./src/Options/index.js', { plugins: [ plugin, '@babel/transform-flow-strip-types' ], babelrc: false, auxiliaryCommentBefore, sourceMaps: false });
+const res = babel.transformFileSync('./src/Options/index.js', { plugins: [plugin, '@babel/transform-flow-strip-types'], babelrc: false, auxiliaryCommentBefore, sourceMaps: false });
 require('fs').writeFileSync('./src/Options/Definitions.js', res.code + '\n');
 require('fs').writeFileSync('./src/Options/docs.js', docs);

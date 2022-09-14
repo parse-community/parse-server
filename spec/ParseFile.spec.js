@@ -3,6 +3,7 @@
 
 'use strict';
 
+const { FilesController } = require('../lib/Controllers/FilesController');
 const request = require('../lib/request');
 
 const str = 'Hello World!';
@@ -203,6 +204,34 @@ describe('Parse.File testing', () => {
       ok(file.name());
       ok(file.url());
       notEqual(file.name(), 'hello.txt');
+    });
+
+    it('saves the file with tags', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      const tags = { hello: 'world' };
+      file.setTags(tags);
+      expect(file.url()).toBeUndefined();
+      const result = await file.save();
+      expect(file.name()).toBeDefined();
+      expect(file.url()).toBeDefined();
+      expect(result.tags()).toEqual(tags);
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        tags: tags,
+        metadata: {},
+      });
+    });
+
+    it('does not pass empty file tags while saving', async () => {
+      spyOn(FilesController.prototype, 'createFile').and.callThrough();
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      expect(file.url()).toBeUndefined();
+      expect(file.name()).toBeDefined();
+      await file.save();
+      expect(file.url()).toBeDefined();
+      expect(FilesController.prototype.createFile.calls.argsFor(0)[4]).toEqual({
+        metadata: {},
+      });
     });
 
     it('save file in object', async done => {
@@ -625,6 +654,44 @@ describe('Parse.File testing', () => {
     });
   });
 
+  describe('getting files', () => {
+    it('does not crash on file request with invalid app ID', async () => {
+      const res1 = await request({
+        url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
+      }).catch(e => e);
+      expect(res1.status).toBe(403);
+      expect(res1.data).toEqual({ code: 119, error: 'Invalid application ID.' });
+      // Ensure server did not crash
+      const res2 = await request({ url: 'http://localhost:8378/1/health' });
+      expect(res2.status).toEqual(200);
+      expect(res2.data).toEqual({ status: 'ok' });
+    });
+
+    it('does not crash on file request with invalid path', async () => {
+      const res1 = await request({
+        url: 'http://localhost:8378/1/files/invalid-id//invalid-path/%20/invalid-file.txt',
+      }).catch(e => e);
+      expect(res1.status).toBe(403);
+      expect(res1.data).toEqual({ error: 'unauthorized' });
+      // Ensure server did not crash
+      const res2 = await request({ url: 'http://localhost:8378/1/health' });
+      expect(res2.status).toEqual(200);
+      expect(res2.data).toEqual({ status: 'ok' });
+    });
+
+    it('does not crash on file metadata request with invalid app ID', async () => {
+      const res1 = await request({
+        url: `http://localhost:8378/1/files/invalid-id/metadata/invalid-file.txt`,
+      });
+      expect(res1.status).toBe(200);
+      expect(res1.data).toEqual({});
+      // Ensure server did not crash
+      const res2 = await request({ url: 'http://localhost:8378/1/health' });
+      expect(res2.status).toEqual(200);
+      expect(res2.data).toEqual({ status: 'ok' });
+    });
+  });
+
   xdescribe('Gridstore Range tests', () => {
     it('supports range requests', done => {
       const headers = {
@@ -833,7 +900,8 @@ describe('Parse.File testing', () => {
   // Because GridStore is not loaded on PG, those are perfect
   // for fallback tests
   describe_only_db('postgres')('Default Range tests', () => {
-    it('fallback to regular request', done => {
+    it('fallback to regular request', async done => {
+      await reconfigureServer();
       const headers = {
         'Content-Type': 'application/octet-stream',
         'X-Parse-Application-Id': 'test',

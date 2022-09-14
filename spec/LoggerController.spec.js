@@ -70,6 +70,7 @@ describe('LoggerController', () => {
     };
 
     const loggerController = new LoggerController(new WinstonLoggerAdapter());
+    loggerController.error('can process an ascending query without throwing');
 
     expect(() => {
       loggerController
@@ -115,6 +116,7 @@ describe('LoggerController', () => {
     };
 
     const loggerController = new LoggerController(new WinstonLoggerAdapter());
+    loggerController.error('can process a descending query without throwing');
 
     expect(() => {
       loggerController

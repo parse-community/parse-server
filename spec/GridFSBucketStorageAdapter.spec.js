@@ -1,10 +1,8 @@
-const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
 const { randomString } = require('../lib/cryptoUtils');
 const databaseURI = 'mongodb://localhost:27017/parse';
 const request = require('../lib/request');
-const Config = require('../lib/Config');
 
 async function expectMissingFile(gfsAdapter, name) {
   try {
@@ -15,23 +13,11 @@ async function expectMissingFile(gfsAdapter, name) {
   }
 }
 
-describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
+describe_only_db('mongo')('GridFSBucket', () => {
   beforeEach(async () => {
-    const gsAdapter = new GridStoreAdapter(databaseURI);
+    const gsAdapter = new GridFSBucketAdapter(databaseURI);
     const db = await gsAdapter._connect();
     await db.dropDatabase();
-  });
-
-  it('a file created in GridStore should be available in GridFS', async () => {
-    const gsAdapter = new GridStoreAdapter(databaseURI);
-    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
-    await expectMissingFile(gfsAdapter, 'myFileName');
-    const originalString = 'abcdefghi';
-    await gsAdapter.createFile('myFileName', originalString);
-    const gsResult = await gsAdapter.getFileData('myFileName');
-    expect(gsResult.toString('utf8')).toBe(originalString);
-    const gfsResult = await gfsAdapter.getFileData('myFileName');
-    expect(gfsResult.toString('utf8')).toBe(originalString);
   });
 
   it('should save an encrypted file that can only be decrypted by a GridFS adapter with the encryptionKey', async () => {
@@ -395,8 +381,9 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   });
 
   it('should handle getMetadata error', async () => {
-    const config = Config.get('test');
-    config.filesController.getMetadata = () => Promise.reject();
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await reconfigureServer({ filesAdapter: gfsAdapter });
+    gfsAdapter.getMetadata = () => Promise.reject();
 
     const headers = {
       'X-Parse-Application-Id': 'test',
@@ -451,7 +438,7 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
       await db.admin().serverStatus();
       expect(false).toBe(true);
     } catch (e) {
-      expect(e.message).toEqual('topology was destroyed');
+      expect(e.message).toEqual('Client must be connected before running operations');
     }
   });
 });

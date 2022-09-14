@@ -6,14 +6,18 @@ var SchemaController = require('./Controllers/SchemaController');
 var deepcopy = require('deepcopy');
 
 const Auth = require('./Auth');
+const Utils = require('./Utils');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
+const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
+import Deprecator from './Deprecator/Deprecator';
+import { requiredColumns } from './Controllers/SchemaController';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -61,6 +65,19 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
     }
   }
 
+  if (this.config.requestKeywordDenylist) {
+    // Scan request data for denied keywords
+    for (const keyword of this.config.requestKeywordDenylist) {
+      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+      if (match) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+        );
+      }
+    }
+  }
+
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -81,6 +98,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
   // Once set the schemaData should be immutable
   this.validSchemaController = null;
+  this.pendingOps = {};
 }
 
 // A convenient method to perform all the steps of processing the
@@ -211,18 +229,11 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     return Promise.resolve();
   }
 
-  // Cloud code gets a bit of extra data for its objects
-  var extraData = { className: this.className };
-  if (this.query && this.query.objectId) {
-    extraData.objectId = this.query.objectId;
-  }
+  const { originalObject, updatedObject } = this.buildParseObjects();
 
-  let originalObject = null;
-  const updatedObject = this.buildUpdatedObject(extraData);
-  if (this.query && this.query.objectId) {
-    // This is an update for existing object.
-    originalObject = triggers.inflate(extraData, this.originalData);
-  }
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
+  this.pendingOps = { ...pending };
 
   return Promise.resolve()
     .then(() => {
@@ -421,7 +432,14 @@ RestWrite.prototype.handleAuthDataValidation = function (authData) {
       return Promise.resolve();
     }
     const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
-    if (!validateAuthData) {
+    const authProvider = (this.config.auth || {})[provider] || {};
+    if (authProvider.enabled == null) {
+      Deprecator.logRuntimeDeprecation({
+        usage: `auth.${provider}`,
+        solution: `auth.${provider}.enabled: true`,
+      });
+    }
+    if (!validateAuthData || authProvider.enabled === false) {
       throw new Parse.Error(
         Parse.Error.UNSUPPORTED_SERVICE,
         'This authentication method is unsupported.'
@@ -857,7 +875,11 @@ RestWrite.prototype.createSessionToken = async function () {
     return;
   }
 
-  const { sessionData, createSession } = Auth.createSession(this.config, {
+  if (this.storage['authProvider'] == null && this.data.authData) {
+    this.storage['authProvider'] = Object.keys(this.data.authData).join(',');
+  }
+
+  const { sessionData, createSession } = RestWrite.createSession(this.config, {
     userId: this.objectId(),
     createdWith: {
       action: this.storage['authProvider'] ? 'login' : 'signup',
@@ -871,6 +893,36 @@ RestWrite.prototype.createSessionToken = async function () {
   }
 
   return createSession();
+};
+
+RestWrite.createSession = function (
+  config,
+  { userId, createdWith, installationId, additionalSessionData }
+) {
+  const token = 'r:' + cryptoUtils.newToken();
+  const expiresAt = config.generateSessionExpiresAt();
+  const sessionData = {
+    sessionToken: token,
+    user: {
+      __type: 'Pointer',
+      className: '_User',
+      objectId: userId,
+    },
+    createdWith,
+    expiresAt: Parse._encode(expiresAt),
+  };
+
+  if (installationId) {
+    sessionData.installationId = installationId;
+  }
+
+  Object.assign(sessionData, additionalSessionData);
+
+  return {
+    sessionData,
+    createSession: () =>
+      new RestWrite(config, Auth.master(config), '_Session', null, sessionData).execute(),
+  };
 };
 
 // Delete email reset tokens if user is changing password or email.
@@ -978,7 +1030,7 @@ RestWrite.prototype.handleSession = function () {
       additionalSessionData[key] = this.data[key];
     }
 
-    const { sessionData, createSession } = Auth.createSession(this.config, {
+    const { sessionData, createSession } = RestWrite.createSession(this.config, {
       userId: this.auth.user.id,
       createdWith: {
         action: 'create',
@@ -1258,7 +1310,7 @@ RestWrite.prototype.handleInstallation = function () {
   return promise;
 };
 
-// If we short-circuted the object response - then we need to make sure we expand all the files,
+// If we short-circuited the object response - then we need to make sure we expand all the files,
 // since this might not have a query, meaning it won't return the full result back.
 // TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
 RestWrite.prototype.expandFilesForExistingObjects = function () {
@@ -1275,6 +1327,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
   if (this.className === '_Role') {
     this.config.cacheController.role.clear();
+    if (this.config.liveQueryController) {
+      this.config.liveQueryController.clearCachedRoles(this.auth.user);
+    }
   }
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
@@ -1374,7 +1429,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
       // default public r/w ACL
       if (!ACL) {
         ACL = {};
-        ACL['*'] = { read: true, write: false };
+        if (!this.config.enforcePrivateUsers) {
+          ACL['*'] = { read: true, write: false };
+        }
       }
       // make sure the user is not locked down
       ACL[this.data.objectId] = { read: true, write: true };
@@ -1481,20 +1538,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     return Promise.resolve();
   }
 
-  var extraData = { className: this.className };
-  if (this.query && this.query.objectId) {
-    extraData.objectId = this.query.objectId;
-  }
-
-  // Build the original object, we only do this for a update write.
-  let originalObject;
-  if (this.query && this.query.objectId) {
-    originalObject = triggers.inflate(extraData, this.originalData);
-  }
-
-  // Build the inflated object, different from beforeSave, originalData is not empty
-  // since developers can change data in the beforeSave.
-  const updatedObject = this.buildUpdatedObject(extraData);
+  const { originalObject, updatedObject } = this.buildParseObjects();
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   this.config.database.loadSchema().then(schemaController => {
@@ -1519,8 +1563,15 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       this.context
     )
     .then(result => {
-      if (result && typeof result === 'object') {
+      const jsonReturned = result && !result._toFullJSON;
+      if (jsonReturned) {
+        this.pendingOps = {};
         this.response.response = result;
+      } else {
+        this.response.response = this._updateResponseWithData(
+          (result || updatedObject).toJSON(),
+          this.data
+        );
       }
     })
     .catch(function (err) {
@@ -1554,12 +1605,29 @@ RestWrite.prototype.sanitizedData = function () {
 };
 
 // Returns an updated copy of the object
-RestWrite.prototype.buildUpdatedObject = function (extraData) {
+RestWrite.prototype.buildParseObjects = function () {
+  const extraData = { className: this.className, objectId: this.query?.objectId };
+  let originalObject;
+  if (this.query && this.query.objectId) {
+    originalObject = triggers.inflate(extraData, this.originalData);
+  }
+
+  const className = Parse.Object.fromJSON(extraData);
+  const readOnlyAttributes = className.constructor.readOnlyAttributes
+    ? className.constructor.readOnlyAttributes()
+    : [];
+  if (!this.originalData) {
+    for (const attribute of readOnlyAttributes) {
+      extraData[attribute] = this.data[attribute];
+    }
+  }
   const updatedObject = triggers.inflate(extraData, this.originalData);
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf('.') > 0) {
       if (typeof data[key].__op === 'string') {
-        updatedObject.set(key, data[key]);
+        if (!readOnlyAttributes.includes(key)) {
+          updatedObject.set(key, data[key]);
+        }
       } else {
         // subdocument key with dot notation { 'x.y': v } => { 'x': { 'y' : v } })
         const splittedKey = key.split('.');
@@ -1576,8 +1644,12 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
     return data;
   }, deepcopy(this.data));
 
-  updatedObject.set(this.sanitizedData());
-  return updatedObject;
+  const sanitized = this.sanitizedData();
+  for (const attribute of readOnlyAttributes) {
+    delete sanitized[attribute];
+  }
+  updatedObject.set(sanitized);
+  return { updatedObject, originalObject };
 };
 
 RestWrite.prototype.cleanUserAuthData = function () {
@@ -1597,6 +1669,34 @@ RestWrite.prototype.cleanUserAuthData = function () {
 };
 
 RestWrite.prototype._updateResponseWithData = function (response, data) {
+  const { updatedObject } = this.buildParseObjects();
+  const stateController = Parse.CoreManager.getObjectStateController();
+  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
+  for (const key in this.pendingOps) {
+    if (!pending[key]) {
+      data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
+      this.storage.fieldsChangedByTrigger.push(key);
+    }
+  }
+  const skipKeys = [
+    'objectId',
+    'createdAt',
+    'updatedAt',
+    ...(requiredColumns.read[this.className] || []),
+  ];
+  for (const key in response) {
+    if (skipKeys.includes(key)) {
+      continue;
+    }
+    const value = response[key];
+    if (
+      value == null ||
+      (value.__type && value.__type === 'Pointer') ||
+      util.isDeepStrictEqual(data[key], value)
+    ) {
+      delete response[key];
+    }
+  }
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
     return response;
   }

@@ -326,22 +326,24 @@ describe('AudiencesRouter', () => {
       { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
       { useMasterKey: true }
     ).then(audience => {
-      database.collection('test__Audience').updateOne(
-        { _id: audience.objectId },
-        {
-          $set: {
-            times_used: 1,
-            _last_used: now,
-          },
-        },
-        {},
-        error => {
-          expect(error).toEqual(null);
+      database
+        .collection('test__Audience')
+        .updateOne(
+          { _id: audience.objectId },
+          {
+            $set: {
+              times_used: 1,
+              _last_used: now,
+            },
+          }
+        )
+        .then(result => {
+          expect(result).toBeTruthy();
           database
             .collection('test__Audience')
             .find({ _id: audience.objectId })
             .toArray((error, rows) => {
-              expect(error).toEqual(null);
+              expect(error).toEqual(undefined);
               expect(rows[0]['times_used']).toEqual(1);
               expect(rows[0]['_last_used']).toEqual(now);
               Parse._request(
@@ -361,8 +363,7 @@ describe('AudiencesRouter', () => {
                   done.fail(error);
                 });
             });
-        }
-      );
+        });
     });
   });
 
