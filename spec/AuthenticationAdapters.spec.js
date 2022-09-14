@@ -1732,6 +1732,7 @@ describe('Apple Game Center Auth adapter', () => {
   });
 
   it('validateAuthData invalid signature id', async () => {
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       {}
