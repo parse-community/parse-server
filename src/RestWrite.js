@@ -1574,6 +1574,9 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
           if (key === 'objectId') {
             continue;
           }
+          if (this.storage.fieldsChangedByTrigger.includes(key)) {
+            continue;
+          }
           if (util.isDeepStrictEqual(json[key], frozenJSON[key])) {
             delete json[key];
           }
