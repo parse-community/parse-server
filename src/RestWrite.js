@@ -1539,7 +1539,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-  const frozenJSON = {...updatedObject.toJSON()}
+  const frozenJSON = Object.freeze(updatedObject.toJSON())
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   this.config.database.loadSchema().then(schemaController => {
