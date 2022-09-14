@@ -1539,6 +1539,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
+  const frozenJSON = {...updatedObject.toJSON()}
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   this.config.database.loadSchema().then(schemaController => {
@@ -1568,8 +1569,17 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
         this.pendingOps = {};
         this.response.response = result;
       } else {
+        const json = (result || updatedObject).toJSON();
+        for (const key in json) {
+          if (key === 'objectId') {
+            continue;
+          }
+          if (util.isDeepStrictEqual(json[key], frozenJSON[key])) {
+            delete json[key];
+          }
+        }
         this.response.response = this._updateResponseWithData(
-          (result || updatedObject).toJSON(),
+          json,
           this.data
         );
       }
@@ -1681,6 +1691,8 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
   const skipKeys = ['updatedAt', ...(requiredColumns.read[this.className] || [])];
   if (!this.query) {
     skipKeys.push('objectId', 'createdAt');
+  } else {
+    delete response.objectId;
   }
   for (const key in response) {
     if (skipKeys.includes(key)) {
@@ -1689,7 +1701,6 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     const value = response[key];
     if (
       value == null ||
-      data[key] == null ||
       (value.__type && value.__type === 'Pointer') ||
       util.isDeepStrictEqual(data[key], value)
     ) {
