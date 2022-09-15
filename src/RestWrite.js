@@ -1568,8 +1568,10 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
         this.pendingOps = {};
         this.response.response = result;
       } else {
-        const json = (result || updatedObject).toJSON();
-        this.response.response = this._updateResponseWithData(json, this.data);
+        this.response.response = this._updateResponseWithData(
+          (result || updatedObject).toJSON(),
+          this.data
+        );
       }
     })
     .catch(function (err) {
