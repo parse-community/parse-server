@@ -1539,7 +1539,6 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-  const frozenJSON = Object.freeze(updatedObject.toJSON());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   this.config.database.loadSchema().then(schemaController => {
@@ -1570,20 +1569,6 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
         this.response.response = result;
       } else {
         const json = (result || updatedObject).toJSON();
-        for (const key in json) {
-          if (key === 'objectId') {
-            continue;
-          }
-          if (
-            this.storage.fieldsChangedByTrigger &&
-            this.storage.fieldsChangedByTrigger.includes(key)
-          ) {
-            continue;
-          }
-          if (util.isDeepStrictEqual(json[key], frozenJSON[key])) {
-            delete json[key];
-          }
-        }
         this.response.response = this._updateResponseWithData(json, this.data);
       }
     })
@@ -1706,7 +1691,8 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     if (
       value == null ||
       (value.__type && value.__type === 'Pointer') ||
-      util.isDeepStrictEqual(data[key], value)
+      util.isDeepStrictEqual(data[key], value) ||
+      util.isDeepStrictEqual((this.originalData || {})[key], value)
     ) {
       delete response[key];
     }
