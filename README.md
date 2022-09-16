@@ -359,8 +359,10 @@ const server = ParseServer({
 });
 ```
 
+Offical email adapters maintained by Parse Platform:
+- [parse-server-api-mail-adapter](https://github.com/parse-community/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
+
 Email adapters contributed by the community:
-- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
 - [parse-smtp-template](https://www.npmjs.com/package/parse-smtp-template) (localization, templates)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
