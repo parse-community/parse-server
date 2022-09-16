@@ -1,3 +1,11 @@
+# [5.3.0-alpha.22](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.21...5.3.0-alpha.22) (2022-09-16)
+
+
+### Bug Fixes
+
+* brute force guessing of user sensitive data via search patterns (GHSA-2m6g-crv8-p3c6) ([#8146](https://github.com/parse-community/parse-server/issues/8146)) [skip release] ([4c0c7c7](https://github.com/parse-community/parse-server/commit/4c0c7c77b76257878b9bcb05ff9de01c9d790262))
+* push notifications `badge` doesn't update with Installation beforeSave trigger ([#8162](https://github.com/parse-community/parse-server/issues/8162)) ([3c75c2b](https://github.com/parse-community/parse-server/commit/3c75c2ba4851fae96a8c19b11a3efde03816c9a1))
+
 # [5.3.0-alpha.21](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.20...5.3.0-alpha.21) (2022-08-05)
 
 
