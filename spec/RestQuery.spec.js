@@ -521,7 +521,6 @@ describe('RestQuery.each', () => {
       'createdAt',
       'initialToRemove',
       'objectId',
-      'updatedAt',
     ]);
   });
 });
