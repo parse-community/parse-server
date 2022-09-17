@@ -1,3 +1,10 @@
+# [5.3.0-alpha.24](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.23...5.3.0-alpha.24) (2022-09-17)
+
+
+### Bug Fixes
+
+* query aggregation pipeline cannot handle value of type `Date` when `directAccess: true` ([#8167](https://github.com/parse-community/parse-server/issues/8167)) ([e424137](https://github.com/parse-community/parse-server/commit/e4241374061caef66538de15112fb6bbafb1f5bb))
+
 # [5.3.0-alpha.23](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.22...5.3.0-alpha.23) (2022-09-17)
 
 
