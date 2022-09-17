@@ -1,3 +1,10 @@
+# [5.3.0-alpha.25](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.24...5.3.0-alpha.25) (2022-09-17)
+
+
+### Bug Fixes
+
+* updating object includes unchanged keys in client response for certain key types ([#8159](https://github.com/parse-community/parse-server/issues/8159)) ([37af1d7](https://github.com/parse-community/parse-server/commit/37af1d78fce5a15039ffe3af7b323c1f1e8582fc))
+
 # [5.3.0-alpha.24](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.23...5.3.0-alpha.24) (2022-09-17)
 
 
