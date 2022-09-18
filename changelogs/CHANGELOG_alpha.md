@@ -1,3 +1,63 @@
+# [5.3.0-alpha.26](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.25...5.3.0-alpha.26) (2022-09-17)
+
+
+### Bug Fixes
+
+* sorting by non-existing value throws `INVALID_SERVER_ERROR` on Postgres ([#8157](https://github.com/parse-community/parse-server/issues/8157)) ([3b775a1](https://github.com/parse-community/parse-server/commit/3b775a1fb8a1878714e3451191438963d688f1b0))
+
+# [5.3.0-alpha.25](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.24...5.3.0-alpha.25) (2022-09-17)
+
+
+### Bug Fixes
+
+* updating object includes unchanged keys in client response for certain key types ([#8159](https://github.com/parse-community/parse-server/issues/8159)) ([37af1d7](https://github.com/parse-community/parse-server/commit/37af1d78fce5a15039ffe3af7b323c1f1e8582fc))
+
+# [5.3.0-alpha.24](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.23...5.3.0-alpha.24) (2022-09-17)
+
+
+### Bug Fixes
+
+* query aggregation pipeline cannot handle value of type `Date` when `directAccess: true` ([#8167](https://github.com/parse-community/parse-server/issues/8167)) ([e424137](https://github.com/parse-community/parse-server/commit/e4241374061caef66538de15112fb6bbafb1f5bb))
+
+# [5.3.0-alpha.23](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.22...5.3.0-alpha.23) (2022-09-17)
+
+
+### Bug Fixes
+
+* liveQuery with `containedIn` not working when object field is an array ([#8128](https://github.com/parse-community/parse-server/issues/8128)) ([1d9605b](https://github.com/parse-community/parse-server/commit/1d9605bc93009263d3811df4d4249034ba6eb8c4))
+
+# [5.3.0-alpha.22](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.21...5.3.0-alpha.22) (2022-09-16)
+
+
+### Bug Fixes
+
+* brute force guessing of user sensitive data via search patterns (GHSA-2m6g-crv8-p3c6) ([#8146](https://github.com/parse-community/parse-server/issues/8146)) [skip release] ([4c0c7c7](https://github.com/parse-community/parse-server/commit/4c0c7c77b76257878b9bcb05ff9de01c9d790262))
+* push notifications `badge` doesn't update with Installation beforeSave trigger ([#8162](https://github.com/parse-community/parse-server/issues/8162)) ([3c75c2b](https://github.com/parse-community/parse-server/commit/3c75c2ba4851fae96a8c19b11a3efde03816c9a1))
+
+# [5.3.0-alpha.21](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.20...5.3.0-alpha.21) (2022-08-05)
+
+
+### Bug Fixes
+
+* internal indices for classes `_Idempotency` and `_Role` are not protected in defined schema ([#8121](https://github.com/parse-community/parse-server/issues/8121)) ([c16f529](https://github.com/parse-community/parse-server/commit/c16f529f74f92154401bf662f634b3c5fa45e18e))
+
+# [5.3.0-alpha.20](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.19...5.3.0-alpha.20) (2022-07-22)
+
+
+### Bug Fixes
+
+* security upgrade undici from 5.6.0 to 5.8.0 ([#8108](https://github.com/parse-community/parse-server/issues/8108)) ([4aa016b](https://github.com/parse-community/parse-server/commit/4aa016b7322467422b9fdf05d8e29b9ecf910da7))
+
+# [5.3.0-alpha.19](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.18...5.3.0-alpha.19) (2022-07-03)
+
+
+### Bug Fixes
+
+* certificate in Apple Game Center auth adapter not validated [skip release] ([#8058](https://github.com/parse-community/parse-server/issues/8058)) ([75af9a2](https://github.com/parse-community/parse-server/commit/75af9a26cc8e9e88a33d1e452c93a0ee6e509f17))
+* graphQL query ignores condition `equalTo` with value `false` ([#8032](https://github.com/parse-community/parse-server/issues/8032)) ([7f5a15d](https://github.com/parse-community/parse-server/commit/7f5a15d5df0dfa3515e9f73709d6a49663545f9b))
+* invalid file request not properly handled [skip release] ([#8062](https://github.com/parse-community/parse-server/issues/8062)) ([4c9e956](https://github.com/parse-community/parse-server/commit/4c9e95674ad081f13062e8cd30b77b1962d5df57))
+* protected fields exposed via LiveQuery (GHSA-crrq-vr9j-fxxh) [skip release] ([#8076](https://github.com/parse-community/parse-server/issues/8076)) ([9fd4516](https://github.com/parse-community/parse-server/commit/9fd4516cde5c742f9f29dd05468b4a43a85639a6))
+
 # [5.3.0-alpha.18](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.17...5.3.0-alpha.18) (2022-06-17)
 
 

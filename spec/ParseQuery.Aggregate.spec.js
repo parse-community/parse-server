@@ -666,6 +666,23 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
+  it('should aggregate with Date object (directAccess)', async () => {
+    const rest = require('../lib/rest');
+    const auth = require('../lib/Auth');
+    const TestObject = Parse.Object.extend('TestObject');
+    const date = new Date();
+    await new TestObject({ date: date }).save(null, { useMasterKey: true });
+    const config = Config.get(Parse.applicationId);
+    const resp = await rest.find(
+      config,
+      auth.master(config),
+      'TestObject',
+      {},
+      { pipeline: [{ $match: { date: { $lte: new Date() } } }] }
+    );
+    expect(resp.results.length).toBe(1);
+  });
+
   it('match comparison query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {

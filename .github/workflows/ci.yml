@@ -1,14 +1,34 @@
 name: ci
 on:
   push:
-    branches: [ release, alpha, beta, next-major ]
+    branches: [ release, alpha, beta ]
   pull_request:
-    branches:
-      - '**'
+    branches: [ release, alpha, beta ]
 env:
   NODE_VERSION: 16.14.2
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
+  check-code-analysis:
+    name: Code Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript' ]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        source-root: src
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
   check-ci:
     name: Node Engine Check
     timeout-minutes: 15
