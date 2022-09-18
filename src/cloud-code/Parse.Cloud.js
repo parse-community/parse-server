@@ -1,6 +1,7 @@
 import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
 import Deprecator from '../Deprecator/Deprecator';
+import { addRateLimit } from '../middlewares';
 const Config = require('../Config');
 
 function isParseObjectConstructor(object) {
@@ -28,6 +29,7 @@ function validateValidator(validator) {
     skipWithMasterKey: [Boolean],
     requireUserKeys: [Array, Object],
     fields: [Array, Object],
+    rateLimit: [Object],
   };
   const getType = fn => {
     if (Array.isArray(fn)) {
@@ -72,6 +74,15 @@ function validateValidator(validator) {
     }
   }
 }
+const getRoute = parseClass => {
+  return (
+    {
+      _User: 'users',
+      _Session: 'sessions',
+      '@File': 'files',
+    }[parseClass] || 'classes'
+  );
+};
 /** @namespace
  * @name Parse
  * @description The Parse SDK.
@@ -111,6 +122,12 @@ var ParseCloud = {};
 ParseCloud.define = function (functionName, handler, validationHandler) {
   validateValidator(validationHandler);
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      { path: `/functions/${functionName}`, ...validationHandler.rateLimit },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -164,6 +181,16 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      {
+        path: `/${getRoute(parseClass)}/${parseClass}`,
+        method: ['POST', 'PUT'],
+        ...validationHandler.rateLimit,
+      },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -200,6 +227,16 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      {
+        path: `/${getRoute(parseClass)}/${parseClass}`,
+        method: 'DELETE',
+        ...validationHandler.rateLimit,
+      },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -225,15 +262,22 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
  * @name Parse.Cloud.beforeLogin
  * @param {Function} func The function to run before a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
-ParseCloud.beforeLogin = function (handler) {
+ParseCloud.beforeLogin = function (handler, validationHandler) {
   let className = '_User';
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
     className = triggers.getClassName(handler);
     handler = arguments[1];
+    validationHandler = arguments.length >= 2 ? arguments[2] : null;
   }
   triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      { path: `/login`, method: 'POST', ...validationHandler.rateLimit },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -402,6 +446,16 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      {
+        path: `/${getRoute(parseClass)}/${parseClass}`,
+        method: 'GET',
+        ...validationHandler.rateLimit,
+      },
+      Parse.applicationId
+    );
+  }
 };
 
 /**

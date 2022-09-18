@@ -7,6 +7,7 @@ import defaultLogger from './logger';
 import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
+import rateLimit from 'express-rate-limit';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -423,6 +424,54 @@ export function promiseEnforceMasterKeyAccess(request) {
   }
   return Promise.resolve();
 }
+
+export const addRateLimit = (route, id) => {
+  const config = Config.get(id);
+  const express = config.expressApp;
+  addLimitForRoute(express, route);
+};
+
+export const handleRateLimit = (api, rateLimitOptions) => {
+  const options = Array.isArray(rateLimitOptions) ? rateLimitOptions : [rateLimitOptions];
+  for (const route of options) {
+    addLimitForRoute(api, route);
+  }
+};
+
+const addLimitForRoute = (api, route) => {
+  api.use(
+    route.path ?? '*',
+    rateLimit({
+      windowMs: route.windowMs ?? 60000,
+      max: route.max ?? 3,
+      message: route.message ?? 'Too many requests.',
+      handler: (request, response, next, options) => {
+        const error = new Parse.Error(Parse.Error.CONNECTION_FAILED, options.message);
+        response.status(429);
+        next(error);
+      },
+      skip: request => {
+        if (route.master) {
+          return false;
+        }
+        const method = Array.isArray(route.method) ? route.method : [route.method];
+        if (route.method && !method.includes(request.method)) {
+          return true;
+        }
+        return request.auth.isMaster;
+      },
+    })
+  );
+  const lastRouter = api._router.stack[api._router.stack.length - 1];
+  api._router.stack.pop();
+  for (let i = 0; i < api._router.stack.length; i++) {
+    const layer = api._router.stack[i];
+    if (layer.name === 'handleParseHeaders') {
+      api._router.stack.splice(i + 1, 0, lastRouter);
+      return;
+    }
+  }
+};
 
 /**
  * Deduplicates a request to ensure idempotency. Duplicates are determined by the request ID

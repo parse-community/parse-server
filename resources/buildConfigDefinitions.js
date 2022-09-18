@@ -42,6 +42,7 @@ const nestedOptionEnvPrefix = {
   'PasswordPolicyOptions': 'PARSE_SERVER_PASSWORD_POLICY_',
   'SecurityOptions': 'PARSE_SERVER_SECURITY_',
   'SchemaOptions': 'PARSE_SERVER_SCHEMA_',
+  'RateLimitOptions': 'PARSE_SERVER_RATE_LIMIT_',
 };
 
 function last(array) {

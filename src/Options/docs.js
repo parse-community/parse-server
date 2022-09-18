@@ -74,6 +74,7 @@
  * @property {ProtectedFields} protectedFields Protected fields that should be treated with extra security when fetching details.
  * @property {String} publicServerURL Public URL to your parse server with http:// or https://.
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
+ * @property {RateLimitOptions[]} rateLimitOptions Rate limiting options to limit repeat calls to Parse Server.
  * @property {String} readOnlyMasterKey Read-only key, which has the same capabilities as MasterKey without writes
  * @property {RequestKeywordDenylist[]} requestKeywordDenylist An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
  * @property {String} restAPIKey Key for REST calls
@@ -91,6 +92,16 @@
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
+ */
+
+/**
+ * @interface RateLimitOptions
+ * @property {Boolean} master If set the rate limit will apply to requests using the masterKey
+ * @property {Number} max The number of requests that can be made by an IP
+ * @property {String} message The error message that should be shown
+ * @property {String} method If set the rate limit will only apply to this method type
+ * @property {String} path The path of the route to be limited
+ * @property {Number} windowMs The window of time (ms) between requests
  */
 
 /**

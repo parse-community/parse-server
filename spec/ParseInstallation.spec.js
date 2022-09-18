@@ -1244,11 +1244,11 @@ describe('Installations', () => {
       deviceToken: '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306',
       deviceType: 'ios',
     };
-    await rest.create(config, auth.nobody(config), '_Installation', input)
+    await rest.create(config, auth.nobody(config), '_Installation', input);
     const functions = {
       beforeSave() {},
-      afterSave() {}
-    }
+      afterSave() {},
+    };
     spyOn(functions, 'beforeSave').and.callThrough();
     spyOn(functions, 'afterSave').and.callThrough();
     Parse.Cloud.beforeSave(Parse.Installation, functions.beforeSave);
@@ -1283,7 +1283,7 @@ describe('Installations', () => {
       },
     });
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const installation = await new Parse.Query(Parse.Installation).first({useMasterKey: true});
+    const installation = await new Parse.Query(Parse.Installation).first({ useMasterKey: true });
     expect(installation.get('badge')).toEqual(3);
     expect(functions.beforeSave).not.toHaveBeenCalled();
     expect(functions.afterSave).not.toHaveBeenCalled();

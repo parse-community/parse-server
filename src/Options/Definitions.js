@@ -391,6 +391,12 @@ module.exports.ParseServerOptions = {
       'Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications',
     action: parsers.objectParser,
   },
+  rateLimitOptions: {
+    env: 'PARSE_SERVER_RATE_LIMIT_OPTIONS',
+    help: 'Rate limiting options to limit repeat calls to Parse Server.',
+    action: parsers.arrayParser,
+    default: [],
+  },
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
@@ -491,6 +497,39 @@ module.exports.ParseServerOptions = {
   webhookKey: {
     env: 'PARSE_SERVER_WEBHOOK_KEY',
     help: 'Key sent with outgoing webhook calls',
+  },
+};
+module.exports.RateLimitOptions = {
+  master: {
+    env: 'PARSE_SERVER_RATE_LIMIT_MASTER',
+    help: 'If set the rate limit will apply to requests using the masterKey',
+    action: parsers.booleanParser,
+  },
+  max: {
+    env: 'PARSE_SERVER_RATE_LIMIT_MAX',
+    help: 'The number of requests that can be made by an IP',
+    action: parsers.numberParser('max'),
+    default: 3,
+  },
+  message: {
+    env: 'PARSE_SERVER_RATE_LIMIT_MESSAGE',
+    help: 'The error message that should be shown',
+    default: "'Too",
+  },
+  method: {
+    env: 'PARSE_SERVER_RATE_LIMIT_METHOD',
+    help: 'If set the rate limit will only apply to this method type',
+  },
+  path: {
+    env: 'PARSE_SERVER_RATE_LIMIT_PATH',
+    help: 'The path of the route to be limited',
+    required: true,
+  },
+  windowMs: {
+    env: 'PARSE_SERVER_RATE_LIMIT_WINDOW_MS',
+    help: 'The window of time (ms) between requests',
+    action: parsers.numberParser('windowMs'),
+    default: 60000,
   },
 };
 module.exports.SecurityOptions = {

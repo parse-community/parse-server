@@ -282,6 +282,27 @@ export interface ParseServerOptions {
   /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
   :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
+  /* Rate limiting options to limit repeat calls to Parse Server.
+  :DEFAULT: [] */
+  rateLimitOptions: ?(RateLimitOptions[]);
+}
+
+export interface RateLimitOptions {
+  /* The path of the route to be limited*/
+  path: string;
+  /* The window of time (ms) between requests
+  :DEFAULT: 60000 */
+  windowMs: ?number;
+  /* The number of requests that can be made by an IP
+  :DEFAULT: 3 */
+  max: ?number;
+  /* The error message that should be shown
+  :DEFAULT: 'Too many requests.' */
+  message: ?string;
+  /* If set the rate limit will only apply to this method type */
+  method: ?string;
+  /* If set the rate limit will apply to requests using the masterKey */
+  master: ?boolean;
 }
 
 export interface SecurityOptions {
