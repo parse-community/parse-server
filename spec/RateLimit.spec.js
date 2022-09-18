@@ -2,7 +2,6 @@ describe('rate limit', () => {
   it('can limit cloud functions', async () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/functions/*',
@@ -22,7 +21,6 @@ describe('rate limit', () => {
   it('can add global limit', async () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: {
         windowMs: 10000,
         max: 1,
@@ -57,7 +55,6 @@ describe('rate limit', () => {
   it('can skip with masterKey', async () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/functions/*',
@@ -76,7 +73,6 @@ describe('rate limit', () => {
   it('should run with masterKey', async () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/functions/*',
@@ -96,7 +92,6 @@ describe('rate limit', () => {
 
   it('can limit saving objects', async () => {
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/classes/*',
@@ -115,7 +110,6 @@ describe('rate limit', () => {
 
   it('can set method to post', async () => {
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/classes/*',
@@ -152,7 +146,6 @@ describe('rate limit', () => {
 
   it('can set method to get', async () => {
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/classes/Test',
@@ -194,7 +187,6 @@ describe('rate limit', () => {
 
   it('can set method to delete', async () => {
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/classes/Test',
@@ -246,7 +238,6 @@ describe('rate limit', () => {
 
   it('can define limits via rateLimitOptions and define', async () => {
     await reconfigureServer({
-      silent: false,
       rateLimitOptions: [
         {
           path: '/functions/*',
