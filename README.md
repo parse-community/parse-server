@@ -20,6 +20,7 @@
 [![License][license-svg]][license-link]
 [![Forum](https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg)](https://community.parseplatform.org/c/parse-server)
 [![Twitter](https://img.shields.io/twitter/follow/ParsePlatform.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=ParsePlatform)
+[![Chat](https://img.shields.io/badge/Chat-Join!-%23fff?style=social&logo=slack)](https://chat.parseplatform.org)
 
 ---
 
@@ -41,6 +42,8 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 
 ---
 
+- [Flavors & Branches](#flavors--branches)
+  - [Long Term Support](#long-term-support)
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
@@ -88,12 +91,24 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Using automatically generated operations](#using-automatically-generated-operations)
   - [Customizing your GraphQL Schema](#customizing-your-graphql-schema)
   - [Learning more](#learning-more)
-- [Upgrading to 3.0.0](#upgrading-to-300)
-- [Want to ride the bleeding edge?](#want-to-ride-the-bleeding-edge)
+- [Upgrading to Parse Server 3.0](#upgrading-to-parse-server-30)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Sponsors](#sponsors)
 - [Backers](#backers)
+
+# Flavors & Branches
+
+Parse Server is available in different flavors on different branches:
+
+- The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
+- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-4.x.x`. LTS branches do not have pre-release branches.
+
+## Long Term Support
+
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
+
+⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-4.x.x) to see the current open vulnerabilities for that LTS branch.
 
 # Getting Started
 
@@ -110,6 +125,7 @@ Before you start make sure you have installed:
 ### Compatibility
 
 #### Node.js
+
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
 | Version    | Latest Version | End-of-Life | Compatible |
@@ -121,6 +137,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Node.js 18 | 18.1.0         | April 2025  | ✅ Yes      |
 
 #### MongoDB
+
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
 | Version     | Latest Version | End-of-Life | Compatible |
@@ -133,6 +150,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 5.2 | 5.2.1          | TBD         | ✅ Yes      |
 
 #### PostgreSQL
+
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
 
 | Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
@@ -143,6 +161,7 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 | Postgres 14 | 3.2             | November 2026 | April 2025               | ✅ Yes      |
 
 ### Locally
+
 ```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
@@ -235,7 +254,6 @@ $ curl -X GET \
     }
   ]
 }
-
 ```
 
 To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](http://docs.parseplatform.org).
@@ -341,8 +359,10 @@ const server = ParseServer({
 });
 ```
 
+Offical email adapters maintained by Parse Platform:
+- [parse-server-api-mail-adapter](https://github.com/parse-community/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
+
 Email adapters contributed by the community:
-- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
 - [parse-smtp-template](https://www.npmjs.com/package/parse-smtp-template) (localization, templates)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
@@ -385,6 +405,7 @@ const server = ParseServer({
 ```
 
 ## Custom Routes
+
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
 Custom routes allow to build user flows with webpages, similar to the existing password reset and email verification features. Custom routes are defined with the `pages` option in the Parse Server configuration:
@@ -417,6 +438,7 @@ The above route can be invoked by sending a `GET` request to:
 The `handler` receives the `request` and returns a `custom_page.html` webpage from the `pages.pagesPath` directory as response. The advantage of building a custom route this way is that it automatically makes use of Parse Server's built-in capabilities, such as [page localization](#pages) and [dynamic placeholders](#dynamic-placeholders).
 
 ### Reserved Paths
+
 The following paths are already used by Parse Server's built-in features and are therefore not available for custom routes. Custom routes with an identical combination of `path` and `method` are ignored.
 
 | Path                        | HTTP Method | Feature            |
@@ -512,6 +534,7 @@ Identical requests are identified by their request header `X-Parse-Request-Id`. 
 Deduplication is only done for object creation and update (`POST` and `PUT` requests). Deduplication is not done for object finding and deletion (`GET` and `DELETE` requests), as these operations are already idempotent by definition.
 
 ### Configuration example <!-- omit in toc -->
+
 ```
 let api = new ParseServer({
     idempotencyOptions: {
@@ -520,6 +543,7 @@ let api = new ParseServer({
     }
 }
 ```
+
 ### Parameters <!-- omit in toc -->
 
 | Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -552,6 +576,7 @@ Assuming the script above is named, `parse_idempotency_delete_expired_records.sh
 ## Localization
 
 ### Pages
+
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
 Custom pages as well as feature pages (e.g. password reset, email verification) can be localized with the `pages` option in the Parse Server configuration:
@@ -1095,37 +1120,15 @@ You also have a very powerful tool inside your GraphQL Playground. Please look a
 
 Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to learn more about the power of the GraphQL language.
 
-# Upgrading to 3.0.0
+# Upgrading to Parse Server 3.0
 
-Starting 3.0.0, parse-server uses the JS SDK version 2.0.
-In short, parse SDK v2.0 removes the backbone style callbacks as well as the Parse.Promise object in favor of native promises.
-All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
+Starting Parse Server 3.0, Parse Server uses the Parse JavaScript SDK 2.0. In short, the Parse JavaScript SDK 2.0 removes the backbone style callbacks as well as the `Parse.Promise` object in favor of native promises. All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by promise style resolution.
 
-We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
-
-# Want to ride the bleeding edge?
-
-It is recommend to use builds deployed npm for many reasons, but if you want to use
-the latest not-yet-released version of parse-server, you can do so by depending
-directly on this branch:
-
-```
-npm install parse-community/parse-server.git#master
-```
-
-## Experimenting <!-- omit in toc -->
-
-You can also use your own forks, and work in progress branches by specifying them:
-
-```
-npm install github:myUsername/parse-server#my-awesome-feature
-```
-
-And don't forget, if you plan to deploy it remotely, you should run `npm install` with the `--save` option.
+We have written up a [migration guide](3.0.0.md) to help you transition to the next major release.
 
 # Contributing
 
-We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
+Please see the [Contributing Guide](CONTRIBUTING.md).
 
 # Contributors
 
@@ -1181,3 +1184,6 @@ As of April 5, 2017, Parse, LLC has transferred this code to the parse-community
 [license-svg]: https://img.shields.io/badge/license-BSD-lightgrey.svg
 [license-link]: LICENSE
 [open-collective-link]: https://opencollective.com/parse-server
+[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
+[log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
+[log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md

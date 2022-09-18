@@ -836,6 +836,50 @@ describe('ParseLiveQuery', function () {
     }
   });
 
+  it('LiveQuery should work with changing role', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['Chat'],
+      },
+      startLiveQueryServer: true,
+    });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
+
+    const role = new Parse.Role('Test', new Parse.ACL(user));
+    await role.save();
+
+    const chatQuery = new Parse.Query('Chat');
+    const subscription = await chatQuery.subscribe();
+    subscription.on('create', () => {
+      fail('should not call create as user is not part of role.');
+    });
+
+    const object = new Parse.Object('Chat');
+    const acl = new Parse.ACL();
+    acl.setRoleReadAccess(role, true);
+    object.setACL(acl);
+    object.set({ foo: 'bar' });
+    await object.save(null, { useMasterKey: true });
+    role.getUsers().add(user);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await role.save();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    object.set('foo', 'yolo');
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', obj => {
+          expect(obj.get('foo')).toBe('yolo');
+          expect(obj.getACL().toJSON()).toEqual({ 'role:Test': { read: true } });
+          resolve();
+        });
+      }),
+      object.save(null, { useMasterKey: true }),
+    ]);
+  });
+
   it('liveQuery on Session class', async done => {
     await reconfigureServer({
       liveQuery: { classNames: [Parse.Session] },
@@ -1064,6 +1108,52 @@ describe('ParseLiveQuery', function () {
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
+  });
+
+  it('should strip out protected fields', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['Test'] },
+      startLiveQueryServer: true,
+    });
+    const obj1 = new Parse.Object('Test');
+    obj1.set('foo', 'foo');
+    obj1.set('bar', 'bar');
+    obj1.set('qux', 'qux');
+    await obj1.save();
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'Test',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        update: { '*': true },
+        protectedFields: {
+          '*': ['foo'],
+        },
+      }
+    );
+    const object = await obj1.fetch();
+    expect(object.get('foo')).toBe(undefined);
+    expect(object.get('bar')).toBeDefined();
+    expect(object.get('qux')).toBeDefined();
+
+    const subscription = await new Parse.Query('Test').subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', (obj, original) => {
+          expect(obj.get('foo')).toBe(undefined);
+          expect(obj.get('bar')).toBeDefined();
+          expect(obj.get('qux')).toBeDefined();
+          expect(original.get('foo')).toBe(undefined);
+          expect(original.get('bar')).toBeDefined();
+          expect(original.get('qux')).toBeDefined();
+          resolve();
+        });
+      }),
+      obj1.save({ foo: 'abc' }),
+    ]);
   });
 
   afterEach(async function (done) {

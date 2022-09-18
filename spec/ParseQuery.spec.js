@@ -1715,6 +1715,16 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('order by non-existing string', async () => {
+    const strings = ['a', 'b', 'c', 'd'];
+    const makeBoxedNumber = function (num, i) {
+      return new BoxedNumber({ number: num, string: strings[i] });
+    };
+    await Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber));
+    const results = await new Parse.Query(BoxedNumber).ascending('foo').find();
+    expect(results.length).toBe(4);
+  });
+
   it('order by descending number then ascending string', function (done) {
     const strings = ['a', 'b', 'c', 'd'];
     const makeBoxedNumber = function (num, i) {

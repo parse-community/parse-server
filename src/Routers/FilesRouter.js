@@ -66,6 +66,12 @@ export class FilesRouter {
 
   getHandler(req, res) {
     const config = Config.get(req.params.appId);
+    if (!config) {
+      res.status(403);
+      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
+      res.json({ code: err.code, error: err.message });
+      return;
+    }
     const filesController = config.filesController;
     const filename = req.params.filename;
     const contentType = mime.getType(filename);
@@ -141,7 +147,7 @@ export class FilesRouter {
     try {
       // run beforeSaveFile trigger
       const triggerResult = await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeSaveFile,
+        triggers.Types.beforeSave,
         fileObject,
         config,
         req.auth
@@ -194,12 +200,7 @@ export class FilesRouter {
         };
       }
       // run afterSaveFile trigger
-      await triggers.maybeRunFileTrigger(
-        triggers.Types.afterSaveFile,
-        fileObject,
-        config,
-        req.auth
-      );
+      await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
@@ -222,7 +223,7 @@ export class FilesRouter {
       file._url = filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeDeleteFile,
+        triggers.Types.beforeDelete,
         fileObject,
         req.config,
         req.auth
@@ -231,7 +232,7 @@ export class FilesRouter {
       await filesController.deleteFile(req.config, filename);
       // run afterDeleteFile trigger
       await triggers.maybeRunFileTrigger(
-        triggers.Types.afterDeleteFile,
+        triggers.Types.afterDelete,
         fileObject,
         req.config,
         req.auth
@@ -250,10 +251,10 @@ export class FilesRouter {
   }
 
   async metadataHandler(req, res) {
-    const config = Config.get(req.params.appId);
-    const { filesController } = config;
-    const { filename } = req.params;
     try {
+      const config = Config.get(req.params.appId);
+      const { filesController } = config;
+      const { filename } = req.params;
       const data = await filesController.getMetadata(filename);
       res.status(200);
       res.json(data);
