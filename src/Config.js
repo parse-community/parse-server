@@ -79,7 +79,7 @@ export class Config {
     enforcePrivateUsers,
     schema,
     requestKeywordDenylist,
-    rateLimitOptions,
+    rateLimit,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -119,32 +119,35 @@ export class Config {
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
-    this.validateRateLimitOptions(rateLimitOptions);
+    this.validaterateLimit(rateLimit);
   }
 
-  static validateRateLimitOptions(rateLimitOptions) {
-    if (!rateLimitOptions) {
+  static validaterateLimit(rateLimit) {
+    if (!rateLimit) {
       return;
     }
-    if (typeof rateLimitOptions !== 'object') {
-      throw `rateLimitOptions must be an array or object`;
+    if (typeof rateLimit !== 'object') {
+      throw `rateLimit must be an array or object`;
     }
-    const options = Array.isArray(rateLimitOptions) ? rateLimitOptions : [rateLimitOptions];
+    const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const option of options) {
       if (typeof option !== 'object') {
-        throw `rateLimitOptions must be an array of objects`;
+        throw `rateLimit must be an array of objects`;
       }
       if (option.path && typeof option.path !== 'string') {
-        throw `rateLimitOptions.path must be a string`;
+        throw `rateLimit.path must be a string`;
       }
       if (option.windowMs && typeof option.windowMs !== 'number') {
-        throw `rateLimitOptions.windowMs must be a number`;
+        throw `rateLimit.windowMs must be a number`;
+      }
+      if (option.restrictInternal && typeof option.restrictInternal !== 'boolean') {
+        throw `rateLimit.restrictInternal must be a boolean`;
       }
       if (option.max && typeof option.max !== 'number') {
-        throw `rateLimitOptions.max must be a number`;
+        throw `rateLimit.max must be a number`;
       }
       if (option.message && typeof option.message !== 'string') {
-        throw `rateLimitOptions.message must be a string`;
+        throw `rateLimit.message must be a string`;
       }
     }
   }

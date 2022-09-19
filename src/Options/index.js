@@ -284,7 +284,7 @@ export interface ParseServerOptions {
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
   /* Rate limiting options to limit repeat calls to Parse Server.
   :DEFAULT: [] */
-  rateLimitOptions: ?(RateLimitOptions[]);
+  rateLimit: ?(RateLimitOptions[]);
 }
 
 export interface RateLimitOptions {
@@ -301,8 +301,12 @@ export interface RateLimitOptions {
   message: ?string;
   /* If set the rate limit will only apply to this method type */
   method: ?string;
-  /* If set the rate limit will apply to requests using the masterKey */
+  /* If set the rate limit will apply to requests using the masterKey
+  :DEFAULT: false */
   master: ?boolean;
+  /* If true the rate limit will apply to internal requests
+  :DEFAULT: false */
+  restrictInternal: ?boolean;
 }
 
 export interface SecurityOptions {

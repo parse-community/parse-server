@@ -140,7 +140,8 @@ module.exports.ParseServerOptions = {
   },
   databaseAdapter: {
     env: 'PARSE_SERVER_DATABASE_ADAPTER',
-    help: 'Adapter module for the database',
+    help:
+      'Adapter module for the database; any options that are not explicitly described here are passed directly to the database client.',
     action: parsers.moduleOrObjectParser,
   },
   databaseOptions: {
@@ -391,8 +392,8 @@ module.exports.ParseServerOptions = {
       'Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications',
     action: parsers.objectParser,
   },
-  rateLimitOptions: {
-    env: 'PARSE_SERVER_RATE_LIMIT_OPTIONS',
+  rateLimit: {
+    env: 'PARSE_SERVER_RATE_LIMIT',
     help: 'Rate limiting options to limit repeat calls to Parse Server.',
     action: parsers.arrayParser,
     default: [],
@@ -504,6 +505,7 @@ module.exports.RateLimitOptions = {
     env: 'PARSE_SERVER_RATE_LIMIT_MASTER',
     help: 'If set the rate limit will apply to requests using the masterKey',
     action: parsers.booleanParser,
+    default: false,
   },
   max: {
     env: 'PARSE_SERVER_RATE_LIMIT_MAX',
@@ -524,6 +526,12 @@ module.exports.RateLimitOptions = {
     env: 'PARSE_SERVER_RATE_LIMIT_PATH',
     help: 'The path of the route to be limited',
     required: true,
+  },
+  restrictInternal: {
+    env: 'PARSE_SERVER_RATE_LIMIT_RESTRICT_INTERNAL',
+    help: 'If true the rate limit will apply to internal requests',
+    action: parsers.booleanParser,
+    default: false,
   },
   windowMs: {
     env: 'PARSE_SERVER_RATE_LIMIT_WINDOW_MS',

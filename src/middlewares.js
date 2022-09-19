@@ -231,54 +231,53 @@ export function handleParseHeaders(req, res, next) {
     return;
   }
 
-  if (!info.sessionToken) {
-    req.auth = new auth.Auth({
-      config: req.config,
-      installationId: info.installationId,
-      isMaster: false,
-    });
-    next();
-    return;
-  }
-
-  return Promise.resolve()
-    .then(() => {
-      // handle the upgradeToRevocableSession path on it's own
-      if (
-        info.sessionToken &&
-        req.url === '/upgradeToRevocableSession' &&
-        info.sessionToken.indexOf('r:') != 0
-      ) {
-        return auth.getAuthForLegacySessionToken({
-          config: req.config,
-          installationId: info.installationId,
-          sessionToken: info.sessionToken,
-        });
-      } else {
-        return auth.getAuthForSessionToken({
-          config: req.config,
-          installationId: info.installationId,
-          sessionToken: info.sessionToken,
-        });
-      }
-    })
-    .then(auth => {
-      if (auth) {
-        req.auth = auth;
-        next();
-      }
-    })
-    .catch(error => {
-      if (error instanceof Parse.Error) {
-        next(error);
-        return;
-      } else {
-        // TODO: Determine the correct error scenario.
-        req.config.loggerController.error('error getting auth for sessionToken', error);
-        throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
-      }
-    });
+  req.auth = new auth.Auth({
+    config: req.config,
+    installationId: info.installationId,
+    isMaster: false,
+  });
+  next();
 }
+
+export const handleParseSession = async (req, res, next) => {
+  try {
+    const info = req.info;
+    if (req.auth.user || req.auth.isMaster || !info.sessionToken) {
+      next();
+      return;
+    }
+    let requestAuth = null;
+    if (
+      info.sessionToken &&
+      req.url === '/upgradeToRevocableSession' &&
+      info.sessionToken.indexOf('r:') != 0
+    ) {
+      requestAuth = await auth.getAuthForLegacySessionToken({
+        config: req.config,
+        installationId: info.installationId,
+        sessionToken: info.sessionToken,
+      });
+    } else {
+      requestAuth = await auth.getAuthForSessionToken({
+        config: req.config,
+        installationId: info.installationId,
+        sessionToken: info.sessionToken,
+      });
+    }
+    if (requestAuth) {
+      req.auth = requestAuth;
+    }
+    next();
+  } catch (error) {
+    if (error instanceof Parse.Error) {
+      next(error);
+      return;
+    }
+    // TODO: Determine the correct error scenario.
+    req.config.loggerController.error('error getting auth for sessionToken', error);
+    throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+  }
+};
 
 function getClientIp(req) {
   if (req.headers['x-forwarded-for']) {
@@ -431,8 +430,8 @@ export const addRateLimit = (route, id) => {
   addLimitForRoute(express, route);
 };
 
-export const handleRateLimit = (api, rateLimitOptions) => {
-  const options = Array.isArray(rateLimitOptions) ? rateLimitOptions : [rateLimitOptions];
+export const handleRateLimit = (api, rateLimit) => {
+  const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
   for (const route of options) {
     addLimitForRoute(api, route);
   }
@@ -446,11 +445,13 @@ const addLimitForRoute = (api, route) => {
       max: route.max ?? 3,
       message: route.message ?? 'Too many requests.',
       handler: (request, response, next, options) => {
-        const error = new Parse.Error(Parse.Error.CONNECTION_FAILED, options.message);
         response.status(429);
-        next(error);
+        response.json({ code: Parse.Error.CONNECTION_FAILED, error: options.message });
       },
       skip: request => {
+        if (request.config.ip === '127.0.0.1' && !route.restrictInternal) {
+          return true;
+        }
         if (route.master) {
           return false;
         }
