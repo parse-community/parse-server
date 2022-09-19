@@ -268,6 +268,12 @@ export const handleParseSession = async (req, res, next) => {
     }
     if (requestAuth) {
       req.auth = requestAuth;
+    } else {
+      req.auth = new auth.Auth({
+        config: req.config,
+        installationId: info.installationId,
+        isMaster: false,
+      });
     }
     next();
   } catch (error) {
