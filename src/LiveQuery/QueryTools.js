@@ -103,8 +103,18 @@ function contains(haystack: Array, needle: any): boolean {
         return true;
       }
     }
+
     return false;
   }
+
+  if (Array.isArray(needle)) {
+    for (const need of needle) {
+      if (contains(haystack, need)) {
+        return true;
+      }
+    }
+  }
+
   return haystack.indexOf(needle) > -1;
 }
 /**
