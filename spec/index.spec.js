@@ -466,11 +466,8 @@ describe('server', () => {
     await expectAsync(reconfigureServer({ defaultLimit: -1 })).toBeRejectedWith('Default limit must be a value greater than 0.');
   });
 
-  it('fails if default limit is zero', done => {
-    reconfigureServer({ defaultLimit: 0 }).catch(error => {
-      expect(error).toEqual('Default limit must be a value greater than 0.');
-      done();
-    });
+  it('fails if default limit is zero', async () => {
+    await expectAsync(reconfigureServer({ defaultLimit: 0 })).toBeRejectedWith('Default limit must be a value greater than 0.');
   });
 
   it('fails if maxLimit is negative', done => {
