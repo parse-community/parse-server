@@ -175,7 +175,7 @@ describe('rate limit', () => {
   });
 
   it('can use a validator', async () => {
-    Parse.Cloud.beforeFind('Test', () => {}, {
+    Parse.Cloud.beforeFind('TestObject', () => {}, {
       rateLimit: {
         windowMs: 10000,
         max: 1,
@@ -183,14 +183,14 @@ describe('rate limit', () => {
         restrictInternal: true,
       },
     });
-    const obj = new Parse.Object('Test');
+    const obj = new Parse.Object('TestObject');
     await obj.save();
     await obj.save();
-    await new Parse.Query('Test').first();
-    await expectAsync(new Parse.Query('Test').first()).toBeRejectedWith(
+    await new Parse.Query('TestObject').first();
+    await expectAsync(new Parse.Query('TestObject').first()).toBeRejectedWith(
       new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
     );
-    await expectAsync(new Parse.Query('Test').get('abc')).toBeRejectedWith(
+    await expectAsync(new Parse.Query('TestObject').get('abc')).toBeRejectedWith(
       new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
     );
   });
@@ -217,7 +217,7 @@ describe('rate limit', () => {
   });
 
   it('can set beforeDelete', async () => {
-    Parse.Cloud.beforeDelete('Test', () => {}, {
+    Parse.Cloud.beforeDelete('TestDelete', () => {}, {
       rateLimit: {
         windowMs: 10000,
         max: 1,
@@ -225,7 +225,7 @@ describe('rate limit', () => {
         restrictInternal: true,
       },
     });
-    const obj = new Parse.Object('Test');
+    const obj = new Parse.Object('TestDelete');
     await obj.save();
     await obj.destroy();
     await expectAsync(obj.destroy()).toBeRejectedWith(
