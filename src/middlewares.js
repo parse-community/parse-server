@@ -447,10 +447,10 @@ export const handleRateLimit = (api, rateLimit) => {
 
 const addLimitForRoute = (api, route) => {
   api.use(
-    route.path ?? '*',
+    route.path || '*',
     rateLimit({
-      windowMs: route.windowMs ?? 60000,
-      max: route.max ?? 3,
+      windowMs: route.windowMs,
+      max: route.max,
       message: route.message ?? 'Too many requests.',
       handler: (request, response, next, options) => {
         response.status(429);

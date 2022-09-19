@@ -137,13 +137,19 @@ export class Config {
       if (option.path && typeof option.path !== 'string') {
         throw `rateLimit.path must be a string`;
       }
-      if (option.windowMs && typeof option.windowMs !== 'number') {
+      if (!option.windowMs) {
+        throw `rateLimit.windowMs must be defined`;
+      }
+      if (typeof option.windowMs !== 'number') {
         throw `rateLimit.windowMs must be a number`;
       }
       if (option.restrictInternal && typeof option.restrictInternal !== 'boolean') {
         throw `rateLimit.restrictInternal must be a boolean`;
       }
-      if (option.max && typeof option.max !== 'number') {
+      if (!option.max) {
+        throw `rateLimit.max must be defined`;
+      }
+      if (typeof option.max !== 'number') {
         throw `rateLimit.max must be a number`;
       }
       if (option.message && typeof option.message !== 'string') {

@@ -295,7 +295,7 @@ describe('rate limit', () => {
   });
 
   it('can validate rateLimit', async () => {
-    await expectAsync(reconfigureServer({ rateLimit: 'a' })).toBeRejectedWith(
+    await expectAsync(reconfigureServer({ rateLimit: 'a', windowMs: 1000, max: 3 })).toBeRejectedWith(
       'rateLimit must be an array or object'
     );
     await expectAsync(reconfigureServer({ rateLimit: ['a'] })).toBeRejectedWith(
@@ -308,13 +308,19 @@ describe('rate limit', () => {
       'rateLimit.windowMs must be a number'
     );
     await expectAsync(
-      reconfigureServer({ rateLimit: [{ restrictInternal: [] }] })
+      reconfigureServer({ rateLimit: [{ restrictInternal: [], windowMs: 1000, max: 3 }] })
     ).toBeRejectedWith('rateLimit.restrictInternal must be a boolean');
-    await expectAsync(reconfigureServer({ rateLimit: [{ max: [] }] })).toBeRejectedWith(
+    await expectAsync(reconfigureServer({ rateLimit: [{ max: [], windowMs: 1000 }] })).toBeRejectedWith(
       'rateLimit.max must be a number'
     );
-    await expectAsync(reconfigureServer({ rateLimit: [{ message: [] }] })).toBeRejectedWith(
+    await expectAsync(reconfigureServer({ rateLimit: [{ message: [], windowMs: 1000, max: 3 }] })).toBeRejectedWith(
       'rateLimit.message must be a string'
+    );
+    await expectAsync(reconfigureServer({ rateLimit: [{ max: 3 }] })).toBeRejectedWith(
+      'rateLimit.windowMs must be defined'
+    );
+    await expectAsync(reconfigureServer({ rateLimit: [{ windowMs: 3 }] })).toBeRejectedWith(
+      'rateLimit.max must be defined'
     );
   });
 });
