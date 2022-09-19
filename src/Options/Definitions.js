@@ -140,7 +140,8 @@ module.exports.ParseServerOptions = {
   },
   databaseAdapter: {
     env: 'PARSE_SERVER_DATABASE_ADAPTER',
-    help: 'Adapter module for the database',
+    help:
+      'Adapter module for the database; any options that are not explicitly described here are passed directly to the database client.',
     action: parsers.moduleOrObjectParser,
   },
   databaseOptions: {
