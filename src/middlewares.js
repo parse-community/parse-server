@@ -231,18 +231,20 @@ export function handleParseHeaders(req, res, next) {
     return;
   }
 
-  req.auth = new auth.Auth({
-    config: req.config,
-    installationId: info.installationId,
-    isMaster: false,
-  });
+  if (!info.sessionToken) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: false,
+    });
+  }
   next();
 }
 
 export const handleParseSession = async (req, res, next) => {
   try {
     const info = req.info;
-    if (req.auth.user || req.auth.isMaster || !info.sessionToken) {
+    if (req.auth) {
       next();
       return;
     }
