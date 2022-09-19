@@ -469,6 +469,9 @@ const addLimitForRoute = (api, route) => {
         }
         return request.auth.isMaster;
       },
+      keyGenerator: (request) => {
+        return request.config.ip;
+      }
     })
   );
   const lastRouter = api._router.stack[api._router.stack.length - 1];
