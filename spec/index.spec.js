@@ -481,10 +481,7 @@ describe('server', () => {
   });
 
   it('fails if maxLimit is smaller than the default limit', done => {
-    reconfigureServer({ defaultLimit: 101, maxLimit: 100 }).catch(error => {
-      expect(error).toEqual('Max limit must be greater than the default limit.');
-      done();
-    });
+    await expectAsync(reconfigureServer({ defaultLimit: 101, maxLimit: 100 })).toBeRejectedWith('Max limit must be greater than the default limit.');
   });
 
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
