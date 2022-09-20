@@ -119,10 +119,10 @@ export class Config {
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
-    this.validaterateLimit(rateLimit);
+    this.validateRateLimit(rateLimit);
   }
 
-  static validaterateLimit(rateLimit) {
+  static validateRateLimit(rateLimit) {
     if (!rateLimit) {
       return;
     }
