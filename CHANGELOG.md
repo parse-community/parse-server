@@ -1,3 +1,10 @@
+## [4.10.16](https://github.com/parse-community/parse-server/compare/4.10.15...4.10.16) (2022-09-20)
+
+
+### Bug Fixes
+
+* authentication adapter app ID validation may be circumvented; this fixes a vulnerability that affects configurations which allow users to authenticate using the Parse Server authentication adapter for *Facebook* or *Spotify* and where the server-side authentication adapter configuration `appIds` is set as a string (e.g. `abc`) instead of an array of strings (e.g. `["abc"]`) ([GHSA-r657-33vp-gp22](https://github.com/parse-community/parse-server/security/advisories/GHSA-r657-33vp-gp22)) ([#8186](https://github.com/parse-community/parse-server/issues/8186)) ([b3e7939](https://github.com/parse-community/parse-server/commit/b3e7939f6bf7d4d295143c5d9b90deb9c25c58b7))
+
 ## [4.10.15](https://github.com/parse-community/parse-server/compare/4.10.14...4.10.15) (2022-09-20)
 
 
