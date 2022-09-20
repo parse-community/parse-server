@@ -108,7 +108,9 @@ function processProperty(property, iface) {
   }
   let defaultValue;
   if (defaultLine) {
-    defaultValue = defaultLine.split(' ')[1];
+    const defaultArray = defaultLine.split(' ');
+    defaultArray.shift();
+    defaultValue = defaultArray.join(' ');
   }
   let type = property.value.type;
   let isRequired = true;

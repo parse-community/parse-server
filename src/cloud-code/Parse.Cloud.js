@@ -124,7 +124,7 @@ ParseCloud.define = function (functionName, handler, validationHandler) {
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
-      { path: `/functions/${functionName}`, ...validationHandler.rateLimit },
+      { requestPath: `/functions/${functionName}`, ...validationHandler.rateLimit },
       Parse.applicationId
     );
   }
@@ -184,8 +184,8 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
-        path: `/${getRoute(parseClass)}/${parseClass}`,
-        method: ['POST', 'PUT'],
+        requestPath: `/${getRoute(parseClass)}/${parseClass}`,
+        requestMethods: ['POST', 'PUT'],
         ...validationHandler.rateLimit,
       },
       Parse.applicationId
@@ -230,8 +230,8 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
-        path: `/${getRoute(parseClass)}/${parseClass}`,
-        method: 'DELETE',
+        requestPath: `/${getRoute(parseClass)}/${parseClass}`,
+        requestMethods: 'DELETE',
         ...validationHandler.rateLimit,
       },
       Parse.applicationId
@@ -274,7 +274,7 @@ ParseCloud.beforeLogin = function (handler, validationHandler) {
   triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
-      { path: `/login`, method: 'POST', ...validationHandler.rateLimit },
+      { requestPath: `/login`, requestMethods: 'POST', ...validationHandler.rateLimit },
       Parse.applicationId
     );
   }
@@ -449,8 +449,8 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
-        path: `/${getRoute(parseClass)}/${parseClass}`,
-        method: 'GET',
+        requestPath: `/${getRoute(parseClass)}/${parseClass}`,
+        requestMethods: 'GET',
         ...validationHandler.rateLimit,
       },
       Parse.applicationId

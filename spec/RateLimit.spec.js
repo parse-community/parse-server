@@ -4,11 +4,11 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/functions/*',
-          windowMs: 10000,
-          max: 1,
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
@@ -23,10 +23,10 @@ describe('rate limit', () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
       rateLimit: {
-        windowMs: 10000,
-        max: 1,
-        message: 'Too many requests',
-        restrictInternal: true,
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
       },
     });
     const response1 = await Parse.Cloud.run('test');
@@ -42,10 +42,10 @@ describe('rate limit', () => {
   it('can limit cloud with validator', async () => {
     Parse.Cloud.define('test', () => 'Abc', {
       rateLimit: {
-        windowMs: 10000,
-        max: 1,
-        message: 'Too many requests',
-        restrictInternal: true,
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
       },
     });
     const response1 = await Parse.Cloud.run('test');
@@ -60,11 +60,11 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/functions/*',
-          windowMs: 10000,
-          max: 1,
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
@@ -79,12 +79,12 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/functions/*',
-          windowMs: 10000,
-          max: 1,
-          master: true,
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          includeMasterKey: true,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
@@ -99,11 +99,11 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/classes/*',
-          windowMs: 10000,
-          max: 1,
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/classes/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
@@ -118,12 +118,12 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/classes/*',
-          windowMs: 10000,
-          max: 1,
-          method: 'POST',
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/classes/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          requestMethods: 'POST',
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
@@ -139,10 +139,10 @@ describe('rate limit', () => {
   it('can use a validator for post', async () => {
     Parse.Cloud.beforeSave('Test', () => {}, {
       rateLimit: {
-        windowMs: 10000,
-        max: 1,
-        message: 'Too many requests',
-        restrictInternal: true,
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
       },
     });
     const obj = new Parse.Object('Test');
@@ -156,12 +156,12 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/classes/Test',
-          windowMs: 10000,
-          max: 1,
-          method: 'GET',
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/classes/Test',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          requestMethods: 'GET',
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
@@ -177,10 +177,10 @@ describe('rate limit', () => {
   it('can use a validator', async () => {
     Parse.Cloud.beforeFind('TestObject', () => {}, {
       rateLimit: {
-        windowMs: 10000,
-        max: 1,
-        message: 'Too many requests',
-        restrictInternal: true,
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
       },
     });
     const obj = new Parse.Object('TestObject');
@@ -199,12 +199,12 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/classes/Test',
-          windowMs: 10000,
-          max: 1,
-          method: 'DELETE',
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/classes/Test',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          requestMethods: 'DELETE',
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
@@ -219,10 +219,10 @@ describe('rate limit', () => {
   it('can set beforeDelete', async () => {
     Parse.Cloud.beforeDelete('TestDelete', () => {}, {
       rateLimit: {
-        windowMs: 10000,
-        max: 1,
-        message: 'Too many requests',
-        restrictInternal: true,
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
       },
     });
     const obj = new Parse.Object('TestDelete');
@@ -236,10 +236,10 @@ describe('rate limit', () => {
   it('can set beforeLogin', async () => {
     Parse.Cloud.beforeLogin(() => {}, {
       rateLimit: {
-        windowMs: 10000,
-        max: 1,
-        message: 'Too many requests',
-        restrictInternal: true,
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
       },
     });
     await Parse.User.signUp('myUser', 'password');
@@ -253,19 +253,19 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/functions/*',
-          windowMs: 10000,
-          max: 100,
-          message: 'Too many requests',
-          restrictInternal: true,
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 100,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
         },
       ],
     });
     Parse.Cloud.define('test', () => 'Abc', {
       rateLimit: {
-        windowMs: 10000,
-        max: 1,
-        restrictInternal: true,
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        includeInternalRequests: true,
       },
     });
     const response1 = await Parse.Cloud.run('test');
@@ -279,10 +279,10 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          path: '/functions/*',
-          windowMs: 10000,
-          max: 1,
-          message: 'Too many requests',
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
         },
       ],
     });
@@ -295,32 +295,35 @@ describe('rate limit', () => {
   });
 
   it('can validate rateLimit', async () => {
-    await expectAsync(reconfigureServer({ rateLimit: 'a', windowMs: 1000, max: 3 })).toBeRejectedWith(
+    await expectAsync(reconfigureServer({ rateLimit: 'a', requestTimeWindow: 1000, requestCount: 3 })).toBeRejectedWith(
       'rateLimit must be an array or object'
     );
     await expectAsync(reconfigureServer({ rateLimit: ['a'] })).toBeRejectedWith(
       'rateLimit must be an array of objects'
     );
-    await expectAsync(reconfigureServer({ rateLimit: [{ path: [] }] })).toBeRejectedWith(
-      'rateLimit.path must be a string'
+    await expectAsync(reconfigureServer({ rateLimit: [{ requestPath: [] }] })).toBeRejectedWith(
+      'rateLimit.requestPath must be a string'
     );
-    await expectAsync(reconfigureServer({ rateLimit: [{ windowMs: [] }] })).toBeRejectedWith(
-      'rateLimit.windowMs must be a number'
+    await expectAsync(reconfigureServer({ rateLimit: [{ requestTimeWindow: [] }] })).toBeRejectedWith(
+      'rateLimit.requestTimeWindow must be a number'
     );
     await expectAsync(
-      reconfigureServer({ rateLimit: [{ restrictInternal: [], windowMs: 1000, max: 3 }] })
-    ).toBeRejectedWith('rateLimit.restrictInternal must be a boolean');
-    await expectAsync(reconfigureServer({ rateLimit: [{ max: [], windowMs: 1000 }] })).toBeRejectedWith(
-      'rateLimit.max must be a number'
+      reconfigureServer({ rateLimit: [{ includeInternalRequests: [], requestTimeWindow: 1000, requestCount: 3 }] })
+    ).toBeRejectedWith('rateLimit.includeInternalRequests must be a boolean');
+    await expectAsync(reconfigureServer({ rateLimit: [{ requestCount: [], requestTimeWindow: 1000 }] })).toBeRejectedWith(
+      'rateLimit.requestCount must be a number'
     );
-    await expectAsync(reconfigureServer({ rateLimit: [{ message: [], windowMs: 1000, max: 3 }] })).toBeRejectedWith(
-      'rateLimit.message must be a string'
+    await expectAsync(reconfigureServer({ rateLimit: [{ errorResponseMessage: [], requestTimeWindow: 1000, requestCount: 3 }] })).toBeRejectedWith(
+      'rateLimit.errorResponseMessage must be a string'
     );
-    await expectAsync(reconfigureServer({ rateLimit: [{ max: 3 }] })).toBeRejectedWith(
-      'rateLimit.windowMs must be defined'
+    await expectAsync(reconfigureServer({ rateLimit: [{ requestCount: 3 }] })).toBeRejectedWith(
+      'rateLimit.requestTimeWindow must be defined'
     );
-    await expectAsync(reconfigureServer({ rateLimit: [{ windowMs: 3 }] })).toBeRejectedWith(
-      'rateLimit.max must be defined'
+    await expectAsync(reconfigureServer({ rateLimit: [{ requestTimeWindow: 3 }] })).toBeRejectedWith(
+      'rateLimit.requestCount must be defined'
+    );
+    await expectAsync(reconfigureServer({ rateLimit: [{ requestTimeWindow: 3, requestCount: 1, path: 'abc' }] })).toBeRejectedWith(
+      `Invalid rate limit option "path"`
     );
   });
 });

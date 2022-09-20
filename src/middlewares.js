@@ -8,6 +8,7 @@ import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
+import { RateLimitOptions } from './Options/Definitions';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -446,25 +447,30 @@ export const handleRateLimit = (api, rateLimit) => {
 };
 
 const addLimitForRoute = (api, route) => {
+  for (const key in route) {
+    if (!RateLimitOptions[key]) {
+      throw `Invalid rate limit option "${key}"`;
+    }
+  }
   api.use(
-    route.path || '*',
+    route.requestPath || '*',
     rateLimit({
-      windowMs: route.windowMs,
-      max: route.max,
-      message: route.message ?? 'Too many requests.',
+      windowMs: route.requestTimeWindow,
+      max: route.requestCount,
+      message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
         response.status(429);
         response.json({ code: Parse.Error.CONNECTION_FAILED, error: options.message });
       },
       skip: request => {
-        if (request.config.ip === '127.0.0.1' && !route.restrictInternal) {
+        if (request.config.ip === '127.0.0.1' && !route.includeInternalRequests) {
           return true;
         }
-        if (route.master) {
+        if (route.includeMasterKey) {
           return false;
         }
-        const method = Array.isArray(route.method) ? route.method : [route.method];
-        if (route.method && !method.includes(request.method)) {
+        const method = Array.isArray(route.requestMethods) ? route.requestMethods : [route.requestMethods];
+        if (route.requestMethods && !method.includes(request.method)) {
           return true;
         }
         return request.auth.isMaster;

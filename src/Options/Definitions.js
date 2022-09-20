@@ -394,7 +394,8 @@ module.exports.ParseServerOptions = {
   },
   rateLimit: {
     env: 'PARSE_SERVER_RATE_LIMIT',
-    help: 'Rate limiting options to limit repeat calls to Parse Server.',
+    help:
+      "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if many Parse Server instances are behind a load balancer, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.",
     action: parsers.arrayParser,
     default: [],
   },
@@ -501,43 +502,49 @@ module.exports.ParseServerOptions = {
   },
 };
 module.exports.RateLimitOptions = {
-  master: {
-    env: 'PARSE_SERVER_RATE_LIMIT_MASTER',
-    help: 'If set the rate limit will apply to requests using the masterKey',
+  errorResponseMessage: {
+    env: 'PARSE_SERVER_RATE_LIMIT_ERROR_RESPONSE_MESSAGE',
+    help:
+      'The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.',
+    default: 'Too many requests.',
+  },
+  includeInternalRequests: {
+    env: 'PARSE_SERVER_RATE_LIMIT_INCLUDE_INTERNAL_REQUESTS',
+    help:
+      'Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may allow to circumvent rate limiting and be vulnerable to a malicious attack. // Is this true? What exactly are "internal requests" here? Maybe we need to clarify more.',
     action: parsers.booleanParser,
     default: false,
   },
-  max: {
-    env: 'PARSE_SERVER_RATE_LIMIT_MAX',
-    help: 'The number of requests that can be made by an IP',
-    action: parsers.numberParser('max'),
-    default: 3,
+  includeMasterKey: {
+    env: 'PARSE_SERVER_RATE_LIMIT_INCLUDE_MASTER_KEY',
+    help:
+      'Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may allow to circumvent rate limiting and be vulnerable to a malicious attack.',
+    action: parsers.booleanParser,
+    default: false,
   },
-  message: {
-    env: 'PARSE_SERVER_RATE_LIMIT_MESSAGE',
-    help: 'The error message that should be shown',
-    default: "'Too",
+  requestCount: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_COUNT',
+    help:
+      'The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied.',
+    action: parsers.numberParser('requestCount'),
   },
-  method: {
-    env: 'PARSE_SERVER_RATE_LIMIT_METHOD',
-    help: 'If set the rate limit will only apply to this method type',
+  requestMethods: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_METHODS',
+    help:
+      'Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.',
+    action: parsers.arrayParser,
   },
-  path: {
-    env: 'PARSE_SERVER_RATE_LIMIT_PATH',
-    help: 'The path of the route to be limited',
+  requestPath: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_PATH',
+    help:
+      'Is this regex or what syntax? We should give examples here, for all requests, for cloud function requests, for job requests, for class requests.',
     required: true,
   },
-  restrictInternal: {
-    env: 'PARSE_SERVER_RATE_LIMIT_RESTRICT_INTERNAL',
-    help: 'If true the rate limit will apply to internal requests',
-    action: parsers.booleanParser,
-    default: false,
-  },
-  windowMs: {
-    env: 'PARSE_SERVER_RATE_LIMIT_WINDOW_MS',
-    help: 'The window of time (ms) between requests',
-    action: parsers.numberParser('windowMs'),
-    default: 60000,
+  requestTimeWindow: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_TIME_WINDOW',
+    help:
+      'The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied.',
+    action: parsers.numberParser('requestTimeWindow'),
   },
 };
 module.exports.SecurityOptions = {

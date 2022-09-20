@@ -126,34 +126,34 @@ export class Config {
     if (!rateLimit) {
       return;
     }
-    if (Object.prototype.toString.call(rateLimit) !== '[object Object]') {
+    if (Object.prototype.toString.call(rateLimit) !== '[object Object]' && !Array.isArray(rateLimit)) {
       throw `rateLimit must be an array or object`;
     }
     const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const option of options) {
-      if (Object.prototype.toString.call(option) !== '[object Object]') {
+      if (typeof option !== 'object') {
         throw `rateLimit must be an array of objects`;
       }
-      if (option.path && typeof option.path !== 'string') {
-        throw `rateLimit.path must be a string`;
+      if (option.requestPath && typeof option.requestPath !== 'string') {
+        throw `rateLimit.requestPath must be a string`;
       }
-      if (!option.windowMs) {
-        throw `rateLimit.windowMs must be defined`;
+      if (!option.requestTimeWindow) {
+        throw `rateLimit.requestTimeWindow must be defined`;
       }
-      if (typeof option.windowMs !== 'number') {
-        throw `rateLimit.windowMs must be a number`;
+      if (typeof option.requestTimeWindow !== 'number') {
+        throw `rateLimit.requestTimeWindow must be a number`;
       }
-      if (option.restrictInternal && typeof option.restrictInternal !== 'boolean') {
-        throw `rateLimit.restrictInternal must be a boolean`;
+      if (option.includeInternalRequests && typeof option.includeInternalRequests !== 'boolean') {
+        throw `rateLimit.includeInternalRequests must be a boolean`;
       }
-      if (!option.max) {
-        throw `rateLimit.max must be defined`;
+      if (!option.requestCount) {
+        throw `rateLimit.requestCount must be defined`;
       }
-      if (typeof option.max !== 'number') {
-        throw `rateLimit.max must be a number`;
+      if (typeof option.requestCount !== 'number') {
+        throw `rateLimit.requestCount must be a number`;
       }
-      if (option.message && typeof option.message !== 'string') {
-        throw `rateLimit.message must be a string`;
+      if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
+        throw `rateLimit.errorResponseMessage must be a string`;
       }
     }
   }
