@@ -131,7 +131,7 @@ export class Config {
     }
     const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const option of options) {
-      if (typeof option !== 'object') {
+      if (Object.prototype.toString.call(option) !== '[object Object]') {
         throw `rateLimit must be an array of objects`;
       }
       if (option.path && typeof option.path !== 'string') {
