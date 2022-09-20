@@ -395,7 +395,7 @@ module.exports.ParseServerOptions = {
   rateLimit: {
     env: 'PARSE_SERVER_RATE_LIMIT',
     help:
-      "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if many Parse Server instances are behind a load balancer, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.",
+      "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.",
     action: parsers.arrayParser,
     default: [],
   },
@@ -537,7 +537,7 @@ module.exports.RateLimitOptions = {
   requestPath: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_PATH',
     help:
-      'Is this regex or what syntax? We should give examples here, for all requests, for cloud function requests, for job requests, for class requests.',
+      'The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html',
     required: true,
   },
   requestTimeWindow: {
