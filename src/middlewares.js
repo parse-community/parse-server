@@ -453,7 +453,7 @@ const addLimitForRoute = (api, route) => {
     }
   }
   api.use(
-    route.requestPath || '*',
+    route.requestPath,
     rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
