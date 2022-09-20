@@ -469,15 +469,17 @@ const addLimitForRoute = (api, route) => {
         if (route.includeMasterKey) {
           return false;
         }
-        const method = Array.isArray(route.requestMethods) ? route.requestMethods : [route.requestMethods];
+        const method = Array.isArray(route.requestMethods)
+          ? route.requestMethods
+          : [route.requestMethods];
         if (route.requestMethods && !method.includes(request.method)) {
           return true;
         }
         return request.auth.isMaster;
       },
-      keyGenerator: (request) => {
+      keyGenerator: request => {
         return request.config.ip;
-      }
+      },
     })
   );
   const lastRouter = api._router.stack[api._router.stack.length - 1];

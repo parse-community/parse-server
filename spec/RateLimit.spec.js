@@ -296,38 +296,55 @@ describe('rate limit', () => {
   });
 
   it('can validate rateLimit', async () => {
-    await expectAsync(reconfigureServer({ rateLimit: 'a', requestTimeWindow: 1000, requestCount: 3 })).toBeRejectedWith(
-      'rateLimit must be an array or object'
-    );
+    await expectAsync(
+      reconfigureServer({ rateLimit: 'a', requestTimeWindow: 1000, requestCount: 3 })
+    ).toBeRejectedWith('rateLimit must be an array or object');
     await expectAsync(reconfigureServer({ rateLimit: ['a'] })).toBeRejectedWith(
       'rateLimit must be an array of objects'
     );
     await expectAsync(reconfigureServer({ rateLimit: [{ requestPath: [] }] })).toBeRejectedWith(
       'rateLimit.requestPath must be a string'
     );
-    await expectAsync(reconfigureServer({ rateLimit: [{ requestTimeWindow: [], requestPath: 'a' }] })).toBeRejectedWith(
-      'rateLimit.requestTimeWindow must be a number'
-    );
     await expectAsync(
-      reconfigureServer({ rateLimit: [{ includeInternalRequests: [], requestTimeWindow: 1000, requestCount: 3, requestPath: 'a' }] })
+      reconfigureServer({ rateLimit: [{ requestTimeWindow: [], requestPath: 'a' }] })
+    ).toBeRejectedWith('rateLimit.requestTimeWindow must be a number');
+    await expectAsync(
+      reconfigureServer({
+        rateLimit: [
+          {
+            includeInternalRequests: [],
+            requestTimeWindow: 1000,
+            requestCount: 3,
+            requestPath: 'a',
+          },
+        ],
+      })
     ).toBeRejectedWith('rateLimit.includeInternalRequests must be a boolean');
-    await expectAsync(reconfigureServer({ rateLimit: [{ requestCount: [], requestTimeWindow: 1000, requestPath: 'a'}] })).toBeRejectedWith(
-      'rateLimit.requestCount must be a number'
-    );
-    await expectAsync(reconfigureServer({ rateLimit: [{ errorResponseMessage: [], requestTimeWindow: 1000, requestCount: 3, requestPath: 'a' }] })).toBeRejectedWith(
-      'rateLimit.errorResponseMessage must be a string'
-    );
-    await expectAsync(reconfigureServer({ rateLimit: [{ requestCount: 3, requestPath: 'abc' }] })).toBeRejectedWith(
-      'rateLimit.requestTimeWindow must be defined'
-    );
-    await expectAsync(reconfigureServer({ rateLimit: [{ requestTimeWindow: 3, requestPath: 'abc' }] })).toBeRejectedWith(
-      'rateLimit.requestCount must be defined'
-    );
-    await expectAsync(reconfigureServer({ rateLimit: [{ requestTimeWindow: 3, requestCount: 'abc' }] })).toBeRejectedWith(
-      'rateLimit.requestPath must be defined'
-    );
-    await expectAsync(reconfigureServer({ rateLimit: [{ requestTimeWindow: 3, requestCount: 1, path: 'abc', requestPath: 'a' }] })).toBeRejectedWith(
-      `Invalid rate limit option "path"`
-    );
+    await expectAsync(
+      reconfigureServer({
+        rateLimit: [{ requestCount: [], requestTimeWindow: 1000, requestPath: 'a' }],
+      })
+    ).toBeRejectedWith('rateLimit.requestCount must be a number');
+    await expectAsync(
+      reconfigureServer({
+        rateLimit: [
+          { errorResponseMessage: [], requestTimeWindow: 1000, requestCount: 3, requestPath: 'a' },
+        ],
+      })
+    ).toBeRejectedWith('rateLimit.errorResponseMessage must be a string');
+    await expectAsync(
+      reconfigureServer({ rateLimit: [{ requestCount: 3, requestPath: 'abc' }] })
+    ).toBeRejectedWith('rateLimit.requestTimeWindow must be defined');
+    await expectAsync(
+      reconfigureServer({ rateLimit: [{ requestTimeWindow: 3, requestPath: 'abc' }] })
+    ).toBeRejectedWith('rateLimit.requestCount must be defined');
+    await expectAsync(
+      reconfigureServer({ rateLimit: [{ requestTimeWindow: 3, requestCount: 'abc' }] })
+    ).toBeRejectedWith('rateLimit.requestPath must be defined');
+    await expectAsync(
+      reconfigureServer({
+        rateLimit: [{ requestTimeWindow: 3, requestCount: 1, path: 'abc', requestPath: 'a' }],
+      })
+    ).toBeRejectedWith(`Invalid rate limit option "path"`);
   });
 });

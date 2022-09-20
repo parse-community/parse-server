@@ -126,12 +126,15 @@ export class Config {
     if (!rateLimit) {
       return;
     }
-    if (Object.prototype.toString.call(rateLimit) !== '[object Object]' && !Array.isArray(rateLimit)) {
+    if (
+      Object.prototype.toString.call(rateLimit) !== '[object Object]' &&
+      !Array.isArray(rateLimit)
+    ) {
       throw `rateLimit must be an array or object`;
     }
     const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const option of options) {
-      if (Object.prototype.toString.call(option) !== '[object Object]' ) {
+      if (Object.prototype.toString.call(option) !== '[object Object]') {
         throw `rateLimit must be an array of objects`;
       }
       if (!option.requestPath) {
