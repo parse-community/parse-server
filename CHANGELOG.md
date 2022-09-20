@@ -1,3 +1,10 @@
+## [4.10.15](https://github.com/parse-community/parse-server/compare/4.10.14...4.10.15) (2022-09-20)
+
+
+### Bug Fixes
+
+* session object properties can be updated by foreign user; this fixes a security vulnerability in which a foreign user can write to the session object of another user if the session object ID is known; the fix prevents writing to foreign session objects ([GHSA-6w4q-23cf-j9jp](https://github.com/parse-community/parse-server/security/advisories/GHSA-6w4q-23cf-j9jp)) ([#8183](https://github.com/parse-community/parse-server/issues/8183)) ([7ca9ed0](https://github.com/parse-community/parse-server/commit/7ca9ed01424478d299e5576ee4208bd9fea78760))
+
 ## [4.10.14](https://github.com/parse-community/parse-server/compare/4.10.13...4.10.14) (2022-09-02)
 
 
