@@ -126,7 +126,7 @@ export class Config {
     if (!rateLimit) {
       return;
     }
-    if (typeof rateLimit !== 'object') {
+    if (Object.prototype.toString.call(rateLimit) !== '[object Object]') {
       throw `rateLimit must be an array or object`;
     }
     const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
