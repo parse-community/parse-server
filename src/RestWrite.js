@@ -1018,6 +1018,20 @@ RestWrite.prototype.handleSession = function () {
     } else if (this.data.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     }
+    if (!this.auth.isMaster) {
+      this.query = {
+        $and: [
+          this.query,
+          {
+            user: {
+              __type: 'Pointer',
+              className: '_User',
+              objectId: this.auth.user.id,
+            },
+          },
+        ],
+      };
+    }
   }
 
   if (!this.query && !this.auth.isMaster) {
