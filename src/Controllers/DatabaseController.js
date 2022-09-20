@@ -1207,6 +1207,9 @@ class DatabaseController {
                 `Invalid field name: ${fieldName}.`
               );
             }
+            if (!schema.fields[fieldName.split('.')[0]] && fieldName !== 'score') {
+              delete sort[fieldName];
+            }
           });
           return (isMaster
             ? Promise.resolve()

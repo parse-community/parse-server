@@ -952,6 +952,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
   // recursive method to traverse down to the "leaf node" which is going to be the string.
   _convertToDate(value: any): any {
+    if (value instanceof Date) {
+      return value;
+    }
     if (typeof value === 'string') {
       return new Date(value);
     }

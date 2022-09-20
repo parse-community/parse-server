@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "5.3.0-alpha.21",
+  "version": "5.3.0-alpha.26",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -20,9 +20,9 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "@graphql-yoga/node": "2.6.0",
-    "@graphql-tools/utils": "8.10.0",
-    "@graphql-tools/merge": "8.3.3",
-    "@graphql-tools/schema": "9.0.1",
+    "@graphql-tools/utils": "8.10.1",
+    "@graphql-tools/merge": "8.3.4",
+    "@graphql-tools/schema": "9.0.2",
     "@parse/fs-files-adapter": "1.2.2",
     "@parse/push-adapter": "4.1.2",
     "bcryptjs": "2.4.3",
@@ -47,7 +47,7 @@
     "mustache": "4.2.0",
     "parse": "3.4.2",
     "pg-monitor": "1.4.1",
-    "pg-promise": "10.11.1",
+    "pg-promise": "10.12.0",
     "pluralize": "8.0.0",
     "redis": "3.1.2",
     "semver": "7.3.7",
