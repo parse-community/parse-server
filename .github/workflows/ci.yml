@@ -146,11 +146,6 @@ jobs:
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 16.14.2
-          - name: MongoDB 4.2, Standalone, MMAPv1
-            MONGODB_VERSION: 4.2.19
-            MONGODB_TOPOLOGY: standalone
-            MONGODB_STORAGE_ENGINE: mmapv1
-            NODE_VERSION: 16.14.2
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 4.4.13
