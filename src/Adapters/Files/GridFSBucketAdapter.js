@@ -234,11 +234,11 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
     let start = Math.min(fileStart || 0, fileEnd, fileLength);
     let end = Math.max(fileStart || 0, fileEnd) + 1 || fileLength;
-    end = Math.min(end, fileLength);
     if (isNaN(fileStart)) {
       start = fileLength - end + 1;
       end = fileLength;
     }
+    end = Math.min(end, fileLength);
     start = Math.max(start, 0);
 
     res.status(206);
