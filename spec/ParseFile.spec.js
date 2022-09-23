@@ -704,7 +704,7 @@ describe('Parse.File testing', () => {
         headers: headers,
         url: 'http://localhost:8378/1//files/file.txt ',
         body: repeat('argle bargle', 100),
-      });
+      })
       const b = response.data;
       const file = await request({
         url: b.url,
@@ -713,7 +713,7 @@ describe('Parse.File testing', () => {
           'X-Parse-Application-Id': 'test',
           Range: 'bytes=15000-18000',
         },
-      });
+      }).catch (e => e);
       expect(file.headers['content-range']).toBe('bytes 1212-1212/1212');
     });
 
@@ -1079,7 +1079,7 @@ describe('Parse.File testing', () => {
           'X-Parse-REST-API-Key': 'rest',
           Range: 'bytes=13-240',
         },
-      });
+      }).catch(e => e);
       expect(response.status).toBe(404);
       const body = response.text;
       expect(body).toEqual('File not found.');
