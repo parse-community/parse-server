@@ -477,7 +477,7 @@ describe('server', () => {
     });
   });
 
-  it('fails if maxLimit is smaller than the default limit', done => {
+  it('fails if maxLimit is smaller than the default limit', async () => {
     await expectAsync(reconfigureServer({ defaultLimit: 101, maxLimit: 100 })).toBeRejectedWith('Max limit must be greater than the default limit.');
   });
 
