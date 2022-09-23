@@ -145,13 +145,14 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 
 #### PostgreSQL
 
-Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
+Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support about 2 years before the official end-of-life date.
 
-| Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
-|-------------|-----------------|---------------|--------------------------|------------|
-| Postgres 12 | 3.1, 3.2, 3.3   | November 2024 | April 2023               | ✅ Yes      |
-| Postgres 13 | 3.3             | November 2025 | April 2024               | ✅ Yes      |
-| Postgres 14 | 3.3             | November 2026 | April 2025               | ✅ Yes      |
+| Version     | PostGIS Version | End-of-Life   | Parse Server Support | Compatible |
+|-------------|-----------------|---------------|----------------------|------------|
+| Postgres 11 | 3.0, 3.1, 3.2, 3.3 | November 2023 | <= 5.x (2022)        | ✅ Yes      |
+| Postgres 12 | 3.3             | November 2024 | <= 5.x (2022)        | ✅ Yes      |
+| Postgres 13 | 3.3             | November 2025 | <= 6.x (2023)        | ✅ Yes      |
+| Postgres 14 | 3.3             | November 2026 | <= 7.x (2024)        | ✅ Yes      |
 
 ### Locally
 
