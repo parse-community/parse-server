@@ -28,7 +28,7 @@
  * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length
  * @property {String} collectionPrefix A collection prefix for the classes
  * @property {CustomPagesOptions} customPages custom pages for password validation and reset
- * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database
+ * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database; any options that are not explicitly described here are passed directly to the database client.
  * @property {DatabaseOptions} databaseOptions Options to pass to the database client
  * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postgres.
  * @property {Number} defaultLimit Default limit for the size of results set on queries, defaults to `100`.
