@@ -872,7 +872,6 @@ describe('Parse.File testing', () => {
         url: 'http://localhost:8378/1//files/file.txt ',
         body: 'a',
       }).catch(e => e);
-      console.log(response.text);
       const b = response.data;
       const file = await request({
         url: b.url,
@@ -882,7 +881,6 @@ describe('Parse.File testing', () => {
           Range: 'bytes=-2000',
         },
       }).catch(e => e);
-      console.log(response);
       expect(file.headers['content-range']).toBe('bytes 0-1/1');
     });
 
