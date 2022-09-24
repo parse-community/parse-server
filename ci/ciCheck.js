@@ -30,14 +30,12 @@ async function checkMongoDbVersions() {
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
     ciVersionKey: 'MONGODB_VERSION',
     releasedVersions,
-    latestComponent: CiVersionCheck.versionComponents.path,
+    latestComponent: CiVersionCheck.versionComponents.minor,
     ignoreReleasedVersions: [
       '<4.0.0', // Versions reached their MongoDB end-of-life support date
       '~4.1.0', // Development release according to MongoDB support
       '~4.3.0', // Development release according to MongoDB support
       '~4.7.0', // Development release according to MongoDB support
-
-      '4.0.26', // Temporarily disabled because not yet available for download via mongodb-runner
     ],
   }).check();
 }
