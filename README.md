@@ -136,24 +136,24 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. We consider the end-of-life date of a MongoDB "rapid release" to be the same as its major version release.
 
-| Version     | Latest Version | End-of-Life   | Compatible    |
-|-------------|----------------|---------------|---------------|
+| Version     | Latest Version | End-of-Life   | Compatible   |
+|-------------|----------------|---------------|--------------|
 | MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes        |
 | MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes        |
 | MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes        |
-| MongoDB 5.2 | 5.2.1          | April 2022    | ✅ Yes        |
+| MongoDB 5.2 | 5.2.1          | October 2024  | ✅ Yes        |
 | MongoDB 6.0 | -              | July 2025     | ❌ Not tested |
 
 #### PostgreSQL
 
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support about 2 years before the official end-of-life date.
 
-| Version     | PostGIS Version | End-of-Life   | Parse Server Support | Compatible |
-|-------------|-----------------|---------------|----------------------|------------|
+| Version     | PostGIS Version    | End-of-Life   | Parse Server Support | Compatible |
+|-------------|--------------------|---------------|----------------------|------------|
 | Postgres 11 | 3.0, 3.1, 3.2, 3.3 | November 2023 | <= 5.x (2022)        | ✅ Yes      |
-| Postgres 12 | 3.3             | November 2024 | <= 5.x (2022)        | ✅ Yes      |
-| Postgres 13 | 3.3             | November 2025 | <= 6.x (2023)        | ✅ Yes      |
-| Postgres 14 | 3.3             | November 2026 | <= 7.x (2024)        | ✅ Yes      |
+| Postgres 12 | 3.3                | November 2024 | <= 5.x (2022)        | ✅ Yes      |
+| Postgres 13 | 3.3                | November 2025 | <= 6.x (2023)        | ✅ Yes      |
+| Postgres 14 | 3.3                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
 
 ### Locally
 
