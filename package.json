@@ -118,8 +118,6 @@
     "test:mongodb:4.0.28": "npm run test:mongodb --dbversion=4.0.28",
     "test:mongodb:4.2.19": "npm run test:mongodb --dbversion=4.2.19",
     "test:mongodb:4.4.13": "npm run test:mongodb --dbversion=4.4.13",
-    "test:mongodb:5.0.6": "npm run test:mongodb --dbversion=5.0.6",
-    "test:mongodb:5.1.1": "npm run test:mongodb --dbversion=5.1.1",
     "test:mongodb:5.2.1": "npm run test:mongodb --dbversion=5.2.1",
     "posttest:mongodb": "mongodb-runner stop",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.2.1} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} mongodb-runner start",
