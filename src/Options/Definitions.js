@@ -157,7 +157,7 @@ module.exports.ParseServerOptions = {
   },
   defaultLimit: {
     env: 'PARSE_SERVER_DEFAULT_LIMIT',
-    help: 'Default limit for the size of results set on queries, defaults to `100`.',
+    help: 'Default value for limit option on queries, defaults to `100`.',
     action: parsers.numberParser('defaultLimit'),
     default: 100,
   },
