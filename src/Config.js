@@ -112,7 +112,7 @@ export class Config {
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateMasterKeyIps(masterKeyIps);
     this.validateDefaultLimit(defaultLimit);
-    this.validateMaxLimit(maxLimit, defaultLimit);
+    this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
@@ -461,12 +461,9 @@ export class Config {
     }
   }
 
-  static validateMaxLimit(maxLimit, defaultLimit) {
+  static validateMaxLimit(maxLimit) {
     if (maxLimit <= 0) {
       throw 'Max limit must be a value greater than 0.';
-    }
-    if (maxLimit < defaultLimit) {
-      throw 'Max limit must be greater than the default limit.';
     }
   }
 

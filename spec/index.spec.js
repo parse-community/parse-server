@@ -463,11 +463,15 @@ describe('server', () => {
   });
 
   it('fails if default limit is negative', async () => {
-    await expectAsync(reconfigureServer({ defaultLimit: -1 })).toBeRejectedWith('Default limit must be a value greater than 0.');
+    await expectAsync(reconfigureServer({ defaultLimit: -1 })).toBeRejectedWith(
+      'Default limit must be a value greater than 0.'
+    );
   });
 
   it('fails if default limit is zero', async () => {
-    await expectAsync(reconfigureServer({ defaultLimit: 0 })).toBeRejectedWith('Default limit must be a value greater than 0.');
+    await expectAsync(reconfigureServer({ defaultLimit: 0 })).toBeRejectedWith(
+      'Default limit must be a value greater than 0.'
+    );
   });
 
   it('fails if maxLimit is negative', done => {
@@ -475,10 +479,6 @@ describe('server', () => {
       expect(error).toEqual('Max limit must be a value greater than 0.');
       done();
     });
-  });
-
-  it('fails if maxLimit is smaller than the default limit', async () => {
-    await expectAsync(reconfigureServer({ defaultLimit: 101, maxLimit: 100 })).toBeRejectedWith('Max limit must be greater than the default limit.');
   });
 
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
