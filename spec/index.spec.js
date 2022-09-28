@@ -468,6 +468,14 @@ describe('server', () => {
     );
   });
 
+  it('fails if default limit is wrong type', async () => {
+    for (const value of ["invalid", {}, [], true]) {
+      await expectAsync(reconfigureServer({ defaultLimit: value})).toBeRejectedWith(
+        'Default limit must be a number.'
+      );
+    }
+  });
+
   it('fails if default limit is zero', async () => {
     await expectAsync(reconfigureServer({ defaultLimit: 0 })).toBeRejectedWith(
       'Default limit must be a value greater than 0.'

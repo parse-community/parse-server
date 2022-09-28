@@ -315,9 +315,9 @@ describe('Parse.Query testing', () => {
   });
 
   it('query without limit respects default limit', async () => {
+    await reconfigureServer({ defaultLimit: 1 });
     const obj1 = new TestObject({ foo: 'baz' });
     const obj2 = new TestObject({ foo: 'qux' });
-    await reconfigureServer({ defaultLimit: 1 });
     await Parse.Object.saveAll([obj1, obj2]);
     const query = new Parse.Query(TestObject);
     const result = await query.find();
@@ -335,9 +335,9 @@ describe('Parse.Query testing', () => {
   });
 
   it('query with limit overrides default limit', async () => {
+    await reconfigureServer({ defaultLimit: 2 });
     const obj1 = new TestObject({ foo: 'baz' });
     const obj2 = new TestObject({ foo: 'qux' });
-    await reconfigureServer({ defaultLimit: 2 });
     await Parse.Object.saveAll([obj1, obj2]);
     const query = new Parse.Query(TestObject);
     query.limit(1);
@@ -346,9 +346,9 @@ describe('Parse.Query testing', () => {
   });
 
   it('query with limit equal to maxlimit', async () => {
+    await reconfigureServer({ maxLimit: 1 });
     const obj1 = new TestObject({ foo: 'baz' });
     const obj2 = new TestObject({ foo: 'qux' });
-    await reconfigureServer({ maxLimit: 1 });
     await Parse.Object.saveAll([obj1, obj2]);
     const query = new Parse.Query(TestObject);
     query.limit(1);
@@ -357,9 +357,9 @@ describe('Parse.Query testing', () => {
   });
 
   it('query with limit exceeding maxlimit', async () => {
+    await reconfigureServer({ maxLimit: 1 });
     const obj1 = new TestObject({ foo: 'baz' });
     const obj2 = new TestObject({ foo: 'qux' });
-    await reconfigureServer({ maxLimit: 1 });
     await Parse.Object.saveAll([obj1, obj2]);
     const query = new Parse.Query(TestObject);
     query.limit(2);
