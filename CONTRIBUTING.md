@@ -111,7 +111,7 @@ In a large pull request, it can be a significant effort to bring it over the fin
 
 If you are out of resources stay calm, explain your personal constraints (expertise or time) and ask for help. Wasting time by complaining about the amount of review comments will neither use your own time in a meaningful way, nor the time of others who read your complaint.
 
-**❗️ Always be mindful that the reviewers' efforts are an integral part of code contribution. Their review is as important as your written code. Keep in mind that their review time is a valuable as your coding time.**
+**❗️ Always be mindful that the reviewers' efforts are an integral part of code contribution. Their review is as important as your written code and their review time is a valuable as your coding time.**
 
 ### Merge Readiness
 
