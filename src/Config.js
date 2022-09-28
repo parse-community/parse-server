@@ -457,7 +457,7 @@ export class Config {
   }
 
   static validateDefaultLimit(defaultLimit) {
-    if (!defaultLimit) {
+    if (defaultLimit == null) {
       defaultLimit = ParseServerOptions.defaultLimit.default
     }
     if (typeof defaultLimit !== 'number') {
