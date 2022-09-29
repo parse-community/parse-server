@@ -125,7 +125,6 @@ const defaultConfiguration = {
     },
     shortLivedAuth: mockShortLivedAuth(),
   },
-  rateLimit: [],
 };
 
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
