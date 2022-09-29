@@ -92,7 +92,7 @@ export interface ParseServerOptions {
   /* Options to pass to the database client
   :ENV: PARSE_SERVER_DATABASE_OPTIONS */
   databaseOptions: ?DatabaseOptions;
-  /* Adapter module for the database */
+  /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
   cloud: ?string;

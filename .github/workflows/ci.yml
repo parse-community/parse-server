@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [ release, alpha, beta ]
 env:
-  NODE_VERSION: 16.14.2
+  NODE_VERSION: 18.1.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-code-analysis:
@@ -121,47 +121,37 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MongoDB 5.2, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 5.2.1
-            MONGODB_TOPOLOGY: replicaset
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.19.1
-          - name: MongoDB 5.1, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 5.1.1
-            MONGODB_TOPOLOGY: replicaset
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 14.19.1
-          - name: MongoDB 5.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 5.0.6
-            MONGODB_TOPOLOGY: replicaset
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.14.2
-          - name: MongoDB 4.4, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: replicaset
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.14.2
-          - name: MongoDB 4.2, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.2.19
-            MONGODB_TOPOLOGY: replicaset
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.14.2
-          - name: MongoDB 4.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.28
-            MONGODB_TOPOLOGY: replicaset
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.14.2
           - name: MongoDB 4.0, Standalone, MMAPv1
             MONGODB_VERSION: 4.0.28
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
-            NODE_VERSION: 16.14.2
+            NODE_VERSION: 18.1.0
+          - name: MongoDB 4.0, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.0.28
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 18.1.0
+          - name: MongoDB 4.2, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.2.19
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 18.1.0
+          - name: MongoDB 4.4, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 18.1.0
+          - name: MongoDB 5.3, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 5.3.2
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 18.1.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 16.14.2
+            NODE_VERSION: 18.1.0
           - name: Node 12
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
@@ -172,16 +162,16 @@ jobs:
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.19.1
+          - name: Node 16
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 16.14.2
           - name: Node 17
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 17.9.0
-          - name: Node 18
-            MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: standalone
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 18.1.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -225,22 +215,25 @@ jobs:
         include:
           - name: PostgreSQL 11, PostGIS 3.0
             POSTGRES_IMAGE: postgis/postgis:11-3.0
-            NODE_VERSION: 16.14.2
+            NODE_VERSION: 18.1.0
           - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
-            NODE_VERSION: 16.14.2
+            NODE_VERSION: 18.1.0
           - name: PostgreSQL 11, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:11-3.2
-            NODE_VERSION: 16.14.2
-          - name: PostgreSQL 12, PostGIS 3.2
-            POSTGRES_IMAGE: postgis/postgis:12-3.2
-            NODE_VERSION: 16.14.2
-          - name: PostgreSQL 13, PostGIS 3.2
-            POSTGRES_IMAGE: postgis/postgis:13-3.2
-            NODE_VERSION: 16.14.2
-          - name: PostgreSQL 14, PostGIS 3.2
-            POSTGRES_IMAGE: postgis/postgis:14-3.2
-            NODE_VERSION: 16.14.2
+            NODE_VERSION: 18.1.0
+          - name: PostgreSQL 11, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:11-3.3
+            NODE_VERSION: 18.1.0
+          - name: PostgreSQL 12, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:12-3.3
+            NODE_VERSION: 18.1.0
+          - name: PostgreSQL 13, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:13-3.3
+            NODE_VERSION: 18.1.0
+          - name: PostgreSQL 14, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:14-3.3
+            NODE_VERSION: 18.1.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
