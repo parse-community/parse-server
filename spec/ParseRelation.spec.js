@@ -446,10 +446,6 @@ describe('Parse.Relation testing', () => {
     const query = Parse.Query.or(query1, query2);
     query.equalTo('toChilds', childObjects[2]);
 
-    // const query4 = new Parse.Query('ChildObject');
-    // query4.equalTo('toChilds', childObjects[2]);
-    // await query4.find();
-
     const list = await query.find();
     const objectIds = list.map(item => item.id);
     expect(objectIds.indexOf(parent.id)).not.toBe(-1);
