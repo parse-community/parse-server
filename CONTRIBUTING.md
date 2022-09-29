@@ -123,7 +123,7 @@ A feature may work for your own use case or in your own environment, but that do
 
 > *The reviewer has never worked on the issue and was never part of any previous discussion, why would I care about their opinion?*
 
-It's contrary to an open, collaborative environment to expect others to be involved in an issue or discussion since its beginning. Such a mindset would close out any new views from other people, which are important for a differentiated view.
+It's contrary to an open, collaborative environment to expect others to be involved in an issue or discussion since its beginning. Such a mindset would close out any new views, which are important for a differentiated discussion.
 
 > *The reviewer doesn't have any expertise in that matter, why would I care about their opinion?*
 
