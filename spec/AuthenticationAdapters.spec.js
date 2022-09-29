@@ -1705,6 +1705,7 @@ describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
   const fs = require('fs');
   const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+  const testCert2 = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
 
   it('can load adapter', async () => {
     const options = {
@@ -1756,6 +1757,7 @@ describe('Apple Game Center Auth adapter', () => {
 
   it('validateAuthData invalid signature id', async () => {
     gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-6.cer'] = testCert2;
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       {}
