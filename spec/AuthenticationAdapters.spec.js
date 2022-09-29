@@ -1867,7 +1867,7 @@ describe('Apple Game Center Auth adapter', () => {
     );
 
     const duration = new Date().getTime() - previous.getTime();
-    expect(duration).toEqual(0);
+    expect(duration <= 1).toBe(true);
   });
 
   it('adapter should throw', async () => {
