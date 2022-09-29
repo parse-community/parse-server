@@ -926,12 +926,12 @@ class DatabaseController {
   // Modifies query so that it no longer has $in on relation fields, or
   // equal-to-pointer constraints on relation fields.
   // Returns a promise that resolves when query is mutated
-  reduceInRelation(className: string, query: any, schema: any): Promise<any> {
+  async reduceInRelation(className: string, query: any, schema: any): Promise<any> {
     // Search for an in-relation or equal-to-relation
     // Make it sequential for now, not sure of paralleization side effects
     if (query['$or']) {
       const ors = query['$or'];
-      return Promise.all(
+      await Promise.all(
         ors.map((aQuery, index) => {
           return this.reduceInRelation(className, aQuery, schema).then(aQuery => {
             query['$or'][index] = aQuery;
@@ -943,7 +943,7 @@ class DatabaseController {
     }
     if (query['$and']) {
       const ands = query['$and'];
-      return Promise.all(
+      await Promise.all(
         ands.map((aQuery, index) => {
           return this.reduceInRelation(className, aQuery, schema).then(aQuery => {
             query['$and'][index] = aQuery;
@@ -955,6 +955,9 @@ class DatabaseController {
     }
 
     const promises = Object.keys(query).map(key => {
+      if (key === '$and' || key === '$or') {
+        return;
+      }
       const t = schema.getExpectedType(className, key);
       if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
