@@ -155,6 +155,12 @@ module.exports.ParseServerOptions = {
     required: true,
     default: 'mongodb://localhost:27017/parse',
   },
+  defaultLimit: {
+    env: 'PARSE_SERVER_DEFAULT_LIMIT',
+    help: 'Default value for limit option on queries, defaults to `100`.',
+    action: parsers.numberParser('defaultLimit'),
+    default: 100,
+  },
   directAccess: {
     env: 'PARSE_SERVER_DIRECT_ACCESS',
     help:
