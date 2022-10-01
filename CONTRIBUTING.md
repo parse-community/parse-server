@@ -101,6 +101,8 @@ Most importantly, with every contribution you improve your skills so that future
 
 A reviewer is already helping you to make a code contribution through their review. A reviewer *may* even help you to write code by actually writing it for you, but is not obliged to do so.
 
+GitHub allows reviewers to suggest and write code changes as part of the review feedback. These code suggestions are likely to contain mistakes due to the lack of code syntax checks when writing code directly on GitHub. You should therefore always review these suggestions before accepting them, ideally in an IDE. If you merge a code suggestion and the CI then fails, take another look at the code change before asking the reviewer for help.
+
 ### Review Feedback
 
 > *It takes too much effort to incorporate the review feedback, why why can't you just merge my pull request?*
