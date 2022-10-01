@@ -111,6 +111,8 @@ In a large pull request, it can be a significant effort to bring it over the fin
 
 If you are out of resources stay calm, explain your personal constraints (expertise or time) and ask for help. Wasting time by complaining about the amount of review comments will neither use your own time in a meaningful way, nor the time of others who read your complaint.
 
+This is a collaborative enviroment in which everyone works on a common goal - to get a pull request ready for merging. Reviewers are working *with* you to get your pull request ready, *not against you*.
+
 **❗️ Always be mindful that the reviewers' efforts are an integral part of code contribution. Their review is as important as your written code and their review time is a valuable as your coding time.**
 
 ### Merge Readiness
@@ -127,7 +129,7 @@ It's contrary to an open, collaborative environment to expect others to be invol
 
 > *The reviewer doesn't have any expertise in that matter, why would I care about their opinion?*
 
-Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you are a reviewer who became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the PMC.
+Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the Parse Platform PMC.
 
 ## Environment Setup
 
