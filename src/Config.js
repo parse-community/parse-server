@@ -12,7 +12,7 @@ import {
   PagesOptions,
   SecurityOptions,
   SchemaOptions,
-  ParseServerOptions
+  ParseServerOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
@@ -458,7 +458,7 @@ export class Config {
 
   static validateDefaultLimit(defaultLimit) {
     if (defaultLimit == null) {
-      defaultLimit = ParseServerOptions.defaultLimit.default
+      defaultLimit = ParseServerOptions.defaultLimit.default;
     }
     if (typeof defaultLimit !== 'number') {
       throw 'Default limit must be a number.';
