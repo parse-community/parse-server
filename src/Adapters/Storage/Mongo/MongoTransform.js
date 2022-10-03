@@ -1014,11 +1014,7 @@ function mapValues(object, iterator) {
   const result = {};
   for (const key in object) {
     result[key] = iterator(object[key]);
-    if (
-      result[key] &&
-      JSON.stringify(result[key]).includes('__type') &&
-      (Array.isArray(result[key]) || Object.prototype.toString.call(result[key]) === '[object Object]')
-    ) {
+    if (result[key] && JSON.stringify(result[key]).includes(`"__type"`)) {
       result[key] = mapValues(object[key], iterator);
     }
   }
