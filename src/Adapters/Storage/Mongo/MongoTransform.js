@@ -1012,12 +1012,12 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
 }
 function mapValues(object, iterator) {
   const result = {};
-  for (const key in object) {
+  Object.keys(object).forEach(key => {
     result[key] = iterator(object[key]);
     if (result[key] && JSON.stringify(result[key]).includes(`"__type"`)) {
       result[key] = mapValues(object[key], iterator);
     }
-  }
+  });
   return result;
 }
 
