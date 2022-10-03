@@ -1012,9 +1012,15 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
 }
 function mapValues(object, iterator) {
   const result = {};
-  Object.keys(object).forEach(key => {
+  for (const key in object) {
     result[key] = iterator(object[key]);
-  });
+    if (result[key] instanceof Date) {
+      continue;
+    }
+    if (Array.isArray(result[key]) || Object.prototype.toString.call(result[key]) === '[object Object]') {
+      result[key] = mapValues(object[key], iterator);
+    }
+  }
   return result;
 }
 
