@@ -1017,7 +1017,8 @@ function mapValues(object, iterator) {
     if (result[key] instanceof Date) {
       continue;
     }
-    if (Array.isArray(result[key]) || Object.prototype.toString.call(result[key]) === '[object Object]') {
+    const encodeArray = Array.isArray(result[key]) ? result[key].some(row => Object.prototype.toString.call(row) === '[object Object]') : false;
+    if (encodeArray || Object.prototype.toString.call(result[key]) === '[object Object]') {
       result[key] = mapValues(object[key], iterator);
     }
   }
