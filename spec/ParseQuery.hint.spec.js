@@ -409,6 +409,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
   });
 
   it_only_mongodb_version('>=5.2')('query aggregate with hint (rest)', async () => {
+    try {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
@@ -439,5 +440,9 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.stage).toBe('IXSCAN');
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.indexName).toBe('_id_');
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
   });
 });
