@@ -410,6 +410,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
 
   fit_only_mongodb_version('>=5.2')('query aggregate with hint (rest)', async () => {
     try {
+      await reconfigureServer({silent: false});
     const object = new TestObject({ foo: 'bar' });
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
