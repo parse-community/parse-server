@@ -440,7 +440,7 @@ class DatabaseController {
     object: any,
     query: any,
     runOptions: QueryOptions,
-    master: Boolean
+    master: boolean
   ): Promise<boolean> {
     let schema;
     const acl = runOptions.acl;

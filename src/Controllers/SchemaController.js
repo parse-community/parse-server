@@ -1072,7 +1072,7 @@ export default class SchemaController {
     fieldName: string,
     type: string | SchemaField,
     isValidation?: boolean,
-    master: boolean
+    master?: boolean,
   ) {
     if (fieldName.indexOf('.') > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
