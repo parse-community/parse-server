@@ -20,8 +20,6 @@ jobs:
       matrix:
         language: [ 'javascript' ]
     steps:
-    - name: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}
-      run: echo Hello world
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Initialize CodeQL
@@ -283,5 +281,5 @@ jobs:
           CI: true
       - run: bash <(curl -s https://codecov.io/bash)
 concurrency:
-  group: ${{ github.head_ref || github.ref_name }}
+  group: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
