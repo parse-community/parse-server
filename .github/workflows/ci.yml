@@ -276,7 +276,7 @@ jobs:
       - run: |
           bash scripts/before_script_postgres_conf.sh
           bash scripts/before_script_postgres.sh
-      - name: Run Tests
+        name: Run Tests
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 60
