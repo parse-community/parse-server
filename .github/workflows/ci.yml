@@ -276,12 +276,12 @@ jobs:
       - run: |
           bash scripts/before_script_postgres_conf.sh
           bash scripts/before_script_postgres.sh
-        name: Run Tests
+      - name: Run Tests
         uses: nick-fields/retry@v2
+        env:
+          CI: true
         with:
           timeout_minutes: 60
           max_attempts: 3
-          env:
-            CI: true
           command: npm run coverage
       - run: bash <(curl -s https://codecov.io/bash)
