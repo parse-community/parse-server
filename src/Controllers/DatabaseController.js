@@ -194,6 +194,7 @@ const filterSensitiveData = (
     }
   }
 
+  const isUserClass = className === '_User';
   if (isUserClass) {
     object.password = object._hashed_password;
     delete object._hashed_password;
@@ -203,8 +204,6 @@ const filterSensitiveData = (
   if (isMaster) {
     return object;
   }
-
-  const isUserClass = className === '_User';
 
   /* special treat for the user class: don't filter protectedFields if currently loggedin user is
   the retrieved user */
@@ -440,7 +439,8 @@ class DatabaseController {
     className: string,
     object: any,
     query: any,
-    runOptions: QueryOptions
+    runOptions: QueryOptions,
+    master: Boolean
   ): Promise<boolean> {
     let schema;
     const acl = runOptions.acl;
@@ -455,7 +455,7 @@ class DatabaseController {
         return this.canAddField(schema, className, object, aclGroup, runOptions);
       })
       .then(() => {
-        return schema.validateObject(className, object, query);
+        return schema.validateObject(className, object, query, master);
       });
   }
 

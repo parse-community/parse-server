@@ -3448,40 +3448,95 @@ describe('Parse.User testing', () => {
       });
   });
 
-  it('should not allow updates to hidden fields', done => {
+  fit('should not allow updates to hidden fields', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
-
     const user = new Parse.User();
     user.set({
       username: 'hello',
       password: 'world',
       email: 'test@email.com',
     });
-
-    reconfigureServer({
+    await reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
-    })
-      .then(() => {
-        return user.signUp();
-      })
-      .then(() => {
-        return Parse.User.current().set('_email_verify_token', 'bad').save();
-      })
-      .then(() => {
-        fail('Should not be able to update email verification token');
-        done();
-      })
-      .catch(err => {
-        expect(err).toBeDefined();
-        done();
-      });
+    });
+    await user.signUp();
+    user.set('_email_verify_token', 'bad', { ignoreValidation: true });
+    await expectAsync(user.save()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid field name: _email_verify_token.')
+    );
+  });
+
+  fit('should allow updates to fields with masterKey', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve(),
+    };
+    const user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world',
+      email: 'test@email.com',
+    });
+    await reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailVerifyTokenValidityDuration: 5,
+      accountLockout: {
+        duration: 1,
+        threshold: 1,
+      },
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+      silent: false,
+    });
+    await user.signUp();
+    for (let i = 0; i < 2; i++) {
+      try {
+        await Parse.User.logIn(user.getEmail(), 'abc');
+      } catch (e) {
+        /* */
+      }
+    }
+    await Parse.User.requestPasswordReset(user.getEmail());
+    const userMaster = await new Parse.Query(Parse.User).first({ useMasterKey: true });
+    expect(Object.keys(userMaster.toJSON()).sort()).toEqual(
+      [
+        'ACL',
+        '_account_lockout_expires_at',
+        '_email_verify_token',
+        '_email_verify_token_expires_at',
+        '_failed_login_count',
+        '_perishable_token',
+        'createdAt',
+        'email',
+        'emailVerified',
+        'objectId',
+        'updatedAt',
+        'username',
+      ].sort()
+    );
+    const toSet = {
+      _account_lockout_expires_at: new Date().toISOString(),
+      _email_verify_token: 'abc',
+      _email_verify_token_expires_at: new Date().toISOString(),
+      _failed_login_count: 0,
+      _perishable_token_expires_at: new Date().toISOString(),
+      _perishable_token: 'abc',
+    };
+    userMaster.set(toSet, { ignoreValidation: true });
+    await userMaster.save(null, { useMasterKey: true });
+    await userMaster.fetch({ useMasterKey: true });
+    for (const key in toSet) {
+      expect(userMaster.get(key)).toEqual(toSet[key]);
+    }
   });
 
   it('should revoke sessions when setting paswword with masterKey (#3289)', done => {

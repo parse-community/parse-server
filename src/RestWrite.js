@@ -211,7 +211,8 @@ RestWrite.prototype.validateSchema = function () {
     this.className,
     this.data,
     this.query,
-    this.runOptions
+    this.runOptions,
+    this.auth.isMaster
   );
 };
 
