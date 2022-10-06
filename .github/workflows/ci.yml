@@ -181,7 +181,7 @@ jobs:
         image: redis
         ports:
             - 6379:6379
-    env:      
+    env:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
@@ -276,7 +276,12 @@ jobs:
       - run: |
           bash scripts/before_script_postgres_conf.sh
           bash scripts/before_script_postgres.sh
-      - run: npm run coverage
-        env:
-          CI: true
+      - name: Run Tests
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 60
+          max_attempts: 3
+          env:
+            CI: true
+          command: npm run coverage
       - run: bash <(curl -s https://codecov.io/bash)
