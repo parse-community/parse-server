@@ -3448,7 +3448,7 @@ describe('Parse.User testing', () => {
       });
   });
 
-  fit('should not allow updates to hidden fields', async () => {
+  it('should not allow updates to hidden fields', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -3473,7 +3473,7 @@ describe('Parse.User testing', () => {
     );
   });
 
-  fit('should allow updates to fields with masterKey', async () => {
+  it('should allow updates to fields with masterKey', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
