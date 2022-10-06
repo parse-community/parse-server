@@ -20,6 +20,8 @@ jobs:
       matrix:
         language: [ 'javascript' ]
     steps:
+    - name: ${{ github.head_ref || github.ref_name }}
+      run: echo Hello world
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Initialize CodeQL
