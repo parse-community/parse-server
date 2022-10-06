@@ -194,6 +194,16 @@ const filterSensitiveData = (
     }
   }
 
+  if (isUserClass) {
+    object.password = object._hashed_password;
+    delete object._hashed_password;
+    delete object.sessionToken;
+  }
+
+  if (isMaster) {
+    return object;
+  }
+
   const isUserClass = className === '_User';
 
   /* special treat for the user class: don't filter protectedFields if currently loggedin user is
@@ -208,15 +218,6 @@ const filterSensitiveData = (
       perms.protectedFields.temporaryKeys.forEach(k => delete object[k]);
   }
 
-  if (isUserClass) {
-    object.password = object._hashed_password;
-    delete object._hashed_password;
-    delete object.sessionToken;
-  }
-
-  if (isMaster) {
-    return object;
-  }
   for (const key in object) {
     if (key.charAt(0) === '_') {
       delete object[key];
