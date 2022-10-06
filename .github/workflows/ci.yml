@@ -20,7 +20,7 @@ jobs:
       matrix:
         language: [ 'javascript' ]
     steps:
-    - name: ${{ github.head_ref || github.ref_name }}
+    - name: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}
       run: echo Hello world
     - name: Checkout repository
       uses: actions/checkout@v3
