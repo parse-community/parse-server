@@ -22,7 +22,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-    - name: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}-{{github.run-name}}
+    - name: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}-${{ github.run-name }}
       run: echo Hello world
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
@@ -283,5 +283,5 @@ jobs:
           CI: true
       - run: bash <(curl -s https://codecov.io/bash)
 concurrency:
-  group: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}-{{github.run-name}}
+  group: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}-${{ github.run-name }}
   cancel-in-progress: true
