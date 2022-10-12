@@ -1,3 +1,8 @@
+process.on('unhandledRejection', (error, p) => {
+  console.log('Unhandled Rejection at: Promise', p);
+  console.log('reason:', error);
+  console.log('stack: ', error.stack);
+});
 describe('rate limit', () => {
   it('can limit cloud functions', async () => {
     Parse.Cloud.define('test', () => 'Abc');
@@ -314,11 +319,6 @@ describe('rate limit', () => {
   });
 
   it('can validate rateLimit', async () => {
-    process.on('unhandledRejection', (error, p) => {
-      console.log('Unhandled Rejection at: Promise', p);
-      console.log('reason:', error);
-      console.log('stack: ', error.stack);
-    });
     await expectAsync(
       reconfigureServer({ rateLimit: 'a', requestTimeWindow: 1000, requestCount: 3 })
     ).toBeRejectedWith('rateLimit must be an array or object');
