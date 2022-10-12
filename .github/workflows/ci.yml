@@ -23,7 +23,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: ${{ github.event.pull_request.user.login || '' }}-${{ github.head_ref || github.ref_name }}-${{ github }}
-      run: echo github
+      run: echo ${{ github }}
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
