@@ -216,7 +216,6 @@ class ParseServer {
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' || directAccess) {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
     }
-    options.expressApp = api;
     return api;
   }
 
