@@ -9,6 +9,7 @@ import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
+import pathRegexp from 'path-to-regexp';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -183,8 +184,7 @@ export function handleParseHeaders(req, res, next) {
       installationId: info.installationId,
       isMaster: true,
     });
-    next();
-    return;
+    return handleRateLimit(req, res, next);
   }
 
   var isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
@@ -199,8 +199,7 @@ export function handleParseHeaders(req, res, next) {
       isMaster: true,
       isReadOnly: true,
     });
-    next();
-    return;
+    return handleRateLimit(req, res, next);
   }
 
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
@@ -228,8 +227,7 @@ export function handleParseHeaders(req, res, next) {
       isMaster: false,
       user: req.userFromJWT,
     });
-    next();
-    return;
+    return handleRateLimit(req, res, next);
   }
 
   if (!info.sessionToken) {
@@ -239,8 +237,31 @@ export function handleParseHeaders(req, res, next) {
       isMaster: false,
     });
   }
-  next();
+  handleRateLimit(req, res, next);
 }
+
+const handleRateLimit = async (req, res, next) => {
+  const rateLimits = req.config.rateLimits || [];
+  try {
+    await Promise.all(
+      rateLimits.map(async limit => {
+        const regExp = new RegExp(limit.path);
+        if (regExp.test(req.url)) {
+          await limit.handler(req, res, err => {
+            if (err) {
+              throw err;
+            }
+          });
+        }
+      })
+    );
+  } catch (error) {
+    res.status(429);
+    res.json({ code: Parse.Error.CONNECTION_FAILED, error });
+    return;
+  }
+  next();
+};
 
 export const handleParseSession = async (req, res, next) => {
   try {
@@ -425,34 +446,26 @@ export function promiseEnforceMasterKeyAccess(request) {
   return Promise.resolve();
 }
 
-export const addRateLimit = (route, id) => {
-  const config = Config.get(id);
-  const express = config.expressApp;
-  addLimitForRoute(express, route);
-};
-
-export const handleRateLimit = (api, rateLimit) => {
-  const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
-  for (const route of options) {
-    addLimitForRoute(api, route);
+export const addRateLimit = (route, config) => {
+  if (typeof config === 'string') {
+    config = Config.get(config);
   }
-};
-
-const addLimitForRoute = (api, route) => {
   for (const key in route) {
     if (!RateLimitOptions[key]) {
       throw `Invalid rate limit option "${key}"`;
     }
   }
-  api.use(
-    route.requestPath,
-    rateLimit({
+  if (!config.rateLimits) {
+    config.rateLimits = [];
+  }
+  config.rateLimits.push({
+    path: pathRegexp(route.requestPath),
+    handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
       message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
-        response.status(429);
-        response.json({ code: Parse.Error.CONNECTION_FAILED, error: options.message });
+        throw options.message;
       },
       skip: request => {
         if (request.config.ip === '127.0.0.1' && !route.includeInternalRequests) {
@@ -472,17 +485,9 @@ const addLimitForRoute = (api, route) => {
       keyGenerator: request => {
         return request.config.ip;
       },
-    })
-  );
-  const lastRouter = api._router.stack[api._router.stack.length - 1];
-  api._router.stack.pop();
-  for (let i = 0; i < api._router.stack.length; i++) {
-    const layer = api._router.stack[i];
-    if (layer.name === 'handleParseHeaders') {
-      api._router.stack.splice(i + 1, 0, lastRouter);
-      return;
-    }
-  }
+    }),
+  });
+  Config.put(config);
 };
 
 /**

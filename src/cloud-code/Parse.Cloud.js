@@ -75,13 +75,16 @@ function validateValidator(validator) {
   }
 }
 const getRoute = parseClass => {
-  return (
+  const route =
     {
       _User: 'users',
       _Session: 'sessions',
       '@File': 'files',
-    }[parseClass] || 'classes'
-  );
+    }[parseClass] || 'classes';
+  if (parseClass === '@File') {
+    return `/${route}/:id?*`;
+  }
+  return `/${route}/${parseClass}/:id?*`;
 };
 /** @namespace
  * @name Parse
@@ -184,7 +187,7 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
-        requestPath: `/${getRoute(parseClass)}/${parseClass}`,
+        requestPath: getRoute(className),
         requestMethods: ['POST', 'PUT'],
         ...validationHandler.rateLimit,
       },
@@ -230,7 +233,7 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
-        requestPath: `/${getRoute(parseClass)}/${parseClass}`,
+        requestPath: getRoute(className),
         requestMethods: 'DELETE',
         ...validationHandler.rateLimit,
       },
@@ -449,7 +452,7 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       {
-        requestPath: `/${getRoute(parseClass)}/${parseClass}`,
+        requestPath: getRoute(className),
         requestMethods: 'GET',
         ...validationHandler.rateLimit,
       },

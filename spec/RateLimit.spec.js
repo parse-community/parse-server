@@ -153,6 +153,23 @@ describe('rate limit', () => {
     );
   });
 
+  it('can use a validator for file', async () => {
+    Parse.Cloud.beforeSave(Parse.File, () => {}, {
+      rateLimit: {
+        requestTimeWindow: 10000,
+        requestCount: 1,
+        errorResponseMessage: 'Too many requests',
+        includeInternalRequests: true,
+      },
+    });
+    const file = new Parse.File('yolo.txt', [1, 2, 3], 'text/plain');
+    await file.save();
+    const file2 = new Parse.File('yolo.txt', [1, 2, 3], 'text/plain');
+    await expectAsync(file2.save()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+  });
+
   it('can set method to get', async () => {
     await reconfigureServer({
       rateLimit: [
@@ -176,6 +193,7 @@ describe('rate limit', () => {
   });
 
   it('can use a validator', async () => {
+    await reconfigureServer({ silent: false });
     Parse.Cloud.beforeFind('TestObject', () => {}, {
       rateLimit: {
         requestTimeWindow: 10000,
@@ -200,7 +218,7 @@ describe('rate limit', () => {
     await reconfigureServer({
       rateLimit: [
         {
-          requestPath: '/classes/Test',
+          requestPath: '/classes/Test/*',
           requestTimeWindow: 10000,
           requestCount: 1,
           requestMethods: 'DELETE',
@@ -297,7 +315,7 @@ describe('rate limit', () => {
 
   it('can validate rateLimit', async () => {
     process.on('unhandledRejection', (error, p) => {
-      console.log('Unhandled Rejection at: Promise', p,);
+      console.log('Unhandled Rejection at: Promise', p);
       console.log('reason:', error);
       console.log('stack: ', error.stack);
     });

@@ -183,7 +183,10 @@ class ParseServer {
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
-    middlewares.handleRateLimit(api, rateLimit);
+    const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
+    for (const route of routes) {
+      middlewares.addRateLimit(route, options);
+    }
     api.use(middlewares.handleParseSession);
 
     const appRouter = ParseServer.promiseRouter({ appId });

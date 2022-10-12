@@ -98,8 +98,8 @@
 /**
  * @interface RateLimitOptions
  * @property {String} errorResponseMessage The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
- * @property {Boolean} includeInternalRequests Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may allow to circumvent rate limiting and be vulnerable to a malicious attack. // Is this true? What exactly are "internal requests" here? Maybe we need to clarify more.
- * @property {Boolean} includeMasterKey Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may allow to circumvent rate limiting and be vulnerable to a malicious attack.
+ * @property {Boolean} includeInternalRequests Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to a malicious attack.
+ * @property {Boolean} includeMasterKey Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to a malicious attack.
  * @property {Number} requestCount The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied.
  * @property {String[]} requestMethods Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.
  * @property {String} requestPath The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html
