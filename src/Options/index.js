@@ -302,10 +302,10 @@ export interface RateLimitOptions {
   errorResponseMessage: ?string;
   /* Optional, the HTTP request methods to which the rate limit should be applied, default is all methods. */
   requestMethods: ?(string[]);
-  /* Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to a malicious attack.
+  /* Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.
   :DEFAULT: false */
   includeMasterKey: ?boolean;
-  /* Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to a malicious attack.
+  /* Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to attacks.
   :DEFAULT: false */
   includeInternalRequests: ?boolean;
 }
