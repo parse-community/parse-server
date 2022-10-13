@@ -2195,6 +2195,153 @@ describe('Parse.User testing', () => {
       );
   });
 
+  it('master key can bypass email verification for new users and changes to the email', done => {
+    const user = new Parse.User();
+
+    const emailAdapter = {
+      sendVerificationEmail: () => {
+        jfail('should not send email');
+      },
+      sendPasswordResetEmail: () => {
+        jfail('should not send email');
+        return Promise.resolve();
+      },
+      sendMail: () => {
+        jfail('should not send email');
+      },
+    };
+    const serverConfig = {
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+    };
+
+    reconfigureServer(serverConfig)
+      .then(() => {
+        user.setUsername('masterKeyBypassEmailVerification');
+        user.setPassword('expiringToken');
+        user.set('email', 'user@parse.com');
+        user.set('emailVerified', true);
+        return user.save(null, { useMasterKey: true });
+      })
+      .then(() => {
+        const config = Config.get('test');
+        return config.database
+          .find('_User', { username: 'masterKeyBypassEmailVerification' })
+          .then(results => {
+            return results[0];
+          });
+      })
+      .then(userFromDb => {
+        expect(typeof userFromDb).toBe('object');
+        expect(userFromDb['emailVerified']).toBe(true);
+        expect(userFromDb['email']).toBe('user@parse.com');
+        expect(user.getSessionToken()).toBeDefined();
+
+        // change the email
+        user.set('email', 'user2@parse.com');
+        user.set('emailVerified', true);
+        return new Promise(resolve => {
+          setTimeout(() => resolve(user.save(null, { useMasterKey: true })), 500);
+        });
+      })
+      .then(() => {
+        const config = Config.get('test');
+        return config.database
+          .find('_User', { username: 'masterKeyBypassEmailVerification' })
+          .then(results => {
+            return results[0];
+          });
+      })
+      .then(userAfterEmailReset => {
+        expect(typeof userAfterEmailReset).toBe('object');
+        expect(userAfterEmailReset['emailVerified']).toBe(true);
+        expect(userAfterEmailReset['email']).toBe('user2@parse.com');
+        done();
+      })
+      .catch(error => {
+        jfail(error);
+        done();
+      });
+  });
+
+  it('email verification happens even for signups/email changes by the master key', done => {
+    const user = new Parse.User();
+
+    let sendVerificationEmailCount = 0;
+    const emailAdapter = {
+      sendVerificationEmail: () => {
+        sendVerificationEmailCount += 1;
+      },
+      sendPasswordResetEmail: () => {
+        jfail('should only send verification email');
+        return Promise.resolve();
+      },
+      sendMail: () => {
+        jfail('should only send verification email');
+      },
+    };
+    const serverConfig = {
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+    };
+
+    reconfigureServer(serverConfig)
+      .then(() => {
+        user.setUsername('masterKeyBypassEmailVerification');
+        user.setPassword('expiringToken');
+        user.set('email', 'user@parse.com');
+        return user.save(null, { useMasterKey: true });
+      })
+      .then(() => {
+        const config = Config.get('test');
+        return config.database
+          .find('_User', { username: 'masterKeyBypassEmailVerification' })
+          .then(results => {
+            return results[0];
+          });
+      })
+      .then(userFromDb => {
+        expect(typeof userFromDb).toBe('object');
+        expect(sendVerificationEmailCount).toBe(1);
+        expect(userFromDb['emailVerified']).toBe(false);
+        expect(userFromDb['email']).toBe('user@parse.com');
+        expect(user.getSessionToken()).toBeUndefined();
+
+        // change the email
+        user.set('email', 'user2@parse.com');
+        return new Promise(resolve => {
+          setTimeout(() => resolve(user.save(null, { useMasterKey: true })), 500);
+        });
+      })
+      .then(() => {
+        const config = Config.get('test');
+        return config.database
+          .find('_User', { username: 'masterKeyBypassEmailVerification' })
+          .then(results => {
+            return results[0];
+          });
+      })
+      .then(userAfterEmailReset => {
+        expect(typeof userAfterEmailReset).toBe('object');
+        expect(sendVerificationEmailCount).toBe(2);
+        expect(userAfterEmailReset['emailVerified']).toBe(false);
+        expect(userAfterEmailReset['email']).toBe('user2@parse.com');
+        done();
+      })
+      .catch(error => {
+        jfail(error);
+        done();
+      });
+  });
+
   describe('case insensitive signup not allowed', () => {
     it('signup should fail with duplicate case insensitive username with basic setter', async () => {
       const user = new Parse.User();
@@ -3312,6 +3459,47 @@ describe('Parse.User testing', () => {
       })
       .catch(err => {
         expect(err.message).toBe("Clients aren't allowed to manually update email verification.");
+        done();
+      });
+  });
+
+  it('should not allow users to sign up with emailVerified set', done => {
+    const user = new Parse.User();
+
+    const emailAdapter = {
+      sendVerificationEmail: () => {
+        jfail('should not send email');
+      },
+      sendPasswordResetEmail: () => {
+        jfail('should not send email');
+      },
+      sendMail: () => {
+        jfail('should not send email');
+      },
+    };
+    const serverConfig = {
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+    };
+
+    reconfigureServer(serverConfig)
+      .then(() => {
+        user.setUsername('hello');
+        user.setPassword('world');
+        user.set('email', 'user@parse.com');
+        user.set('emailVerified', true);
+        return user.save();
+      })
+      .then(() => {
+        fail('Should not be able to sign up with emailVerified');
+        done();
+      })
+      .catch(error => {
+        expect(error.message).toBe("Clients aren't allowed to manually update email verification.");
         done();
       });
   });
