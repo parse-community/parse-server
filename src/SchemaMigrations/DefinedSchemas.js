@@ -99,6 +99,7 @@ export class DefinedSchemas {
       }
 
       await this.createDeleteSession();
+      // @flow-disable-next-line
       const schemaController = await this.config.database.loadSchema();
       this.allCloudSchemas = await schemaController.getAllClasses();
       clearTimeout(timeout);
