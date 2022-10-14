@@ -1,3 +1,10 @@
+## [5.2.8](https://github.com/parse-community/parse-server/compare/5.2.7...5.2.8) (2022-10-14)
+
+
+### Bug Fixes
+
+* server crashes when receiving file download request with invalid byte range; this fixes a security vulnerability that allows an attacker to impact the availability of the server instance; the fix improves parsing of the range parameter to properly handle invalid range requests ([GHSA-h423-w6qv-2wj3](https://github.com/parse-community/parse-server/security/advisories/GHSA-h423-w6qv-2wj3)) ([#8235](https://github.com/parse-community/parse-server/issues/8235)) ([066f296](https://github.com/parse-community/parse-server/commit/066f29673ab4030b6b5b90c0c0326f7d3fe7612a))
+
 ## [5.2.7](https://github.com/parse-community/parse-server/compare/5.2.6...5.2.7) (2022-09-20)
 
 
