@@ -266,5 +266,10 @@ export class FilesRouter {
 }
 
 function isFileStreamable(req, filesController) {
-  return req.get('Range') && typeof filesController.adapter.handleFileStream === 'function';
+  const range = (req.get('Range') || '/-/').split('-');
+  const start = Number(range[0]);
+  const end = Number(range[1]);
+  return (
+    (!isNaN(start) || !isNaN(end)) && typeof filesController.adapter.handleFileStream === 'function'
+  );
 }
