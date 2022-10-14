@@ -554,10 +554,7 @@ describe('server', () => {
       serverURL: 'http://localhost:12668/parse',
       silent: true,
       async cloud() {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        Parse.Cloud.beforeSave('Test', () => {
-          throw 'Cannot save.';
-        });
+        await new Promise(resolve => setTimeout(resolve, 2000));
       },
     });
     const express = require('express');
