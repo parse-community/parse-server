@@ -158,7 +158,7 @@ export function handleParseHeaders(req, res, next) {
 
   const clientIp = getClientIp(req);
   const config = Config.get(info.appId, mount);
-  if (config.state !== 'ok') {
+  if (config.state && config.state !== 'ok') {
     return invalidRequest(req, res);
   }
 

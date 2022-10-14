@@ -68,12 +68,12 @@ runner({
           cluster.fork();
         });
       } else {
-        ParseServer.start(options, () => {
+        ParseServer.start(options).then(() => {
           printSuccessMessage();
         });
       }
     } else {
-      ParseServer.start(options, () => {
+      ParseServer.start(options).then(() => {
         logOptions();
         console.log('');
         printSuccessMessage();
