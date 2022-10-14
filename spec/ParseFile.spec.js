@@ -692,7 +692,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  describe('Gridstore Range tests', () => {
+  describe_only_db('mongo')('Gridstore Range', () => {
     it('supports bytes range out of range', async () => {
       const headers = {
         'Content-Type': 'application/octet-stream',
