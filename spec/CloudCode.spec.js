@@ -60,7 +60,6 @@ describe('Cloud Code', () => {
       appId: 'test2',
       masterKey: 'abc',
       serverURL: 'http://localhost:12668/parse',
-      silent: true,
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         Parse.Cloud.beforeSave('Test', () => {
