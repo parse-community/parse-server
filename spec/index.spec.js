@@ -547,6 +547,31 @@ describe('server', () => {
     await new Promise(resolve => server.close(resolve));
   });
 
+  it('can get starting state', async () => {
+    const parseServer = new ParseServer.ParseServer({
+      appId: 'test2',
+      masterKey: 'abc',
+      serverURL: 'http://localhost:12668/parse',
+      silent: true,
+      async cloud() {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        Parse.Cloud.beforeSave('Test', () => {
+          throw 'Cannot save.';
+        });
+      },
+    });
+    const express = require('express');
+    const app = express();
+    app.use('/parse', parseServer);
+    const server = app.listen(12668);
+    parseServer.start();
+    const health = await request({
+      url: 'http://localhost:12668/parse/health',
+    }).then(res => res.data);
+    expect(health.status).toBe('starting');
+    await new Promise(resolve => server.close(resolve));
+  });
+
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');
 
