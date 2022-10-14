@@ -72,6 +72,7 @@ class ParseServer {
     Parse.serverURL = serverURL;
 
     const allControllers = controllers.getControllers(options);
+    options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     logging.setLogger(allControllers.loggerController);
   }
@@ -83,9 +84,12 @@ class ParseServer {
 
   async startApp() {
     try {
-      if (this.started) {
+      if (this.state === 'ok') {
         return this.app;
       }
+      this.state = 'starting';
+      this.config.state = 'starting';
+      Config.put(this.config);
       const { databaseController, hooksController, cloud, security, schema } = this.config;
       await databaseController.performInitialization();
       await hooksController.load();
@@ -109,8 +113,8 @@ class ParseServer {
       if (security && security.enableCheck && security.enableCheckLog) {
         new CheckRunner(security).run();
       }
-      this.started = true;
-      this.config.started = true;
+      this.state = 'ok';
+      this.config.state = 'ok';
       Config.put(this.config);
       return this.app;
     } catch (error) {
@@ -169,7 +173,7 @@ class ParseServer {
 
     api.use('/health', function (req, res) {
       res.json({
-        status: 'ok',
+        status: options.state,
       });
     });
 

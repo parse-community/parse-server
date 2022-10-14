@@ -540,6 +540,10 @@ describe('server', () => {
     await expectAsync(testObject.save()).toBeRejectedWith(
       new Parse.Error(undefined, 'unauthorized')
     );
+    const health = await request({
+      url: 'http://localhost:12701/parse/health',
+    }).then(res => res.data);
+    expect(health.status).toBe('initialized');
     await new Promise(resolve => server.close(resolve));
   });
 
