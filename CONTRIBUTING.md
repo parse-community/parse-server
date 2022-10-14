@@ -2,8 +2,14 @@
 
 ## Table of Contents <!-- omit in toc -->
 - [Contributing](#contributing)
+  - [Issue vs. Pull Request](#issue-vs-pull-request)
   - [Templates](#templates)
 - [Why Contributing?](#why-contributing)
+- [Contribution FAQs](#contribution-faqs)
+  - [Reviewer Role](#reviewer-role)
+  - [Review Feedback](#review-feedback)
+  - [Merge Readiness](#merge-readiness)
+  - [Review Validity](#review-validity)
 - [Environment Setup](#environment-setup)
   - [Recommended Tools](#recommended-tools)
   - [Setting up your local machine](#setting-up-your-local-machine)
@@ -86,6 +92,46 @@ Consider the benefits you get:
   You learn to better understand the inner workings of Parse Server, which will help you to write more efficient and resilient code for your own application.
 
 Most importantly, with every contribution you improve your skills so that future contributions take even less time and you get all the benefits above for free — easy choice, right?
+
+## Contribution FAQs
+
+### Reviewer Role
+
+> *Instead of writing review comments back-and-forth, why doesn't the reviewer just write the code themselves?*
+
+A reviewer is already helping you to make a code contribution through their review. A reviewer *may* even help you to write code by actually writing it for you, but is not obliged to do so.
+
+GitHub allows reviewers to suggest and write code changes as part of the review feedback. These code suggestions are likely to contain mistakes due to the lack of code syntax checks when writing code directly on GitHub. You should therefore always review these suggestions before accepting them, ideally in an IDE. If you merge a code suggestion and the CI then fails, take another look at the code change before asking the reviewer for help.
+
+### Review Feedback
+
+> *It takes too much effort to incorporate the review feedback, why why can't you just merge my pull request?*
+
+If you are a new contributor, it's naturally a learning experience for you and therefore takes longer. We welcome contributors of any experience levels and gladly support you in getting familiar with the code base and our quality standards and contribution requirements. In return we expect you to be open to and appreciative of the reviewers' feedback.
+
+In a large pull request, it can be a significant effort to bring it over the finish line. Luckily this is a collaborative environment and others are free to jump in to contribute to the pull request to share the effort. You can either give others access to your fork or they can open their own pull request based on your previous work.
+
+If you are out of resources stay calm, explain your personal constraints (expertise or time) and ask for help. Wasting time by complaining about the amount of review comments will neither use your own time in a meaningful way, nor the time of others who read your complaint.
+
+This is a collaborative enviroment in which everyone works on a common goal - to get a pull request ready for merging. Reviewers are working *with* you to get your pull request ready, *not against you*.
+
+**❗️ Always be mindful that the reviewers' efforts are an integral part of code contribution. Their review is as important as your written code and their review time is a valuable as your coding time.**
+
+### Merge Readiness
+
+> *The feature already works, why do you request more changes instead of just merging my pull request?*
+
+A feature may work for your own use case or in your own environment, but that doesn't necessarily mean that it's ready for merging. Aside from code quality and code style requirements, reviewers also review based on strategic and architectural considerations. It's often easy to just get a feature to work, but it needs to be also maintained in the future, robust therefore well tested and validated, intuitive for other developers to use, well documented, and not cause a forseeable breaking change in the near future.
+
+### Review Validity
+
+> *The reviewer has never worked on the issue and was never part of any previous discussion, why would I care about their opinion?*
+
+It's contrary to an open, collaborative environment to expect others to be involved in an issue or discussion since its beginning. Such a mindset would close out any new views, which are important for a differentiated discussion.
+
+> *The reviewer doesn't have any expertise in that matter, why would I care about their opinion?*
+
+Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the Parse Platform PMC.
 
 ## Environment Setup
 

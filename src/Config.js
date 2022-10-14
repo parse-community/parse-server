@@ -12,6 +12,7 @@ import {
   PagesOptions,
   SecurityOptions,
   SchemaOptions,
+  ParseServerOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
@@ -63,6 +64,7 @@ export class Config {
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
+    defaultLimit,
     maxLimit,
     emailVerifyTokenValidityDuration,
     accountLockout,
@@ -110,6 +112,7 @@ export class Config {
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateMasterKeyIps(masterKeyIps);
+    this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
@@ -450,6 +453,18 @@ export class Config {
       } else if (sessionLength <= 0) {
         throw 'Session length must be a value greater than 0.';
       }
+    }
+  }
+
+  static validateDefaultLimit(defaultLimit) {
+    if (defaultLimit == null) {
+      defaultLimit = ParseServerOptions.defaultLimit.default;
+    }
+    if (typeof defaultLimit !== 'number') {
+      throw 'Default limit must be a number.';
+    }
+    if (defaultLimit <= 0) {
+      throw 'Default limit must be a value greater than 0.';
     }
   }
 
