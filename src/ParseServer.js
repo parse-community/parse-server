@@ -64,64 +64,65 @@ class ParseServer {
     const {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
-      cloud,
-      security,
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
-      serverStartComplete,
-      schema,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
 
     const allControllers = controllers.getControllers(options);
-
-    const { loggerController, databaseController, hooksController } = allControllers;
     this.config = Config.put(Object.assign({}, options, allControllers));
+    logging.setLogger(allControllers.loggerController);
+  }
 
-    logging.setLogger(loggerController);
+  /**
+   * Starts the Parse Server to be served as an express. Resolves when parse-server is ready to accept external traffic.
+   * @returns {Promise<function>} express middleware
+   */
 
-    // Note: Tests will start to fail if any validation happens after this is called.
-    databaseController
-      .performInitialization()
-      .then(() => hooksController.load())
-      .then(async () => {
-        if (schema) {
-          await new DefinedSchemas(schema, this.config).execute();
-        }
-        if (serverStartComplete) {
-          serverStartComplete();
-        }
-      })
-      .catch(error => {
-        if (serverStartComplete) {
-          serverStartComplete(error);
-        } else {
-          console.error(error);
-          process.exit(1);
-        }
-      });
-
-    if (cloud) {
-      addParseCloud();
-      if (typeof cloud === 'function') {
-        cloud(Parse);
-      } else if (typeof cloud === 'string') {
-        require(path.resolve(process.cwd(), cloud));
-      } else {
-        throw "argument 'cloud' must either be a string or a function";
+  async startApp() {
+    try {
+      if (this.started) {
+        return this.app;
       }
-    }
-
-    if (security && security.enableCheck && security.enableCheckLog) {
-      new CheckRunner(options.security).run();
+      const { databaseController, hooksController, cloud, security, schema } = this.config;
+      await databaseController.performInitialization();
+      await hooksController.load();
+      if (schema) {
+        await new DefinedSchemas(schema, this.config).execute();
+      }
+      if (cloud) {
+        addParseCloud();
+        if (typeof cloud === 'function') {
+          await Promise.resolve(cloud(Parse));
+        } else if (typeof cloud === 'string') {
+          if (process.env.npm_package_type === 'module') {
+            await import(path.resolve(process.cwd(), cloud));
+          } else {
+            require(path.resolve(process.cwd(), cloud));
+          }
+        } else {
+          throw "argument 'cloud' must either be a string or a function";
+        }
+      }
+      if (security && security.enableCheck && security.enableCheckLog) {
+        new CheckRunner(security).run();
+      }
+      this.started = true;
+      this.config.started = true;
+      Config.put(this.config);
+      return this.app;
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   }
 
   get app() {
     if (!this._app) {
       this._app = ParseServer.app(this.config);
+      this._app.start = () => this.startApp();
     }
     return this._app;
   }
@@ -254,7 +255,7 @@ class ParseServer {
    * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
-  start(options: ParseServerOptions, callback: ?() => void) {
+  async start(options: ParseServerOptions) {
     const app = express();
     if (options.middleware) {
       let middleware;
@@ -294,7 +295,11 @@ class ParseServer {
       }
     }
 
-    const server = app.listen(options.port, options.host, callback);
+    const server = await new Promise(resolve => {
+      app.listen(options.port, options.host, function () {
+        resolve(this);
+      });
+    });
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
@@ -318,9 +323,10 @@ class ParseServer {
    * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
-  static start(options: ParseServerOptions, callback: ?() => void) {
+  static async start(options: ParseServerOptions) {
     const parseServer = new ParseServer(options);
-    return parseServer.start(options, callback);
+    await parseServer.startApp();
+    return parseServer.start(options);
   }
 
   /**

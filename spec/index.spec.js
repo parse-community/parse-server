@@ -295,91 +295,46 @@ describe('server', () => {
     });
   });
 
-  it('can create a parse-server v1', done => {
-    const parseServer = new ParseServer.default(
+  it('can create a parse-server v1', async () => {
+    const parseServer = await new ParseServer.default(
       Object.assign({}, defaultConfiguration, {
         appId: 'aTestApp',
         masterKey: 'aTestMasterKey',
         serverURL: 'http://localhost:12666/parse',
-        serverStartComplete: () => {
-          expect(Parse.applicationId).toEqual('aTestApp');
-          const app = express();
-          app.use('/parse', parseServer.app);
-
-          const server = app.listen(12666);
-          const obj = new Parse.Object('AnObject');
-          let objId;
-          obj
-            .save()
-            .then(obj => {
-              objId = obj.id;
-              const q = new Parse.Query('AnObject');
-              return q.first();
-            })
-            .then(obj => {
-              expect(obj.id).toEqual(objId);
-              server.close(async () => {
-                await reconfigureServer();
-                done();
-              });
-            })
-            .catch(() => {
-              server.close(async () => {
-                await reconfigureServer();
-                done();
-              });
-            });
-        },
       })
-    );
+    ).startApp();
+    console.log({ parseServer });
+    expect(Parse.applicationId).toEqual('aTestApp');
+    const app = express();
+    app.use('/parse', parseServer);
+    const server = app.listen(12666);
+    const obj = new Parse.Object('AnObject');
+    await obj.save();
+    const query = await new Parse.Query('AnObject').first();
+    expect(obj.id).toEqual(query.id);
+    await new Promise(resolve => server.close(resolve));
   });
 
-  it('can create a parse-server v2', done => {
-    let objId;
-    let server;
+  it('can create a parse-server v2', async () => {
     const parseServer = ParseServer.ParseServer(
       Object.assign({}, defaultConfiguration, {
         appId: 'anOtherTestApp',
         masterKey: 'anOtherTestMasterKey',
         serverURL: 'http://localhost:12667/parse',
-        serverStartComplete: error => {
-          const promise = error ? Promise.reject(error) : Promise.resolve();
-          promise
-            .then(() => {
-              expect(Parse.applicationId).toEqual('anOtherTestApp');
-              const app = express();
-              app.use('/parse', parseServer);
-
-              server = app.listen(12667);
-              const obj = new Parse.Object('AnObject');
-              return obj.save();
-            })
-            .then(obj => {
-              objId = obj.id;
-              const q = new Parse.Query('AnObject');
-              return q.first();
-            })
-            .then(obj => {
-              expect(obj.id).toEqual(objId);
-              server.close(async () => {
-                await reconfigureServer();
-                done();
-              });
-            })
-            .catch(error => {
-              fail(JSON.stringify(error));
-              if (server) {
-                server.close(async () => {
-                  await reconfigureServer();
-                  done();
-                });
-              } else {
-                done();
-              }
-            });
-        },
       })
     );
+
+    expect(Parse.applicationId).toEqual('anOtherTestApp');
+    await parseServer.start();
+    const app = express();
+    app.use('/parse', parseServer);
+
+    const server = app.listen(12667);
+    const obj = new Parse.Object('AnObject');
+    await obj.save();
+    const q = await new Parse.Query('AnObject').first();
+    expect(obj.id).toEqual(q.id);
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('has createLiveQueryServer', done => {
@@ -549,6 +504,43 @@ describe('server', () => {
         });
       })
       .catch(done.fail);
+  });
+
+  it('call call start', async () => {
+    const config = {
+      appId: 'aTestApp',
+      masterKey: 'aTestMasterKey',
+      serverURL: 'http://localhost:12701/parse',
+    };
+    const parseServer = new ParseServer.ParseServer(config);
+    await parseServer.start();
+    expect(Parse.applicationId).toEqual('aTestApp');
+    expect(Parse.serverURL).toEqual('http://localhost:12701/parse');
+    const app = express();
+    app.use('/parse', parseServer);
+    const server = app.listen(12701);
+    const testObject = new Parse.Object('TestObject');
+    await expectAsync(testObject.save()).toBeResolved();
+    await new Promise(resolve => server.close(resolve));
+  });
+
+  it('start is required to mount', async () => {
+    const config = {
+      appId: 'aTestApp',
+      masterKey: 'aTestMasterKey',
+      serverURL: 'http://localhost:12701/parse',
+    };
+    const parseServer = new ParseServer.ParseServer(config);
+    expect(Parse.applicationId).toEqual('aTestApp');
+    expect(Parse.serverURL).toEqual('http://localhost:12701/parse');
+    const app = express();
+    app.use('/parse', parseServer);
+    const server = app.listen(12701);
+    const testObject = new Parse.Object('TestObject');
+    await expectAsync(testObject.save()).toBeRejectedWith(
+      new Parse.Error(undefined, 'unauthorized')
+    );
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
