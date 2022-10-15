@@ -194,6 +194,9 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
+  /* Default value for limit option on queries, defaults to `100`.
+  :DEFAULT: 100 */
+  defaultLimit: ?number;
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
   /* Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
