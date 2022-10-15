@@ -9,7 +9,7 @@
 
 [![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16,_17,_18-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0,_5.1,_5.2-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14,_15-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
 [![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
@@ -154,6 +154,7 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 | Postgres 12 | 3.3                | November 2024 | <= 5.x (2022)        | ✅ Yes      |
 | Postgres 13 | 3.3                | November 2025 | <= 6.x (2023)        | ✅ Yes      |
 | Postgres 14 | 3.3                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
+| Postgres 15 | 3.3                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
 
 ### Locally
 

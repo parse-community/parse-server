@@ -234,6 +234,9 @@ jobs:
           - name: PostgreSQL 14, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:14-3.3
             NODE_VERSION: 18.1.0
+          - name: PostgreSQL 15, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:15-3.3
+            NODE_VERSION: 18.1.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
