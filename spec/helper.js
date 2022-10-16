@@ -154,20 +154,23 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     server = undefined;
     return reconfigureServer(changedConfiguration);
   }
-  let parseServer = undefined;
   didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
   const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
     mountPath: '/1',
     port,
   });
   cache.clear();
-  parseServer = await ParseServer.start(newConfiguration);
+  const { parseServer, error } = await ParseServer.start(newConfiguration);
+  server = parseServer.server;
+  if (error) {
+    throw error;
+  }
+
   Parse.CoreManager.setRESTController(RESTController);
   parseServer.expressApp.use('/1', err => {
     console.error(err);
     fail('should not call next');
   });
-  server = parseServer.server;
   server.on('connection', connection => {
     const key = `${connection.remoteAddress}:${connection.remotePort}`;
     openConnections[key] = connection;

@@ -85,7 +85,7 @@ describe('server', () => {
         expect(response.status).toEqual(500);
         const body = response.data;
         expect(body.code).toEqual(1);
-        expect(body.message).toEqual('Internal server error.');
+        expect(body.message).toEqual('Invalid server state: error');
         reconfigureServer().then(done, done);
       });
     });

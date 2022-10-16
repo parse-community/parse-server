@@ -159,8 +159,11 @@ export function handleParseHeaders(req, res, next) {
   const clientIp = getClientIp(req);
   const config = Config.get(info.appId, mount);
   if (config.state && config.state !== 'ok') {
-    res.status(400);
-    res.json({ code: Parse.Error.INTERNAL_SERVER_ERROR, error: `Invalid server state: ${config.state}` });
+    res.status(500);
+    res.json({
+      code: Parse.Error.INTERNAL_SERVER_ERROR,
+      message: `Invalid server state: ${config.state}`,
+    });
     return;
   }
 
