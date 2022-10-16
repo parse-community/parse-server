@@ -419,6 +419,29 @@ describe('AuthenticationProviders', function () {
     expect(providerOptions).toEqual(options.facebook);
   });
 
+  it('should throw error when Facebook request appId is wrong data type', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'a' });
+    });
+    const options = {
+      facebook: {
+        appIds: 'abcd',
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      access_token: 'badtoken',
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
+    );
+  });
+
   it('should handle Facebook appSecret for validating appIds', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
@@ -1682,6 +1705,7 @@ describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
   const fs = require('fs');
   const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+  const testCert2 = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
 
   it('can load adapter', async () => {
     const options = {
@@ -1732,6 +1756,8 @@ describe('Apple Game Center Auth adapter', () => {
   });
 
   it('validateAuthData invalid signature id', async () => {
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-6.cer'] = testCert2;
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       {}
@@ -1843,7 +1869,7 @@ describe('Apple Game Center Auth adapter', () => {
     );
 
     const duration = new Date().getTime() - previous.getTime();
-    expect(duration).toEqual(0);
+    expect(duration <= 1).toBe(true);
   });
 
   it('adapter should throw', async () => {

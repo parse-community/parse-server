@@ -1,3 +1,69 @@
+# [5.3.0-alpha.29](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.28...5.3.0-alpha.29) (2022-10-15)
+
+
+### Bug Fixes
+
+* server crashes when receiving file download request with invalid byte range; this fixes a security vulnerability that allows an attacker to impact the availability of the server instance; the fix improves parsing of the range parameter to properly handle invalid range requests ([GHSA-h423-w6qv-2wj3](https://github.com/parse-community/parse-server/security/advisories/GHSA-h423-w6qv-2wj3)) [skip release] ([#8238](https://github.com/parse-community/parse-server/issues/8238)) ([c03908f](https://github.com/parse-community/parse-server/commit/c03908f74e5c9eed834874a89df6c89c1a1e849f))
+
+### Features
+
+* add support for Postgres 15 ([#8215](https://github.com/parse-community/parse-server/issues/8215)) ([2feb6c4](https://github.com/parse-community/parse-server/commit/2feb6c46080946c984daa351187fa07cd582355d))
+
+# [5.3.0-alpha.28](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.27...5.3.0-alpha.28) (2022-10-11)
+
+
+### Features
+
+* liveQuery support for unsorted distance queries ([#8221](https://github.com/parse-community/parse-server/issues/8221)) ([0f763da](https://github.com/parse-community/parse-server/commit/0f763da17d646b2fec2cd980d3857e46072a8a07))
+
+# [5.3.0-alpha.27](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.26...5.3.0-alpha.27) (2022-09-29)
+
+
+### Bug Fixes
+
+* authentication adapter app ID validation may be circumvented; this fixes a vulnerability that affects configurations which allow users to authenticate using the Parse Server authentication adapter for *Facebook* or *Spotify* and where the server-side authentication adapter configuration `appIds` is set as a string (e.g. `abc`) instead of an array of strings (e.g. `["abc"]`) ([GHSA-r657-33vp-gp22](https://github.com/parse-community/parse-server/security/advisories/GHSA-r657-33vp-gp22)) [skip release] ([#8187](https://github.com/parse-community/parse-server/issues/8187)) ([8c8ec71](https://github.com/parse-community/parse-server/commit/8c8ec715739e0f851338cfed794409ebac66c51b))
+* session object properties can be updated by foreign user; this fixes a security vulnerability in which a foreign user can write to the session object of another user if the session object ID is known; the fix prevents writing to foreign session objects ([GHSA-6w4q-23cf-j9jp](https://github.com/parse-community/parse-server/security/advisories/GHSA-6w4q-23cf-j9jp)) [skip release] ([#8180](https://github.com/parse-community/parse-server/issues/8180)) ([37fed30](https://github.com/parse-community/parse-server/commit/37fed3062ccc3ef1dfd49a9fc53318e72b3e4aff))
+
+### Features
+
+* add option to change the default value of the `Parse.Query.limit()` constraint ([#8152](https://github.com/parse-community/parse-server/issues/8152)) ([0388956](https://github.com/parse-community/parse-server/commit/038895680894984e569dff54bf5c7b31094f3891))
+
+# [5.3.0-alpha.26](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.25...5.3.0-alpha.26) (2022-09-17)
+
+
+### Bug Fixes
+
+* sorting by non-existing value throws `INVALID_SERVER_ERROR` on Postgres ([#8157](https://github.com/parse-community/parse-server/issues/8157)) ([3b775a1](https://github.com/parse-community/parse-server/commit/3b775a1fb8a1878714e3451191438963d688f1b0))
+
+# [5.3.0-alpha.25](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.24...5.3.0-alpha.25) (2022-09-17)
+
+
+### Bug Fixes
+
+* updating object includes unchanged keys in client response for certain key types ([#8159](https://github.com/parse-community/parse-server/issues/8159)) ([37af1d7](https://github.com/parse-community/parse-server/commit/37af1d78fce5a15039ffe3af7b323c1f1e8582fc))
+
+# [5.3.0-alpha.24](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.23...5.3.0-alpha.24) (2022-09-17)
+
+
+### Bug Fixes
+
+* query aggregation pipeline cannot handle value of type `Date` when `directAccess: true` ([#8167](https://github.com/parse-community/parse-server/issues/8167)) ([e424137](https://github.com/parse-community/parse-server/commit/e4241374061caef66538de15112fb6bbafb1f5bb))
+
+# [5.3.0-alpha.23](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.22...5.3.0-alpha.23) (2022-09-17)
+
+
+### Bug Fixes
+
+* liveQuery with `containedIn` not working when object field is an array ([#8128](https://github.com/parse-community/parse-server/issues/8128)) ([1d9605b](https://github.com/parse-community/parse-server/commit/1d9605bc93009263d3811df4d4249034ba6eb8c4))
+
+# [5.3.0-alpha.22](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.21...5.3.0-alpha.22) (2022-09-16)
+
+
+### Bug Fixes
+
+* brute force guessing of user sensitive data via search patterns (GHSA-2m6g-crv8-p3c6) ([#8146](https://github.com/parse-community/parse-server/issues/8146)) [skip release] ([4c0c7c7](https://github.com/parse-community/parse-server/commit/4c0c7c77b76257878b9bcb05ff9de01c9d790262))
+* push notifications `badge` doesn't update with Installation beforeSave trigger ([#8162](https://github.com/parse-community/parse-server/issues/8162)) ([3c75c2b](https://github.com/parse-community/parse-server/commit/3c75c2ba4851fae96a8c19b11a3efde03816c9a1))
+
 # [5.3.0-alpha.21](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.20...5.3.0-alpha.21) (2022-08-05)
 
 

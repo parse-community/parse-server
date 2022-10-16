@@ -272,7 +272,7 @@ const calculateSkipAndLimit = (skipInput, first, after, last, before, maxLimit) 
     }
 
     if ((skip || 0) >= before) {
-      // If the before index is less then the skip, no objects will be returned
+      // If the before index is less than the skip, no objects will be returned
       limit = 0;
     } else if ((!limit && limit !== 0) || (skip || 0) + limit > before) {
       // If there is no limit set, the limit is calculated. Or, if the limit (plus skip) is bigger than the before index, the new limit is set.

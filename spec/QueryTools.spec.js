@@ -583,6 +583,29 @@ describe('matchesQuery', function () {
     expect(matchesQuery(message, q)).toBe(false);
   });
 
+  it('should support containedIn with array of pointers', () => {
+    const message = {
+      id: new Id('Message', 'O2'),
+      profiles: [pointer('Profile', 'yeahaw'), pointer('Profile', 'yes')],
+    };
+
+    let q = new Parse.Query('Message');
+    q.containedIn('profiles', [
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'no' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'yes' }),
+    ]);
+
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.containedIn('profiles', [
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'no' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'nope' }),
+    ]);
+
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
   it('should support notContainedIn with pointers', () => {
     let message = {
       id: new Id('Message', 'O1'),

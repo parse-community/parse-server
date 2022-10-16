@@ -1156,6 +1156,40 @@ describe('ParseLiveQuery', function () {
     ]);
   });
 
+  it('can subscribe to query and return object with withinKilometers with last parameter on update', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    const firstPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: firstPoint });
+    await object.save();
+
+    // unsorted will use $centerSphere operator
+    const sorted = false;
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers(
+      'location',
+      new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 }),
+      2,
+      sorted
+    );
+    const subscription = await query.subscribe();
+    subscription.on('update', obj => {
+      expect(obj.id).toBe(object.id);
+      done();
+    });
+
+    const secondPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: secondPoint });
+    await object.save();
+  });
+
   afterEach(async function (done) {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();
