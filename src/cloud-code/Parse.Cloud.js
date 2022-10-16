@@ -736,6 +736,7 @@ module.exports = ParseCloud;
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`, ...)
  * @property {Object} log The current logger inside Parse Server.
  * @property {Parse.Object} original If set, the object, as currently stored.
+ * @property {Object} config The Parse Server config.
  */
 
 /**
@@ -750,6 +751,7 @@ module.exports = ParseCloud;
  * @property {Object} headers The original HTTP headers for the request.
  * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
  * @property {Object} log The current logger inside Parse Server.
+ * @property {Object} config The Parse Server config.
  */
 
 /**
@@ -787,6 +789,7 @@ module.exports = ParseCloud;
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`, ...)
  * @property {Object} log The current logger inside Parse Server.
  * @property {Boolean} isGet wether the query a `get` or a `find`
+ * @property {Object} config The Parse Server config.
  */
 
 /**
@@ -800,6 +803,7 @@ module.exports = ParseCloud;
  * @property {Object} headers The original HTTP headers for the request.
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`, ...)
  * @property {Object} log The current logger inside Parse Server.
+ * @property {Object} config The Parse Server config.
  */
 
 /**
@@ -808,12 +812,14 @@ module.exports = ParseCloud;
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Object} params The params passed to the cloud function.
+ * @property {Object} config The Parse Server config.
  */
 
 /**
  * @interface Parse.Cloud.JobRequest
  * @property {Object} params The params passed to the background job.
  * @property {function} message If message is called with a string argument, will update the current message to be stored in the job status.
+ * @property {Object} config The Parse Server config.
  */
 
 /**
