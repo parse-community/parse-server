@@ -139,6 +139,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
+  disableIndexFieldValidation: boolean;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
@@ -152,7 +153,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
+    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
     delete mongoOptions.enableSchemaHooks;
+    delete mongoOptions.disableIndexFieldValidation;
     delete mongoOptions.maxTimeMS;
   }
 
@@ -287,6 +290,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       } else {
         Object.keys(field).forEach(key => {
           if (
+            !this.disableIndexFieldValidation &&
             !Object.prototype.hasOwnProperty.call(
               fields,
               key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
