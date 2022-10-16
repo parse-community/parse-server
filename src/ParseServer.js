@@ -329,7 +329,6 @@ class ParseServer {
    */
   static async start(options: ParseServerOptions) {
     const parseServer = new ParseServer(options);
-    await parseServer.startApp();
     return parseServer.start(options);
   }
 
