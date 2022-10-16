@@ -499,7 +499,7 @@ The following changes are done in the `alpha` branch, before publishing the last
 3. Pull all remote branches into local branches.
 4. Create a new temporary branch `backmerge` on branch `release`.
 5. Create PR to merge `backmerge` into `beta`:
-   - PR title: `<pr-name> [skip release]` where `<pr-name>` is the PR title of step 1.
+   - PR title: `refactor: <commit-summary>` where `<commit-summary>` is the commit summary of step 1. The commit type needs to be `refactor`, otherwise the commit will show in the changelog of the `release` branch, once the `beta` branch is merged into release; this would a duplicate entry because the same changelog entry has already been generated when the PR was merged into the `release` branch in step 1.
    - PR description: (leave empty)
 6. Resolve any conflicts:
    - During back-merging, usually all changes are preserved; current changes come from the hotfix in the `release` branch, the incoming changes come from the `beta` branch usually being ahead of the `release` branch. This makes back-merging so complex and bug-prone and is the main reason why it should be avoided if possible.
