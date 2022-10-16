@@ -259,7 +259,11 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   async start(options: ParseServerOptions) {
-    await this.startApp();
+    try {
+      await this.startApp();
+    } catch (e) {
+      console.error('Error on ParseServer.start: ', e);
+    }
     const app = express();
     if (options.middleware) {
       let middleware;
