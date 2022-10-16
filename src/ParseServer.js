@@ -84,10 +84,9 @@ class ParseServer {
 
   async startApp() {
     try {
-      if (this.state === 'ok') {
+      if (this.config.state === 'ok') {
         return this.app;
       }
-      this.state = 'starting';
       this.config.state = 'starting';
       Config.put(this.config);
       const { databaseController, hooksController, cloud, security, schema } = this.config;
@@ -113,12 +112,12 @@ class ParseServer {
       if (security && security.enableCheck && security.enableCheckLog) {
         new CheckRunner(security).run();
       }
-      this.state = 'ok';
       this.config.state = 'ok';
       Config.put(this.config);
       return this.app;
     } catch (error) {
       console.error(error);
+      this.config.state = 'error';
       throw error;
     }
   }
@@ -260,6 +259,7 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   async start(options: ParseServerOptions) {
+    await this.startApp();
     const app = express();
     if (options.middleware) {
       let middleware;
@@ -270,7 +270,6 @@ class ParseServer {
       }
       app.use(middleware);
     }
-
     app.use(options.mountPath, this.app);
 
     if (options.mountGraphQL === true || options.mountPlayground === true) {
