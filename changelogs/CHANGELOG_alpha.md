@@ -1,3 +1,10 @@
+# [5.3.0-alpha.30](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.29...5.3.0-alpha.30) (2022-10-17)
+
+
+### Features
+
+* add support for MongoDB 6 ([#8242](https://github.com/parse-community/parse-server/issues/8242)) ([aba0081](https://github.com/parse-community/parse-server/commit/aba0081ce1a166a93de57f3928c19a05562b5cc1))
+
 # [5.3.0-alpha.29](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.28...5.3.0-alpha.29) (2022-10-15)
 
 
