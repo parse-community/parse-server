@@ -50,6 +50,97 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can get config', () => {
+    const config = Parse.Server;
+    let currentConfig = Config.get('test');
+    expect(Object.keys(config)).toEqual(Object.keys(currentConfig));
+    expect(Object.keys(config).sort()).toEqual(
+      [
+        '_mount',
+        'allowClientClassCreation',
+        'allowCustomObjectId',
+        'analyticsController',
+        'appId',
+        'applicationId',
+        'auth',
+        'authDataManager',
+        'cacheController',
+        'cacheMaxSize',
+        'cacheTTL',
+        'clientKey',
+        'collectionPrefix',
+        'customPages',
+        'database',
+        'databaseAdapter',
+        'databaseURI',
+        'defaultLimit',
+        'directAccess',
+        'dotNetKey',
+        'emailVerifyTokenReuseIfValid',
+        'enableAnonymousUsers',
+        'enableExpressErrorHandler',
+        'enforcePrivateUsers',
+        'expireInactiveSessions',
+        'fileKey',
+        'fileUpload',
+        'filesAdapter',
+        'filesController',
+        'generateEmailVerifyTokenExpiresAt',
+        'generateSessionExpiresAt',
+        'graphQLPath',
+        'hasPushScheduledSupport',
+        'hasPushSupport',
+        'hooksController',
+        'host',
+        'idempotencyOptions',
+        'javascriptKey',
+        'jsonLogs',
+        'level',
+        'liveQueryController',
+        'logLevel',
+        'loggerController',
+        'logsFolder',
+        'masterKey',
+        'masterKeyIps',
+        'maxUploadSize',
+        'mountGraphQL',
+        'mountPath',
+        'mountPlayground',
+        'objectIdSize',
+        'pages',
+        'parseGraphQLController',
+        'playgroundPath',
+        'port',
+        'preserveFileName',
+        'preventLoginWithUnverifiedEmail',
+        'protectedFields',
+        'push',
+        'pushController',
+        'pushControllerQueue',
+        'pushWorker',
+        'readOnlyMasterKey',
+        'requestKeywordDenylist',
+        'restAPIKey',
+        'revokeSessionOnPasswordReset',
+        'scheduledPush',
+        'schemaCache',
+        'security',
+        'serverStartComplete',
+        'serverURL',
+        'sessionLength',
+        'silent',
+        'userController',
+        'verbose',
+        'verifyUserEmails',
+        'webhookKey',
+      ].sort()
+    );
+    config.silent = false;
+    Parse.Server = config;
+    currentConfig = Config.get('test');
+    expect(currentConfig.silent).toBeFalse();
+  });
+
   it('show warning on duplicate cloud functions', done => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'warn').and.callFake(() => {});
