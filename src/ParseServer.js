@@ -382,6 +382,7 @@ function addParseCloud() {
       newVal.appId = Parse.applicationId;
       Config.put(newVal);
     },
+    configurable: true,
   });
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
