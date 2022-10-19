@@ -4,7 +4,6 @@ const request = require('../lib/request');
 const triggers = require('../lib/triggers');
 const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require('express');
-const bodyParser = require('body-parser');
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 
@@ -17,7 +16,7 @@ describe('Hooks', () => {
   beforeEach(done => {
     if (!app) {
       app = express();
-      app.use(bodyParser.json({ type: '*/*' }));
+      app.use(express.json({ type: '*/*' }));
       server = app.listen(port, undefined, done);
     } else {
       done();

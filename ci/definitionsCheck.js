@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const { exec } = require('child_process');
 const core = require('@actions/core');
 const { nextTick } = require('process');
-const { AbortController } = require("node-abort-controller");
+const { AbortController } = require("@whatwg-node/fetch");
 (async () => {
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),

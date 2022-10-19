@@ -1,7 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLSchema, GraphQLObjectType, DocumentNode, GraphQLNamedType } from 'graphql';
 import { mergeSchemas } from '@graphql-tools/schema';
-import { mergeTypeDefs } from '@graphql-tools/merge';
 import { isDeepStrictEqual } from 'util';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
@@ -284,10 +283,7 @@ class ParseGraphQLSchema {
       } else {
         this.graphQLSchema = mergeSchemas({
           schemas: [this.graphQLAutoSchema],
-          typeDefs: mergeTypeDefs([
-            this.graphQLCustomTypeDefs,
-            this.graphQLSchemaDirectivesDefinitions,
-          ]),
+          typeDefs: [this.graphQLCustomTypeDefs, this.graphQLSchemaDirectivesDefinitions],
         });
         this.graphQLSchema = this.graphQLSchemaDirectives(this.graphQLSchema);
       }
