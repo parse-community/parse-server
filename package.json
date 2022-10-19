@@ -56,7 +56,7 @@
     "uuid": "9.0.0",
     "winston": "3.8.1",
     "winston-daily-rotate-file": "4.7.1",
-    "ws": "8.8.1"
+    "ws": "8.9.0"
   },
   "devDependencies": {
     "graphql-tag": "2.12.6",
