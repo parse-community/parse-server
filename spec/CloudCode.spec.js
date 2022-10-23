@@ -18,6 +18,41 @@ const mockAdapter = {
   },
 };
 
+fdescribe('Error handling', () => {
+  const error = new Error('throw in cloud code');
+
+  it('does not crash server when throwing in cloud code function', async () => {
+    let triggered = false;
+
+    Parse.Cloud.define('hello', () => {
+      triggered = true;
+      throw error;
+    });
+
+    const response = await Parse.Cloud.run('hello').catch(e => e);
+    expect(triggered).toBeTrue();
+    expect(response).toBeDefined();
+    expect(response.code).toBe(141);
+    expect(response.message).toBe(error.message);
+  });
+
+  it('does not crash server when throwing in afterLogout hook', async () => {
+    let triggered = false;
+
+    Parse.Cloud.afterLogout(() => {
+      triggered = true;
+      throw error;
+    });
+
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logOut().catch(e => e);
+    expect(triggered).toBeTrue();
+    expect(response).toBeDefined();
+    expect(response.code).toBe(141);
+    expect(response.message).toBe(error.message);
+  });
+});
+
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
     reconfigureServer({
