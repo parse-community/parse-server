@@ -1,3 +1,10 @@
+# [5.3.0-alpha.31](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.30...5.3.0-alpha.31) (2022-10-24)
+
+
+### Bug Fixes
+
+* relation constraints in compound queries `Parse.Query.or`, `Parse.Query.and` not working ([#8203](https://github.com/parse-community/parse-server/issues/8203)) ([28f0d26](https://github.com/parse-community/parse-server/commit/28f0d2667787d2ac68726607b811d6f0ef62b9f1))
+
 # [5.3.0-alpha.30](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.29...5.3.0-alpha.30) (2022-10-17)
 
 
