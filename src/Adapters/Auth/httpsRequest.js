@@ -1,6 +1,6 @@
 const https = require('https');
 const http = require('http');
-const { isJSON } = require('./utils.js');
+const { isJsonString } = require('../../../src/Utils');
 
 const requestProtocol = {
   http,
@@ -18,8 +18,9 @@ function makeCallback(resolve, reject, noJSON) {
         return resolve(data);
       }
       try {
-        if (!isJSON(data)) throw new Error('Invalid response type (response should be JSON)');
-
+        if (!isJsonString(data)) {
+          throw new Error('Invalid response; response should be JSON');
+        }
         data = JSON.parse(data);
       } catch (e) {
         return reject(e);

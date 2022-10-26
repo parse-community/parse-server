@@ -122,10 +122,24 @@ class Utils {
   /**
    * Determines whether an object is a Promise.
    * @param {any} object The object to validate.
-   * @returns {Boolean} Returns true if the object is a promise.
+   * @returns {Boolean} Returns `true` if the object is a promise, `false` otherwise.
    */
   static isPromise(object) {
     return object instanceof Promise;
+  }
+
+  /**
+   * Determines whether a string can be parsed to JSON.
+   * @param {String} string The string to validate.
+   * @returns {Boolean} Returns `true` if the string can be parsed to JSON, `false` otherwise.
+   */
+  static isJsonString(string) {
+    try {
+      JSON.parse(string);
+    } catch {
+      return false;
+    }
+    return true;
   }
 
   /**

@@ -35,7 +35,7 @@
 
 const { Parse } = require('parse/node');
 const httpsRequest = require('./httpsRequest');
-const { isJSON } = require('./utils');
+const { isJsonString } = require('../../../src/Utils');
 
 const arraysEqual = (_arr1, _arr2) => {
   if (!Array.isArray(_arr1) || !Array.isArray(_arr2) || _arr1.length !== _arr2.length) return false;
@@ -91,7 +91,7 @@ const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } =
     if (e instanceof Parse.Error) {
       throw e;
     }
-    const error = e.text && isJSON(e.text) ? JSON.parse(e.text) : {};
+    const error = e.text && isJsonString(e.text) ? JSON.parse(e.text) : {};
     if (error.error_description) {
       throw new Parse.Error(Parse.Error.HOSTING_ERROR, error.error_description);
     } else {
