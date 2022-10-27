@@ -22,8 +22,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-    - name: ${{ github.workflow }}-${{ github.ref }}
-      run: echo github
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
