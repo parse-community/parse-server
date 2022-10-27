@@ -308,7 +308,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(undefined);
   });
 
-  it_only_mongodb_version('<5.1')('should use index for caseInsensitive query', async () => {
+  it_only_mongodb_version('<5.1>=6')('should use index for caseInsensitive query', async () => {
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
@@ -342,7 +342,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 
-  it_only_mongodb_version('>=5.1')('should use index for caseInsensitive query', async () => {
+  it_only_mongodb_version('>=5.1<6')('should use index for caseInsensitive query', async () => {
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
