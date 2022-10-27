@@ -56,6 +56,8 @@
  * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
  * @property {String} logLevel Sets the level for logs
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
+ * @property {String} maintenanceKey Your Parse Maintenance Key, used for updating internal fields
+ * @property {String[]} maintenanceKeyIps Restrict maintenanceKey to be used by only these ips, defaults to [] (allow all ips)
  * @property {String} masterKey Your Parse Master Key
  * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
  * @property {Number} maxLimit Max value for limit option on queries, defaults to unlimited

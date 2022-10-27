@@ -71,6 +71,8 @@ export class Config {
     passwordPolicy,
     masterKeyIps,
     masterKey,
+    maintenanceKey,
+    maintenanceKeyIps,
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
@@ -84,6 +86,10 @@ export class Config {
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
+    }
+
+    if (masterKey === maintenanceKey) {
+      throw new Error('masterKey and maintenanceKey should be different');
     }
 
     const emailAdapter = userController.adapter;
@@ -111,7 +117,8 @@ export class Config {
       }
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
-    this.validateMasterKeyIps(masterKeyIps);
+    this.validateIps('masterKeyIps', masterKeyIps);
+    this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
@@ -426,10 +433,10 @@ export class Config {
     }
   }
 
-  static validateMasterKeyIps(masterKeyIps) {
+  static validateIps(field, masterKeyIps) {
     for (const ip of masterKeyIps) {
       if (!net.isIP(ip)) {
-        throw `Invalid ip in masterKeyIps: ${ip}`;
+        throw `Invalid ip in ${field}: ${ip}`;
       }
     }
   }

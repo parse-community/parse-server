@@ -288,6 +288,17 @@ module.exports.ParseServerOptions = {
     help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
     default: './logs',
   },
+  maintenanceKey: {
+    env: 'PARSE_SERVER_MAINTENANCE_KEY',
+    help: 'Your Parse Maintenance Key, used for updating internal fields',
+    required: true,
+  },
+  maintenanceKeyIps: {
+    env: 'PARSE_SERVER_MAINTENANCE_KEY_IPS',
+    help: 'Restrict maintenanceKey to be used by only these ips, defaults to [] (allow all ips)',
+    action: parsers.arrayParser,
+    default: ['127.0.0.1'],
+  },
   masterKey: {
     env: 'PARSE_SERVER_MASTER_KEY',
     help: 'Your Parse Master Key',

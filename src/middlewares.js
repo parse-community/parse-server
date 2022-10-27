@@ -41,6 +41,7 @@ export function handleParseHeaders(req, res, next) {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
     masterKey: req.get('X-Parse-Master-Key'),
+    maintenanceKey: req.get('X-Parse-Maintenance-Key'),
     installationId: req.get('X-Parse-Installation-Id'),
     clientKey: req.get('X-Parse-Client-Key'),
     javascriptKey: req.get('X-Parse-Javascript-Key'),
@@ -163,6 +164,25 @@ export function handleParseHeaders(req, res, next) {
   req.config.headers = req.headers || {};
   req.config.ip = clientIp;
   req.info = info;
+
+  if (
+    info.maintenanceKey &&
+    req.config.maintenanceKeyIps &&
+    req.config.maintenanceKeyIps.length !== 0 &&
+    req.config.maintenanceKeyIps.indexOf(clientIp) === -1
+  ) {
+    return invalidRequest(req, res);
+  }
+
+  if (req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaintenance: true,
+    });
+    next();
+    return;
+  }
 
   if (
     info.masterKey &&

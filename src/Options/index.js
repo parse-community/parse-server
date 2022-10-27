@@ -46,12 +46,17 @@ export interface ParseServerOptions {
   appId: string;
   /* Your Parse Master Key */
   masterKey: string;
+  /* Your Parse Maintenance Key, used for updating internal fields */
+  maintenanceKey: string;
   /* URL to your parse server with http:// or https://.
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
   /* Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
   :DEFAULT: [] */
   masterKeyIps: ?(string[]);
+  /* Restrict maintenanceKey to be used by only these ips, defaults to ["127.0.0.1"] (only allow current IP)
+  :DEFAULT: ["127.0.0.1"] */
+  maintenanceKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */

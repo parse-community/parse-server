@@ -145,6 +145,17 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
+  it('should not succeed if the ip does not belong to maintenanceKeyIps list', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      maintenanceKey: 'masterKey',
+      maintenanceKeyIps: ['ip1', 'ip2'],
+    });
+    fakeReq.ip = 'ip3';
+    fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
+
   it('should succeed if the ip does belong to masterKeyIps list', done => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',

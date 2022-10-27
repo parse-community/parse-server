@@ -3473,7 +3473,7 @@ describe('Parse.User testing', () => {
     );
   });
 
-  fit('should allow updates to fields with masterKey', async () => {
+  it('should allow updates to fields with masterKey', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -3487,6 +3487,7 @@ describe('Parse.User testing', () => {
     });
     await reconfigureServer({
       appName: 'unused',
+      maintenanceKey: 'test2',
       verifyUserEmails: true,
       emailVerifyTokenValidityDuration: 5,
       accountLockout: {
@@ -3506,8 +3507,19 @@ describe('Parse.User testing', () => {
       }
     }
     await Parse.User.requestPasswordReset(user.getEmail());
-    const userMaster = await new Parse.Query(Parse.User).first({ useMasterKey: true });
-    expect(Object.keys(userMaster.toJSON()).sort()).toEqual(
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Rest-API-Key': 'test',
+      'X-Parse-Maintenance-Key': 'test2',
+      'Content-Type': 'application/json',
+    };
+    const userMaster = await request({
+      method: 'GET',
+      url: `http://localhost:8378/1/classes/_User`,
+      json: true,
+      headers,
+    }).then(res => res.data.results[0]);
+    expect(Object.keys(userMaster).sort()).toEqual(
       [
         'ACL',
         '_account_lockout_expires_at',
@@ -3531,14 +3543,22 @@ describe('Parse.User testing', () => {
       _perishable_token_expires_at: new Date(),
       _perishable_token: 'abc',
     };
-    userMaster.set(toSet, { ignoreValidation: true });
-    await userMaster.save(null, { useMasterKey: true });
-    await userMaster.fetch({ useMasterKey: true });
+    await request({
+      method: 'PUT',
+      headers,
+      url: Parse.serverURL + '/users/' + userMaster.objectId,
+      json: true,
+      body: toSet,
+    }).then(res => res.data);
+    const update = await request({
+      method: 'GET',
+      url: `http://localhost:8378/1/classes/_User`,
+      json: true,
+      headers,
+    }).then(res => res.data.results[0]);
     for (const key in toSet) {
       const value = toSet[key];
-      expect(
-        userMaster.get(key) === value || userMaster.get(key) === value.toISOString()
-      ).toBeTrue();
+      expect(update[key] === value || update[key] === value.toISOString()).toBeTrue();
     }
   });
 
