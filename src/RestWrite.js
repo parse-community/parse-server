@@ -802,7 +802,8 @@ RestWrite.prototype._validatePasswordHistory = function () {
       .find(
         '_User',
         { objectId: this.objectId() },
-        { keys: ['_password_history', '_hashed_password'] }
+        { keys: ['_password_history', '_hashed_password'] },
+        Auth.maintenance(this.config)
       )
       .then(results => {
         if (results.length != 1) {
@@ -1400,7 +1401,8 @@ RestWrite.prototype.runDatabaseOperation = function () {
         .find(
           '_User',
           { objectId: this.objectId() },
-          { keys: ['_password_history', '_hashed_password'] }
+          { keys: ['_password_history', '_hashed_password'] },
+          Auth.maintenance(this.config)
         )
         .then(results => {
           if (results.length != 1) {
