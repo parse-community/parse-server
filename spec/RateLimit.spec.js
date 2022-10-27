@@ -236,6 +236,8 @@ describe('rate limit', () => {
   });
 
   it('can set beforeDelete', async () => {
+    const obj = new Parse.Object('TestDelete');
+    await obj.save();
     Parse.Cloud.beforeDelete('TestDelete', () => {}, {
       rateLimit: {
         requestTimeWindow: 10000,
@@ -244,8 +246,6 @@ describe('rate limit', () => {
         includeInternalRequests: true,
       },
     });
-    const obj = new Parse.Object('TestDelete');
-    await obj.save();
     await obj.destroy();
     await expectAsync(obj.destroy()).toBeRejectedWith(
       new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
