@@ -860,10 +860,12 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when masterKey and maintenanceKey are the same', async () => {
-    await expectAsync(reconfigureServer({
-      masterKey: 'yolo',
-      maintenanceKey: 'yolo',
-    })).toBeRejectedWith(new Error('masterKey and maintenanceKey should be different'));
+    await expectAsync(
+      reconfigureServer({
+        masterKey: 'yolo',
+        maintenanceKey: 'yolo',
+      })
+    ).toBeRejectedWith(new Error('masterKey and maintenanceKey should be different'));
   });
 
   it('should throw when trying to create RestWrite', () => {

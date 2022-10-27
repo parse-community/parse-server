@@ -68,7 +68,12 @@ const specialMasterQueryKeys = [
   '_password_history',
 ];
 
-const validateQuery = (query: any, isMaster: boolean, isMaintenance: boolean, update: boolean): void => {
+const validateQuery = (
+  query: any,
+  isMaster: boolean,
+  isMaintenance: boolean,
+  update: boolean
+): void => {
   if (isMaintenance) {
     isMaster = true;
   }

@@ -109,7 +109,7 @@ describe('Regex Vulnerabilities', function () {
           'X-Parse-Maintenance-Key': 'test2',
           'Content-Type': 'application/json',
         },
-      }).then(res => res.data)
+      }).then(res => res.data);
       // It should work
       await request({
         url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token=${current._email_verify_token}`,
@@ -184,7 +184,7 @@ describe('Regex Vulnerabilities', function () {
           'X-Parse-Maintenance-Key': 'test2',
           'Content-Type': 'application/json',
         },
-      }).then(res => res.data)
+      }).then(res => res.data);
       const token = current._perishable_token;
       const passwordResetResponse = await request({
         url: `${serverURL}/apps/test/request_password_reset?username=someemail@somedomain.com&token=${token}`,

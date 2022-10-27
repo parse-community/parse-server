@@ -263,9 +263,14 @@ describe('Email Verification Token Expiration: ', () => {
       })
       .then(() => {
         const config = Config.get('test');
-        return config.database.find('_User', {
-          username: 'sets_email_verify_token_expires_at',
-        }, {}, Auth.maintenance(config));
+        return config.database.find(
+          '_User',
+          {
+            username: 'sets_email_verify_token_expires_at',
+          },
+          {},
+          Auth.maintenance(config)
+        );
       })
       .then(results => {
         expect(results.length).toBe(1);
@@ -500,7 +505,12 @@ describe('Email Verification Token Expiration: ', () => {
       .then(() => {
         const config = Config.get('test');
         return config.database
-          .find('_User', { username: 'newEmailVerifyTokenOnEmailReset' }, {}, Auth.maintenance(config))
+          .find(
+            '_User',
+            { username: 'newEmailVerifyTokenOnEmailReset' },
+            {},
+            Auth.maintenance(config)
+          )
           .then(results => {
             return results[0];
           });
