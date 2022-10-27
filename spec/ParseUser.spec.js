@@ -3473,7 +3473,7 @@ describe('Parse.User testing', () => {
     );
   });
 
-  it('should allow updates to fields with masterKey', async () => {
+  it('should allow updates to fields with maintenanceKey', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -3496,7 +3496,6 @@ describe('Parse.User testing', () => {
       },
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
-      silent: false,
     });
     await user.signUp();
     for (let i = 0; i < 2; i++) {
@@ -3558,7 +3557,13 @@ describe('Parse.User testing', () => {
     }).then(res => res.data.results[0]);
     for (const key in toSet) {
       const value = toSet[key];
-      expect(update[key] === value || update[key] === value.toISOString()).toBeTrue();
+      if (update[key] && update[key].iso) {
+        expect(update[key].iso).toEqual(value.toISOString());
+      } else if (value.toISOString) {
+        expect(update[key]).toEqual(value.toISOString());
+      } else {
+        expect(update[key]).toEqual(value);
+      }
     }
   });
 

@@ -70,12 +70,9 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const maintenanceAuth = Auth.maintenance(this.config);
-    var findUserForEmailVerification = new RestQuery(
-      this.config,
-      maintenanceAuth,
-      '_User',
-      { username }
-    );
+    var findUserForEmailVerification = new RestQuery(this.config, maintenanceAuth, '_User', {
+      username,
+    });
     return findUserForEmailVerification.execute().then(result => {
       if (result.results.length && result.results[0].emailVerified) {
         return Promise.resolve(result.results.length[0]);
