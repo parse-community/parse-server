@@ -8,7 +8,7 @@
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
 [![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16,_17,_18-green.svg?logo=node.js&style=flat)](https://nodejs.org)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0,_5.1,_5.2-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5,_6-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14,_15-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
@@ -141,8 +141,8 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes        |
 | MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes        |
 | MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes        |
-| MongoDB 5.3 | 5.3.2          | October 2024  | ✅ Yes        |
-| MongoDB 6.0 | -              | July 2025     | ❌ Not tested |
+| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes        |
+| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes        |
 
 #### PostgreSQL
 
