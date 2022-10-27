@@ -517,14 +517,14 @@ module.exports.RateLimitOptions = {
   includeInternalRequests: {
     env: 'PARSE_SERVER_RATE_LIMIT_INCLUDE_INTERNAL_REQUESTS',
     help:
-      'Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to a malicious attack.',
+      'Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to attacks.',
     action: parsers.booleanParser,
     default: false,
   },
   includeMasterKey: {
     env: 'PARSE_SERVER_RATE_LIMIT_INCLUDE_MASTER_KEY',
     help:
-      'Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to a malicious attack.',
+      'Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.',
     action: parsers.booleanParser,
     default: false,
   },
