@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "5.3.0-alpha.28",
+  "version": "5.3.0-alpha.31",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -32,7 +32,7 @@
     "deepcopy": "2.1.0",
     "express": "4.18.1",
     "express-rate-limit": "6.6.0",
-    "follow-redirects": "1.15.1",
+    "follow-redirects": "1.15.2",
     "graphql": "16.6.0",
     "graphql-list-fields": "2.0.2",
     "graphql-relay": "0.10.0",
@@ -44,10 +44,10 @@
     "lodash": "4.17.21",
     "lru-cache": "7.12.0",
     "mime": "3.0.0",
-    "mongodb": "4.9.1",
+    "mongodb": "4.10.0",
     "mustache": "4.2.0",
     "parse": "3.4.2",
-    "pg-monitor": "1.4.1",
+    "pg-monitor": "1.5.0",
     "pg-promise": "10.12.0",
     "pluralize": "8.0.0",
     "redis": "3.1.2",
@@ -57,7 +57,7 @@
     "uuid": "9.0.0",
     "winston": "3.8.1",
     "winston-daily-rotate-file": "4.7.1",
-    "ws": "8.8.1"
+    "ws": "8.9.0"
   },
   "devDependencies": {
     "graphql-tag": "2.12.6",
@@ -120,6 +120,7 @@
     "test:mongodb:4.2.19": "npm run test:mongodb --dbversion=4.2.19",
     "test:mongodb:4.4.13": "npm run test:mongodb --dbversion=4.4.13",
     "test:mongodb:5.3.2": "npm run test:mongodb --dbversion=5.3.2",
+    "test:mongodb:6.0.2": "npm run test:mongodb --dbversion=6.0.2",
     "posttest:mongodb": "mongodb-runner stop",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} mongodb-runner start",
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} TESTING=1 jasmine",
