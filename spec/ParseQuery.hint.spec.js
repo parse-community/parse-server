@@ -27,7 +27,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     await TestUtils.destroyAllDataPermanently(false);
   });
 
-  it_only_mongodb_version('<5.1')('query find with hint string', async () => {
+  it_only_mongodb_version('<5.1>=6')('query find with hint string', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -39,7 +39,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('>=5.1')('query find with hint string', async () => {
+  it_only_mongodb_version('>=5.1<6')('query find with hint string', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -50,7 +50,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.queryPlan.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('<5.1')('query find with hint object', async () => {
+  it_only_mongodb_version('<5.1>=6')('query find with hint object', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -64,7 +64,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
   });
 
-  it_only_mongodb_version('>=5.1')('query find with hint object', async () => {
+  it_only_mongodb_version('>=5.1<6')('query find with hint object', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -265,7 +265,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('<5.1')('query find with hint (rest)', async () => {
+  it_only_mongodb_version('<5.1>=6')('query find with hint (rest)', async () => {
     const object = new TestObject();
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
@@ -290,7 +290,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('>=5.1')('query find with hint (rest)', async () => {
+  it_only_mongodb_version('>=5.1<6')('query find with hint (rest)', async () => {
     const object = new TestObject();
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
