@@ -1,3 +1,38 @@
+## [5.2.8](https://github.com/parse-community/parse-server/compare/5.2.7...5.2.8) (2022-10-14)
+
+
+### Bug Fixes
+
+* server crashes when receiving file download request with invalid byte range; this fixes a security vulnerability that allows an attacker to impact the availability of the server instance; the fix improves parsing of the range parameter to properly handle invalid range requests ([GHSA-h423-w6qv-2wj3](https://github.com/parse-community/parse-server/security/advisories/GHSA-h423-w6qv-2wj3)) ([#8235](https://github.com/parse-community/parse-server/issues/8235)) ([066f296](https://github.com/parse-community/parse-server/commit/066f29673ab4030b6b5b90c0c0326f7d3fe7612a))
+
+## [5.2.7](https://github.com/parse-community/parse-server/compare/5.2.6...5.2.7) (2022-09-20)
+
+
+### Bug Fixes
+
+* authentication adapter app ID validation may be circumvented; this fixes a vulnerability that affects configurations which allow users to authenticate using the Parse Server authentication adapter for *Facebook* or *Spotify* and where the server-side authentication adapter configuration `appIds` is set as a string (e.g. `abc`) instead of an array of strings (e.g. `["abc"]`) ([GHSA-r657-33vp-gp22](https://github.com/parse-community/parse-server/security/advisories/GHSA-r657-33vp-gp22)) ([#8185](https://github.com/parse-community/parse-server/issues/8185)) ([ecf0814](https://github.com/parse-community/parse-server/commit/ecf0814499bde31ab6082b6e42854aa65ad2e03e))
+
+## [5.2.6](https://github.com/parse-community/parse-server/compare/5.2.5...5.2.6) (2022-09-20)
+
+
+### Bug Fixes
+
+* session object properties can be updated by foreign user; this fixes a security vulnerability in which a foreign user can write to the session object of another user if the session object ID is known; the fix prevents writing to foreign session objects ([GHSA-6w4q-23cf-j9jp](https://github.com/parse-community/parse-server/security/advisories/GHSA-6w4q-23cf-j9jp)) ([#8182](https://github.com/parse-community/parse-server/issues/8182)) ([6d0b2f5](https://github.com/parse-community/parse-server/commit/6d0b2f534603301bb630d9c8e497af3bc7ff1d09))
+
+## [5.2.5](https://github.com/parse-community/parse-server/compare/5.2.4...5.2.5) (2022-09-02)
+
+
+### Bug Fixes
+
+* brute force guessing of user sensitive data via search patterns; this fixes a security vulnerability in which internal and protected fields may be used as query constraints to guess the value of these fields and obtain sensitive data (GHSA-2m6g-crv8-p3c6) ([#8144](https://github.com/parse-community/parse-server/issues/8144)) ([e39d51b](https://github.com/parse-community/parse-server/commit/e39d51bd329cd978589983bd659db46e1d45aad4))
+
+## [5.2.4](https://github.com/parse-community/parse-server/compare/5.2.3...5.2.4) (2022-06-30)
+
+
+### Bug Fixes
+
+* protected fields exposed via LiveQuery; this removes protected fields from the client response; this may be a breaking change if your app is currently expecting to receive these protected fields ([GHSA-crrq-vr9j-fxxh](https://github.com/parse-community/parse-server/security/advisories/GHSA-crrq-vr9j-fxxh)) (https://github.com/parse-community/parse-server/pull/8074) ([#8073](https://github.com/parse-community/parse-server/issues/8073)) ([309f64c](https://github.com/parse-community/parse-server/commit/309f64ced8700321df056fb3cc97f15007a00df1))
+
 ## [5.2.3](https://github.com/parse-community/parse-server/compare/5.2.2...5.2.3) (2022-06-17)
 
 
