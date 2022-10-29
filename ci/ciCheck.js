@@ -61,7 +61,7 @@ async function checkNodeVersions() {
       '<12.0.0', // These versions have reached their end-of-life support date
       '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
       '>=15.0.0 <16.0.0', // These versions have reached their end-of-life support date
-      '>=17.0.0', // These versions are not officially supported yet
+      '>=19.0.0', // These versions are not officially supported yet
     ],
   }).check();
 }
