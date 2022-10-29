@@ -1,3 +1,10 @@
+# [5.3.0-alpha.32](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.31...5.3.0-alpha.32) (2022-10-29)
+
+
+### Features
+
+* add convenience access to Parse Server configuration in Cloud Code via `Parse.Server` ([#8244](https://github.com/parse-community/parse-server/issues/8244)) ([9f11115](https://github.com/parse-community/parse-server/commit/9f111158edf7fd57a65db0c4f9244b37e58cf293))
+
 # [5.3.0-alpha.31](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.30...5.3.0-alpha.31) (2022-10-24)
 
 
