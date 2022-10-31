@@ -50,6 +50,16 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can get config', () => {
+    const config = Parse.Server;
+    let currentConfig = Config.get('test');
+    expect(Object.keys(config)).toEqual(Object.keys(currentConfig));
+    config.silent = false;
+    Parse.Server = config;
+    currentConfig = Config.get('test');
+    expect(currentConfig.silent).toBeFalse();
+  });
+
   it('show warning on duplicate cloud functions', done => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'warn').and.callFake(() => {});
