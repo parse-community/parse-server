@@ -590,6 +590,7 @@ export class UsersRouter extends ClassesRouter {
           const providerChallengeResponse = await challenge(
             challengeData[provider],
             authData && authData[provider],
+            req.config.auth[provider],
             request
           );
           acc[provider] = providerChallengeResponse || true;

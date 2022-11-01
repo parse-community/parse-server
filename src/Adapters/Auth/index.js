@@ -107,13 +107,13 @@ function authDataValidator(provider, adapter, appIds, options) {
       if (hasAuthDataConfigured) {
         return {
           method: 'validateUpdate',
-          validator: () => adapter.validateUpdate(authData, requestObject),
+          validator: () => adapter.validateUpdate(authData, options, requestObject),
         };
       }
       // Set up if the user does not have the provider configured
       return {
         method: 'validateSetUp',
-        validator: () => adapter.validateSetUp(authData, requestObject),
+        validator: () => adapter.validateSetUp(authData, options, requestObject),
       };
     }
 
@@ -121,7 +121,7 @@ function authDataValidator(provider, adapter, appIds, options) {
     if (hasAuthDataConfigured) {
       return {
         method: 'validateLogin',
-        validator: () => adapter.validateLogin(authData, requestObject),
+        validator: () => adapter.validateLogin(authData, options, requestObject),
       };
     }
 
@@ -129,7 +129,7 @@ function authDataValidator(provider, adapter, appIds, options) {
     // signs up or an existing user uses a new auth provider
     return {
       method: 'validateSetUp',
-      validator: () => adapter.validateSetUp(authData, requestObject),
+      validator: () => adapter.validateSetUp(authData, options, requestObject),
     };
   };
 }
