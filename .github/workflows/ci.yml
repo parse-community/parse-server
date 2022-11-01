@@ -141,8 +141,13 @@ jobs:
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 18.1.0
-          - name: MongoDB 5.3, ReplicaSet, WiredTiger
+          - name: MongoDB 5, ReplicaSet, WiredTiger
             MONGODB_VERSION: 5.3.2
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 18.1.0
+          - name: MongoDB 6, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 6.0.2
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 18.1.0
@@ -181,7 +186,7 @@ jobs:
         image: redis
         ports:
             - 6379:6379
-    env:      
+    env:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
@@ -234,6 +239,9 @@ jobs:
           - name: PostgreSQL 14, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:14-3.3
             NODE_VERSION: 18.1.0
+          - name: PostgreSQL 15, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:15-3.3
+            NODE_VERSION: 18.1.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -280,3 +288,6 @@ jobs:
         env:
           CI: true
       - run: bash <(curl -s https://codecov.io/bash)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
