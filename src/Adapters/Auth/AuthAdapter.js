@@ -26,11 +26,11 @@ export class AuthAdapter {
   /**
    * @param appIds The specified app IDs in the configuration
    * @param {Object} authData The client provided authData
-   * @param {Parse.Cloud.TriggerRequest} request
    * @param {Object} options additional adapter options
+   * @param {Parse.Cloud.TriggerRequest} request
    * @returns {(Promise<undefined|void>|void|undefined)} resolves or returns if the applicationId is valid
    */
-  validateAppId(appIds, authData, options) {
+  validateAppId(appIds, authData, options, request) {
     return Promise.resolve({});
   }
 

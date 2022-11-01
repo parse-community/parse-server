@@ -319,7 +319,7 @@ describe('Auth Adapter features', () => {
     expect(modernAdapter.validateLogin).toHaveBeenCalledTimes(0);
     const call = modernAdapter.validateUpdate.calls.argsFor(0);
     expect(call[0]).toEqual({ id: 'modernAdapter2' });
-    expect(call[1]).toEqual(modernAdapter)
+    expect(call[1]).toEqual(modernAdapter);
     expect(call[2].isChallenge).toBeUndefined();
     expect(call[2].master).toBeDefined();
     expect(call[2].object instanceof Parse.User).toBeTruthy();
@@ -1225,5 +1225,27 @@ describe('Auth Adapter features', () => {
     expect(validateCall[2].object.id).toEqual(user.id);
     expect(validateCall[2].original.id).toEqual(user.id);
     expect(validateCall.length).toEqual(3);
+  });
+
+  it('should work with multiple adapters', async () => {
+    const adapterA = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const adapterB = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+    await reconfigureServer({ auth: { adapterA, adapterB } });
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'test',
+      password: 'password',
+    });
+    await user.save({ authData: { adapterA: { id: 'testA' } } });
+    expect(user.get('authData')).toEqual({ adapterA: { id: 'testA' } });
+    await user.save({ authData: { adapterA: null, adapterB: { id: 'test' } } });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
   });
 });

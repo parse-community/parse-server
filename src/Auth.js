@@ -423,12 +423,13 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
   const acc = { authData: {}, authDataResponse: {} };
-  for (const provider of Object.keys(authData).sort()) {
+  const authKeys = Object.keys(authData).sort();
+  for (const provider of authKeys) {
     let method = '';
     try {
       if (authData[provider] === null) {
         acc.authData[provider] = null;
-        return acc;
+        continue;
       }
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
       const authProvider = (req.config.auth || {})[provider] || {};
@@ -456,6 +457,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       }
       if (!Object.keys(validationResult).length) {
         acc.authData[provider] = authData[provider];
+        continue;
       }
 
       if (validationResult.response) {
