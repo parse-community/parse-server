@@ -92,7 +92,7 @@ export interface ParseServerOptions {
   /* Options to pass to the database client
   :ENV: PARSE_SERVER_DATABASE_OPTIONS */
   databaseOptions: ?DatabaseOptions;
-  /* Adapter module for the database */
+  /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
   cloud: ?string;
@@ -140,7 +140,7 @@ export interface ParseServerOptions {
   allowCustomObjectId: ?boolean;
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
-  auth: ?any;
+  auth: ?(AuthAdapter[]);
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
@@ -194,6 +194,9 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
+  /* Default value for limit option on queries, defaults to `100`.
+  :DEFAULT: 100 */
+  defaultLimit: ?number;
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
   /* Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
@@ -505,4 +508,12 @@ export interface DatabaseOptions {
   /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
   :DEFAULT: false */
   enableSchemaHooks: ?boolean;
+}
+
+export interface AuthAdapter {
+  /* Is `true` if the auth adapter is enabled, `false` otherwise.
+  :DEFAULT: true
+  :ENV:
+  */
+  enabled: ?boolean;
 }

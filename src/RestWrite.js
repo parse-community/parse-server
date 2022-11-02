@@ -12,9 +12,12 @@ var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
+const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
+import Deprecator from './Deprecator/Deprecator';
+import { requiredColumns } from './Controllers/SchemaController';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -215,7 +218,7 @@ RestWrite.prototype.validateSchema = function () {
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeSaveTrigger = function () {
-  if (this.response) {
+  if (this.response || this.runOptions.many) {
     return;
   }
 
@@ -429,7 +432,14 @@ RestWrite.prototype.handleAuthDataValidation = function (authData) {
       return Promise.resolve();
     }
     const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
-    if (!validateAuthData) {
+    const authProvider = (this.config.auth || {})[provider] || {};
+    if (authProvider.enabled == null) {
+      Deprecator.logRuntimeDeprecation({
+        usage: `auth.${provider}`,
+        solution: `auth.${provider}.enabled: true`,
+      });
+    }
+    if (!validateAuthData || authProvider.enabled === false) {
       throw new Parse.Error(
         Parse.Error.UNSUPPORTED_SERVICE,
         'This authentication method is unsupported.'
@@ -1009,6 +1019,20 @@ RestWrite.prototype.handleSession = function () {
     } else if (this.data.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     }
+    if (!this.auth.isMaster) {
+      this.query = {
+        $and: [
+          this.query,
+          {
+            user: {
+              __type: 'Pointer',
+              className: '_User',
+              objectId: this.auth.user.id,
+            },
+          },
+        ],
+      };
+    }
   }
 
   if (!this.query && !this.auth.isMaster) {
@@ -1317,6 +1341,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
   if (this.className === '_Role') {
     this.config.cacheController.role.clear();
+    if (this.config.liveQueryController) {
+      this.config.liveQueryController.clearCachedRoles(this.auth.user);
+    }
   }
 
   if (this.className === '_User' && this.query && this.auth.isUnauthenticated()) {
@@ -1510,7 +1537,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
 // Returns nothing - doesn't wait for the trigger.
 RestWrite.prototype.runAfterSaveTrigger = function () {
-  if (!this.response || !this.response.response) {
+  if (!this.response || !this.response.response || this.runOptions.many) {
     return;
   }
 
@@ -1556,7 +1583,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
-          (result || updatedObject)._toFullJSON(),
+          (result || updatedObject).toJSON(),
           this.data
         );
       }
@@ -1663,6 +1690,27 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     if (!pending[key]) {
       data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
       this.storage.fieldsChangedByTrigger.push(key);
+    }
+  }
+  const skipKeys = [...(requiredColumns.read[this.className] || [])];
+  if (!this.query) {
+    skipKeys.push('objectId', 'createdAt');
+  } else {
+    skipKeys.push('updatedAt');
+    delete response.objectId;
+  }
+  for (const key in response) {
+    if (skipKeys.includes(key)) {
+      continue;
+    }
+    const value = response[key];
+    if (
+      value == null ||
+      (value.__type && value.__type === 'Pointer') ||
+      util.isDeepStrictEqual(data[key], value) ||
+      util.isDeepStrictEqual((this.originalData || {})[key], value)
+    ) {
+      delete response[key];
     }
   }
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
