@@ -464,6 +464,29 @@ describe('AuthenticationProviders', function () {
     expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
   });
 
+  it('should throw error when Facebook request appId is wrong data type', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'a' });
+    });
+    const options = {
+      facebook: {
+        appIds: 'abcd',
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      access_token: 'badtoken',
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
+    );
+  });
+
   it('should handle Facebook appSecret for validating auth data', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
