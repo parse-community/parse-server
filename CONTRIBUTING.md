@@ -101,6 +101,8 @@ Most importantly, with every contribution you improve your skills so that future
 
 A reviewer is already helping you to make a code contribution through their review. A reviewer *may* even help you to write code by actually writing it for you, but is not obliged to do so.
 
+GitHub allows reviewers to suggest and write code changes as part of the review feedback. These code suggestions are likely to contain mistakes due to the lack of code syntax checks when writing code directly on GitHub. You should therefore always review these suggestions before accepting them, ideally in an IDE. If you merge a code suggestion and the CI then fails, take another look at the code change before asking the reviewer for help.
+
 ### Review Feedback
 
 > *It takes too much effort to incorporate the review feedback, why why can't you just merge my pull request?*
@@ -110,6 +112,8 @@ If you are a new contributor, it's naturally a learning experience for you and t
 In a large pull request, it can be a significant effort to bring it over the finish line. Luckily this is a collaborative environment and others are free to jump in to contribute to the pull request to share the effort. You can either give others access to your fork or they can open their own pull request based on your previous work.
 
 If you are out of resources stay calm, explain your personal constraints (expertise or time) and ask for help. Wasting time by complaining about the amount of review comments will neither use your own time in a meaningful way, nor the time of others who read your complaint.
+
+This is a collaborative enviroment in which everyone works on a common goal - to get a pull request ready for merging. Reviewers are working *with* you to get your pull request ready, *not against you*.
 
 **❗️ Always be mindful that the reviewers' efforts are an integral part of code contribution. Their review is as important as your written code and their review time is a valuable as your coding time.**
 
@@ -123,11 +127,11 @@ A feature may work for your own use case or in your own environment, but that do
 
 > *The reviewer has never worked on the issue and was never part of any previous discussion, why would I care about their opinion?*
 
-It's contrary to an open, collaborative environment to expect others to be involved in an issue or discussion since its beginning. Such a mindset would close out any new views from other people, which are important for a differentiated view.
+It's contrary to an open, collaborative environment to expect others to be involved in an issue or discussion since its beginning. Such a mindset would close out any new views, which are important for a differentiated discussion.
 
 > *The reviewer doesn't have any expertise in that matter, why would I care about their opinion?*
 
-Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you are a reviewer who became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the PMC.
+Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the Parse Platform PMC.
 
 ## Environment Setup
 
@@ -495,7 +499,7 @@ The following changes are done in the `alpha` branch, before publishing the last
 3. Pull all remote branches into local branches.
 4. Create a new temporary branch `backmerge` on branch `release`.
 5. Create PR to merge `backmerge` into `beta`:
-   - PR title: `<pr-name> [skip release]` where `<pr-name>` is the PR title of step 1.
+   - PR title: `refactor: <commit-summary>` where `<commit-summary>` is the commit summary of step 1. The commit type needs to be `refactor`, otherwise the commit will show in the changelog of the `release` branch, once the `beta` branch is merged into release; this would a duplicate entry because the same changelog entry has already been generated when the PR was merged into the `release` branch in step 1.
    - PR description: (leave empty)
 6. Resolve any conflicts:
    - During back-merging, usually all changes are preserved; current changes come from the hotfix in the `release` branch, the incoming changes come from the `beta` branch usually being ahead of the `release` branch. This makes back-merging so complex and bug-prone and is the main reason why it should be avoided if possible.

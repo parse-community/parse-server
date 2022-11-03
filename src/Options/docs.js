@@ -31,6 +31,7 @@
  * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database; any options that are not explicitly described here are passed directly to the database client.
  * @property {DatabaseOptions} databaseOptions Options to pass to the database client
  * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postgres.
+ * @property {Number} defaultLimit Default value for limit option on queries, defaults to `100`.
  * @property {Boolean} directAccess Set to `true` if Parse requests within the same Node.js environment as Parse Server should be routed to Parse Server directly instead of via the HTTP interface. Default is `false`.<br><br>If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.<br><br>⚠️ In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.
  * @property {String} dotNetKey Key for Unity and .Net SDK
  * @property {Adapter<MailAdapter>} emailAdapter Adapter module for email sending
