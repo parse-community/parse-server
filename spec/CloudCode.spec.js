@@ -3122,6 +3122,36 @@ describe('beforeLogin hook', () => {
     done();
   });
 
+  it('does not crash server when throwing in afterLogin hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogin error');
+    const trigger = {
+      afterLogin() {
+        throw error;
+      },
+    };
+    const spy = spyOn(trigger, 'afterLogin').and.callThrough();
+    Parse.Cloud.afterLogin(trigger.afterLogin);
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logIn('user', 'pass').catch(e => e);
+    expect(spy).toHaveBeenCalled();
+    expect(response).toEqual(error);
+  });
+
+  it('does not crash server when throwing in afterLogout hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogout error');
+    const trigger = {
+      afterLogout() {
+        throw error;
+      },
+    };
+    const spy = spyOn(trigger, 'afterLogout').and.callThrough();
+    Parse.Cloud.afterLogout(trigger.afterLogout);
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logOut().catch(e => e);
+    expect(spy).toHaveBeenCalled();
+    expect(response).toEqual(error);
+  });
+
   it('should have expected data in request', async done => {
     Parse.Cloud.beforeLogin(req => {
       expect(req.object).toBeDefined();
