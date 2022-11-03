@@ -59,7 +59,6 @@ describe('test validate_receipt endpoint', () => {
       const otherResponse = await request({
         url: url,
       });
-      console.log(otherResponse.data);
       expect(otherResponse.text).toBe('download_file');
     }
   });
