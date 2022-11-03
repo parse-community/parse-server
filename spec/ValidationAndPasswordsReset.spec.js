@@ -690,20 +690,22 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       },
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
-      request({
-        url: 'http://localhost:8378/1/apps/test/resend_verification_email',
-        method: 'POST',
-        followRedirects: false,
-        body: {
-          username: 'sadfasga',
-        },
-      }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/link_send_fail.html'
-        );
-        done();
-      });
+      request
+        .legacy({
+          url: 'http://localhost:8378/1/apps/test/resend_verification_email',
+          method: 'POST',
+          followRedirects: false,
+          body: {
+            username: 'sadfasga',
+          },
+        })
+        .then(response => {
+          expect(response.status).toEqual(302);
+          expect(response.text).toEqual(
+            'Found. Redirecting to http://localhost:8378/1/apps/link_send_fail.html'
+          );
+          done();
+        });
     });
   });
 
@@ -975,7 +977,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         });
         expect(resetResponse.status).toEqual(200);
-        expect(resetResponse.text).toEqual('"Password successfully reset"');
+        expect(resetResponse.text).toEqual('Password successfully reset');
 
         await Parse.User.logIn('zxcv', 'hello');
         const config = Config.get('test');

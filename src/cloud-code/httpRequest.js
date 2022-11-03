@@ -129,6 +129,9 @@ module.exports = async options => {
       e.text = data;
     }
     e.buffer = Buffer.from(e.text);
+    if (e.response && e.response.headers) {
+      e.headers = e.response.headers;
+    }
     if (e.status === 301 || e.status === 302 || e.status === 303) {
       return e;
     }

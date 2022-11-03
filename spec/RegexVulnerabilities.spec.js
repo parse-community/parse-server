@@ -137,11 +137,11 @@ describe('Regex Vulnerabilities', function () {
       await request({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',
-        body: {
+        body: JSON.stringify({
           token: { $regex: '' },
           username: 'someemail@somedomain.com',
           new_password: 'newpassword',
-        },
+        }),
       });
       try {
         await Parse.User.logIn('someemail@somedomain.com', 'newpassword');
@@ -174,7 +174,7 @@ describe('Regex Vulnerabilities', function () {
       expect(passwordResetResponse.headers.location).toMatch(
         `\\/choose\\_password\\?token\\=${token}\\&`
       );
-      await request({
+      await request.legacy({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',
         body: {

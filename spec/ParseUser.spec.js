@@ -2459,7 +2459,7 @@ describe('Parse.User testing', () => {
               'X-Parse-REST-API-Key': 'rest',
             },
             url: 'http://localhost:8378/1/sessions/' + b.objectId,
-            body: JSON.stringify({ foo: 'bar' }),
+            body: { foo: 'bar' },
           }).then(() => {
             done();
           });
