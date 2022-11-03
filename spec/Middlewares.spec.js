@@ -146,17 +146,15 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(false);
   });
 
-  it('should succeed if the ip does belong to masterKeyIps list', done => {
+  it('should succeed if the ip does belong to masterKeyIps list', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['10.0.0.1'],
     });
     fakeReq.ip = '10.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
   });
 
   it('should not succeed if the connection.remoteAddress does not belong to masterKeyIps list', async () => {
