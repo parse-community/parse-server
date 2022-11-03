@@ -85,7 +85,57 @@ const encodeBody = function ({ body, headers = {} }) {
  * @param {Parse.Cloud.HTTPOptions} options The Parse.Cloud.HTTPOptions object that makes the request.
  * @return {Promise<Parse.Cloud.HTTPResponse>} A promise that will be resolved with a {@link Parse.Cloud.HTTPResponse} object when the request completes.
  */
-module.exports = function httpRequest(options) {
+import axios from 'axios';
+import { parse as qs } from 'querystring';
+module.exports = async options => {
+  if (options.method) {
+    options.method = options.method.toLowerCase();
+  }
+  if (options.body) {
+    options.data = options.body;
+    delete options.body;
+  }
+  if (typeof options.params === 'object') {
+    options.qs = options.params;
+  } else if (typeof options.params === 'string') {
+    options.qs = qs(options.params);
+  }
+  if (options.qs) {
+    options.params = options.qs;
+    delete options.qs;
+  }
+  if (!options.followRedirects) {
+    options.maxRedirects = 0;
+    delete options.followRedirects;
+  }
+  try {
+    const response = await axios(options);
+    const data = response.data;
+    if (Object.prototype.toString.call(data) === '[object Object]') {
+      response.text = JSON.stringify(data);
+      response.data = data;
+    } else {
+      response.text = data;
+    }
+    response.buffer = Buffer.from(response.text);
+    return response;
+  } catch (e) {
+    e.status = e.response && e.response.status;
+    const data = e.response && e.response.data;
+    if (Object.prototype.toString.call(data) === '[object Object]') {
+      e.text = JSON.stringify(data);
+      e.data = data;
+    } else {
+      e.text = data;
+    }
+    e.buffer = Buffer.from(e.text);
+    if (e.status === 301 || e.status === 302 || e.status === 303) {
+      return e;
+    }
+    throw e;
+  }
+};
+module.exports.legacy = function httpRequest(options) {
   let url;
   try {
     url = parse(options.url);

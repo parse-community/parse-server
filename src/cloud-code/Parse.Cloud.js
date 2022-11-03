@@ -713,14 +713,8 @@ ParseCloud.useMasterKey = () => {
   );
 };
 
-const request = require('./httpRequest');
-ParseCloud.httpRequest = opts => {
-  Deprecator.logRuntimeDeprecation({
-    usage: 'Parse.Cloud.httpRequest',
-    solution: 'Use a http request library instead.',
-  });
-  return request(opts);
-};
+import axios from 'axios';
+ParseCloud.httpRequest = axios;
 
 module.exports = ParseCloud;
 

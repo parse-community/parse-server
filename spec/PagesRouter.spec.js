@@ -116,7 +116,7 @@ describe('Pages Router', () => {
         followRedirects: false,
       }).catch(e => e);
       expect(res.status).toBe(200);
-      expect(res.text).toEqual('"Password successfully reset"');
+      expect(res.text).toEqual('Password successfully reset');
     });
 
     it('request_password_reset: responds with AJAX error on missing password', async () => {
@@ -970,10 +970,12 @@ describe('Pages Router', () => {
         // Do not compose this URL with `new URL(...)` because that would normalize
         // the URL and remove path patterns; the path patterns must reach the router
         const url = `${config.publicServerURL}/apps/../.gitignore`;
-        const response = await request({
-          url: url,
-          followRedirects: false,
-        }).catch(e => e);
+        const response = await request
+          .legacy({
+            url: url,
+            followRedirects: false,
+          })
+          .catch(e => e);
         expect(response.status).toBe(404);
         expect(response.text).toBe('Not found.');
       });

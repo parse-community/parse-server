@@ -83,18 +83,17 @@ describe('httpRequest', () => {
   });
 
   it('should fail on 404', async () => {
-    await expectAsync(
-      httpRequest({
+    try {
+      await httpRequest({
         url: `${httpRequestServer}/404`,
-      })
-    ).toBeRejectedWith(
-      jasmine.objectContaining({
-        status: 404,
-        buffer: Buffer.from('NO'),
-        text: 'NO',
-        data: undefined,
-      })
-    );
+      });
+      fail('should have failed');
+    } catch (e) {
+      expect(e.status).toBe(404);
+      expect(e.buffer).toEqual(Buffer.from('NO'));
+      expect(e.text).toBe('NO');
+      expect(e.data).toBeUndefined();
+    }
   });
 
   it('should post on echo', async () => {
@@ -178,7 +177,6 @@ describe('httpRequest', () => {
       url: `${httpRequestServer}/qs`,
       params: 'foo=bar&foo2=bar2',
     });
-
     expect(httpResponse.status).toBe(200);
     expect(httpResponse.data).toEqual({ foo: 'bar', foo2: 'bar2' });
   });
