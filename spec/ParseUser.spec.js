@@ -808,13 +808,17 @@ describe('Parse.User testing', () => {
   });
 
   it('count users', async done => {
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
     const james = new Parse.User();
     james.set('username', 'james');
     james.set('password', 'mypass');
+    james.setACL(acl);
     await james.signUp();
     const kevin = new Parse.User();
     kevin.set('username', 'kevin');
     kevin.set('password', 'mypass');
+    kevin.setACL(acl);
     await kevin.signUp();
     const query = new Parse.Query(Parse.User);
     const count = await query.count({ useMasterKey: true });
