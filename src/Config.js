@@ -427,7 +427,10 @@ export class Config {
   }
 
   static validateMasterKeyIps(masterKeyIps) {
-    for (const ip of masterKeyIps) {
+    for (let ip of masterKeyIps) {
+      if (ip.includes('/')) {
+        ip = ip.split('/')[0];
+      }
       if (!net.isIP(ip)) {
         throw `Invalid ip in masterKeyIps: ${ip}`;
       }

@@ -297,7 +297,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
     help: 'Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)',
     action: parsers.arrayParser,
-    default: [],
+    default: ['127.0.0.1'],
   },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',

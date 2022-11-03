@@ -50,7 +50,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
   /* Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
-  :DEFAULT: [] */
+  :DEFAULT: ["127.0.0.1"] */
   masterKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
