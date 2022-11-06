@@ -67,7 +67,7 @@ export class RedisCacheAdapter {
     if (!isValidTTL(ttl)) {
       ttl = this.ttl;
     }
-    return this.client.set(key, value, 'EX', ttl);
+    return this.client.set(key, value, { EX: ttl });
   }
 
   async del(key) {
