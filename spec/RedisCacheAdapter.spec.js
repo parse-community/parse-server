@@ -27,7 +27,7 @@ describe_only(() => {
     const cacheNaN = new RedisCacheAdapter({
       ttl: NaN,
     });
-    await cache.connect();
+    await cacheNaN.connect();
     await cacheNaN.put(KEY, VALUE);
     let value = await cacheNaN.get(KEY);
     expect(value).toEqual(VALUE);
@@ -99,7 +99,7 @@ describe_only(() => {
   it('handleShutdown, close connection', async () => {
     await cache.handleShutdown();
     setTimeout(() => {
-      expect(cache.client.connected).toBe(false);
+      expect(cache.client.isOpen).toBe(false);
     }, 0);
   });
 });

@@ -43,7 +43,7 @@ export class RedisCacheAdapter {
       await this.queue.enqueue(key);
       const res = await this.client.get(key);
       if (!res) {
-        return;
+        return null;
       }
       return JSON.parse(res);
     } catch (err) {
@@ -67,7 +67,7 @@ export class RedisCacheAdapter {
     if (!isValidTTL(ttl)) {
       ttl = this.ttl;
     }
-    return this.client.set(key, value, { EX: ttl });
+    return this.client.set(key, value, { PX: ttl });
   }
 
   async del(key) {
