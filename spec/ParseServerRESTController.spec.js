@@ -2,7 +2,6 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
   .ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
-const semver = require('semver');
 const TestUtils = require('../lib/TestUtils');
 
 let RESTController;
@@ -130,8 +129,7 @@ describe('ParseServerRESTController', () => {
   });
 
   if (
-    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
-      process.env.MONGODB_TOPOLOGY === 'replicaset' &&
+    (process.env.MONGODB_TOPOLOGY === 'replicaset' &&
       process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
@@ -139,7 +137,6 @@ describe('ParseServerRESTController', () => {
       beforeEach(async () => {
         await TestUtils.destroyAllDataPermanently(true);
         if (
-          semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
           process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {

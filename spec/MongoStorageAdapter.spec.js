@@ -6,7 +6,6 @@ const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDataba
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
-const semver = require('semver');
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -402,7 +401,6 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   if (
-    semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
     process.env.MONGODB_TOPOLOGY === 'replicaset' &&
     process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
   ) {
