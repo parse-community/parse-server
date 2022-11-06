@@ -20,6 +20,9 @@ export class RedisCacheAdapter {
   }
 
   async connect() {
+    if (this.client.isOpen) {
+      return;
+    }
     return this.client.connect();
   }
 

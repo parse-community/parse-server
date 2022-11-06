@@ -91,7 +91,11 @@ class ParseServer {
         if (schema) {
           startupPromises.push(new DefinedSchemas(schema, this.config).execute());
         }
-        if (options.cacheAdapter && options.cacheAdapter.connect) {
+        if (
+          options.cacheAdapter &&
+          options.cacheAdapter.connect &&
+          typeof options.cacheAdapter.connect === 'function'
+        ) {
           startupPromises.push(options.cacheAdapter.connect());
         }
         await Promise.all(startupPromises);
