@@ -121,16 +121,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MongoDB 4.0, Standalone, MMAPv1
-            MONGODB_VERSION: 4.0.28
-            MONGODB_TOPOLOGY: standalone
-            MONGODB_STORAGE_ENGINE: mmapv1
-            NODE_VERSION: 18.1.0
-          - name: MongoDB 4.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.28
-            MONGODB_TOPOLOGY: replicaset
-            MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 18.1.0
           - name: MongoDB 4.2, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.2.19
             MONGODB_TOPOLOGY: replicaset
