@@ -11,7 +11,8 @@
     ],
     "parserOptions": {
         "ecmaVersion": 6,
-        "sourceType": "module"
+        "sourceType": "module",
+        "requireConfigFile": false
     },
     "rules": {
         "indent": ["error", 2, { "SwitchCase": 1 }],
