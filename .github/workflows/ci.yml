@@ -137,7 +137,7 @@ jobs:
       - name: Check NPM lock file version
         uses: mansona/npm-lockfile-version@v1
         with:
-          version: 2
+          version: 1
   check-mongo:
     strategy:
       matrix:
