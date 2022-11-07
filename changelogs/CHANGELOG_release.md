@@ -1,3 +1,10 @@
+## [5.3.1](https://github.com/parse-community/parse-server/compare/5.3.0...5.3.1) (2022-11-07)
+
+
+### Bug Fixes
+
+* Remote code execution via MongoDB BSON parser through prototype pollution; fixes security vulnerability [GHSA-prm5-8g2m-24gg](https://github.com/parse-community/parse-server/security/advisories/GHSA-prm5-8g2m-24gg) ([#8295](https://github.com/parse-community/parse-server/issues/8295)) ([50eed3c](https://github.com/parse-community/parse-server/commit/50eed3cffe80fadfb4bdac52b2783a18da2cfc4f))
+
 # [5.3.0](https://github.com/parse-community/parse-server/compare/5.2.8...5.3.0) (2022-10-29)
 
 
