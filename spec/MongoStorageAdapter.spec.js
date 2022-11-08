@@ -401,8 +401,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   if (
-    process.env.MONGODB_TOPOLOGY === 'replicaset' &&
-    process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
+    process.env.MONGODB_TOPOLOGY === 'replicaset'
   ) {
     describe('transactions', () => {
       const headers = {

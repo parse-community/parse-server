@@ -129,16 +129,14 @@ describe('ParseServerRESTController', () => {
   });
 
   if (
-    (process.env.MONGODB_TOPOLOGY === 'replicaset' &&
-      process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
+    process.env.MONGODB_TOPOLOGY === 'replicaset' ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
       beforeEach(async () => {
         await TestUtils.destroyAllDataPermanently(true);
         if (
-          process.env.MONGODB_TOPOLOGY === 'replicaset' &&
-          process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
+          process.env.MONGODB_TOPOLOGY === 'replicaset'
         ) {
           await reconfigureServer({
             databaseAdapter: undefined,
