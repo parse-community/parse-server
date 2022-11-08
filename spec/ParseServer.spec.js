@@ -95,7 +95,7 @@ describe('Server Url Checks', () => {
     const parseServer = ParseServer.start(newConfiguration);
   });
 
-  fit('does not have unhandled promise rejection in the case of load error', done => {
+  it('does not have unhandled promise rejection in the case of load error', done => {
     const parseServerProcess = spawn(path.resolve(__dirname, './support/FailingServer.js'));
     let stdout;
     let stderr;
