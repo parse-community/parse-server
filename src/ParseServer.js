@@ -90,7 +90,13 @@ class ParseServer {
       this.config.state = 'starting';
       Config.put(this.config);
       const { databaseController, hooksController, cloud, security, schema } = this.config;
-      await databaseController.performInitialization();
+      try {
+        await databaseController.performInitialization();
+      } catch (e) {
+        if (e.code !== Parse.Error.DUPLICATE_VALUE) {
+          throw e;
+        }
+      }
       await hooksController.load();
       if (schema) {
         await new DefinedSchemas(schema, this.config).execute();
@@ -259,11 +265,12 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   async start(options: ParseServerOptions) {
+    let error = null;
     try {
       await this.startApp();
     } catch (e) {
       console.error('Error on ParseServer.start: ', e);
-      this.startupError = e;
+      error = e;
     }
     const app = express();
     if (options.middleware) {
@@ -322,6 +329,9 @@ class ParseServer {
       configureListeners(this);
     }
     this.expressApp = app;
+    if (error) {
+      throw error;
+    }
     return this;
   }
 
