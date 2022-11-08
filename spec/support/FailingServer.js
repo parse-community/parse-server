@@ -7,7 +7,7 @@ const ParseServer = require('../../lib/index').ParseServer;
 const databaseURI = 'mongodb://doesnotexist:27017/parseServerMongoAdapterTestDatabase';
 
 (async () => {
-  const parseServer = await ParseServer.start({
+  await ParseServer.start({
     appId: 'test',
     masterKey: 'test',
     databaseAdapter: new MongoStorageAdapter({
@@ -18,7 +18,5 @@ const databaseURI = 'mongodb://doesnotexist:27017/parseServerMongoAdapterTestDat
     }),
     filesAdapter: new GridFSBucketAdapter(databaseURI),
   });
-  if (parseServer.startupError) {
-    throw parseServer.startupError;
-  }
+  process.exit(1);
 })();

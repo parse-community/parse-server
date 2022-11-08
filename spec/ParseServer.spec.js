@@ -101,11 +101,9 @@ describe('Server Url Checks', () => {
     let stderr;
     parseServerProcess.stdout.on('data', data => {
       stdout = data.toString();
-      console.log(data.toString());
     });
     parseServerProcess.stderr.on('data', data => {
       stderr = data.toString();
-      console.log('error: ', data.toString());
     });
     parseServerProcess.on('close', async code => {
       expect(code).toEqual(1);
