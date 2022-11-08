@@ -1112,22 +1112,22 @@ describe('Parse.File testing', () => {
       await expectAsync(
         reconfigureServer({
           fileUpload: {
-            fileTypes: 1,
+            fileExtensions: 1,
           },
         })
-      ).toBeRejectedWith('fileUpload.fileTypes must be an array or string.');
+      ).toBeRejectedWith('fileUpload.fileExtensions must be an array.');
     });
   });
-  describe('fileTypes', () => {
+  describe('fileExtensions', () => {
     it('works with _ContentType', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileTypes: '(^image)(/)[a-zA-Z0-9_]*',
+          fileExtensions: ['png'],
         },
       });
       await expectAsync(
-        requestWithExpectedError({
+        request({
           method: 'POST',
           url: 'http://localhost:8378/1/files/file',
           body: JSON.stringify({
@@ -1136,9 +1136,11 @@ describe('Parse.File testing', () => {
             _ContentType: 'text/html',
             base64: 'PGh0bWw+PC9odG1sPgo=',
           }),
+        }).catch(e => {
+          throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type text/html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
       );
     });
 
@@ -1146,7 +1148,6 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileTypes: '(^image)(/)[a-zA-Z0-9_]*',
         },
       });
       const headers = {
@@ -1154,14 +1155,16 @@ describe('Parse.File testing', () => {
         'X-Parse-REST-API-Key': 'rest',
       };
       await expectAsync(
-        requestWithExpectedError({
+        request({
           method: 'POST',
           headers: headers,
           url: 'http://localhost:8378/1/files/file.html',
           body: '<html></html>\n',
+        }).catch(e => {
+          throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type text/html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
       );
     });
 
@@ -1169,11 +1172,11 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileTypes: ['image/jpg'],
+          fileExtensions: ['jpg'],
         },
       });
       await expectAsync(
-        requestWithExpectedError({
+        request({
           method: 'POST',
           url: 'http://localhost:8378/1/files/file',
           body: JSON.stringify({
@@ -1182,9 +1185,11 @@ describe('Parse.File testing', () => {
             _ContentType: 'text/html',
             base64: 'PGh0bWw+PC9odG1sPgo=',
           }),
+        }).catch(e => {
+          throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type text/html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
       );
     });
 
@@ -1192,7 +1197,7 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileTypes: ['image/jpg'],
+          fileExtensions: ['jpg'],
         },
       });
       const headers = {
@@ -1200,14 +1205,16 @@ describe('Parse.File testing', () => {
         'X-Parse-REST-API-Key': 'rest',
       };
       await expectAsync(
-        requestWithExpectedError({
+        request({
           method: 'POST',
           headers: headers,
           url: 'http://localhost:8378/1/files/file.html',
           body: '<html></html>\n',
+        }).catch(e => {
+          throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type text/html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
       );
     });
 
@@ -1215,7 +1222,7 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileTypes: ['text/html'],
+          fileExtensions: ['html'],
         },
       });
       const response = await request({
@@ -1227,28 +1234,6 @@ describe('Parse.File testing', () => {
           _ContentType: 'text/html',
           base64: 'PGh0bWw+PC9odG1sPgo=',
         }),
-      });
-      const b = response.data;
-      expect(b.name).toMatch(/_file.html$/);
-      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
-    });
-
-    it('works with regex with correct file type', async () => {
-      await reconfigureServer({
-        fileUpload: {
-          enableForPublic: true,
-          fileTypes: '(^text)(/)[a-zA-Z0-9_]*',
-        },
-      });
-      const headers = {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
-      };
-      const response = await request({
-        method: 'POST',
-        headers: headers,
-        url: 'http://localhost:8378/1/files/file.html',
-        body: '<html></html>\n',
       });
       const b = response.data;
       expect(b.name).toMatch(/_file.html$/);

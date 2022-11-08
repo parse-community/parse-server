@@ -34,8 +34,7 @@
       "jequal": true,
       "create": true,
       "arrayContains": true,
-      "databaseAdapter": true,
-      "requestWithExpectedError": true
+      "databaseAdapter": true
     },
     "rules": {
       "no-console": [0],

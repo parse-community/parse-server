@@ -490,9 +490,9 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /*  If set, allowed content types of files
-  :DEFAULT: .* */
-  fileTypes: ?string;
+  /* Allowed content types of files
+  :DEFAULT: [] */
+  fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
   enableForAnonymousUser: ?boolean;

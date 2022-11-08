@@ -866,10 +866,11 @@ module.exports.FileUploadOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  fileTypes: {
-    env: 'PARSE_SERVER_FILE_UPLOAD_FILE_TYPES',
-    help: 'If set, allowed content types of files',
-    default: '.*',
+  fileExtensions: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
+    help: 'Allowed content types of files',
+    action: parsers.arrayParser,
+    default: [],
   },
 };
 module.exports.DatabaseOptions = {

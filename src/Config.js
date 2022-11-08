@@ -421,10 +421,10 @@ export class Config {
     } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
       throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
     }
-    if (fileUpload.fileTypes === undefined) {
-      fileUpload.fileTypes = FileUploadOptions.fileTypes.default;
-    } else if (typeof fileUpload.fileTypes !== 'string' && !Array.isArray(fileUpload.fileTypes)) {
-      throw 'fileUpload.fileTypes must be an array or string.';
+    if (fileUpload.fileExtensions === undefined) {
+      fileUpload.fileExtensions = FileUploadOptions.fileExtensions.default;
+    } else if (!Array.isArray(fileUpload.fileExtensions)) {
+      throw 'fileUpload.fileExtensions must be an array.';
     }
   }
 
