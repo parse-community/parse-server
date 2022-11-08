@@ -162,10 +162,6 @@ const reconfigureServer = async (changedConfiguration = {}) => {
   cache.clear();
   const parseServer = await ParseServer.start(newConfiguration);
   server = parseServer.server;
-  if (parseServer.startupError) {
-    throw parseServer.startupError;
-  }
-
   Parse.CoreManager.setRESTController(RESTController);
   parseServer.expressApp.use('/1', err => {
     console.error(err);
@@ -178,6 +174,9 @@ const reconfigureServer = async (changedConfiguration = {}) => {
       delete openConnections[key];
     });
   });
+  if (parseServer.startupError) {
+    throw parseServer.startupError;
+  }
   return parseServer;
 };
 
