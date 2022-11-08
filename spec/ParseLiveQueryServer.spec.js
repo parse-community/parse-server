@@ -116,7 +116,7 @@ describe('ParseLiveQueryServer', function () {
 
   describe_only_db('mongo')('initialization', () => {
     it('can be initialized through ParseServer without liveQueryServerOptions', async () => {
-      const parseServer = await ParseServer.start({
+      const { parseServer } = await ParseServer.start({
         appId: 'hello',
         masterKey: 'world',
         port: 22345,
@@ -133,7 +133,7 @@ describe('ParseLiveQueryServer', function () {
     });
 
     it('can be initialized through ParseServer with liveQueryServerOptions', async () => {
-      const parseServer = await ParseServer.start({
+      const { parseServer } = await ParseServer.start({
         appId: 'hello',
         masterKey: 'world',
         port: 22346,

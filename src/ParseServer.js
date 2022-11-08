@@ -329,10 +329,7 @@ class ParseServer {
       configureListeners(this);
     }
     this.expressApp = app;
-    if (error) {
-      throw error;
-    }
-    return this;
+    return { parseServer: this, error };
   }
 
   /**
