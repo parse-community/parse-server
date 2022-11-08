@@ -95,15 +95,17 @@ describe('Server Url Checks', () => {
     const parseServer = ParseServer.start(newConfiguration);
   });
 
-  it('does not have unhandled promise rejection in the case of load error', done => {
+  fit('does not have unhandled promise rejection in the case of load error', done => {
     const parseServerProcess = spawn(path.resolve(__dirname, './support/FailingServer.js'));
     let stdout;
     let stderr;
     parseServerProcess.stdout.on('data', data => {
       stdout = data.toString();
+      console.log(data.toString());
     });
     parseServerProcess.stderr.on('data', data => {
       stderr = data.toString();
+      console.log('error: ', data.toString());
     });
     parseServerProcess.on('close', async code => {
       expect(code).toEqual(1);
