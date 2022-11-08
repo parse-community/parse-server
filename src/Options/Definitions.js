@@ -140,7 +140,8 @@ module.exports.ParseServerOptions = {
   },
   databaseAdapter: {
     env: 'PARSE_SERVER_DATABASE_ADAPTER',
-    help: 'Adapter module for the database',
+    help:
+      'Adapter module for the database; any options that are not explicitly described here are passed directly to the database client.',
     action: parsers.moduleOrObjectParser,
   },
   databaseOptions: {
@@ -153,6 +154,12 @@ module.exports.ParseServerOptions = {
     help: 'The full URI to your database. Supported databases are mongodb or postgres.',
     required: true,
     default: 'mongodb://localhost:27017/parse',
+  },
+  defaultLimit: {
+    env: 'PARSE_SERVER_DEFAULT_LIMIT',
+    help: 'Default value for limit option on queries, defaults to `100`.',
+    action: parsers.numberParser('defaultLimit'),
+    default: 100,
   },
   directAccess: {
     env: 'PARSE_SERVER_DIRECT_ACCESS',

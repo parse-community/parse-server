@@ -92,7 +92,7 @@ export interface ParseServerOptions {
   /* Options to pass to the database client
   :ENV: PARSE_SERVER_DATABASE_OPTIONS */
   databaseOptions: ?DatabaseOptions;
-  /* Adapter module for the database */
+  /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
   cloud: ?string;
@@ -194,6 +194,9 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
+  /* Default value for limit option on queries, defaults to `100`.
+  :DEFAULT: 100 */
+  defaultLimit: ?number;
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
   /* Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
