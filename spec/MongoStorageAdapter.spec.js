@@ -400,9 +400,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(schemaAfterDeletion.fields.test).toBeUndefined();
   });
 
-  if (
-    process.env.MONGODB_TOPOLOGY === 'replicaset'
-  ) {
+  if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
     describe('transactions', () => {
       const headers = {
         'Content-Type': 'application/json',

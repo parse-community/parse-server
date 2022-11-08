@@ -135,9 +135,7 @@ describe('ParseServerRESTController', () => {
     describe('transactions', () => {
       beforeEach(async () => {
         await TestUtils.destroyAllDataPermanently(true);
-        if (
-          process.env.MONGODB_TOPOLOGY === 'replicaset'
-        ) {
+        if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
           await reconfigureServer({
             databaseAdapter: undefined,
             databaseURI:
