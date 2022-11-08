@@ -303,7 +303,6 @@ describe('server', () => {
         serverURL: 'http://localhost:12666/parse',
       })
     ).startApp();
-    console.log({ parseServer });
     expect(Parse.applicationId).toEqual('aTestApp');
     const app = express();
     app.use('/parse', parseServer);
