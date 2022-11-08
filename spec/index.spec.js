@@ -85,7 +85,7 @@ describe('server', () => {
         expect(response.status).toEqual(500);
         const body = response.data;
         expect(body.code).toEqual(1);
-        expect(body.message).toEqual('Invalid server state: error');
+        expect(body.error).toEqual('Invalid server state: error');
         reconfigureServer().then(done, done);
       });
     });
@@ -538,7 +538,7 @@ describe('server', () => {
     const server = app.listen(12701);
     const testObject = new Parse.Object('TestObject');
     await expectAsync(testObject.save()).toBeRejectedWith(
-      new Parse.Error(undefined, 'unauthorized')
+      new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid server state: initialized')
     );
     const health = await request({
       url: 'http://localhost:12701/parse/health',

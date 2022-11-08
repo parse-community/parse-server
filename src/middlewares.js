@@ -162,7 +162,7 @@ export function handleParseHeaders(req, res, next) {
     res.status(500);
     res.json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,
-      message: `Invalid server state: ${config.state}`,
+      error: `Invalid server state: ${config.state}`,
     });
     return;
   }

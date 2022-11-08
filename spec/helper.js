@@ -160,9 +160,8 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     port,
   });
   cache.clear();
-  const { parseServer, error } = await ParseServer.start(newConfiguration);
-  server = parseServer.server;
-  if (error) {
+  const parseServer = await ParseServer.start(newConfiguration);
+  if (parseServer.startupError) {
     throw error;
   }
 
@@ -171,6 +170,7 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     console.error(err);
     fail('should not call next');
   });
+  server = parseServer.server;
   server.on('connection', connection => {
     const key = `${connection.remoteAddress}:${connection.remotePort}`;
     openConnections[key] = connection;
@@ -178,7 +178,7 @@ const reconfigureServer = async (changedConfiguration = {}) => {
       delete openConnections[key];
     });
   });
-  return parseServer;
+  return server;
 };
 
 // Set up a Parse client to talk to our test API server
