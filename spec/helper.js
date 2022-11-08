@@ -160,10 +160,10 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     port,
   });
   cache.clear();
-  const { parseServer, error } = await ParseServer.start(newConfiguration);
+  const parseServer = await ParseServer.start(newConfiguration);
   server = parseServer.server;
-  if (error) {
-    throw error;
+  if (parseServer.startupError) {
+    throw parseServer.startupError;
   }
 
   Parse.CoreManager.setRESTController(RESTController);
