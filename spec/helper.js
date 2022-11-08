@@ -178,7 +178,7 @@ const reconfigureServer = async (changedConfiguration = {}) => {
       delete openConnections[key];
     });
   });
-  return server;
+  return parseServer;
 };
 
 // Set up a Parse client to talk to our test API server
