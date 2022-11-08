@@ -296,16 +296,18 @@ describe('server', () => {
   });
 
   it('can create a parse-server v1', async () => {
-    const parseServer = await new ParseServer.default(
+    await reconfigureServer({ appId: 'aTestApp' })
+    const parseServer = new ParseServer.default(
       Object.assign({}, defaultConfiguration, {
         appId: 'aTestApp',
         masterKey: 'aTestMasterKey',
         serverURL: 'http://localhost:12666/parse',
       })
-    ).startApp();
+    );
+    await parseServer.start();
     expect(Parse.applicationId).toEqual('aTestApp');
     const app = express();
-    app.use('/parse', parseServer);
+    app.use('/parse', parseServer.app);
     const server = app.listen(12666);
     const obj = new Parse.Object('AnObject');
     await obj.save();
@@ -315,6 +317,7 @@ describe('server', () => {
   });
 
   it('can create a parse-server v2', async () => {
+    await reconfigureServer({ appId: 'anOtherTestApp' })
     const parseServer = ParseServer.ParseServer(
       Object.assign({}, defaultConfiguration, {
         appId: 'anOtherTestApp',
@@ -326,8 +329,7 @@ describe('server', () => {
     expect(Parse.applicationId).toEqual('anOtherTestApp');
     await parseServer.start();
     const app = express();
-    app.use('/parse', parseServer);
-
+    app.use('/parse', parseServer.app);
     const server = app.listen(12667);
     const obj = new Parse.Object('AnObject');
     await obj.save();

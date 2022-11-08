@@ -79,13 +79,12 @@ class ParseServer {
 
   /**
    * Starts the Parse Server to be served as an express. Resolves when parse-server is ready to accept external traffic.
-   * @returns {Promise<function>} express middleware
    */
 
-  async startApp() {
+  async start() {
     try {
       if (this.config.state === 'ok') {
-        return this.app;
+        return this;
       }
       this.config.state = 'starting';
       Config.put(this.config);
@@ -120,7 +119,7 @@ class ParseServer {
       }
       this.config.state = 'ok';
       Config.put(this.config);
-      return this.app;
+      return this;
     } catch (error) {
       console.error(error);
       this.config.state = 'error';
@@ -131,7 +130,6 @@ class ParseServer {
   get app() {
     if (!this._app) {
       this._app = ParseServer.app(this.config);
-      this._app.start = () => this.startApp();
     }
     return this._app;
   }
@@ -261,15 +259,14 @@ class ParseServer {
   /**
    * starts the parse server's express app
    * @param {ParseServerOptions} options to use to start the server
-   * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
-  async start(options: ParseServerOptions) {
+  async startApp(options: ParseServerOptions) {
     try {
-      await this.startApp();
+      await this.start();
     } catch (e) {
       console.error('Error on ParseServer.start: ', e);
-      this.startupError = e;
+      throw e;
     }
     const app = express();
     if (options.middleware) {
@@ -334,12 +331,11 @@ class ParseServer {
   /**
    * Creates a new ParseServer and starts it.
    * @param {ParseServerOptions} options used to start the server
-   * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
-  static async start(options: ParseServerOptions) {
+  static async startApp(options: ParseServerOptions) {
     const parseServer = new ParseServer(options);
-    return parseServer.start(options);
+    return parseServer.startApp(options);
   }
 
   /**

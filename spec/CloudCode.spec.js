@@ -55,10 +55,11 @@ describe('Cloud Code', () => {
   });
 
   it('should wait for cloud code to load', async () => {
+    await reconfigureServer({ appId: 'test3' })
     const initiated = new Date();
     const parseServer = await new ParseServer({
-      appId: 'test2',
-      masterKey: 'abc',
+      appId: 'test3',
+      masterKey: 'test',
       serverURL: 'http://localhost:12668/parse',
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -69,9 +70,8 @@ describe('Cloud Code', () => {
     }).start();
     const express = require('express');
     const app = express();
-    app.use('/parse', parseServer);
+    app.use('/parse', parseServer.app);
     const server = app.listen(12668);
-
     const now = new Date();
     expect(now.getTime() - initiated.getTime() > 1000).toBeTrue();
     await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
