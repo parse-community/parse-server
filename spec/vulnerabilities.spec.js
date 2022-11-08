@@ -279,6 +279,44 @@ describe('Vulnerabilities', () => {
       expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
       expect(text.error).toBe('Prohibited keyword in request data: {"value":"aValue[123]*"}.');
     });
+
+    it('denies BSON type code data in file metadata', async () => {
+      const str = 'Hello World!';
+      const data = [];
+      for (let i = 0; i < str.length; i++) {
+        data.push(str.charCodeAt(i));
+      }
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.addMetadata('obj', {
+        _bsontype: 'Code',
+        code: 'delete Object.prototype.evalFunctions',
+      });
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.`
+        )
+      );
+    });
+
+    it('denies BSON type code data in file tags', async () => {
+      const str = 'Hello World!';
+      const data = [];
+      for (let i = 0; i < str.length; i++) {
+        data.push(str.charCodeAt(i));
+      }
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.addTag('obj', {
+        _bsontype: 'Code',
+        code: 'delete Object.prototype.evalFunctions',
+      });
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.`
+        )
+      );
+    });
   });
 
   describe('Ignore non-matches', () => {
