@@ -1,3 +1,10 @@
+## [4.10.20](https://github.com/parse-community/parse-server/compare/4.10.19...4.10.20) (2022-11-09)
+
+
+### Bug Fixes
+
+* Prototype pollution via Cloud Code Webhooks; fixes security vulnerability [GHSA-93vw-8fm5-p2jf](https://github.com/parse-community/parse-server/security/advisories/GHSA-93vw-8fm5-p2jf) ([#8306](https://github.com/parse-community/parse-server/issues/8306)) ([6c63f04](https://github.com/parse-community/parse-server/commit/6c63f04ba37174021082a5b5c4ba1556dcc954f4))
+
 ## [4.10.19](https://github.com/parse-community/parse-server/compare/4.10.18...4.10.19) (2022-11-09)
 
 
