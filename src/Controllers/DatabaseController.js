@@ -929,32 +929,32 @@ class DatabaseController {
   reduceInRelation(className: string, query: any, schema: any): Promise<any> {
     // Search for an in-relation or equal-to-relation
     // Make it sequential for now, not sure of paralleization side effects
+    const promises = [];
     if (query['$or']) {
       const ors = query['$or'];
-      return Promise.all(
-        ors.map((aQuery, index) => {
+      promises.push(
+        ...ors.map((aQuery, index) => {
           return this.reduceInRelation(className, aQuery, schema).then(aQuery => {
             query['$or'][index] = aQuery;
           });
         })
-      ).then(() => {
-        return Promise.resolve(query);
-      });
+      );
     }
     if (query['$and']) {
       const ands = query['$and'];
-      return Promise.all(
-        ands.map((aQuery, index) => {
+      promises.push(
+        ...ands.map((aQuery, index) => {
           return this.reduceInRelation(className, aQuery, schema).then(aQuery => {
             query['$and'][index] = aQuery;
           });
         })
-      ).then(() => {
-        return Promise.resolve(query);
-      });
+      );
     }
 
-    const promises = Object.keys(query).map(key => {
+    const otherKeys = Object.keys(query).map(key => {
+      if (key === '$and' || key === '$or') {
+        return;
+      }
       const t = schema.getExpectedType(className, key);
       if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
@@ -1016,7 +1016,7 @@ class DatabaseController {
       });
     });
 
-    return Promise.all(promises).then(() => {
+    return Promise.all([...promises, ...otherKeys]).then(() => {
       return Promise.resolve(query);
     });
   }
@@ -1768,7 +1768,11 @@ class DatabaseController {
     if (this.options && this.options.requestKeywordDenylist) {
       // Scan request data for denied keywords
       for (const keyword of this.options.requestKeywordDenylist) {
-        const match = Utils.objectContainsKeyValue({ firstKey: undefined }, keyword.key, undefined);
+        const match = Utils.objectContainsKeyValue(
+          { [firstKey]: true, [nextPath]: true },
+          keyword.key,
+          true
+        );
         if (match) {
           throw new Parse.Error(
             Parse.Error.INVALID_KEY_NAME,

@@ -374,6 +374,16 @@ class ParseServer {
 
 function addParseCloud() {
   const ParseCloud = require('./cloud-code/Parse.Cloud');
+  Object.defineProperty(Parse, 'Server', {
+    get() {
+      return Config.get(Parse.applicationId);
+    },
+    set(newVal) {
+      newVal.appId = Parse.applicationId;
+      Config.put(newVal);
+    },
+    configurable: true,
+  });
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
 }
