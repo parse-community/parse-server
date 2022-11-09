@@ -109,6 +109,17 @@ describe('Vulnerabilities', () => {
       );
     });
 
+    it('denies expanding existing object with polluted keys', async () => {
+      const obj = await new Parse.Object('RCE', { a: { foo: [] } }).save();
+      await reconfigureServer({
+        requestKeywordDenylist: ['foo'],
+      });
+      obj.addUnique('a.foo', 'abc');
+      await expectAsync(obj.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Prohibited keyword in request data: "foo".`)
+      );
+    });
+
     it('denies creating a cloud trigger with polluted data', async () => {
       Parse.Cloud.beforeSave('TestObject', ({ object }) => {
         object.set('obj', {
