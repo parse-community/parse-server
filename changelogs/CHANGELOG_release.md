@@ -1,3 +1,10 @@
+## [5.3.2](https://github.com/parse-community/parse-server/compare/5.3.1...5.3.2) (2022-11-09)
+
+
+### Bug Fixes
+
+* Parse Server option `requestKeywordDenylist` can be bypassed via Cloud Code Webhooks or Triggers; fixes security vulnerability [GHSA-xprv-wvh7-qqqx](https://github.com/parse-community/parse-server/security/advisories/GHSA-xprv-wvh7-qqqx) ([#8302](https://github.com/parse-community/parse-server/issues/8302)) ([6728da1](https://github.com/parse-community/parse-server/commit/6728da1e3591db1e27031d335d64d8f25546a06f))
+
 ## [5.3.1](https://github.com/parse-community/parse-server/compare/5.3.0...5.3.1) (2022-11-07)
 
 
