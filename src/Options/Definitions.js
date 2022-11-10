@@ -68,6 +68,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  allowExpiredAuthDataToken: {
+    env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
+    help:
+      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   allowHeaders: {
     env: 'PARSE_SERVER_ALLOW_HEADERS',
     help: 'Add headers to Access-Control-Allow-Headers',
@@ -166,7 +173,7 @@ module.exports.ParseServerOptions = {
     help:
       'Set to `true` if Parse requests within the same Node.js environment as Parse Server should be routed to Parse Server directly instead of via the HTTP interface. Default is `false`.<br><br>If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.<br><br>\u26A0\uFE0F In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',

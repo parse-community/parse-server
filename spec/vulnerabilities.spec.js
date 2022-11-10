@@ -109,6 +109,67 @@ describe('Vulnerabilities', () => {
       );
     });
 
+    it('denies expanding existing object with polluted keys', async () => {
+      const obj = await new Parse.Object('RCE', { a: { foo: [] } }).save();
+      await reconfigureServer({
+        requestKeywordDenylist: ['foo'],
+      });
+      obj.addUnique('a.foo', 'abc');
+      await expectAsync(obj.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Prohibited keyword in request data: "foo".`)
+      );
+    });
+
+    it('denies creating a cloud trigger with polluted data', async () => {
+      Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+        object.set('obj', {
+          constructor: {
+            prototype: {
+              dummy: 0,
+            },
+          },
+        });
+      });
+      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'Prohibited keyword in request data: {"key":"constructor"}.'
+        )
+      );
+    });
+
+    it('denies creating a hook with polluted data', async () => {
+      const express = require('express');
+      const bodyParser = require('body-parser');
+      const port = 34567;
+      const hookServerURL = 'http://localhost:' + port;
+      const app = express();
+      app.use(bodyParser.json({ type: '*/*' }));
+      const server = await new Promise(resolve => {
+        const res = app.listen(port, undefined, () => resolve(res));
+      });
+      app.post('/BeforeSave', function (req, res) {
+        const object = Parse.Object.fromJSON(req.body.object);
+        object.set('hello', 'world');
+        object.set('obj', {
+          constructor: {
+            prototype: {
+              dummy: 0,
+            },
+          },
+        });
+        res.json({ success: object });
+      });
+      await Parse.Hooks.createTrigger('TestObject', 'beforeSave', hookServerURL + '/BeforeSave');
+      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'Prohibited keyword in request data: {"key":"constructor"}.'
+        )
+      );
+      await new Promise(resolve => server.close(resolve));
+    });
+
     it('allows BSON type code data in write request with custom denylist', async () => {
       await reconfigureServer({
         requestKeywordDenylist: [],

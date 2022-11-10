@@ -142,10 +142,6 @@ jobs:
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 18.1.0
-          - name: Node 12
-            MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 12.22.11
           - name: Node 14
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
@@ -154,10 +150,6 @@ jobs:
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 16.14.2
-          - name: Node 17
-            MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 17.9.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
