@@ -1,8 +1,10 @@
 ![parse-repository-header-server](https://user-images.githubusercontent.com/5673677/138278489-7d0cebc5-1e31-4d3c-8ffb-53efcda6f29d.png)
 
 ---
-    
+
 [![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=alpha)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Aalpha)
+[![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=beta)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Abeta)
+[![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=release)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Arelease)
 [![Snyk Badge](https://snyk.io/test/github/parse-community/parse-server/badge.svg)](https://snyk.io/test/github/parse-community/parse-server)
 [![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
@@ -126,10 +128,8 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 | Version    | Latest Version | End-of-Life | Compatible |
 |------------|----------------|-------------|------------|
-| Node.js 12 | 12.22.11       | April 2022  | ✅ Yes      |
 | Node.js 14 | 14.19.1        | April 2023  | ✅ Yes      |
 | Node.js 16 | 16.14.2        | April 2024  | ✅ Yes      |
-| Node.js 17 | 17.9.0         | June 2022   | ✅ Yes      |
 | Node.js 18 | 18.1.0         | April 2025  | ✅ Yes      |
 
 #### MongoDB
@@ -389,7 +389,7 @@ const server = ParseServer({
   },
 
   // The password policy
-  passwordPolicy: {    
+  passwordPolicy: {
     // Enforce a password of at least 8 characters which contain at least 1 lower case, 1 upper case and 1 digit
     validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/,
     // Do not allow the username as part of the password
@@ -430,7 +430,7 @@ const api = new ParseServer({
 
 The above route can be invoked by sending a `GET` request to:
 `https://[parseServerPublicUrl]/[parseMount]/[pagesEndpoint]/[appId]/[customRoute]`
- 
+
 The `handler` receives the `request` and returns a `custom_page.html` webpage from the `pages.pagesPath` directory as response. The advantage of building a custom route this way is that it automatically makes use of Parse Server's built-in capabilities, such as [page localization](#pages) and [dynamic placeholders](#dynamic-placeholders).
 
 ### Reserved Paths
@@ -518,7 +518,7 @@ Parse Server allows developers to choose from several options when hosting files
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using Amazon S3, Google Cloud Storage, or local file storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
 ## Idempotency Enforcement
- 
+
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
 This feature deduplicates identical requests that are received by Parse Server multiple times, typically due to network issues or network adapter access restrictions on mobile operating systems.
