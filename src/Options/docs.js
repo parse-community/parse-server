@@ -58,7 +58,7 @@
  * @property {String} logLevel Sets the level for logs
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
  * @property {String} masterKey Your Parse Master Key
- * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
+ * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips, defaults to ["127.0.0.1"] (localhost only). Option can be an array of IPs, or CIDR range. For allow from anywhere, use ["0.0.0.0/0"].
  * @property {Number} maxLimit Max value for limit option on queries, defaults to unlimited
  * @property {Number|String} maxLogFiles Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)
  * @property {String} maxUploadSize Max file size for uploads, defaults to 20mb

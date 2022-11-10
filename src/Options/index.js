@@ -49,7 +49,7 @@ export interface ParseServerOptions {
   /* URL to your parse server with http:// or https://.
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
-  /* Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
+  /* Restrict masterKey to be used by only these ips, defaults to ["127.0.0.1"] (localhost only). Option can be an array of IPs, or CIDR range. For allow from anywhere, use ["0.0.0.0/0"].
   :DEFAULT: ["127.0.0.1"] */
   masterKeyIps: ?(string[]);
   /* Sets the app name */

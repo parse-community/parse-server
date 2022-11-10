@@ -302,7 +302,8 @@ module.exports.ParseServerOptions = {
   },
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
-    help: 'Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)',
+    help:
+      'Restrict masterKey to be used by only these ips, defaults to ["127.0.0.1"] (localhost only). Option can be an array of IPs, or CIDR range. For allow from anywhere, use ["0.0.0.0/0"].',
     action: parsers.arrayParser,
     default: ['127.0.0.1'],
   },
