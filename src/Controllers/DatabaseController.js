@@ -1768,7 +1768,11 @@ class DatabaseController {
     if (this.options && this.options.requestKeywordDenylist) {
       // Scan request data for denied keywords
       for (const keyword of this.options.requestKeywordDenylist) {
-        const match = Utils.objectContainsKeyValue({ firstKey: undefined }, keyword.key, undefined);
+        const match = Utils.objectContainsKeyValue(
+          { [firstKey]: true, [nextPath]: true },
+          keyword.key,
+          true
+        );
         if (match) {
           throw new Parse.Error(
             Parse.Error.INVALID_KEY_NAME,
