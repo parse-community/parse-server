@@ -1,3 +1,27 @@
+# [6.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.3...6.0.0-alpha.4) (2022-11-10)
+
+
+### Features
+
+* Remove deprecation `DEPPS2`: Config option `directAccess` defaults to true ([#8284](https://github.com/parse-community/parse-server/issues/8284)) ([f535ee6](https://github.com/parse-community/parse-server/commit/f535ee6ec2abba63f702127258ca49fa5b4e08c9))
+
+
+### BREAKING CHANGES
+
+* Config option `directAccess` defaults to true; set this to `false` in environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`. ([f535ee6](f535ee6))
+
+# [6.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.2...6.0.0-alpha.3) (2022-11-10)
+
+
+### Features
+
+* Remove deprecation `DEPPS4`: Remove convenience method for http request `Parse.Cloud.httpRequest`  ([#8287](https://github.com/parse-community/parse-server/issues/8287)) ([2d79c08](https://github.com/parse-community/parse-server/commit/2d79c0835b6a9acaf20d5c943d9b4619bb96831c))
+
+
+### BREAKING CHANGES
+
+* The convenience method for HTTP requests `Parse.Cloud.httpRequest` is removed; use your preferred 3rd party library for making HTTP requests ([2d79c08](2d79c08))
+
 # [6.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.1...6.0.0-alpha.2) (2022-11-10)
 
 
