@@ -281,7 +281,7 @@ export class UsersRouter extends ClassesRouter {
     await createSession();
 
     const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
-    maybeRunTrigger(
+    await maybeRunTrigger(
       TriggerTypes.afterLogin,
       { ...req.auth, user: afterLoginUser },
       afterLoginUser,
@@ -360,49 +360,36 @@ export class UsersRouter extends ClassesRouter {
       });
   }
 
-  handleLogOut(req) {
+  async handleLogOut(req) {
     const success = { response: {} };
     if (req.info && req.info.sessionToken) {
-      return rest
-        .find(
+      const records = await rest.find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { sessionToken: req.info.sessionToken },
+        undefined,
+        req.info.clientSDK,
+        req.info.context
+      );
+      if (records.results && records.results.length) {
+        await rest.del(
           req.config,
           Auth.master(req.config),
           '_Session',
-          { sessionToken: req.info.sessionToken },
-          undefined,
-          req.info.clientSDK,
+          records.results[0].objectId,
           req.info.context
-        )
-        .then(records => {
-          if (records.results && records.results.length) {
-            return rest
-              .del(
-                req.config,
-                Auth.master(req.config),
-                '_Session',
-                records.results[0].objectId,
-                req.info.context
-              )
-              .then(() => {
-                this._runAfterLogoutTrigger(req, records.results[0]);
-                return Promise.resolve(success);
-              });
-          }
-          return Promise.resolve(success);
-        });
+        );
+        await maybeRunTrigger(
+          TriggerTypes.afterLogout,
+          req.auth,
+          Parse.Session.fromJSON(Object.assign({ className: '_Session' }, records.results[0])),
+          null,
+          req.config
+        );
+      }
     }
-    return Promise.resolve(success);
-  }
-
-  _runAfterLogoutTrigger(req, session) {
-    // After logout trigger
-    maybeRunTrigger(
-      TriggerTypes.afterLogout,
-      req.auth,
-      Parse.Session.fromJSON(Object.assign({ className: '_Session' }, session)),
-      null,
-      req.config
-    );
+    return success;
   }
 
   _throwOnBadEmailConfig(req) {
