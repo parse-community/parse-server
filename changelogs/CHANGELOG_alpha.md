@@ -1,3 +1,15 @@
+# [6.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.3...6.0.0-alpha.4) (2022-11-10)
+
+
+### Features
+
+* Remove deprecation `DEPPS2`: Config option `directAccess` defaults to true ([#8284](https://github.com/parse-community/parse-server/issues/8284)) ([f535ee6](https://github.com/parse-community/parse-server/commit/f535ee6ec2abba63f702127258ca49fa5b4e08c9))
+
+
+### BREAKING CHANGES
+
+* Config option `directAccess` defaults to true; set this to `false` in environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`. ([f535ee6](f535ee6))
+
 # [6.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.2...6.0.0-alpha.3) (2022-11-10)
 
 
