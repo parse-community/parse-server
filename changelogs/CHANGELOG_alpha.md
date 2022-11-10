@@ -1,3 +1,15 @@
+# [6.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.4...6.0.0-alpha.5) (2022-11-10)
+
+
+### Bug Fixes
+
+* Throwing error in Cloud Code Triggers `afterLogin`, `afterLogout` crashes server ([#8280](https://github.com/parse-community/parse-server/issues/8280)) ([130d290](https://github.com/parse-community/parse-server/commit/130d29074e3f763460e5685d0b9059e5a333caff))
+
+
+### BREAKING CHANGES
+
+* Throwing an error in Cloud Code Triggers `afterLogin`, `afterLogout` returns a rejected promise; in previous releases it crashed the server if you did not handle the error on the Node.js process level; consider adapting your code if your app currently handles these errors on the Node.js process level with `process.on('unhandledRejection', ...)` ([130d290](130d290))
+
 # [6.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.3...6.0.0-alpha.4) (2022-11-10)
 
 
