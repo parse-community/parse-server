@@ -1,3 +1,15 @@
+# [6.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.4.0-alpha.1...6.0.0-alpha.1) (2022-11-10)
+
+
+### Bug Fixes
+
+* Remove Node 12 and Node 17 support ([#8279](https://github.com/parse-community/parse-server/issues/8279)) ([2546cc8](https://github.com/parse-community/parse-server/commit/2546cc8572bea6610cb9b3c7401d9afac0e3c1d6))
+
+
+### BREAKING CHANGES
+
+* This release removes Node 12 and Node 17 support ([2546cc8](2546cc8))
+
 # [5.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.3.0...5.4.0-alpha.1) (2022-10-31)
 
 
