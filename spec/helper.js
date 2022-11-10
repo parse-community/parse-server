@@ -102,7 +102,7 @@ const defaultConfiguration = {
   masterKey: 'test',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
-  directAccess: false,
+  directAccess: true,
   silent,
   logLevel,
   fileUpload: {
