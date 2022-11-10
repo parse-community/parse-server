@@ -115,7 +115,6 @@
     "test:mongodb:runnerstart": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start",
     "test:mongodb:testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
     "test:mongodb": "npm run test:mongodb:runnerstart --dbversion=$npm_config_dbversion && npm run test:mongodb:testonly --dbversion=$npm_config_dbversion",
-    "test:mongodb:4.0.28": "npm run test:mongodb --dbversion=4.0.28",
     "test:mongodb:4.2.19": "npm run test:mongodb --dbversion=4.2.19",
     "test:mongodb:4.4.13": "npm run test:mongodb --dbversion=4.4.13",
     "test:mongodb:5.3.2": "npm run test:mongodb --dbversion=5.3.2",
