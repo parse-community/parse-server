@@ -1,3 +1,10 @@
+# [6.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.1...6.0.0-alpha.2) (2022-11-10)
+
+
+### Features
+
+* Improve authentication adapter interface to support multi-factor authentication (MFA), authentication challenges, and provide a more powerful interface for writing custom authentication adapters ([#8156](https://github.com/parse-community/parse-server/issues/8156)) ([5bbf9ca](https://github.com/parse-community/parse-server/commit/5bbf9cade9a527787fd1002072d4013ab5d8db2b))
+
 # [6.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.4.0-alpha.1...6.0.0-alpha.1) (2022-11-10)
 
 
