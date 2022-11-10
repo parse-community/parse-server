@@ -256,6 +256,49 @@ describe('AuthenticationProviders', function () {
       .catch(done.fail);
   });
 
+  it('should support loginWith with session token and with/without mutated authData', async () => {
+    const fakeAuthProvider = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const payload = { authData: { id: 'user1', token: 'fakeToken' } };
+    const payload2 = { authData: { id: 'user1', token: 'fakeToken2' } };
+    await reconfigureServer({ auth: { fakeAuthProvider } });
+    const user = await Parse.User.logInWith('fakeAuthProvider', payload);
+    const user2 = await Parse.User.logInWith('fakeAuthProvider', payload, {
+      sessionToken: user.getSessionToken(),
+    });
+    const user3 = await Parse.User.logInWith('fakeAuthProvider', payload2, {
+      sessionToken: user2.getSessionToken(),
+    });
+    expect(user.id).toEqual(user2.id);
+    expect(user.id).toEqual(user3.id);
+  });
+
+  it('should support sync/async validateAppId', async () => {
+    const syncProvider = {
+      validateAppId: () => true,
+      appIds: 'test',
+      validateAuthData: () => Promise.resolve(),
+    };
+    const asyncProvider = {
+      appIds: 'test',
+      validateAppId: () => Promise.resolve(true),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const payload = { authData: { id: 'user1', token: 'fakeToken' } };
+    const syncSpy = spyOn(syncProvider, 'validateAppId');
+    const asyncSpy = spyOn(asyncProvider, 'validateAppId');
+
+    await reconfigureServer({ auth: { asyncProvider, syncProvider } });
+    const user = await Parse.User.logInWith('asyncProvider', payload);
+    const user2 = await Parse.User.logInWith('syncProvider', payload);
+    expect(user.getSessionToken()).toBeDefined();
+    expect(user2.getSessionToken()).toBeDefined();
+    expect(syncSpy).toHaveBeenCalledTimes(1);
+    expect(asyncSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('unlink and link with custom provider', async () => {
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -339,10 +382,10 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator(validAuthData).then(
+    validator(validAuthData, {}, {}).then(
       () => {
         expect(authDataSpy).toHaveBeenCalled();
         // AppIds are not provided in the adapter, should not be called
@@ -362,12 +405,15 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
-
-    validator({
-      token: 'my-token',
-    }).then(
+    validator(
+      {
+        token: 'my-token',
+      },
+      {},
+      {}
+    ).then(
       () => {
         done();
       },
@@ -387,12 +433,16 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator({
-      token: 'valid-token',
-    }).then(
+    validator(
+      {
+        token: 'valid-token',
+      },
+      {},
+      {}
+    ).then(
       () => {
         done();
       },
@@ -541,6 +591,7 @@ describe('AuthenticationProviders', function () {
   });
 
   it('can depreciate', async () => {
+    await reconfigureServer();
     const Deprecator = require('../lib/Deprecator/Deprecator');
     const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
     const provider = getMockMyOauthProvider();

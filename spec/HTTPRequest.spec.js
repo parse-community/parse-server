@@ -1,7 +1,7 @@
 'use strict';
 
-const httpRequest = require('../lib/cloud-code/httpRequest'),
-  HTTPResponse = require('../lib/cloud-code/HTTPResponse').default,
+const httpRequest = require('../lib/request'),
+  HTTPResponse = require('../lib/request').HTTPResponse,
   bodyParser = require('body-parser'),
   express = require('express');
 
