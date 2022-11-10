@@ -13,6 +13,63 @@ const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 
+describe('allowExpiredAuthDataToken option', () => {
+  it('should accept true value', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({ allowExpiredAuthDataToken: true });
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(true);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
+        ).length
+    ).toEqual(0);
+  });
+
+  it('should accept false value', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({ allowExpiredAuthDataToken: false });
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
+        ).length
+    ).toEqual(0);
+  });
+
+  it('should default true', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({});
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(true);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
+        ).length
+    ).toEqual(1);
+  });
+
+  it('should enforce boolean values', async () => {
+    const options = [[], 'a', '', 0, 1, {}, 'true', 'false'];
+    for (const option of options) {
+      await expectAsync(reconfigureServer({ allowExpiredAuthDataToken: option })).toBeRejected();
+    }
+  });
+});
+
 describe('Parse.User testing', () => {
   it('user sign up class method', async done => {
     const user = await Parse.User.signUp('asdf', 'zxcv');
@@ -1128,7 +1185,7 @@ describe('Parse.User testing', () => {
         this.synchronizedExpiration = authData.expiration_date;
         return true;
       },
-      getAuthType: function () {
+      getAuthType() {
         return 'facebook';
       },
       deauthenticate: function () {
@@ -1157,7 +1214,7 @@ describe('Parse.User testing', () => {
       synchronizedAuthToken: null,
       synchronizedExpiration: null,
 
-      authenticate: function (options) {
+      authenticate(options) {
         if (this.shouldError) {
           options.error(this, 'An error occurred');
         } else if (this.shouldCancel) {
@@ -1166,7 +1223,7 @@ describe('Parse.User testing', () => {
           options.success(this, this.authData);
         }
       },
-      restoreAuthentication: function (authData) {
+      restoreAuthentication(authData) {
         if (!authData) {
           this.synchronizedUserId = null;
           this.synchronizedAuthToken = null;
@@ -1178,10 +1235,10 @@ describe('Parse.User testing', () => {
         this.synchronizedExpiration = authData.expiration_date;
         return true;
       },
-      getAuthType: function () {
+      getAuthType() {
         return 'myoauth';
       },
-      deauthenticate: function () {
+      deauthenticate() {
         this.loggedOut = true;
         this.restoreAuthentication(null);
       },
@@ -1791,7 +1848,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should allow login with old authData token', done => {
+  it('should allow login with expired authData token by default', async () => {
     const provider = {
       authData: {
         id: '12345',
@@ -1812,22 +1869,42 @@ describe('Parse.User testing', () => {
     };
     defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith('shortLivedAuth', {})
-      .then(() => {
-        // Simulate a remotely expired token (like a short lived one)
-        // In this case, we want success as it was valid once.
-        // If the client needs an updated one, do lock the user out
-        defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
-        return Parse.User._logInWith('shortLivedAuth', {});
-      })
-      .then(
-        () => {
-          done();
-        },
-        err => {
-          done.fail(err);
-        }
-      );
+    await Parse.User._logInWith('shortLivedAuth', {});
+    // Simulate a remotely expired token (like a short lived one)
+    // In this case, we want success as it was valid once.
+    // If the client needs an updated token, do lock the user out
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
+    await Parse.User._logInWith('shortLivedAuth', {});
+  });
+
+  it('should not allow login with expired authData token when allowExpiredAuthDataToken is set to false', async () => {
+    await reconfigureServer({ allowExpiredAuthDataToken: false });
+    const provider = {
+      authData: {
+        id: '12345',
+        access_token: 'token',
+      },
+      restoreAuthentication() {
+        return true;
+      },
+      deauthenticate() {
+        provider.authData = {};
+      },
+      authenticate(options) {
+        options.success(this, provider.authData);
+      },
+      getAuthType() {
+        return 'shortLivedAuth';
+      },
+    };
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith('shortLivedAuth', {});
+    // Simulate a remotely expired token (like a short lived one)
+    // In this case, we want success as it was valid once.
+    // If the client needs an updated token, do lock the user out
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
+    expectAsync(Parse.User._logInWith('shortLivedAuth', {})).toBeRejected();
   });
 
   it('should allow PUT request with stale auth Data', done => {
@@ -2277,37 +2354,14 @@ describe('Parse.User testing', () => {
     });
 
     describe('anonymous users', () => {
-      beforeEach(() => {
-        const insensitiveCollisions = [
-          'abcdefghijklmnop',
-          'Abcdefghijklmnop',
-          'ABcdefghijklmnop',
-          'ABCdefghijklmnop',
-          'ABCDefghijklmnop',
-          'ABCDEfghijklmnop',
-          'ABCDEFghijklmnop',
-          'ABCDEFGhijklmnop',
-          'ABCDEFGHijklmnop',
-          'ABCDEFGHIjklmnop',
-          'ABCDEFGHIJklmnop',
-          'ABCDEFGHIJKlmnop',
-          'ABCDEFGHIJKLmnop',
-          'ABCDEFGHIJKLMnop',
-          'ABCDEFGHIJKLMnop',
-          'ABCDEFGHIJKLMNop',
-          'ABCDEFGHIJKLMNOp',
-          'ABCDEFGHIJKLMNOP',
-        ];
-
-        // need a bunch of spare random strings per api request
-        spyOn(cryptoUtils, 'randomString').and.returnValues(...insensitiveCollisions);
-      });
-
       it('should not fail on case insensitive matches', async () => {
-        const user1 = await Parse.AnonymousUtils.logIn();
+        spyOn(cryptoUtils, 'randomString').and.returnValue('abcdefghijklmnop');
+        const logIn = id => Parse.User.logInWith('anonymous', { authData: { id } });
+        const user1 = await logIn('test1');
         const username1 = user1.get('username');
 
-        const user2 = await Parse.AnonymousUtils.logIn();
+        cryptoUtils.randomString.and.returnValue('ABCDEFGHIJKLMNOp');
+        const user2 = await logIn('test2');
         const username2 = user2.get('username');
 
         expect(username1).not.toBeUndefined();

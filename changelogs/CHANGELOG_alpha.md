@@ -1,3 +1,34 @@
+# [6.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.2...6.0.0-alpha.3) (2022-11-10)
+
+
+### Features
+
+* Remove deprecation `DEPPS4`: Remove convenience method for http request `Parse.Cloud.httpRequest`  ([#8287](https://github.com/parse-community/parse-server/issues/8287)) ([2d79c08](https://github.com/parse-community/parse-server/commit/2d79c0835b6a9acaf20d5c943d9b4619bb96831c))
+
+
+### BREAKING CHANGES
+
+* The convenience method for HTTP requests `Parse.Cloud.httpRequest` is removed; use your preferred 3rd party library for making HTTP requests ([2d79c08](2d79c08))
+
+# [6.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.1...6.0.0-alpha.2) (2022-11-10)
+
+
+### Features
+
+* Improve authentication adapter interface to support multi-factor authentication (MFA), authentication challenges, and provide a more powerful interface for writing custom authentication adapters ([#8156](https://github.com/parse-community/parse-server/issues/8156)) ([5bbf9ca](https://github.com/parse-community/parse-server/commit/5bbf9cade9a527787fd1002072d4013ab5d8db2b))
+
+# [6.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.4.0-alpha.1...6.0.0-alpha.1) (2022-11-10)
+
+
+### Bug Fixes
+
+* Remove Node 12 and Node 17 support ([#8279](https://github.com/parse-community/parse-server/issues/8279)) ([2546cc8](https://github.com/parse-community/parse-server/commit/2546cc8572bea6610cb9b3c7401d9afac0e3c1d6))
+
+
+### BREAKING CHANGES
+
+* This release removes Node 12 and Node 17 support ([2546cc8](2546cc8))
+
 # [5.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.3.0...5.4.0-alpha.1) (2022-10-31)
 
 
