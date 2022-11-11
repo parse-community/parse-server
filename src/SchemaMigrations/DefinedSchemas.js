@@ -403,8 +403,8 @@ export class DefinedSchemas {
     if (className === '_User') {
       indexes = [
         ...indexes,
-        'case_insensitive_username',
-        'case_insensitive_email',
+        //'case_insensitive_username',
+        //'case_insensitive_email',
         'username_1',
         'email_1',
       ];

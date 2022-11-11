@@ -70,7 +70,7 @@ export default class MongoCollection {
    * Collation to support case insensitive queries
    */
   static caseInsensitiveCollation() {
-    return { locale: 'en_US', strength: 2 };
+    return { locale: 'en_US', strength: 3 };
   }
 
   _rawFind(
@@ -90,7 +90,7 @@ export default class MongoCollection {
     }
 
     if (caseInsensitive) {
-      findOperation = findOperation.collation(MongoCollection.caseInsensitiveCollation());
+      // findOperation = findOperation.collation(MongoCollection.caseInsensitiveCollation());
     }
 
     if (maxTimeMS) {
