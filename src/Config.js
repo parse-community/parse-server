@@ -440,7 +440,7 @@ export class Config {
         ip = ip.split('/')[0];
       }
       if (!net.isIP(ip)) {
-        throw `The option "masterKeyIps" contains an invalid IP address "${ip}".`;
+        throw `The Parse Server option "masterKeyIps" contains an invalid IP address "${ip}".`;
       }
     }
   }
