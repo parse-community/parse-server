@@ -1,3 +1,15 @@
+# [6.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.6...6.0.0-alpha.7) (2022-11-11)
+
+
+### Features
+
+* Upgrade Redis 3 to 4 ([#8293](https://github.com/parse-community/parse-server/issues/8293)) ([7d622f0](https://github.com/parse-community/parse-server/commit/7d622f06a4347e0ad2cba9a4ec07d8d4fb0f67bc))
+
+
+### BREAKING CHANGES
+
+* This release upgrades to Redis 4; if you are using the Redis cache adapter with Parse Server then this is a breaking change as the Redis client options have changed; see the [Redis migration guide](https://github.com/redis/node-redis/blob/redis%404.0.0/docs/v3-to-v4.md) for more details (#8293) ([7d622f0](7d622f0))
+
 # [6.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.5...6.0.0-alpha.6) (2022-11-10)
 
 
