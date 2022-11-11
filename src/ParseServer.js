@@ -87,9 +87,18 @@ class ParseServer {
       .performInitialization()
       .then(() => hooksController.load())
       .then(async () => {
+        const startupPromises = [];
         if (schema) {
-          await new DefinedSchemas(schema, this.config).execute();
+          startupPromises.push(new DefinedSchemas(schema, this.config).execute());
         }
+        if (
+          options.cacheAdapter &&
+          options.cacheAdapter.connect &&
+          typeof options.cacheAdapter.connect === 'function'
+        ) {
+          startupPromises.push(options.cacheAdapter.connect());
+        }
+        await Promise.all(startupPromises);
         if (serverStartComplete) {
           serverStartComplete();
         }

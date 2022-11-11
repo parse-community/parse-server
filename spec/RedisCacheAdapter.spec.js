@@ -19,23 +19,22 @@ describe_only(() => {
 
   beforeEach(async () => {
     cache = new RedisCacheAdapter(null, 100);
+    await cache.connect();
     await cache.clear();
   });
 
-  it('should get/set/clear', done => {
+  it('should get/set/clear', async () => {
     const cacheNaN = new RedisCacheAdapter({
       ttl: NaN,
     });
-
-    cacheNaN
-      .put(KEY, VALUE)
-      .then(() => cacheNaN.get(KEY))
-      .then(value => expect(value).toEqual(VALUE))
-      .then(() => cacheNaN.clear())
-      .then(() => cacheNaN.get(KEY))
-      .then(value => expect(value).toEqual(null))
-      .then(() => cacheNaN.clear())
-      .then(done);
+    await cacheNaN.connect();
+    await cacheNaN.put(KEY, VALUE);
+    let value = await cacheNaN.get(KEY);
+    expect(value).toEqual(VALUE);
+    await cacheNaN.clear();
+    value = await cacheNaN.get(KEY);
+    expect(value).toEqual(null);
+    await cacheNaN.clear();
   });
 
   it('should expire after ttl', done => {
@@ -100,7 +99,7 @@ describe_only(() => {
   it('handleShutdown, close connection', async () => {
     await cache.handleShutdown();
     setTimeout(() => {
-      expect(cache.client.connected).toBe(false);
+      expect(cache.client.isOpen).toBe(false);
     }, 0);
   });
 });
@@ -122,8 +121,9 @@ describe_only(() => {
     return Object.keys(cache.queue.queue).length;
   }
 
-  it('it should clear completed operations from queue', done => {
+  it('it should clear completed operations from queue', async done => {
     const cache = new RedisCacheAdapter({ ttl: NaN });
+    await cache.connect();
 
     // execute a bunch of operations in sequence
     let promise = Promise.resolve();
@@ -144,8 +144,9 @@ describe_only(() => {
     promise.then(() => expect(getQueueCount(cache)).toEqual(0)).then(done);
   });
 
-  it('it should count per key chained operations correctly', done => {
+  it('it should count per key chained operations correctly', async done => {
     const cache = new RedisCacheAdapter({ ttl: NaN });
+    await cache.connect();
 
     let key1Promise = Promise.resolve();
     let key2Promise = Promise.resolve();
