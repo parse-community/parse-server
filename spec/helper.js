@@ -102,7 +102,7 @@ const defaultConfiguration = {
   masterKey: 'test',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
-  directAccess: false,
+  directAccess: true,
   silent,
   logLevel,
   fileUpload: {
@@ -110,6 +110,7 @@ const defaultConfiguration = {
     enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
   },
+  masterKeyIps: ['127.0.0.1'],
   push: {
     android: {
       senderId: 'yolo',
