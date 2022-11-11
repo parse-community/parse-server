@@ -7,6 +7,7 @@ import defaultLogger from './logger';
 import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
+import ipRangeCheck from 'ip-range-check';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -164,16 +165,10 @@ export function handleParseHeaders(req, res, next) {
   req.config.ip = clientIp;
   req.info = info;
 
-  if (
-    info.masterKey &&
-    req.config.masterKeyIps &&
-    req.config.masterKeyIps.length !== 0 &&
-    req.config.masterKeyIps.indexOf(clientIp) === -1
-  ) {
-    return invalidRequest(req, res);
+  let isMaster = info.masterKey === req.config.masterKey;
+  if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
+    isMaster = false;
   }
-
-  var isMaster = info.masterKey === req.config.masterKey;
 
   if (isMaster) {
     req.auth = new auth.Auth({
