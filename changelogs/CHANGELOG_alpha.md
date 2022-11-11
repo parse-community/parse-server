@@ -1,3 +1,15 @@
+# [6.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.7...6.0.0-alpha.8) (2022-11-11)
+
+
+### Features
+
+* Restrict use of `masterKey` to localhost by default ([#8281](https://github.com/parse-community/parse-server/issues/8281)) ([6c16021](https://github.com/parse-community/parse-server/commit/6c16021a1f03a70a6d9e68cb64df362d07f3b693))
+
+
+### BREAKING CHANGES
+
+* This release restricts the use of `masterKey` to localhost by default; if you are using Parse Dashboard on a different server to connect to Parse Server you need to add the IP address of the server that hosts Parse Dashboard to this option (#8281) ([6c16021](6c16021))
+
 # [6.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.6...6.0.0-alpha.7) (2022-11-11)
 
 
