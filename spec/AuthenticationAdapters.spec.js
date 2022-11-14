@@ -256,6 +256,49 @@ describe('AuthenticationProviders', function () {
       .catch(done.fail);
   });
 
+  it('should support loginWith with session token and with/without mutated authData', async () => {
+    const fakeAuthProvider = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const payload = { authData: { id: 'user1', token: 'fakeToken' } };
+    const payload2 = { authData: { id: 'user1', token: 'fakeToken2' } };
+    await reconfigureServer({ auth: { fakeAuthProvider } });
+    const user = await Parse.User.logInWith('fakeAuthProvider', payload);
+    const user2 = await Parse.User.logInWith('fakeAuthProvider', payload, {
+      sessionToken: user.getSessionToken(),
+    });
+    const user3 = await Parse.User.logInWith('fakeAuthProvider', payload2, {
+      sessionToken: user2.getSessionToken(),
+    });
+    expect(user.id).toEqual(user2.id);
+    expect(user.id).toEqual(user3.id);
+  });
+
+  it('should support sync/async validateAppId', async () => {
+    const syncProvider = {
+      validateAppId: () => true,
+      appIds: 'test',
+      validateAuthData: () => Promise.resolve(),
+    };
+    const asyncProvider = {
+      appIds: 'test',
+      validateAppId: () => Promise.resolve(true),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const payload = { authData: { id: 'user1', token: 'fakeToken' } };
+    const syncSpy = spyOn(syncProvider, 'validateAppId');
+    const asyncSpy = spyOn(asyncProvider, 'validateAppId');
+
+    await reconfigureServer({ auth: { asyncProvider, syncProvider } });
+    const user = await Parse.User.logInWith('asyncProvider', payload);
+    const user2 = await Parse.User.logInWith('syncProvider', payload);
+    expect(user.getSessionToken()).toBeDefined();
+    expect(user2.getSessionToken()).toBeDefined();
+    expect(syncSpy).toHaveBeenCalledTimes(1);
+    expect(asyncSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('unlink and link with custom provider', async () => {
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -339,10 +382,10 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator(validAuthData).then(
+    validator(validAuthData, {}, {}).then(
       () => {
         expect(authDataSpy).toHaveBeenCalled();
         // AppIds are not provided in the adapter, should not be called
@@ -362,12 +405,15 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
-
-    validator({
-      token: 'my-token',
-    }).then(
+    validator(
+      {
+        token: 'my-token',
+      },
+      {},
+      {}
+    ).then(
       () => {
         done();
       },
@@ -387,12 +433,16 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator({
-      token: 'valid-token',
-    }).then(
+    validator(
+      {
+        token: 'valid-token',
+      },
+      {},
+      {}
+    ).then(
       () => {
         done();
       },
@@ -419,6 +469,29 @@ describe('AuthenticationProviders', function () {
     expect(providerOptions).toEqual(options.facebook);
   });
 
+  it('should throw error when Facebook request appId is wrong data type', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'a' });
+    });
+    const options = {
+      facebook: {
+        appIds: 'abcd',
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      access_token: 'badtoken',
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
+    );
+  });
+
   it('should handle Facebook appSecret for validating appIds', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
@@ -439,6 +512,29 @@ describe('AuthenticationProviders', function () {
     );
     await adapter.validateAppId(appIds, authData, providerOptions);
     expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
+  });
+
+  it('should throw error when Facebook request appId is wrong data type', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'a' });
+    });
+    const options = {
+      facebook: {
+        appIds: 'abcd',
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      access_token: 'badtoken',
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
+    );
   });
 
   it('should handle Facebook appSecret for validating auth data', async () => {
@@ -495,6 +591,7 @@ describe('AuthenticationProviders', function () {
   });
 
   it('can depreciate', async () => {
+    await reconfigureServer();
     const Deprecator = require('../lib/Deprecator/Deprecator');
     const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
     const provider = getMockMyOauthProvider();
@@ -1682,6 +1779,7 @@ describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
   const fs = require('fs');
   const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+  const testCert2 = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
 
   it('can load adapter', async () => {
     const options = {
@@ -1732,6 +1830,8 @@ describe('Apple Game Center Auth adapter', () => {
   });
 
   it('validateAuthData invalid signature id', async () => {
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-6.cer'] = testCert2;
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       {}
@@ -1843,7 +1943,7 @@ describe('Apple Game Center Auth adapter', () => {
     );
 
     const duration = new Date().getTime() - previous.getTime();
-    expect(duration).toEqual(0);
+    expect(duration <= 1).toBe(true);
   });
 
   it('adapter should throw', async () => {

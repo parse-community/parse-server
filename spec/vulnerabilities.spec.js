@@ -109,6 +109,67 @@ describe('Vulnerabilities', () => {
       );
     });
 
+    it('denies expanding existing object with polluted keys', async () => {
+      const obj = await new Parse.Object('RCE', { a: { foo: [] } }).save();
+      await reconfigureServer({
+        requestKeywordDenylist: ['foo'],
+      });
+      obj.addUnique('a.foo', 'abc');
+      await expectAsync(obj.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Prohibited keyword in request data: "foo".`)
+      );
+    });
+
+    it('denies creating a cloud trigger with polluted data', async () => {
+      Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+        object.set('obj', {
+          constructor: {
+            prototype: {
+              dummy: 0,
+            },
+          },
+        });
+      });
+      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'Prohibited keyword in request data: {"key":"constructor"}.'
+        )
+      );
+    });
+
+    it('denies creating a hook with polluted data', async () => {
+      const express = require('express');
+      const bodyParser = require('body-parser');
+      const port = 34567;
+      const hookServerURL = 'http://localhost:' + port;
+      const app = express();
+      app.use(bodyParser.json({ type: '*/*' }));
+      const server = await new Promise(resolve => {
+        const res = app.listen(port, undefined, () => resolve(res));
+      });
+      app.post('/BeforeSave', function (req, res) {
+        const object = Parse.Object.fromJSON(req.body.object);
+        object.set('hello', 'world');
+        object.set('obj', {
+          constructor: {
+            prototype: {
+              dummy: 0,
+            },
+          },
+        });
+        res.json({ success: object });
+      });
+      await Parse.Hooks.createTrigger('TestObject', 'beforeSave', hookServerURL + '/BeforeSave');
+      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'Prohibited keyword in request data: {"key":"constructor"}.'
+        )
+      );
+      await new Promise(resolve => server.close(resolve));
+    });
+
     it('allows BSON type code data in write request with custom denylist', async () => {
       await reconfigureServer({
         requestKeywordDenylist: [],
@@ -278,6 +339,44 @@ describe('Vulnerabilities', () => {
       const text = JSON.parse(response.text);
       expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
       expect(text.error).toBe('Prohibited keyword in request data: {"value":"aValue[123]*"}.');
+    });
+
+    it('denies BSON type code data in file metadata', async () => {
+      const str = 'Hello World!';
+      const data = [];
+      for (let i = 0; i < str.length; i++) {
+        data.push(str.charCodeAt(i));
+      }
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.addMetadata('obj', {
+        _bsontype: 'Code',
+        code: 'delete Object.prototype.evalFunctions',
+      });
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.`
+        )
+      );
+    });
+
+    it('denies BSON type code data in file tags', async () => {
+      const str = 'Hello World!';
+      const data = [];
+      for (let i = 0; i < str.length; i++) {
+        data.push(str.charCodeAt(i));
+      }
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      file.addTag('obj', {
+        _bsontype: 'Code',
+        code: 'delete Object.prototype.evalFunctions',
+      });
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.`
+        )
+      );
     });
   });
 
