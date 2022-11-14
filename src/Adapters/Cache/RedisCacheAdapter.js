@@ -1,4 +1,4 @@
-import redis from 'redis';
+import { createClient } from 'redis';
 import logger from '../../logger';
 import { KeyPromiseQueue } from '../../KeyPromiseQueue';
 
@@ -15,114 +15,76 @@ const isValidTTL = ttl => typeof ttl === 'number' && ttl > 0;
 export class RedisCacheAdapter {
   constructor(redisCtx, ttl = DEFAULT_REDIS_TTL) {
     this.ttl = isValidTTL(ttl) ? ttl : DEFAULT_REDIS_TTL;
-    this.client = redis.createClient(redisCtx);
+    this.client = createClient(redisCtx);
     this.queue = new KeyPromiseQueue();
   }
 
-  handleShutdown() {
-    if (!this.client) {
-      return Promise.resolve();
+  async connect() {
+    if (this.client.isOpen) {
+      return;
     }
-    return new Promise(resolve => {
-      this.client.quit(err => {
-        if (err) {
-          logger.error('RedisCacheAdapter error on shutdown', { error: err });
-        }
-        resolve();
-      });
-    });
+    return this.client.connect();
   }
 
-  get(key) {
+  async handleShutdown() {
+    if (!this.client) {
+      return;
+    }
+    try {
+      await this.client.quit();
+    } catch (err) {
+      logger.error('RedisCacheAdapter error on shutdown', { error: err });
+    }
+  }
+
+  async get(key) {
     debug('get', { key });
-    return this.queue.enqueue(
-      key,
-      () =>
-        new Promise(resolve => {
-          this.client.get(key, function (err, res) {
-            debug('-> get', { key, res });
-            if (!res) {
-              return resolve(null);
-            }
-            resolve(JSON.parse(res));
-          });
-        })
-    );
+    try {
+      await this.queue.enqueue(key);
+      const res = await this.client.get(key);
+      if (!res) {
+        return null;
+      }
+      return JSON.parse(res);
+    } catch (err) {
+      logger.error('RedisCacheAdapter error on get', { error: err });
+    }
   }
 
-  put(key, value, ttl = this.ttl) {
+  async put(key, value, ttl = this.ttl) {
     value = JSON.stringify(value);
     debug('put', { key, value, ttl });
-
+    await this.queue.enqueue(key);
     if (ttl === 0) {
       // ttl of zero is a logical no-op, but redis cannot set expire time of zero
-      return this.queue.enqueue(key, () => Promise.resolve());
+      return;
     }
 
     if (ttl === Infinity) {
-      return this.queue.enqueue(
-        key,
-        () =>
-          new Promise(resolve => {
-            this.client.set(key, value, function () {
-              resolve();
-            });
-          })
-      );
+      return this.client.set(key, value);
     }
 
     if (!isValidTTL(ttl)) {
       ttl = this.ttl;
     }
-
-    return this.queue.enqueue(
-      key,
-      () =>
-        new Promise(resolve => {
-          this.client.psetex(key, ttl, value, function () {
-            resolve();
-          });
-        })
-    );
+    return this.client.set(key, value, { PX: ttl });
   }
 
-  del(key) {
+  async del(key) {
     debug('del', { key });
-    return this.queue.enqueue(
-      key,
-      () =>
-        new Promise(resolve => {
-          this.client.del(key, function () {
-            resolve();
-          });
-        })
-    );
+    await this.queue.enqueue(key);
+    return this.client.del(key);
   }
 
-  clear() {
+  async clear() {
     debug('clear');
-    return this.queue.enqueue(
-      FLUSH_DB_KEY,
-      () =>
-        new Promise(resolve => {
-          this.client.flushdb(function () {
-            resolve();
-          });
-        })
-    );
+    await this.queue.enqueue(FLUSH_DB_KEY);
+    return this.client.sendCommand(['FLUSHDB']);
   }
 
   // Used for testing
-  async getAllKeys() {
-    return new Promise((resolve, reject) => {
-      this.client.keys('*', (err, keys) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(keys);
-        }
-      });
-    });
+  getAllKeys() {
+    return this.client.keys('*');
   }
 }
 

@@ -12,10 +12,10 @@ var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
+const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
-import Deprecator from './Deprecator/Deprecator';
 import { requiredColumns } from './Controllers/SchemaController';
 
 // query and data are both provided in REST API format. So data
@@ -64,18 +64,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
     }
   }
 
-  if (this.config.requestKeywordDenylist) {
-    // Scan request data for denied keywords
-    for (const keyword of this.config.requestKeywordDenylist) {
-      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
-      if (match) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
-        );
-      }
-    }
-  }
+  this.checkProhibitedKeywords(data);
 
   // When the operation is complete, this.response may have several
   // fields.
@@ -125,6 +114,9 @@ RestWrite.prototype.execute = function () {
       return this.runBeforeSaveTrigger();
     })
     .then(() => {
+      return this.ensureUniqueAuthDataId();
+    })
+    .then(() => {
       return this.deleteEmailResetTokenIfNeeded();
     })
     .then(() => {
@@ -159,6 +151,12 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
+      // Append the authDataResponse if exists
+      if (this.authDataResponse) {
+        if (this.response && this.response.response) {
+          this.response.response.authDataResponse = this.authDataResponse;
+        }
+      }
       return this.response;
     });
 };
@@ -217,7 +215,7 @@ RestWrite.prototype.validateSchema = function () {
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeSaveTrigger = function () {
-  if (this.response) {
+  if (this.response || this.runOptions.many) {
     return;
   }
 
@@ -292,6 +290,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
           delete this.data.objectId;
         }
       }
+      this.checkProhibitedKeywords(this.data);
     });
 };
 
@@ -384,7 +383,11 @@ RestWrite.prototype.validateAuthData = function () {
     return;
   }
 
-  if (!this.query && !this.data.authData) {
+  const authData = this.data.authData;
+  const hasUsernameAndPassword =
+    typeof this.data.username === 'string' && typeof this.data.password === 'string';
+
+  if (!this.query && !authData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
     }
@@ -394,10 +397,10 @@ RestWrite.prototype.validateAuthData = function () {
   }
 
   if (
-    (this.data.authData && !Object.keys(this.data.authData).length) ||
+    (authData && !Object.keys(authData).length) ||
     !Object.prototype.hasOwnProperty.call(this.data, 'authData')
   ) {
-    // Handle saving authData to {} or if authData doesn't exist
+    // Nothing to validate here
     return;
   } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
     // Handle saving authData to null
@@ -407,15 +410,14 @@ RestWrite.prototype.validateAuthData = function () {
     );
   }
 
-  var authData = this.data.authData;
   var providers = Object.keys(authData);
   if (providers.length > 0) {
-    const canHandleAuthData = providers.reduce((canHandle, provider) => {
+    const canHandleAuthData = providers.some(provider => {
       var providerAuthData = authData[provider];
       var hasToken = providerAuthData && providerAuthData.id;
-      return canHandle && (hasToken || providerAuthData == null);
-    }, true);
-    if (canHandleAuthData) {
+      return hasToken || providerAuthData === null;
+    });
+    if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
       return this.handleAuthData(authData);
     }
   }
@@ -423,55 +425,6 @@ RestWrite.prototype.validateAuthData = function () {
     Parse.Error.UNSUPPORTED_SERVICE,
     'This authentication method is unsupported.'
   );
-};
-
-RestWrite.prototype.handleAuthDataValidation = function (authData) {
-  const validations = Object.keys(authData).map(provider => {
-    if (authData[provider] === null) {
-      return Promise.resolve();
-    }
-    const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
-    const authProvider = (this.config.auth || {})[provider] || {};
-    if (authProvider.enabled == null) {
-      Deprecator.logRuntimeDeprecation({
-        usage: `auth.${provider}`,
-        solution: `auth.${provider}.enabled: true`,
-      });
-    }
-    if (!validateAuthData || authProvider.enabled === false) {
-      throw new Parse.Error(
-        Parse.Error.UNSUPPORTED_SERVICE,
-        'This authentication method is unsupported.'
-      );
-    }
-    return validateAuthData(authData[provider]);
-  });
-  return Promise.all(validations);
-};
-
-RestWrite.prototype.findUsersWithAuthData = function (authData) {
-  const providers = Object.keys(authData);
-  const query = providers
-    .reduce((memo, provider) => {
-      if (!authData[provider]) {
-        return memo;
-      }
-      const queryKey = `authData.${provider}.id`;
-      const query = {};
-      query[queryKey] = authData[provider].id;
-      memo.push(query);
-      return memo;
-    }, [])
-    .filter(q => {
-      return typeof q !== 'undefined';
-    });
-
-  let findPromise = Promise.resolve([]);
-  if (query.length > 0) {
-    findPromise = this.config.database.find(this.className, { $or: query }, {});
-  }
-
-  return findPromise;
 };
 
 RestWrite.prototype.filteredObjectsByACL = function (objects) {
@@ -487,106 +440,161 @@ RestWrite.prototype.filteredObjectsByACL = function (objects) {
   });
 };
 
-RestWrite.prototype.handleAuthData = function (authData) {
-  let results;
-  return this.findUsersWithAuthData(authData).then(async r => {
-    results = this.filteredObjectsByACL(r);
+RestWrite.prototype.getUserId = function () {
+  if (this.query && this.query.objectId && this.className === '_User') {
+    return this.query.objectId;
+  } else if (this.auth && this.auth.user && this.auth.user.id) {
+    return this.auth.user.id;
+  }
+};
 
-    if (results.length == 1) {
-      this.storage['authProvider'] = Object.keys(authData).join(',');
+// Developers are allowed to change authData via before save trigger
+// we need after before save to ensure that the developer
+// is not currently duplicating auth data ID
+RestWrite.prototype.ensureUniqueAuthDataId = async function () {
+  if (this.className !== '_User' || !this.data.authData) {
+    return;
+  }
 
-      const userResult = results[0];
-      const mutatedAuthData = {};
-      Object.keys(authData).forEach(provider => {
-        const providerData = authData[provider];
-        const userAuthData = userResult.authData[provider];
-        if (!_.isEqual(providerData, userAuthData)) {
-          mutatedAuthData[provider] = providerData;
-        }
-      });
-      const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
-      let userId;
-      if (this.query && this.query.objectId) {
-        userId = this.query.objectId;
-      } else if (this.auth && this.auth.user && this.auth.user.id) {
-        userId = this.auth.user.id;
+  const hasAuthDataId = Object.keys(this.data.authData).some(
+    key => this.data.authData[key] && this.data.authData[key].id
+  );
+
+  if (!hasAuthDataId) return;
+
+  const r = await Auth.findUsersWithAuthData(this.config, this.data.authData);
+  const results = this.filteredObjectsByACL(r);
+  if (results.length > 1) {
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
+  // use data.objectId in case of login time and found user during handle validateAuthData
+  const userId = this.getUserId() || this.data.objectId;
+  if (results.length === 1 && userId !== results[0].objectId) {
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
+};
+
+RestWrite.prototype.handleAuthData = async function (authData) {
+  const r = await Auth.findUsersWithAuthData(this.config, authData);
+  const results = this.filteredObjectsByACL(r);
+
+  if (results.length > 1) {
+    // To avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
+    // Let's run some validation before throwing
+    await Auth.handleAuthDataValidation(authData, this, results[0]);
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
+
+  // No user found with provided authData we need to validate
+  if (!results.length) {
+    const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
+      authData,
+      this
+    );
+    this.authDataResponse = authDataResponse;
+    // Replace current authData by the new validated one
+    this.data.authData = validatedAuthData;
+    return;
+  }
+
+  // User found with provided authData
+  if (results.length === 1) {
+    const userId = this.getUserId();
+    const userResult = results[0];
+    // Prevent duplicate authData id
+    if (userId && userId !== userResult.objectId) {
+      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+    }
+
+    this.storage.authProvider = Object.keys(authData).join(',');
+
+    const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
+      authData,
+      userResult.authData
+    );
+
+    const isCurrentUserLoggedOrMaster =
+      (this.auth && this.auth.user && this.auth.user.id === userResult.objectId) ||
+      this.auth.isMaster;
+
+    const isLogin = !userId;
+
+    if (isLogin || isCurrentUserLoggedOrMaster) {
+      // no user making the call
+      // OR the user making the call is the right one
+      // Login with auth data
+      delete results[0].password;
+
+      // need to set the objectId first otherwise location has trailing undefined
+      this.data.objectId = userResult.objectId;
+
+      if (!this.query || !this.query.objectId) {
+        this.response = {
+          response: userResult,
+          location: this.location(),
+        };
+        // Run beforeLogin hook before storing any updates
+        // to authData on the db; changes to userResult
+        // will be ignored.
+        await this.runBeforeLoginTrigger(deepcopy(userResult));
+
+        // If we are in login operation via authData
+        // we need to be sure that the user has provided
+        // required authData
+        Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
+          authData,
+          userResult.authData,
+          this.config
+        );
       }
-      if (!userId || userId === userResult.objectId) {
-        // no user making the call
-        // OR the user making the call is the right one
-        // Login with auth data
-        delete results[0].password;
 
-        // need to set the objectId first otherwise location has trailing undefined
-        this.data.objectId = userResult.objectId;
+      // Prevent validating if no mutated data detected on update
+      if (!hasMutatedAuthData && isCurrentUserLoggedOrMaster) {
+        return;
+      }
 
-        if (!this.query || !this.query.objectId) {
-          // this a login call, no userId passed
-          this.response = {
-            response: userResult,
-            location: this.location(),
-          };
-          // Run beforeLogin hook before storing any updates
-          // to authData on the db; changes to userResult
-          // will be ignored.
-          await this.runBeforeLoginTrigger(deepcopy(userResult));
-        }
+      // Force to validate all provided authData on login
+      // on update only validate mutated ones
+      if (hasMutatedAuthData || !this.config.allowExpiredAuthDataToken) {
+        const res = await Auth.handleAuthDataValidation(
+          isLogin ? authData : mutatedAuthData,
+          this,
+          userResult
+        );
+        this.data.authData = res.authData;
+        this.authDataResponse = res.authDataResponse;
+      }
 
-        // If we didn't change the auth data, just keep going
-        if (!hasMutatedAuthData) {
-          return;
-        }
-        // We have authData that is updated on login
-        // that can happen when token are refreshed,
-        // We should update the token and let the user in
-        // We should only check the mutated keys
-        return this.handleAuthDataValidation(mutatedAuthData).then(async () => {
-          // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
-          // we need to set it up there.
-          // We are supposed to have a response only on LOGIN with authData, so we skip those
-          // If we're not logging in, but just updating the current user, we can safely skip that part
-          if (this.response) {
-            // Assign the new authData in the response
-            Object.keys(mutatedAuthData).forEach(provider => {
-              this.response.response.authData[provider] = mutatedAuthData[provider];
-            });
-
-            // Run the DB update directly, as 'master'
-            // Just update the authData part
-            // Then we're good for the user, early exit of sorts
-            return this.config.database.update(
-              this.className,
-              { objectId: this.data.objectId },
-              { authData: mutatedAuthData },
-              {}
-            );
-          }
+      // IF we are in login we'll skip the database operation / beforeSave / afterSave etc...
+      // we need to set it up there.
+      // We are supposed to have a response only on LOGIN with authData, so we skip those
+      // If we're not logging in, but just updating the current user, we can safely skip that part
+      if (this.response) {
+        // Assign the new authData in the response
+        Object.keys(mutatedAuthData).forEach(provider => {
+          this.response.response.authData[provider] = mutatedAuthData[provider];
         });
-      } else if (userId) {
-        // Trying to update auth data but users
-        // are different
-        if (userResult.objectId !== userId) {
-          throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
-        }
-        // No auth data was mutated, just keep going
-        if (!hasMutatedAuthData) {
-          return;
+
+        // Run the DB update directly, as 'master' only if authData contains some keys
+        // authData could not contains keys after validation if the authAdapter
+        // uses the `doNotSave` option. Just update the authData part
+        // Then we're good for the user, early exit of sorts
+        if (Object.keys(this.data.authData).length) {
+          await this.config.database.update(
+            this.className,
+            { objectId: this.data.objectId },
+            { authData: this.data.authData },
+            {}
+          );
         }
       }
     }
-    return this.handleAuthDataValidation(authData).then(() => {
-      if (results.length > 1) {
-        // More than 1 user with the passed id's
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
-      }
-    });
-  });
+  }
 };
 
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function () {
   var promise = Promise.resolve();
-
   if (this.className !== '_User') {
     return promise;
   }
@@ -857,7 +865,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = function () {
     return;
   }
   if (
-    !this.storage['authProvider'] && // signup call, with
+    !this.storage.authProvider && // signup call, with
     this.config.preventLoginWithUnverifiedEmail && // no login without verification
     this.config.verifyUserEmails
   ) {
@@ -874,15 +882,15 @@ RestWrite.prototype.createSessionToken = async function () {
     return;
   }
 
-  if (this.storage['authProvider'] == null && this.data.authData) {
-    this.storage['authProvider'] = Object.keys(this.data.authData).join(',');
+  if (this.storage.authProvider == null && this.data.authData) {
+    this.storage.authProvider = Object.keys(this.data.authData).join(',');
   }
 
   const { sessionData, createSession } = RestWrite.createSession(this.config, {
     userId: this.objectId(),
     createdWith: {
-      action: this.storage['authProvider'] ? 'login' : 'signup',
-      authProvider: this.storage['authProvider'] || 'password',
+      action: this.storage.authProvider ? 'login' : 'signup',
+      authProvider: this.storage.authProvider || 'password',
     },
     installationId: this.auth.installationId,
   });
@@ -1017,6 +1025,20 @@ RestWrite.prototype.handleSession = function () {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     } else if (this.data.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    }
+    if (!this.auth.isMaster) {
+      this.query = {
+        $and: [
+          this.query,
+          {
+            user: {
+              __type: 'Pointer',
+              className: '_User',
+              objectId: this.auth.user.id,
+            },
+          },
+        ],
+      };
     }
   }
 
@@ -1522,7 +1544,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
 // Returns nothing - doesn't wait for the trigger.
 RestWrite.prototype.runAfterSaveTrigger = function () {
-  if (!this.response || !this.response.response) {
+  if (!this.response || !this.response.response || this.runOptions.many) {
     return;
   }
 
@@ -1677,18 +1699,24 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
-  const skipKeys = [
-    'objectId',
-    'createdAt',
-    'updatedAt',
-    ...(requiredColumns.read[this.className] || []),
-  ];
+  const skipKeys = [...(requiredColumns.read[this.className] || [])];
+  if (!this.query) {
+    skipKeys.push('objectId', 'createdAt');
+  } else {
+    skipKeys.push('updatedAt');
+    delete response.objectId;
+  }
   for (const key in response) {
     if (skipKeys.includes(key)) {
       continue;
     }
     const value = response[key];
-    if (value == null || (value.__type && value.__type === 'Pointer') || data[key] === value) {
+    if (
+      value == null ||
+      (value.__type && value.__type === 'Pointer') ||
+      util.isDeepStrictEqual(data[key], value) ||
+      util.isDeepStrictEqual((this.originalData || {})[key], value)
+    ) {
       delete response[key];
     }
   }
@@ -1712,6 +1740,21 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     }
   });
   return response;
+};
+
+RestWrite.prototype.checkProhibitedKeywords = function (data) {
+  if (this.config.requestKeywordDenylist) {
+    // Scan request data for denied keywords
+    for (const keyword of this.config.requestKeywordDenylist) {
+      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+      if (match) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+        );
+      }
+    }
+  }
 };
 
 export default RestWrite;

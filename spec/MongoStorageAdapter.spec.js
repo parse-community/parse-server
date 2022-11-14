@@ -6,7 +6,6 @@ const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDataba
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
-const semver = require('semver');
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -283,7 +282,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       await adapter.database.admin().serverStatus();
       expect(false).toBe(true);
     } catch (e) {
-      expect(e.message).toEqual('MongoClient must be connected to perform this operation');
+      expect(e.message).toEqual('Client must be connected before running operations');
     }
   });
 
@@ -308,7 +307,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(undefined);
   });
 
-  it_only_mongodb_version('<5.1')('should use index for caseInsensitive query', async () => {
+  it_only_mongodb_version('<5.1>=6')('should use index for caseInsensitive query', async () => {
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
@@ -342,7 +341,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 
-  it_only_mongodb_version('>=5.1')('should use index for caseInsensitive query', async () => {
+  it_only_mongodb_version('>=5.1<6')('should use index for caseInsensitive query', async () => {
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
@@ -401,11 +400,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(schemaAfterDeletion.fields.test).toBeUndefined();
   });
 
-  if (
-    semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
-    process.env.MONGODB_TOPOLOGY === 'replicaset' &&
-    process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
-  ) {
+  if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
     describe('transactions', () => {
       const headers = {
         'Content-Type': 'application/json',

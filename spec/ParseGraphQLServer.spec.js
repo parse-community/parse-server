@@ -942,8 +942,7 @@ describe('ParseGraphQLServer', () => {
           ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
-
-          expect(inputFields).toEqual(['clientMutationId', 'password', 'username']);
+          expect(inputFields).toEqual(['authData', 'clientMutationId', 'password', 'username']);
         });
 
         it('should have clientMutationId in log in mutation payload', async () => {
@@ -7027,7 +7026,61 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Users Mutations', () => {
+        const challengeAdapter = {
+          validateAuthData: () => Promise.resolve({ response: { someData: true } }),
+          validateAppId: () => Promise.resolve(),
+          challenge: () => Promise.resolve({ someData: true }),
+          options: { anOption: true },
+        };
+
+        it('should create user and return authData response', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
+          const clientMutationId = uuidv4();
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation createUser($input: CreateUserInput!) {
+                createUser(input: $input) {
+                  clientMutationId
+                  user {
+                    id
+                    authDataResponse
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                fields: {
+                  authData: {
+                    challengeAdapter: {
+                      id: 'challengeAdapter',
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          expect(result.data.createUser.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.createUser.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
+        });
+
         it('should sign user up', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
           const clientMutationId = uuidv4();
           const userSchema = new Parse.Schema('_User');
           userSchema.addString('someField');
@@ -7044,6 +7097,7 @@ describe('ParseGraphQLServer', () => {
                     sessionToken
                     user {
                       someField
+                      authDataResponse
                       aPointer {
                         id
                         username
@@ -7059,6 +7113,11 @@ describe('ParseGraphQLServer', () => {
                 fields: {
                   username: 'user1',
                   password: 'user1',
+                  authData: {
+                    challengeAdapter: {
+                      id: 'challengeAdapter',
+                    },
+                  },
                   aPointer: {
                     createAndLink: {
                       username: 'user2',
@@ -7078,6 +7137,9 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.signUp.viewer.user.aPointer.id).toBeDefined();
           expect(result.data.signUp.viewer.user.aPointer.username).toEqual('user2');
           expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
+          expect(result.data.signUp.viewer.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
         });
 
         it('should login with user', async () => {
@@ -7086,6 +7148,7 @@ describe('ParseGraphQLServer', () => {
           parseServer = await global.reconfigureServer({
             publicServerURL: 'http://localhost:13377/parse',
             auth: {
+              challengeAdapter,
               myAuth: {
                 module: global.mockCustomAuthenticator('parse', 'graphql'),
               },
@@ -7105,6 +7168,7 @@ describe('ParseGraphQLServer', () => {
                     sessionToken
                     user {
                       someField
+                      authDataResponse
                       aPointer {
                         id
                         username
@@ -7118,6 +7182,7 @@ describe('ParseGraphQLServer', () => {
               input: {
                 clientMutationId,
                 authData: {
+                  challengeAdapter: { id: 'challengeAdapter' },
                   myAuth: {
                     id: 'parse',
                     password: 'graphql',
@@ -7143,9 +7208,92 @@ describe('ParseGraphQLServer', () => {
           expect(typeof result.data.logInWith.viewer.sessionToken).toBe('string');
           expect(result.data.logInWith.viewer.user.aPointer.id).toBeDefined();
           expect(result.data.logInWith.viewer.user.aPointer.username).toEqual('user2');
+          expect(result.data.logInWith.viewer.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
+        });
+
+        it('should handle challenge', async () => {
+          const clientMutationId = uuidv4();
+
+          spyOn(challengeAdapter, 'challenge').and.callThrough();
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
+
+          const user = new Parse.User();
+          await user.save({ username: 'username', password: 'password' });
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation Challenge($input: ChallengeInput!) {
+                challenge(input: $input) {
+                  clientMutationId
+                  challengeData
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                username: 'username',
+                password: 'password',
+                challengeData: {
+                  challengeAdapter: { someChallengeData: true },
+                },
+              },
+            },
+          });
+
+          const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
+          expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
+          expect(challengeCall[0]).toEqual({ someChallengeData: true });
+          expect(challengeCall[1]).toEqual(undefined);
+          expect(challengeCall[2]).toEqual(challengeAdapter);
+          expect(challengeCall[3].object instanceof Parse.User).toBeTruthy();
+          expect(challengeCall[3].original instanceof Parse.User).toBeTruthy();
+          expect(challengeCall[3].isChallenge).toBeTruthy();
+          expect(challengeCall[3].object.id).toEqual(user.id);
+          expect(challengeCall[3].original.id).toEqual(user.id);
+          expect(result.data.challenge.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.challenge.challengeData).toEqual({
+            challengeAdapter: { someData: true },
+          });
+
+          await expectAsync(
+            apolloClient.mutate({
+              mutation: gql`
+                mutation Challenge($input: ChallengeInput!) {
+                  challenge(input: $input) {
+                    clientMutationId
+                    challengeData
+                  }
+                }
+              `,
+              variables: {
+                input: {
+                  clientMutationId,
+                  username: 'username',
+                  password: 'wrongPassword',
+                  challengeData: {
+                    challengeAdapter: { someChallengeData: true },
+                  },
+                },
+              },
+            })
+          ).toBeRejected();
         });
 
         it('should log the user in', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              challengeAdapter,
+            },
+          });
           const clientMutationId = uuidv4();
           const user = new Parse.User();
           user.setUsername('user1');
@@ -7162,6 +7310,7 @@ describe('ParseGraphQLServer', () => {
                   viewer {
                     sessionToken
                     user {
+                      authDataResponse
                       someField
                     }
                   }
@@ -7173,6 +7322,7 @@ describe('ParseGraphQLServer', () => {
                 clientMutationId,
                 username: 'user1',
                 password: 'user1',
+                authData: { challengeAdapter: { token: true } },
               },
             },
           });
@@ -7181,6 +7331,9 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.logIn.viewer.sessionToken).toBeDefined();
           expect(result.data.logIn.viewer.user.someField).toEqual('someValue');
           expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
+          expect(result.data.logIn.viewer.user.authDataResponse).toEqual({
+            challengeAdapter: { someData: true },
+          });
         });
 
         it('should log the user out', async () => {
@@ -9511,6 +9664,130 @@ describe('ParseGraphQLServer', () => {
             // Checks class query results
             expect(someClasses.edges.length).toEqual(1);
             expect(someClasses.edges[0].node.someObjectField).toEqual(someObjectFieldValue);
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should support where argument on object field that contains false boolean value or 0 number value', async () => {
+          try {
+            const someObjectFieldValue1 = {
+              foo: { bar: true, baz: 100 },
+            };
+
+            const someObjectFieldValue2 = {
+              foo: { bar: false, baz: 0 },
+            };
+
+            const object1 = new Parse.Object('SomeClass');
+            await object1.save({
+              someObjectField: someObjectFieldValue1,
+            });
+            const object2 = new Parse.Object('SomeClass');
+            await object2.save({
+              someObjectField: someObjectFieldValue2,
+            });
+
+            const whereToObject1 = {
+              someObjectField: {
+                equalTo: { key: 'foo.bar', value: true },
+                notEqualTo: { key: 'foo.baz', value: 0 },
+              },
+            };
+            const whereToObject2 = {
+              someObjectField: {
+                notEqualTo: { key: 'foo.bar', value: true },
+                equalTo: { key: 'foo.baz', value: 0 },
+              },
+            };
+
+            const whereToAll = {
+              someObjectField: {
+                lessThan: { key: 'foo.baz', value: 101 },
+              },
+            };
+
+            const whereToNone = {
+              someObjectField: {
+                notEqualTo: { key: 'foo.bar', value: true },
+                equalTo: { key: 'foo.baz', value: 1 },
+              },
+            };
+
+            const queryResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject(
+                  $id1: ID!
+                  $id2: ID!
+                  $whereToObject1: SomeClassWhereInput
+                  $whereToObject2: SomeClassWhereInput
+                  $whereToAll: SomeClassWhereInput
+                  $whereToNone: SomeClassWhereInput
+                ) {
+                  obj1: someClass(id: $id1) {
+                    id
+                    someObjectField
+                  }
+                  obj2: someClass(id: $id2) {
+                    id
+                    someObjectField
+                  }
+                  onlyObj1: someClasses(where: $whereToObject1) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                  onlyObj2: someClasses(where: $whereToObject2) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                  all: someClasses(where: $whereToAll) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                  none: someClasses(where: $whereToNone) {
+                    edges {
+                      node {
+                        id
+                        someObjectField
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                id1: object1.id,
+                id2: object2.id,
+                whereToObject1,
+                whereToObject2,
+                whereToAll,
+                whereToNone,
+              },
+            });
+
+            const { obj1, obj2, onlyObj1, onlyObj2, all, none } = queryResult.data;
+
+            expect(obj1.someObjectField).toEqual(someObjectFieldValue1);
+            expect(obj2.someObjectField).toEqual(someObjectFieldValue2);
+
+            // Checks class query results
+            expect(onlyObj1.edges.length).toEqual(1);
+            expect(onlyObj1.edges[0].node.someObjectField).toEqual(someObjectFieldValue1);
+            expect(onlyObj2.edges.length).toEqual(1);
+            expect(onlyObj2.edges[0].node.someObjectField).toEqual(someObjectFieldValue2);
+            expect(all.edges.length).toEqual(2);
+            expect(none.edges.length).toEqual(0);
           } catch (e) {
             handleError(e);
           }

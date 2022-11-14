@@ -12,6 +12,7 @@ import {
   PagesOptions,
   SecurityOptions,
   SchemaOptions,
+  ParseServerOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
@@ -63,6 +64,7 @@ export class Config {
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
+    defaultLimit,
     maxLimit,
     emailVerifyTokenValidityDuration,
     accountLockout,
@@ -79,6 +81,7 @@ export class Config {
     enforcePrivateUsers,
     schema,
     requestKeywordDenylist,
+    allowExpiredAuthDataToken,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -110,6 +113,7 @@ export class Config {
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
     this.validateMasterKeyIps(masterKeyIps);
+    this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
@@ -117,6 +121,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
   }
 
@@ -131,6 +136,12 @@ export class Config {
   static validateEnforcePrivateUsers(enforcePrivateUsers) {
     if (typeof enforcePrivateUsers !== 'boolean') {
       throw 'Parse Server option enforcePrivateUsers must be a boolean.';
+    }
+  }
+
+  static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
+    if (typeof allowExpiredAuthDataToken !== 'boolean') {
+      throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
     }
   }
 
@@ -424,9 +435,12 @@ export class Config {
   }
 
   static validateMasterKeyIps(masterKeyIps) {
-    for (const ip of masterKeyIps) {
+    for (let ip of masterKeyIps) {
+      if (ip.includes('/')) {
+        ip = ip.split('/')[0];
+      }
       if (!net.isIP(ip)) {
-        throw `Invalid ip in masterKeyIps: ${ip}`;
+        throw `The Parse Server option "masterKeyIps" contains an invalid IP address "${ip}".`;
       }
     }
   }
@@ -450,6 +464,18 @@ export class Config {
       } else if (sessionLength <= 0) {
         throw 'Session length must be a value greater than 0.';
       }
+    }
+  }
+
+  static validateDefaultLimit(defaultLimit) {
+    if (defaultLimit == null) {
+      defaultLimit = ParseServerOptions.defaultLimit.default;
+    }
+    if (typeof defaultLimit !== 'number') {
+      throw 'Default limit must be a number.';
+    }
+    if (defaultLimit <= 0) {
+      throw 'Default limit must be a value greater than 0.';
     }
   }
 

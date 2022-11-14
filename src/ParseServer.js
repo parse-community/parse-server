@@ -87,9 +87,18 @@ class ParseServer {
       .performInitialization()
       .then(() => hooksController.load())
       .then(async () => {
+        const startupPromises = [];
         if (schema) {
-          await new DefinedSchemas(schema, this.config).execute();
+          startupPromises.push(new DefinedSchemas(schema, this.config).execute());
         }
+        if (
+          options.cacheAdapter &&
+          options.cacheAdapter.connect &&
+          typeof options.cacheAdapter.connect === 'function'
+        ) {
+          startupPromises.push(options.cacheAdapter.connect());
+        }
+        await Promise.all(startupPromises);
         if (serverStartComplete) {
           serverStartComplete();
         }
@@ -374,6 +383,16 @@ class ParseServer {
 
 function addParseCloud() {
   const ParseCloud = require('./cloud-code/Parse.Cloud');
+  Object.defineProperty(Parse, 'Server', {
+    get() {
+      return Config.get(Parse.applicationId);
+    },
+    set(newVal) {
+      newVal.appId = Parse.applicationId;
+      Config.put(newVal);
+    },
+    configurable: true,
+  });
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
 }
