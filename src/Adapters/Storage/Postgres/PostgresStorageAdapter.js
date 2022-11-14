@@ -1001,7 +1001,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           await self.createIndexes(className, insertedIndexes, t);
         }
       } catch (e) {
-        const columnDoesNotExistError = e.errors?.[0]?.code === '42703';
+        const columnDoesNotExistError = e.errors && e.errors[0] && e.errors[0].code === '42703';
         if (columnDoesNotExistError && !this.disableIndexFieldValidation) {
           throw e;
         }
