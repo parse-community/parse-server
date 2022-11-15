@@ -1558,6 +1558,23 @@ describe('Cloud Code', () => {
     expect(obj.get('foo')).toBe('bar');
   });
 
+  it('create role with name and ACL and a beforeSave', async () => {
+    Parse.Cloud.beforeSave(Parse.Role, ({ object }) => {
+      // do nothing, it's just to reproduce the bug, we must have a beforeSave
+      return object;
+    });
+
+    const obj = new Parse.Role('TestRole', new Parse.ACL({ '*': { read: true, write: true } }));
+    await obj.save();
+
+    expect(obj.getACL()).toEqual(new Parse.ACL({ '*': { read: true, write: true } }));
+    expect(obj.get('name')).toEqual('TestRole');
+    await obj.fetch();
+
+    expect(obj.getACL()).toEqual(new Parse.ACL({ '*': { read: true, write: true } }));
+    expect(obj.get('name')).toEqual('TestRole');
+  });
+
   it('can unset in afterSave', async () => {
     Parse.Cloud.beforeSave('TestObject', ({ object }) => {
       if (!object.existed()) {
