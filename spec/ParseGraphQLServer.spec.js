@@ -7040,7 +7040,7 @@ describe('ParseGraphQLServer', () => {
           options: { anOption: true },
         };
 
-        fit('should create user and return authData response', async () => {
+        it('should create user and return authData response', async () => {
           parseServer = await global.reconfigureServer({
             publicServerURL: 'http://localhost:13377/parse',
             auth: {
