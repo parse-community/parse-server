@@ -68,6 +68,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  allowExpiredAuthDataToken: {
+    env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
+    help:
+      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   allowHeaders: {
     env: 'PARSE_SERVER_ALLOW_HEADERS',
     help: 'Add headers to Access-Control-Allow-Headers',
@@ -166,7 +173,7 @@ module.exports.ParseServerOptions = {
     help:
       'Set to `true` if Parse requests within the same Node.js environment as Parse Server should be routed to Parse Server directly instead of via the HTTP interface. Default is `false`.<br><br>If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.<br><br>\u26A0\uFE0F In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',
@@ -210,7 +217,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ENFORCE_PRIVATE_USERS',
     help: 'Set to true if new users should be created without public read and write access.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
@@ -295,9 +302,10 @@ module.exports.ParseServerOptions = {
   },
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
-    help: 'Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)',
+    help:
+      "(Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1']` which means that only `localhost`, the server itself, is allowed to use the master key.",
     action: parsers.arrayParser,
-    default: [],
+    default: ['127.0.0.1'],
   },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',

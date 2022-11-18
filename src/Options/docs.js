@@ -14,6 +14,7 @@
  * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
+ * @property {Boolean} allowExpiredAuthDataToken Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
  * @property {String} allowOrigin Sets the origin to Access-Control-Allow-Origin
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
@@ -57,7 +58,7 @@
  * @property {String} logLevel Sets the level for logs
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
  * @property {String} masterKey Your Parse Master Key
- * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
+ * @property {String[]} masterKeyIps (Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1']` which means that only `localhost`, the server itself, is allowed to use the master key.
  * @property {Number} maxLimit Max value for limit option on queries, defaults to unlimited
  * @property {Number|String} maxLogFiles Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)
  * @property {String} maxUploadSize Max file size for uploads, defaults to 20mb
