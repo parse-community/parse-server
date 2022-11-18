@@ -55,7 +55,7 @@ describe('Cloud Code', () => {
   });
 
   it('should wait for cloud code to load', async () => {
-    await reconfigureServer({ appId: 'test3' })
+    await reconfigureServer({ appId: 'test3' });
     const initiated = new Date();
     const parseServer = await new ParseServer({
       appId: 'test3',

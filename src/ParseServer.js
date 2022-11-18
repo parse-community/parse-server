@@ -88,7 +88,14 @@ class ParseServer {
       }
       this.config.state = 'starting';
       Config.put(this.config);
-      const { databaseController, hooksController, cloud, security, schema } = this.config;
+      const {
+        databaseController,
+        hooksController,
+        cloud,
+        security,
+        schema,
+        cacheAdapter,
+      } = this.config;
       try {
         await databaseController.performInitialization();
       } catch (e) {
@@ -97,9 +104,14 @@ class ParseServer {
         }
       }
       await hooksController.load();
+      const startupPromises = [];
       if (schema) {
-        await new DefinedSchemas(schema, this.config).execute();
+        startupPromises.push(new DefinedSchemas(schema, this.config).execute());
       }
+      if (cacheAdapter?.connect && typeof cacheAdapter.connect === 'function') {
+        startupPromises.push(cacheAdapter.connect());
+      }
+      await Promise.all(startupPromises);
       if (cloud) {
         addParseCloud();
         if (typeof cloud === 'function') {

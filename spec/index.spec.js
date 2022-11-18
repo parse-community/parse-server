@@ -296,7 +296,7 @@ describe('server', () => {
   });
 
   it('can create a parse-server v1', async () => {
-    await reconfigureServer({ appId: 'aTestApp' })
+    await reconfigureServer({ appId: 'aTestApp' });
     const parseServer = new ParseServer.default(
       Object.assign({}, defaultConfiguration, {
         appId: 'aTestApp',
@@ -317,7 +317,7 @@ describe('server', () => {
   });
 
   it('can create a parse-server v2', async () => {
-    await reconfigureServer({ appId: 'anOtherTestApp' })
+    await reconfigureServer({ appId: 'anOtherTestApp' });
     const parseServer = ParseServer.ParseServer(
       Object.assign({}, defaultConfiguration, {
         appId: 'anOtherTestApp',

@@ -8,19 +8,19 @@ const databaseURI = 'mongodb://doesnotexist:27017/parseServerMongoAdapterTestDat
 
 (async () => {
   try {
-  await ParseServer.startApp({
-    appId: 'test',
-    masterKey: 'test',
-    databaseAdapter: new MongoStorageAdapter({
-      uri: databaseURI,
-      mongoOptions: {
-        serverSelectionTimeoutMS: 2000,
-      },
-    }),
-    filesAdapter: new GridFSBucketAdapter(databaseURI),
-  });
-} catch (e) {
-  console.log(e);
-  process.exit(1);
+    await ParseServer.startApp({
+      appId: 'test',
+      masterKey: 'test',
+      databaseAdapter: new MongoStorageAdapter({
+        uri: databaseURI,
+        mongoOptions: {
+          serverSelectionTimeoutMS: 2000,
+        },
+      }),
+      filesAdapter: new GridFSBucketAdapter(databaseURI),
+    });
+  } catch (e) {
+    console.log(e);
+    process.exit(1);
   }
 })();
