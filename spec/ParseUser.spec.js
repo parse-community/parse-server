@@ -196,14 +196,13 @@ describe('Parse.User testing', () => {
     const ACL = user.getACL();
     expect(ACL.getReadAccess(user)).toBe(true);
     expect(ACL.getWriteAccess(user)).toBe(true);
-    expect(ACL.getPublicReadAccess()).toBe(true);
+    expect(ACL.getPublicReadAccess()).toBe(false);
     expect(ACL.getPublicWriteAccess()).toBe(false);
     const perms = ACL.permissionsById;
-    expect(Object.keys(perms).length).toBe(2);
+    expect(Object.keys(perms).length).toBe(1);
     expect(perms[user.id].read).toBe(true);
     expect(perms[user.id].write).toBe(true);
-    expect(perms['*'].read).toBe(true);
-    expect(perms['*'].write).not.toBe(true);
+    expect(perms['*']).toBeUndefined();
     done();
   });
 
@@ -875,8 +874,8 @@ describe('Parse.User testing', () => {
     kevin.set('password', 'mypass');
     await kevin.signUp();
     const query = new Parse.Query(Parse.User);
-    const count = await query.count();
-    equal(count, 2);
+    const count = await query.find({ useMasterKey: true });
+    equal(count.length, 2);
     done();
   });
 
@@ -2153,7 +2152,15 @@ describe('Parse.User testing', () => {
   });
 
   it("querying for users doesn't get session tokens", done => {
-    Parse.User.signUp('finn', 'human', { foo: 'bar' })
+    const user = new Parse.User();
+    user.set('username', 'finn');
+    user.set('password', 'human');
+    user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
+    user
+      .signUp()
       .then(function () {
         return Parse.User.logOut();
       })
@@ -2162,6 +2169,9 @@ describe('Parse.User testing', () => {
         user.set('username', 'jake');
         user.set('password', 'dog');
         user.set('foo', 'baz');
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        user.setACL(acl);
         return user.signUp();
       })
       .then(function () {
@@ -2188,7 +2198,14 @@ describe('Parse.User testing', () => {
   });
 
   it('querying for users only gets the expected fields', done => {
-    Parse.User.signUp('finn', 'human', { foo: 'bar' }).then(() => {
+    const user = new Parse.User();
+    user.setUsername('finn');
+    user.setPassword('human');
+    user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
+    user.signUp().then(() => {
       request({
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -3426,6 +3443,9 @@ describe('Parse.User testing', () => {
       password: 'world',
       email: 'test@email.com',
     });
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
 
     reconfigureServer({
       appName: 'unused',
@@ -4055,6 +4075,12 @@ describe('Parse.User testing', () => {
       startLiveQueryServer: true,
       verbose: false,
       silent: true,
+    });
+
+    Parse.Cloud.beforeSave(Parse.User, ({ object }) => {
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      object.setACL(acl);
     });
 
     const query = new Parse.Query(Parse.User);
