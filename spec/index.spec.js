@@ -61,34 +61,19 @@ describe('server', () => {
     });
   });
 
-  it('fails if database is unreachable', done => {
-    reconfigureServer({
+  it('fails if database is unreachable', async () => {
+    const server = new ParseServer.default({
+      ...defaultConfiguration,
       databaseAdapter: new MongoStorageAdapter({
         uri: 'mongodb://fake:fake@localhost:43605/drew3',
         mongoOptions: {
           serverSelectionTimeoutMS: 2000,
         },
       }),
-    }).catch(() => {
-      const config = Config.get('test');
-      config.schemaCache.clear();
-      //Need to use rest api because saving via JS SDK results in fail() not getting called
-      request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/classes/NewClass',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        body: {},
-      }).then(fail, response => {
-        expect(response.status).toEqual(500);
-        const body = response.data;
-        expect(body.code).toEqual(1);
-        expect(body.error).toEqual('Invalid server state: error');
-        reconfigureServer().then(done, done);
-      });
     });
+    const error = await server.start().catch(e => e);
+    expect(`${error}`.includes('MongoServerSelectionError')).toBeTrue();
+    await reconfigureServer();
   });
 
   describe('mail adapter', () => {
@@ -509,7 +494,7 @@ describe('server', () => {
       .catch(done.fail);
   });
 
-  it('call call start', async () => {
+  it('can call start', async () => {
     const config = {
       appId: 'aTestApp',
       masterKey: 'aTestMasterKey',
@@ -520,7 +505,7 @@ describe('server', () => {
     expect(Parse.applicationId).toEqual('aTestApp');
     expect(Parse.serverURL).toEqual('http://localhost:12701/parse');
     const app = express();
-    app.use('/parse', parseServer);
+    app.use('/parse', parseServer.app);
     const server = app.listen(12701);
     const testObject = new Parse.Object('TestObject');
     await expectAsync(testObject.save()).toBeResolved();
@@ -537,10 +522,16 @@ describe('server', () => {
     expect(Parse.applicationId).toEqual('aTestApp');
     expect(Parse.serverURL).toEqual('http://localhost:12701/parse');
     const app = express();
-    app.use('/parse', parseServer);
+    app.use('/parse', parseServer.app);
     const server = app.listen(12701);
-    const testObject = new Parse.Object('TestObject');
-    await expectAsync(testObject.save()).toBeRejectedWith(
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'aTestApp',
+      },
+      method: 'POST',
+      url: 'http://localhost:12701/parse/classes/TestObject',
+    }).catch(e => new Parse.Error(e.data.code, e.data.error));
+    expect(response).toEqual(
       new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid server state: initialized')
     );
     const health = await request({
@@ -561,7 +552,7 @@ describe('server', () => {
     });
     const express = require('express');
     const app = express();
-    app.use('/parse', parseServer);
+    app.use('/parse', parseServer.app);
     const server = app.listen(12668);
     parseServer.start();
     const health = await request({
