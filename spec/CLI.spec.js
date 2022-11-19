@@ -219,7 +219,7 @@ describe('execution', () => {
     }
   });
 
-  it('shoud start Parse Server', done => {
+  it('should start Parse Server', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -232,6 +232,7 @@ describe('execution', () => {
     ]);
     childProcess.stdout.on('data', data => {
       data = data.toString();
+      console.log({data});
       if (data.includes('parse-server running on')) {
         done();
       }
@@ -241,7 +242,7 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL', done => {
+  it('should start Parse Server with GraphQL', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -267,7 +268,7 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL and Playground', done => {
+  it('should start Parse Server with GraphQL and Playground', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
