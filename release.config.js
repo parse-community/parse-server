@@ -24,7 +24,7 @@ const templates = {
 async function config() {
 
   // Get branch
-  const branch = ref.split('/').pop();
+  const branch = ref.split('/').pop().split('-')[0];
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
@@ -36,10 +36,12 @@ async function config() {
 
   const config = {
     branches: [
-      'release(-[0-9]+\.x\.x)?',
+      'release',
       { name: 'alpha', prerelease: true },
       { name: 'beta', prerelease: true },
       'next-major',
+      // Long-Term-Support branches; defined as GLOB pattern
+      'release-+([0-9]).x.x',
     ],
     dryRun: false,
     debug: true,
