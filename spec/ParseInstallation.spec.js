@@ -1239,6 +1239,56 @@ describe('Installations', () => {
     });
   });
 
+  it('can use push with beforeSave', async () => {
+    const input = {
+      deviceToken: '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306',
+      deviceType: 'ios',
+    };
+    await rest.create(config, auth.nobody(config), '_Installation', input);
+    const functions = {
+      beforeSave() {},
+      afterSave() {},
+    };
+    spyOn(functions, 'beforeSave').and.callThrough();
+    spyOn(functions, 'afterSave').and.callThrough();
+    Parse.Cloud.beforeSave(Parse.Installation, functions.beforeSave);
+    Parse.Cloud.afterSave(Parse.Installation, functions.afterSave);
+    await Parse.Push.send({
+      where: {
+        deviceType: 'ios',
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!',
+      },
+    });
+
+    await Parse.Push.send({
+      where: {
+        deviceType: 'ios',
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!',
+      },
+    });
+
+    await Parse.Push.send({
+      where: {
+        deviceType: 'ios',
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!',
+      },
+    });
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const installation = await new Parse.Query(Parse.Installation).first({ useMasterKey: true });
+    expect(installation.get('badge')).toEqual(3);
+    expect(functions.beforeSave).not.toHaveBeenCalled();
+    expect(functions.afterSave).not.toHaveBeenCalled();
+  });
+
   // TODO: Look at additional tests from installation_collection_test.go:882
   // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments

@@ -3,6 +3,7 @@
 //
 
 'use strict';
+const request = require('../lib/request');
 
 function setupTestUsers() {
   const user1 = new Parse.User();
@@ -137,7 +138,6 @@ describe('Parse.Session', () => {
   });
 
   it('cannot edit session with known ID', async () => {
-    const request = require('../lib/request');
     await setupTestUsers();
     const [first, second] = await new Parse.Query(Parse.Session).find({ useMasterKey: true });
     const headers = {

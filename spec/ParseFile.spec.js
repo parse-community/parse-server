@@ -713,7 +713,7 @@ describe('Parse.File testing', () => {
           'X-Parse-Application-Id': 'test',
           Range: 'bytes=15000-18000',
         },
-      }).catch(e => e);
+      });
       expect(file.headers['content-range']).toBe('bytes 1212-1212/1212');
     });
 
