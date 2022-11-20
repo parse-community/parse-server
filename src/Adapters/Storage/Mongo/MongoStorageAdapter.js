@@ -191,6 +191,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       })
       .catch(err => {
         delete this.connectionPromise;
+        console.log({err});
         return Promise.reject(err);
       });
 
