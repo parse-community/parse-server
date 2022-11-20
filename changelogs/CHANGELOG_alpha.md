@@ -1,3 +1,10 @@
+# [6.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.9...6.0.0-alpha.10) (2022-11-19)
+
+
+### Bug Fixes
+
+* Cloud Code trigger `beforeSave` does not work with `Parse.Role` ([#8320](https://github.com/parse-community/parse-server/issues/8320)) ([f29d972](https://github.com/parse-community/parse-server/commit/f29d9720e9b37918fd885c97a31e34c42750e724))
+
 # [6.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.8...6.0.0-alpha.9) (2022-11-16)
 
 
