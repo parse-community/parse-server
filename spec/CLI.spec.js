@@ -222,7 +222,7 @@ describe('execution', () => {
   });
 
   fit('should start Parse Server', async done => {
-    childProcess = exec(`${binPath} ${[
+    childProcess = exec(`mongodb-runner start && ${binPath} ${[
       '--appId',
       'test123',
       '--masterKey',
