@@ -1666,9 +1666,11 @@ class DatabaseController {
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
   // have a Parse app without it having a _User collection.
   async performInitialization() {
+    console.log('initialising 1');
     await this.adapter.performInitialization({
       VolatileClassesSchemas: SchemaController.VolatileClassesSchemas,
     });
+    console.log('initialising 2');
     const requiredUserFields = {
       fields: {
         ...SchemaController.defaultColumns._Default,
@@ -1688,6 +1690,7 @@ class DatabaseController {
       },
     };
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
+    console.log('initialising 3');
     await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
 

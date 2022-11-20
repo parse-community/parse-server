@@ -206,13 +206,6 @@ describe('LiveQuery definitions', () => {
 });
 
 describe('execution', () => {
-  beforeEach(async () => {
-      jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
-  });
-  afterAll(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
-  });
-
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
@@ -226,7 +219,8 @@ describe('execution', () => {
     }
   });
 
-  it('should start Parse Server', done => {
+  it('should start Parse Server', async done => {
+    await reconfigureServer();
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -249,7 +243,8 @@ describe('execution', () => {
     });
   });
 
-  it('should start Parse Server with GraphQL', done => {
+  it('should start Parse Server with GraphQL', async done => {
+    await reconfigureServer();
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -276,14 +271,15 @@ describe('execution', () => {
     });
   });
 
-  it('should start Parse Server with GraphQL and Playground', done => {
+  it('should start Parse Server with GraphQL and Playground', async done => {
+    await reconfigureServer();
     childProcess = spawn(binPath, [
       '--appId',
       'test',
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1/test',
+      'mongodb://127.0.0.1:27017/test',
       '--port',
       '1341',
       '--mountGraphQL',
