@@ -346,8 +346,13 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   static async startApp(options: ParseServerOptions) {
+    console.log('call start')
     const parseServer = new ParseServer(options);
-    return parseServer.startApp(options);
+    try {
+      await parseServer.startApp(options);
+    } catch (err) {
+      console.log({err});
+    }
   }
 
   /**

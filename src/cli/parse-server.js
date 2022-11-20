@@ -68,15 +68,23 @@ runner({
           cluster.fork();
         });
       } else {
+        console.log('start app 1');
         ParseServer.startApp(options).then(() => {
           printSuccessMessage();
+        }).catch(e => {
+          console.log(e);
+          throw e;
         });
       }
     } else {
+      console.log('start app 2');
       ParseServer.startApp(options).then(() => {
         logOptions();
         console.log('');
         printSuccessMessage();
+      }).catch(e => {
+        console.log(e);
+        throw e;
       });
     }
 

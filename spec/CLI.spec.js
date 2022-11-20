@@ -219,7 +219,7 @@ describe('execution', () => {
     }
   });
 
-  it('should start Parse Server', done => {
+  fit('should start Parse Server', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -232,7 +232,6 @@ describe('execution', () => {
     ]);
     childProcess.stdout.on('data', data => {
       data = data.toString();
-      console.log({data});
       if (data.includes('parse-server running on')) {
         done();
       }
@@ -249,7 +248,7 @@ describe('execution', () => {
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1/test',
+      'mongodb://127.0.0.1:27017/test',
       '--port',
       '1340',
       '--mountGraphQL',
