@@ -222,7 +222,7 @@ describe('execution', () => {
   });
 
   fit('should start Parse Server', async done => {
-    childProcess = spawn(`${binPath}`, [
+    childProcess = spawn(binPath, [
       '--appId',
       'test123',
       '--masterKey',
