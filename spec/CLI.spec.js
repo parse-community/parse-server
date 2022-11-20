@@ -3,7 +3,7 @@ const commander = require('../lib/cli/utils/commander').default;
 const definitions = require('../lib/cli/definitions/parse-server').default;
 const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
 const path = require('path');
-const { spawn } = require('child_process');
+const { exec } = require('child_process');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
 
 const testDefinitions = {
@@ -222,16 +222,16 @@ describe('execution', () => {
   });
 
   fit('should start Parse Server', async done => {
-    childProcess = spawn(binPath, [
+    childProcess = exec(`${binPath} ${[
       '--appId',
       'test123',
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1/test',
+      'mongodb://localhost:27017/test',
       '--port',
       '1339',
-    ]);
+    ].join(' ')}`);
     childProcess.stdout.on('data', data => {
       data = data.toString();
       console.log({data});
