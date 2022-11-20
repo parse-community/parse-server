@@ -100,6 +100,7 @@ class ParseServer {
       } = this.config;
       try {
         console.log('initialising...');
+        console.log({databaseController});
         await databaseController.performInitialization();
         console.log('initialised...');
       } catch (e) {

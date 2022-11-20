@@ -206,6 +206,13 @@ describe('LiveQuery definitions', () => {
 });
 
 describe('execution', () => {
+  beforeEach(async () => {
+      jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
+  });
+  afterAll(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+  });
+
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
