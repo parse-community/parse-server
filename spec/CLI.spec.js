@@ -220,9 +220,10 @@ describe('execution', () => {
   });
 
   it('should start Parse Server', async done => {
+    await reconfigureServer({ appId: 'aTestApp' });
     childProcess = spawn(binPath, [
       '--appId',
-      'test',
+      'test123',
       '--masterKey',
       'test',
       '--databaseURI',
