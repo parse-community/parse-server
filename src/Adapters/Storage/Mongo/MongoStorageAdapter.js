@@ -168,7 +168,6 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
-    console.log({encodedUri})
 
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
       .then(client => {
@@ -191,7 +190,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         this.database = database;
       })
       .catch(err => {
-        console.log({err});
+        console.log({encodedUri, err});
         delete this.connectionPromise;
         return Promise.reject(err);
       });
