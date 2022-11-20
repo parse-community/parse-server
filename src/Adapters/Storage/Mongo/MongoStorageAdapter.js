@@ -169,7 +169,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
+    console.log({encodedUri});
+    this.connectionPromise = MongoClient.connect('mongodb://127.0.0.1:27017', this._mongoOptions)
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
