@@ -169,7 +169,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
+    this.connectionPromise = MongoClient.connect(encodedUri, {...this._mongoOptions, ipv6: true})
       .then(client => {
         console.log('---- success -----');
         console.log({encodedUri});
