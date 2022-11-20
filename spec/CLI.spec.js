@@ -220,7 +220,8 @@ fdescribe('execution', () => {
   });
 
   it('should start Parse Server', async done => {
-    await reconfigureServer({ appId: 'aTestApp' });
+    const server = await reconfigureServer({ appId: 'aTestApp' });
+    console.log(server);
     childProcess = spawn(binPath, [
       '--appId',
       'test123',
