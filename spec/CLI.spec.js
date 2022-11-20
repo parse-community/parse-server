@@ -228,7 +228,7 @@ describe('execution', () => {
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://0.0.0.0:27017/test',
+      'mongodb://127.0.0.1/test',
       '--port',
       '1339',
     ]);
