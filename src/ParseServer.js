@@ -97,9 +97,8 @@ class ParseServer {
         cacheAdapter,
       } = this.config;
       try {
-        console.log('initialising...');
+        if (this.config.port === 1339) console.log(databaseController.adapter);
         await databaseController.performInitialization();
-        console.log('initialised...');
       } catch (e) {
         if (e.code !== Parse.Error.DUPLICATE_VALUE) {
           throw e;

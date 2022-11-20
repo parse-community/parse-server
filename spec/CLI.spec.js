@@ -220,20 +220,18 @@ describe('execution', () => {
   });
 
   it('should start Parse Server', async done => {
-    await reconfigureServer();
     childProcess = spawn(binPath, [
       '--appId',
       'test',
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://localhost:27017/test',
+      'mongodb://127.0.0.1:27017/test',
       '--port',
       '1339',
     ]);
     childProcess.stdout.on('data', data => {
       data = data.toString();
-      console.log({data});
       if (data.includes('parse-server running on')) {
         done();
       }
@@ -244,7 +242,6 @@ describe('execution', () => {
   });
 
   it('should start Parse Server with GraphQL', async done => {
-    await reconfigureServer();
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -259,7 +256,6 @@ describe('execution', () => {
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
-      console.log({data});
       output += data;
       if (data.includes('GraphQL running on')) {
         expect(output).toMatch('parse-server running on');
@@ -272,7 +268,6 @@ describe('execution', () => {
   });
 
   it('should start Parse Server with GraphQL and Playground', async done => {
-    await reconfigureServer();
     childProcess = spawn(binPath, [
       '--appId',
       'test',

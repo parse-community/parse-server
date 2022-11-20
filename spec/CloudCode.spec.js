@@ -67,6 +67,7 @@ describe('Cloud Code', () => {
           throw 'Cannot save.';
         });
       },
+      ...defaultConfiguration
     }).start();
     const express = require('express');
     const app = express();

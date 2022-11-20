@@ -517,6 +517,7 @@ describe('server', () => {
       appId: 'aTestApp',
       masterKey: 'aTestMasterKey',
       serverURL: 'http://localhost:12701/parse',
+      ...defaultConfiguration
     };
     const parseServer = new ParseServer.ParseServer(config);
     expect(Parse.applicationId).toEqual('aTestApp');
@@ -549,6 +550,7 @@ describe('server', () => {
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 2000));
       },
+      ...defaultConfiguration
     });
     const express = require('express');
     const app = express();
