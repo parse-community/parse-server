@@ -27,7 +27,7 @@ const testDefinitions = {
   },
 };
 
-fdescribe('commander additions', () => {
+describe('commander additions', () => {
   afterEach(done => {
     commander.options = [];
     delete commander.arg0;
