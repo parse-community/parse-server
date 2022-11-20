@@ -277,6 +277,7 @@ class ParseServer {
     try {
       await this.start();
     } catch (e) {
+      console.log({e});
       console.error('Error on ParseServer.start: ', e);
       throw e;
     }
@@ -317,12 +318,13 @@ class ParseServer {
         parseGraphQLServer.applyPlayground(app);
       }
     }
-
+    console.log('starting server')
     const server = await new Promise(resolve => {
       app.listen(options.port, options.host, function () {
         resolve(this);
       });
     });
+    console.log('server started')
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
@@ -349,7 +351,7 @@ class ParseServer {
     console.log('call start')
     const parseServer = new ParseServer(options);
     try {
-      return await parseServer.startApp(options);
+      return parseServer.startApp(options);
     } catch (err) {
       console.log({err});
     }
