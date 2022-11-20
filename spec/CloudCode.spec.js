@@ -58,6 +58,7 @@ describe('Cloud Code', () => {
     await reconfigureServer({ appId: 'test3' });
     const initiated = new Date();
     const parseServer = await new ParseServer({
+      ...defaultConfiguration,
       appId: 'test3',
       masterKey: 'test',
       serverURL: 'http://localhost:12668/parse',
@@ -67,7 +68,6 @@ describe('Cloud Code', () => {
           throw 'Cannot save.';
         });
       },
-      ...defaultConfiguration
     }).start();
     const express = require('express');
     const app = express();
