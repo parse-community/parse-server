@@ -495,7 +495,9 @@ describe('server', () => {
   });
 
   it('can call start', async () => {
+    await reconfigureServer({ appId: 'aTestApp' });
     const config = {
+      ...defaultConfiguration,
       appId: 'aTestApp',
       masterKey: 'aTestMasterKey',
       serverURL: 'http://localhost:12701/parse',
@@ -513,6 +515,7 @@ describe('server', () => {
   });
 
   it('start is required to mount', async () => {
+    await reconfigureServer({ appId: 'aTestApp' });
     const config = {
       ...defaultConfiguration,
       appId: 'aTestApp',
@@ -543,6 +546,7 @@ describe('server', () => {
   });
 
   it('can get starting state', async () => {
+    await reconfigureServer({ appId: 'test2' });
     const parseServer = new ParseServer.ParseServer({
       ...defaultConfiguration,
       appId: 'test2',
