@@ -403,14 +403,11 @@ class DatabaseController {
     if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
-    console.log('load');
     this.schemaPromise = SchemaController.load(this.adapter, options);
-    console.log('schemapromise');
     this.schemaPromise.then(
       () => delete this.schemaPromise,
       () => delete this.schemaPromise
     );
-    console.log('schemapromise done');
     return this.loadSchema(options);
   }
 

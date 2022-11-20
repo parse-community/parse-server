@@ -205,7 +205,7 @@ describe('LiveQuery definitions', () => {
   });
 });
 
-describe('execution', () => {
+fdescribe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
