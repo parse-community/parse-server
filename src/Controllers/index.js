@@ -243,8 +243,10 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
     default:
       return new MongoStorageAdapter({
         uri: databaseURI,
-        collectionPrefix,
-        mongoOptions: databaseOptions,
+        collectionPrefix: 'test_',
+        mongoOptions: {
+          serverSelectionTimeoutMS: 2000,
+        },
       });
   }
 }

@@ -4,6 +4,7 @@ const definitions = require('../lib/cli/definitions/parse-server').default;
 const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
 const path = require('path');
 const { spawn } = require('child_process');
+const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
 
 const testDefinitions = {
   arg0: 'PROGRAM_ARG_0',
@@ -217,18 +218,17 @@ fdescribe('execution', () => {
       });
       childProcess.kill();
     }
+    SchemaCache.clear();
   });
 
   it('should start Parse Server', async done => {
-    const server = await reconfigureServer({ appId: 'aTestApp' });
-    console.log(server);
     childProcess = spawn(binPath, [
       '--appId',
       'test123',
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+      'mongodb://localhost:27017/test',
       '--port',
       '1339',
     ]);
