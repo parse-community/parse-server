@@ -205,7 +205,7 @@ describe('LiveQuery definitions', () => {
   });
 });
 
-fdescribe('execution', () => {
+describe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
@@ -232,6 +232,7 @@ fdescribe('execution', () => {
     ]);
     childProcess.stdout.on('data', data => {
       data = data.toString();
+      console.log({data});
       if (data.includes('parse-server running on')) {
         done();
       }
