@@ -228,7 +228,7 @@ fdescribe('execution', () => {
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1:27017/test',
+      'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
       '--port',
       '1339',
     ]);
