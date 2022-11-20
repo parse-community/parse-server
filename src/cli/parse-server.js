@@ -70,6 +70,8 @@ runner({
       } else {
         ParseServer.startApp(options).then(() => {
           printSuccessMessage();
+        }).catch(e => {
+          console.error(e);
         });
       }
     } else {
@@ -77,6 +79,8 @@ runner({
         logOptions();
         console.log('');
         printSuccessMessage();
+      }).catch(e => {
+        console.error(e);
       });
     }
 
