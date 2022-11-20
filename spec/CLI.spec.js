@@ -27,7 +27,7 @@ const testDefinitions = {
   },
 };
 
-describe('commander additions', () => {
+fdescribe('commander additions', () => {
   afterEach(done => {
     commander.options = [];
     delete commander.arg0;
@@ -226,7 +226,7 @@ describe('execution', () => {
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1:27017/test',
+      'mongodb://localhost:27017/test',
       '--port',
       '1339',
     ]);
@@ -257,6 +257,7 @@ describe('execution', () => {
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
+      console.log({data});
       output += data;
       if (data.includes('GraphQL running on')) {
         expect(output).toMatch('parse-server running on');
@@ -284,6 +285,7 @@ describe('execution', () => {
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
+      console.log({data});
       output += data;
       if (data.includes('Playground running on')) {
         expect(output).toMatch('GraphQL running on');

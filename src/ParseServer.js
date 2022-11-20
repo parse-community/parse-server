@@ -83,10 +83,12 @@ class ParseServer {
 
   async start() {
     try {
+      console.log('b');
       if (this.config.state === 'ok') {
         return this;
       }
       this.config.state = 'starting';
+      console.log('c');
       Config.put(this.config);
       const {
         databaseController,
@@ -97,12 +99,16 @@ class ParseServer {
         cacheAdapter,
       } = this.config;
       try {
+        console.log('initialising...');
         await databaseController.performInitialization();
+        console.log('initialised...');
       } catch (e) {
+        console.log(e);
         if (e.code !== Parse.Error.DUPLICATE_VALUE) {
           throw e;
         }
       }
+      console.log('d');
       await hooksController.load();
       const startupPromises = [];
       if (schema) {
@@ -111,6 +117,7 @@ class ParseServer {
       if (cacheAdapter?.connect && typeof cacheAdapter.connect === 'function') {
         startupPromises.push(cacheAdapter.connect());
       }
+      console.log('f');
       await Promise.all(startupPromises);
       if (cloud) {
         addParseCloud();
@@ -129,6 +136,7 @@ class ParseServer {
       if (security && security.enableCheck && security.enableCheckLog) {
         new CheckRunner(security).run();
       }
+      console.log('g');
       this.config.state = 'ok';
       Config.put(this.config);
       return this;
@@ -274,7 +282,9 @@ class ParseServer {
    * @returns {ParseServer} the parse server instance
    */
   async startApp(options: ParseServerOptions) {
+    console.log('start app');
     try {
+      console.log('start called 1');
       await this.start();
     } catch (e) {
       console.log({e});
@@ -318,13 +328,13 @@ class ParseServer {
         parseGraphQLServer.applyPlayground(app);
       }
     }
-    console.log('starting server')
+    console.log('starting server');
     const server = await new Promise(resolve => {
       app.listen(options.port, options.host, function () {
         resolve(this);
       });
     });
-    console.log('server started')
+    console.log('server started');
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
