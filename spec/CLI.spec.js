@@ -222,14 +222,13 @@ describe('execution', () => {
   });
 
   fit('should start Parse Server', async done => {
-    await reconfigureServer({appId: 'test123'});
     childProcess = spawn(binPath, [
       '--appId',
       'test123',
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1:27017/test',
+      'mongodb://0.0.0.0:27017/test',
       '--port',
       '1339',
     ]);
