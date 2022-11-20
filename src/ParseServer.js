@@ -349,7 +349,7 @@ class ParseServer {
     console.log('call start')
     const parseServer = new ParseServer(options);
     try {
-      await parseServer.startApp(options);
+      return await parseServer.startApp(options);
     } catch (err) {
       console.log({err});
     }

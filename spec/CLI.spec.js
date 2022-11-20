@@ -205,7 +205,7 @@ describe('LiveQuery definitions', () => {
   });
 });
 
-describe('execution', () => {
+fdescribe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
@@ -219,7 +219,7 @@ describe('execution', () => {
     }
   });
 
-  fit('should start Parse Server', done => {
+  it('should start Parse Server', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
