@@ -243,8 +243,8 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
     default:
       return new MongoStorageAdapter({
         uri: databaseURI,
-        collectionPrefix: 'test_',
-        databaseOptions,
+        collectionPrefix,
+        mongoOptions: databaseOptions,
       });
   }
 }
