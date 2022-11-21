@@ -15,6 +15,7 @@ import {
   ParseServerOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
+import { logLevels } from './Controllers/LoggerController';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -82,6 +83,9 @@ export class Config {
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
+    logLevelTriggerAfterHook,
+    logLevelTriggerSuccessBeforeHook,
+    logLevelTriggerErrorBeforeHook,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -123,6 +127,9 @@ export class Config {
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
+    this.validateLogLevelTriggerAfterHook(logLevelTriggerAfterHook);
+    this.validateLogLevelTriggerSuccessBeforeHook(logLevelTriggerSuccessBeforeHook);
+    this.validateLogLevelTriggerErrorBeforeHook(logLevelTriggerErrorBeforeHook);
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -499,6 +506,23 @@ export class Config {
         throw 'Allow headers must be an array';
       }
     }
+  }
+
+  static validateLogLevelTriggerAfterHook(logLevelTriggerAfterHook) {
+    const values = ['none', ...logLevels];
+    if (values.indexOf(logLevelTriggerAfterHook) === -1) {
+      throw 'LogLevelTriggerAfterHook must be one of theses ' + values;
+    }
+  }
+
+  static validateLogLevelTriggerSuccessBeforeHook(logLevelTriggerSuccessBeforeHook) {
+    // Same as validateLogLevelTriggerAfterHook for now
+    return this.validateLogLevelTriggerAfterHook(logLevelTriggerSuccessBeforeHook);
+  }
+
+  static validateLogLevelTriggerErrorBeforeHook(logLevelTriggerErrorBeforeHook) {
+    // Same as validateLogLevelTriggerAfterHook for now
+    return this.validateLogLevelTriggerAfterHook(logLevelTriggerErrorBeforeHook);
   }
 
   generateEmailVerifyTokenExpiresAt() {

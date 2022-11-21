@@ -182,6 +182,33 @@ describe('Cloud Code Logger', () => {
     });
   });
 
+  it('should log cloud function triggers using the custom log level', done => {
+    reconfigureServer({
+      // useful to flip to false for fine tuning :).
+      silent: true,
+      logLevel: 'silly',
+      logLevelTriggerAfterHook: 'debug',
+      logLevelTriggerSuccessBeforeHook: 'silly',
+      logLevelTriggerErrorBeforeHook: 'warn',
+    }).then(async () => {
+      spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+
+      Parse.Cloud.beforeSave('TestClass', () => {});
+      Parse.Cloud.afterSave('TestClass', () => {});
+      const obj = new Parse.Object('TestClass');
+      await obj.save();
+
+      let log = spy.calls.argsFor(1);
+      expect(log[0]).toEqual('silly');
+      expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
+
+      log = spy.calls.argsFor(2);
+      expect(log[0]).toEqual('debug');
+      expect(log[1]).toMatch(/afterSave triggered for TestClass for user .*/);
+      done();
+    });
+  });
+
   it('should log cloud function failure', done => {
     Parse.Cloud.define('aFunction', () => {
       throw 'it failed!';

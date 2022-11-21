@@ -290,6 +290,21 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LOG_LEVEL',
     help: 'Sets the level for logs',
   },
+  logLevelTriggerAfterHook: {
+    env: 'PARSE_SERVER_LOG_LEVEL_TRIGGER_AFTER_HOOK',
+    help: 'Set the level used when logging when a after hook is triggered',
+    default: 'info',
+  },
+  logLevelTriggerSuccessBeforeHook: {
+    env: 'PARSE_SERVER_LOG_LEVEL_TRIGGER_SUCCESS_BEFORE_HOOK',
+    help: 'Set the level used when logging when a before hook was successfully triggered',
+    default: 'info',
+  },
+  logLevelTriggerErrorBeforeHook: {
+    env: 'PARSE_SERVER_LOG_LEVEL_TRIGGER_ERROR_BEFORE_HOOK',
+    help: 'Set the level used when logging when a before hook was triggered with error',
+    default: 'error',
+  },
   logsFolder: {
     env: 'PARSE_SERVER_LOGS_FOLDER',
     help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
