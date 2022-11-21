@@ -219,7 +219,7 @@ describe('execution', () => {
     }
   });
 
-  it('should start Parse Server', async done => {
+  fit('should start Parse Server', async done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test123',

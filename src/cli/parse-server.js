@@ -4,6 +4,11 @@ import definitions from './definitions/parse-server';
 import cluster from 'cluster';
 import os from 'os';
 import runner from './utils/runner';
+import dns from 'dns';
+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const help = function () {
   console.log('  Get Started guide:');
@@ -68,20 +73,24 @@ runner({
           cluster.fork();
         });
       } else {
-        ParseServer.startApp(options).then(() => {
-          printSuccessMessage();
-        }).catch(e => {
-          console.error(e);
-        });
+        ParseServer.startApp(options)
+          .then(() => {
+            printSuccessMessage();
+          })
+          .catch(e => {
+            console.error(e);
+          });
       }
     } else {
-      ParseServer.startApp(options).then(() => {
-        logOptions();
-        console.log('');
-        printSuccessMessage();
-      }).catch(e => {
-        console.error(e);
-      });
+      ParseServer.startApp(options)
+        .then(() => {
+          logOptions();
+          console.log('');
+          printSuccessMessage();
+        })
+        .catch(e => {
+          console.error(e);
+        });
     }
 
     function printSuccessMessage() {
