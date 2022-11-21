@@ -6,10 +6,6 @@ import os from 'os';
 import runner from './utils/runner';
 import dns from 'dns';
 
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
-
 const help = function () {
   console.log('  Get Started guide:');
   console.log('');
@@ -43,6 +39,10 @@ runner({
       console.error('\u001b[31mERROR: appId and masterKey are required\u001b[0m');
       console.error('');
       process.exit(1);
+    }
+
+    if (options.defaultResultOrder && dns.setDefaultResultOrder) {
+      dns.setDefaultResultOrder(options.defaultResultOrder);
     }
 
     if (options['liveQuery.classNames']) {
@@ -79,6 +79,7 @@ runner({
           })
           .catch(e => {
             console.error(e);
+            process.exit(1);
           });
       }
     } else {
@@ -90,6 +91,7 @@ runner({
         })
         .catch(e => {
           console.error(e);
+          process.exit(1);
         });
     }
 

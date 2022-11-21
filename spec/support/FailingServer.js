@@ -20,7 +20,6 @@ const databaseURI = 'mongodb://doesnotexist:27017/parseServerMongoAdapterTestDat
       filesAdapter: new GridFSBucketAdapter(databaseURI),
     });
   } catch (e) {
-    console.log(e);
     process.exit(1);
   }
 })();

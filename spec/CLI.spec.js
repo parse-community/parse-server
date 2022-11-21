@@ -219,20 +219,21 @@ describe('execution', () => {
     }
   });
 
-  fit('should start Parse Server', async done => {
+  it('should start Parse Server', done => {
     childProcess = spawn(binPath, [
       '--appId',
-      'test123',
+      'test',
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1:27017/test',
+      'mongodb://localhost/test',
       '--port',
       '1339',
+      '--defaultResultOrder',
+      'ipv4first',
     ]);
     childProcess.stdout.on('data', data => {
       data = data.toString();
-      console.log({ data });
       if (data.includes('parse-server running on')) {
         done();
       }
@@ -249,10 +250,12 @@ describe('execution', () => {
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1:27017/test',
+      'mongodb://localhost/test',
       '--port',
       '1340',
       '--mountGraphQL',
+      '--defaultResultOrder',
+      'ipv4first',
     ]);
     let output = '';
     childProcess.stdout.on('data', data => {
@@ -275,16 +278,17 @@ describe('execution', () => {
       '--masterKey',
       'test',
       '--databaseURI',
-      'mongodb://127.0.0.1:27017/test',
+      'mongodb://localhost/test',
       '--port',
       '1341',
       '--mountGraphQL',
       '--mountPlayground',
+      '--defaultResultOrder',
+      'ipv4first',
     ]);
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
-      console.log({ data });
       output += data;
       if (data.includes('Playground running on')) {
         expect(output).toMatch('GraphQL running on');
