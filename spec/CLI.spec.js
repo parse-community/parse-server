@@ -238,10 +238,6 @@ describe('execution', () => {
       }
     });
     childProcess.stderr.on('data', data => {
-      if (data.toString().includes('ECONNREFUSED')) {
-        done();
-        return;
-      }
       done.fail(data.toString());
     });
   });
@@ -268,10 +264,6 @@ describe('execution', () => {
       }
     });
     childProcess.stderr.on('data', data => {
-      if (data.toString().includes('ECONNREFUSED')) {
-        done();
-        return;
-      }
       done.fail(data.toString());
     });
   });

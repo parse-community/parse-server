@@ -171,9 +171,6 @@ export class MongoStorageAdapter implements StorageAdapter {
 
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
       .then(client => {
-        console.log('---- success -----');
-        console.log({encodedUri});
-        console.log(this._mongoOptions)
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
         // https://github.com/mongodb/node-mongodb-native/blob/2c35d76f08574225b8db02d7bef687123e6bb018/lib/mongo_client.js#L885
@@ -193,9 +190,6 @@ export class MongoStorageAdapter implements StorageAdapter {
         this.database = database;
       })
       .catch(err => {
-        console.log('---- error -----')
-        console.log({encodedUri});
-        console.log(this._mongoOptions)
         delete this.connectionPromise;
         return Promise.reject(err);
       });
