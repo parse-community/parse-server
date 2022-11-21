@@ -219,14 +219,14 @@ describe('execution', () => {
     }
   });
 
-  it('should start Parse Server', done => {
+  it_only_db('mongo')('should start Parse Server', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
       '--masterKey',
       'test',
       '--databaseURI',
-      databaseAdapter._uri,
+      'mongodb://localhost/test',
       '--port',
       '1339',
       '--defaultResultOrder',
@@ -243,14 +243,14 @@ describe('execution', () => {
     });
   });
 
-  it('should start Parse Server with GraphQL', async done => {
+  it_only_db('mongo')('should start Parse Server with GraphQL', async done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
       '--masterKey',
       'test',
       '--databaseURI',
-      databaseAdapter._uri,
+      'mongodb://localhost/test',
       '--port',
       '1340',
       '--mountGraphQL',
@@ -271,14 +271,14 @@ describe('execution', () => {
     });
   });
 
-  it('should start Parse Server with GraphQL and Playground', async done => {
+  it_only_db('mongo')('should start Parse Server with GraphQL and Playground', async done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
       '--masterKey',
       'test',
       '--databaseURI',
-      databaseAdapter._uri,
+      'mongodb://localhost/test',
       '--port',
       '1341',
       '--mountGraphQL',
