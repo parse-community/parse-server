@@ -560,11 +560,12 @@ describe('server', () => {
     const app = express();
     app.use('/parse', parseServer.app);
     const server = app.listen(12668);
-    parseServer.start();
+    const startingPromise = parseServer.start();
     const health = await request({
       url: 'http://localhost:12668/parse/health',
     }).then(res => res.data);
     expect(health.status).toBe('starting');
+    await startingPromise;
     await new Promise(resolve => server.close(resolve));
   });
 
