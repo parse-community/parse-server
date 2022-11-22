@@ -1,7 +1,7 @@
 ############################################################
 # Build stage
 ############################################################
-FROM node:lts-alpine as build
+FROM node:12-alpine as build
 
 RUN apk update; \
   apk add git;
@@ -25,7 +25,7 @@ RUN npm run build
 ############################################################
 # Release stage
 ############################################################
-FROM node:lts-alpine as release
+FROM node:12-alpine as release
 
 RUN apk update; \
   apk add git;

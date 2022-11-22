@@ -19,9 +19,10 @@
   ],
   "license": "BSD-3-Clause",
   "dependencies": {
-    "@apollographql/graphql-playground-html": "1.6.29",
-    "@graphql-tools/links": "8.2.2",
     "@apollo/client": "3.5.8",
+    "@apollographql/graphql-playground-html": "1.6.29",
+    "@aws-sdk/client-s3": "^3.215.0",
+    "@graphql-tools/links": "8.2.2",
     "@graphql-tools/stitch": "6.2.4",
     "@graphql-tools/utils": "6.2.4",
     "@parse/fs-files-adapter": "1.2.1",
