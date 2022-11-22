@@ -81,6 +81,9 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
+  /* Set the level used internally by Parse Server features
+  :ENV: PARSE_SERVER_LOG_LEVEL_USES */
+  logLevelUses: ?LogLevelUses;
   /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
   maxLogFiles: ?NumberOrString;
   /* Disables console output
@@ -519,4 +522,19 @@ export interface AuthAdapter {
   :ENV:
   */
   enabled: ?boolean;
+}
+
+export interface LogLevelUses {
+  /* Log level used by the after hook trigger, default is 'info'.
+  :DEFAULT: 'info'
+  */
+  triggerAfterHook: ?string;
+  /* Log level used by the success before hook trigger, default is 'info.
+  :DEFAULT: 'info'
+  */
+  triggerSuccessBeforeHook: ?string;
+  /* Log level used by the error before hook trigger, default is 'error.
+  :DEFAULT: 'error'
+  */
+  triggerErrorBeforeHook: ?string;
 }

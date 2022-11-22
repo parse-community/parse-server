@@ -83,9 +83,7 @@ export class Config {
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
-    logLevelTriggerAfterHook,
-    logLevelTriggerSuccessBeforeHook,
-    logLevelTriggerErrorBeforeHook,
+    logLevelUses,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -127,9 +125,7 @@ export class Config {
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
-    this.validateLogLevelTriggerAfterHook(logLevelTriggerAfterHook);
-    this.validateLogLevelTriggerSuccessBeforeHook(logLevelTriggerSuccessBeforeHook);
-    this.validateLogLevelTriggerErrorBeforeHook(logLevelTriggerErrorBeforeHook);
+    this.validateLogLevelUses(logLevelUses);
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -508,21 +504,13 @@ export class Config {
     }
   }
 
-  static validateLogLevelTriggerAfterHook(logLevelTriggerAfterHook) {
-    const values = ['none', ...logLevels];
-    if (values.indexOf(logLevelTriggerAfterHook) === -1) {
-      throw 'LogLevelTriggerAfterHook must be one of theses ' + values;
+  static validateLogLevelUses(logLevelUses) {
+    const possibleValues = ['none', ...logLevels];
+    for (const entry of Object.entries(logLevelUses)) {
+      if (possibleValues.indexOf(entry[1]) === -1) {
+        throw entry[0] + ' must be one of theses ' + possibleValues;
+      }
     }
-  }
-
-  static validateLogLevelTriggerSuccessBeforeHook(logLevelTriggerSuccessBeforeHook) {
-    // Same as validateLogLevelTriggerAfterHook for now
-    return this.validateLogLevelTriggerAfterHook(logLevelTriggerSuccessBeforeHook);
-  }
-
-  static validateLogLevelTriggerErrorBeforeHook(logLevelTriggerErrorBeforeHook) {
-    // Same as validateLogLevelTriggerAfterHook for now
-    return this.validateLogLevelTriggerAfterHook(logLevelTriggerErrorBeforeHook);
   }
 
   generateEmailVerifyTokenExpiresAt() {

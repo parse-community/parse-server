@@ -182,19 +182,22 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it('should log cloud function triggers using the custom log level', done => {
-    reconfigureServer({
-      // useful to flip to false for fine tuning :).
-      silent: true,
-      logLevel: 'silly',
-      logLevelTriggerAfterHook: 'debug',
-      logLevelTriggerSuccessBeforeHook: 'silly',
-      logLevelTriggerErrorBeforeHook: 'warn',
-    }).then(async () => {
+  it('should log cloud function triggers using the custom log level', async done => {
+    Parse.Cloud.beforeSave('TestClass', () => {});
+    Parse.Cloud.afterSave('TestClass', () => {});
+
+    {
+      await reconfigureServer({
+        silent: true,
+        logLevel: 'silly',
+        logLevelUses: {
+          triggerAfterHook: 'debug',
+          triggerSuccessBeforeHook: 'silly',
+        },
+      });
+
       spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
 
-      Parse.Cloud.beforeSave('TestClass', () => {});
-      Parse.Cloud.afterSave('TestClass', () => {});
       const obj = new Parse.Object('TestClass');
       await obj.save();
 
@@ -205,8 +208,32 @@ describe('Cloud Code Logger', () => {
       log = spy.calls.argsFor(2);
       expect(log[0]).toEqual('debug');
       expect(log[1]).toMatch(/afterSave triggered for TestClass for user .*/);
-      done();
-    });
+    }
+
+    {
+      await reconfigureServer({
+        silent: true,
+        logLevel: 'info',
+        logLevelUses: {
+          triggerSuccessBeforeHook: 'none',
+          triggerErrorBeforeHook: 'warn',
+        },
+      });
+
+      spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+
+      const obj = new Parse.Object('TestClass');
+      await obj.save();
+
+      let log = spy.calls.argsFor(1);
+      expect(log[0]).toEqual('warn');
+      expect(log[1]).toMatch('afterSave caught an error');
+
+      log = spy.calls.argsFor(2);
+      expect(log).toEqual([]);
+    }
+
+    done();
   });
 
   it('should log cloud function failure', done => {

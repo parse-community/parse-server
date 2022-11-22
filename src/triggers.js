@@ -375,46 +375,52 @@ function userIdForLog(auth) {
 
 function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  logger[logLevel](
-    `${triggerType} triggered for ${className} for user ${userIdForLog(
-      auth
-    )}:\n  Input: ${cleanInput}`,
-    {
-      className,
-      triggerType,
-      user: userIdForLog(auth),
-    }
-  );
+  if (logLevel !== 'none') {
+    logger[logLevel](
+      `${triggerType} triggered for ${className} for user ${userIdForLog(
+        auth
+      )}:\n  Input: ${cleanInput}`,
+      {
+        className,
+        triggerType,
+        user: userIdForLog(auth),
+      }
+    );
+  }
 }
 
 function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
-  logger[logLevel](
-    `${triggerType} triggered for ${className} for user ${userIdForLog(
-      auth
-    )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
-    {
-      className,
-      triggerType,
-      user: userIdForLog(auth),
-    }
-  );
+  if (logLevel !== 'none') {
+    logger[logLevel](
+      `${triggerType} triggered for ${className} for user ${userIdForLog(
+        auth
+      )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
+      {
+        className,
+        triggerType,
+        user: userIdForLog(auth),
+      }
+    );
+  }
 }
 
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  logger[logLevel](
-    `${triggerType} failed for ${className} for user ${userIdForLog(
-      auth
-    )}:\n  Input: ${cleanInput}\n  Error: ${JSON.stringify(error)}`,
-    {
-      className,
-      triggerType,
-      error,
-      user: userIdForLog(auth),
-    }
-  );
+  if (logLevel !== 'none') {
+    logger[logLevel](
+      `${triggerType} failed for ${className} for user ${userIdForLog(
+        auth
+      )}:\n  Input: ${cleanInput}\n  Error: ${JSON.stringify(error)}`,
+      {
+        className,
+        triggerType,
+        error,
+        user: userIdForLog(auth),
+      }
+    );
+  }
 }
 
 export function maybeRunAfterFindTrigger(
@@ -450,7 +456,7 @@ export function maybeRunAfterFindTrigger(
       'AfterFind',
       JSON.stringify(objects),
       auth,
-      config.logLevelTriggerSuccessBeforeHook
+      config.logLevelUses.triggerSuccessBeforeHook
     );
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
@@ -480,7 +486,7 @@ export function maybeRunAfterFindTrigger(
       className,
       JSON.stringify(results),
       auth,
-      config.logLevelTriggerAfterHook
+      config.logLevelUses.triggerAfterHook
     );
     return results;
   });
@@ -856,7 +862,7 @@ export function maybeRunTrigger(
           parseObject.toJSON(),
           object,
           auth,
-          config.logLevelTriggerSuccessBeforeHook
+          config.logLevelUses.triggerSuccessBeforeHook
         );
         if (
           triggerType === Types.beforeSave ||
@@ -875,7 +881,7 @@ export function maybeRunTrigger(
           parseObject.toJSON(),
           auth,
           error,
-          config.logLevelTriggerErrorBeforeHook
+          config.logLevelUses.triggerErrorBeforeHook
         );
         reject(error);
       }
@@ -905,7 +911,7 @@ export function maybeRunTrigger(
             parseObject.className,
             parseObject.toJSON(),
             auth,
-            config.logLevelTriggerAfterHook
+            config.logLevelUses.triggerAfterHook
           );
         }
         // beforeSave is expected to return null (nothing)
@@ -987,7 +993,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         result,
         auth,
-        config.logLevelTriggerSuccessBeforeHook
+        config.logLevelUses.triggerSuccessBeforeHook
       );
       return result || fileObject;
     } catch (error) {
@@ -997,7 +1003,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         auth,
         error,
-        config.logLevelTriggerErrorBeforeHook
+        config.logLevelUses.triggerErrorBeforeHook
       );
       throw error;
     }

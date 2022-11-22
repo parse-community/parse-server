@@ -56,6 +56,7 @@
  * @property {LiveQueryServerOptions} liveQueryServerOptions Live query server configuration options (will start the liveQuery server)
  * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
  * @property {String} logLevel Sets the level for logs
+ * @property {LogLevelUses} logLevelUses Set the level used internally by Parse Server features
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
  * @property {String} masterKey Your Parse Master Key
  * @property {String[]} masterKeyIps (Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1']` which means that only `localhost`, the server itself, is allowed to use the master key.
@@ -214,4 +215,11 @@
 /**
  * @interface AuthAdapter
  * @property {Boolean} enabled Is `true` if the auth adapter is enabled, `false` otherwise.
+ */
+
+/**
+ * @interface LogLevelUses
+ * @property {Boolean} triggerAfterHook Log level used by the after hook trigger, default is 'info'.
+ * @property {Boolean} triggerSuccessBeforeHook Log level used by the success before hook trigger, default is 'info.
+ * @property {Boolean} triggerErrorBeforeHook Log level used by the error before hook trigger, default is 'error.
  */
