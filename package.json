@@ -22,6 +22,7 @@
     "@apollo/client": "3.5.8",
     "@apollographql/graphql-playground-html": "1.6.29",
     "@aws-sdk/client-s3": "^3.215.0",
+    "@aws-sdk/s3-request-presigner": "^3.215.0",
     "@graphql-tools/links": "8.2.2",
     "@graphql-tools/stitch": "6.2.4",
     "@graphql-tools/utils": "6.2.4",
