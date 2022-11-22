@@ -50,16 +50,19 @@ const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController'
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
+let databaseURI;
 // need to bind for mocking mocha
 
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+  databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI;
   databaseAdapter = new PostgresStorageAdapter({
-    uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
+    uri: databaseURI,
     collectionPrefix: 'test_',
   });
 } else {
+  databaseURI = mongoURI;
   databaseAdapter = new MongoStorageAdapter({
-    uri: mongoURI,
+    uri: databaseURI,
     collectionPrefix: 'test_',
   });
 }
@@ -407,6 +410,7 @@ global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.databaseAdapter = databaseAdapter;
+global.databaseURI = databaseURI;
 global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
