@@ -190,9 +190,9 @@ describe('Cloud Code Logger', () => {
       await reconfigureServer({
         silent: true,
         logLevel: 'silly',
-        logLevelUses: {
-          triggerAfterHook: 'debug',
-          triggerSuccessBeforeHook: 'silly',
+        logLevels: {
+          triggerAfter: 'debug',
+          triggerBeforeSuccess: 'silly',
         },
       });
 
@@ -214,9 +214,9 @@ describe('Cloud Code Logger', () => {
       await reconfigureServer({
         silent: true,
         logLevel: 'info',
-        logLevelUses: {
-          triggerSuccessBeforeHook: 'none',
-          triggerErrorBeforeHook: 'warn',
+        logLevels: {
+          triggerAfter: 'none',
+          triggerBeforeSuccess: 'warn',
         },
       });
 
@@ -225,11 +225,11 @@ describe('Cloud Code Logger', () => {
       const obj = new Parse.Object('TestClass');
       await obj.save();
 
-      let log = spy.calls.argsFor(1);
+      let log = spy.calls.argsFor(0);
       expect(log[0]).toEqual('warn');
-      expect(log[1]).toMatch('afterSave caught an error');
+      expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
 
-      log = spy.calls.argsFor(2);
+      log = spy.calls.argsFor(1);
       expect(log).toEqual([]);
     }
 

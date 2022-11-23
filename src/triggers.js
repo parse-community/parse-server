@@ -456,7 +456,7 @@ export function maybeRunAfterFindTrigger(
       'AfterFind',
       JSON.stringify(objects),
       auth,
-      config.logLevelUses.triggerSuccessBeforeHook
+      config.logLevels.triggerBeforeSuccess
     );
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
@@ -486,7 +486,7 @@ export function maybeRunAfterFindTrigger(
       className,
       JSON.stringify(results),
       auth,
-      config.logLevelUses.triggerAfterHook
+      config.logLevels.triggerAfter
     );
     return results;
   });
@@ -862,7 +862,9 @@ export function maybeRunTrigger(
           parseObject.toJSON(),
           object,
           auth,
-          config.logLevelUses.triggerSuccessBeforeHook
+          triggerType.startsWith('after')
+            ? config.logLevels.triggerAfter
+            : config.logLevels.triggerBeforeSuccess
         );
         if (
           triggerType === Types.beforeSave ||
@@ -881,7 +883,7 @@ export function maybeRunTrigger(
           parseObject.toJSON(),
           auth,
           error,
-          config.logLevelUses.triggerErrorBeforeHook
+          config.logLevels.triggerBeforeError
         );
         reject(error);
       }
@@ -911,7 +913,7 @@ export function maybeRunTrigger(
             parseObject.className,
             parseObject.toJSON(),
             auth,
-            config.logLevelUses.triggerAfterHook
+            config.logLevels.triggerAfter
           );
         }
         // beforeSave is expected to return null (nothing)
@@ -993,7 +995,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         result,
         auth,
-        config.logLevelUses.triggerSuccessBeforeHook
+        config.logLevels.triggerBeforeSuccess
       );
       return result || fileObject;
     } catch (error) {
@@ -1003,7 +1005,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         auth,
         error,
-        config.logLevelUses.triggerErrorBeforeHook
+        config.logLevels.triggerBeforeError
       );
       throw error;
     }

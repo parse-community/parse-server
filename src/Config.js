@@ -2,20 +2,21 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
+import { isBoolean, isString } from 'lodash';
+import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
-import net from 'net';
+import { logLevels as ctrlLogLevels } from './Controllers/LoggerController';
 import {
-  IdempotencyOptions,
-  FileUploadOptions,
   AccountLockoutOptions,
+  FileUploadOptions,
+  IdempotencyOptions,
+  LogLevels,
   PagesOptions,
-  SecurityOptions,
-  SchemaOptions,
   ParseServerOptions,
+  SchemaOptions,
+  SecurityOptions,
 } from './Options/Definitions';
-import { isBoolean, isString } from 'lodash';
-import { logLevels } from './Controllers/LoggerController';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -83,7 +84,7 @@ export class Config {
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
-    logLevelUses,
+    logLevels,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -125,7 +126,7 @@ export class Config {
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
-    this.validateLogLevelUses(logLevelUses);
+    this.validateLogLevels(logLevels);
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -504,11 +505,15 @@ export class Config {
     }
   }
 
-  static validateLogLevelUses(logLevelUses) {
-    const possibleValues = ['none', ...logLevels];
-    for (const entry of Object.entries(logLevelUses)) {
-      if (possibleValues.indexOf(entry[1]) === -1) {
-        throw entry[0] + ' must be one of theses ' + possibleValues;
+  static validateLogLevels(logLevels) {
+    const possibleValues = ['none', ...ctrlLogLevels];
+    for (const key of Object.keys(LogLevels)) {
+      if (logLevels[key]) {
+        if (possibleValues.indexOf(logLevels[key]) === -1) {
+          throw key + ' must be one of theses ' + possibleValues;
+        }
+      } else {
+        logLevels[key] = LogLevels[key].default;
       }
     }
   }

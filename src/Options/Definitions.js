@@ -290,15 +290,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LOG_LEVEL',
     help: 'Sets the level for logs',
   },
-  logLevelUses: {
-    env: 'PARSE_SERVER_LOG_LEVEL_USES',
-    help: 'Set the level used internally by Parse Server features',
+  logLevels: {
+    env: 'PARSE_SERVER_LOG_LEVELS',
+    help: '(Optional) Overrides the log levels used internally by Parse Server to log events.',
     action: parsers.objectParser,
-    default: {
-      triggerAfterHook: 'info',
-      triggerSuccessBeforeHook: 'info',
-      triggerErrorBeforeHook: 'error',
-    },
+    default: {},
   },
   logsFolder: {
     env: 'PARSE_SERVER_LOGS_FOLDER',
@@ -906,5 +902,22 @@ module.exports.AuthAdapter = {
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
     default: true,
+  },
+};
+module.exports.LogLevels = {
+  triggerAfter: {
+    env: 'undefinedTRIGGER_AFTER',
+    help: "Log level used by the after hook trigger, default is 'info'.",
+    default: 'info',
+  },
+  triggerBeforeError: {
+    env: 'undefinedTRIGGER_BEFORE_ERROR',
+    help: "Log level used by the error before hook trigger, default is 'error.",
+    default: 'error',
+  },
+  triggerBeforeSuccess: {
+    env: 'undefinedTRIGGER_BEFORE_SUCCESS',
+    help: "Log level used by the success before hook trigger, default is 'info.",
+    default: 'info',
   },
 };
