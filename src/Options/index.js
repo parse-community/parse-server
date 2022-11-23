@@ -533,7 +533,7 @@ export interface LogLevels {
   :DEFAULT: info
   */
   triggerBeforeSuccess: ?string;
-  /* Log level used by the error before hook trigger, default is 'error.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `error `.
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
