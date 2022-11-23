@@ -80,7 +80,7 @@ class ParseLiveQueryServer {
       if (typeof this.subscriber.connect === 'function') {
         await this.subscriber.connect();
       }
-      const getMessageJSON = messageStr => {
+      const messageRecieved = (channel, messageStr) => {
         logger.verbose('Subscribe message %j', messageStr);
         let message;
         try {
@@ -89,29 +89,24 @@ class ParseLiveQueryServer {
           logger.error('unable to parse message', messageStr, e);
           return;
         }
-        return message;
-      };
-      const runTrigger = (messageStr, triggerName) => {
-        console.log({ triggerName });
-        const message = getMessageJSON(messageStr);
-        this._inflateParseObject(message);
-        if (message) {
-          const nameCapitalized = triggerName.charAt(0).toUpperCase() + triggerName.slice(1);
-          this[`_on${nameCapitalized}`](message);
-        }
-      };
-      this.subscriber.subscribe(`${Parse.applicationId}afterSave`, message =>
-        runTrigger(message, 'afterSave')
-      );
-      this.subscriber.subscribe(`${Parse.applicationId}afterDelete`, message =>
-        runTrigger(message, 'afterDelete')
-      );
-      this.subscriber.subscribe(`${Parse.applicationId}clearCache`, messageStr => {
-        const message = getMessageJSON(messageStr);
-        if (message?.userId) {
+        if (channel === Parse.applicationId + 'clearCache') {
           this._clearCachedRoles(message.userId);
+          return;
         }
-      });
+        this._inflateParseObject(message);
+        if (channel === Parse.applicationId + 'afterSave') {
+          this._onAfterSave(message);
+        } else if (channel === Parse.applicationId + 'afterDelete') {
+          this._onAfterDelete(message);
+        } else {
+          logger.error('Get message %s from unknown channel %j', message, channel);
+        }
+      };
+      this.subscriber.on('message', (channel, messageStr) => messageRecieved(channel, messageStr));
+      for (const field of ['afterSave', 'afterDelete', 'clearCache']) {
+        const channel = `${Parse.applicationId}${field}`;
+        this.subscriber.subscribe(channel, messageStr => messageRecieved(channel, messageStr));
+      }
     })();
   }
 
