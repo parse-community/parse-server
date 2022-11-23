@@ -525,7 +525,7 @@ export interface AuthAdapter {
 }
 
 export interface LogLevels {
-  /* Log level used by the after hook trigger, default is 'info'.
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
   :DEFAULT: info
   */
   triggerAfter: ?string;
