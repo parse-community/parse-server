@@ -219,7 +219,7 @@
 
 /**
  * @interface LogLevels
- * @property {String} triggerAfter Log level used by the after hook trigger, default is 'info'.
- * @property {String} triggerBeforeError Log level used by the error before hook trigger, default is 'error.
- * @property {String} triggerBeforeSuccess Log level used by the success before hook trigger, default is 'info.
+ * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
+ * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
+ * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.
  */
