@@ -75,34 +75,44 @@ class ParseLiveQueryServer {
     );
 
     // Initialize subscriber
-    this.subscriber = ParsePubSub.createSubscriber(config);
-    this.subscriber.subscribe(Parse.applicationId + 'afterSave');
-    this.subscriber.subscribe(Parse.applicationId + 'afterDelete');
-    this.subscriber.subscribe(Parse.applicationId + 'clearCache');
-    // Register message handler for subscriber. When publisher get messages, it will publish message
-    // to the subscribers and the handler will be called.
-    this.subscriber.on('message', (channel, messageStr) => {
-      logger.verbose('Subscribe message %j', messageStr);
-      let message;
-      try {
-        message = JSON.parse(messageStr);
-      } catch (e) {
-        logger.error('unable to parse message', messageStr, e);
-        return;
+    (async () => {
+      this.subscriber = ParsePubSub.createSubscriber(config);
+      if (typeof this.subscriber.connect === 'function') {
+        await this.subscriber.connect();
       }
-      if (channel === Parse.applicationId + 'clearCache') {
-        this._clearCachedRoles(message.userId);
-        return;
-      }
-      this._inflateParseObject(message);
-      if (channel === Parse.applicationId + 'afterSave') {
-        this._onAfterSave(message);
-      } else if (channel === Parse.applicationId + 'afterDelete') {
-        this._onAfterDelete(message);
-      } else {
-        logger.error('Get message %s from unknown channel %j', message, channel);
-      }
-    });
+      const getMessageJSON = messageStr => {
+        logger.verbose('Subscribe message %j', messageStr);
+        let message;
+        try {
+          message = JSON.parse(messageStr);
+        } catch (e) {
+          logger.error('unable to parse message', messageStr, e);
+          return;
+        }
+        return message;
+      };
+      const runTrigger = (messageStr, triggerName) => {
+        console.log({ triggerName });
+        const message = getMessageJSON(messageStr);
+        this._inflateParseObject(message);
+        if (message) {
+          const nameCapitalized = triggerName.charAt(0).toUpperCase() + triggerName.slice(1);
+          this[`_on${nameCapitalized}`](message);
+        }
+      };
+      this.subscriber.subscribe(`${Parse.applicationId}afterSave`, message =>
+        runTrigger(message, 'afterSave')
+      );
+      this.subscriber.subscribe(`${Parse.applicationId}afterDelete`, message =>
+        runTrigger(message, 'afterDelete')
+      );
+      this.subscriber.subscribe(`${Parse.applicationId}clearCache`, messageStr => {
+        const message = getMessageJSON(messageStr);
+        if (message?.userId) {
+          this._clearCachedRoles(message.userId);
+        }
+      });
+    })();
   }
 
   // Message is the JSON object from publisher. Message.currentParseObject is the ParseObject JSON after changes.
