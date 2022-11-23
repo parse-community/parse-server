@@ -197,10 +197,8 @@ describe('Cloud Code Logger', () => {
       });
 
       spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
-
       const obj = new Parse.Object('TestClass');
       await obj.save();
-
       return spy;
     };
 
