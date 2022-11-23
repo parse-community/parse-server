@@ -1,5 +1,9 @@
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   describe('ParseLiveQuery redis', () => {
+    afterEach(async () => {
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      client.close();
+    });
     it('can connect', async () => {
       await reconfigureServer({
         startLiveQueryServer: true,

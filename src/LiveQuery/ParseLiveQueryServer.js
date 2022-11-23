@@ -78,7 +78,7 @@ class ParseLiveQueryServer {
     (async () => {
       this.subscriber = ParsePubSub.createSubscriber(config);
       if (typeof this.subscriber.connect === 'function') {
-        await this.subscriber.connect();
+        await Promise.resolve(this.subscriber.connect());
       }
       const messageRecieved = (channel, messageStr) => {
         logger.verbose('Subscribe message %j', messageStr);

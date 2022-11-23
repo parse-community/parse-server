@@ -11,7 +11,7 @@ class ParseCloudCodePublisher {
     (async () => {
       this.parsePublisher = ParsePubSub.createPublisher(config);
       if (typeof this.parsePublisher.connect === 'function') {
-        await this.parsePublisher.connect();
+        await Promise.resolve(this.parsePublisher.connect());
       }
     })();
   }
