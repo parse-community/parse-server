@@ -81,9 +81,8 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
-  /* Set the level used internally by Parse Server features
-  :ENV: PARSE_SERVER_LOG_LEVEL_USES */
-  logLevelUses: ?LogLevelUses;
+  /* (Optional) Overrides the log levels used internally by Parse Server to log events. */
+  logLevels: ?LogLevels;
   /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
   maxLogFiles: ?NumberOrString;
   /* Disables console output
