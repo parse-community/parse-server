@@ -216,8 +216,6 @@ describe('Cloud Code Logger', () => {
     expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
     log = spy.calls.argsFor(1);
     expect(log).toEqual([]);
-
-    done();
   });
 
   it('should log cloud function failure', done => {
