@@ -186,13 +186,13 @@ describe('Cloud Code Logger', () => {
     Parse.Cloud.beforeSave('TestClass', () => {});
     Parse.Cloud.afterSave('TestClass', () => {});
 
-    {
+    const execTest = async (logLevel, triggerAfter, triggerBeforeSuccess) => {
       await reconfigureServer({
         silent: true,
-        logLevel: 'silly',
+        logLevel,
         logLevels: {
-          triggerAfter: 'debug',
-          triggerBeforeSuccess: 'silly',
+          triggerAfter,
+          triggerBeforeSuccess,
         },
       });
 
@@ -201,37 +201,23 @@ describe('Cloud Code Logger', () => {
       const obj = new Parse.Object('TestClass');
       await obj.save();
 
-      let log = spy.calls.argsFor(1);
-      expect(log[0]).toEqual('silly');
-      expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
+      return spy;
+    };
 
-      log = spy.calls.argsFor(2);
-      expect(log[0]).toEqual('debug');
-      expect(log[1]).toMatch(/afterSave triggered for TestClass for user .*/);
-    }
+    spy = await execTest('silly', 'debug', 'silly');
+    let log = spy.calls.argsFor(1);
+    expect(log[0]).toEqual('silly');
+    expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
+    log = spy.calls.argsFor(2);
+    expect(log[0]).toEqual('debug');
+    expect(log[1]).toMatch(/afterSave triggered for TestClass for user .*/);
 
-    {
-      await reconfigureServer({
-        silent: true,
-        logLevel: 'info',
-        logLevels: {
-          triggerAfter: 'none',
-          triggerBeforeSuccess: 'warn',
-        },
-      });
-
-      spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
-
-      const obj = new Parse.Object('TestClass');
-      await obj.save();
-
-      let log = spy.calls.argsFor(0);
-      expect(log[0]).toEqual('warn');
-      expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
-
-      log = spy.calls.argsFor(1);
-      expect(log).toEqual([]);
-    }
+    spy = await execTest('info', 'none', 'warn');
+    log = spy.calls.argsFor(0);
+    expect(log[0]).toEqual('warn');
+    expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
+    log = spy.calls.argsFor(1);
+    expect(log).toEqual([]);
 
     done();
   });
