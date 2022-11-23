@@ -508,6 +508,11 @@ describe('server', () => {
     }).then(done);
   });
 
+  it('should set default masterKeyIps', () => {
+    const definitions = require('../lib/Options/Definitions.js');
+    expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual(['127.0.0.1', '::1']);
+  });
+
   it('should load a middleware', done => {
     const obj = {
       middleware: function (req, res, next) {
