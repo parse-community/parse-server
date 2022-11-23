@@ -182,7 +182,7 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it('should log cloud function triggers using the custom log level', async done => {
+  it('should log cloud function triggers using the custom log level', async () => {
     Parse.Cloud.beforeSave('TestClass', () => {});
     Parse.Cloud.afterSave('TestClass', () => {});
 
