@@ -302,9 +302,10 @@ module.exports.ParseServerOptions = {
   },
   maintenanceKeyIps: {
     env: 'PARSE_SERVER_MAINTENANCE_KEY_IPS',
-    help: 'Restrict maintenanceKey to be used by only these ips, defaults to [] (allow all ips)',
+    help:
+      'Restrict maintenanceKey to be used by only these ips, defaults to ["127.0.0.1", "::1"] (only allow current IP)',
     action: parsers.arrayParser,
-    default: ['127.0.0.1'],
+    default: ['127.0.0.1', '::1'],
   },
   masterKey: {
     env: 'PARSE_SERVER_MASTER_KEY',

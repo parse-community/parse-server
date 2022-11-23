@@ -58,7 +58,7 @@
  * @property {String} logLevel Sets the level for logs
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
  * @property {String} maintenanceKey Your Parse Maintenance Key, used for updating internal fields
- * @property {String[]} maintenanceKeyIps Restrict maintenanceKey to be used by only these ips, defaults to [] (allow all ips)
+ * @property {String[]} maintenanceKeyIps Restrict maintenanceKey to be used by only these ips, defaults to ["127.0.0.1", "::1"] (only allow current IP)
  * @property {String} masterKey Your Parse Master Key
  * @property {String[]} masterKeyIps (Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1']` which means that only `localhost`, the server itself, is allowed to use the master key.
  * @property {Number} maxLimit Max value for limit option on queries, defaults to unlimited
