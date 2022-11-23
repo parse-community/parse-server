@@ -495,7 +495,9 @@ describe('server', () => {
 
   it('fails if you provides invalid ip in masterKeyIps', done => {
     reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
-      expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
+      expect(error).toEqual(
+        'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
+      );
       done();
     });
   });

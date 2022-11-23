@@ -7,6 +7,7 @@ import mime from 'mime';
 import logger from '../logger';
 const triggers = require('../triggers');
 const http = require('http');
+const Utils = require('../Utils');
 
 const downloadFileFromURI = uri => {
   return new Promise((res, rej) => {
@@ -140,6 +141,23 @@ export class FilesRouter {
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
+    if (req.config && req.config.requestKeywordDenylist) {
+      // Scan request data for denied keywords
+      for (const keyword of req.config.requestKeywordDenylist) {
+        const match =
+          Utils.objectContainsKeyValue(metadata, keyword.key, keyword.value) ||
+          Utils.objectContainsKeyValue(tags, keyword.key, keyword.value);
+        if (match) {
+          next(
+            new Parse.Error(
+              Parse.Error.INVALID_KEY_NAME,
+              `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+            )
+          );
+          return;
+        }
+      }
+    }
     file.setTags(tags);
     file.setMetadata(metadata);
     const fileSize = Buffer.byteLength(req.body);

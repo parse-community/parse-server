@@ -1558,6 +1558,22 @@ describe('Cloud Code', () => {
     expect(obj.get('foo')).toBe('bar');
   });
 
+  it('create role with name and ACL and a beforeSave', async () => {
+    Parse.Cloud.beforeSave(Parse.Role, ({ object }) => {
+      return object;
+    });
+
+    const obj = new Parse.Role('TestRole', new Parse.ACL({ '*': { read: true, write: true } }));
+    await obj.save();
+
+    expect(obj.getACL()).toEqual(new Parse.ACL({ '*': { read: true, write: true } }));
+    expect(obj.get('name')).toEqual('TestRole');
+    await obj.fetch();
+
+    expect(obj.getACL()).toEqual(new Parse.ACL({ '*': { read: true, write: true } }));
+    expect(obj.get('name')).toEqual('TestRole');
+  });
+
   it('can unset in afterSave', async () => {
     Parse.Cloud.beforeSave('TestObject', ({ object }) => {
       if (!object.existed()) {
@@ -1684,25 +1700,6 @@ describe('Cloud Code', () => {
     const AfterSaveTestClass = Parse.Object.extend('AfterSaveTestClass');
     const obj = new AfterSaveTestClass();
     obj.save().then(done, done.fail);
-  });
-
-  it('can deprecate Parse.Cloud.httpRequest', async () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'warn').and.callFake(() => {});
-    Parse.Cloud.define('hello', () => {
-      return 'Hello world!';
-    });
-    await Parse.Cloud.httpRequest({
-      method: 'POST',
-      url: 'http://localhost:8378/1/functions/hello',
-      headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-REST-API-Key': 'rest',
-      },
-    });
-    expect(logger.warn).toHaveBeenCalledWith(
-      'DeprecationWarning: Parse.Cloud.httpRequest is deprecated and will be removed in a future version. Use a http request library instead.'
-    );
   });
 
   describe('cloud jobs', () => {
@@ -3120,6 +3117,36 @@ describe('beforeLogin hook', () => {
     await Parse.User.logOut();
     expect(user.id).toBe(userId);
     done();
+  });
+
+  it('does not crash server when throwing in afterLogin hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogin error');
+    const trigger = {
+      afterLogin() {
+        throw error;
+      },
+    };
+    const spy = spyOn(trigger, 'afterLogin').and.callThrough();
+    Parse.Cloud.afterLogin(trigger.afterLogin);
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logIn('user', 'pass').catch(e => e);
+    expect(spy).toHaveBeenCalled();
+    expect(response).toEqual(error);
+  });
+
+  it('does not crash server when throwing in afterLogout hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogout error');
+    const trigger = {
+      afterLogout() {
+        throw error;
+      },
+    };
+    const spy = spyOn(trigger, 'afterLogout').and.callThrough();
+    Parse.Cloud.afterLogout(trigger.afterLogout);
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logOut().catch(e => e);
+    expect(spy).toHaveBeenCalled();
+    expect(response).toEqual(error);
   });
 
   it('should have expected data in request', async done => {

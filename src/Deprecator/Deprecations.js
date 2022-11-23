@@ -16,12 +16,6 @@
  * If there are no deprecations, this must return an empty array.
  */
 module.exports = [
-  {
-    optionKey: 'directAccess',
-    changeNewDefault: 'true',
-    solution:
-      "Additionally, the environment variable 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS' will be deprecated and renamed to 'PARSE_SERVER_DIRECT_ACCESS' in a future version; it is currently possible to use either one.",
-  },
-  { optionKey: 'enforcePrivateUsers', changeNewDefault: 'true' },
   { optionKey: 'allowClientClassCreation', changeNewDefault: 'false' },
+  { optionKey: 'allowExpiredAuthDataToken', changeNewDefault: 'false' },
 ];

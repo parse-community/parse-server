@@ -11,7 +11,7 @@
 ### Issue Description
 <!-- Add a brief description of the issue this PR solves. -->
 
-Related issue: FILL_THIS_OUT
+Closes: FILL_THIS_OUT
 
 ### Approach
 <!-- Add a description of the approach in this PR. -->
@@ -26,4 +26,3 @@ Related issue: FILL_THIS_OUT
 - [ ] Add changes to documentation (guides, repository pages, in-code descriptions)
 - [ ] Add [security check](https://github.com/parse-community/parse-server/blob/master/CONTRIBUTING.md#security-checks)
 - [ ] Add new Parse Error codes to Parse JS SDK <!-- no hard-coded error codes in Parse Server -->
-- [x] A changelog entry is created automatically using the pull request title (do not manually add a changelog entry)
