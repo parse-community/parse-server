@@ -158,7 +158,6 @@ describe('middlewares', () => {
   });
 
   it('should succeed if the ip does belong to masterKeyIps list', async () => {
-
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['10.0.0.1'],

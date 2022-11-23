@@ -165,8 +165,9 @@ export function handleParseHeaders(req, res, next) {
   req.config.headers = req.headers || {};
   req.config.ip = clientIp;
   req.info = info;
-  
-  const isMaintenance = req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
+
+  const isMaintenance =
+    req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
   if (isMaintenance && ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
     req.auth = new auth.Auth({
       config: req.config,
