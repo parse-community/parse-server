@@ -508,7 +508,7 @@ describe('server', () => {
     }).then(done);
   });
 
-  it('should set default masterKeyIps', () => {
+  it('should set default masterKeyIps for IPv4 and IPv6 localhost', () => {
     const definitions = require('../lib/Options/Definitions.js');
     expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual(['127.0.0.1', '::1']);
   });
