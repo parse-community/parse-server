@@ -74,6 +74,18 @@ class ParseLiveQueryServer {
       config
     );
     this.subscriber = ParsePubSub.createSubscriber(config);
+    if (!this.subscriber.connect) {
+      this.connect();
+    }
+  }
+
+  async connect() {
+    if (typeof this.subscriber.connect === 'function') {
+      if (this.subscriber.isOpen) {
+        return;
+      }
+      await Promise.resolve(this.subscriber.connect());
+    }
     const messageRecieved = (channel, messageStr) => {
       logger.verbose('Subscribe message %j', messageStr);
       let message;
@@ -100,15 +112,6 @@ class ParseLiveQueryServer {
     for (const field of ['afterSave', 'afterDelete', 'clearCache']) {
       const channel = `${Parse.applicationId}${field}`;
       this.subscriber.subscribe(channel, messageStr => messageRecieved(channel, messageStr));
-    }
-  }
-
-  async connect() {
-    if (typeof this.subscriber.connect === 'function') {
-      if (this.subscriber.isOpen) {
-        return;
-      }
-      return await Promise.resolve(this.subscriber.connect());
     }
   }
 
