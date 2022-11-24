@@ -506,11 +506,10 @@ export class Config {
   }
 
   static validateLogLevels(logLevels) {
-    const possibleValues = ['none', ...ctrlLogLevels];
     for (const key of Object.keys(LogLevels)) {
       if (logLevels[key]) {
-        if (possibleValues.indexOf(logLevels[key]) === -1) {
-          throw key + ' must be one of theses ' + possibleValues;
+        if (ctrlLogLevels.indexOf(logLevels[key]) === -1) {
+          throw key + ' must be one of theses ' + ctrlLogLevels;
         }
       } else {
         logLevels[key] = LogLevels[key].default;

@@ -375,52 +375,46 @@ function userIdForLog(auth) {
 
 function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  if (logLevel !== 'none') {
-    logger[logLevel](
-      `${triggerType} triggered for ${className} for user ${userIdForLog(
-        auth
-      )}:\n  Input: ${cleanInput}`,
-      {
-        className,
-        triggerType,
-        user: userIdForLog(auth),
-      }
-    );
-  }
+  logger[logLevel](
+    `${triggerType} triggered for ${className} for user ${userIdForLog(
+      auth
+    )}:\n  Input: ${cleanInput}`,
+    {
+      className,
+      triggerType,
+      user: userIdForLog(auth),
+    }
+  );
 }
 
 function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
-  if (logLevel !== 'none') {
-    logger[logLevel](
-      `${triggerType} triggered for ${className} for user ${userIdForLog(
-        auth
-      )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
-      {
-        className,
-        triggerType,
-        user: userIdForLog(auth),
-      }
-    );
-  }
+  logger[logLevel](
+    `${triggerType} triggered for ${className} for user ${userIdForLog(
+      auth
+    )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
+    {
+      className,
+      triggerType,
+      user: userIdForLog(auth),
+    }
+  );
 }
 
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  if (logLevel !== 'none') {
-    logger[logLevel](
-      `${triggerType} failed for ${className} for user ${userIdForLog(
-        auth
-      )}:\n  Input: ${cleanInput}\n  Error: ${JSON.stringify(error)}`,
-      {
-        className,
-        triggerType,
-        error,
-        user: userIdForLog(auth),
-      }
-    );
-  }
+  logger[logLevel](
+    `${triggerType} failed for ${className} for user ${userIdForLog(
+      auth
+    )}:\n  Input: ${cleanInput}\n  Error: ${JSON.stringify(error)}`,
+    {
+      className,
+      triggerType,
+      error,
+      user: userIdForLog(auth),
+    }
+  );
 }
 
 export function maybeRunAfterFindTrigger(

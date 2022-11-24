@@ -210,7 +210,7 @@ describe('Cloud Code Logger', () => {
     expect(log[0]).toEqual('debug');
     expect(log[1]).toMatch(/afterSave triggered for TestClass for user .*/);
 
-    spy = await execTest('info', 'none', 'warn');
+    spy = await execTest('info', 'silly', 'warn');
     log = spy.calls.argsFor(0);
     expect(log[0]).toEqual('warn');
     expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
