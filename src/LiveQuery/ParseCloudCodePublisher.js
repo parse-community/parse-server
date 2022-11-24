@@ -8,12 +8,16 @@ class ParseCloudCodePublisher {
   // config object of the publisher, right now it only contains the redisURL,
   // but we may extend it later.
   constructor(config: any = {}) {
-    (async () => {
-      this.parsePublisher = ParsePubSub.createPublisher(config);
-      if (typeof this.parsePublisher.connect === 'function') {
-        await Promise.resolve(this.parsePublisher.connect());
+    this.parsePublisher = ParsePubSub.createPublisher(config);
+  }
+
+  async connect() {
+    if (typeof this.parsePublisher.connect === 'function') {
+      if (this.parsePublisher.isOpen) {
+        return;
       }
-    })();
+      return Promise.resolve(this.parsePublisher.connect());
+    }
   }
 
   onCloudCodeAfterSave(request: any): void {

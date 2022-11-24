@@ -73,41 +73,43 @@ class ParseLiveQueryServer {
       parseWebsocket => this._onConnect(parseWebsocket),
       config
     );
+    this.subscriber = ParsePubSub.createSubscriber(config);
+    const messageRecieved = (channel, messageStr) => {
+      logger.verbose('Subscribe message %j', messageStr);
+      let message;
+      try {
+        message = JSON.parse(messageStr);
+      } catch (e) {
+        logger.error('unable to parse message', messageStr, e);
+        return;
+      }
+      if (channel === Parse.applicationId + 'clearCache') {
+        this._clearCachedRoles(message.userId);
+        return;
+      }
+      this._inflateParseObject(message);
+      if (channel === Parse.applicationId + 'afterSave') {
+        this._onAfterSave(message);
+      } else if (channel === Parse.applicationId + 'afterDelete') {
+        this._onAfterDelete(message);
+      } else {
+        logger.error('Get message %s from unknown channel %j', message, channel);
+      }
+    };
+    this.subscriber.on('message', (channel, messageStr) => messageRecieved(channel, messageStr));
+    for (const field of ['afterSave', 'afterDelete', 'clearCache']) {
+      const channel = `${Parse.applicationId}${field}`;
+      this.subscriber.subscribe(channel, messageStr => messageRecieved(channel, messageStr));
+    }
+  }
 
-    // Initialize subscriber
-    (async () => {
-      this.subscriber = ParsePubSub.createSubscriber(config);
-      if (typeof this.subscriber.connect === 'function') {
-        await Promise.resolve(this.subscriber.connect());
+  async connect() {
+    if (typeof this.subscriber.connect === 'function') {
+      if (this.subscriber.isOpen) {
+        return;
       }
-      const messageRecieved = (channel, messageStr) => {
-        logger.verbose('Subscribe message %j', messageStr);
-        let message;
-        try {
-          message = JSON.parse(messageStr);
-        } catch (e) {
-          logger.error('unable to parse message', messageStr, e);
-          return;
-        }
-        if (channel === Parse.applicationId + 'clearCache') {
-          this._clearCachedRoles(message.userId);
-          return;
-        }
-        this._inflateParseObject(message);
-        if (channel === Parse.applicationId + 'afterSave') {
-          this._onAfterSave(message);
-        } else if (channel === Parse.applicationId + 'afterDelete') {
-          this._onAfterDelete(message);
-        } else {
-          logger.error('Get message %s from unknown channel %j', message, channel);
-        }
-      };
-      this.subscriber.on('message', (channel, messageStr) => messageRecieved(channel, messageStr));
-      for (const field of ['afterSave', 'afterDelete', 'clearCache']) {
-        const channel = `${Parse.applicationId}${field}`;
-        this.subscriber.subscribe(channel, messageStr => messageRecieved(channel, messageStr));
-      }
-    })();
+      return await Promise.resolve(this.subscriber.connect());
+    }
   }
 
   // Message is the JSON object from publisher. Message.currentParseObject is the ParseObject JSON after changes.
