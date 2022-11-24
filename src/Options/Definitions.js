@@ -906,19 +906,19 @@ module.exports.AuthAdapter = {
 };
 module.exports.LogLevels = {
   triggerAfter: {
-    env: 'undefinedTRIGGER_AFTER',
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
       'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.',
     default: 'info',
   },
   triggerBeforeError: {
-    env: 'undefinedTRIGGER_BEFORE_ERROR',
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
     help:
       'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.',
     default: 'error',
   },
   triggerBeforeSuccess: {
-    env: 'undefinedTRIGGER_BEFORE_SUCCESS',
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
     help:
       'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
     default: 'info',
