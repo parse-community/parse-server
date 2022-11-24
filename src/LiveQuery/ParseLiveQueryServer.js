@@ -80,12 +80,17 @@ class ParseLiveQueryServer {
   }
 
   async connect() {
-    if (typeof this.subscriber.connect === 'function') {
-      if (this.subscriber.isOpen) {
-        return;
-      }
-      await Promise.resolve(this.subscriber.connect());
+    if (this.subscriber.isOpen) {
+      return;
     }
+    if (typeof this.subscriber.connect === 'function') {
+      await Promise.resolve(this.subscriber.connect());
+    } else {
+      this.subscriber.isOpen = true;
+    }
+    this._createSubscribers();
+  }
+  _createSubscribers() {
     const messageRecieved = (channel, messageStr) => {
       logger.verbose('Subscribe message %j', messageStr);
       let message;
