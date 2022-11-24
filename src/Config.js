@@ -6,7 +6,7 @@ import { isBoolean, isString } from 'lodash';
 import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
-import { logLevels as ctrlLogLevels } from './Controllers/LoggerController';
+import LoggerController from './Controllers/LoggerController';
 import {
   AccountLockoutOptions,
   FileUploadOptions,
