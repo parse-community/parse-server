@@ -33,5 +33,24 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
         object.destroy(),
       ]);
     });
+
+    it('can call connect twice', async () => {
+      const server = await reconfigureServer({
+        startLiveQueryServer: true,
+        liveQuery: {
+          classNames: ['TestObject'],
+          redisURL: 'redis://localhost:6379',
+        },
+        liveQueryServerOptions: {
+          redisURL: 'redis://localhost:6379',
+        },
+      });
+      expect(server.config.liveQueryController.liveQueryPublisher.parsePublisher.isOpen).toBeTrue();
+      await server.config.liveQueryController.connect();
+      expect(server.config.liveQueryController.liveQueryPublisher.parsePublisher.isOpen).toBeTrue();
+      expect(server.liveQueryServer.subscriber.isOpen).toBe(true);
+      await server.liveQueryServer.connect();
+      expect(server.liveQueryServer.subscriber.isOpen).toBe(true);
+    });
   });
 }
