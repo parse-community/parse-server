@@ -94,24 +94,24 @@ describe('ParseLiveQueryServer', function () {
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
 
-  it('can be initialized from ParseServer', function () {
+  it('can be initialized from ParseServer', async () => {
     const httpServer = {};
-    const parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {});
+    const parseLiveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {});
 
     expect(parseLiveQueryServer.clientId).toBeUndefined();
     expect(parseLiveQueryServer.clients.size).toBe(0);
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
 
-  it('can be initialized from ParseServer without httpServer', function (done) {
-    const parseLiveQueryServer = ParseServer.createLiveQueryServer(undefined, {
+  it('can be initialized from ParseServer without httpServer', async () => {
+    const parseLiveQueryServer = await ParseServer.createLiveQueryServer(undefined, {
       port: 22345,
     });
 
     expect(parseLiveQueryServer.clientId).toBeUndefined();
     expect(parseLiveQueryServer.clients.size).toBe(0);
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
-    parseLiveQueryServer.server.close(done);
+    await new Promise(resolve => parseLiveQueryServer.server.close(resolve));
   });
 
   describe_only_db('mongo')('initialization', () => {
