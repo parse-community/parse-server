@@ -508,7 +508,7 @@ export class Config {
   static validateLogLevels(logLevels) {
     for (const key of Object.keys(LogLevels)) {
       if (logLevels[key]) {
-        if (ctrlLogLevels.indexOf(logLevels[key]) === -1) {
+        if (validLogLevels.indexOf(logLevels[key]) === -1) {
           throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
         }
       } else {
