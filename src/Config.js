@@ -509,7 +509,7 @@ export class Config {
     for (const key of Object.keys(LogLevels)) {
       if (logLevels[key]) {
         if (ctrlLogLevels.indexOf(logLevels[key]) === -1) {
-          throw key + ' must be one of theses ' + ctrlLogLevels;
+          throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
         }
       } else {
         logLevels[key] = LogLevels[key].default;
