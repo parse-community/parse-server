@@ -186,7 +186,7 @@ describe('Cloud Code Logger', () => {
     Parse.Cloud.beforeSave('TestClass', () => {});
     Parse.Cloud.afterSave('TestClass', () => {});
 
-    const execTest = async (logLevel, triggerAfter, triggerBeforeSuccess) => {
+    const execTest = async (logLevel, triggerBeforeSuccess, triggerAfter) => {
       await reconfigureServer({
         silent: true,
         logLevel,
@@ -199,23 +199,22 @@ describe('Cloud Code Logger', () => {
       spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
       const obj = new Parse.Object('TestClass');
       await obj.save();
-      return spy;
+
+      return {
+        beforeSave: spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('beforeSave triggered for TestClass for user '))?.[0],
+        afterSave: spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('afterSave triggered for TestClass for user '))?.[0],
+      };
     };
 
-    spy = await execTest('silly', 'debug', 'silly');
-    let log = spy.calls.argsFor(1);
-    expect(log[0]).toEqual('silly');
-    expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
-    log = spy.calls.argsFor(2);
-    expect(log[0]).toEqual('debug');
-    expect(log[1]).toMatch(/afterSave triggered for TestClass for user .*/);
+    let calls = await execTest('silly', 'silly', 'debug');
+    expect(calls).toEqual({ beforeSave: 'silly', afterSave: 'debug' });
 
-    spy = await execTest('info', 'silly', 'warn');
-    log = spy.calls.argsFor(0);
-    expect(log[0]).toEqual('warn');
-    expect(log[1]).toMatch(/beforeSave triggered for TestClass for user .*/);
-    log = spy.calls.argsFor(1);
-    expect(log).toEqual([]);
+    calls = await execTest('info', 'warn', 'debug');
+    expect(calls).toEqual({ beforeSave: 'warn', afterSave: undefined });
   });
 
   it('should log cloud function failure', done => {
