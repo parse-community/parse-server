@@ -15,7 +15,8 @@ describe('RedisPubSub', function () {
     });
 
     const redis = require('redis');
-    expect(redis.createClient).toHaveBeenCalledWith('redisAddress', {
+    expect(redis.createClient).toHaveBeenCalledWith({
+      url: 'redisAddress',
       socket_keepalive: true,
       no_ready_check: true,
     });
@@ -28,7 +29,8 @@ describe('RedisPubSub', function () {
     });
 
     const redis = require('redis');
-    expect(redis.createClient).toHaveBeenCalledWith('redisAddress', {
+    expect(redis.createClient).toHaveBeenCalledWith({
+      url: 'redisAddress',
       socket_keepalive: true,
       no_ready_check: true,
     });
