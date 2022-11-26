@@ -432,7 +432,7 @@ describe('ParseGraphQLServer', () => {
       const expressApp = express();
       httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
-      parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {
+      parseLiveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
       });
       parseGraphQLServer.applyGraphQL(expressApp);

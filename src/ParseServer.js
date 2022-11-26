@@ -77,7 +77,12 @@ class ParseServer {
 
     const allControllers = controllers.getControllers(options);
 
-    const { loggerController, databaseController, hooksController } = allControllers;
+    const {
+      loggerController,
+      databaseController,
+      hooksController,
+      liveQueryController,
+    } = allControllers;
     this.config = Config.put(Object.assign({}, options, allControllers));
 
     logging.setLogger(loggerController);
@@ -98,6 +103,7 @@ class ParseServer {
         ) {
           startupPromises.push(options.cacheAdapter.connect());
         }
+        startupPromises.push(liveQueryController.connect());
         await Promise.all(startupPromises);
         if (serverStartComplete) {
           serverStartComplete();
@@ -263,7 +269,7 @@ class ParseServer {
    * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
-  start(options: ParseServerOptions, callback: ?() => void) {
+  async start(options: ParseServerOptions, callback: ?() => void) {
     const app = express();
     if (options.middleware) {
       let middleware;
@@ -307,7 +313,7 @@ class ParseServer {
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
-      this.liveQueryServer = ParseServer.createLiveQueryServer(
+      this.liveQueryServer = await ParseServer.createLiveQueryServer(
         server,
         options.liveQueryServerOptions,
         options
@@ -338,9 +344,9 @@ class ParseServer {
    * @param {Server} httpServer an optional http server to pass
    * @param {LiveQueryServerOptions} config options for the liveQueryServer
    * @param {ParseServerOptions} options options for the ParseServer
-   * @returns {ParseLiveQueryServer} the live query server instance
+   * @returns {Promise<ParseLiveQueryServer>} the live query server instance
    */
-  static createLiveQueryServer(
+  static async createLiveQueryServer(
     httpServer,
     config: LiveQueryServerOptions,
     options: ParseServerOptions
@@ -350,7 +356,9 @@ class ParseServer {
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
     }
-    return new ParseLiveQueryServer(httpServer, config, options);
+    const server = new ParseLiveQueryServer(httpServer, config, options);
+    await server.connect();
+    return server;
   }
 
   static verifyServerUrl(callback) {
