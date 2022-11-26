@@ -1,3 +1,10 @@
+# [6.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.11...6.0.0-alpha.12) (2022-11-26)
+
+
+### Features
+
+* Upgrade Redis 3 to 4 for LiveQuery ([#8333](https://github.com/parse-community/parse-server/issues/8333)) ([b2761fb](https://github.com/parse-community/parse-server/commit/b2761fb3786b519d9bbcf35be54309d2d35da1a9))
+
 # [6.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.10...6.0.0-alpha.11) (2022-11-25)
 
 
