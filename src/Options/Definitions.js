@@ -303,9 +303,9 @@ module.exports.ParseServerOptions = {
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
     help:
-      "(Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1']` which means that only `localhost`, the server itself, is allowed to use the master key.",
+      "(Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the master key.",
     action: parsers.arrayParser,
-    default: ['127.0.0.1'],
+    default: ['127.0.0.1', '::1'],
   },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
