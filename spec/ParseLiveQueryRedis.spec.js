@@ -16,13 +16,13 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
         },
       });
       const subscription = await new Parse.Query('TestObject').subscribe();
-      const [, object] = await Promise.all([
+      const [object] = await Promise.all([
+        new Parse.Object('TestObject').save(),
         new Promise(resolve =>
           subscription.on('create', () => {
             resolve();
           })
         ),
-        new Parse.Object('TestObject').save(),
       ]);
       await Promise.all([
         new Promise(resolve =>
