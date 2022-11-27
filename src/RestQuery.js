@@ -18,6 +18,7 @@ const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 //   readPreference
 //   includeReadPreference
 //   subqueryReadPreference
+//   allowDiskUse
 function RestQuery(
   config,
   auth,
@@ -137,6 +138,7 @@ function RestQuery(
       case 'skip':
       case 'limit':
       case 'readPreference':
+      case 'allowDiskUse':
         this.findOptions[option] = restOptions[option];
         break;
       case 'order':

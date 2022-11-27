@@ -15,7 +15,18 @@ export default class MongoCollection {
   // idea. Or even if this behavior is a good idea.
   find(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      maxTimeMS,
+      readPreference,
+      hint,
+      caseInsensitive,
+      explain,
+      allowDiskUse,
+    } = {}
   ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
@@ -32,6 +43,7 @@ export default class MongoCollection {
       hint,
       caseInsensitive,
       explain,
+      allowDiskUse,
     }).catch(error => {
       // Check for "no geoindex" error
       if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
@@ -60,6 +72,7 @@ export default class MongoCollection {
               hint,
               caseInsensitive,
               explain,
+              allowDiskUse,
             })
           )
       );
@@ -75,7 +88,18 @@ export default class MongoCollection {
 
   _rawFind(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      maxTimeMS,
+      readPreference,
+      hint,
+      caseInsensitive,
+      explain,
+      allowDiskUse,
+    } = {}
   ) {
     let findOperation = this._mongoCollection.find(query, {
       skip,
@@ -83,6 +107,7 @@ export default class MongoCollection {
       sort,
       readPreference,
       hint,
+      allowDiskUse,
     });
 
     if (keys) {
@@ -95,6 +120,10 @@ export default class MongoCollection {
 
     if (maxTimeMS) {
       findOperation = findOperation.maxTimeMS(maxTimeMS);
+    }
+
+    if (allowDiskUse) {
+      findOperation = findOperation.allowDiskUse();
     }
 
     return explain ? findOperation.explain(explain) : findOperation.toArray();
@@ -127,9 +156,9 @@ export default class MongoCollection {
     return this._mongoCollection.distinct(field, query);
   }
 
-  aggregate(pipeline, { maxTimeMS, readPreference, hint, explain } = {}) {
+  aggregate(pipeline, { maxTimeMS, readPreference, hint, explain, allowDiskUse } = {}) {
     return this._mongoCollection
-      .aggregate(pipeline, { maxTimeMS, readPreference, hint, explain })
+      .aggregate(pipeline, { maxTimeMS, readPreference, hint, explain, allowDiskUse })
       .toArray();
   }
 

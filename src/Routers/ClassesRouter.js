@@ -11,6 +11,7 @@ const ALLOWED_GET_QUERY_KEYS = [
   'readPreference',
   'includeReadPreference',
   'subqueryReadPreference',
+  'allowDiskUse',
 ];
 
 export class ClassesRouter extends PromiseRouter {
@@ -166,6 +167,7 @@ export class ClassesRouter extends PromiseRouter {
       'subqueryReadPreference',
       'hint',
       'explain',
+      'allowDiskUse',
     ];
 
     for (const key of Object.keys(body)) {
@@ -199,6 +201,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.includeAll) {
       options.includeAll = true;
+    }
+    if (typeof body.allowDiskUse === 'boolean') {
+      options.allowDiskUse = body.allowDiskUse;
     }
     if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
