@@ -220,18 +220,13 @@ describe('execution', () => {
   });
 
   it('should start Parse Server', done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      databaseURI,
-      '--port',
-      '1339',
-      '--defaultResultOrder',
-      'ipv4first',
-    ]);
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
+      { env }
+    );
     childProcess.stdout.on('data', data => {
       data = data.toString();
       if (data.includes('parse-server running on')) {
@@ -244,19 +239,23 @@ describe('execution', () => {
   });
 
   it('should start Parse Server with GraphQL', async done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      databaseURI,
-      '--port',
-      '1340',
-      '--mountGraphQL',
-      '--defaultResultOrder',
-      'ipv4first',
-    ]);
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      [
+        '--appId',
+        'test',
+        '--masterKey',
+        'test',
+        '--databaseURI',
+        databaseURI,
+        '--port',
+        '1340',
+        '--mountGraphQL',
+      ],
+      { env }
+    );
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
@@ -272,20 +271,24 @@ describe('execution', () => {
   });
 
   it('should start Parse Server with GraphQL and Playground', async done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      databaseURI,
-      '--port',
-      '1341',
-      '--mountGraphQL',
-      '--mountPlayground',
-      '--defaultResultOrder',
-      'ipv4first',
-    ]);
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      [
+        '--appId',
+        'test',
+        '--masterKey',
+        'test',
+        '--databaseURI',
+        databaseURI,
+        '--port',
+        '1341',
+        '--mountGraphQL',
+        '--mountPlayground',
+      ],
+      { env }
+    );
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();

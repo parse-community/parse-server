@@ -168,12 +168,6 @@ module.exports.ParseServerOptions = {
     action: parsers.numberParser('defaultLimit'),
     default: 100,
   },
-  defaultResultOrder: {
-    env: 'PARSE_SERVER_DEFAULT_RESULT_ORDER',
-    help:
-      "Value for Parse Server's `dns.setDefaultResultOrder` - [NodeJS' DNS lookup](https://nodejs.org/api/dns.html#dnssetdefaultresultorderorder)",
-    default: 'verbatim',
-  },
   directAccess: {
     env: 'PARSE_SERVER_DIRECT_ACCESS',
     help:

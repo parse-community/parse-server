@@ -101,8 +101,8 @@ class Deprecator {
       changeNewKey == null
         ? undefined
         : changeNewKey.length > 0
-          ? `renamed to '${changeNewKey}'`
-          : `removed`;
+        ? `renamed to '${changeNewKey}'`
+        : `removed`;
 
     // Compose message
     let output = `DeprecationWarning: The Parse Server ${type} '${key}' `;

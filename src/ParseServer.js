@@ -95,7 +95,7 @@ class ParseServer {
         security,
         schema,
         cacheAdapter,
-        liveQueryController
+        liveQueryController,
       } = this.config;
       try {
         await databaseController.performInitialization();
