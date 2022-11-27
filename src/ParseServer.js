@@ -280,7 +280,7 @@ class ParseServer {
     try {
       await this.start();
     } catch (e) {
-      console.error('Error on ParseServer.start: ', e);
+      console.error('Error on ParseServer.startApp: ', e);
       throw e;
     }
     const app = express();
