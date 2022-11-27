@@ -881,7 +881,6 @@ app.listen(1337, function() {
   console.log('GraphQL API running on http://localhost:1337/graphql');
   console.log('GraphQL Playground running on http://localhost:1337/playground');
 });
-
 ```
 
 And finally start your app:
