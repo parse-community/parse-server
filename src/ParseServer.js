@@ -78,7 +78,7 @@ class ParseServer {
   }
 
   /**
-   * Starts the Parse Server to be served as an express. Resolves when parse-server is ready to accept external traffic.
+   * Starts Parse Server as an express app; this promise resolves when Parse Server is ready to accept requests.
    */
 
   async start() {
