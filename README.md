@@ -295,8 +295,8 @@ const server = new ParseServer({
   serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
 });
 
-// start the API
-await api.start();
+// Start server
+await server.start();
 
 // Serve the Parse API on the /parse URL prefix
 app.use('/parse', api.app);
