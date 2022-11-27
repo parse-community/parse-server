@@ -467,13 +467,6 @@ function injectDefaults(options: ParseServerOptions) {
       });
     }
   });
-
-  options.masterKeyIps = Array.from(
-    new Set(options.masterKeyIps.concat(defaults.masterKeyIps, options.masterKeyIps))
-  );
-  options.maintenanceKeyIps = Array.from(
-    new Set([...defaults.maintenanceKeyIps, options.maintenanceKeyIps])
-  );
 }
 
 // Those can't be tested as it requires a subprocess
