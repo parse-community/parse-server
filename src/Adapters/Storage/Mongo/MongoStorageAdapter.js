@@ -599,7 +599,17 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference, hint, caseInsensitive, explain }: QueryOptions
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      readPreference,
+      hint,
+      caseInsensitive,
+      explain,
+      allowDiskUse,
+    }: QueryOptions
   ): Promise<any> {
     validateExplainValue(explain);
     schema = convertParseSchemaToMongoSchema(schema);
@@ -642,6 +652,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           hint,
           caseInsensitive,
           explain,
+          allowDiskUse,
         })
       )
       .then(objects => {
@@ -778,7 +789,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     pipeline: any,
     readPreference: ?string,
     hint: ?mixed,
-    explain?: boolean
+    explain?: boolean,
+    allowDiskUse?: boolean
   ) {
     validateExplainValue(explain);
     let isPointerField = false;
@@ -812,6 +824,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
           hint,
           explain,
+          allowDiskUse,
         })
       )
       .then(results => {

@@ -1147,6 +1147,7 @@ class DatabaseController {
       hint,
       caseInsensitive = false,
       explain,
+      allowDiskUse,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1195,6 +1196,7 @@ class DatabaseController {
             hint,
             caseInsensitive,
             explain,
+            allowDiskUse,
           };
           Object.keys(sort).forEach(fieldName => {
             if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
@@ -1283,7 +1285,8 @@ class DatabaseController {
                     pipeline,
                     readPreference,
                     hint,
-                    explain
+                    explain,
+                    allowDiskUse
                   );
                 }
               } else if (explain) {
