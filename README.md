@@ -299,7 +299,7 @@ const api = new ParseServer({
 await api.start();
 
 // Serve the Parse API on the /parse URL prefix
-app.use('/parse', api);
+app.use('/parse', api.app);
 
 app.listen(1337, function() {
   console.log('parse-server-example running on port 1337.');
