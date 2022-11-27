@@ -460,9 +460,12 @@ function injectDefaults(options: ParseServerOptions) {
     }
   });
 
-  options.masterKeyIps = Array.from(
-    new Set(options.masterKeyIps.concat(defaults.masterKeyIps, options.masterKeyIps))
-  );
+  options.masterKeyIps =
+    options.masterKeyIps?.length > 0
+      ? Array.from(
+        new Set(options.masterKeyIps.concat(defaults.masterKeyIps, options.masterKeyIps))
+      )
+      : [];
 }
 
 // Those can't be tested as it requires a subprocess

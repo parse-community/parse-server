@@ -166,7 +166,11 @@ export function handleParseHeaders(req, res, next) {
   req.info = info;
 
   let isMaster = info.masterKey === req.config.masterKey;
-  if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
+  if (
+    isMaster &&
+    req.config.masterKeyIps?.length &&
+    !ipRangeCheck(clientIp, req.config.masterKeyIps || [])
+  ) {
     isMaster = false;
   }
 
