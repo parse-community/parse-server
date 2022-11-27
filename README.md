@@ -286,7 +286,7 @@ const express = require('express');
 const ParseServer = require('parse-server').ParseServer;
 const app = express();
 
-const api = new ParseServer({
+const server = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
   cloud: './cloud/main.js', // Path to your Cloud Code
   appId: 'myAppId',
