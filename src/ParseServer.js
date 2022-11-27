@@ -95,6 +95,7 @@ class ParseServer {
         security,
         schema,
         cacheAdapter,
+        liveQueryController
       } = this.config;
       try {
         await databaseController.performInitialization();
@@ -111,6 +112,7 @@ class ParseServer {
       if (cacheAdapter?.connect && typeof cacheAdapter.connect === 'function') {
         startupPromises.push(cacheAdapter.connect());
       }
+      startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);
       if (cloud) {
         addParseCloud();
@@ -273,6 +275,7 @@ class ParseServer {
    * @param {ParseServerOptions} options to use to start the server
    * @returns {ParseServer} the parse server instance
    */
+
   async startApp(options: ParseServerOptions) {
     try {
       await this.start();
@@ -325,7 +328,7 @@ class ParseServer {
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
-      this.liveQueryServer = ParseServer.createLiveQueryServer(
+      this.liveQueryServer = await ParseServer.createLiveQueryServer(
         server,
         options.liveQueryServerOptions,
         options
@@ -355,9 +358,9 @@ class ParseServer {
    * @param {Server} httpServer an optional http server to pass
    * @param {LiveQueryServerOptions} config options for the liveQueryServer
    * @param {ParseServerOptions} options options for the ParseServer
-   * @returns {ParseLiveQueryServer} the live query server instance
+   * @returns {Promise<ParseLiveQueryServer>} the live query server instance
    */
-  static createLiveQueryServer(
+  static async createLiveQueryServer(
     httpServer,
     config: LiveQueryServerOptions,
     options: ParseServerOptions
@@ -367,7 +370,9 @@ class ParseServer {
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
     }
-    return new ParseLiveQueryServer(httpServer, config, options);
+    const server = new ParseLiveQueryServer(httpServer, config, options);
+    await server.connect();
+    return server;
   }
 
   static verifyServerUrl(callback) {
