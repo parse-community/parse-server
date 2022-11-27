@@ -875,14 +875,13 @@ app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
 parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
 parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
 
-(async () => {
-  await parseServer.start();
-  app.listen(1337, function() {
-    console.log('REST API running on http://localhost:1337/parse');
-    console.log('GraphQL API running on http://localhost:1337/graphql');
-    console.log('GraphQL Playground running on http://localhost:1337/playground');
-  });
-})();
+await parseServer.start();
+app.listen(1337, function() {
+  console.log('REST API running on http://localhost:1337/parse');
+  console.log('GraphQL API running on http://localhost:1337/graphql');
+  console.log('GraphQL Playground running on http://localhost:1337/playground');
+});
+
 ```
 
 And finally start your app:
