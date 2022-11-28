@@ -120,11 +120,13 @@ class ParseServer {
         if (typeof cloud === 'function') {
           await Promise.resolve(cloud(Parse));
         } else if (typeof cloud === 'string') {
-          console.log(process.env);
-          const json = require(process.env.npm_package_json);
-          if (process.env.npm_package_type === 'module' || json.type === 'module') {
+          let json;
+          if (process.env.npm_package_json) {
+            json = require(process.env.npm_package_json);
+          }
+          if (process.env.npm_package_type === 'module' || json?.type === 'module') {
             await import(path.resolve(process.cwd(), cloud)).default;
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await new Promise(resolve => nextTick(resolve));
           } else {
             require(path.resolve(process.cwd(), cloud));
           }
