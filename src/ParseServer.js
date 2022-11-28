@@ -125,13 +125,13 @@ class ParseServer {
           }
           if (process.env.npm_package_type === 'module' || json?.type === 'module') {
             await import(path.resolve(process.cwd(), cloud)).default;
-            await new Promise(resolve => setTimeout(resolve, 100));
           } else {
             require(path.resolve(process.cwd(), cloud));
           }
         } else {
           throw "argument 'cloud' must either be a string or a function";
         }
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
       if (security && security.enableCheck && security.enableCheckLog) {
         new CheckRunner(security).run();
