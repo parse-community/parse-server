@@ -45,6 +45,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
+import { nextTick } from 'process';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -122,6 +123,7 @@ class ParseServer {
           const json = require(process.env.npm_package_json);
           if (process.env.npm_package_type === 'module' || json.type === 'module') {
             await import(path.resolve(process.cwd(), cloud)).default;
+            await new Promise(resolve => nextTick(resolve));
           } else {
             require(path.resolve(process.cwd(), cloud));
           }
