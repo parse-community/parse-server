@@ -42,7 +42,7 @@ describe('Cloud Code', () => {
 
   fit('can load cloud code as a module', async () => {
     process.env.npm_package_type = 'module';
-    await reconfigureServer({ cloud: './spec/cloud/cloudCodeModuleFile.js' });
+    await reconfigureServer({ cloud: './spec/cloud/cloudCodeModuleFile.js', silent: false });
     const result = await Parse.Cloud.run('cloudCodeInFile');
     expect(result).toEqual('It is possible to define cloud code in a file.');
     delete process.env.npm_package_type;
