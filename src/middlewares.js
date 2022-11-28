@@ -468,7 +468,7 @@ export const addRateLimit = (route, config) => {
         throw options.message;
       },
       skip: request => {
-        if (request.config.ip === '127.0.0.1' && !route.includeInternalRequests) {
+        if (request.ip === '127.0.0.1' && !route.includeInternalRequests) {
           return true;
         }
         if (route.includeMasterKey) {
