@@ -120,6 +120,7 @@ class ParseServer {
         if (typeof cloud === 'function') {
           await Promise.resolve(cloud(Parse));
         } else if (typeof cloud === 'string') {
+          console.log(process.env.npm_package_json);
           const json = require(process.env.npm_package_json);
           if (process.env.npm_package_type === 'module' || json.type === 'module') {
             await import(path.resolve(process.cwd(), cloud)).default;
