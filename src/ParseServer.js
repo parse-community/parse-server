@@ -467,7 +467,6 @@ function injectDefaults(options: ParseServerOptions) {
       });
     }
   });
-
 }
 
 // Those can't be tested as it requires a subprocess
