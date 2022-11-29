@@ -558,6 +558,59 @@ describe('server', () => {
       .catch(done.fail);
   });
 
+  it('can create server with middleware', async () => {
+    const obj = {
+      middleware: function (req, res, next) {
+        next();
+      },
+    };
+    const spy = spyOn(obj, 'middleware').and.callThrough();
+    const parseServer = await new Promise((resolve, reject) => {
+      const server = ParseServer.ParseServer({
+        ...defaultConfiguration,
+        ...{
+          appId: 'anOtherTestApp',
+          masterKey: 'anOtherTestMasterKey',
+          serverURL: 'http://localhost:12667/parse',
+          serverStartComplete(error) {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(server);
+            }
+          },
+          middleware: obj.middleware,
+        },
+      });
+    });
+    const app = express();
+    app.use('/parse', parseServer);
+    const httpServer = app.listen(12667);
+    expect(Parse.applicationId).toEqual('anOtherTestApp');
+    expect(Parse.serverURL).toEqual('http://localhost:12667/parse');
+    await new Parse.Query('AnObject').find();
+    expect(spy).toHaveBeenCalled();
+    httpServer.close();
+  });
+
+  it('cannot create middleware with invalid type', async () => {
+    await expectAsync(new Promise((resolve, reject) => {
+      const server = ParseServer.ParseServer({
+        ...defaultConfiguration,
+        ...{
+          serverStartComplete(error) {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(server);
+            }
+          },
+          middleware: true
+        },
+      });
+    })).toBeRejectedWith("argument 'middleware' must either be a string or a function");
+  });
+
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');
 
