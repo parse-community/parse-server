@@ -1,0 +1,75 @@
+version: '3'
+
+# uffizzi integration
+x-uffizzi:
+  ingress:
+    service: nginx
+    port: 8081
+
+services:
+
+  postgres:
+      image: postgres
+      environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=password
+        - POSTGRES_DB=postgres
+      ports:
+        - "5432:5432"
+      deploy:
+            resources:
+              limits:
+                memory: 1000M
+      volumes:
+        - postgres_data:/var/lib/postgresql
+
+  parse:
+        image: "${PARSE_SERVER_IMAGE}"
+        environment:
+        - PARSE_SERVER_APPLICATION_ID=parse
+        - PARSE_SERVER_MASTER_KEY=parse@master123!
+        - PARSE_SERVER_DATABASE_URI=postgresql://postgres:password@localhost:5432/postgres
+        - PARSE_SERVER_MOUNT_PATH=/parse
+        - PORT=1337
+        ports:
+          - '1337:1337'
+        deploy:
+          resources:
+            limits:
+              memory: 1000M
+        #entrypoint: ["/bin/sh", "-c", "sleep 5;  node ./bin/parse-server; export UFFIZZI_URL"] #sleep few seconds for postgres to come up
+  dashboard:
+        image: parseplatform/parse-dashboard:latest
+        ports:
+            - "4040:4040"
+        environment:
+        # - PARSE_DASHBOARD_SERVER_URL=https://pr-1-deployment-8540-parse-server.app.uffizzi.com/parse
+        - PARSE_DASHBOARD_MASTER_KEY=parse@master123!
+        - PARSE_DASHBOARD_APP_ID=parse
+        - PARSE_DASHBOARD_APP_NAME=MyParseApp
+        - PARSE_DASHBOARD_USER_ID=admin
+        - PARSE_DASHBOARD_USER_PASSWORD=password
+        - MOUNT_PATH=/dashboard
+        # - PARSE_DASHBOARD_ALLOW_INSECURE_HTTP=1
+        - PARSE_DASHBOARD_TRUST_PROXY=1
+        #- PARSE_DASHBOARD_COOKIE_SESSION_SECRET=AB8849B6-D725-4A75-AA73-AB7103F0363F
+        #command: parse-dashboard --dev
+        entrypoint: /bin/sh
+        command:
+         - "-c"
+         - "PARSE_DASHBOARD_SERVER_URL=$$UFFIZZI_URL/parse node Parse-Dashboard/index.js"
+        deploy:
+          resources:
+            limits:
+              memory: 1000M
+        # volumes:
+        # -  ./dashboard/parse-dashboard-config.json:/src/Parse-Dashboard/parse-dashboard-config.json
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx:/etc/nginx
+
+volumes:
+  postgres_data:
+
