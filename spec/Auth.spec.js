@@ -152,6 +152,17 @@ describe('Auth', () => {
     expect(userAuth.user.id).toBe(user.id);
   });
 
+  it('should create session index', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const indexes = await Parse.Server.databaseAdapter.getIndexes('_Session');
+    const names = indexes.map(({ name }) => name);
+    expect(names).toEqual(['_id_', '_session_token_1', '_p_user_1']);
+  });
+
   describe('getRolesForUser', () => {
     const rolesNumber = 100;
 

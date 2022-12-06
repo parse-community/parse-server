@@ -45,6 +45,25 @@ describe('Parse.Relation testing', () => {
       });
   });
 
+  it('should create indexes', async () => {
+    const child = new ChildObject();
+    child.set('x', 2);
+    const parent = new ParentObject();
+    parent.set('x', 4);
+    const relation = parent.relation('child');
+    await child.save();
+    relation.add(child);
+    await parent.save();
+    const child2 = new ChildObject();
+    await child2.save();
+    relation.add(child2);
+    await parent.save();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const indexes = await Parse.Server.databaseAdapter.getIndexes('_Join:child:ParentObject');
+    const names = indexes.map(({ name }) => name);
+    expect(names).toEqual(['_id_', 'relatedId_1', 'owningId_1']);
+  });
+
   it('query relation without schema', async () => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];

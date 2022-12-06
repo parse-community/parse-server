@@ -684,12 +684,28 @@ class DatabaseController {
   // Adds a relation.
   // Returns a promise that resolves successfully iff the add was successful.
   addRelation(key: string, fromClassName: string, fromId: string, toId: string) {
+    const className = `_Join:${key}:${fromClassName}`;
     const doc = {
       relatedId: toId,
       owningId: fromId,
     };
+    (async () => {
+      const exists = await this.collectionExists(className);
+      if (!exists) {
+        await Promise.all([
+          this.adapter.ensureIndex(className, relationSchema, ['relatedId']).catch(error => {
+            logger.warn('Unable to create relatedId index: ', error);
+            throw error;
+          }),
+          this.adapter.ensureIndex(className, relationSchema, ['owningId']).catch(error => {
+            logger.warn('Unable to create owningId index: ', error);
+            throw error;
+          }),
+        ]);
+      }
+    })();
     return this.adapter.upsertOneObject(
-      `_Join:${key}:${fromClassName}`,
+      className,
       relationSchema,
       doc,
       doc,
@@ -1687,9 +1703,16 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
+    const requiredSessionFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._Session,
+      },
+    };
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Session'));
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
@@ -1732,6 +1755,18 @@ class DatabaseController {
         logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
         throw error;
       });
+
+    await this.adapter
+      .ensureIndex('_Session', requiredSessionFields, ['_session_token'])
+      .catch(error => {
+        logger.warn('Unable to create session token index: ', error);
+        throw error;
+      });
+
+    await this.adapter.ensureIndex('_Session', requiredSessionFields, ['_p_user']).catch(error => {
+      logger.warn('Unable to create session token index: ', error);
+      throw error;
+    });
 
     const isMongoAdapter = this.adapter instanceof MongoStorageAdapter;
     const isPostgresAdapter = this.adapter instanceof PostgresStorageAdapter;
