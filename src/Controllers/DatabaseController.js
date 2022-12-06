@@ -375,7 +375,7 @@ class DatabaseController {
     this.schemaPromise = null;
     this._transactionalSession = null;
     this.options = options;
-    this.relationTablesAdded = [];
+    this._relationTablesAdded = [];
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -691,7 +691,7 @@ class DatabaseController {
       owningId: fromId,
     };
     (async () => {
-      if (this.relationTablesAdded.includes(className)) {
+      if (this._relationTablesAdded.includes(className)) {
         return;
       }
       const indexes = await this.adapter.getIndexes(className);
@@ -708,7 +708,7 @@ class DatabaseController {
           });
         })
       );
-      this.relationTablesAdded.push(className);
+      this._relationTablesAdded.push(className);
     })();
     return this.adapter.upsertOneObject(
       className,
