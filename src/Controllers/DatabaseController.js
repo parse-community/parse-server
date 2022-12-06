@@ -365,6 +365,7 @@ class DatabaseController {
   _transactionalSession: ?any;
   options: ParseServerOptions;
   idempotencyOptions: any;
+  _relationTablesAdded: string[];
 
   constructor(adapter: StorageAdapter, options: ParseServerOptions) {
     this.adapter = adapter;
@@ -694,15 +695,15 @@ class DatabaseController {
       if (this._relationTablesAdded.includes(className)) {
         return;
       }
-      const indexes = await this.adapter.getIndexes(className);
+      const indexes = await this.adapter.getIndexes(className) || [];
       const names = indexes.map(({ name }) => name.split('_')[0]);
       const keys = ['relatedId', 'owningId'];
       await Promise.all(
-        keys.map(key => {
+        keys.map(subKey => {
           if (names.includes(key)) {
             return;
           }
-          return this.adapter.ensureIndex(className, relationSchema, key).catch(error => {
+          return this.adapter.ensureIndex(className, relationSchema, [subKey]).catch(error => {
             logger.warn('Unable to create relatedId index: ', error);
             throw error;
           });
