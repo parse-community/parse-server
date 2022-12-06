@@ -695,8 +695,12 @@ class DatabaseController {
       if (this._relationTablesAdded.includes(className)) {
         return;
       }
-      const indexes = await this.adapter.getIndexes(className) || [];
-      const names = indexes.map(({ name }) => name.split('_')[0]);
+      const exists = await this.collectionExists(className);
+      let names = []
+      if (exists) {
+        const indexes = await this.adapter.getIndexes(className) || [];
+        indexes.map(({ name }) => name.split('_')[0]);
+      }
       const keys = ['relatedId', 'owningId'];
       await Promise.all(
         keys.map(subKey => {
