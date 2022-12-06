@@ -375,6 +375,7 @@ class DatabaseController {
     this.schemaPromise = null;
     this._transactionalSession = null;
     this.options = options;
+    this.relationTablesAdded = [];
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -690,19 +691,24 @@ class DatabaseController {
       owningId: fromId,
     };
     (async () => {
-      const exists = await this.collectionExists(className);
-      if (!exists) {
-        await Promise.all([
-          this.adapter.ensureIndex(className, relationSchema, ['relatedId']).catch(error => {
+      if (this.relationTablesAdded.includes(className)) {
+        return;
+      }
+      const indexes = await this.adapter.getIndexes(className);
+      const names = indexes.map(({ name }) => name.split('_')[0]);
+      const keys = ['relatedId', 'owningId'];
+      await Promise.all(
+        keys.map(key => {
+          if (names.includes(key)) {
+            return;
+          }
+          return this.adapter.ensureIndex(className, relationSchema, key).catch(error => {
             logger.warn('Unable to create relatedId index: ', error);
             throw error;
-          }),
-          this.adapter.ensureIndex(className, relationSchema, ['owningId']).catch(error => {
-            logger.warn('Unable to create owningId index: ', error);
-            throw error;
-          }),
-        ]);
-      }
+          });
+        })
+      );
+      this.relationTablesAdded.push(className);
     })();
     return this.adapter.upsertOneObject(
       className,
