@@ -696,10 +696,10 @@ class DatabaseController {
         return;
       }
       const exists = await this.collectionExists(className);
-      let names = []
+      const names = []
       if (exists) {
         const indexes = await this.adapter.getIndexes(className) || [];
-        indexes.map(({ name }) => name.split('_')[0]);
+        names.push(...indexes.map(({ name }) => name.split('_')[0]));
       }
       const keys = ['relatedId', 'owningId'];
       await Promise.all(
