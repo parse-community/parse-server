@@ -290,6 +290,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LOG_LEVEL',
     help: 'Sets the level for logs',
   },
+  logLevels: {
+    env: 'PARSE_SERVER_LOG_LEVELS',
+    help: '(Optional) Overrides the log levels used internally by Parse Server to log events.',
+    action: parsers.objectParser,
+    default: {},
+  },
   logsFolder: {
     env: 'PARSE_SERVER_LOGS_FOLDER',
     help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
@@ -892,5 +898,25 @@ module.exports.AuthAdapter = {
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
     default: true,
+  },
+};
+module.exports.LogLevels = {
+  triggerAfter: {
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
+    help:
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.',
+    default: 'info',
+  },
+  triggerBeforeError: {
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
+    help:
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.',
+    default: 'error',
+  },
+  triggerBeforeSuccess: {
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
+    help:
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+    default: 'info',
   },
 };
