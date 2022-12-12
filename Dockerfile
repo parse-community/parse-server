@@ -12,12 +12,11 @@ COPY package*.json ./
 
 # Copy src to have config files for install
 COPY . .
-
 # Clean npm cache; added to fix an issue with the install process
 RUN npm cache clean --force
 
 # Install all dependencies
-RUN npm ci
+RUN npm install
 
 # Run build steps
 RUN npm run build
@@ -35,10 +34,9 @@ VOLUME /parse-server/cloud /parse-server/config
 WORKDIR /parse-server
 
 COPY package*.json ./
-
 # Clean npm cache; added to fix an issue with the install process
 RUN npm cache clean --force
-RUN npm ci --production --ignore-scripts
+RUN npm install --production
 
 COPY bin bin
 COPY public_html public_html

@@ -55,6 +55,7 @@
     "moment-timezone": "^0.5.39",
     "mongodb": "4.3.1",
     "mustache": "4.2.0",
+    "neo4j-driver": "^5.3.0",
     "parse": "3.4.1",
     "parse-server-sendgrid-adapter": "^1.0.0",
     "pg-monitor": "1.4.1",
