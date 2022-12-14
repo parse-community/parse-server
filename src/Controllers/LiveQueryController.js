@@ -21,6 +21,10 @@ export class LiveQueryController {
     this.liveQueryPublisher = new ParseCloudCodePublisher(config);
   }
 
+  connect() {
+    return this.liveQueryPublisher.connect();
+  }
+
   onAfterSave(
     className: string,
     currentObject: any,
@@ -54,6 +58,13 @@ export class LiveQueryController {
       }
     }
     return false;
+  }
+
+  clearCachedRoles(user: any) {
+    if (!user) {
+      return;
+    }
+    return this.liveQueryPublisher.onClearCachedRoles(user);
   }
 
   _makePublisherRequest(currentObject: any, originalObject: any, classLevelPermissions: ?any): any {

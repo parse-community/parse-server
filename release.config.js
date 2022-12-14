@@ -24,7 +24,7 @@ const templates = {
 async function config() {
 
   // Get branch
-  const branch = ref.split('/').pop();
+  const branch = ref.split('/').pop().split('-')[0];
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
@@ -40,11 +40,8 @@ async function config() {
       { name: 'alpha', prerelease: true },
       { name: 'beta', prerelease: true },
       'next-major',
-      // Long-Term-Support branches
-      // { name: 'release-1', range: '1.x.x', channel: '1.x' },
-      // { name: 'release-2', range: '2.x.x', channel: '2.x' },
-      // { name: 'release-3', range: '3.x.x', channel: '3.x' },
-      // { name: 'release-4', range: '4.x.x', channel: '4.x' },
+      // Long-Term-Support branches; defined as GLOB pattern
+      'release-+([0-9]).x.x',
     ],
     dryRun: false,
     debug: true,
@@ -83,21 +80,21 @@ async function config() {
       ['@semantic-release/git', {
         assets: [changelogFile, 'package.json', 'package-lock.json', 'npm-shrinkwrap.json'],
       }],
+      ['@semantic-release/github', {
+        successComment: getReleaseComment(),
+        labels: ['type:ci'],
+        releasedLabels: ['state:released<%= nextRelease.channel ? `-\${nextRelease.channel}` : "" %>']
+      }],
+      // Back-merge module runs last because if it fails it should not impede the release process
       [
         "@saithodev/semantic-release-backmerge",
         {
           "branches": [
             { from: "beta", to: "alpha" },
             { from: "release", to: "beta" },
-            { from: "release", to: "alpha" },
           ]
         }
       ],
-      ['@semantic-release/github', {
-        successComment: getReleaseComment(),
-        labels: ['type:ci'],
-        releasedLabels: ['state:released<%= nextRelease.channel ? `-\${nextRelease.channel}` : "" %>']
-      }],
     ],
   };
 

@@ -1,15 +1,17 @@
 ![parse-repository-header-server](https://user-images.githubusercontent.com/5673677/138278489-7d0cebc5-1e31-4d3c-8ffb-53efcda6f29d.png)
 
 ---
-    
+
 [![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=alpha)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Aalpha)
+[![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=beta)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Abeta)
+[![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=release)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Arelease)
 [![Snyk Badge](https://snyk.io/test/github/parse-community/parse-server/badge.svg)](https://snyk.io/test/github/parse-community/parse-server)
 [![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-12,_14,_16,_17,_18-green.svg?logo=node.js&style=flat)](https://nodejs.org)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5.0,_5.1,_5.2-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![Node Version](https://img.shields.io/badge/nodejs-14,_16,_18-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5,_6-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14,_15-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
 [![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
@@ -32,16 +34,14 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who support the development of Parse Platform!
 
-### Diamond Sponsors
-
-[![Diamond Sponsors](https://opencollective.com/parse-server/tiers/diamond-sponsor.svg?avatarHeight=70&button=false)](https://opencollective.com/parse-server/contribute/diamond-sponsor-10560)
-
 #### Bronze Sponsors
 
 [![Bronze Sponsors](https://opencollective.com/parse-server/tiers/bronze-sponsor.svg?avatarHeight=36&button=false)](https://opencollective.com/parse-server/contribute/bronze-sponsor-10559)
 
 ---
 
+- [Flavors & Branches](#flavors--branches)
+  - [Long Term Support](#long-term-support)
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
@@ -89,12 +89,24 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Using automatically generated operations](#using-automatically-generated-operations)
   - [Customizing your GraphQL Schema](#customizing-your-graphql-schema)
   - [Learning more](#learning-more)
-- [Upgrading to 3.0.0](#upgrading-to-300)
-- [Want to ride the bleeding edge?](#want-to-ride-the-bleeding-edge)
+- [Upgrading to Parse Server 3.0](#upgrading-to-parse-server-30)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Sponsors](#sponsors)
 - [Backers](#backers)
+
+# Flavors & Branches
+
+Parse Server is available in different flavors on different branches:
+
+- The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
+- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-4.x.x`. LTS branches do not have pre-release branches.
+
+## Long Term Support
+
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
+
+⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-4.x.x) to see the current open vulnerabilities for that LTS branch.
 
 # Getting Started
 
@@ -116,35 +128,33 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 | Version    | Latest Version | End-of-Life | Compatible |
 |------------|----------------|-------------|------------|
-| Node.js 12 | 12.22.11       | April 2022  | ✅ Yes      |
 | Node.js 14 | 14.19.1        | April 2023  | ✅ Yes      |
 | Node.js 16 | 16.14.2        | April 2024  | ✅ Yes      |
-| Node.js 17 | 17.9.0         | June 2022   | ✅ Yes      |
 | Node.js 18 | 18.1.0         | April 2025  | ✅ Yes      |
 
 #### MongoDB
 
-Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
+Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. We consider the end-of-life date of a MongoDB "rapid release" to be the same as its major version release.
 
-| Version     | Latest Version | End-of-Life | Compatible |
-|-------------|----------------|-------------|------------|
-| MongoDB 4.0 | 4.0.28         | April 2022  | ✅ Yes      |
-| MongoDB 4.2 | 4.2.19         | TBD         | ✅ Yes      |
-| MongoDB 4.4 | 4.4.13         | TBD         | ✅ Yes      |
-| MongoDB 5.0 | 5.0.6          | TBD         | ✅ Yes      |
-| MongoDB 5.1 | 5.1.1          | TBD         | ✅ Yes      |
-| MongoDB 5.2 | 5.2.1          | TBD         | ✅ Yes      |
+| Version     | Latest Version | End-of-Life   | Compatible   |
+|-------------|----------------|---------------|--------------|
+| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes        |
+| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes        |
+| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes        |
+| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes        |
+| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes        |
 
 #### PostgreSQL
 
-Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support if a version is older than 3.5 years and a newer version has been available for at least 2.5 years.
+Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility, using [PostGIS docker images](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated). We follow the [PostgreSQL support schedule](https://www.postgresql.org/support/versioning) and [PostGIS support schedule](https://www.postgis.net/eol_policy/) and only test against versions that are officially supported and have not reached their end-of-life date. Due to the extensive PostgreSQL support duration of 5 years, Parse Server drops support about 2 years before the official end-of-life date.
 
-| Version     | PostGIS Version | End-of-Life   | Parse Server Support End | Compatible |
-|-------------|-----------------|---------------|--------------------------|------------|
-| Postgres 11 | 3.0, 3.1, 3.2   | November 2023 | April 2022               | ✅ Yes      |
-| Postgres 12 | 3.2             | November 2024 | April 2023               | ✅ Yes      |
-| Postgres 13 | 3.2             | November 2025 | April 2024               | ✅ Yes      |
-| Postgres 14 | 3.2             | November 2026 | April 2025               | ✅ Yes      |
+| Version     | PostGIS Version    | End-of-Life   | Parse Server Support | Compatible |
+|-------------|--------------------|---------------|----------------------|------------|
+| Postgres 11 | 3.0, 3.1, 3.2, 3.3 | November 2023 | <= 5.x (2022)        | ✅ Yes      |
+| Postgres 12 | 3.3                | November 2024 | <= 5.x (2022)        | ✅ Yes      |
+| Postgres 13 | 3.3                | November 2025 | <= 6.x (2023)        | ✅ Yes      |
+| Postgres 14 | 3.3                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
+| Postgres 15 | 3.3                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
 
 ### Locally
 
@@ -345,8 +355,10 @@ const server = ParseServer({
 });
 ```
 
+Offical email adapters maintained by Parse Platform:
+- [parse-server-api-mail-adapter](https://github.com/parse-community/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
+
 Email adapters contributed by the community:
-- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) (localization, templates, universally supports any email provider)
 - [parse-smtp-template](https://www.npmjs.com/package/parse-smtp-template) (localization, templates)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
@@ -377,7 +389,7 @@ const server = ParseServer({
   },
 
   // The password policy
-  passwordPolicy: {    
+  passwordPolicy: {
     // Enforce a password of at least 8 characters which contain at least 1 lower case, 1 upper case and 1 digit
     validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/,
     // Do not allow the username as part of the password
@@ -418,7 +430,7 @@ const api = new ParseServer({
 
 The above route can be invoked by sending a `GET` request to:
 `https://[parseServerPublicUrl]/[parseMount]/[pagesEndpoint]/[appId]/[customRoute]`
- 
+
 The `handler` receives the `request` and returns a `custom_page.html` webpage from the `pages.pagesPath` directory as response. The advantage of building a custom route this way is that it automatically makes use of Parse Server's built-in capabilities, such as [page localization](#pages) and [dynamic placeholders](#dynamic-placeholders).
 
 ### Reserved Paths
@@ -506,7 +518,7 @@ Parse Server allows developers to choose from several options when hosting files
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using Amazon S3, Google Cloud Storage, or local file storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
 ## Idempotency Enforcement
- 
+
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
 This feature deduplicates identical requests that are received by Parse Server multiple times, typically due to network issues or network adapter access restrictions on mobile operating systems.
@@ -1104,37 +1116,15 @@ You also have a very powerful tool inside your GraphQL Playground. Please look a
 
 Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to learn more about the power of the GraphQL language.
 
-# Upgrading to 3.0.0
+# Upgrading to Parse Server 3.0
 
-Starting 3.0.0, parse-server uses the JS SDK version 2.0.
-In short, parse SDK v2.0 removes the backbone style callbacks as well as the Parse.Promise object in favor of native promises.
-All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
+Starting Parse Server 3.0, Parse Server uses the Parse JavaScript SDK 2.0. In short, the Parse JavaScript SDK 2.0 removes the backbone style callbacks as well as the `Parse.Promise` object in favor of native promises. All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by promise style resolution.
 
-We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
-
-# Want to ride the bleeding edge?
-
-It is recommend to use builds deployed npm for many reasons, but if you want to use
-the latest not-yet-released version of parse-server, you can do so by depending
-directly on this branch:
-
-```
-npm install parse-community/parse-server.git#master
-```
-
-## Experimenting <!-- omit in toc -->
-
-You can also use your own forks, and work in progress branches by specifying them:
-
-```
-npm install github:myUsername/parse-server#my-awesome-feature
-```
-
-And don't forget, if you plan to deploy it remotely, you should run `npm install` with the `--save` option.
+We have written up a [migration guide](3.0.0.md) to help you transition to the next major release.
 
 # Contributing
 
-We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
+Please see the [Contributing Guide](CONTRIBUTING.md).
 
 # Contributors
 
@@ -1190,3 +1180,6 @@ As of April 5, 2017, Parse, LLC has transferred this code to the parse-community
 [license-svg]: https://img.shields.io/badge/license-BSD-lightgrey.svg
 [license-link]: LICENSE
 [open-collective-link]: https://opencollective.com/parse-server
+[log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
+[log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
+[log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
