@@ -435,8 +435,8 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       const authProvider = (req.config.auth || {})[provider] || {};
       if (authProvider.enabled == null) {
         Deprecator.logRuntimeDeprecation({
-          usage: `auth.${provider}`,
-          solution: `auth.${provider}.enabled: true`,
+          usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
+          solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
         });
       }
       if (!validator || authProvider.enabled === false) {
