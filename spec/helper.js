@@ -173,17 +173,19 @@ const reconfigureServer = (changedConfiguration = {}) => {
         port,
       });
       cache.clear();
-      parseServer = ParseServer.start(newConfiguration);
-      parseServer.expressApp.use('/1', err => {
-        console.error(err);
-        fail('should not call next');
-      });
-      server = parseServer.server;
-      server.on('connection', connection => {
-        const key = `${connection.remoteAddress}:${connection.remotePort}`;
-        openConnections[key] = connection;
-        connection.on('close', () => {
-          delete openConnections[key];
+      ParseServer.start(newConfiguration).then(_parseServer => {
+        parseServer = _parseServer;
+        parseServer.expressApp.use('/1', err => {
+          console.error(err);
+          fail('should not call next');
+        });
+        server = parseServer.server;
+        server.on('connection', connection => {
+          const key = `${connection.remoteAddress}:${connection.remotePort}`;
+          openConnections[key] = connection;
+          connection.on('close', () => {
+            delete openConnections[key];
+          });
         });
       });
     } catch (error) {
