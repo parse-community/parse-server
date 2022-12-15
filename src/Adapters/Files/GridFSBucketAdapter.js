@@ -254,7 +254,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     stream.on('data', chunk => {
       res.write(chunk);
     });
-    stream.on('error', (e) => {
+    stream.on('error', e => {
       res.status(404);
       res.send(e.message);
     });

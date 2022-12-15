@@ -1,11 +1,11 @@
 // @flow
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
-import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
-import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
-import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
+import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
+import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
 
@@ -86,6 +86,9 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
+  /* (Optional) Overrides the log levels used internally by Parse Server to log events.
+  :DEFAULT: {} */
+  logLevels: ?LogLevels;
   /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
   maxLogFiles: ?NumberOrString;
   /* Disables console output
@@ -524,4 +527,19 @@ export interface AuthAdapter {
   :ENV:
   */
   enabled: ?boolean;
+}
+
+export interface LogLevels {
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
+  :DEFAULT: info
+  */
+  triggerAfter: ?string;
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  :DEFAULT: info
+  */
+  triggerBeforeSuccess: ?string;
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
+  :DEFAULT: error
+  */
+  triggerBeforeError: ?string;
 }
