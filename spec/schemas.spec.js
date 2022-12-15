@@ -1617,64 +1617,42 @@ describe('schemas', () => {
     done();
   });
 
-  it('deletes collections including join tables', done => {
+  it('deletes collections including join tables', async () => {
     const obj = new Parse.Object('MyClass');
     obj.set('data', 'data');
-    obj
-      .save()
-      .then(() => {
-        const obj2 = new Parse.Object('MyOtherClass');
-        const relation = obj2.relation('aRelation');
-        relation.add(obj);
-        return obj2.save();
-      })
-      .then(obj2 => obj2.destroy())
-      .then(() => {
-        request({
-          url: 'http://localhost:8378/1/schemas/MyOtherClass',
-          method: 'DELETE',
-          headers: masterKeyHeaders,
-          json: true,
-        }).then(response => {
-          expect(response.status).toEqual(200);
-          expect(response.data).toEqual({});
-          config.database
-            .collectionExists('_Join:aRelation:MyOtherClass')
-            .then(exists => {
-              if (exists) {
-                fail('Relation collection should be deleted.');
-                done();
-              }
-              return config.database.collectionExists('MyOtherClass');
-            })
-            .then(exists => {
-              if (exists) {
-                fail('Class collection should be deleted.');
-                done();
-              }
-            })
-            .then(() => {
-              request({
-                url: 'http://localhost:8378/1/schemas/MyOtherClass',
-                headers: masterKeyHeaders,
-                json: true,
-              }).then(fail, response => {
-                //Expect _SCHEMA entry to be gone.
-                expect(response.status).toEqual(400);
-                expect(response.data.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-                expect(response.data.error).toEqual('Class MyOtherClass does not exist.');
-                done();
-              });
-            });
-        });
-      })
-      .then(
-        () => {},
-        error => {
-          fail(error);
-          done();
-        }
-      );
+    await obj.save();
+    const obj2 = new Parse.Object('MyOtherClass');
+    const relation = obj2.relation('aRelation');
+    relation.add(obj);
+    await obj2.save();
+    await obj2.destroy();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    let response = await request({
+      url: 'http://localhost:8378/1/schemas/MyOtherClass',
+      method: 'DELETE',
+      headers: masterKeyHeaders,
+      json: true,
+    });
+    expect(response.status).toEqual(200);
+    expect(response.data).toEqual({});
+    let exists = await config.database.collectionExists('_Join:aRelation:MyOtherClass');
+
+    if (exists) {
+      throw 'Relation collection should be deleted.';
+    }
+    exists = await config.database.collectionExists('MyOtherClass');
+    if (exists) {
+      throw 'Relation collection should be deleted.';
+    }
+    response = await request({
+      url: 'http://localhost:8378/1/schemas/MyOtherClass',
+      headers: masterKeyHeaders,
+      json: true,
+    }).catch(e => e);
+    //Expect _SCHEMA entry to be gone.
+    expect(response.status).toEqual(400);
+    expect(response.data.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+    expect(response.data.error).toEqual('Class MyOtherClass does not exist.');
   });
 
   it('deletes schema when actual collection does not exist', done => {
