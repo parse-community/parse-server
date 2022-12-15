@@ -194,6 +194,10 @@ class ParseServer {
     );
 
     api.use('/health', function (req, res) {
+      res.status(options.state === 'ok' ? 200 : 503);
+      if (options.state === 'starting') {
+        res.set('Retry-After', 1);
+      }
       res.json({
         status: options.state,
       });

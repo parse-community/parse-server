@@ -545,13 +545,14 @@ describe('server', () => {
     );
     const health = await request({
       url: 'http://localhost:12701/parse/health',
-    }).then(res => res.data);
-    expect(health.status).toBe('initialized');
+    }).catch(e => e);
+    expect(health.data.status).toBe('initialized');
+    expect(health.status).toBe(503);
     await new Promise(resolve => server.close(resolve));
   });
 
   it('can get starting state', async () => {
-    await reconfigureServer({ appId: 'test2' });
+    await reconfigureServer({ appId: 'test2', silent: false });
     const parseServer = new ParseServer.ParseServer({
       ...defaultConfiguration,
       appId: 'test2',
@@ -568,8 +569,10 @@ describe('server', () => {
     const startingPromise = parseServer.start();
     const health = await request({
       url: 'http://localhost:12668/parse/health',
-    }).then(res => res.data);
-    expect(health.status).toBe('starting');
+    }).catch(e => e);
+    expect(health.data.status).toBe('starting');
+    expect(health.status).toBe(503);
+    expect(health.headers['retry-after']).toBe('1');
     await startingPromise;
     await new Promise(resolve => server.close(resolve));
   });
