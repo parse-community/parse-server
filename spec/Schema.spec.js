@@ -1019,38 +1019,25 @@ describe('SchemaController', () => {
       });
   });
 
-  it('drops related collection when deleting relation field', done => {
+  it('drops related collection when deleting relation field', async () => {
     const obj1 = hasAllPODobject();
-    obj1
-      .save()
-      .then(savedObj1 => {
-        const obj2 = new Parse.Object('HasPointersAndRelations');
-        obj2.set('aPointer', savedObj1);
-        const relation = obj2.relation('aRelation');
-        relation.add(obj1);
-        return obj2.save();
-      })
-      .then(() => config.database.collectionExists('_Join:aRelation:HasPointersAndRelations'))
-      .then(exists => {
-        if (!exists) {
-          fail('Relation collection ' + 'should exist after save.');
-        }
-      })
-      .then(() => config.database.loadSchema())
-      .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database))
-      .then(() => config.database.collectionExists('_Join:aRelation:HasPointersAndRelations'))
-      .then(
-        exists => {
-          if (exists) {
-            fail('Relation collection should not exist after deleting relation field.');
-          }
-          done();
-        },
-        error => {
-          jfail(error);
-          done();
-        }
-      );
+    await obj1.save();
+    const obj2 = new Parse.Object('HasPointersAndRelations');
+    obj2.set('aPointer', obj1);
+    const relation = obj2.relation('aRelation');
+    relation.add(obj1);
+    await obj2.save();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    let exists = await config.database.collectionExists('_Join:aRelation:HasPointersAndRelations');
+    if (!exists) {
+      throw 'Relation collection should exist after save.';
+    }
+    const schema = await config.database.loadSchema();
+    await schema.deleteField('aRelation', 'HasPointersAndRelations', config.database);
+    exists = await config.database.collectionExists('_Join:aRelation:HasPointersAndRelations');
+    if (exists) {
+      throw 'Relation collection should not exist after deleting relation field.';
+    }
   });
 
   it('can delete relation field when related _Join collection not exist', done => {
