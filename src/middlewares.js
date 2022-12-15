@@ -168,14 +168,20 @@ export function handleParseHeaders(req, res, next) {
 
   const isMaintenance =
     req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
-  if (isMaintenance && ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
-    req.auth = new auth.Auth({
-      config: req.config,
-      installationId: info.installationId,
-      isMaintenance: true,
-    });
-    next();
-    return;
+  if (isMaintenance) {
+    if (ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
+      req.auth = new auth.Auth({
+        config: req.config,
+        installationId: info.installationId,
+        isMaintenance: true,
+      });
+      next();
+      return;
+    }
+    const log = req.config?.loggerController || defaultLogger;
+    log.error(
+      `Request using maintenance key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
   }
 
   let isMaster = info.masterKey === req.config.masterKey;

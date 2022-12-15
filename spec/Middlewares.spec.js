@@ -146,15 +146,20 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(false);
   });
 
-  it('should not succeed if the ip does not belong to maintenanceKeyIps list', () => {
+  it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
     AppCache.put(fakeReq.body._ApplicationId, {
       maintenanceKey: 'masterKey',
       maintenanceKeyIps: ['ip1', 'ip2'],
     });
     fakeReq.ip = 'ip3';
     fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
-    expect(fakeRes.status).toHaveBeenCalledWith(403);
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaintenance).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using maintenance key rejected as the request IP address 'ip3' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
   });
 
   it('should succeed if the ip does belong to masterKeyIps list', async () => {
