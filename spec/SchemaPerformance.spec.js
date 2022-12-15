@@ -108,7 +108,7 @@ describe('Schema Performance', function () {
     user.setPassword('testing');
     await user.signUp();
 
-    expect(getAllSpy.calls.count()).toBe(1);
+    expect(getAllSpy.calls.count()).toBe(0);
   });
 
   it('test query include', async () => {

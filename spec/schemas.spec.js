@@ -124,6 +124,22 @@ const roleSchema = {
   classLevelPermissions: defaultClassLevelPermissions,
 };
 
+const sessionSchema = {
+  className: '_Session',
+  fields: {
+    objectId: { type: 'String' },
+    createdAt: { type: 'Date' },
+    updatedAt: { type: 'Date' },
+    ACL: { type: 'ACL' },
+    user: { type: 'Pointer', targetClass: '_User' },
+    installationId: { type: 'String' },
+    sessionToken: { type: 'String' },
+    expiresAt: { type: 'Date' },
+    createdWith: { type: 'Object' },
+  },
+  classLevelPermissions: defaultClassLevelPermissions,
+};
+
 const noAuthHeaders = {
   'X-Parse-Application-Id': 'test',
 };
@@ -191,7 +207,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
     }).then(response => {
       const expected = {
-        results: [userSchema, roleSchema],
+        results: [userSchema, roleSchema, sessionSchema],
       };
       expect(
         response.data.results
@@ -224,7 +240,13 @@ describe('schemas', () => {
           headers: masterKeyHeaders,
         }).then(response => {
           const expected = {
-            results: [userSchema, roleSchema, plainOldDataSchema, pointersAndRelationsSchema],
+            results: [
+              userSchema,
+              roleSchema,
+              sessionSchema,
+              plainOldDataSchema,
+              pointersAndRelationsSchema,
+            ],
           };
           expect(
             response.data.results
@@ -261,6 +283,7 @@ describe('schemas', () => {
       results: [
         userSchema,
         roleSchema,
+        sessionSchema,
         {
           className: 'A',
           fields: {
@@ -1580,7 +1603,7 @@ describe('schemas', () => {
       json: true,
     });
     const expected = {
-      results: [userSchema, roleSchema],
+      results: [userSchema, roleSchema, sessionSchema],
     };
     expect(
       response.data.results

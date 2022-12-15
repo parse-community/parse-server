@@ -696,9 +696,9 @@ class DatabaseController {
         return;
       }
       const exists = await this.collectionExists(className);
-      const names = []
+      const names = [];
       if (exists) {
-        const indexes = await this.adapter.getIndexes(className) || [];
+        const indexes = (await this.adapter.getIndexes(className)) || [];
         names.push(...indexes.map(({ name }) => name.split('_')[0]));
       }
       const keys = ['relatedId', 'owningId'];

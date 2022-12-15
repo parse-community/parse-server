@@ -61,7 +61,7 @@ describe('Parse.Relation testing', () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     const indexes = await Parse.Server.databaseAdapter.getIndexes('_Join:child:ParentObject');
     const names = indexes.map(({ name }) => name);
-    expect(names).toEqual(['_id_', 'relatedId_1', 'owningId_1']);
+    expect(names.sort()).toEqual(['_id_', 'relatedId_1', 'owningId_1'].sort());
   });
 
   it('query relation without schema', async () => {
