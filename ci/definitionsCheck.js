@@ -2,16 +2,16 @@ const fs = require('fs').promises;
 const { exec } = require('child_process');
 const core = require('@actions/core');
 (async () => {
-  const dir = await fs.readdir('./src/options');
+  const dir = await fs.readdir('./src/Options');
   console.log(dir);
   const [currentDefinitions, currentDocs] = await Promise.all([
-    fs.readFile('./src/options/Definitions.js', 'utf8'),
-    fs.readFile('./src/options/Docs.js', 'utf8'),
+    fs.readFile('./src/Options/Definitions.js', 'utf8'),
+    fs.readFile('./src/Options/Docs.js', 'utf8'),
   ]);
   await exec('npm run definitions');
   const [newDefinitions, newDocs] = await Promise.all([
-    fs.readFile('./src/options/Definitions.js', 'utf8'),
-    fs.readFile('./src/options/Docs.js', 'utf8'),
+    fs.readFile('./src/Options/Definitions.js', 'utf8'),
+    fs.readFile('./src/Options/Docs.js', 'utf8'),
   ]);
   if (currentDefinitions !== newDefinitions || currentDocs !== newDocs) {
     console.error(
