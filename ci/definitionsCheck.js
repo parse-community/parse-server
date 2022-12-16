@@ -31,7 +31,7 @@ const { AbortController } = require("node-abort-controller");
       '\x1b[31m%s\x1b[0m',
       'Definitions files cannot be updated manually. Please update src/Options/index.js then run `npm run definitions` to generate definitions.'
     );
-    core.error('Definitions files cannot be updated manually. Please update index.js then run npm run definitions to generate definitions.');
+    core.error('Definitions files cannot be updated manually. Please update src/Options/index.js then run `npm run definitions` to generate definitions.');
     process.exit(1);
   } else {
     process.exit(0);
