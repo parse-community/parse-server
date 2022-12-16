@@ -462,6 +462,26 @@ describe('server', () => {
       .then(done);
   });
 
+  it('fails if default limit is negative', async () => {
+    await expectAsync(reconfigureServer({ defaultLimit: -1 })).toBeRejectedWith(
+      'Default limit must be a value greater than 0.'
+    );
+  });
+
+  it('fails if default limit is wrong type', async () => {
+    for (const value of ['invalid', {}, [], true]) {
+      await expectAsync(reconfigureServer({ defaultLimit: value })).toBeRejectedWith(
+        'Default limit must be a number.'
+      );
+    }
+  });
+
+  it('fails if default limit is zero', async () => {
+    await expectAsync(reconfigureServer({ defaultLimit: 0 })).toBeRejectedWith(
+      'Default limit must be a value greater than 0.'
+    );
+  });
+
   it('fails if maxLimit is negative', done => {
     reconfigureServer({ maxLimit: -100 }).catch(error => {
       expect(error).toEqual('Max limit must be a value greater than 0.');
@@ -475,7 +495,9 @@ describe('server', () => {
 
   it('fails if you provides invalid ip in masterKeyIps', done => {
     reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
-      expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
+      expect(error).toEqual(
+        'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
+      );
       done();
     });
   });
@@ -484,6 +506,11 @@ describe('server', () => {
     reconfigureServer({
       masterKeyIps: ['1.2.3.4', '2001:0db8:0000:0042:0000:8a2e:0370:7334'],
     }).then(done);
+  });
+
+  it('should set default masterKeyIps for IPv4 and IPv6 localhost', () => {
+    const definitions = require('../lib/Options/Definitions.js');
+    expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual(['127.0.0.1', '::1']);
   });
 
   it('should load a middleware', done => {

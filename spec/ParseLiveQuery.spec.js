@@ -836,6 +836,50 @@ describe('ParseLiveQuery', function () {
     }
   });
 
+  it('LiveQuery should work with changing role', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['Chat'],
+      },
+      startLiveQueryServer: true,
+    });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
+
+    const role = new Parse.Role('Test', new Parse.ACL(user));
+    await role.save();
+
+    const chatQuery = new Parse.Query('Chat');
+    const subscription = await chatQuery.subscribe();
+    subscription.on('create', () => {
+      fail('should not call create as user is not part of role.');
+    });
+
+    const object = new Parse.Object('Chat');
+    const acl = new Parse.ACL();
+    acl.setRoleReadAccess(role, true);
+    object.setACL(acl);
+    object.set({ foo: 'bar' });
+    await object.save(null, { useMasterKey: true });
+    role.getUsers().add(user);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await role.save();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    object.set('foo', 'yolo');
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', obj => {
+          expect(obj.get('foo')).toBe('yolo');
+          expect(obj.getACL().toJSON()).toEqual({ 'role:Test': { read: true } });
+          resolve();
+        });
+      }),
+      object.save(null, { useMasterKey: true }),
+    ]);
+  });
+
   it('liveQuery on Session class', async done => {
     await reconfigureServer({
       liveQuery: { classNames: [Parse.Session] },
@@ -1032,6 +1076,9 @@ describe('ParseLiveQuery', function () {
     user.setUsername('username');
     user.setPassword('password');
     user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
 
     const query = new Parse.Query(Parse.User);
     query.equalTo('foo', 'bar');
@@ -1064,6 +1111,86 @@ describe('ParseLiveQuery', function () {
     for (const key of events) {
       expect(calls[key]).toHaveBeenCalled();
     }
+  });
+
+  it('should strip out protected fields', async () => {
+    await reconfigureServer({
+      liveQuery: { classNames: ['Test'] },
+      startLiveQueryServer: true,
+    });
+    const obj1 = new Parse.Object('Test');
+    obj1.set('foo', 'foo');
+    obj1.set('bar', 'bar');
+    obj1.set('qux', 'qux');
+    await obj1.save();
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+    await schemaController.updateClass(
+      'Test',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        update: { '*': true },
+        protectedFields: {
+          '*': ['foo'],
+        },
+      }
+    );
+    const object = await obj1.fetch();
+    expect(object.get('foo')).toBe(undefined);
+    expect(object.get('bar')).toBeDefined();
+    expect(object.get('qux')).toBeDefined();
+
+    const subscription = await new Parse.Query('Test').subscribe();
+    await Promise.all([
+      new Promise(resolve => {
+        subscription.on('update', (obj, original) => {
+          expect(obj.get('foo')).toBe(undefined);
+          expect(obj.get('bar')).toBeDefined();
+          expect(obj.get('qux')).toBeDefined();
+          expect(original.get('foo')).toBe(undefined);
+          expect(original.get('bar')).toBeDefined();
+          expect(original.get('qux')).toBeDefined();
+          resolve();
+        });
+      }),
+      obj1.save({ foo: 'abc' }),
+    ]);
+  });
+
+  it('can subscribe to query and return object with withinKilometers with last parameter on update', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    const firstPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: firstPoint });
+    await object.save();
+
+    // unsorted will use $centerSphere operator
+    const sorted = false;
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers(
+      'location',
+      new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 }),
+      2,
+      sorted
+    );
+    const subscription = await query.subscribe();
+    subscription.on('update', obj => {
+      expect(obj.id).toBe(object.id);
+      done();
+    });
+
+    const secondPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: secondPoint });
+    await object.save();
   });
 
   afterEach(async function (done) {

@@ -38,6 +38,7 @@ class ParseGraphQLServer {
           config,
           auth,
         }),
+        maskedErrors: false,
         multipart: {
           fileSize: this._transformMaxUploadSizeToBytes(
             this.parseServer.config.maxUploadSize || '20mb'

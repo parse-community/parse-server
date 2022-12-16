@@ -5,7 +5,7 @@ export class LRUCache {
   constructor({ ttl = defaults.cacheTTL, maxSize = defaults.cacheMaxSize }) {
     this.cache = new LRU({
       max: maxSize,
-      maxAge: ttl,
+      ttl,
     });
   }
 
@@ -18,11 +18,11 @@ export class LRUCache {
   }
 
   del(key) {
-    this.cache.del(key);
+    this.cache.delete(key);
   }
 
   clear() {
-    this.cache.reset();
+    this.cache.clear();
   }
 }
 

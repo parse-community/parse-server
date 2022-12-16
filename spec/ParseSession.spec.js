@@ -3,8 +3,11 @@
 //
 
 'use strict';
+const request = require('../lib/request');
 
 function setupTestUsers() {
+  const acl = new Parse.ACL();
+  acl.setPublicReadAccess(true);
   const user1 = new Parse.User();
   const user2 = new Parse.User();
   const user3 = new Parse.User();
@@ -16,6 +19,10 @@ function setupTestUsers() {
   user1.set('password', 'password');
   user2.set('password', 'password');
   user3.set('password', 'password');
+
+  user1.setACL(acl);
+  user2.setACL(acl);
+  user3.setACL(acl);
 
   return user1
     .signUp()
@@ -134,5 +141,32 @@ describe('Parse.Session', () => {
       .catch(err => {
         fail(err);
       });
+  });
+
+  it('cannot edit session with known ID', async () => {
+    await setupTestUsers();
+    const [first, second] = await new Parse.Query(Parse.Session).find({ useMasterKey: true });
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Rest-API-Key': 'rest',
+      'X-Parse-Session-Token': second.get('sessionToken'),
+      'Content-Type': 'application/json',
+    };
+    const firstUser = first.get('user').id;
+    const secondUser = second.get('user').id;
+    const e = await request({
+      method: 'PUT',
+      headers,
+      url: `http://localhost:8378/1/sessions/${first.id}`,
+      body: JSON.stringify({
+        foo: 'bar',
+        user: { __type: 'Pointer', className: '_User', objectId: secondUser },
+      }),
+    }).catch(e => e.data);
+    expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    expect(e.error).toBe('Object not found.');
+    await Parse.Object.fetchAll([first, second], { useMasterKey: true });
+    expect(first.get('user').id).toBe(firstUser);
+    expect(second.get('user').id).toBe(secondUser);
   });
 });
