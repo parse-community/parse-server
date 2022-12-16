@@ -590,7 +590,7 @@ describe('AuthenticationProviders', function () {
     );
   });
 
-  it('can depreciate', async () => {
+  it('can deprecate', async () => {
     await reconfigureServer();
     const Deprecator = require('../lib/Deprecator/Deprecator');
     const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
@@ -598,8 +598,9 @@ describe('AuthenticationProviders', function () {
     Parse.User._registerAuthenticationProvider(provider);
     await Parse.User._logInWith('myoauth');
     expect(spy).toHaveBeenCalledWith({
-      usage: 'auth.myoauth',
-      solution: 'auth.myoauth.enabled: true',
+      usage: 'Using the authentication adapter "myoauth" without explicitly enabling it',
+      solution:
+        'Enable the authentication adapter by setting the Parse Server option "auth.myoauth.enabled: true".',
     });
   });
 });
