@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const { exec } = require('child_process');
 const core = require('@actions/core');
 const { nextTick } = require('process');
+const { AbortController } = require("node-abort-controller");
 (async () => {
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
@@ -12,6 +13,7 @@ const { nextTick } = require('process');
   const { signal } = ac;
   const watcher = fs.watch('./src/Options/docs.js', {signal});
   let i = 0;
+  // eslint-disable-next-line
   for await (const _ of watcher) {
     i++;
     if (i === 3) {
