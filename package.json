@@ -160,7 +160,6 @@
     "{src,spec}/{**/*,*}.js": [
       "prettier --write",
       "eslint --fix --cache",
-      "npm run ci:definitionsCheck",
       "git add"
     ]
   }
