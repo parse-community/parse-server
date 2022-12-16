@@ -6,12 +6,12 @@ const core = require('@actions/core');
   console.log(dir);
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
-    fs.readFile('./src/Options/Docs.js', 'utf8'),
+    fs.readFile('./src/Options/docs.js', 'utf8'),
   ]);
   await exec('npm run definitions');
   const [newDefinitions, newDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
-    fs.readFile('./src/Options/Docs.js', 'utf8'),
+    fs.readFile('./src/Options/docs.js', 'utf8'),
   ]);
   if (currentDefinitions !== newDefinitions || currentDocs !== newDocs) {
     console.error(
