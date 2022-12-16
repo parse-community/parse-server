@@ -176,6 +176,10 @@ export function handleParseHeaders(req, res, next) {
 
   let isMaster = info.masterKey === req.config.masterKey;
   if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
+    const log = req.config?.loggerController || defaultLogger;
+    log.error(
+      `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
+    );
     isMaster = false;
   }
 
