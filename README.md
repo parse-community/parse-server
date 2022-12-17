@@ -40,7 +40,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 
 ---
 
-- [Flavors & Branches](#flavors--branches)
+- [Flavors \& Branches](#flavors--branches)
   - [Long Term Support](#long-term-support)
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
@@ -58,6 +58,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 - [Configuration](#configuration)
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
+  - [Access Scopes](#access-scopes)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
   - [Password and Account Policy](#password-and-account-policy)
   - [Custom Routes](#custom-routes)
@@ -136,13 +137,13 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. We consider the end-of-life date of a MongoDB "rapid release" to be the same as its major version release.
 
-| Version     | Latest Version | End-of-Life   | Compatible   |
-|-------------|----------------|---------------|--------------|
-| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes        |
-| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes        |
-| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes        |
-| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes        |
-| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes        |
+| Version     | Latest Version | End-of-Life   | Compatible |
+|-------------|----------------|---------------|------------|
+| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes      |
+| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes      |
+| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes      |
+| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes      |
+| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes      |
 
 #### PostgreSQL
 
@@ -329,6 +330,15 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `javascriptKey`
 * `restAPIKey`
 * `dotNetKey`
+
+## Access Scopes
+
+| Scope          | Internal data | Custom data | Restricted by CLP, ACL | Key                 |
+|----------------|---------------|-------------|------------------------|---------------------|
+| Internal       | r/w           | r/w         | no                     | `maintenanceKey`    |
+| Master         | -/-           | r/w         | no                     | `masterKey`         |
+| ReadOnlyMaster | -/-           | r/-         | no                     | `readOnlyMasterKey` |
+| Session        | -/-           | r/w         | yes                    | `sessionToken`      |
 
 ## Email Verification and Password Reset
 
