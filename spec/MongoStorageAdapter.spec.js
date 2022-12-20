@@ -212,6 +212,44 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
+  it('handles nested dates', async () => {
+    await new Parse.Object('MyClass', {
+      foo: {
+        test: {
+          date: new Date(),
+        },
+      },
+      bar: {
+        date: new Date(),
+      },
+      date: new Date(),
+    }).save();
+    const adapter = Config.get(Parse.applicationId).database.adapter;
+    const [object] = await adapter._rawFind('MyClass', {});
+    expect(object.date instanceof Date).toBeTrue();
+    expect(object.bar.date instanceof Date).toBeTrue();
+    expect(object.foo.test.date instanceof Date).toBeTrue();
+  });
+
+  it('handles nested dates in array ', async () => {
+    await new Parse.Object('MyClass', {
+      foo: {
+        test: {
+          date: [new Date()],
+        },
+      },
+      bar: {
+        date: [new Date()],
+      },
+      date: [new Date()],
+    }).save();
+    const adapter = Config.get(Parse.applicationId).database.adapter;
+    const [object] = await adapter._rawFind('MyClass', {});
+    expect(object.date[0] instanceof Date).toBeTrue();
+    expect(object.bar.date[0] instanceof Date).toBeTrue();
+    expect(object.foo.test.date[0] instanceof Date).toBeTrue();
+  });
+
   it('handles updating a single object with array, object date', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 

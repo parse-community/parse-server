@@ -99,6 +99,7 @@
     "mongodb-runner": "4.8.1",
     "mongodb-version-list": "1.0.0",
     "node-fetch": "3.2.10",
+    "node-abort-controller": "3.0.1",
     "nyc": "15.1.0",
     "prettier": "2.0.5",
     "semantic-release": "17.4.6",
@@ -107,6 +108,7 @@
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
     "ci:checkNodeEngine": "node ./ci/nodeEngineCheck.js",
+    "ci:definitionsCheck": "node ./ci/definitionsCheck.js",
     "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
