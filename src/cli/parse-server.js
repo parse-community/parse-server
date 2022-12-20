@@ -39,6 +39,21 @@ runner({
       console.error('');
       process.exit(1);
     }
+    if (options['liveQuery.classNames']) {
+      options.liveQuery = options.liveQuery || {};
+      options.liveQuery.classNames = options['liveQuery.classNames'];
+      delete options['liveQuery.classNames'];
+    }
+    if (options['liveQuery.redisURL']) {
+      options.liveQuery = options.liveQuery || {};
+      options.liveQuery.redisURL = options['liveQuery.redisURL'];
+      delete options['liveQuery.redisURL'];
+    }
+    if (options['liveQuery.redisOptions']) {
+      options.liveQuery = options.liveQuery || {};
+      options.liveQuery.redisOptions = options['liveQuery.redisOptions'];
+      delete options['liveQuery.redisOptions'];
+    }
     if (options.cluster) {
       const numCPUs = typeof options.cluster === 'number' ? options.cluster : os.cpus().length;
       if (cluster.isMaster) {
