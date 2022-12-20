@@ -16,7 +16,6 @@
  * If there are no deprecations, this must return an empty array.
  */
 module.exports = [
-  { optionKey: 'enforcePrivateUsers', changeNewDefault: 'true' },
   { optionKey: 'allowClientClassCreation', changeNewDefault: 'false' },
   { optionKey: 'allowExpiredAuthDataToken', changeNewDefault: 'false' },
 ];

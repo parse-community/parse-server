@@ -73,15 +73,25 @@ class ParseLiveQueryServer {
       parseWebsocket => this._onConnect(parseWebsocket),
       config
     );
-
-    // Initialize subscriber
     this.subscriber = ParsePubSub.createSubscriber(config);
-    this.subscriber.subscribe(Parse.applicationId + 'afterSave');
-    this.subscriber.subscribe(Parse.applicationId + 'afterDelete');
-    this.subscriber.subscribe(Parse.applicationId + 'clearCache');
-    // Register message handler for subscriber. When publisher get messages, it will publish message
-    // to the subscribers and the handler will be called.
-    this.subscriber.on('message', (channel, messageStr) => {
+    if (!this.subscriber.connect) {
+      this.connect();
+    }
+  }
+
+  async connect() {
+    if (this.subscriber.isOpen) {
+      return;
+    }
+    if (typeof this.subscriber.connect === 'function') {
+      await Promise.resolve(this.subscriber.connect());
+    } else {
+      this.subscriber.isOpen = true;
+    }
+    this._createSubscribers();
+  }
+  _createSubscribers() {
+    const messageRecieved = (channel, messageStr) => {
       logger.verbose('Subscribe message %j', messageStr);
       let message;
       try {
@@ -102,7 +112,12 @@ class ParseLiveQueryServer {
       } else {
         logger.error('Get message %s from unknown channel %j', message, channel);
       }
-    });
+    };
+    this.subscriber.on('message', (channel, messageStr) => messageRecieved(channel, messageStr));
+    for (const field of ['afterSave', 'afterDelete', 'clearCache']) {
+      const channel = `${Parse.applicationId}${field}`;
+      this.subscriber.subscribe(channel, messageStr => messageRecieved(channel, messageStr));
+    }
   }
 
   // Message is the JSON object from publisher. Message.currentParseObject is the ParseObject JSON after changes.

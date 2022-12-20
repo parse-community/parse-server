@@ -217,7 +217,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ENFORCE_PRIVATE_USERS',
     help: 'Set to true if new users should be created without public read and write access.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
@@ -290,6 +290,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LOG_LEVEL',
     help: 'Sets the level for logs',
   },
+  logLevels: {
+    env: 'PARSE_SERVER_LOG_LEVELS',
+    help: '(Optional) Overrides the log levels used internally by Parse Server to log events.',
+    action: parsers.objectParser,
+    default: {},
+  },
   logsFolder: {
     env: 'PARSE_SERVER_LOGS_FOLDER',
     help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
@@ -302,9 +308,10 @@ module.exports.ParseServerOptions = {
   },
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
-    help: 'Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)',
+    help:
+      "(Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the master key.",
     action: parsers.arrayParser,
-    default: [],
+    default: ['127.0.0.1', '::1'],
   },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
@@ -895,5 +902,25 @@ module.exports.AuthAdapter = {
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
     default: true,
+  },
+};
+module.exports.LogLevels = {
+  triggerAfter: {
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
+    help:
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.',
+    default: 'info',
+  },
+  triggerBeforeError: {
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
+    help:
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.',
+    default: 'error',
+  },
+  triggerBeforeSuccess: {
+    env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
+    help:
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+    default: 'info',
   },
 };

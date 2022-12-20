@@ -495,7 +495,9 @@ describe('server', () => {
 
   it('fails if you provides invalid ip in masterKeyIps', done => {
     reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
-      expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
+      expect(error).toEqual(
+        'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
+      );
       done();
     });
   });
@@ -504,6 +506,11 @@ describe('server', () => {
     reconfigureServer({
       masterKeyIps: ['1.2.3.4', '2001:0db8:0000:0042:0000:8a2e:0370:7334'],
     }).then(done);
+  });
+
+  it('should set default masterKeyIps for IPv4 and IPv6 localhost', () => {
+    const definitions = require('../lib/Options/Definitions.js');
+    expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual(['127.0.0.1', '::1']);
   });
 
   it('should load a middleware', done => {
