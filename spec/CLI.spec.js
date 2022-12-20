@@ -219,7 +219,7 @@ describe('execution', () => {
     }
   });
 
-  it('shoud start Parse Server', done => {
+  it('should start Parse Server', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -241,7 +241,16 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL', done => {
+  it('should throw without masterKey and appId', done => {
+    childProcess = spawn(binPath, []);
+    childProcess.stderr.on('data', data => {
+      if (data.toString().includes('ERROR: appId and masterKey are required')) {
+        done();
+      }
+    });
+  });
+
+  it('should start Parse Server with GraphQL', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -267,7 +276,7 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL and Playground', done => {
+  it('should start Parse Server with GraphQL and Playground', done => {
     childProcess = spawn(binPath, [
       '--appId',
       'test',
@@ -287,6 +296,30 @@ describe('execution', () => {
       if (data.includes('Playground running on')) {
         expect(output).toMatch('GraphQL running on');
         expect(output).toMatch('parse-server running on');
+        done();
+      }
+    });
+    childProcess.stderr.on('data', data => {
+      done.fail(data.toString());
+    });
+  });
+
+  it('should redact push keys', done => {
+    childProcess = spawn(binPath, [
+      '--appId',
+      'test',
+      '--masterKey',
+      'test',
+      '--databaseURI',
+      'mongodb://localhost/test',
+      '--port',
+      '1341',
+      '--push',
+      '123',
+    ]);
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      if (data.includes('**REDACTED**')) {
         done();
       }
     });

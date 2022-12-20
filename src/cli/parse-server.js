@@ -39,7 +39,6 @@ runner({
       console.error('');
       process.exit(1);
     }
-
     if (options['liveQuery.classNames']) {
       options.liveQuery = options.liveQuery || {};
       options.liveQuery.classNames = options['liveQuery.classNames'];
@@ -55,7 +54,6 @@ runner({
       options.liveQuery.redisOptions = options['liveQuery.redisOptions'];
       delete options['liveQuery.redisOptions'];
     }
-
     if (options.cluster) {
       const numCPUs = typeof options.cluster === 'number' ? options.cluster : os.cpus().length;
       if (cluster.isMaster) {
