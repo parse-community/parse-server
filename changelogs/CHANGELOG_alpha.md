@@ -1,3 +1,15 @@
+# [6.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.14...6.0.0-alpha.15) (2022-12-20)
+
+
+### Bug Fixes
+
+* Nested objects are encoded incorrectly for MongoDB ([#8209](https://github.com/parse-community/parse-server/issues/8209)) ([1412666](https://github.com/parse-community/parse-server/commit/1412666f75829612de6fb9d7ccae35761c9b75cb))
+
+
+### BREAKING CHANGES
+
+* Nested objects are now properly stored in the database using JSON serialization; previously, due to a bug only top-level objects were serialized, but nested objects were saved as raw JSON; for example, a nested `Date` object was saved as a JSON object like `{ "__type": "Date", "iso": "2020-01-01T00:00:00.000Z" }` instead of its serialized representation `2020-01-01T00:00:00.000Z` (#8209) ([1412666](1412666))
+
 # [6.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.13...6.0.0-alpha.14) (2022-12-16)
 
 
