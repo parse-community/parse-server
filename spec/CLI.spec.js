@@ -219,17 +219,14 @@ describe('execution', () => {
     }
   });
 
-  it('shoud start Parse Server', done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      'mongodb://localhost/test',
-      '--port',
-      '1339',
-    ]);
+  it('should start Parse Server', done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
+      { env }
+    );
     childProcess.stdout.on('data', data => {
       data = data.toString();
       if (data.includes('parse-server running on')) {
@@ -241,18 +238,24 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL', done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      'mongodb://localhost/test',
-      '--port',
-      '1340',
-      '--mountGraphQL',
-    ]);
+  it('should start Parse Server with GraphQL', async done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      [
+        '--appId',
+        'test',
+        '--masterKey',
+        'test',
+        '--databaseURI',
+        databaseURI,
+        '--port',
+        '1340',
+        '--mountGraphQL',
+      ],
+      { env }
+    );
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
@@ -267,19 +270,25 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL and Playground', done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      'mongodb://localhost/test',
-      '--port',
-      '1341',
-      '--mountGraphQL',
-      '--mountPlayground',
-    ]);
+  it('should start Parse Server with GraphQL and Playground', async done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      [
+        '--appId',
+        'test',
+        '--masterKey',
+        'test',
+        '--databaseURI',
+        databaseURI,
+        '--port',
+        '1341',
+        '--mountGraphQL',
+        '--mountPlayground',
+      ],
+      { env }
+    );
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();

@@ -16,11 +16,11 @@ import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 // Factory function
 const _ParseServer = function (options: ParseServerOptions) {
   const server = new ParseServer(options);
-  return server.app;
+  return server;
 };
 // Mount the create liveQueryServer
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
-_ParseServer.start = ParseServer.start;
+_ParseServer.startApp = ParseServer.startApp;
 
 const S3Adapter = useExternal('S3Adapter', '@parse/s3-files-adapter');
 const GCSAdapter = useExternal('GCSAdapter', '@parse/gcs-files-adapter');
