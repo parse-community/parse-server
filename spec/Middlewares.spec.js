@@ -174,7 +174,7 @@ describe('middlewares', () => {
     await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
     expect(fakeReq.auth.isMaintenance).toBe(false);
     expect(logger.error).toHaveBeenCalledWith(
-      `Request using maintenance key rejected as the request IP address 'ip3' is not set in Parse Server option 'maintenanceKeyIps'.`
+      `Request using maintenance key rejected as the request IP address '10.0.0.2' is not set in Parse Server option 'maintenanceKeyIps'.`
     );
   });
 
