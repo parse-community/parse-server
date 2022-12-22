@@ -3576,13 +3576,14 @@ describe('Parse.User testing', () => {
       try {
         await Parse.User.logIn(user.getEmail(), 'abc');
       } catch (e) {
-        /* */
+        expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        expect(e.message === 'Invalid username/password.' || e.message === 'Your account is locked due to multiple failed login attempts. Please try again after 1 minute(s)').toBeTrue();
       }
     }
     await Parse.User.requestPasswordReset(user.getEmail());
     const headers = {
       'X-Parse-Application-Id': 'test',
-      'X-Parse-Rest-API-Key': 'test',
+      'X-Parse-Rest-API-Key': 'rest',
       'X-Parse-Maintenance-Key': 'test2',
       'Content-Type': 'application/json',
     };
