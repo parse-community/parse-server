@@ -3577,7 +3577,11 @@ describe('Parse.User testing', () => {
         await Parse.User.logIn(user.getEmail(), 'abc');
       } catch (e) {
         expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-        expect(e.message === 'Invalid username/password.' || e.message === 'Your account is locked due to multiple failed login attempts. Please try again after 1 minute(s)').toBeTrue();
+        expect(
+          e.message === 'Invalid username/password.' ||
+            e.message ===
+              'Your account is locked due to multiple failed login attempts. Please try again after 1 minute(s)'
+        ).toBeTrue();
       }
     }
     await Parse.User.requestPasswordReset(user.getEmail());
