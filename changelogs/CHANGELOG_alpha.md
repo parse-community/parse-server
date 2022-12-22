@@ -1,3 +1,41 @@
+# [6.0.0-alpha.16](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.15...6.0.0-alpha.16) (2022-12-21)
+
+
+### Features
+
+* Asynchronous initialization of Parse Server ([#8232](https://github.com/parse-community/parse-server/issues/8232)) ([99fcf45](https://github.com/parse-community/parse-server/commit/99fcf45e55c368de2345b0c4d780e70e0adf0e15))
+
+
+### BREAKING CHANGES
+
+* This release introduces the asynchronous initialization of Parse Server to prevent mounting Parse Server before being ready to receive request; it changes how Parse Server is imported, initialized and started; it also removes the callback `serverStartComplete`; see the [Parse Server 6 migration guide](https://github.com/parse-community/parse-server/blob/alpha/6.0.0.md) for more details (#8232) ([99fcf45](99fcf45))
+
+# [6.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.14...6.0.0-alpha.15) (2022-12-20)
+
+
+### Bug Fixes
+
+* Nested objects are encoded incorrectly for MongoDB ([#8209](https://github.com/parse-community/parse-server/issues/8209)) ([1412666](https://github.com/parse-community/parse-server/commit/1412666f75829612de6fb9d7ccae35761c9b75cb))
+
+
+### BREAKING CHANGES
+
+* Nested objects are now properly stored in the database using JSON serialization; previously, due to a bug only top-level objects were serialized, but nested objects were saved as raw JSON; for example, a nested `Date` object was saved as a JSON object like `{ "__type": "Date", "iso": "2020-01-01T00:00:00.000Z" }` instead of its serialized representation `2020-01-01T00:00:00.000Z` (#8209) ([1412666](1412666))
+
+# [6.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.13...6.0.0-alpha.14) (2022-12-16)
+
+
+### Features
+
+* Write log entry when request with master key is rejected as outside of `masterKeyIps` ([#8350](https://github.com/parse-community/parse-server/issues/8350)) ([e22b73d](https://github.com/parse-community/parse-server/commit/e22b73d4b700c8ff745aa81726c6680082294b45))
+
+# [6.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.12...6.0.0-alpha.13) (2022-12-07)
+
+
+### Features
+
+* Add option to change the log level of the logs emitted by triggers ([#8328](https://github.com/parse-community/parse-server/issues/8328)) ([8f3b694](https://github.com/parse-community/parse-server/commit/8f3b694e39d4a966567e50dbea4d62e954fa5c06))
+
 # [6.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.11...6.0.0-alpha.12) (2022-11-26)
 
 

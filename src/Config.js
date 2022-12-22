@@ -2,19 +2,21 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
+import { isBoolean, isString } from 'lodash';
+import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
-import net from 'net';
+import { logLevels as validLogLevels } from './Controllers/LoggerController';
 import {
-  IdempotencyOptions,
-  FileUploadOptions,
   AccountLockoutOptions,
+  FileUploadOptions,
+  IdempotencyOptions,
+  LogLevels,
   PagesOptions,
-  SecurityOptions,
-  SchemaOptions,
   ParseServerOptions,
+  SchemaOptions,
+  SecurityOptions,
 } from './Options/Definitions';
-import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -84,6 +86,7 @@ export class Config {
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
+    logLevels,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -130,6 +133,7 @@ export class Config {
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
+    this.validateLogLevels(logLevels);
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -504,6 +508,18 @@ export class Config {
         });
       } else {
         throw 'Allow headers must be an array';
+      }
+    }
+  }
+
+  static validateLogLevels(logLevels) {
+    for (const key of Object.keys(LogLevels)) {
+      if (logLevels[key]) {
+        if (validLogLevels.indexOf(logLevels[key]) === -1) {
+          throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
+        }
+      } else {
+        logLevels[key] = LogLevels[key].default;
       }
     }
   }

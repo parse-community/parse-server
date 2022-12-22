@@ -56,6 +56,7 @@
  * @property {LiveQueryServerOptions} liveQueryServerOptions Live query server configuration options (will start the liveQuery server)
  * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
  * @property {String} logLevel Sets the level for logs
+ * @property {LogLevels} logLevels (Optional) Overrides the log levels used internally by Parse Server to log events.
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
  * @property {String} maintenanceKey Your Parse Maintenance Key, used for updating internal fields
  * @property {String[]} maintenanceKeyIps Restrict maintenanceKey to be used by only these ips, defaults to ["127.0.0.1", "::1"] (only allow current IP)
@@ -86,7 +87,6 @@
  * @property {SchemaOptions} schema Defined schema
  * @property {SecurityOptions} security The security options to identify and report weak security settings.
  * @property {Function} serverCloseComplete Callback when server has closed
- * @property {Function} serverStartComplete Callback when server has started
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
@@ -216,4 +216,11 @@
 /**
  * @interface AuthAdapter
  * @property {Boolean} enabled Is `true` if the auth adapter is enabled, `false` otherwise.
+ */
+
+/**
+ * @interface LogLevels
+ * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
+ * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
+ * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.
  */

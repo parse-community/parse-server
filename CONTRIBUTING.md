@@ -32,6 +32,7 @@
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
   - [Reverting](#reverting)
+  - [Security Vulnerability](#security-vulnerability)
 - [Releasing](#releasing)
   - [General Considerations](#general-considerations)
   - [Major Release / Long-Term-Support](#major-release--long-term-support)
@@ -450,6 +451,24 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   
   This reverts commit 1234567890abcdef.
   ```
+
+### Security Vulnerability
+
+#### Local Testing
+
+Fixes for securify vulnerabilities are developed in private forks with a closed audience, inaccessible to the public. A current GitHub limitation does not allow to run CI tests on pull requests in private forks. Whether a pull requests fully passes all CI tests can only be determined by publishing the fix as a public pull request and running the CI. This means the fix and implicitly information about the vulnerabilty are made accessible to the public. This increases the risk that a vulnerability fix is published, but then cannot be merged immediately due to a CI issue. To mitigate that risk, before publishing a vulnerability fix, the following tests needs to be run locally and pass:
+
+- `npm run test` (MongoDB)
+- `npm run test` (Postgres)
+- `npm run madge:circular` (circular dependencies)
+- `npm run lint` (Lint)
+- `npm run definitions` (Parse Server options definitions)
+
+#### Merging
+
+A current GitHub limitation does not allow to customize the commit message when merging pull requests of a private fork that was created to fix a security vulnerabilty. Our release automation framework demands a specific commit message syntax which therefore cannot be met. This prohibits to follow the process that GitHub suggest, which is to merge a pull request from a private fork directly to a public branch. Instead, after [local testing](#local-testing), a public pull request needs to be created with the code fix copied over from the private pull request.
+
+This creates a risk that a vulnerability is indirectly disclosed by publishing a pull request with the fix, but the fix cannot be merged due to a CI issue. To mitigate that risk, the pull request title and description should be kept marginal or generic, not hiting to a vulnerabilty or giving any details about the vulnerabilty, until the pull request has been successfully merged.
 
 ## Releasing
 
