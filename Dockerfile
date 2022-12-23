@@ -1,10 +1,9 @@
 ############################################################
 # Build stage
 ############################################################
-FROM node:lts-alpine as build
+FROM node:lts-alpine AS build
 
-RUN apk update; \
-  apk add git;
+RUN apk --no-cache add git
 WORKDIR /tmp
 
 # Copy package.json first to benefit from layer caching
@@ -16,6 +15,12 @@ COPY . .
 # Clean npm cache; added to fix an issue with the install process
 RUN npm cache clean --force
 
+# Install without scripts
+RUN npm ci --production --ignore-scripts
+
+# Copy production node_modules aside for later
+RUN cp -R node_modules prod_node_modules
+
 # Install all dependencies
 RUN npm ci
 
@@ -25,20 +30,15 @@ RUN npm run build
 ############################################################
 # Release stage
 ############################################################
-FROM node:lts-alpine as release
-
-RUN apk update; \
-  apk add git;
+FROM node:lts-alpine AS release
 
 VOLUME /parse-server/cloud /parse-server/config
 
 WORKDIR /parse-server
 
-COPY package*.json ./
-
-# Clean npm cache; added to fix an issue with the install process
-RUN npm cache clean --force
-RUN npm ci --production --ignore-scripts
+# Copy production node_modules
+COPY --from=build /tmp/prod_node_modules /parse-server/node_modules
+COPY --from=build /tmp/package*.json /parse-server/
 
 COPY bin bin
 COPY public_html public_html
