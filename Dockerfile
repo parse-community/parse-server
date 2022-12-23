@@ -16,7 +16,7 @@ COPY . .
 RUN npm cache clean --force
 
 # Install without scripts
-RUN npm ci --production --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copy production node_modules aside for later
 RUN cp -R node_modules prod_node_modules
