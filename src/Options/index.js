@@ -271,8 +271,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* Callback when server has started */
-  serverStartComplete: ?(error: ?Error) => void;
   /* Defined schema
   :ENV: PARSE_SERVER_SCHEMA
   */

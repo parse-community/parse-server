@@ -40,7 +40,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 
 ---
 
-- [Flavors & Branches](#flavors--branches)
+- [Flavors \& Branches](#flavors--branches)
   - [Long Term Support](#long-term-support)
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
@@ -55,6 +55,8 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Running Parse Server elsewhere](#running-parse-server-elsewhere)
     - [Sample Application](#sample-application)
     - [Parse Server + Express](#parse-server--express)
+  - [Parse Server Health](#parse-server-health)
+    - [Status Values](#status-values)
 - [Configuration](#configuration)
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
@@ -136,13 +138,13 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. We consider the end-of-life date of a MongoDB "rapid release" to be the same as its major version release.
 
-| Version     | Latest Version | End-of-Life   | Compatible   |
-|-------------|----------------|---------------|--------------|
-| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes        |
-| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes        |
-| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes        |
-| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes        |
-| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes        |
+| Version     | Latest Version | End-of-Life   | Compatible |
+|-------------|----------------|---------------|------------|
+| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes      |
+| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes      |
+| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes      |
+| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes      |
+| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes      |
 
 #### PostgreSQL
 
@@ -282,11 +284,11 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 You can also create an instance of Parse Server, and mount it on a new or existing Express website:
 
 ```js
-var express = require('express');
-var ParseServer = require('parse-server').ParseServer;
-var app = express();
+const express = require('express');
+const ParseServer = require('parse-server').ParseServer;
+const app = express();
 
-var api = new ParseServer({
+const server = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
   cloud: './cloud/main.js', // Path to your Cloud Code
   appId: 'myAppId',
@@ -295,8 +297,11 @@ var api = new ParseServer({
   serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
 });
 
+// Start server
+await server.start();
+
 // Serve the Parse API on the /parse URL prefix
-app.use('/parse', api);
+app.use('/parse', server.app);
 
 app.listen(1337, function() {
   console.log('parse-server-example running on port 1337.');
@@ -304,6 +309,27 @@ app.listen(1337, function() {
 ```
 
 For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
+
+## Parse Server Health
+
+Check the Parse Server health by sending a request to the `/parse/health` endpoint.
+
+The response looks like this:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### Status Values
+
+| Value         | Description                                                                 |
+|---------------|-----------------------------------------------------------------------------|
+| `initialized` | The server has been created but the `start` method has not been called yet. |
+| `starting`    | The server is starting up.                                                  |
+| `ok`          | The server started and is running.                                          |
+| `error`       | There was a startup error, see the logs for details.                        |
 
 # Configuration
 
@@ -461,7 +487,7 @@ The following paths are already used by Parse Server's built-in features and are
 It’s possible to change the default pages of the app and redirect the user to another path or domain.
 
 ```js
-var server = ParseServer({
+const server = ParseServer({
   ...otherOptions,
 
   customPages: {
@@ -851,7 +877,7 @@ Then, create an `index.js` file with the following content:
 
 ```js
 const express = require('express');
-const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
+const { ParseServer, ParseGraphQLServer } = require('parse-server');
 
 const app = express();
 
@@ -875,6 +901,7 @@ app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
 parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
 parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
 
+await parseServer.start();
 app.listen(1337, function() {
   console.log('REST API running on http://localhost:1337/parse');
   console.log('GraphQL API running on http://localhost:1337/graphql');

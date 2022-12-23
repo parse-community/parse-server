@@ -631,7 +631,7 @@ describe('DefinedSchemas', () => {
     const logger = require('../lib/logger').logger;
     spyOn(DefinedSchemas.prototype, 'wait').and.resolveTo();
     spyOn(logger, 'error').and.callThrough();
-    spyOn(Parse.Schema, 'all').and.callFake(() => {
+    spyOn(DefinedSchemas.prototype, 'createDeleteSession').and.callFake(() => {
       throw error;
     });
 

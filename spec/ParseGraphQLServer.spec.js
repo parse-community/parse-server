@@ -8,7 +8,7 @@ require('./helper');
 const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
-const { getMainDefinition } = require('apollo-utilities');
+const { getMainDefinition } = require('@apollo/client/utilities');
 const { createUploadLink } = require('apollo-upload-client');
 const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('@apollo/client/link/ws');
