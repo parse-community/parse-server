@@ -12,9 +12,7 @@ const needToGetAllKeys = (fields, keys, parseClasses) =>
         if (fields[key[0]]) {
           if (fields[key[0]].type === 'Relation') return false;
           if (fields[key[0]].type === 'Pointer') {
-            const subClass = parseClasses.find(
-              ({ className: parseClassName }) => fields[key[0]].targetClass === parseClassName
-            );
+            const subClass = parseClasses[fields[key[0]].targetClass];
             if (subClass && subClass.fields[key[1]]) {
               // Current sub key is not custom
               return false;
@@ -48,17 +46,11 @@ const getObject = async (
 ) => {
   const options = {};
   try {
-    if (
-      !needToGetAllKeys(
-        parseClasses.find(({ className: parseClassName }) => className === parseClassName).fields,
-        keys,
-        parseClasses
-      )
-    ) {
+    if (!needToGetAllKeys(parseClasses[className].fields, keys, parseClasses)) {
       options.keys = keys;
     }
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
   if (include) {
     options.include = include;
@@ -165,13 +157,7 @@ const findObjects = async (
         // Silently replace the limit on the query with the max configured
         options.limit = config.maxLimit;
       }
-      if (
-        !needToGetAllKeys(
-          parseClasses.find(({ className: parseClassName }) => className === parseClassName).fields,
-          keys,
-          parseClasses
-        )
-      ) {
+      if (!needToGetAllKeys(parseClasses[className].fields, keys, parseClasses)) {
         options.keys = keys;
       }
       if (includeAll === true) {
@@ -286,7 +272,7 @@ const calculateSkipAndLimit = (skipInput, first, after, last, before, maxLimit) 
     }
 
     if ((skip || 0) >= before) {
-      // If the before index is less then the skip, no objects will be returned
+      // If the before index is less than the skip, no objects will be returned
       limit = 0;
     } else if ((!limit && limit !== 0) || (skip || 0) + limit > before) {
       // If there is no limit set, the limit is calculated. Or, if the limit (plus skip) is bigger than the before index, the new limit is set.

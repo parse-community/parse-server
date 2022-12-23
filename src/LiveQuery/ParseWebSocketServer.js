@@ -14,6 +14,10 @@ export class ParseWebSocketServer {
       logger.info('Parse LiveQuery Server started running');
     };
     wss.onConnection = ws => {
+      ws.waitingForPong = false;
+      ws.on('pong', () => {
+        ws.waitingForPong = false;
+      });
       ws.on('error', error => {
         logger.error(error.message);
         logger.error(inspect(ws, false));
@@ -21,10 +25,12 @@ export class ParseWebSocketServer {
       onConnect(new ParseWebSocket(ws));
       // Send ping to client periodically
       const pingIntervalId = setInterval(() => {
-        if (ws.readyState == ws.OPEN) {
+        if (!ws.waitingForPong) {
           ws.ping();
+          ws.waitingForPong = true;
         } else {
           clearInterval(pingIntervalId);
+          ws.terminate();
         }
       }, config.websocketTimeout || 10 * 1000);
     };

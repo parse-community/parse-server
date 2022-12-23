@@ -276,7 +276,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user'
           );
           user
-            .fetch()
+            .fetch({ useMasterKey: true })
             .then(
               () => {
                 expect(user.get('emailVerified')).toEqual(true);

@@ -12,16 +12,11 @@ export const Types = {
   afterDelete: 'afterDelete',
   beforeFind: 'beforeFind',
   afterFind: 'afterFind',
-  beforeSaveFile: 'beforeSaveFile',
-  afterSaveFile: 'afterSaveFile',
-  beforeDeleteFile: 'beforeDeleteFile',
-  afterDeleteFile: 'afterDeleteFile',
   beforeConnect: 'beforeConnect',
   beforeSubscribe: 'beforeSubscribe',
   afterEvent: 'afterEvent',
 };
 
-const FileClassName = '@File';
 const ConnectClassName = '@Connect';
 
 const baseStore = function () {
@@ -49,6 +44,9 @@ const baseStore = function () {
 export function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
     return parseClass.className;
+  }
+  if (parseClass && parseClass.name) {
+    return parseClass.name.replace('Parse', '@');
   }
   return parseClass;
 }
@@ -140,11 +138,6 @@ export function addTrigger(type, className, handler, applicationId, validationHa
   add(Category.Validators, `${type}.${className}`, validationHandler, applicationId);
 }
 
-export function addFileTrigger(type, handler, applicationId, validationHandler) {
-  add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
-  add(Category.Validators, `${type}.${FileClassName}`, validationHandler, applicationId);
-}
-
 export function addConnectTrigger(type, handler, applicationId, validationHandler) {
   add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
   add(Category.Validators, `${type}.${ConnectClassName}`, validationHandler, applicationId);
@@ -205,10 +198,6 @@ export async function runTrigger(trigger, name, request, auth) {
     return;
   }
   return await trigger(request);
-}
-
-export function getFileTrigger(type, applicationId) {
-  return getTrigger(FileClassName, type, applicationId);
 }
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
@@ -384,9 +373,9 @@ function userIdForLog(auth) {
   return auth && auth.user ? auth.user.id : undefined;
 }
 
-function logTriggerAfterHook(triggerType, className, input, auth) {
+function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  logger.info(
+  logger[logLevel](
     `${triggerType} triggered for ${className} for user ${userIdForLog(
       auth
     )}:\n  Input: ${cleanInput}`,
@@ -398,10 +387,10 @@ function logTriggerAfterHook(triggerType, className, input, auth) {
   );
 }
 
-function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth) {
+function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
-  logger.info(
+  logger[logLevel](
     `${triggerType} triggered for ${className} for user ${userIdForLog(
       auth
     )}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
@@ -413,9 +402,9 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
   );
 }
 
-function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
+function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, logLevel) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  logger.error(
+  logger[logLevel](
     `${triggerType} failed for ${className} for user ${userIdForLog(
       auth
     )}:\n  Input: ${cleanInput}\n  Error: ${JSON.stringify(error)}`,
@@ -455,7 +444,14 @@ export function maybeRunAfterFindTrigger(
         reject(error);
       }
     );
-    logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
+    logTriggerSuccessBeforeHook(
+      triggerType,
+      className,
+      'AfterFind',
+      JSON.stringify(objects),
+      auth,
+      config.logLevels.triggerBeforeSuccess
+    );
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
       object.className = className;
@@ -479,7 +475,13 @@ export function maybeRunAfterFindTrigger(
       })
       .then(success, error);
   }).then(results => {
-    logTriggerAfterHook(triggerType, className, JSON.stringify(results), auth);
+    logTriggerAfterHook(
+      triggerType,
+      className,
+      JSON.stringify(results),
+      auth,
+      config.logLevels.triggerAfter
+    );
     return results;
   });
 }
@@ -738,7 +740,7 @@ async function builtInTriggerValidator(options, request, auth) {
         }
         if (opt.constant && request.object) {
           if (request.original) {
-            request.object.set(key, request.original.get(key));
+            request.object.revert(key);
           } else if (opt.default != null) {
             request.object.set(key, opt.default);
           }
@@ -853,7 +855,10 @@ export function maybeRunTrigger(
           parseObject.className,
           parseObject.toJSON(),
           object,
-          auth
+          auth,
+          triggerType.startsWith('after')
+            ? config.logLevels.triggerAfter
+            : config.logLevels.triggerBeforeSuccess
         );
         if (
           triggerType === Types.beforeSave ||
@@ -871,7 +876,8 @@ export function maybeRunTrigger(
           parseObject.className,
           parseObject.toJSON(),
           auth,
-          error
+          error,
+          config.logLevels.triggerBeforeError
         );
         reject(error);
       }
@@ -896,7 +902,13 @@ export function maybeRunTrigger(
           triggerType === Types.afterDelete ||
           triggerType === Types.afterLogin
         ) {
-          logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
+          logTriggerAfterHook(
+            triggerType,
+            parseObject.className,
+            parseObject.toJSON(),
+            auth,
+            config.logLevels.triggerAfter
+          );
         }
         // beforeSave is expected to return null (nothing)
         if (triggerType === Types.beforeSave) {
@@ -961,7 +973,8 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
 }
 
 export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
-  const fileTrigger = getFileTrigger(triggerType, config.applicationId);
+  const FileClassName = getClassName(Parse.File);
+  const fileTrigger = getTrigger(FileClassName, triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
     try {
       const request = getRequestFileObject(triggerType, auth, fileObject, config);
@@ -975,7 +988,8 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         result,
-        auth
+        auth,
+        config.logLevels.triggerBeforeSuccess
       );
       return result || fileObject;
     } catch (error) {
@@ -984,7 +998,8 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         auth,
-        error
+        error,
+        config.logLevels.triggerBeforeError
       );
       throw error;
     }
