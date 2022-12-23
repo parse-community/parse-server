@@ -1,7 +1,7 @@
 // Tools for encrypting and decrypting passwords.
 // Basically promise-friendly wrappers for bcrypt.
 var bcrypt = require('bcryptjs');
-
+var crypto = require('crypto');
 try {
   const _bcrypt = require('@node-rs/bcrypt');
   bcrypt = {
@@ -24,7 +24,11 @@ function compare(password, hashedPassword) {
   if (!password || !hashedPassword) {
     return Promise.resolve(false);
   }
-  return bcrypt.compare(password, hashedPassword);
+  if(hashedPassword.startsWith("$1$")) {
+    return `$1$${crypto.createHash('md5').update(password).digest("hex")}` == hashedPassword;
+  } else {
+    return bcrypt.compare(password, hashedPassword);
+  }
 }
 
 module.exports = {

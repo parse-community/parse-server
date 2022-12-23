@@ -24,7 +24,7 @@ const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
 const keycloak = require('./keycloak');
 const ldap = require('./ldap');
-
+const cjxf = require('./cjxf')
 const anonymous = {
   validateAuthData: () => {
     return Promise.resolve();
@@ -59,6 +59,7 @@ const providers = {
   microsoft,
   keycloak,
   ldap,
+  cjxf
 };
 
 function authDataValidator(adapter, appIds, options) {
