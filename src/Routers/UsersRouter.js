@@ -435,10 +435,7 @@ export class UsersRouter extends ClassesRouter {
       };
     } catch (err) {
       if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
-        if (
-          !req.config.passwordPolicy ||
-          req.config.passwordPolicy.resetPasswordSuccessOnInvalidEmail
-        ) {
+        if (!req.config.passwordPolicy) {
           return {
             response: {},
           };

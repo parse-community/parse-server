@@ -1097,24 +1097,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     expect(result).toEqual({});
   });
 
-  it('validate resetPasswordSuccessonInvalidEmail', async () => {
-    await expectAsync(
-      reconfigureServer({
-        appName: 'coolapp',
-        publicServerURL: 'http://localhost:1337/1',
-        emailAdapter: MockEmailAdapterWithOptions({
-          fromAddress: 'parse@example.com',
-          apiKey: 'k',
-          domain: 'd',
-        }),
-        passwordPolicy: {
-          resetPasswordSuccessOnInvalidEmail: [],
-        },
-      })
-    ).toBeRejectedWith('resetPasswordSuccessOnInvalidEmail must be a boolean value');
-  });
-
-  it('should throw on an invalid reset password with resetPasswordSuccessOnInvalidEmail', async () => {
+  it('should throw on an invalid reset password', async () => {
     await reconfigureServer({
       appName: 'coolapp',
       publicServerURL: 'http://localhost:1337/1',
@@ -1123,15 +1106,10 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         apiKey: 'k',
         domain: 'd',
       }),
-      passwordPolicy: {
-        resetPasswordSuccessOnInvalidEmail: false,
-      },
     });
+
     await expectAsync(Parse.User.requestPasswordReset('test@example.com')).toBeRejectedWith(
-      new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'A user with the email test@example.com does not exist.'
-      )
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'A user with that email does not exist.')
     );
   });
 });
