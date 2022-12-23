@@ -15,7 +15,6 @@ const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
-const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
 const logger = require('../../../logger');
 
@@ -90,6 +89,22 @@ const toPostgresValue = value => {
     }
   }
   return value;
+};
+
+const toPostgresValueCastType = value => {
+  const postgresValue = toPostgresValue(value);
+  let castType;
+  switch (typeof postgresValue) {
+    case 'number':
+      castType = 'double precision';
+      break;
+    case 'boolean':
+      castType = 'boolean';
+      break;
+    default:
+      castType = undefined;
+  }
+  return castType;
 };
 
 const transformValue = value => {
@@ -274,7 +289,6 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         continue;
       }
     }
-
     const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
     if (authDataMatch) {
       // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
@@ -370,9 +384,12 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             );
           } else {
             if (fieldName.indexOf('.') >= 0) {
-              const constraintFieldName = transformDotField(fieldName);
+              const castType = toPostgresValueCastType(fieldValue.$ne);
+              const constraintFieldName = castType
+                ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+                : transformDotField(fieldName);
               patterns.push(
-                `(${constraintFieldName} <> $${index} OR ${constraintFieldName} IS NULL)`
+                `(${constraintFieldName} <> $${index + 1} OR ${constraintFieldName} IS NULL)`
               );
             } else if (typeof fieldValue.$ne === 'object' && fieldValue.$ne.$relativeTime) {
               throw new Parse.Error(
@@ -402,8 +419,12 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         index += 1;
       } else {
         if (fieldName.indexOf('.') >= 0) {
+          const castType = toPostgresValueCastType(fieldValue.$eq);
+          const constraintFieldName = castType
+            ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+            : transformDotField(fieldName);
           values.push(fieldValue.$eq);
-          patterns.push(`${transformDotField(fieldName)} = $${index++}`);
+          patterns.push(`${constraintFieldName} = $${index++}`);
         } else if (typeof fieldValue.$eq === 'object' && fieldValue.$eq.$relativeTime) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
@@ -772,20 +793,11 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp] || fieldValue[cmp] === 0) {
         const pgComparator = ParseToPosgresComparator[cmp];
-        let postgresValue = toPostgresValue(fieldValue[cmp]);
         let constraintFieldName;
+        let postgresValue = toPostgresValue(fieldValue[cmp]);
+
         if (fieldName.indexOf('.') >= 0) {
-          let castType;
-          switch (typeof postgresValue) {
-            case 'number':
-              castType = 'double precision';
-              break;
-            case 'boolean':
-              castType = 'boolean';
-              break;
-            default:
-              castType = undefined;
-          }
+          const castType = toPostgresValueCastType(fieldValue[cmp]);
           constraintFieldName = castType
             ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
             : transformDotField(fieldName);
@@ -906,15 +918,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         'CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )'
       )
       .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError ||
-          error.code === PostgresUniqueIndexViolationError ||
-          error.code === PostgresDuplicateObjectError
-        ) {
-          // Table already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
+        throw error;
       });
   }
 
@@ -1317,12 +1321,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
         return;
       }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      const authDataAlreadyExists = !!object.authData;
       if (authDataMatch) {
         var provider = authDataMatch[1];
         object['authData'] = object['authData'] || {};
         object['authData'][provider] = object[fieldName];
         delete object[fieldName];
         fieldName = 'authData';
+        // Avoid adding authData multiple times to the query
+        if (authDataAlreadyExists) {
+          return;
+        }
       }
 
       columnsArray.push(fieldName);
@@ -1802,7 +1811,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       caseInsensitive,
     });
     values.push(...where.values);
-
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const limitPattern = hasLimit ? `LIMIT $${values.length + 1}` : '';
     if (hasLimit) {
@@ -2449,6 +2457,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
       ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
+    const setIdempotencyFunction =
+      options.setIdempotencyFunction !== undefined ? options.setIdempotencyFunction : false;
+    if (setIdempotencyFunction) {
+      await this.ensureIdempotencyFunctionExists(options);
+    }
     await conn.none(qs, [indexNameOptions.name, className, ...fieldNames]).catch(error => {
       if (
         error.code === PostgresDuplicateRelationError &&
@@ -2467,6 +2480,24 @@ export class PostgresStorageAdapter implements StorageAdapter {
       } else {
         throw error;
       }
+    });
+  }
+
+  async deleteIdempotencyFunction(options?: Object = {}): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const qs = 'DROP FUNCTION IF EXISTS idempotency_delete_expired_records()';
+    return conn.none(qs).catch(error => {
+      throw error;
+    });
+  }
+
+  async ensureIdempotencyFunctionExists(options?: Object = {}): Promise<any> {
+    const conn = options.conn !== undefined ? options.conn : this._client;
+    const ttlOptions = options.ttl !== undefined ? `${options.ttl} seconds` : '60 seconds';
+    const qs =
+      'CREATE OR REPLACE FUNCTION idempotency_delete_expired_records() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM "_Idempotency" WHERE expire < NOW() - INTERVAL $1; END; $$;';
+    return conn.none(qs, [ttlOptions]).catch(error => {
+      throw error;
     });
   }
 }

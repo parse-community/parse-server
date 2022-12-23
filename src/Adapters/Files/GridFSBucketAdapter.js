@@ -1,6 +1,6 @@
 /**
  GridFSBucketAdapter
- Stores files in Mongo using GridStore
+ Stores files in Mongo using GridFS
  Requires the database adapter to be based on mongoclient
 
  @flow weak
@@ -228,22 +228,35 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const partialstart = parts[0];
     const partialend = parts[1];
 
-    const start = parseInt(partialstart, 10);
-    const end = partialend ? parseInt(partialend, 10) : files[0].length - 1;
+    const fileLength = files[0].length;
+    const fileStart = parseInt(partialstart, 10);
+    const fileEnd = partialend ? parseInt(partialend, 10) : fileLength;
 
-    res.writeHead(206, {
-      'Accept-Ranges': 'bytes',
-      'Content-Length': end - start + 1,
-      'Content-Range': 'bytes ' + start + '-' + end + '/' + files[0].length,
-      'Content-Type': contentType,
-    });
+    let start = Math.min(fileStart || 0, fileEnd, fileLength);
+    let end = Math.max(fileStart || 0, fileEnd) + 1 || fileLength;
+    if (isNaN(fileStart)) {
+      start = fileLength - end + 1;
+      end = fileLength;
+    }
+    end = Math.min(end, fileLength);
+    start = Math.max(start, 0);
+
+    res.status(206);
+    res.header('Accept-Ranges', 'bytes');
+    res.header('Content-Length', end - start);
+    res.header('Content-Range', 'bytes ' + start + '-' + end + '/' + fileLength);
+    res.header('Content-Type', contentType);
     const stream = bucket.openDownloadStreamByName(filename);
     stream.start(start);
+    if (end) {
+      stream.end(end);
+    }
     stream.on('data', chunk => {
       res.write(chunk);
     });
-    stream.on('error', () => {
-      res.sendStatus(404);
+    stream.on('error', e => {
+      res.status(404);
+      res.send(e.message);
     });
     stream.on('end', () => {
       res.end();

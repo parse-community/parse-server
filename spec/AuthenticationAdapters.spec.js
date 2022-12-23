@@ -256,6 +256,49 @@ describe('AuthenticationProviders', function () {
       .catch(done.fail);
   });
 
+  it('should support loginWith with session token and with/without mutated authData', async () => {
+    const fakeAuthProvider = {
+      validateAppId: () => Promise.resolve(),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const payload = { authData: { id: 'user1', token: 'fakeToken' } };
+    const payload2 = { authData: { id: 'user1', token: 'fakeToken2' } };
+    await reconfigureServer({ auth: { fakeAuthProvider } });
+    const user = await Parse.User.logInWith('fakeAuthProvider', payload);
+    const user2 = await Parse.User.logInWith('fakeAuthProvider', payload, {
+      sessionToken: user.getSessionToken(),
+    });
+    const user3 = await Parse.User.logInWith('fakeAuthProvider', payload2, {
+      sessionToken: user2.getSessionToken(),
+    });
+    expect(user.id).toEqual(user2.id);
+    expect(user.id).toEqual(user3.id);
+  });
+
+  it('should support sync/async validateAppId', async () => {
+    const syncProvider = {
+      validateAppId: () => true,
+      appIds: 'test',
+      validateAuthData: () => Promise.resolve(),
+    };
+    const asyncProvider = {
+      appIds: 'test',
+      validateAppId: () => Promise.resolve(true),
+      validateAuthData: () => Promise.resolve(),
+    };
+    const payload = { authData: { id: 'user1', token: 'fakeToken' } };
+    const syncSpy = spyOn(syncProvider, 'validateAppId');
+    const asyncSpy = spyOn(asyncProvider, 'validateAppId');
+
+    await reconfigureServer({ auth: { asyncProvider, syncProvider } });
+    const user = await Parse.User.logInWith('asyncProvider', payload);
+    const user2 = await Parse.User.logInWith('syncProvider', payload);
+    expect(user.getSessionToken()).toBeDefined();
+    expect(user2.getSessionToken()).toBeDefined();
+    expect(syncSpy).toHaveBeenCalledTimes(1);
+    expect(asyncSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('unlink and link with custom provider', async () => {
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -339,10 +382,10 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator(validAuthData).then(
+    validator(validAuthData, {}, {}).then(
       () => {
         expect(authDataSpy).toHaveBeenCalled();
         // AppIds are not provided in the adapter, should not be called
@@ -362,12 +405,15 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
-
-    validator({
-      token: 'my-token',
-    }).then(
+    validator(
+      {
+        token: 'my-token',
+      },
+      {},
+      {}
+    ).then(
       () => {
         done();
       },
@@ -387,12 +433,16 @@ describe('AuthenticationProviders', function () {
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator({
-      token: 'valid-token',
-    }).then(
+    validator(
+      {
+        token: 'valid-token',
+      },
+      {},
+      {}
+    ).then(
       () => {
         done();
       },
@@ -419,6 +469,29 @@ describe('AuthenticationProviders', function () {
     expect(providerOptions).toEqual(options.facebook);
   });
 
+  it('should throw error when Facebook request appId is wrong data type', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'a' });
+    });
+    const options = {
+      facebook: {
+        appIds: 'abcd',
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      access_token: 'badtoken',
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
+    );
+  });
+
   it('should handle Facebook appSecret for validating appIds', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
@@ -439,6 +512,29 @@ describe('AuthenticationProviders', function () {
     );
     await adapter.validateAppId(appIds, authData, providerOptions);
     expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
+  });
+
+  it('should throw error when Facebook request appId is wrong data type', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'a' });
+    });
+    const options = {
+      facebook: {
+        appIds: 'abcd',
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      access_token: 'badtoken',
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
+    );
   });
 
   it('should handle Facebook appSecret for validating auth data', async () => {
@@ -476,6 +572,36 @@ describe('AuthenticationProviders', function () {
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
+  });
+
+  it('can disable provider', async () => {
+    await reconfigureServer({
+      auth: {
+        myoauth: {
+          enabled: false,
+          module: path.resolve(__dirname, 'support/myoauth'), // relative path as it's run from src
+        },
+      },
+    });
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await expectAsync(Parse.User._logInWith('myoauth')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+  });
+
+  it('can deprecate', async () => {
+    await reconfigureServer();
+    const Deprecator = require('../lib/Deprecator/Deprecator');
+    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
+    const provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith('myoauth');
+    expect(spy).toHaveBeenCalledWith({
+      usage: 'Using the authentication adapter "myoauth" without explicitly enabling it',
+      solution:
+        'Enable the authentication adapter by setting the Parse Server option "auth.myoauth.enabled: true".',
+    });
   });
 });
 
@@ -1652,8 +1778,44 @@ describe('apple signin auth adapter', () => {
 
 describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
+  const fs = require('fs');
+  const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+  const testCert2 = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+
+  it('can load adapter', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+  });
 
   it('validateAuthData should validate', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
     // real token is used
     const authData = {
       id: 'G:1965586982',
@@ -1664,48 +1826,149 @@ describe('Apple Game Center Auth adapter', () => {
       salt: 'DzqqrQ==',
       bundleId: 'cloud.xtralife.gamecenterauth',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-    } catch (e) {
-      fail();
-    }
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    await gcenter.validateAuthData(authData);
   });
 
   it('validateAuthData invalid signature id', async () => {
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+    gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-6.cer'] = testCert2;
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      {}
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
     const authData = {
       id: 'G:1965586982',
-      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-6.cer',
       timestamp: 1565257031287,
       signature: '1234',
       salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
+      bundleId: 'com.example.com',
     };
-
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid signature');
-    }
+    await expectAsync(gcenter.validateAuthData(authData)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Apple Game Center - invalid signature')
+    );
   });
 
-  it('validateAuthData invalid public key url', async () => {
-    const authData = {
-      id: 'G:1965586982',
-      publicKeyUrl: 'invalid.com',
-      timestamp: 1565257031287,
-      signature: '1234',
-      salt: 'DzqqrQ==',
-      bundleId: 'cloud.xtralife.gamecenterauth',
+  it('validateAuthData invalid public key http url', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
     };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    const publicKeyUrls = [
+      'example.com',
+      'http://static.gc.apple.com/public-key/gc-prod-4.cer',
+      'https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg',
+      'https://example.com/ \\.apple.com/public_key.cer',
+      'https://example.com/ &.apple.com/public_key.cer',
+    ];
+    await Promise.all(
+      publicKeyUrls.map(publicKeyUrl =>
+        expectAsync(
+          gcenter.validateAuthData({
+            id: 'G:1965586982',
+            timestamp: 1565257031287,
+            publicKeyUrl,
+            signature: '1234',
+            salt: 'DzqqrQ==',
+            bundleId: 'com.example.com',
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.SCRIPT_FAILED,
+            `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+          )
+        )
+      )
+    );
+  });
 
-    try {
-      await gcenter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple Game Center - invalid publicKeyUrl: invalid.com');
-    }
+  it('should not validate Symantec Cert', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl:
+          'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    expect(() =>
+      gcenter.verifyPublicKeyIssuer(
+        testCert,
+        'https://static.gc.apple.com/public-key/gc-prod-4.cer'
+      )
+    );
+  });
+
+  it('adapter should load default cert', async () => {
+    const options = {
+      gcenter: {},
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+    const previous = new Date();
+    await adapter.validateAppId(
+      appIds,
+      { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+      providerOptions
+    );
+
+    const duration = new Date().getTime() - previous.getTime();
+    expect(duration <= 1).toBe(true);
+  });
+
+  it('adapter should throw', async () => {
+    const options = {
+      gcenter: {
+        rootCertificateUrl: 'https://example.com',
+      },
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'gcenter',
+      options
+    );
+    await expectAsync(
+      adapter.validateAppId(
+        appIds,
+        { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer' },
+        providerOptions
+      )
+    ).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Apple Game Center auth adapter parameter `rootCertificateURL` is invalid.'
+      )
+    );
   });
 });
 

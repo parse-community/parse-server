@@ -479,6 +479,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
     return this._adaptiveCollection(className)
       .then(collection => collection.insertOne(mongoObject, transactionalSession))
+      .then(() => ({ ops: [mongoObject] }))
       .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
@@ -517,8 +518,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       })
       .catch(err => this.handleError(err))
       .then(
-        ({ result }) => {
-          if (result.n === 0) {
+        ({ deletedCount }) => {
+          if (deletedCount === 0) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
           }
           return Promise.resolve();
@@ -951,6 +952,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
   // recursive method to traverse down to the "leaf node" which is going to be the string.
   _convertToDate(value: any): any {
+    if (value instanceof Date) {
+      return value;
+    }
     if (typeof value === 'string') {
       return new Date(value);
     }

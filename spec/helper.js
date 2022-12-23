@@ -1,8 +1,14 @@
 'use strict';
+const dns = require('dns');
 const semver = require('semver');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
+
+// Ensure localhost resolves to ipv4 address first on node v17+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
@@ -44,16 +50,19 @@ const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController'
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
+let databaseURI;
 // need to bind for mocking mocha
 
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+  databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI;
   databaseAdapter = new PostgresStorageAdapter({
-    uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
+    uri: databaseURI,
     collectionPrefix: 'test_',
   });
 } else {
+  databaseURI = mongoURI;
   databaseAdapter = new MongoStorageAdapter({
-    uri: mongoURI,
+    uri: databaseURI,
     collectionPrefix: 'test_',
   });
 }
@@ -96,7 +105,7 @@ const defaultConfiguration = {
   masterKey: 'test',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
-  directAccess: false,
+  directAccess: true,
   silent,
   logLevel,
   fileUpload: {
@@ -104,6 +113,7 @@ const defaultConfiguration = {
     enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
   },
+  masterKeyIps: ['127.0.0.1'],
   push: {
     android: {
       senderId: 'yolo',
@@ -142,47 +152,33 @@ let server;
 let didChangeConfiguration = false;
 
 // Allows testing specific configurations of Parse Server
-const reconfigureServer = (changedConfiguration = {}) => {
-  return new Promise((resolve, reject) => {
-    if (server) {
-      return server.close(() => {
-        server = undefined;
-        reconfigureServer(changedConfiguration).then(resolve, reject);
-      });
-    }
-    try {
-      let parseServer = undefined;
-      didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
-      const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-        serverStartComplete: error => {
-          if (error) {
-            reject(error);
-          } else {
-            Parse.CoreManager.setRESTController(RESTController);
-            resolve(parseServer);
-          }
-        },
-        mountPath: '/1',
-        port,
-      });
-      cache.clear();
-      parseServer = ParseServer.start(newConfiguration);
-      parseServer.expressApp.use('/1', err => {
-        console.error(err);
-        fail('should not call next');
-      });
-      server = parseServer.server;
-      server.on('connection', connection => {
-        const key = `${connection.remoteAddress}:${connection.remotePort}`;
-        openConnections[key] = connection;
-        connection.on('close', () => {
-          delete openConnections[key];
-        });
-      });
-    } catch (error) {
-      reject(error);
-    }
+const reconfigureServer = async (changedConfiguration = {}) => {
+  if (server) {
+    await new Promise(resolve => server.close(resolve));
+    server = undefined;
+    return reconfigureServer(changedConfiguration);
+  }
+  didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
+  const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+    mountPath: '/1',
+    port,
   });
+  cache.clear();
+  const parseServer = await ParseServer.startApp(newConfiguration);
+  server = parseServer.server;
+  Parse.CoreManager.setRESTController(RESTController);
+  parseServer.expressApp.use('/1', err => {
+    console.error(err);
+    fail('should not call next');
+  });
+  server.on('connection', connection => {
+    const key = `${connection.remoteAddress}:${connection.remotePort}`;
+    openConnections[key] = connection;
+    connection.on('close', () => {
+      delete openConnections[key];
+    });
+  });
+  return parseServer;
 };
 
 // Set up a Parse client to talk to our test API server
@@ -414,6 +410,7 @@ global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.databaseAdapter = databaseAdapter;
+global.databaseURI = databaseURI;
 global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
@@ -455,8 +452,26 @@ global.it_only_postgres_version = version => {
   }
 };
 
+global.it_only_node_version = version => {
+  const envVersion = process.version;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
 global.fit_only_mongodb_version = version => {
   const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_node_version = version => {
+  const envVersion = process.version;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return fit;
   } else {
@@ -482,8 +497,26 @@ global.it_exclude_postgres_version = version => {
   }
 };
 
+global.it_exclude_node_version = version => {
+  const envVersion = process.env.NODE_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
 global.fit_exclude_mongodb_version = version => {
   const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_exclude_node_version = version => {
+  const envVersion = process.env.NODE_VERSION;
   if (!envVersion || !semver.satisfies(envVersion, version)) {
     return fit;
   } else {

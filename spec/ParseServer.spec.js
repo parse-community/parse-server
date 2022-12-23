@@ -92,7 +92,7 @@ describe('Server Url Checks', () => {
         close = true;
       },
     });
-    const parseServer = ParseServer.start(newConfiguration);
+    const parseServer = ParseServer.startApp(newConfiguration);
   });
 
   it('does not have unhandled promise rejection in the case of load error', done => {
