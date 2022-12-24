@@ -1,11 +1,11 @@
 // @flow
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
-import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
-import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
-import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
+import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
+import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 import { CheckGroup } from '../Security/CheckGroup';
 
@@ -49,8 +49,8 @@ export interface ParseServerOptions {
   /* URL to your parse server with http:// or https://.
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
-  /* Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
-  :DEFAULT: [] */
+  /* (Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey`` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the master key.
+  :DEFAULT: ["127.0.0.1","::1"] */
   masterKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
@@ -81,6 +81,9 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
+  /* (Optional) Overrides the log levels used internally by Parse Server to log events.
+  :DEFAULT: {} */
+  logLevels: ?LogLevels;
   /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
   maxLogFiles: ?NumberOrString;
   /* Disables console output
@@ -216,7 +219,7 @@ export interface ParseServerOptions {
   If set to `false` then Parse requests within the same Node.js environment as Parse Server are executed as HTTP requests sent to Parse Server via the `serverURL`. For example, a `Parse.Query` in Cloud Code is calling Parse Server via a HTTP request. The server is essentially making a HTTP request to itself, unnecessarily using network resources such as network ports.
   <br><br>
   ⚠️ In environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`, this should be set to `false`.
-  :DEFAULT: false */
+  :DEFAULT: true */
   directAccess: ?boolean;
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
@@ -268,8 +271,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* Callback when server has started */
-  serverStartComplete: ?(error: ?Error) => void;
   /* Defined schema
   :ENV: PARSE_SERVER_SCHEMA
   */
@@ -280,8 +281,11 @@ export interface ParseServerOptions {
   :DEFAULT: {} */
   security: ?SecurityOptions;
   /* Set to true if new users should be created without public read and write access.
-  :DEFAULT: false */
+  :DEFAULT: true */
   enforcePrivateUsers: ?boolean;
+  /* Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.
+  :DEFAULT: true */
+  allowExpiredAuthDataToken: ?boolean;
   /* An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
   :DEFAULT: [{"key":"_bsontype","value":"Code"},{"key":"constructor"},{"key":"__proto__"}] */
   requestKeywordDenylist: ?(RequestKeywordDenylist[]);
@@ -516,4 +520,19 @@ export interface AuthAdapter {
   :ENV:
   */
   enabled: ?boolean;
+}
+
+export interface LogLevels {
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
+  :DEFAULT: info
+  */
+  triggerAfter: ?string;
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  :DEFAULT: info
+  */
+  triggerBeforeSuccess: ?string;
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
+  :DEFAULT: error
+  */
+  triggerBeforeError: ?string;
 }

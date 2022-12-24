@@ -96,6 +96,7 @@ describe('rest query', () => {
     let user = {
       username: 'aUsername',
       password: 'aPassword',
+      ACL: { '*': { read: true } },
     };
     const activity = {
       type: 'comment',

@@ -21,6 +21,10 @@ export class LiveQueryController {
     this.liveQueryPublisher = new ParseCloudCodePublisher(config);
   }
 
+  connect() {
+    return this.liveQueryPublisher.connect();
+  }
+
   onAfterSave(
     className: string,
     currentObject: any,

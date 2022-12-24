@@ -13,6 +13,63 @@ const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
 const cryptoUtils = require('../lib/cryptoUtils');
 
+describe('allowExpiredAuthDataToken option', () => {
+  it('should accept true value', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({ allowExpiredAuthDataToken: true });
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(true);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
+        ).length
+    ).toEqual(0);
+  });
+
+  it('should accept false value', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({ allowExpiredAuthDataToken: false });
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
+        ).length
+    ).toEqual(0);
+  });
+
+  it('should default true', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    await reconfigureServer({});
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(true);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
+        ).length
+    ).toEqual(1);
+  });
+
+  it('should enforce boolean values', async () => {
+    const options = [[], 'a', '', 0, 1, {}, 'true', 'false'];
+    for (const option of options) {
+      await expectAsync(reconfigureServer({ allowExpiredAuthDataToken: option })).toBeRejected();
+    }
+  });
+});
+
 describe('Parse.User testing', () => {
   it('user sign up class method', async done => {
     const user = await Parse.User.signUp('asdf', 'zxcv');
@@ -139,14 +196,13 @@ describe('Parse.User testing', () => {
     const ACL = user.getACL();
     expect(ACL.getReadAccess(user)).toBe(true);
     expect(ACL.getWriteAccess(user)).toBe(true);
-    expect(ACL.getPublicReadAccess()).toBe(true);
+    expect(ACL.getPublicReadAccess()).toBe(false);
     expect(ACL.getPublicWriteAccess()).toBe(false);
     const perms = ACL.permissionsById;
-    expect(Object.keys(perms).length).toBe(2);
+    expect(Object.keys(perms).length).toBe(1);
     expect(perms[user.id].read).toBe(true);
     expect(perms[user.id].write).toBe(true);
-    expect(perms['*'].read).toBe(true);
-    expect(perms['*'].write).not.toBe(true);
+    expect(perms['*']).toBeUndefined();
     done();
   });
 
@@ -818,8 +874,8 @@ describe('Parse.User testing', () => {
     kevin.set('password', 'mypass');
     await kevin.signUp();
     const query = new Parse.Query(Parse.User);
-    const count = await query.count();
-    equal(count, 2);
+    const count = await query.find({ useMasterKey: true });
+    equal(count.length, 2);
     done();
   });
 
@@ -1129,7 +1185,7 @@ describe('Parse.User testing', () => {
         this.synchronizedExpiration = authData.expiration_date;
         return true;
       },
-      getAuthType: function () {
+      getAuthType() {
         return 'facebook';
       },
       deauthenticate: function () {
@@ -1158,7 +1214,7 @@ describe('Parse.User testing', () => {
       synchronizedAuthToken: null,
       synchronizedExpiration: null,
 
-      authenticate: function (options) {
+      authenticate(options) {
         if (this.shouldError) {
           options.error(this, 'An error occurred');
         } else if (this.shouldCancel) {
@@ -1167,7 +1223,7 @@ describe('Parse.User testing', () => {
           options.success(this, this.authData);
         }
       },
-      restoreAuthentication: function (authData) {
+      restoreAuthentication(authData) {
         if (!authData) {
           this.synchronizedUserId = null;
           this.synchronizedAuthToken = null;
@@ -1179,10 +1235,10 @@ describe('Parse.User testing', () => {
         this.synchronizedExpiration = authData.expiration_date;
         return true;
       },
-      getAuthType: function () {
+      getAuthType() {
         return 'myoauth';
       },
-      deauthenticate: function () {
+      deauthenticate() {
         this.loggedOut = true;
         this.restoreAuthentication(null);
       },
@@ -1792,7 +1848,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should allow login with old authData token', done => {
+  it('should allow login with expired authData token by default', async () => {
     const provider = {
       authData: {
         id: '12345',
@@ -1813,22 +1869,42 @@ describe('Parse.User testing', () => {
     };
     defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith('shortLivedAuth', {})
-      .then(() => {
-        // Simulate a remotely expired token (like a short lived one)
-        // In this case, we want success as it was valid once.
-        // If the client needs an updated one, do lock the user out
-        defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
-        return Parse.User._logInWith('shortLivedAuth', {});
-      })
-      .then(
-        () => {
-          done();
-        },
-        err => {
-          done.fail(err);
-        }
-      );
+    await Parse.User._logInWith('shortLivedAuth', {});
+    // Simulate a remotely expired token (like a short lived one)
+    // In this case, we want success as it was valid once.
+    // If the client needs an updated token, do lock the user out
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
+    await Parse.User._logInWith('shortLivedAuth', {});
+  });
+
+  it('should not allow login with expired authData token when allowExpiredAuthDataToken is set to false', async () => {
+    await reconfigureServer({ allowExpiredAuthDataToken: false });
+    const provider = {
+      authData: {
+        id: '12345',
+        access_token: 'token',
+      },
+      restoreAuthentication() {
+        return true;
+      },
+      deauthenticate() {
+        provider.authData = {};
+      },
+      authenticate(options) {
+        options.success(this, provider.authData);
+      },
+      getAuthType() {
+        return 'shortLivedAuth';
+      },
+    };
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith('shortLivedAuth', {});
+    // Simulate a remotely expired token (like a short lived one)
+    // In this case, we want success as it was valid once.
+    // If the client needs an updated token, do lock the user out
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
+    expectAsync(Parse.User._logInWith('shortLivedAuth', {})).toBeRejected();
   });
 
   it('should allow PUT request with stale auth Data', done => {
@@ -2076,7 +2152,15 @@ describe('Parse.User testing', () => {
   });
 
   it("querying for users doesn't get session tokens", done => {
-    Parse.User.signUp('finn', 'human', { foo: 'bar' })
+    const user = new Parse.User();
+    user.set('username', 'finn');
+    user.set('password', 'human');
+    user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
+    user
+      .signUp()
       .then(function () {
         return Parse.User.logOut();
       })
@@ -2085,6 +2169,9 @@ describe('Parse.User testing', () => {
         user.set('username', 'jake');
         user.set('password', 'dog');
         user.set('foo', 'baz');
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        user.setACL(acl);
         return user.signUp();
       })
       .then(function () {
@@ -2111,7 +2198,14 @@ describe('Parse.User testing', () => {
   });
 
   it('querying for users only gets the expected fields', done => {
-    Parse.User.signUp('finn', 'human', { foo: 'bar' }).then(() => {
+    const user = new Parse.User();
+    user.setUsername('finn');
+    user.setPassword('human');
+    user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
+    user.signUp().then(() => {
       request({
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -2260,37 +2354,14 @@ describe('Parse.User testing', () => {
     });
 
     describe('anonymous users', () => {
-      beforeEach(() => {
-        const insensitiveCollisions = [
-          'abcdefghijklmnop',
-          'Abcdefghijklmnop',
-          'ABcdefghijklmnop',
-          'ABCdefghijklmnop',
-          'ABCDefghijklmnop',
-          'ABCDEfghijklmnop',
-          'ABCDEFghijklmnop',
-          'ABCDEFGhijklmnop',
-          'ABCDEFGHijklmnop',
-          'ABCDEFGHIjklmnop',
-          'ABCDEFGHIJklmnop',
-          'ABCDEFGHIJKlmnop',
-          'ABCDEFGHIJKLmnop',
-          'ABCDEFGHIJKLMnop',
-          'ABCDEFGHIJKLMnop',
-          'ABCDEFGHIJKLMNop',
-          'ABCDEFGHIJKLMNOp',
-          'ABCDEFGHIJKLMNOP',
-        ];
-
-        // need a bunch of spare random strings per api request
-        spyOn(cryptoUtils, 'randomString').and.returnValues(...insensitiveCollisions);
-      });
-
       it('should not fail on case insensitive matches', async () => {
-        const user1 = await Parse.AnonymousUtils.logIn();
+        spyOn(cryptoUtils, 'randomString').and.returnValue('abcdefghijklmnop');
+        const logIn = id => Parse.User.logInWith('anonymous', { authData: { id } });
+        const user1 = await logIn('test1');
         const username1 = user1.get('username');
 
-        const user2 = await Parse.AnonymousUtils.logIn();
+        cryptoUtils.randomString.and.returnValue('ABCDEFGHIJKLMNOp');
+        const user2 = await logIn('test2');
         const username2 = user2.get('username');
 
         expect(username1).not.toBeUndefined();
@@ -3372,6 +3443,9 @@ describe('Parse.User testing', () => {
       password: 'world',
       email: 'test@email.com',
     });
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
 
     reconfigureServer({
       appName: 'unused',
@@ -4001,6 +4075,12 @@ describe('Parse.User testing', () => {
       startLiveQueryServer: true,
       verbose: false,
       silent: true,
+    });
+
+    Parse.Cloud.beforeSave(Parse.User, ({ object }) => {
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      object.setACL(acl);
     });
 
     const query = new Parse.Query(Parse.User);
