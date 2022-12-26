@@ -13,7 +13,7 @@ COPY package*.json ./
 COPY . .
 
 # Clean npm cache; added to fix an issue with the install process
-RUN npm cache clean --force
+#RUN npm cache clean --force
 
 # Install without scripts
 RUN npm ci --omit=dev --ignore-scripts
