@@ -12,9 +12,6 @@ COPY package*.json ./
 # Copy src to have config files for install
 COPY . .
 
-# Clean npm cache; added to fix an issue with the install process
-#RUN npm cache clean --force
-
 # Install without scripts
 RUN npm ci --omit=dev --ignore-scripts
 
