@@ -93,7 +93,11 @@ export class AggregateRouter extends ClassesRouter {
   }
 
   static transformStage(stageName, stage) {
-    if (stageName[0] !== '$' && stageName !== 'distinct') {
+    const skipKeys = ['distinct', 'where'];
+    if (skipKeys.includes(stageName)) {
+      return;
+    }
+    if (stageName[0] !== '$') {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage: ${stageName}.`);
     }
     if (stageName === '$group') {
