@@ -37,8 +37,14 @@ describe('Parse.File testing', () => {
       });
     });
 
-    it('works with _ContentType', done => {
-      request({
+    it('works with _ContentType', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: '*',
+        },
+      });
+      let response = await request({
         method: 'POST',
         url: 'http://localhost:8378/1/files/file',
         body: JSON.stringify({
@@ -47,21 +53,18 @@ describe('Parse.File testing', () => {
           _ContentType: 'text/html',
           base64: 'PGh0bWw+PC9odG1sPgo=',
         }),
-      }).then(response => {
-        const b = response.data;
-        expect(b.name).toMatch(/_file.html/);
-        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
-        request({ url: b.url }).then(response => {
-          const body = response.text;
-          try {
-            expect(response.headers['content-type']).toMatch('^text/html');
-            expect(body).toEqual('<html></html>\n');
-          } catch (e) {
-            jfail(e);
-          }
-          done();
-        });
       });
+      const b = response.data;
+      expect(b.name).toMatch(/_file.html/);
+      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
+      response = await request({ url: b.url });
+      const body = response.text;
+      try {
+        expect(response.headers['content-type']).toMatch('^text/html');
+        expect(body).toEqual('<html></html>\n');
+      } catch (e) {
+        jfail(e);
+      }
     });
 
     it('works without Content-Type', done => {
@@ -351,25 +354,28 @@ describe('Parse.File testing', () => {
       ok(object.toJSON().file.url);
     });
 
-    it('content-type used with no extension', done => {
+    it('content-type used with no extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: '*',
+        },
+      });
       const headers = {
         'Content-Type': 'text/html',
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request({
+      let response = await request({
         method: 'POST',
         headers: headers,
         url: 'http://localhost:8378/1/files/file',
         body: 'fee fi fo',
-      }).then(response => {
-        const b = response.data;
-        expect(b.name).toMatch(/\.html$/);
-        request({ url: b.url }).then(response => {
-          expect(response.headers['content-type']).toMatch(/^text\/html/);
-          done();
-        });
       });
+      const b = response.data;
+      expect(b.name).toMatch(/\.html$/);
+      response = await request({ url: b.url });
+      expect(response.headers['content-type']).toMatch(/^text\/html/);
     });
 
     it('filename is url encoded', done => {
@@ -1304,12 +1310,13 @@ describe('Parse.File testing', () => {
             fileExtensions: 1,
           },
         })
-      ).toBeRejectedWith('fileUpload.fileExtensions must be an array.');
+      ).toBeRejectedWith('fileUpload.fileExtensions must be an array or string.');
     });
   });
   describe('fileExtensions', () => {
     it('works with _ContentType', async () => {
       await reconfigureServer({
+        silent: false,
         fileUpload: {
           enableForPublic: true,
           fileExtensions: ['png'],
@@ -1329,7 +1336,7 @@ describe('Parse.File testing', () => {
           throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
     });
 
@@ -1353,7 +1360,7 @@ describe('Parse.File testing', () => {
           throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
     });
 
@@ -1378,7 +1385,7 @@ describe('Parse.File testing', () => {
           throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
     });
 
@@ -1403,7 +1410,7 @@ describe('Parse.File testing', () => {
           throw new Error(e.data.error);
         })
       ).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of type html is disabled.`)
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
     });
 

@@ -426,8 +426,11 @@ export class Config {
     }
     if (fileUpload.fileExtensions === undefined) {
       fileUpload.fileExtensions = FileUploadOptions.fileExtensions.default;
-    } else if (!Array.isArray(fileUpload.fileExtensions)) {
-      throw 'fileUpload.fileExtensions must be an array.';
+    } else if (
+      !Array.isArray(fileUpload.fileExtensions) &&
+      typeof fileUpload.fileExtensions !== 'string'
+    ) {
+      throw 'fileUpload.fileExtensions must be an array or string.';
     }
   }
 

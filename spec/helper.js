@@ -110,7 +110,6 @@ const defaultConfiguration = {
     enableForPublic: true,
     enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
-    fileExtensions: ['*']
   },
   push: {
     android: {

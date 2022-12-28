@@ -138,17 +138,32 @@ export class FilesRouter {
       return;
     }
 
-    const fileExtensions = config.fileUpload && config.fileUpload.fileExtensions;
-    if (!isMaster && fileExtensions && !fileExtensions.includes('*')) {
-      try {
-        const extension = filename.includes('.')
-          ? filename.split('.')[1]
-          : contentType.split('/')[1];
-        if (!fileExtensions.includes(extension)) {
-          throw `File upload of type ${extension} is disabled.`;
+    const fileExtensions = config.fileUpload?.fileExtensions;
+    if (!isMaster && fileExtensions) {
+      const isValidExtension = extension => {
+        if (fileExtensions === '*') {
+          return true;
         }
-      } catch (e) {
-        next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, e));
+        if (Array.isArray(fileExtensions)) {
+          if (fileExtensions.includes(extension)) {
+            return true;
+          }
+        } else {
+          const regex = new RegExp(fileExtensions);
+          if (regex.test(extension)) {
+            return true;
+          }
+        }
+      };
+      let extension = filename.includes('.') ? filename.split('.')[1] : contentType.split('/')[1];
+      extension = extension.split(' ').join('');
+      if (!isValidExtension(extension)) {
+        next(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension ${extension} is disabled.`
+          )
+        );
         return;
       }
     }
