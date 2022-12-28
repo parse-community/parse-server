@@ -68,7 +68,7 @@ const get = function (url, options) {
     });
 };
 
-fdescribe('Parse.Query Aggregate testing', () => {
+describe('Parse.Query Aggregate testing', () => {
   beforeEach(done => {
     loadTestData().then(done, done);
   });
@@ -1074,7 +1074,7 @@ fdescribe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
-  fit('distinct query', done => {
+  it('distinct query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'score' },
     });
