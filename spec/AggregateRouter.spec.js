@@ -100,7 +100,7 @@ describe('AggregateRouter', () => {
   it('support nested stage names starting with `$`', () => {
     const body = [
       {
-        lookup: {
+        $lookup: {
           from: 'ACollection',
           let: { id: '_id' },
           as: 'results',
@@ -141,10 +141,10 @@ describe('AggregateRouter', () => {
   it('support the use of `_id` in stages', () => {
     const body = [
       { $match: { _id: 'randomId' } },
-      { sort: { _id: -1 } },
-      { addFields: { _id: 1 } },
+      { $sort: { _id: -1 } },
+      { $addFields: { _id: 1 } },
       { $group: { _id: {} } },
-      { project: { _id: 0 } },
+      { $project: { _id: 0 } },
     ];
     const expected = [
       { $match: { _id: 'randomId' } },
