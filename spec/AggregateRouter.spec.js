@@ -156,4 +156,16 @@ describe('AggregateRouter', () => {
     const result = AggregateRouter.getPipeline(body);
     expect(result).toEqual(expected);
   });
+
+  it('should throw with invalid stage', () => {
+    expect(() => AggregateRouter.getPipeline([{ foo: 'bar' }])).toThrow(
+      new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage: foo.`)
+    );
+  });
+
+  it('should throw with invalid group', () => {
+    expect(() => AggregateRouter.getPipeline([{ $group: { objectId: 'bar' } }])).toThrow(
+      new Parse.Error(Parse.Error.INVALID_QUERY, `Cannot use objectId in aggregation stage $group.`)
+    );
+  });
 });
