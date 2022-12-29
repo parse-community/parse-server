@@ -712,7 +712,7 @@ class DatabaseController {
       const keys = ['relatedId', 'owningId'];
       await Promise.all(
         keys.map(subKey => {
-          if (names.includes(key)) {
+          if (names.includes(subKey)) {
             return;
           }
           return this.adapter.ensureIndex(className, relationSchema, [subKey]).catch(error => {
