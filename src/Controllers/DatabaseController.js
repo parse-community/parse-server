@@ -699,7 +699,15 @@ class DatabaseController {
       const names = [];
       if (exists) {
         const indexes = (await this.adapter.getIndexes(className)) || [];
-        names.push(...indexes.map(({ name }) => name.split('_')[0]));
+        names.push(
+          ...indexes.map(({ name, indexname }) => {
+            if (name) {
+              return name.split('_')[0];
+            }
+            const splitName = indexname.split('_');
+            return splitName.at(-1);
+          })
+        );
       }
       const keys = ['relatedId', 'owningId'];
       await Promise.all(
@@ -1767,19 +1775,24 @@ class DatabaseController {
         throw error;
       });
 
+    const isMongoAdapter = this.adapter instanceof MongoStorageAdapter;
+
     await this.adapter
-      .ensureIndex('_Session', requiredSessionFields, ['_session_token'])
+      .ensureIndex('_Session', requiredSessionFields, [
+        isMongoAdapter ? '_session_token' : 'sessionToken',
+      ])
       .catch(error => {
         logger.warn('Unable to create session token index: ', error);
         throw error;
       });
 
-    await this.adapter.ensureIndex('_Session', requiredSessionFields, ['_p_user']).catch(error => {
-      logger.warn('Unable to create session token index: ', error);
-      throw error;
-    });
+    await this.adapter
+      .ensureIndex('_Session', requiredSessionFields, [isMongoAdapter ? '_p_user' : 'user'])
+      .catch(error => {
+        logger.warn('Unable to create session token index: ', error);
+        throw error;
+      });
 
-    const isMongoAdapter = this.adapter instanceof MongoStorageAdapter;
     const isPostgresAdapter = this.adapter instanceof PostgresStorageAdapter;
     if (isMongoAdapter || isPostgresAdapter) {
       let options = {};

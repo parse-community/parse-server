@@ -60,8 +60,45 @@ describe('Parse.Relation testing', () => {
     await parent.save();
     await new Promise(resolve => setTimeout(resolve, 500));
     const indexes = await Parse.Server.databaseAdapter.getIndexes('_Join:child:ParentObject');
-    const names = indexes.map(({ name }) => name);
-    expect(names.sort()).toEqual(['_id_', 'relatedId_1', 'owningId_1'].sort());
+    const names = indexes.map(({ name, indexname }) => {
+      if (name) {
+        return name;
+      }
+      return indexname;
+    });
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      expect(names.sort()).toEqual(
+        [
+          '_Join:child:ParentObject_pkey',
+          'parse_default_owningId',
+          'parse_default_relatedId',
+        ].sort()
+      );
+    } else {
+      expect(names.sort()).toEqual(['_id_', 'relatedId_1', 'owningId_1'].sort());
+    }
+  });
+
+  it('should create indexes', async () => {
+    const user = new Parse.User();
+    user.set('username', 'name');
+    user.set('password', 'pass');
+    await user.signUp();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const indexes = await Parse.Server.databaseAdapter.getIndexes('_Session');
+    const names = indexes.map(({ name, indexname }) => {
+      if (name) {
+        return name;
+      }
+      return indexname;
+    });
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      expect(names.sort()).toEqual(
+        ['_Session_pkey', 'parse_default_sessionToken', 'parse_default_user'].sort()
+      );
+    } else {
+      expect(names.sort()).toEqual(['_id_', '_session_token_1', '_p_user_1'].sort());
+    }
   });
 
   it('query relation without schema', async () => {
