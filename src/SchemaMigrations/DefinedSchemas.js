@@ -7,6 +7,8 @@ import { internalCreateSchema, internalUpdateSchema } from '../Routers/SchemasRo
 import { defaultColumns, systemClasses } from '../Controllers/SchemaController';
 import { ParseServerOptions } from '../Options';
 import * as Migrations from './Migrations';
+import Auth from '../Auth';
+import rest from '../rest';
 
 export class DefinedSchemas {
   config: ParseServerOptions;
@@ -96,9 +98,10 @@ export class DefinedSchemas {
         }, 20000);
       }
 
-      // Hack to force session schema to be created
       await this.createDeleteSession();
-      this.allCloudSchemas = await Parse.Schema.all();
+      // @flow-disable-next-line
+      const schemaController = await this.config.database.loadSchema();
+      this.allCloudSchemas = await schemaController.getAllClasses();
       clearTimeout(timeout);
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
 
@@ -171,9 +174,8 @@ export class DefinedSchemas {
   // Create a fake session since Parse do not create the _Session until
   // a session is created
   async createDeleteSession() {
-    const session = new Parse.Session();
-    await session.save(null, { useMasterKey: true });
-    await session.destroy({ useMasterKey: true });
+    const { response } = await rest.create(this.config, Auth.master(this.config), '_Session', {});
+    await rest.del(this.config, Auth.master(this.config), '_Session', response.objectId);
   }
 
   async saveOrUpdate(localSchema: Migrations.JSONSchema) {
