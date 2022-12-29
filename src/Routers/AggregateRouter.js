@@ -104,7 +104,7 @@ export class AggregateRouter extends ClassesRouter {
       if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
-          `Cannot use objectId in aggregation stage $group.`
+          `Cannot use 'objectId' in aggregation stage $group.`
         );
       }
       if (!Object.prototype.hasOwnProperty.call(stage[stageName], '_id')) {
