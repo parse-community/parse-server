@@ -1,6 +1,7 @@
 'use strict';
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
+const ParseServer = require('../lib/index').ParseServer;
 const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
   .InMemoryCacheAdapter;
@@ -37,6 +38,47 @@ describe('Cloud Code', () => {
         done();
       });
     });
+  });
+
+  it('can load cloud code as a module', async () => {
+    process.env.npm_package_type = 'module';
+    await reconfigureServer({ appId: 'test1', cloud: './spec/cloud/cloudCodeModuleFile.js' });
+    const result = await Parse.Cloud.run('cloudCodeInFile');
+    expect(result).toEqual('It is possible to define cloud code in a file.');
+    delete process.env.npm_package_type;
+  });
+
+  it('cloud code must be valid type', async () => {
+    await expectAsync(reconfigureServer({ cloud: true })).toBeRejectedWith(
+      "argument 'cloud' must either be a string or a function"
+    );
+  });
+
+  it('should wait for cloud code to load', async () => {
+    await reconfigureServer({ appId: 'test3' });
+    const initiated = new Date();
+    const parseServer = await new ParseServer({
+      ...defaultConfiguration,
+      appId: 'test3',
+      masterKey: 'test',
+      serverURL: 'http://localhost:12668/parse',
+      async cloud() {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        Parse.Cloud.beforeSave('Test', () => {
+          throw 'Cannot save.';
+        });
+      },
+    }).start();
+    const express = require('express');
+    const app = express();
+    app.use('/parse', parseServer.app);
+    const server = app.listen(12668);
+    const now = new Date();
+    expect(now.getTime() - initiated.getTime() > 1000).toBeTrue();
+    await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
+      new Parse.Error(141, 'Cannot save.')
+    );
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('can create functions', done => {
@@ -1558,6 +1600,22 @@ describe('Cloud Code', () => {
     expect(obj.get('foo')).toBe('bar');
   });
 
+  it('create role with name and ACL and a beforeSave', async () => {
+    Parse.Cloud.beforeSave(Parse.Role, ({ object }) => {
+      return object;
+    });
+
+    const obj = new Parse.Role('TestRole', new Parse.ACL({ '*': { read: true, write: true } }));
+    await obj.save();
+
+    expect(obj.getACL()).toEqual(new Parse.ACL({ '*': { read: true, write: true } }));
+    expect(obj.get('name')).toEqual('TestRole');
+    await obj.fetch();
+
+    expect(obj.getACL()).toEqual(new Parse.ACL({ '*': { read: true, write: true } }));
+    expect(obj.get('name')).toEqual('TestRole');
+  });
+
   it('can unset in afterSave', async () => {
     Parse.Cloud.beforeSave('TestObject', ({ object }) => {
       if (!object.existed()) {
@@ -1684,25 +1742,6 @@ describe('Cloud Code', () => {
     const AfterSaveTestClass = Parse.Object.extend('AfterSaveTestClass');
     const obj = new AfterSaveTestClass();
     obj.save().then(done, done.fail);
-  });
-
-  it('can deprecate Parse.Cloud.httpRequest', async () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'warn').and.callFake(() => {});
-    Parse.Cloud.define('hello', () => {
-      return 'Hello world!';
-    });
-    await Parse.Cloud.httpRequest({
-      method: 'POST',
-      url: 'http://localhost:8378/1/functions/hello',
-      headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-REST-API-Key': 'rest',
-      },
-    });
-    expect(logger.warn).toHaveBeenCalledWith(
-      'DeprecationWarning: Parse.Cloud.httpRequest is deprecated and will be removed in a future version. Use a http request library instead.'
-    );
   });
 
   describe('cloud jobs', () => {
@@ -3120,6 +3159,36 @@ describe('beforeLogin hook', () => {
     await Parse.User.logOut();
     expect(user.id).toBe(userId);
     done();
+  });
+
+  it('does not crash server when throwing in afterLogin hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogin error');
+    const trigger = {
+      afterLogin() {
+        throw error;
+      },
+    };
+    const spy = spyOn(trigger, 'afterLogin').and.callThrough();
+    Parse.Cloud.afterLogin(trigger.afterLogin);
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logIn('user', 'pass').catch(e => e);
+    expect(spy).toHaveBeenCalled();
+    expect(response).toEqual(error);
+  });
+
+  it('does not crash server when throwing in afterLogout hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogout error');
+    const trigger = {
+      afterLogout() {
+        throw error;
+      },
+    };
+    const spy = spyOn(trigger, 'afterLogout').and.callThrough();
+    Parse.Cloud.afterLogout(trigger.afterLogout);
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logOut().catch(e => e);
+    expect(spy).toHaveBeenCalled();
+    expect(response).toEqual(error);
   });
 
   it('should have expected data in request', async done => {
