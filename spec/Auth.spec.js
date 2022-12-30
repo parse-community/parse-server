@@ -156,7 +156,7 @@ describe('Auth', () => {
     await reconfigureServer({
       appId: 'test2'
     });
-    await new Promise(resolve => setTimeout(500, resolve));
+    await new Promise(resolve => setTimeout(resolve, 500));
     const user = new Parse.User();
     await user.signUp({
       username: 'hello',
