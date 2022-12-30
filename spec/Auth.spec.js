@@ -153,7 +153,9 @@ describe('Auth', () => {
   });
 
   it('should create session index', async () => {
-    await reconfigureServer();
+    await reconfigureServer({
+      appId: 'test2'
+    });
     const user = new Parse.User();
     await user.signUp({
       username: 'hello',

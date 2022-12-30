@@ -46,6 +46,9 @@ describe('Parse.Relation testing', () => {
   });
 
   it('should create indexes', async () => {
+    await reconfigureServer({
+      appId: 'test1'
+    });
     const child = new ChildObject();
     child.set('x', 2);
     const parent = new ParentObject();
@@ -80,7 +83,9 @@ describe('Parse.Relation testing', () => {
   });
 
   it('should create indexes', async () => {
-    await reconfigureServer();
+    await reconfigureServer({
+      appId: 'test3'
+    });
     const user = new Parse.User();
     user.set('username', 'name');
     user.set('password', 'pass');
