@@ -163,8 +163,19 @@ describe('Auth', () => {
       password: 'password',
     });
     const indexes = await Parse.Server.databaseAdapter.getIndexes('_Session');
-    const names = indexes.map(({ name }) => name);
-    expect(names).toEqual(['_id_', '_session_token_1', '_p_user_1']);
+    const names = indexes.map(({ name, indexname }) => {
+      if (name) {
+        return name;
+      }
+      return indexname;
+    });
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      expect(names.sort()).toEqual(
+        ['_Session_pkey', 'parse_default_sessionToken', 'parse_default_user'].sort()
+      );
+    } else {
+      expect(names.sort()).toEqual(['_id_', '_session_token_1', '_p_user_1'].sort());
+    }
   });
 
   describe('getRolesForUser', () => {

@@ -82,31 +82,6 @@ describe('Parse.Relation testing', () => {
     }
   });
 
-  it('should create indexes', async () => {
-    await reconfigureServer({
-      appId: 'test3'
-    });
-    const user = new Parse.User();
-    user.set('username', 'name');
-    user.set('password', 'pass');
-    await user.signUp();
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const indexes = await Parse.Server.databaseAdapter.getIndexes('_Session');
-    const names = indexes.map(({ name, indexname }) => {
-      if (name) {
-        return name;
-      }
-      return indexname;
-    });
-    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
-      expect(names.sort()).toEqual(
-        ['_Session_pkey', 'parse_default_sessionToken', 'parse_default_user'].sort()
-      );
-    } else {
-      expect(names.sort()).toEqual(['_id_', '_session_token_1', '_p_user_1'].sort());
-    }
-  });
-
   it('query relation without schema', async () => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
