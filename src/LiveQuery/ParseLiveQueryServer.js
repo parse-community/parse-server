@@ -22,6 +22,7 @@ import { getCacheController, getDatabaseController } from '../Controllers';
 import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
+import { isDeepStrictEqual } from 'util';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -329,8 +330,8 @@ class ParseLiveQueryServer {
             } else {
               return null;
             }
-            const triggerFieldsChanged = this._checkTriggerFields(client, requestId, message);
-            if (!triggerFieldsChanged && (type === 'update' || type === 'create')) {
+            const listenFieldsChanged = this._checkListenFields(client, requestId, message);
+            if (!listenFieldsChanged && (type === 'update' || type === 'create')) {
               return;
             }
             res = {
@@ -710,15 +711,15 @@ class ParseLiveQueryServer {
     return auth;
   }
 
-  _checkTriggerFields(client: any, requestId: any, message: any) {
+  _checkListenFields(client: any, requestId: any, message: any) {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
-    const triggerFields = subscriptionInfo?.triggerFields;
-    if (!triggerFields) {
+    const listen = subscriptionInfo?.listen;
+    if (!listen) {
       return true;
     }
     const object = message.currentParseObject;
     const original = message.originalParseObject;
-    return triggerFields.some(field => !_.isEqual(object.get(field), original?.get(field)));
+    return listen.some(field => !isDeepStrictEqual(object.get(field), original?.get(field)));
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
@@ -902,8 +903,8 @@ class ParseLiveQueryServer {
       if (request.query.fields) {
         subscriptionInfo.fields = request.query.fields;
       }
-      if (request.query.triggerFields) {
-        subscriptionInfo.triggerFields = request.query.triggerFields;
+      if (request.query.listen) {
+        subscriptionInfo.listen = request.query.listen;
       }
       if (request.sessionToken) {
         subscriptionInfo.sessionToken = request.sessionToken;
