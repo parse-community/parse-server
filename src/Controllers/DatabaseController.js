@@ -711,14 +711,17 @@ class DatabaseController {
       }
       const keys = ['relatedId', 'owningId'];
       await Promise.all(
-        keys.map(subKey => {
+        keys.map(async subKey => {
           if (names.includes(subKey)) {
             return;
           }
-          return this.adapter.ensureIndex(className, relationSchema, [subKey]).catch(error => {
-            logger.warn('Unable to create relatedId index: ', error);
-            throw error;
-          });
+          try {
+            await this.adapter.ensureIndex(className, relationSchema, [subKey]);
+          } catch (error) {
+            if (error.code !== '23505') {
+              logger.warn('Unable to create relatedId index: ', error);
+            }
+          }
         })
       );
       this._relationTablesAdded.push(className);

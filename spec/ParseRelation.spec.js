@@ -80,6 +80,7 @@ describe('Parse.Relation testing', () => {
   });
 
   it('should create indexes', async () => {
+    await reconfigureServer();
     const user = new Parse.User();
     user.set('username', 'name');
     user.set('password', 'pass');
