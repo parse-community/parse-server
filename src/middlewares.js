@@ -253,8 +253,8 @@ const handleRateLimit = async (req, res, next) => {
   try {
     await Promise.all(
       rateLimits.map(async limit => {
-        const regExp = new RegExp(limit.path);
-        if (regExp.test(req.url)) {
+        const pathExp = new RegExp(limit.path);
+        if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
               throw err;
@@ -482,11 +482,17 @@ export const addRateLimit = (route, config) => {
         if (route.includeMasterKey) {
           return false;
         }
-        const method = Array.isArray(route.requestMethods)
-          ? route.requestMethods
-          : [route.requestMethods];
-        if (route.requestMethods && !method.includes(request.method)) {
-          return true;
+        if (route.requestMethods) {
+          if (Array.isArray(route.requestMethods)) {
+            if (!route.requestMethods.includes(request.method)) {
+              return true;
+            }
+          } else {
+            const regExp = new RegExp(route.requestMethods);
+            if (!regExp.test(request.method)) {
+              return true;
+            }
+          }
         }
         return request.auth.isMaster;
       },
