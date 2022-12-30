@@ -518,8 +518,8 @@ export class Config {
       }
     }
   }
-  
-    static validateRateLimit(rateLimit) {
+
+  static validateRateLimit(rateLimit) {
     if (!rateLimit) {
       return;
     }
@@ -559,6 +559,7 @@ export class Config {
         throw `rateLimit.errorResponseMessage must be a string`;
       }
     }
+  }
 
   generateEmailVerifyTokenExpiresAt() {
     if (!this.verifyUserEmails || !this.emailVerifyTokenValidityDuration) {
