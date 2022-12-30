@@ -13,16 +13,13 @@ COPY package*.json ./
 COPY . .
 
 # Install without scripts
-RUN npm ci --omit=dev --ignore-scripts
-
-# Copy production node_modules aside for later
-RUN cp -R node_modules prod_node_modules
-
-# Install all dependencies
-RUN npm ci
-
-# Run build steps
-RUN npm run build
+RUN npm ci --omit=dev --ignore-scripts \
+    # Copy production node_modules aside for later
+ && cp -R node_modules prod_node_modules \
+    # Install all dependencies
+ && npm ci \
+    # Run build steps
+ && npm run build
 
 ############################################################
 # Release stage
@@ -35,9 +32,9 @@ WORKDIR /parse-server
 
 # Copy build stage folders
 COPY --from=build /tmp/prod_node_modules /parse-server/node_modules
-COPY --from=build /tmp/package*.json /parse-server/
 COPY --from=build /tmp/lib lib
 
+COPY package*.json ./
 COPY bin bin
 COPY public_html public_html
 COPY views views
