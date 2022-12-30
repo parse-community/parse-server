@@ -9,7 +9,7 @@ import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
-import { pathToRegexp } from 'path-to-regexp';
+import pathToRegexp from 'path-to-regexp';
 import ipRangeCheck from 'ip-range-check';
 
 export const DEFAULT_ALLOWED_HEADERS =
