@@ -1076,6 +1076,9 @@ describe('ParseLiveQuery', function () {
     user.setUsername('username');
     user.setPassword('password');
     user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
 
     const query = new Parse.Query(Parse.User);
     query.equalTo('foo', 'bar');

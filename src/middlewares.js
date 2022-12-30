@@ -7,6 +7,7 @@ import defaultLogger from './logger';
 import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
+import ipRangeCheck from 'ip-range-check';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -157,23 +158,30 @@ export function handleParseHeaders(req, res, next) {
   }
 
   const clientIp = getClientIp(req);
+  const config = Config.get(info.appId, mount);
+  if (config.state && config.state !== 'ok') {
+    res.status(500);
+    res.json({
+      code: Parse.Error.INTERNAL_SERVER_ERROR,
+      error: `Invalid server state: ${config.state}`,
+    });
+    return;
+  }
 
   info.app = AppCache.get(info.appId);
-  req.config = Config.get(info.appId, mount);
+  req.config = config;
   req.config.headers = req.headers || {};
   req.config.ip = clientIp;
   req.info = info;
 
-  if (
-    info.masterKey &&
-    req.config.masterKeyIps &&
-    req.config.masterKeyIps.length !== 0 &&
-    req.config.masterKeyIps.indexOf(clientIp) === -1
-  ) {
-    return invalidRequest(req, res);
+  let isMaster = info.masterKey === req.config.masterKey;
+  if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
+    const log = req.config?.loggerController || defaultLogger;
+    log.error(
+      `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
+    );
+    isMaster = false;
   }
-
-  var isMaster = info.masterKey === req.config.masterKey;
 
   if (isMaster) {
     req.auth = new auth.Auth({

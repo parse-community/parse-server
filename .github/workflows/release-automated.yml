@@ -1,7 +1,7 @@
 name: release-automated
 on:
   push:
-    branches: [ release, alpha, beta, next-major ]
+    branches: [ release, alpha, beta, next-major, 'release-[0-9]+.x.x' ]
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -17,7 +17,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 18.1.0
           registry-url: https://registry.npmjs.org/
       - name: Cache Node.js modules
         uses: actions/cache@v2
@@ -93,7 +93,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 14
+          node-version: 18.1.0
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
