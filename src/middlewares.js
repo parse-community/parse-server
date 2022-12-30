@@ -9,7 +9,7 @@ import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
-import pathRegexp from 'path-to-regexp';
+import { pathToRegexp } from 'path-to-regexp';
 import ipRangeCheck from 'ip-range-check';
 
 export const DEFAULT_ALLOWED_HEADERS =
@@ -467,7 +467,7 @@ export const addRateLimit = (route, config) => {
     config.rateLimits = [];
   }
   config.rateLimits.push({
-    path: pathRegexp(route.requestPath),
+    path: pathToRegexp(route.requestPath),
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
