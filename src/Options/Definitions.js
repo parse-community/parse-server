@@ -477,6 +477,13 @@ module.exports.ParseServerOptions = {
     help: 'Starts the liveQuery server',
     action: parsers.booleanParser,
   },
+  trustProxy: {
+    env: 'PARSE_SERVER_TRUST_PROXY',
+    help:
+      'The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.',
+    action: parsers.objectParser,
+    default: [],
+  },
   userSensitiveFields: {
     env: 'PARSE_SERVER_USER_SENSITIVE_FIELDS',
     help:

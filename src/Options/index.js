@@ -238,6 +238,9 @@ export interface ParseServerOptions {
   cluster: ?NumberOrBoolean;
   /* middleware for express server, can be string or function */
   middleware: ?((() => void) | string);
+  /* The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
+  :DEFAULT: false */
+  trustProxy: ?any;
   /* Starts the liveQuery server */
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
