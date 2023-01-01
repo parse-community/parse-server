@@ -55,7 +55,7 @@ describe('AggregateRouter', () => {
     expect(() => AggregateRouter.getPipeline(body)).toThrow(
       new Parse.Error(
         Parse.Error.INVALID_QUERY,
-        'Pipeline stages should only have one key but found $group, $match.'
+        'Pipeline stages should only have one key but found $group, $match'
       )
     );
   });
@@ -72,7 +72,7 @@ describe('AggregateRouter', () => {
     expect(() => AggregateRouter.getPipeline(body)).toThrow(
       new Parse.Error(
         Parse.Error.INVALID_QUERY,
-        'Pipeline stages should only have one key but found $group, $match.'
+        'Pipeline stages should only have one key but found $group, $match'
       )
     );
   });
@@ -159,7 +159,7 @@ describe('AggregateRouter', () => {
 
   it('should throw with invalid stage', () => {
     expect(() => AggregateRouter.getPipeline([{ foo: 'bar' }])).toThrow(
-      new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage 'foo'.`)
+      new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage: foo.`)
     );
   });
 
