@@ -196,7 +196,7 @@ class ParseServer {
     api.use('/health', function (req, res) {
       res.status(options.state === 'ok' ? 200 : 503);
       if (options.state === 'starting') {
-        res.set('Retry-After', 1);
+        res.set('Retry-After', 100);
       }
       res.json({
         status: options.state,
@@ -384,30 +384,45 @@ class ParseServer {
     return server;
   }
 
-  static verifyServerUrl(callback) {
+  static async verifyServerUrl() {
     // perform a health check on the serverURL value
     if (Parse.serverURL) {
+      const isValidHttpUrl = string => {
+        let url;
+        try {
+          url = new URL(string);
+        } catch (_) {
+          return false;
+        }
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      };
+      const url = `${Parse.serverURL.replace(/\/$/, '')}/health`;
+      if (!isValidHttpUrl(url)) {
+        console.warn(
+          `\nWARNING, Unable to connect to '${Parse.serverURL}' as the URL is invalid.` +
+            ` Cloud code and push notifications may be unavailable!\n`
+        );
+        return;
+      }
       const request = require('./request');
-      request({ url: Parse.serverURL.replace(/\/$/, '') + '/health' })
-        .catch(response => response)
-        .then(response => {
-          const json = response.data || null;
-          if (response.status !== 200 || !json || (json && json.status !== 'ok')) {
-            /* eslint-disable no-console */
-            console.warn(
-              `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
-                ` Cloud code and push notifications may be unavailable!\n`
-            );
-            /* eslint-enable no-console */
-            if (callback) {
-              callback(false);
-            }
-          } else {
-            if (callback) {
-              callback(true);
-            }
-          }
-        });
+      const response = await request({ url }).catch(response => response);
+      const json = response.data || null;
+      console.log(response.status, { json });
+      const retry = response.headers['retry-after'];
+      if (retry) {
+        await new Promise(resolve => setTimeout(resolve, retry));
+        return this.verifyServerUrl();
+      }
+      if (response.status !== 200 || json?.status !== 'ok') {
+        /* eslint-disable no-console */
+        console.warn(
+          `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+            ` Cloud code and push notifications may be unavailable!\n`
+        );
+        /* eslint-enable no-console */
+        return;
+      }
+      return true;
     }
   }
 }
