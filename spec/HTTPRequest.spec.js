@@ -2,6 +2,7 @@
 
 const httpRequest = require('../lib/request'),
   HTTPResponse = require('../lib/request').HTTPResponse,
+  bodyParser = require('body-parser'),
   express = require('express');
 
 const port = 13371;
@@ -9,7 +10,7 @@ const httpRequestServer = `http://localhost:${port}`;
 
 function startServer(done) {
   const app = express();
-  app.use(express.json({ type: '*/*' }));
+  app.use(bodyParser.json({ type: '*/*' }));
   app.get('/hello', function (req, res) {
     res.json({ response: 'OK' });
   });

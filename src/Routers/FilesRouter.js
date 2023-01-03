@@ -1,4 +1,5 @@
 import express from 'express';
+import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
 import Config from '../Config';
@@ -45,7 +46,7 @@ export class FilesRouter {
 
     router.post(
       '/files/:filename',
-      express.raw({
+      BodyParser.raw({
         type: () => {
           return true;
         },
