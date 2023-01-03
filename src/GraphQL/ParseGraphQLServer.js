@@ -30,12 +30,7 @@ class ParseGraphQLServer {
     this.yoga = createYoga({
       graphqlEndpoint: this.config.graphQLPath,
       schema: () => this.parseGraphQLSchema.load(),
-      context: ({ req: { info, config, auth } }) => ({
-        info,
-        config,
-        auth,
-      }),
-      maskedErrors: false,
+      context: ({ req }) => req,
       fetchAPI: createFetch({
         useNodeFetch: true,
         formDataLimits: {
@@ -44,11 +39,16 @@ class ParseGraphQLServer {
           ),
         },
       }),
-      graphiql: {
-        title: 'ParseGraphiQL',
-      },
+      logging: this.log,
+      maskedErrors: false,
+      graphiql: false,
       // Validation cache doesn't work with lazy schemas
-      validationCache: false,
+      validationCache: {
+        get() {},
+        set() {},
+        clear() {},
+        reset() {},
+      },
     });
   }
 
@@ -70,9 +70,7 @@ class ParseGraphQLServer {
       requiredParameter('You must provide an Express.js app instance!');
     }
 
-    app.use(this.config.graphQLPath, handleParseHeaders);
-    app.use(this.config.graphQLPath, handleParseErrors);
-    app.use(this.config.graphQLPath, this.yoga);
+    app.use(this.config.graphQLPath, handleParseHeaders, handleParseErrors, this.yoga);
   }
 
   applyPlayground(app) {
@@ -86,6 +84,7 @@ class ParseGraphQLServer {
         res.setHeader('Content-Type', 'text/html');
         res.write(
           renderGraphiQL({
+            title: 'ParseGraphiQL',
             endpoint: this.config.graphQLPath,
             subscriptionEndpoint: this.config.subscriptionsPath,
             headers: JSON.stringify({
@@ -107,11 +106,7 @@ class ParseGraphQLServer {
         onOperation: async (_message, params, webSocket) =>
           Object.assign({}, params, {
             schema: await this.parseGraphQLSchema.load(),
-            context: {
-              info: webSocket.upgradeReq.info,
-              config: webSocket.upgradeReq.config,
-              auth: webSocket.upgradeReq.auth,
-            },
+            context: webSocket.upgradeReq,
           }),
       },
       {

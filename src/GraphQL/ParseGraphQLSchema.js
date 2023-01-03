@@ -1,5 +1,11 @@
 import Parse from 'parse/node';
-import { GraphQLSchema, GraphQLObjectType, DocumentNode, GraphQLNamedType } from 'graphql';
+import {
+  GraphQLSchema,
+  GraphQLObjectType,
+  DocumentNode,
+  GraphQLNamedType,
+  isSchema,
+} from 'graphql';
 import { mergeSchemas } from '@graphql-tools/schema';
 import { mergeTypeDefs } from '@graphql-tools/merge';
 import { isDeepStrictEqual } from 'util';
@@ -203,78 +209,10 @@ class ParseGraphQLSchema {
 
     if (this.graphQLCustomTypeDefs) {
       schemaDirectives.load(this);
-      if (typeof this.graphQLCustomTypeDefs.getTypeMap === 'function') {
-        // In following code we use underscore attr to keep the direct variable reference
-        const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs._typeMap;
-        const findAndReplaceLastType = (parent, key) => {
-          if (parent[key].name) {
-            if (
-              this.graphQLAutoSchema._typeMap[parent[key].name] &&
-              this.graphQLAutoSchema._typeMap[parent[key].name] !== parent[key]
-            ) {
-              // To avoid unresolved field on overloaded schema
-              // replace the final type with the auto schema one
-              parent[key] = this.graphQLAutoSchema._typeMap[parent[key].name];
-            }
-          } else {
-            if (parent[key].ofType) {
-              findAndReplaceLastType(parent[key], 'ofType');
-            }
-          }
-        };
-        // Add non shared types from custom schema to auto schema
-        // note: some non shared types can use some shared types
-        // so this code need to be ran before the shared types addition
-        // we use sort to ensure schema consistency over restarts
-        Object.keys(customGraphQLSchemaTypeMap)
-          .sort()
-          .forEach(customGraphQLSchemaTypeKey => {
-            const customGraphQLSchemaType = customGraphQLSchemaTypeMap[customGraphQLSchemaTypeKey];
-            if (
-              !customGraphQLSchemaType ||
-              !customGraphQLSchemaType.name ||
-              customGraphQLSchemaType.name.startsWith('__')
-            ) {
-              return;
-            }
-            const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
-              customGraphQLSchemaType.name
-            ];
-            if (!autoGraphQLSchemaType) {
-              this.graphQLAutoSchema._typeMap[
-                customGraphQLSchemaType.name
-              ] = customGraphQLSchemaType;
-            }
-          });
-        // Handle shared types
-        // We pass through each type and ensure that all sub field types are replaced
-        // we use sort to ensure schema consistency over restarts
-        Object.keys(customGraphQLSchemaTypeMap)
-          .sort()
-          .forEach(customGraphQLSchemaTypeKey => {
-            const customGraphQLSchemaType = customGraphQLSchemaTypeMap[customGraphQLSchemaTypeKey];
-            if (
-              !customGraphQLSchemaType ||
-              !customGraphQLSchemaType.name ||
-              customGraphQLSchemaType.name.startsWith('__')
-            ) {
-              return;
-            }
-            const autoGraphQLSchemaType = this.graphQLAutoSchema._typeMap[
-              customGraphQLSchemaType.name
-            ];
-
-            if (autoGraphQLSchemaType && typeof customGraphQLSchemaType.getFields === 'function') {
-              Object.keys(customGraphQLSchemaType._fields)
-                .sort()
-                .forEach(fieldKey => {
-                  const field = customGraphQLSchemaType._fields[fieldKey];
-                  findAndReplaceLastType(field, 'type');
-                  autoGraphQLSchemaType._fields[field.name] = field;
-                });
-            }
-          });
-        this.graphQLSchema = this.graphQLAutoSchema;
+      if (isSchema(this.graphQLCustomTypeDefs)) {
+        this.graphQLSchema = mergeSchemas({
+          schemas: [this.graphQLAutoSchema, this.graphQLCustomTypeDefs],
+        });
       } else if (typeof this.graphQLCustomTypeDefs === 'function') {
         this.graphQLSchema = await this.graphQLCustomTypeDefs({
           directivesDefinitionsSchema: this.graphQLSchemaDirectivesDefinitions,

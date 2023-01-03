@@ -1321,22 +1321,28 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.setGraphQLConfig(graphQLConfig);
           await resetGraphQLCache();
 
-          const { data } = await apolloClient.query({
-            query: gql`
-              query UserType {
-                userType: __type(name: "User") {
-                  fields {
-                    name
+          let data;
+          try {
+            const resp = await apolloClient.query({
+              query: gql`
+                query UserType {
+                  userType: __type(name: "User") {
+                    fields {
+                      name
+                    }
+                  }
+                  superCarType: __type(name: "SuperCar") {
+                    fields {
+                      name
+                    }
                   }
                 }
-                superCarType: __type(name: "SuperCar") {
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          });
+              `,
+            });
+            data = resp.data;
+          } catch (e) {
+            expect(e).toBeFalsy();
+          }
           expect(data.userType).toBeNull();
           expect(data.superCarType).toBeTruthy();
         });
