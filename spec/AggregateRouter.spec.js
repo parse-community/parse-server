@@ -159,7 +159,7 @@ describe('AggregateRouter', () => {
 
   it('should throw with invalid stage', () => {
     expect(() => AggregateRouter.getPipeline([{ foo: 'bar' }])).toThrow(
-      new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage: foo.`)
+      new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage 'foo'.`)
     );
   });
 
