@@ -88,6 +88,7 @@
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
  * @property {Boolean} startLiveQueryServer Starts the liveQuery server
+ * @property {Any} trustProxy The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.
