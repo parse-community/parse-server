@@ -196,7 +196,7 @@ class ParseServer {
     api.use('/health', function (req, res) {
       res.status(options.state === 'ok' ? 200 : 503);
       if (options.state === 'starting') {
-        res.set('Retry-After', 100);
+        res.set('Retry-After', 1);
       }
       res.json({
         status: options.state,
@@ -410,7 +410,7 @@ class ParseServer {
       console.log(response.status, { json });
       const retry = response.headers['retry-after'];
       if (retry) {
-        await new Promise(resolve => setTimeout(resolve, retry));
+        await new Promise(resolve => setTimeout(resolve, retry * 1000));
         return this.verifyServerUrl();
       }
       if (response.status !== 200 || json?.status !== 'ok') {
