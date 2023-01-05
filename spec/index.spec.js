@@ -578,7 +578,7 @@ describe('server', () => {
     }).catch(e => e);
     expect(health.data.status).toBe('starting');
     expect(health.status).toBe(503);
-    expect(health.headers['retry-after']).toBe('100');
+    expect(health.headers['retry-after']).toBe('1');
     const response = await ParseServer.default.verifyServerUrl();
     expect(response).toBeTrue();
     await startingPromise;
