@@ -165,7 +165,10 @@ describe('AggregateRouter', () => {
 
   it('should throw with invalid group', () => {
     expect(() => AggregateRouter.getPipeline([{ $group: { objectId: 'bar' } }])).toThrow(
-      new Parse.Error(Parse.Error.INVALID_QUERY, `Cannot use 'objectId' in aggregation stage $group.`)
+      new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Cannot use 'objectId' in aggregation stage $group.`
+      )
     );
   });
 });
