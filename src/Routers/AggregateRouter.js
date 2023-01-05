@@ -98,7 +98,7 @@ export class AggregateRouter extends ClassesRouter {
       return;
     }
     if (stageName[0] !== '$') {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage: ${stageName}.`);
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage '${stageName}'.`);
     }
     if (stageName === '$group') {
       if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
