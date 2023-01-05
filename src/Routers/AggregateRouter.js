@@ -85,7 +85,7 @@ export class AggregateRouter extends ClassesRouter {
       if (keys.length !== 1) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
-          `Pipeline stages should only have one key but found ${keys.join(', ')}`
+          `Pipeline stages should only have one key but found ${keys.join(', ')}.`
         );
       }
       return AggregateRouter.transformStage(keys[0], stage);
