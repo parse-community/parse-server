@@ -72,7 +72,7 @@ describe('AggregateRouter', () => {
     expect(() => AggregateRouter.getPipeline(body)).toThrow(
       new Parse.Error(
         Parse.Error.INVALID_QUERY,
-        'Pipeline stages should only have one key but found $group, $match'
+        'Pipeline stages should only have one key but found $group, $match.'
       )
     );
   });
