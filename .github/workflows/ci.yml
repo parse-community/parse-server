@@ -1,9 +1,9 @@
 name: ci
 on:
   push:
-    branches: [ release, alpha, beta ]
+    branches: [ release*, alpha, beta ]
   pull_request:
-    branches: [ release, alpha, beta ]
+    branches: [ release*, alpha, beta ]
 env:
   NODE_VERSION: 18.1.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
