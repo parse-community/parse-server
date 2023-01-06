@@ -738,7 +738,7 @@ class DatabaseController {
           }
         })
       );
-      this._relationTablesAdded.push(className);
+      this._relationTablesCache.classes.push(className);
     };
     const promise = this._relationTablesCache.promises[className] || startupPromise();
     this._relationTablesCache.promises[className] = promise;
