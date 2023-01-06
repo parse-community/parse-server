@@ -779,7 +779,7 @@ module.exports = ParseCloud;
  * @property {Boolean} isChallenge If true, means the current request is originally triggered by an auth challenge.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Parse.Object} object The object triggering the hook.
- * @property {String} ip The IP address of the client making the request.
+ * @property {String} ip The IP address of the client making the request. To ensure retrieving the correct IP address, set the Parse Server option `trustProxy: true` if Parse Server runs behind a proxy server, for example behind a load balancer.
  * @property {Object} headers The original HTTP headers for the request.
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`, ...)
  * @property {Object} log The current logger inside Parse Server.
