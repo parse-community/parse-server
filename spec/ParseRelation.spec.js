@@ -47,7 +47,7 @@ describe('Parse.Relation testing', () => {
 
   it('should create indexes', async () => {
     await reconfigureServer({
-      appId: 'test1'
+      appId: 'test1',
     });
     const child = new ChildObject();
     child.set('x', 2);

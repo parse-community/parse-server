@@ -365,7 +365,7 @@ class DatabaseController {
   _transactionalSession: ?any;
   options: ParseServerOptions;
   idempotencyOptions: any;
-  _relationTablesAdded: string[];
+  _relationTablesCache: any;
 
   constructor(adapter: StorageAdapter, options: ParseServerOptions) {
     this.adapter = adapter;
@@ -376,7 +376,10 @@ class DatabaseController {
     this.schemaPromise = null;
     this._transactionalSession = null;
     this.options = options;
-    this._relationTablesAdded = [];
+    this._relationTablesCache = {
+      promises: {},
+      classes: [],
+    };
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -685,14 +688,25 @@ class DatabaseController {
 
   // Adds a relation.
   // Returns a promise that resolves successfully iff the add was successful.
-  addRelation(key: string, fromClassName: string, fromId: string, toId: string) {
+  async addRelation(key: string, fromClassName: string, fromId: string, toId: string) {
     const className = `_Join:${key}:${fromClassName}`;
     const doc = {
       relatedId: toId,
       owningId: fromId,
     };
-    (async () => {
-      if (this._relationTablesAdded.includes(className)) {
+    await this.createJoinTable(className);
+    return this.adapter.upsertOneObject(
+      className,
+      relationSchema,
+      doc,
+      doc,
+      this._transactionalSession
+    );
+  }
+
+  createJoinTable(className: string) {
+    const startupPromise = async () => {
+      if (this._relationTablesCache.classes.includes(className)) {
         return;
       }
       const exists = await this.collectionExists(className);
@@ -725,14 +739,10 @@ class DatabaseController {
         })
       );
       this._relationTablesAdded.push(className);
-    })();
-    return this.adapter.upsertOneObject(
-      className,
-      relationSchema,
-      doc,
-      doc,
-      this._transactionalSession
-    );
+    };
+    const promise = this._relationTablesCache.promises[className] || startupPromise();
+    this._relationTablesCache.promises[className] = promise;
+    return promise;
   }
 
   // Removes a relation.

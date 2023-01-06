@@ -154,7 +154,7 @@ describe('Auth', () => {
 
   it('should create session index', async () => {
     await reconfigureServer({
-      appId: 'test2'
+      appId: 'test2',
     });
     await new Promise(resolve => setTimeout(resolve, 500));
     const user = new Parse.User();
