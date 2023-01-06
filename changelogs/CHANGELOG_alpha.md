@@ -1,3 +1,34 @@
+# [6.0.0-alpha.20](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.19...6.0.0-alpha.20) (2023-01-06)
+
+
+### Features
+
+* Add Node 19 support ([#8363](https://github.com/parse-community/parse-server/issues/8363)) ([a4990dc](https://github.com/parse-community/parse-server/commit/a4990dcd29abcb4442f3c424aff482a0a116160f))
+
+# [6.0.0-alpha.19](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.18...6.0.0-alpha.19) (2023-01-05)
+
+
+### Features
+
+* Remove deprecation `DEPPS1`: Native MongoDB syntax in aggregation pipeline ([#8362](https://github.com/parse-community/parse-server/issues/8362)) ([d0d30c4](https://github.com/parse-community/parse-server/commit/d0d30c4f1394f563724644a8fc81734be538a2c0))
+
+
+### BREAKING CHANGES
+
+* The MongoDB aggregation pipeline requires native MongoDB syntax instead of the custom Parse Server syntax; for example pipeline stage names require a leading dollar sign like `$match` and the MongoDB document ID is referenced using `_id` instead of `objectId` (#8362) ([d0d30c4](d0d30c4))
+
+# [6.0.0-alpha.18](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.17...6.0.0-alpha.18) (2023-01-05)
+
+
+### Bug Fixes
+
+* The client IP address may be determined incorrectly in some cases; this fixes a security vulnerability in which the Parse Server option `masterKeyIps` may be circumvented, see [GHSA-vm5r-c87r-pf6x](https://github.com/parse-community/parse-server/security/advisories/GHSA-vm5r-c87r-pf6x) ([#8372](https://github.com/parse-community/parse-server/issues/8372)) ([892040d](https://github.com/parse-community/parse-server/commit/892040dc2f82a3e2abe2824e4b553521b6f894de))
+
+
+### BREAKING CHANGES
+
+* The mechanism to determine the client IP address has been rewritten; to correctly determine the IP address it is now required to set the Parse Server option `trustProxy` accordingly if Parse Server runs behind a proxy server, see the express framework's [trust proxy](https://expressjs.com/en/guide/behind-proxies.html) setting (#8372) ([892040d](892040d))
+
 # [6.0.0-alpha.17](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.16...6.0.0-alpha.17) (2022-12-22)
 
 
