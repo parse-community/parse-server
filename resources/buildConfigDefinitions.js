@@ -44,6 +44,7 @@ const nestedOptionEnvPrefix = {
   SecurityOptions: 'PARSE_SERVER_SECURITY_',
   SchemaOptions: 'PARSE_SERVER_SCHEMA_',
   LogLevels: 'PARSE_SERVER_LOG_LEVELS_',
+  RateLimitOptions: 'PARSE_SERVER_RATE_LIMIT_',
 };
 
 function last(array) {
@@ -111,7 +112,9 @@ function processProperty(property, iface) {
   }
   let defaultValue;
   if (defaultLine) {
-    defaultValue = defaultLine.split(' ')[1];
+    const defaultArray = defaultLine.split(' ');
+    defaultArray.shift();
+    defaultValue = defaultArray.join(' ');
   }
   let type = property.value.type;
   let isRequired = true;
