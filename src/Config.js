@@ -534,13 +534,13 @@ export class Config {
       if (Object.prototype.toString.call(option) !== '[object Object]') {
         throw `rateLimit must be an array of objects`;
       }
-      if (!option.requestPath) {
+      if (option.requestPath == null) {
         throw `rateLimit.requestPath must be defined`;
       }
       if (typeof option.requestPath !== 'string') {
         throw `rateLimit.requestPath must be a string`;
       }
-      if (!option.requestTimeWindow) {
+      if (option.requestTimeWindow == null) {
         throw `rateLimit.requestTimeWindow must be defined`;
       }
       if (typeof option.requestTimeWindow !== 'number') {
@@ -549,7 +549,7 @@ export class Config {
       if (option.includeInternalRequests && typeof option.includeInternalRequests !== 'boolean') {
         throw `rateLimit.includeInternalRequests must be a boolean`;
       }
-      if (!option.requestCount) {
+      if (option.requestCount == null) {
         throw `rateLimit.requestCount must be defined`;
       }
       if (typeof option.requestCount !== 'number') {
