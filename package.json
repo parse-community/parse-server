@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.0.0-alpha.19",
+  "version": "6.0.0-alpha.21",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -32,6 +32,7 @@
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.18.2",
+    "express-rate-limit": "6.6.0",
     "follow-redirects": "1.15.2",
     "graphql": "16.6.0",
     "graphql-list-fields": "2.0.2",
@@ -48,6 +49,7 @@
     "mongodb": "4.10.0",
     "mustache": "4.2.0",
     "parse": "3.4.2",
+    "path-to-regexp": "0.1.7",
     "pg-monitor": "1.5.0",
     "pg-promise": "10.12.1",
     "pluralize": "8.0.0",
@@ -97,8 +99,8 @@
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
     "mongodb-runner": "4.8.1",
     "mongodb-version-list": "1.0.0",
-    "node-fetch": "3.2.10",
     "node-abort-controller": "3.0.1",
+    "node-fetch": "3.2.10",
     "nyc": "15.1.0",
     "prettier": "2.0.5",
     "semantic-release": "17.4.6",
