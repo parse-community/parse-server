@@ -6,6 +6,273 @@ const validatorFail = () => {
 };
 
 describe('ParseLiveQuery', function () {
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+
+  it('can subscribe to query', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+    subscription.on('update', object => {
+      expect(object.get('foo')).toBe('bar');
+      done();
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+  });
+
+  /*
+  it('can query/find and return object with correct withinKilometers', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    const point = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: point });
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers('location', new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 }), 2);
+    const results = await query.find();
+    expect(results[0].id).toBe(object.id);
+    done();
+  });
+
+  it('can query/find and return object with incorrect withinKilometers', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    const point = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: point });
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers('location', new Parse.GeoPoint({ latitude: 25.0, longitude: 4.0 }), 2);
+    const results = await query.find();
+    expect(results[0]).toBe(undefined);
+    done();
+  });
+
+  it('can subscribe to query and return object with withinKilometers', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers('location', new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 }), 2);
+    const subscription = await query.subscribe();
+    subscription.on('enter', obj => {
+      console.log('enter');
+      expect(obj.id).toBe(object.id);
+      done();
+    });
+
+    const point = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: point });
+    await object.save();
+  });
+
+  it('can subscribe to query and return object with withinKilometers on leave', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    const firstPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: firstPoint });
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers('location', new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 }), 2);
+    const subscription = await query.subscribe();
+    subscription.on('leave', obj => {
+      console.log('leave');
+      expect(obj.id).toBe(object.id);
+      done();
+    });
+
+    const secondPoint = new Parse.GeoPoint({ latitude: 20.0, longitude: -1.0 });
+    object.set({ location: secondPoint });
+    await object.save();
+  });
+  */
+
+  it('can subscribe to query and return object with withinKilometers with last parameter on update', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: true,
+      silent: false,
+    });
+    const object = new TestObject();
+    const firstPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: firstPoint });
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers(
+      'location',
+      new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 }),
+      2,
+      false
+    );
+    const subscription = await query.subscribe();
+    subscription.on('update', obj => {
+      console.log('update');
+      expect(obj.id).toBe(object.id);
+      done();
+    });
+
+    const secondPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: secondPoint });
+    await object.save();
+  });
+
+  it('can subscribe to query and return object with withinKilometers without last parameter on update', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: true,
+      silent: false,
+    });
+    const object = new TestObject();
+    const firstPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: firstPoint });
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.withinKilometers('location', new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 }), 2);
+    const subscription = await query.subscribe();
+    subscription.on('update', obj => {
+      console.log('update');
+      expect(obj.id).toBe(object.id);
+      done();
+    });
+
+    const secondPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    object.set({ location: secondPoint });
+    await object.save();
+  });
+
+  /*
+  it('can subscribe to query and return object on enter with simple boolean', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('isActive', true);
+    const subscription = await query.subscribe();
+    subscription.on('enter', obj => {
+      console.log('enter');
+      expect(obj.get('isActive')).toBe(true);
+      done();
+    });
+
+    object.set({ isActive: true });
+    await object.save();
+  });
+
+  it('can subscribe to query and return object on leave with simple boolean', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('isActive', true);
+    const subscription = await query.subscribe();
+
+    subscription.on('leave', obj => {
+      console.log('leave');
+      expect(obj.get('isActive')).toBe(false);
+      done();
+    });
+
+    object.set({ isActive: true });
+    await object.save();
+
+    object.set({ isActive: false });
+    await object.save();
+  });
+
+  it('can subscribe to query and return object on update with simple boolean', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    object.set({ isActive: true });
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('isActive', true);
+    const subscription = await query.subscribe();
+
+    subscription.on('update', obj => {
+      console.log('update');
+      expect(obj.get('isActive')).toBe(true);
+      done();
+    });
+
+    object.set({ isActive: true });
+    await object.save();
+  });
+  */
+
   it('access user on onLiveQueryEvent disconnect', async done => {
     await reconfigureServer({
       liveQuery: {
