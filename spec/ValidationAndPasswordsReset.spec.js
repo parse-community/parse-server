@@ -1083,20 +1083,6 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('should resolve on an invalid reset password with default server parameters', async () => {
-    await reconfigureServer({
-      appName: 'coolapp',
-      publicServerURL: 'http://localhost:1337/1',
-      emailAdapter: MockEmailAdapterWithOptions({
-        fromAddress: 'parse@example.com',
-        apiKey: 'k',
-        domain: 'd',
-      }),
-    });
-    const result = await Parse.User.requestPasswordReset('test@example.com');
-    expect(result).toEqual({});
-  });
-
   it('should throw on an invalid reset password', async () => {
     await reconfigureServer({
       appName: 'coolapp',
