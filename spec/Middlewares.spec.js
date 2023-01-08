@@ -189,72 +189,6 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(true);
   });
 
-  it('should not succeed if the connection.remoteAddress does not belong to masterKeyIps list', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1', '10.0.0.2'],
-    });
-    fakeReq.connection = { remoteAddress: '127.0.0.1' };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
-  });
-
-  it('should succeed if the connection.remoteAddress does belong to masterKeyIps list', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1', '10.0.0.2'],
-    });
-    fakeReq.connection = { remoteAddress: '10.0.0.1' };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
-  });
-
-  it('should not succeed if the socket.remoteAddress does not belong to masterKeyIps list', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1', '10.0.0.2'],
-    });
-    fakeReq.socket = { remoteAddress: '127.0.0.1' };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
-  });
-
-  it('should succeed if the socket.remoteAddress does belong to masterKeyIps list', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1', '10.0.0.2'],
-    });
-    fakeReq.socket = { remoteAddress: '10.0.0.1' };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
-  });
-
-  it('should not succeed if the connection.socket.remoteAddress does not belong to masterKeyIps list', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1', '10.0.0.2'],
-    });
-    fakeReq.connection = { socket: { remoteAddress: 'ip3' } };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
-  });
-
-  it('should succeed if the connection.socket.remoteAddress does belong to masterKeyIps list', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1', '10.0.0.2'],
-    });
-    fakeReq.connection = { socket: { remoteAddress: '10.0.0.1' } };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
-  });
-
   it('should allow any ip to use masterKey if masterKeyIps is empty', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
@@ -266,48 +200,9 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(true);
   });
 
-  it('should succeed if xff header does belong to masterKeyIps', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = '10.0.0.1, 10.0.0.2, ip3';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
-  });
-
-  it('should succeed if xff header with one ip does belong to masterKeyIps', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = '10.0.0.1';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
-  });
-
-  it('should not succeed if xff header does not belong to masterKeyIps', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip4'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = '10.0.0.1, 10.0.0.2, ip3';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
-  });
-
-  it('should not succeed if xff header is empty and masterKeyIps is set', async () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = '';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
+  it('can set trust proxy', async () => {
+    const server = await reconfigureServer({ trustProxy: 1 });
+    expect(server.app.parent.settings['trust proxy']).toBe(1);
   });
 
   it('should properly expose the headers', () => {

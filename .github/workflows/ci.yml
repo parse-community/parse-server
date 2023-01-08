@@ -1,11 +1,11 @@
 name: ci
 on:
   push:
-    branches: [ release, alpha, beta ]
+    branches: [ release*, alpha, beta ]
   pull_request:
-    branches: [ release, alpha, beta ]
+    branches: [ release*, alpha, beta ]
 env:
-  NODE_VERSION: 18.12.1
+  NODE_VERSION: 19.3.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-code-analysis:
@@ -137,7 +137,7 @@ jobs:
       - name: Check NPM lock file version
         uses: mansona/npm-lockfile-version@v1
         with:
-          version: 1
+          version: 2
   check-mongo:
     strategy:
       matrix:
@@ -145,24 +145,24 @@ jobs:
           - name: MongoDB 4.2, ReplicaSet
             MONGODB_VERSION: 4.2.19
             MONGODB_TOPOLOGY: replicaset
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: MongoDB 4.4, ReplicaSet
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: replicaset
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: MongoDB 5, ReplicaSet
             MONGODB_VERSION: 5.3.2
             MONGODB_TOPOLOGY: replicaset
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: MongoDB 6, ReplicaSet
             MONGODB_VERSION: 6.0.2
             MONGODB_TOPOLOGY: replicaset
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: Node 14
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
@@ -171,6 +171,10 @@ jobs:
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 16.18.1
+          - name: Node 18
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            NODE_VERSION: 18.12.1
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -214,28 +218,28 @@ jobs:
         include:
           - name: PostgreSQL 11, PostGIS 3.0
             POSTGRES_IMAGE: postgis/postgis:11-3.0
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 11, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 11, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:11-3.2
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 11, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:11-3.3
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 12, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:12-3.3
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 13, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:13-3.3
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 14, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:14-3.3
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 15, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:15-3.3
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 19.3.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
