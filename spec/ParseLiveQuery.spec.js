@@ -1,4 +1,5 @@
 'use strict';
+const Auth = require('../lib/Auth');
 const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
 const validatorFail = () => {
@@ -977,6 +978,7 @@ describe('ParseLiveQuery', function () {
     };
 
     await reconfigureServer({
+      maintenanceKey: 'test2',
       liveQuery: {
         classNames: [Parse.User],
       },
@@ -998,9 +1000,14 @@ describe('ParseLiveQuery', function () {
         .signUp()
         .then(() => {
           const config = Config.get('test');
-          return config.database.find('_User', {
-            username: 'zxcv',
-          });
+          return config.database.find(
+            '_User',
+            {
+              username: 'zxcv',
+            },
+            {},
+            Auth.maintenance(config)
+          );
         })
         .then(async results => {
           const foundUser = results[0];

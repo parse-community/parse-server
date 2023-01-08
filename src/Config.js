@@ -73,6 +73,8 @@ export class Config {
     passwordPolicy,
     masterKeyIps,
     masterKey,
+    maintenanceKey,
+    maintenanceKeyIps,
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
@@ -89,6 +91,10 @@ export class Config {
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
+    }
+
+    if (masterKey === maintenanceKey) {
+      throw new Error('masterKey and maintenanceKey should be different');
     }
 
     const emailAdapter = userController.adapter;
@@ -116,7 +122,8 @@ export class Config {
       }
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
-    this.validateMasterKeyIps(masterKeyIps);
+    this.validateIps('masterKeyIps', masterKeyIps);
+    this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
@@ -440,13 +447,13 @@ export class Config {
     }
   }
 
-  static validateMasterKeyIps(masterKeyIps) {
+  static validateIps(field, masterKeyIps) {
     for (let ip of masterKeyIps) {
       if (ip.includes('/')) {
         ip = ip.split('/')[0];
       }
       if (!net.isIP(ip)) {
-        throw `The Parse Server option "masterKeyIps" contains an invalid IP address "${ip}".`;
+        throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
       }
     }
   }
