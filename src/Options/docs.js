@@ -77,6 +77,7 @@
  * @property {ProtectedFields} protectedFields Protected fields that should be treated with extra security when fetching details.
  * @property {String} publicServerURL Public URL to your parse server with http:// or https://.
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
+ * @property {RateLimitOptions[]} rateLimit Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
  * @property {String} readOnlyMasterKey Read-only key, which has the same capabilities as MasterKey without writes
  * @property {RequestKeywordDenylist[]} requestKeywordDenylist An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
  * @property {String} restAPIKey Key for REST calls
@@ -94,6 +95,17 @@
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
+ */
+
+/**
+ * @interface RateLimitOptions
+ * @property {String} errorResponseMessage The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
+ * @property {Boolean} includeInternalRequests Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to attacks.
+ * @property {Boolean} includeMasterKey Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.
+ * @property {Number} requestCount The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied.
+ * @property {String[]} requestMethods Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.
+ * @property {String} requestPath The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html
+ * @property {Number} requestTimeWindow The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied.
  */
 
 /**
