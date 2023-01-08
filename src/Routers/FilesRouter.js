@@ -141,19 +141,15 @@ export class FilesRouter {
     const fileExtensions = config.fileUpload?.fileExtensions;
     if (!isMaster && fileExtensions) {
       const isValidExtension = extension => {
-        if (fileExtensions === '*') {
-          return true;
-        }
-        if (Array.isArray(fileExtensions)) {
-          if (fileExtensions.includes(extension)) {
+        return fileExtensions.some(ext => {
+          if (ext === '*') {
             return true;
           }
-        } else {
           const regex = new RegExp(fileExtensions);
           if (regex.test(extension)) {
             return true;
           }
-        }
+        });
       };
       let extension = filename.includes('.') ? filename.split('.')[1] : contentType.split('/')[1];
       extension = extension.split(' ').join('');

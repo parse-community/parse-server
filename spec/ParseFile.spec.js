@@ -41,7 +41,7 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileExtensions: '*',
+          fileExtensions: ['*'],
         },
       });
       let response = await request({
@@ -358,7 +358,7 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileExtensions: '*',
+          fileExtensions: ['*'],
         },
       });
       const headers = {
@@ -1310,7 +1310,7 @@ describe('Parse.File testing', () => {
             fileExtensions: 1,
           },
         })
-      ).toBeRejectedWith('fileUpload.fileExtensions must be an array or string.');
+      ).toBeRejectedWith('fileUpload.fileExtensions must be an array.');
     });
   });
   describe('fileExtensions', () => {
