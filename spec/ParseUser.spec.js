@@ -3557,7 +3557,7 @@ describe('Parse.User testing', () => {
     user.set({
       username: 'hello',
       password: 'world',
-      email: 'test@email.com',
+      email: 'test@example.com',
     });
     await reconfigureServer({
       appName: 'unused',
