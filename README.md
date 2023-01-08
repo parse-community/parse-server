@@ -60,6 +60,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 - [Configuration](#configuration)
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
+  - [Access Scopes](#access-scopes)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
   - [Password and Account Policy](#password-and-account-policy)
   - [Custom Routes](#custom-routes)
@@ -356,6 +357,15 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `javascriptKey`
 * `restAPIKey`
 * `dotNetKey`
+
+## Access Scopes
+
+| Scope          | Internal data | Custom data | Restricted by CLP, ACL | Key                 |
+|----------------|---------------|-------------|------------------------|---------------------|
+| Internal       | r/w           | r/w         | no                     | `maintenanceKey`    |
+| Master         | -/-           | r/w         | no                     | `masterKey`         |
+| ReadOnlyMaster | -/-           | r/-         | no                     | `readOnlyMasterKey` |
+| Session        | -/-           | r/w         | yes                    | `sessionToken`      |
 
 ## Email Verification and Password Reset
 

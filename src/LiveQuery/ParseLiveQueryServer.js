@@ -630,6 +630,7 @@ class ParseLiveQueryServer {
       }
       return DatabaseController.filterSensitiveData(
         client.hasMasterKey,
+        false,
         aclGroup,
         clientAuth,
         op,
