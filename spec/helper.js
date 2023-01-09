@@ -113,7 +113,6 @@ const defaultConfiguration = {
     enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
   },
-  masterKeyIps: ['127.0.0.1'],
   push: {
     android: {
       senderId: 'yolo',

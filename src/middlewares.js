@@ -45,6 +45,7 @@ export function handleParseHeaders(req, res, next) {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
     masterKey: req.get('X-Parse-Master-Key'),
+    maintenanceKey: req.get('X-Parse-Maintenance-Key'),
     installationId: req.get('X-Parse-Installation-Id'),
     clientKey: req.get('X-Parse-Client-Key'),
     javascriptKey: req.get('X-Parse-Javascript-Key'),
@@ -176,6 +177,24 @@ export function handleParseHeaders(req, res, next) {
   req.config.headers = req.headers || {};
   req.config.ip = clientIp;
   req.info = info;
+
+  const isMaintenance =
+    req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
+  if (isMaintenance) {
+    if (ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
+      req.auth = new auth.Auth({
+        config: req.config,
+        installationId: info.installationId,
+        isMaintenance: true,
+      });
+      next();
+      return;
+    }
+    const log = req.config?.loggerController || defaultLogger;
+    log.error(
+      `Request using maintenance key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
+  }
 
   let isMaster = info.masterKey === req.config.masterKey;
   if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
