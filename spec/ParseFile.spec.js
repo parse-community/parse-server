@@ -265,7 +265,7 @@ describe('Parse.File testing', () => {
       ok(objectAgain.get('file') instanceof Parse.File);
     });
 
-    fit('autosave file in object', async () => {
+    it('autosave file in object', async () => {
       let file = new Parse.File('hello.txt', data, 'text/plain');
       ok(!file.url());
       const object = new Parse.Object('TestObject');
