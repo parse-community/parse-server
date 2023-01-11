@@ -82,7 +82,7 @@ on_db(
 );
 
 let logLevel;
-let silent = true;
+let silent = false;
 if (process.env.VERBOSE) {
   silent = false;
   logLevel = 'verbose';
@@ -112,6 +112,8 @@ const defaultConfiguration = {
     enableForPublic: true,
     enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
+    enableLegacyAccess: false,
+    tokenValidityDuration: 5 * 60,
   },
   push: {
     android: {

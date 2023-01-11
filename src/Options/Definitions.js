@@ -955,6 +955,19 @@ module.exports.FileUploadOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  enableLegacyAccess: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_LEGACY_ACCESS',
+    help:
+      'Is true if files that do not have a corresponding _FileObject should be publicly accessable.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  tokenValidityDuration: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_TOKEN_VALIDITY_DURATION',
+    help: 'Duration of the file token in seconds',
+    action: parsers.numberParser('tokenValidityDuration'),
+    default: 300,
+  },
 };
 module.exports.DatabaseOptions = {
   enableSchemaHooks: {

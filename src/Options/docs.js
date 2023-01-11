@@ -219,6 +219,8 @@
  * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
+ * @property {Boolean} enableLegacyAccess Is true if files that do not have a corresponding _FileObject should be publicly accessable.
+ * @property {Number} tokenValidityDuration Duration of the file token in seconds
  */
 
 /**

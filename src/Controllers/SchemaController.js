@@ -148,6 +148,22 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     reqId: { type: 'String' },
     expire: { type: 'Date' },
   },
+  _FileObject: {
+    file: { type: 'File' },
+  },
+  _FileSession: {
+    file: { type: 'Pointer', targetClass: '_FileObject' },
+    master: { type: 'Boolean' },
+    sessionToken: { type: 'String' },
+    installationId: { type: 'String' },
+    token: { type: 'String' },
+    expiry: { type: 'Date' },
+  },
+  _FileReference: {
+    file: { type: 'Pointer', targetClass: '_FileObject' },
+    referenceId: { type: 'String' },
+    referenceClass: { type: 'String' },
+  },
 });
 
 // fields required for read or write operations on their respective classes.
@@ -174,6 +190,9 @@ const systemClasses = Object.freeze([
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
+  '_FileObject',
+  '_FileSession',
+  '_FileReference',
 ]);
 
 const volatileClasses = Object.freeze([
@@ -185,6 +204,9 @@ const volatileClasses = Object.freeze([
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
+  '_FileObject',
+  '_FileSession',
+  '_FileReference',
 ]);
 
 // Anything that start with role
@@ -654,6 +676,27 @@ const _IdempotencySchema = convertSchemaToAdapterSchema(
     classLevelPermissions: {},
   })
 );
+const _FileSchema = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_FileObject',
+    fields: defaultColumns._FileObject,
+    classLevelPermissions: {},
+  })
+);
+const _FileSessionSchema = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_FileSession',
+    fields: defaultColumns._FileSession,
+    classLevelPermissions: {},
+  })
+);
+const _FileReferencechema = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_FileReference',
+    fields: defaultColumns._FileReference,
+    classLevelPermissions: {},
+  })
+);
 const VolatileClassesSchemas = [
   _HooksSchema,
   _JobStatusSchema,
@@ -663,6 +706,9 @@ const VolatileClassesSchemas = [
   _GraphQLConfigSchema,
   _AudienceSchema,
   _IdempotencySchema,
+  _FileSchema,
+  _FileSessionSchema,
+  _FileReferencechema,
 ];
 
 const dbTypeMatchesObjectType = (dbType: SchemaField | string, objectType: SchemaField) => {

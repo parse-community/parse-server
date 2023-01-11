@@ -3812,6 +3812,64 @@ describe('saveFile hooks', () => {
       );
     }
   });
+
+  it('can run find hooks', async () => {
+    const user = new Parse.User();
+    user.setUsername('triggeruser');
+    user.setPassword('triggeruser');
+    await user.signUp();
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    await file.save({ sessionToken: user.getSessionToken() });
+    const hooks = {
+      beforeFind(req) {
+        expect(req.user.id).toEqual(user.id);
+        expect(req.file instanceof Parse.File).toBeTrue();
+        expect(req.file._name).toEqual(file._name);
+        expect(req.file._url).toEqual(file._url);
+      },
+      afterFind(req) {
+        expect(req.user.id).toEqual(user.id);
+        expect(req.file instanceof Parse.File).toBeTrue();
+        expect(req.file._name).toEqual(file._name);
+        expect(req.file._url).toEqual(file._url);
+      },
+    };
+    for (const key in hooks) {
+      spyOn(hooks, key).and.callThrough();
+      Parse.Cloud[key](Parse.File, hooks[key]);
+    }
+    const response = await request({ url: file.url() });
+    expect(response.text).toEqual('Working at Parse is great!');
+    for (const key in hooks) {
+      expect(hooks[key]).toHaveBeenCalled();
+    }
+  });
+
+  fit('can clean up files', async () => {
+    const server = await reconfigureServer();
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    const obj = await new Parse.Object('TestObject').save({ file });
+    await Promise.all([
+      (async () => {
+        const objects = await new Parse.Query('_FileObject').find({ useMasterKey: true });
+        expect(objects.length).toBe(1);
+      })(),
+      (async () => {
+        const objects = await new Parse.Query('_FileReference').find({ useMasterKey: true });
+        expect(objects.length).toBe(1);
+      })(),
+    ]);
+    await obj.destroy();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const references = await new Parse.Query('_FileReference').find({ useMasterKey: true });
+    expect(references.length).toBe(0);
+    await server.cleanupFiles();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const objects = await new Parse.Query('_FileObject').find({ useMasterKey: true });
+    expect(objects.length).toBe(0);
+  });
 });
 
 describe('sendEmail', () => {

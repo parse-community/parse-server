@@ -445,6 +445,19 @@ export class Config {
     } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
       throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
     }
+    if (fileUpload.enableLegacyAccess === undefined) {
+      fileUpload.enableLegacyAccess = FileUploadOptions.enableLegacyAccess.default;
+    } else if (typeof fileUpload.enableLegacyAccess !== 'boolean') {
+      throw 'fileUpload.enableLegacyAccess must be a boolean value.';
+    }
+    if (fileUpload.tokenValidityDuration === undefined) {
+      fileUpload.tokenValidityDuration = FileUploadOptions.tokenValidityDuration.default;
+    } else if (
+      typeof fileUpload.tokenValidityDuration !== 'number' ||
+      fileUpload.tokenValidityDuration <= 0
+    ) {
+      throw 'fileUpload.tokenValidityDuration must be a positive number.';
+    }
   }
 
   static validateIps(field, masterKeyIps) {

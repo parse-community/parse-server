@@ -537,6 +537,12 @@ export interface FileUploadOptions {
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
   enableForPublic: ?boolean;
+  /* Is true if files that do not have a corresponding _FileObject should be publicly accessable.
+  :DEFAULT: false */
+  enableLegacyAccess: ?boolean;
+  /* Duration of the file token in seconds
+  :DEFAULT: 300 */
+  tokenValidityDuration: ?number;
 }
 
 export interface DatabaseOptions {

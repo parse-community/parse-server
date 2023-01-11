@@ -1699,9 +1699,30 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
+    const requiredFileObjectFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._FileObject,
+      },
+    };
+    const requiredFileSessionFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._FileSession,
+      },
+    };
+    const requiredFileReferenceFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._FileReference,
+      },
+    };
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_FileObject'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_FileSession'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_FileReference'));
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
@@ -1742,6 +1763,37 @@ class DatabaseController {
       .ensureUniqueness('_Idempotency', requiredIdempotencyFields, ['reqId'])
       .catch(error => {
         logger.warn('Unable to ensure uniqueness for idempotency request ID: ', error);
+        throw error;
+      });
+
+    await this.adapter
+      .ensureUniqueness('_FileObject', requiredFileObjectFields, ['file'])
+      .catch(error => {
+        logger.warn('Unable to ensure uniqueness for file object: ', error);
+        throw error;
+      });
+
+    await this.adapter
+      .ensureUniqueness('_FileObject', requiredFileObjectFields, ['file'])
+      .catch(error => {
+        logger.warn('Unable to ensure uniqueness for file object: ', error);
+        throw error;
+      });
+
+    await this.adapter
+      .ensureUniqueness('_FileSession', requiredFileSessionFields, ['token'])
+      .catch(error => {
+        logger.warn('Unable to ensure uniqueness for file object: ', error);
+        throw error;
+      });
+
+    await this.adapter
+      .ensureUniqueness('_FileReference', requiredFileReferenceFields, [
+        'referenceId',
+        'referenceClass',
+      ])
+      .catch(error => {
+        logger.warn('Unable to ensure uniqueness for file object: ', error);
         throw error;
       });
 

@@ -152,14 +152,27 @@ function del(config, auth, className, objectId, context) {
         }
       }
 
-      return config.database.destroy(
-        className,
-        {
-          objectId: objectId,
-        },
-        options,
-        schemaController
-      );
+      return Promise.all([
+        config.database.destroy(
+          className,
+          {
+            objectId: objectId,
+          },
+          options,
+          schemaController
+        ),
+        config.database
+          .destroy(
+            '_FileReference',
+            {
+              referenceId: objectId,
+              referenceClass: className,
+            },
+            {},
+            schemaController
+          )
+          .catch(e => e),
+      ]);
     })
     .then(() => {
       // Notify LiveQuery server if possible
