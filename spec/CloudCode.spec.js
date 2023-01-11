@@ -3846,7 +3846,7 @@ describe('saveFile hooks', () => {
     }
   });
 
-  fit('can clean up files', async () => {
+  it('can clean up files', async () => {
     const server = await reconfigureServer();
     const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
     const file = new Parse.File('myfile.txt', { base64 });
