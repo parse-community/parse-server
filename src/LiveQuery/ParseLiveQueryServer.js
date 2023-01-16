@@ -23,6 +23,7 @@ import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
+import Deprecator from '../Deprecator/Deprecator';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -903,6 +904,10 @@ class ParseLiveQueryServer {
       }
       if (request.query.fields) {
         subscriptionInfo.keys = request.query.fields;
+        Deprecator.logRuntimeDeprecation({
+          usage: `Subscribing using fields parameter`,
+          solution: `Subscribe using "keys" instead.`,
+        });
       }
       if (request.query.watch) {
         subscriptionInfo.watch = request.query.watch;
