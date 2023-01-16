@@ -330,8 +330,8 @@ class ParseLiveQueryServer {
             } else {
               return null;
             }
-            const listenFieldsChanged = this._checkListenFields(client, requestId, message);
-            if (!listenFieldsChanged && (type === 'update' || type === 'create')) {
+            const watchFieldsChanged = this._checkWatchFields(client, requestId, message);
+            if (!watchFieldsChanged && (type === 'update' || type === 'create')) {
               return;
             }
             res = {
@@ -712,15 +712,15 @@ class ParseLiveQueryServer {
     return auth;
   }
 
-  _checkListenFields(client: any, requestId: any, message: any) {
+  _checkWatchFields(client: any, requestId: any, message: any) {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
-    const listen = subscriptionInfo?.listen;
-    if (!listen) {
+    const watch = subscriptionInfo?.watch;
+    if (!watch) {
       return true;
     }
     const object = message.currentParseObject;
     const original = message.originalParseObject;
-    return listen.some(field => !isDeepStrictEqual(object.get(field), original?.get(field)));
+    return watch.some(field => !isDeepStrictEqual(object.get(field), original?.get(field)));
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
@@ -904,8 +904,8 @@ class ParseLiveQueryServer {
       if (request.query.fields) {
         subscriptionInfo.fields = request.query.fields;
       }
-      if (request.query.listen) {
-        subscriptionInfo.listen = request.query.listen;
+      if (request.query.watch) {
+        subscriptionInfo.watch = request.query.watch;
       }
       if (request.sessionToken) {
         subscriptionInfo.sessionToken = request.sessionToken;

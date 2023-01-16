@@ -1087,7 +1087,7 @@ describe('ParseLiveQueryServer', function () {
     done();
   });
 
-  it('can handle create command with listen', async () => {
+  it('can handle create command with watch', async () => {
     jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
     const Client = require('../lib/LiveQuery/Client').Client;
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -1110,7 +1110,7 @@ describe('ParseLiveQueryServer', function () {
       where: {
         key: 'value',
       },
-      listen: ['yolo'],
+      watch: ['yolo'],
     };
     await addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
     // Mock _matchesSubscription to return matching
