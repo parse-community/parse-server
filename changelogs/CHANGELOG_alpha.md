@@ -1,3 +1,10 @@
+# [6.0.0-alpha.25](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.24...6.0.0-alpha.25) (2023-01-16)
+
+
+### Features
+
+* Add `ParseQuery.watch` to trigger LiveQuery only on update of specific fields ([#8028](https://github.com/parse-community/parse-server/issues/8028)) ([fc92faa](https://github.com/parse-community/parse-server/commit/fc92faac75107b3392eeddd916c4c5b45e3c5e0c))
+
 # [6.0.0-alpha.24](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.23...6.0.0-alpha.24) (2023-01-09)
 
 
