@@ -850,9 +850,6 @@ class ParseLiveQueryServer {
         await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth);
 
         const query = request.query.toJSON();
-        if (query.keys) {
-          query.fields = query.keys.split(',');
-        }
         request.query = query;
       }
 
@@ -901,8 +898,11 @@ class ParseLiveQueryServer {
         subscription: subscription,
       };
       // Add selected fields, sessionToken and installationId for this subscription if necessary
+      if (request.query.keys) {
+        subscriptionInfo.keys = request.query.keys;
+      }
       if (request.query.fields) {
-        subscriptionInfo.fields = request.query.fields;
+        subscriptionInfo.keys = request.query.fields;
       }
       if (request.query.watch) {
         subscriptionInfo.watch = request.query.watch;

@@ -294,7 +294,7 @@ describe('ParseLiveQueryServer', function () {
       where: {
         key: 'value',
       },
-      fields: ['test'],
+      keys: ['test'],
     };
     const requestId = 2;
     const request = {
@@ -331,7 +331,7 @@ describe('ParseLiveQueryServer', function () {
       where: {
         key: 'value',
       },
-      fields: ['test'],
+      keys: ['test'],
     };
     const requestId = 2;
     const request = {
@@ -378,7 +378,7 @@ describe('ParseLiveQueryServer', function () {
       where: {
         key: 'value',
       },
-      fields: ['test'],
+      keys: ['test'],
     };
     await addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
     // Add subscription for mock client 2
@@ -390,7 +390,7 @@ describe('ParseLiveQueryServer', function () {
       where: {
         key: 'value',
       },
-      fields: ['testAgain'],
+      keys: ['testAgain'],
     };
     const requestIdAgain = 1;
     await addMockSubscription(
@@ -1060,7 +1060,7 @@ describe('ParseLiveQueryServer', function () {
       where: {
         key: 'value',
       },
-      fields: ['test'],
+      keys: ['test'],
     };
     await addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
     // Mock _matchesSubscription to return matching
@@ -1865,7 +1865,7 @@ describe('ParseLiveQueryServer', function () {
         where: {
           key: 'value',
         },
-        fields: ['test'],
+        keys: ['test'],
       };
     }
     const request = {
