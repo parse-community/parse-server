@@ -900,7 +900,7 @@ class ParseLiveQueryServer {
       };
       // Add selected fields, sessionToken and installationId for this subscription if necessary
       if (request.query.keys) {
-        subscriptionInfo.keys = request.query.keys;
+        subscriptionInfo.keys = Array.isArray(request.query.keys) ? request.query.keys : [request.query.keys];
       }
       if (request.query.fields) {
         subscriptionInfo.keys = request.query.fields;
