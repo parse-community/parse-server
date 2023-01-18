@@ -850,11 +850,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
   _pgp: any;
   _stream: any;
   _uuid: any;
+  disableIndexFieldValidation: boolean;
 
   constructor({ uri, collectionPrefix = '', databaseOptions = {} }: any) {
     this._collectionPrefix = collectionPrefix;
     this.enableSchemaHooks = !!databaseOptions.enableSchemaHooks;
+    this.disableIndexFieldValidation = !!databaseOptions.disableIndexFieldValidation;
     delete databaseOptions.enableSchemaHooks;
+    delete databaseOptions.disableIndexFieldValidation;
 
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;
@@ -974,7 +977,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
+          if (
+            !this.disableIndexFieldValidation &&
+            !Object.prototype.hasOwnProperty.call(fields, key)
+          ) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -989,8 +995,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
     });
     await conn.tx('set-indexes-with-schema-format', async t => {
-      if (insertedIndexes.length > 0) {
-        await self.createIndexes(className, insertedIndexes, t);
+      try {
+        if (insertedIndexes.length > 0) {
+          await self.createIndexes(className, insertedIndexes, t);
+        }
+      } catch (e) {
+        const columnDoesNotExistError = e.errors && e.errors[0] && e.errors[0].code === '42703';
+        if (columnDoesNotExistError && !this.disableIndexFieldValidation) {
+          throw e;
+        }
       }
       if (deletedIndexes.length > 0) {
         await self.dropIndexes(className, deletedIndexes, t);
