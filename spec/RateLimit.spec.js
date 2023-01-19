@@ -371,7 +371,7 @@ describe('rate limit', () => {
   describe_only(() => {
     return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
   })('with RedisCache', function () {
-    fit('does work with cache', async () => {
+    it('does work with cache', async () => {
       await reconfigureServer({
         rateLimit: [
           {
