@@ -320,6 +320,9 @@ export interface RateLimitOptions {
   /* Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to attacks.
   :DEFAULT: false */
   includeInternalRequests: ?boolean;
+  /* Optional, a RedisURL used to store requests across multiple servers or clusters
+   */
+  redisURL: ?string;
 }
 
 export interface SecurityOptions {

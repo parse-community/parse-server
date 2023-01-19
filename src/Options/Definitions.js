@@ -557,6 +557,10 @@ module.exports.RateLimitOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  redisURL: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REDIS_URL',
+    help: 'Optional, a RedisURL used to store requests across multiple servers or clusters',
+  },
   requestCount: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_COUNT',
     help:
