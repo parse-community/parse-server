@@ -68,14 +68,22 @@ const specialMasterQueryKeys = [
   '_password_history',
 ];
 
-const validateQuery = (query: any, isMaster: boolean, update: boolean): void => {
+const validateQuery = (
+  query: any,
+  isMaster: boolean,
+  isMaintenance: boolean,
+  update: boolean
+): void => {
+  if (isMaintenance) {
+    isMaster = true;
+  }
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
 
   if (query.$or) {
     if (query.$or instanceof Array) {
-      query.$or.forEach(value => validateQuery(value, isMaster, update));
+      query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
@@ -83,7 +91,7 @@ const validateQuery = (query: any, isMaster: boolean, update: boolean): void => 
 
   if (query.$and) {
     if (query.$and instanceof Array) {
-      query.$and.forEach(value => validateQuery(value, isMaster, update));
+      query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
     }
@@ -91,7 +99,7 @@ const validateQuery = (query: any, isMaster: boolean, update: boolean): void => 
 
   if (query.$nor) {
     if (query.$nor instanceof Array && query.$nor.length > 0) {
-      query.$nor.forEach(value => validateQuery(value, isMaster, update));
+      query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -124,6 +132,7 @@ const validateQuery = (query: any, isMaster: boolean, update: boolean): void => 
 // Filters out any data that shouldn't be on this REST-formatted object.
 const filterSensitiveData = (
   isMaster: boolean,
+  isMaintenance: boolean,
   aclGroup: any[],
   auth: any,
   operation: any,
@@ -195,6 +204,15 @@ const filterSensitiveData = (
   }
 
   const isUserClass = className === '_User';
+  if (isUserClass) {
+    object.password = object._hashed_password;
+    delete object._hashed_password;
+    delete object.sessionToken;
+  }
+
+  if (isMaintenance) {
+    return object;
+  }
 
   /* special treat for the user class: don't filter protectedFields if currently loggedin user is
   the retrieved user */
@@ -208,22 +226,13 @@ const filterSensitiveData = (
       perms.protectedFields.temporaryKeys.forEach(k => delete object[k]);
   }
 
-  if (isUserClass) {
-    object.password = object._hashed_password;
-    delete object._hashed_password;
-    delete object.sessionToken;
-  }
-
-  if (isMaster) {
-    return object;
-  }
   for (const key in object) {
     if (key.charAt(0) === '_') {
       delete object[key];
     }
   }
 
-  if (!isUserClass) {
+  if (!isUserClass || isMaster) {
     return object;
   }
 
@@ -439,7 +448,8 @@ class DatabaseController {
     className: string,
     object: any,
     query: any,
-    runOptions: QueryOptions
+    runOptions: QueryOptions,
+    maintenance: boolean
   ): Promise<boolean> {
     let schema;
     const acl = runOptions.acl;
@@ -454,7 +464,7 @@ class DatabaseController {
         return this.canAddField(schema, className, object, aclGroup, runOptions);
       })
       .then(() => {
-        return schema.validateObject(className, object, query);
+        return schema.validateObject(className, object, query, maintenance);
       });
   }
 
@@ -512,7 +522,7 @@ class DatabaseController {
           if (acl) {
             query = addWriteACL(query, acl);
           }
-          validateQuery(query, isMaster, true);
+          validateQuery(query, isMaster, false, true);
           return schemaController
             .getOneSchema(className, true)
             .catch(error => {
@@ -758,7 +768,7 @@ class DatabaseController {
         if (acl) {
           query = addWriteACL(query, acl);
         }
-        validateQuery(query, isMaster, false);
+        validateQuery(query, isMaster, false, false);
         return schemaController
           .getOneSchema(className)
           .catch(error => {
@@ -1151,7 +1161,8 @@ class DatabaseController {
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
-    const isMaster = acl === undefined;
+    const isMaintenance = auth.isMaintenance;
+    const isMaster = acl === undefined || isMaintenance;
     const aclGroup = acl || [];
     op =
       op || (typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
@@ -1253,7 +1264,7 @@ class DatabaseController {
                   query = addReadACL(query, aclGroup);
                 }
               }
-              validateQuery(query, isMaster, false);
+              validateQuery(query, isMaster, isMaintenance, false);
               if (count) {
                 if (!classExists) {
                   return 0;
@@ -1296,6 +1307,7 @@ class DatabaseController {
                       object = untransformObjectACL(object);
                       return filterSensitiveData(
                         isMaster,
+                        isMaintenance,
                         aclGroup,
                         auth,
                         op,
@@ -1813,8 +1825,8 @@ class DatabaseController {
     return Promise.resolve(response);
   }
 
-  static _validateQuery: (any, boolean, boolean) => void;
-  static filterSensitiveData: (boolean, any[], any, any, any, string, any[], any) => void;
+  static _validateQuery: (any, boolean, boolean, boolean) => void;
+  static filterSensitiveData: (boolean, boolean, any[], any, any, any, string, any[], any) => void;
 }
 
 module.exports = DatabaseController;

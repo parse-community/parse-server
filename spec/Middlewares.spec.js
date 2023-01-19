@@ -162,6 +162,22 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(false);
   });
 
+  it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    AppCache.put(fakeReq.body._ApplicationId, {
+      maintenanceKey: 'masterKey',
+      maintenanceKeyIps: ['10.0.0.0', '10.0.0.1'],
+    });
+    fakeReq.ip = '10.0.0.2';
+    fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaintenance).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using maintenance key rejected as the request IP address '10.0.0.2' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
+  });
+
   it('should succeed if the ip does belong to masterKeyIps list', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',

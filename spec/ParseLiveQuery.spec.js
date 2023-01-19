@@ -1,4 +1,5 @@
 'use strict';
+const Auth = require('../lib/Auth');
 const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
 const validatorFail = () => {
@@ -391,6 +392,49 @@ describe('ParseLiveQuery', function () {
     });
     object.set({ foo: 'bar' });
     await object.save();
+  });
+
+  xit('can handle live query with fields - enable upon JS SDK support', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['Test'],
+      },
+      startLiveQueryServer: true,
+    });
+    const query = new Parse.Query('Test');
+    query.watch('yolo');
+    const subscription = await query.subscribe();
+    const spy = {
+      create(obj) {
+        if (!obj.get('yolo')) {
+          fail('create should not have been called');
+        }
+      },
+      update(object, original) {
+        if (object.get('yolo') === original.get('yolo')) {
+          fail('create should not have been called');
+        }
+      },
+    };
+    const createSpy = spyOn(spy, 'create').and.callThrough();
+    const updateSpy = spyOn(spy, 'update').and.callThrough();
+    subscription.on('create', spy.create);
+    subscription.on('update', spy.update);
+    const obj = new Parse.Object('Test');
+    obj.set('foo', 'bar');
+    await obj.save();
+    obj.set('foo', 'xyz');
+    obj.set('yolo', 'xyz');
+    await obj.save();
+    const obj2 = new Parse.Object('Test');
+    obj2.set('foo', 'bar');
+    obj2.set('yolo', 'bar');
+    await obj2.save();
+    obj2.set('foo', 'bart');
+    await obj2.save();
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy).toHaveBeenCalledTimes(1);
   });
 
   it('can handle afterEvent set pointers', async done => {
@@ -977,6 +1021,7 @@ describe('ParseLiveQuery', function () {
     };
 
     await reconfigureServer({
+      maintenanceKey: 'test2',
       liveQuery: {
         classNames: [Parse.User],
       },
@@ -998,9 +1043,14 @@ describe('ParseLiveQuery', function () {
         .signUp()
         .then(() => {
           const config = Config.get('test');
-          return config.database.find('_User', {
-            username: 'zxcv',
-          });
+          return config.database.find(
+            '_User',
+            {
+              username: 'zxcv',
+            },
+            {},
+            Auth.maintenance(config)
+          );
         })
         .then(async results => {
           const foundUser = results[0];
