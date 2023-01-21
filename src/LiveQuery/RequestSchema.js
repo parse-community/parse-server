@@ -124,6 +124,14 @@ const update = {
           minItems: 1,
           uniqueItems: true,
         },
+        keys: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          minItems: 1,
+          uniqueItems: true,
+        },
         watch: {
           type: 'array',
           items: {
