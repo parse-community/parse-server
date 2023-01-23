@@ -1,3 +1,10 @@
+# [6.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.26...6.0.0-alpha.27) (2023-01-23)
+
+
+### Bug Fixes
+
+* `ParseServer.verifyServerUrl` may fail if server response headers are missing; remove unnecessary logging ([#8391](https://github.com/parse-community/parse-server/issues/8391)) ([1c37a7c](https://github.com/parse-community/parse-server/commit/1c37a7cd0715949a70b220a629071c7dab7d5e7b))
+
 # [6.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.25...6.0.0-alpha.26) (2023-01-20)
 
 
