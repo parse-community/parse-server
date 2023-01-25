@@ -12,6 +12,7 @@ var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
+const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
@@ -64,18 +65,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
     }
   }
 
-  if (this.config.requestKeywordDenylist) {
-    // Scan request data for denied keywords
-    for (const keyword of this.config.requestKeywordDenylist) {
-      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
-      if (match) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
-        );
-      }
-    }
-  }
+  this.checkProhibitedKeywords(data);
 
   // When the operation is complete, this.response may have several
   // fields.
@@ -217,7 +207,7 @@ RestWrite.prototype.validateSchema = function () {
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeSaveTrigger = function () {
-  if (this.response) {
+  if (this.response || this.runOptions.many) {
     return;
   }
 
@@ -292,6 +282,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
           delete this.data.objectId;
         }
       }
+      this.checkProhibitedKeywords(this.data);
     });
 };
 
@@ -1018,6 +1009,20 @@ RestWrite.prototype.handleSession = function () {
     } else if (this.data.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     }
+    if (!this.auth.isMaster) {
+      this.query = {
+        $and: [
+          this.query,
+          {
+            user: {
+              __type: 'Pointer',
+              className: '_User',
+              objectId: this.auth.user.id,
+            },
+          },
+        ],
+      };
+    }
   }
 
   if (!this.query && !this.auth.isMaster) {
@@ -1522,7 +1527,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
 // Returns nothing - doesn't wait for the trigger.
 RestWrite.prototype.runAfterSaveTrigger = function () {
-  if (!this.response || !this.response.response) {
+  if (!this.response || !this.response.response || this.runOptions.many) {
     return;
   }
 
@@ -1677,18 +1682,24 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
-  const skipKeys = [
-    'objectId',
-    'createdAt',
-    'updatedAt',
-    ...(requiredColumns.read[this.className] || []),
-  ];
+  const skipKeys = [...(requiredColumns.read[this.className] || [])];
+  if (!this.query) {
+    skipKeys.push('objectId', 'createdAt');
+  } else {
+    skipKeys.push('updatedAt');
+    delete response.objectId;
+  }
   for (const key in response) {
     if (skipKeys.includes(key)) {
       continue;
     }
     const value = response[key];
-    if (value == null || (value.__type && value.__type === 'Pointer') || data[key] === value) {
+    if (
+      value == null ||
+      (value.__type && value.__type === 'Pointer') ||
+      util.isDeepStrictEqual(data[key], value) ||
+      util.isDeepStrictEqual((this.originalData || {})[key], value)
+    ) {
       delete response[key];
     }
   }
@@ -1712,6 +1723,21 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     }
   });
   return response;
+};
+
+RestWrite.prototype.checkProhibitedKeywords = function (data) {
+  if (this.config.requestKeywordDenylist) {
+    // Scan request data for denied keywords
+    for (const keyword of this.config.requestKeywordDenylist) {
+      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+      if (match) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+        );
+      }
+    }
+  }
 };
 
 export default RestWrite;

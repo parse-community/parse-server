@@ -203,6 +203,9 @@ RestQuery.prototype.execute = function (executeOptions) {
       return this.buildRestWhere();
     })
     .then(() => {
+      return this.denyProtectedFields();
+    })
+    .then(() => {
       return this.handleIncludeAll();
     })
     .then(() => {
@@ -686,6 +689,30 @@ RestQuery.prototype.runCount = function () {
   return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
     this.response.count = c;
   });
+};
+
+RestQuery.prototype.denyProtectedFields = async function () {
+  if (this.auth.isMaster) {
+    return;
+  }
+  const schemaController = await this.config.database.loadSchema();
+  const protectedFields =
+    this.config.database.addProtectedFields(
+      schemaController,
+      this.className,
+      this.restWhere,
+      this.findOptions.acl,
+      this.auth,
+      this.findOptions
+    ) || [];
+  for (const key of protectedFields) {
+    if (this.restWhere[key]) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `This user is not allowed to query ${key} on class ${this.className}`
+      );
+    }
+  }
 };
 
 // Augments this.response with all pointers on an object
