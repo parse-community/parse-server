@@ -1,3 +1,10 @@
+# [6.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.27...6.0.0-alpha.28) (2023-01-25)
+
+
+### Bug Fixes
+
+* Rate limiter may reject requests that contain a session token ([#8399](https://github.com/parse-community/parse-server/issues/8399)) ([c114dc8](https://github.com/parse-community/parse-server/commit/c114dc8831055d74187b9dfb4c9eeb558520237c))
+
 # [6.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.26...6.0.0-alpha.27) (2023-01-23)
 
 
