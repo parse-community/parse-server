@@ -276,7 +276,13 @@ const handleRateLimit = async (req, res, next) => {
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
-              throw err;
+              if (err.code === Parse.Error.CONNECTION_FAILED) {
+                throw err;
+              }
+              req.config.loggerController.error(
+                'An unknown error occured when attempting to apply the rate limiter: ',
+                err
+              );
             }
           });
         }
@@ -284,7 +290,7 @@ const handleRateLimit = async (req, res, next) => {
     );
   } catch (error) {
     res.status(429);
-    res.json({ code: Parse.Error.CONNECTION_FAILED, error });
+    res.json({ code: Parse.Error.CONNECTION_FAILED, error: error.message });
     return;
   }
   next();
@@ -477,7 +483,10 @@ export const addRateLimit = (route, config) => {
       max: route.requestCount,
       message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
-        throw options.message;
+        throw {
+          code: Parse.Error.CONNECTION_FAILED,
+          message: options.message,
+        };
       },
       skip: request => {
         if (request.ip === '127.0.0.1' && !route.includeInternalRequests) {
@@ -498,7 +507,7 @@ export const addRateLimit = (route, config) => {
             }
           }
         }
-        return request.auth.isMaster;
+        return request.auth?.isMaster;
       },
       keyGenerator: request => {
         return request.config.ip;
