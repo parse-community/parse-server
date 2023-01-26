@@ -5,7 +5,7 @@
 - Link this pull request to an [issue](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
 
 ### Issue
-<!-- Link the issue that this PR closes. -->
+<!-- Add the link to the issue that this PR closes. -->
 
 Closes: FILL_THIS_OUT
 
