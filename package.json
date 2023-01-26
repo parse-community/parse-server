@@ -46,7 +46,7 @@
     "mime": "3.0.0",
     "mongodb": "4.10.0",
     "mustache": "4.2.0",
-    "parse": "4.0.0-alpha.3",
+    "parse": "4.0.0",
     "pg-monitor": "1.5.0",
     "pg-promise": "10.12.1",
     "pluralize": "8.0.0",
