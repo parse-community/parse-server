@@ -102,13 +102,13 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 Parse Server is available in different flavors on different branches:
 
 - The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
-- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-4.x.x`. LTS branches do not have pre-release branches.
+- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-5.x.x`. LTS branches do not have pre-release branches.
 
 ## Long Term Support
 
-Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 5.x will receive security updates until Parse Server 6.x is superseded by Parse Server 7.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-5.x.x` for the Parse Server 5.x LTS branch.
 
-⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-4.x.x) to see the current open vulnerabilities for that LTS branch.
+⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-5.x.x) to see the current open vulnerabilities for that LTS branch.
 
 # Getting Started
 
