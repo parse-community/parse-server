@@ -2,7 +2,7 @@ import corsMiddleware from 'cors';
 import { createServer, renderGraphiQL } from '@graphql-yoga/node';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
-import { handleParseErrors, handleParseHeaders } from '../middlewares';
+import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
@@ -82,6 +82,7 @@ class ParseGraphQLServer {
 
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
+    app.use(this.config.graphQLPath, handleParseSession);
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(this.config.graphQLPath, async (req, res) => {
       const server = await this._getServer();

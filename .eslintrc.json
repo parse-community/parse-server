@@ -5,13 +5,14 @@
         "node": true,
         "es6": true
     },
-    "parser": "babel-eslint",
+    "parser": "@babel/eslint-parser",
     "plugins": [
         "flowtype"
     ],
     "parserOptions": {
         "ecmaVersion": 6,
-        "sourceType": "module"
+        "sourceType": "module",
+        "requireConfigFile": false
     },
     "rules": {
         "indent": ["error", 2, { "SwitchCase": 1 }],
