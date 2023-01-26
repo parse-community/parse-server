@@ -111,7 +111,7 @@ function del(config, auth, className, objectId, context) {
             if (response && response.results && response.results.length) {
               const firstResult = response.results[0];
               firstResult.className = className;
-              if (className === '_Session' && !auth.isMaster && !auth.isMaintenance) {
+              if (className === '_Session' && !auth.isMaster) {
                 if (!auth.user || firstResult.user.objectId !== auth.user.id) {
                   throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
                 }
@@ -134,7 +134,7 @@ function del(config, auth, className, objectId, context) {
       return Promise.resolve({});
     })
     .then(() => {
-      if (!auth.isMaster && !auth.isMaintenance) {
+      if (!auth.isMaster) {
         return auth.getUserRoles();
       } else {
         return;
@@ -144,7 +144,7 @@ function del(config, auth, className, objectId, context) {
     .then(s => {
       schemaController = s;
       const options = {};
-      if (!auth.isMaster && !auth.isMaintenance) {
+      if (!auth.isMaster) {
         options.acl = ['*'];
         if (auth.user) {
           options.acl.push(auth.user.id);
@@ -237,12 +237,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
 
 function handleSessionMissingError(error, className, auth) {
   // If we're trying to update a user without / with bad session token
-  if (
-    className === '_User' &&
-    error.code === Parse.Error.OBJECT_NOT_FOUND &&
-    !auth.isMaster &&
-    !auth.isMaintenance
-  ) {
+  if (className === '_User' && error.code === Parse.Error.OBJECT_NOT_FOUND && !auth.isMaster) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
@@ -258,7 +253,7 @@ const classesWithMasterOnlyAccess = [
 ];
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
-  if (className === '_Installation' && !auth.isMaster && !auth.isMaintenance) {
+  if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {
       const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`;
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
@@ -266,11 +261,7 @@ function enforceRoleSecurity(method, className, auth) {
   }
 
   //all volatileClasses are masterKey only
-  if (
-    classesWithMasterOnlyAccess.indexOf(className) >= 0 &&
-    !auth.isMaster &&
-    !auth.isMaintenance
-  ) {
+  if (classesWithMasterOnlyAccess.indexOf(className) >= 0 && !auth.isMaster) {
     const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }

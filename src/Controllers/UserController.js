@@ -69,17 +69,20 @@ export class UserController extends AdaptableController {
 
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
-    const maintenanceAuth = Auth.maintenance(this.config);
-    var findUserForEmailVerification = new RestQuery(this.config, maintenanceAuth, '_User', {
-      username,
-    });
+    const masterAuth = Auth.master(this.config);
+    var findUserForEmailVerification = new RestQuery(
+      this.config,
+      Auth.master(this.config),
+      '_User',
+      { username: username }
+    );
     return findUserForEmailVerification.execute().then(result => {
       if (result.results.length && result.results[0].emailVerified) {
         return Promise.resolve(result.results.length[0]);
       } else if (result.results.length) {
         query.objectId = result.results[0].objectId;
       }
-      return rest.update(this.config, maintenanceAuth, '_User', query, updateFields);
+      return rest.update(this.config, masterAuth, '_User', query, updateFields);
     });
   }
 
@@ -91,8 +94,7 @@ export class UserController extends AdaptableController {
           username: username,
           _perishable_token: token,
         },
-        { limit: 1 },
-        Auth.maintenance(this.config)
+        { limit: 1 }
       )
       .then(results => {
         if (results.length != 1) {
@@ -226,8 +228,7 @@ export class UserController extends AdaptableController {
             { username: email, email: { $exists: false }, _perishable_token: { $exists: true } },
           ],
         },
-        { limit: 1 },
-        Auth.maintenance(this.config)
+        { limit: 1 }
       );
       if (results.length == 1) {
         let expiresDate = results[0]._perishable_token_expires_at;

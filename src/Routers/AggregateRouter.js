@@ -3,6 +3,7 @@ import rest from '../rest';
 import * as middleware from '../middlewares';
 import Parse from 'parse/node';
 import UsersRouter from './UsersRouter';
+import Deprecator from '../Deprecator/Deprecator';
 
 export class AggregateRouter extends ClassesRouter {
   handleFind(req) {
@@ -82,30 +83,22 @@ export class AggregateRouter extends ClassesRouter {
 
     return pipeline.map(stage => {
       const keys = Object.keys(stage);
-      if (keys.length !== 1) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Pipeline stages should only have one key but found ${keys.join(', ')}.`
-        );
+      if (keys.length != 1) {
+        throw new Error(`Pipeline stages should only have one key found ${keys.join(', ')}`);
       }
       return AggregateRouter.transformStage(keys[0], stage);
     });
   }
 
   static transformStage(stageName, stage) {
-    const skipKeys = ['distinct', 'where'];
-    if (skipKeys.includes(stageName)) {
-      return;
-    }
-    if (stageName[0] !== '$') {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage '${stageName}'.`);
-    }
-    if (stageName === '$group') {
+    if (stageName === 'group') {
       if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Cannot use 'objectId' in aggregation stage $group.`
-        );
+        Deprecator.logRuntimeDeprecation({
+          usage: 'The use of objectId in aggregation stage $group',
+          solution: 'Use _id instead.',
+        });
+        stage[stageName]._id = stage[stageName].objectId;
+        delete stage[stageName].objectId;
       }
       if (!Object.prototype.hasOwnProperty.call(stage[stageName], '_id')) {
         throw new Parse.Error(
@@ -114,7 +107,15 @@ export class AggregateRouter extends ClassesRouter {
         );
       }
     }
-    return { [stageName]: stage[stageName] };
+
+    if (stageName[0] !== '$') {
+      Deprecator.logRuntimeDeprecation({
+        usage: "Using aggregation stages without a leading '$'",
+        solution: `Try $${stageName} instead.`,
+      });
+    }
+    const key = stageName[0] === '$' ? stageName : `$${stageName}`;
+    return { [key]: stage[stageName] };
   }
 
   mountRoutes() {

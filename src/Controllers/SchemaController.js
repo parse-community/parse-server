@@ -1071,19 +1071,14 @@ export default class SchemaController {
     className: string,
     fieldName: string,
     type: string | SchemaField,
-    isValidation?: boolean,
-    maintenance?: boolean
+    isValidation?: boolean
   ) {
     if (fieldName.indexOf('.') > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
       fieldName = fieldName.split('.')[0];
       type = 'Object';
     }
-    let fieldNameToValidate = `${fieldName}`;
-    if (maintenance && fieldNameToValidate.charAt(0) === '_') {
-      fieldNameToValidate = fieldNameToValidate.substring(1);
-    }
-    if (!fieldNameIsValid(fieldNameToValidate, className)) {
+    if (!fieldNameIsValid(fieldName, className)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
 
@@ -1233,7 +1228,7 @@ export default class SchemaController {
   // Validates an object provided in REST format.
   // Returns a promise that resolves to the new schema if this object is
   // valid.
-  async validateObject(className: string, object: any, query: any, maintenance: boolean) {
+  async validateObject(className: string, object: any, query: any) {
     let geocount = 0;
     const schema = await this.enforceClassExists(className);
     const promises = [];
@@ -1263,7 +1258,7 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promises.push(schema.enforceFieldExists(className, fieldName, expected, true, maintenance));
+      promises.push(schema.enforceFieldExists(className, fieldName, expected, true));
     }
     const results = await Promise.all(promises);
     const enforceFields = results.filter(result => !!result);

@@ -1,10 +1,11 @@
 const AggregateRouter = require('../lib/Routers/AggregateRouter').AggregateRouter;
 
 describe('AggregateRouter', () => {
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Array', () => {
     const body = [
       {
-        $group: { _id: {} },
+        group: { objectId: {} },
       },
     ];
     const expected = [{ $group: { _id: {} } }];
@@ -12,20 +13,22 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Object', () => {
     const body = {
-      $group: { _id: {} },
+      group: { objectId: {} },
     };
     const expected = [{ $group: { _id: {} } }];
     const result = AggregateRouter.getPipeline(body);
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Pipeline Operator (Array)', () => {
     const body = {
       pipeline: [
         {
-          $group: { _id: {} },
+          group: { objectId: {} },
         },
       ],
     };
@@ -34,10 +37,11 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline from Pipeline Operator (Object)', () => {
     const body = {
       pipeline: {
-        $group: { _id: {} },
+        group: { objectId: {} },
       },
     };
     const expected = [{ $group: { _id: {} } }];
@@ -45,42 +49,43 @@ describe('AggregateRouter', () => {
     expect(result).toEqual(expected);
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline fails multiple keys in Array stage ', () => {
     const body = [
       {
-        $group: { _id: {} },
-        $match: { name: 'Test' },
+        group: { objectId: {} },
+        match: { name: 'Test' },
       },
     ];
-    expect(() => AggregateRouter.getPipeline(body)).toThrow(
-      new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        'Pipeline stages should only have one key but found $group, $match.'
-      )
-    );
+    try {
+      AggregateRouter.getPipeline(body);
+    } catch (e) {
+      expect(e.message).toBe('Pipeline stages should only have one key found group, match');
+    }
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get pipeline fails multiple keys in Pipeline Operator Array stage ', () => {
     const body = {
       pipeline: [
         {
-          $group: { _id: {} },
-          $match: { name: 'Test' },
+          group: { objectId: {} },
+          match: { name: 'Test' },
         },
       ],
     };
-    expect(() => AggregateRouter.getPipeline(body)).toThrow(
-      new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        'Pipeline stages should only have one key but found $group, $match.'
-      )
-    );
+    try {
+      AggregateRouter.getPipeline(body);
+    } catch (e) {
+      expect(e.message).toBe('Pipeline stages should only have one key found group, match');
+    }
   });
 
+  // TODO: update pipeline syntax. See [#7339](https://bit.ly/3incnWx)
   it('get search pipeline from Pipeline Operator (Array)', () => {
     const body = {
       pipeline: {
-        $search: {},
+        search: {},
       },
     };
     const expected = [{ $search: {} }];
@@ -100,7 +105,7 @@ describe('AggregateRouter', () => {
   it('support nested stage names starting with `$`', () => {
     const body = [
       {
-        $lookup: {
+        lookup: {
           from: 'ACollection',
           let: { id: '_id' },
           as: 'results',
@@ -140,11 +145,11 @@ describe('AggregateRouter', () => {
 
   it('support the use of `_id` in stages', () => {
     const body = [
-      { $match: { _id: 'randomId' } },
-      { $sort: { _id: -1 } },
-      { $addFields: { _id: 1 } },
-      { $group: { _id: {} } },
-      { $project: { _id: 0 } },
+      { match: { _id: 'randomId' } },
+      { sort: { _id: -1 } },
+      { addFields: { _id: 1 } },
+      { group: { _id: {} } },
+      { project: { _id: 0 } },
     ];
     const expected = [
       { $match: { _id: 'randomId' } },
@@ -155,20 +160,5 @@ describe('AggregateRouter', () => {
     ];
     const result = AggregateRouter.getPipeline(body);
     expect(result).toEqual(expected);
-  });
-
-  it('should throw with invalid stage', () => {
-    expect(() => AggregateRouter.getPipeline([{ foo: 'bar' }])).toThrow(
-      new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage 'foo'.`)
-    );
-  });
-
-  it('should throw with invalid group', () => {
-    expect(() => AggregateRouter.getPipeline([{ $group: { objectId: 'bar' } }])).toThrow(
-      new Parse.Error(
-        Parse.Error.INVALID_QUERY,
-        `Cannot use 'objectId' in aggregation stage $group.`
-      )
-    );
   });
 });

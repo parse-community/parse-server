@@ -124,7 +124,7 @@ class ParseServer {
             json = require(process.env.npm_package_json);
           }
           if (process.env.npm_package_type === 'module' || json?.type === 'module') {
-            await import(path.resolve(process.cwd(), cloud));
+            await import(path.resolve(process.cwd(), cloud)).default;
           } else {
             require(path.resolve(process.cwd(), cloud));
           }
@@ -179,7 +179,7 @@ class ParseServer {
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
   static app(options) {
-    const { maxUploadSize = '20mb', appId, directAccess, pages, rateLimit = [] } = options;
+    const { maxUploadSize = '20mb', appId, directAccess, pages } = options;
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
@@ -214,11 +214,6 @@ class ParseServer {
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
-    const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
-    for (const route of routes) {
-      middlewares.addRateLimit(route, options);
-    }
-    api.use(middlewares.handleParseSession);
 
     const appRouter = ParseServer.promiseRouter({ appId });
     api.use(appRouter.expressRouter());
@@ -240,8 +235,7 @@ class ParseServer {
       });
       // verify the server url after a 'mount' event is received
       /* istanbul ignore next */
-      api.on('mount', async function () {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      api.on('mount', function () {
         ParseServer.verifyServerUrl();
       });
     }
@@ -349,9 +343,6 @@ class ParseServer {
         options
       );
     }
-    if (options.trustProxy) {
-      app.set('trust proxy', options.trustProxy);
-    }
     /* istanbul ignore next */
     if (!process.env.TESTING) {
       configureListeners(this);
@@ -393,44 +384,30 @@ class ParseServer {
     return server;
   }
 
-  static async verifyServerUrl() {
+  static verifyServerUrl(callback) {
     // perform a health check on the serverURL value
     if (Parse.serverURL) {
-      const isValidHttpUrl = string => {
-        let url;
-        try {
-          url = new URL(string);
-        } catch (_) {
-          return false;
-        }
-        return url.protocol === 'http:' || url.protocol === 'https:';
-      };
-      const url = `${Parse.serverURL.replace(/\/$/, '')}/health`;
-      if (!isValidHttpUrl(url)) {
-        console.warn(
-          `\nWARNING, Unable to connect to '${Parse.serverURL}' as the URL is invalid.` +
-            ` Cloud code and push notifications may be unavailable!\n`
-        );
-        return;
-      }
       const request = require('./request');
-      const response = await request({ url }).catch(response => response);
-      const json = response.data || null;
-      const retry = response.headers?.['retry-after'];
-      if (retry) {
-        await new Promise(resolve => setTimeout(resolve, retry * 1000));
-        return this.verifyServerUrl();
-      }
-      if (response.status !== 200 || json?.status !== 'ok') {
-        /* eslint-disable no-console */
-        console.warn(
-          `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
-            ` Cloud code and push notifications may be unavailable!\n`
-        );
-        /* eslint-enable no-console */
-        return;
-      }
-      return true;
+      request({ url: Parse.serverURL.replace(/\/$/, '') + '/health' })
+        .catch(response => response)
+        .then(response => {
+          const json = response.data || null;
+          if (response.status !== 200 || !json || (json && json.status !== 'ok')) {
+            /* eslint-disable no-console */
+            console.warn(
+              `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+                ` Cloud code and push notifications may be unavailable!\n`
+            );
+            /* eslint-enable no-console */
+            if (callback) {
+              callback(false);
+            }
+          } else {
+            if (callback) {
+              callback(true);
+            }
+          }
+        });
     }
   }
 }
@@ -513,6 +490,10 @@ function injectDefaults(options: ParseServerOptions) {
       });
     }
   });
+
+  options.masterKeyIps = Array.from(
+    new Set(options.masterKeyIps.concat(defaults.masterKeyIps, options.masterKeyIps))
+  );
 }
 
 // Those can't be tested as it requires a subprocess

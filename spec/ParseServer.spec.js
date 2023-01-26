@@ -29,20 +29,27 @@ describe('Server Url Checks', () => {
     server.close(done);
   });
 
-  it('validate good server url', async () => {
+  it('validate good server url', done => {
     Parse.serverURL = 'http://localhost:13376';
-    const response = await ParseServer.verifyServerUrl();
-    expect(response).toBeTrue();
+    ParseServer.verifyServerUrl(async result => {
+      if (!result) {
+        done.fail('Did not pass valid url');
+      }
+      await reconfigureServer();
+      done();
+    });
   });
 
-  it('mark bad server url', async () => {
+  it('mark bad server url', done => {
     spyOn(console, 'warn').and.callFake(() => {});
     Parse.serverURL = 'notavalidurl';
-    const response = await ParseServer.verifyServerUrl();
-    expect(response).not.toBeTrue();
-    expect(console.warn).toHaveBeenCalledWith(
-      `\nWARNING, Unable to connect to 'notavalidurl' as the URL is invalid. Cloud code and push notifications may be unavailable!\n`
-    );
+    ParseServer.verifyServerUrl(async result => {
+      if (result) {
+        done.fail('Did not mark invalid url');
+      }
+      await reconfigureServer();
+      done();
+    });
   });
 
   xit('handleShutdown, close connection', done => {

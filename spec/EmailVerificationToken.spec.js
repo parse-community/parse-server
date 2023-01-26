@@ -1,6 +1,5 @@
 'use strict';
 
-const Auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
 
@@ -263,14 +262,9 @@ describe('Email Verification Token Expiration: ', () => {
       })
       .then(() => {
         const config = Config.get('test');
-        return config.database.find(
-          '_User',
-          {
-            username: 'sets_email_verify_token_expires_at',
-          },
-          {},
-          Auth.maintenance(config)
-        );
+        return config.database.find('_User', {
+          username: 'sets_email_verify_token_expires_at',
+        });
       })
       .then(results => {
         expect(results.length).toBe(1);
@@ -505,12 +499,7 @@ describe('Email Verification Token Expiration: ', () => {
       .then(() => {
         const config = Config.get('test');
         return config.database
-          .find(
-            '_User',
-            { username: 'newEmailVerifyTokenOnEmailReset' },
-            {},
-            Auth.maintenance(config)
-          )
+          .find('_User', { username: 'newEmailVerifyTokenOnEmailReset' })
           .then(results => {
             return results[0];
           });
@@ -593,7 +582,7 @@ describe('Email Verification Token Expiration: ', () => {
         // query for this user again
         const config = Config.get('test');
         return config.database
-          .find('_User', { username: 'resends_verification_token' }, {}, Auth.maintenance(config))
+          .find('_User', { username: 'resends_verification_token' })
           .then(results => {
             return results[0];
           });
@@ -610,7 +599,6 @@ describe('Email Verification Token Expiration: ', () => {
         done();
       })
       .catch(error => {
-        console.log(error);
         jfail(error);
         done();
       });

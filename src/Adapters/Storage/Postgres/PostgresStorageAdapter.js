@@ -2241,11 +2241,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
           });
           stage.$match = collapse;
         }
-        for (let field in stage.$match) {
+        for (const field in stage.$match) {
           const value = stage.$match[field];
-          if (field === '_id') {
-            field = 'objectId';
-          }
           const matchPatterns = [];
           Object.keys(ParseToPosgresComparator).forEach(cmp => {
             if (value[cmp]) {

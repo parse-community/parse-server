@@ -1,9 +1,9 @@
 {
     "plugins": [
-        "@babel/plugin-proposal-object-rest-spread"
+        "transform-object-rest-spread"
     ],
     "presets": [
-        ["@babel/preset-env", {
+        ["env", {
             "targets": {
                 "node": "14"
             }
