@@ -1,3 +1,24 @@
+# [6.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.28...6.0.0-alpha.29) (2023-01-26)
+
+
+### Features
+
+* Upgrade to Parse JavaScript SDK 4 ([#8332](https://github.com/parse-community/parse-server/issues/8332)) ([9092874](https://github.com/parse-community/parse-server/commit/9092874a9a482a24dfdce1dce56615702999d6b8))
+
+# [6.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.27...6.0.0-alpha.28) (2023-01-25)
+
+
+### Bug Fixes
+
+* Rate limiter may reject requests that contain a session token ([#8399](https://github.com/parse-community/parse-server/issues/8399)) ([c114dc8](https://github.com/parse-community/parse-server/commit/c114dc8831055d74187b9dfb4c9eeb558520237c))
+
+# [6.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.26...6.0.0-alpha.27) (2023-01-23)
+
+
+### Bug Fixes
+
+* `ParseServer.verifyServerUrl` may fail if server response headers are missing; remove unnecessary logging ([#8391](https://github.com/parse-community/parse-server/issues/8391)) ([1c37a7c](https://github.com/parse-community/parse-server/commit/1c37a7cd0715949a70b220a629071c7dab7d5e7b))
+
 # [6.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.25...6.0.0-alpha.26) (2023-01-20)
 
 

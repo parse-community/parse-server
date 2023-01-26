@@ -240,7 +240,8 @@ class ParseServer {
       });
       // verify the server url after a 'mount' event is received
       /* istanbul ignore next */
-      api.on('mount', function () {
+      api.on('mount', async function () {
+        await new Promise(resolve => setTimeout(resolve, 1000));
         ParseServer.verifyServerUrl();
       });
     }
@@ -415,8 +416,7 @@ class ParseServer {
       const request = require('./request');
       const response = await request({ url }).catch(response => response);
       const json = response.data || null;
-      console.log(response.status, { json });
-      const retry = response.headers['retry-after'];
+      const retry = response.headers?.['retry-after'];
       if (retry) {
         await new Promise(resolve => setTimeout(resolve, retry * 1000));
         return this.verifyServerUrl();
