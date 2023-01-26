@@ -10,7 +10,7 @@
 Closes: FILL_THIS_OUT
 
 ### Approach
-<!-- Add a description of the approach in this PR. -->
+<!-- Describe the changes in this PR. -->
 
 ### TODOs before merging
 <!-- Delete TODOs that don't apply. -->
