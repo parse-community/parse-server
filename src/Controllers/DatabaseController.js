@@ -221,9 +221,7 @@ const filterSensitiveData = (
 
     // fields not requested by client (excluded),
     // but were needed to apply protectedFields
-    perms && perms.protectedFields &&
-      perms.protectedFields.temporaryKeys &&
-      perms.protectedFields.temporaryKeys.forEach(k => delete object[k]);
+    perms?.protectedFields?.temporaryKeys?.forEach(k => delete object[k]);
   }
 
   for (const key in object) {
