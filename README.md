@@ -19,7 +19,6 @@
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
 [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)][open-collective-link]
-[![License][license-svg]][license-link]
 [![Forum](https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg)](https://community.parseplatform.org/c/parse-server)
 [![Twitter](https://img.shields.io/twitter/follow/ParsePlatform.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=ParsePlatform)
 [![Chat](https://img.shields.io/badge/Chat-Join!-%23fff?style=social&logo=slack)](https://chat.parseplatform.org)
@@ -1204,12 +1203,6 @@ Support us with a monthly donation and help us continue our activities. [Become 
 
 <a href="https://opencollective.com/parse-server#backers" target="_blank"><img src="https://opencollective.com/parse-server/backers.svg?width=890" /></a>
 
------
-
-As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.
-
-[license-svg]: https://img.shields.io/badge/license-BSD-lightgrey.svg
-[license-link]: LICENSE
 [open-collective-link]: https://opencollective.com/parse-server
 [log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
 [log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
