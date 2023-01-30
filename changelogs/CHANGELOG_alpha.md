@@ -1,3 +1,10 @@
+# [6.0.0-alpha.30](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.29...6.0.0-alpha.30) (2023-01-27)
+
+
+### Bug Fixes
+
+* Schema without class level permissions may cause error ([#8409](https://github.com/parse-community/parse-server/issues/8409)) ([aa2cd51](https://github.com/parse-community/parse-server/commit/aa2cd51b703388d925e4572e5c2b2d883c68e49c))
+
 # [6.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.28...6.0.0-alpha.29) (2023-01-26)
 
 
