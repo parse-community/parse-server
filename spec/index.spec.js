@@ -61,34 +61,19 @@ describe('server', () => {
     });
   });
 
-  it('fails if database is unreachable', done => {
-    reconfigureServer({
+  it('fails if database is unreachable', async () => {
+    const server = new ParseServer.default({
+      ...defaultConfiguration,
       databaseAdapter: new MongoStorageAdapter({
         uri: 'mongodb://fake:fake@localhost:43605/drew3',
         mongoOptions: {
           serverSelectionTimeoutMS: 2000,
         },
       }),
-    }).catch(() => {
-      const config = Config.get('test');
-      config.schemaCache.clear();
-      //Need to use rest api because saving via JS SDK results in fail() not getting called
-      request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/classes/NewClass',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        body: {},
-      }).then(fail, response => {
-        expect(response.status).toEqual(500);
-        const body = response.data;
-        expect(body.code).toEqual(1);
-        expect(body.message).toEqual('Internal server error.');
-        reconfigureServer().then(done, done);
-      });
     });
+    const error = await server.start().catch(e => e);
+    expect(`${error}`.includes('MongoServerSelectionError')).toBeTrue();
+    await reconfigureServer();
   });
 
   describe('mail adapter', () => {
@@ -295,91 +280,47 @@ describe('server', () => {
     });
   });
 
-  it('can create a parse-server v1', done => {
+  it('can create a parse-server v1', async () => {
+    await reconfigureServer({ appId: 'aTestApp' });
     const parseServer = new ParseServer.default(
       Object.assign({}, defaultConfiguration, {
         appId: 'aTestApp',
         masterKey: 'aTestMasterKey',
         serverURL: 'http://localhost:12666/parse',
-        serverStartComplete: () => {
-          expect(Parse.applicationId).toEqual('aTestApp');
-          const app = express();
-          app.use('/parse', parseServer.app);
-
-          const server = app.listen(12666);
-          const obj = new Parse.Object('AnObject');
-          let objId;
-          obj
-            .save()
-            .then(obj => {
-              objId = obj.id;
-              const q = new Parse.Query('AnObject');
-              return q.first();
-            })
-            .then(obj => {
-              expect(obj.id).toEqual(objId);
-              server.close(async () => {
-                await reconfigureServer();
-                done();
-              });
-            })
-            .catch(() => {
-              server.close(async () => {
-                await reconfigureServer();
-                done();
-              });
-            });
-        },
       })
     );
+    await parseServer.start();
+    expect(Parse.applicationId).toEqual('aTestApp');
+    const app = express();
+    app.use('/parse', parseServer.app);
+    const server = app.listen(12666);
+    const obj = new Parse.Object('AnObject');
+    await obj.save();
+    const query = await new Parse.Query('AnObject').first();
+    expect(obj.id).toEqual(query.id);
+    await new Promise(resolve => server.close(resolve));
   });
 
-  it('can create a parse-server v2', done => {
-    let objId;
-    let server;
+  it('can create a parse-server v2', async () => {
+    await reconfigureServer({ appId: 'anOtherTestApp' });
     const parseServer = ParseServer.ParseServer(
       Object.assign({}, defaultConfiguration, {
         appId: 'anOtherTestApp',
         masterKey: 'anOtherTestMasterKey',
         serverURL: 'http://localhost:12667/parse',
-        serverStartComplete: error => {
-          const promise = error ? Promise.reject(error) : Promise.resolve();
-          promise
-            .then(() => {
-              expect(Parse.applicationId).toEqual('anOtherTestApp');
-              const app = express();
-              app.use('/parse', parseServer);
-
-              server = app.listen(12667);
-              const obj = new Parse.Object('AnObject');
-              return obj.save();
-            })
-            .then(obj => {
-              objId = obj.id;
-              const q = new Parse.Query('AnObject');
-              return q.first();
-            })
-            .then(obj => {
-              expect(obj.id).toEqual(objId);
-              server.close(async () => {
-                await reconfigureServer();
-                done();
-              });
-            })
-            .catch(error => {
-              fail(JSON.stringify(error));
-              if (server) {
-                server.close(async () => {
-                  await reconfigureServer();
-                  done();
-                });
-              } else {
-                done();
-              }
-            });
-        },
       })
     );
+
+    expect(Parse.applicationId).toEqual('anOtherTestApp');
+    await parseServer.start();
+    const app = express();
+    app.use('/parse', parseServer.app);
+    const server = app.listen(12667);
+    const obj = new Parse.Object('AnObject');
+    await obj.save();
+    const q = await new Parse.Query('AnObject').first();
+    expect(obj.id).toEqual(q.id);
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('has createLiveQueryServer', done => {
@@ -495,7 +436,9 @@ describe('server', () => {
 
   it('fails if you provides invalid ip in masterKeyIps', done => {
     reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
-      expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
+      expect(error).toEqual(
+        'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
+      );
       done();
     });
   });
@@ -504,6 +447,11 @@ describe('server', () => {
     reconfigureServer({
       masterKeyIps: ['1.2.3.4', '2001:0db8:0000:0042:0000:8a2e:0370:7334'],
     }).then(done);
+  });
+
+  it('should set default masterKeyIps for IPv4 and IPv6 localhost', () => {
+    const definitions = require('../lib/Options/Definitions.js');
+    expect(definitions.ParseServerOptions.masterKeyIps.default).toEqual(['127.0.0.1', '::1']);
   });
 
   it('should load a middleware', done => {
@@ -549,6 +497,92 @@ describe('server', () => {
         });
       })
       .catch(done.fail);
+  });
+
+  it('can call start', async () => {
+    await reconfigureServer({ appId: 'aTestApp' });
+    const config = {
+      ...defaultConfiguration,
+      appId: 'aTestApp',
+      masterKey: 'aTestMasterKey',
+      serverURL: 'http://localhost:12701/parse',
+    };
+    const parseServer = new ParseServer.ParseServer(config);
+    await parseServer.start();
+    expect(Parse.applicationId).toEqual('aTestApp');
+    expect(Parse.serverURL).toEqual('http://localhost:12701/parse');
+    const app = express();
+    app.use('/parse', parseServer.app);
+    const server = app.listen(12701);
+    const testObject = new Parse.Object('TestObject');
+    await expectAsync(testObject.save()).toBeResolved();
+    await new Promise(resolve => server.close(resolve));
+  });
+
+  it('start is required to mount', async () => {
+    await reconfigureServer({ appId: 'aTestApp' });
+    const config = {
+      ...defaultConfiguration,
+      appId: 'aTestApp',
+      masterKey: 'aTestMasterKey',
+      serverURL: 'http://localhost:12701/parse',
+    };
+    const parseServer = new ParseServer.ParseServer(config);
+    expect(Parse.applicationId).toEqual('aTestApp');
+    expect(Parse.serverURL).toEqual('http://localhost:12701/parse');
+    const app = express();
+    app.use('/parse', parseServer.app);
+    const server = app.listen(12701);
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'aTestApp',
+      },
+      method: 'POST',
+      url: 'http://localhost:12701/parse/classes/TestObject',
+    }).catch(e => new Parse.Error(e.data.code, e.data.error));
+    expect(response).toEqual(
+      new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid server state: initialized')
+    );
+    const health = await request({
+      url: 'http://localhost:12701/parse/health',
+    }).catch(e => e);
+    spyOn(console, 'warn').and.callFake(() => {});
+    const verify = await ParseServer.default.verifyServerUrl();
+    expect(verify).not.toBeTrue();
+    expect(console.warn).toHaveBeenCalledWith(
+      `\nWARNING, Unable to connect to 'http://localhost:12701/parse'. Cloud code and push notifications may be unavailable!\n`
+    );
+    expect(health.data.status).toBe('initialized');
+    expect(health.status).toBe(503);
+    await new Promise(resolve => server.close(resolve));
+  });
+
+  it('can get starting state', async () => {
+    await reconfigureServer({ appId: 'test2', silent: false });
+    const parseServer = new ParseServer.ParseServer({
+      ...defaultConfiguration,
+      appId: 'test2',
+      masterKey: 'abc',
+      serverURL: 'http://localhost:12668/parse',
+      async cloud() {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      },
+    });
+    const express = require('express');
+    const app = express();
+    app.use('/parse', parseServer.app);
+    const server = app.listen(12668);
+    const startingPromise = parseServer.start();
+    const health = await request({
+      url: 'http://localhost:12668/parse/health',
+    }).catch(e => e);
+    expect(health.data.status).toBe('starting');
+    expect(health.status).toBe(503);
+    expect(health.headers['retry-after']).toBe('1');
+    const response = await ParseServer.default.verifyServerUrl();
+    expect(response).toBeTrue();
+    await startingPromise;
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {

@@ -16,7 +16,9 @@ describe('Personally Identifiable Information', () => {
     await reconfigureServer();
     user = await Parse.User.signUp('tester', 'abc');
     user = await Parse.User.logIn(user.get('username'), 'abc');
-    await user.set('email', EMAIL).set('zip', ZIP).set('ssn', SSN).save();
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    await user.set('email', EMAIL).set('zip', ZIP).set('ssn', SSN).setACL(acl).save();
     done();
   });
 

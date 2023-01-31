@@ -2,19 +2,21 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
+import { isBoolean, isString } from 'lodash';
+import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
-import net from 'net';
+import { logLevels as validLogLevels } from './Controllers/LoggerController';
 import {
-  IdempotencyOptions,
-  FileUploadOptions,
   AccountLockoutOptions,
+  FileUploadOptions,
+  IdempotencyOptions,
+  LogLevels,
   PagesOptions,
-  SecurityOptions,
-  SchemaOptions,
   ParseServerOptions,
+  SchemaOptions,
+  SecurityOptions,
 } from './Options/Definitions';
-import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -71,6 +73,8 @@ export class Config {
     passwordPolicy,
     masterKeyIps,
     masterKey,
+    maintenanceKey,
+    maintenanceKeyIps,
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
@@ -81,9 +85,16 @@ export class Config {
     enforcePrivateUsers,
     schema,
     requestKeywordDenylist,
+    allowExpiredAuthDataToken,
+    logLevels,
+    rateLimit,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
+    }
+
+    if (masterKey === maintenanceKey) {
+      throw new Error('masterKey and maintenanceKey should be different');
     }
 
     const emailAdapter = userController.adapter;
@@ -111,7 +122,8 @@ export class Config {
       }
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
-    this.validateMasterKeyIps(masterKeyIps);
+    this.validateIps('masterKeyIps', masterKeyIps);
+    this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
@@ -120,7 +132,10 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
+    this.validateRateLimit(rateLimit);
+    this.validateLogLevels(logLevels);
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -134,6 +149,12 @@ export class Config {
   static validateEnforcePrivateUsers(enforcePrivateUsers) {
     if (typeof enforcePrivateUsers !== 'boolean') {
       throw 'Parse Server option enforcePrivateUsers must be a boolean.';
+    }
+  }
+
+  static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
+    if (typeof allowExpiredAuthDataToken !== 'boolean') {
+      throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
     }
   }
 
@@ -426,10 +447,13 @@ export class Config {
     }
   }
 
-  static validateMasterKeyIps(masterKeyIps) {
-    for (const ip of masterKeyIps) {
+  static validateIps(field, masterKeyIps) {
+    for (let ip of masterKeyIps) {
+      if (ip.includes('/')) {
+        ip = ip.split('/')[0];
+      }
       if (!net.isIP(ip)) {
-        throw `Invalid ip in masterKeyIps: ${ip}`;
+        throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
       }
     }
   }
@@ -486,6 +510,60 @@ export class Config {
         });
       } else {
         throw 'Allow headers must be an array';
+      }
+    }
+  }
+
+  static validateLogLevels(logLevels) {
+    for (const key of Object.keys(LogLevels)) {
+      if (logLevels[key]) {
+        if (validLogLevels.indexOf(logLevels[key]) === -1) {
+          throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
+        }
+      } else {
+        logLevels[key] = LogLevels[key].default;
+      }
+    }
+  }
+
+  static validateRateLimit(rateLimit) {
+    if (!rateLimit) {
+      return;
+    }
+    if (
+      Object.prototype.toString.call(rateLimit) !== '[object Object]' &&
+      !Array.isArray(rateLimit)
+    ) {
+      throw `rateLimit must be an array or object`;
+    }
+    const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
+    for (const option of options) {
+      if (Object.prototype.toString.call(option) !== '[object Object]') {
+        throw `rateLimit must be an array of objects`;
+      }
+      if (option.requestPath == null) {
+        throw `rateLimit.requestPath must be defined`;
+      }
+      if (typeof option.requestPath !== 'string') {
+        throw `rateLimit.requestPath must be a string`;
+      }
+      if (option.requestTimeWindow == null) {
+        throw `rateLimit.requestTimeWindow must be defined`;
+      }
+      if (typeof option.requestTimeWindow !== 'number') {
+        throw `rateLimit.requestTimeWindow must be a number`;
+      }
+      if (option.includeInternalRequests && typeof option.includeInternalRequests !== 'boolean') {
+        throw `rateLimit.includeInternalRequests must be a boolean`;
+      }
+      if (option.requestCount == null) {
+        throw `rateLimit.requestCount must be defined`;
+      }
+      if (typeof option.requestCount !== 'number') {
+        throw `rateLimit.requestCount must be a number`;
+      }
+      if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
+        throw `rateLimit.errorResponseMessage must be a string`;
       }
     }
   }

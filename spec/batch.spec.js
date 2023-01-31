@@ -1,6 +1,5 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
-const semver = require('semver');
 const TestUtils = require('../lib/TestUtils');
 
 const originalURL = '/parse/batch';
@@ -206,19 +205,13 @@ describe('batch', () => {
   });
 
   if (
-    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
-      process.env.MONGODB_TOPOLOGY === 'replicaset' &&
-      process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
+    process.env.MONGODB_TOPOLOGY === 'replicaset' ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
       beforeEach(async () => {
         await TestUtils.destroyAllDataPermanently(true);
-        if (
-          semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
-          process.env.MONGODB_TOPOLOGY === 'replicaset' &&
-          process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
-        ) {
+        if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
           await reconfigureServer({
             databaseAdapter: undefined,
             databaseURI:
