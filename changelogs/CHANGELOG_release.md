@@ -1,3 +1,10 @@
+## [5.4.1](https://github.com/parse-community/parse-server/compare/5.4.0...5.4.1) (2023-01-31)
+
+
+### Bug Fixes
+
+* The client IP address may be determined incorrectly in some cases; it is now required to set the Parse Server option `trustProxy` accordingly if Parse Server runs behind a proxy server, see the express framework's [trust proxy](https://expressjs.com/en/guide/behind-proxies.html) setting; this fixes a security vulnerability in which the Parse Server option `masterKeyIps` may be circumvented, see [GHSA-vm5r-c87r-pf6x](https://github.com/parse-community/parse-server/security/advisories/GHSA-vm5r-c87r-pf6x) ([#8369](https://github.com/parse-community/parse-server/issues/8369)) ([e016d81](https://github.com/parse-community/parse-server/commit/e016d813e083ce6828f9abce245d15b681a224d8))
+
 # [5.4.0](https://github.com/parse-community/parse-server/compare/5.3.3...5.4.0) (2022-11-19)
 
 
