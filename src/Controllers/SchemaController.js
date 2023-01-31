@@ -694,7 +694,6 @@ export default class SchemaController {
 
   constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
-    this._addingClasses = {};
     this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
 
@@ -742,23 +741,13 @@ export default class SchemaController {
   }
 
   setAllClasses(): Promise<Array<Schema>> {
-    if (this._setAllPromise) {
-      return this._setAllPromise;
-    }
-    let id = "set all classes " + Math.random().toString(16).slice(2);
-    console.time('all end ' + id);
-    this._setAllPromise = this._dbAdapter.getAllClasses().then(allSchemas => {
-      console.timeEnd('all end ' + id);
-        return allSchemas.map(injectDefaultSchema)
-      })
+    return this._dbAdapter
+      .getAllClasses()
+      .then(allSchemas => allSchemas.map(injectDefaultSchema))
       .then(allSchemas => {
         SchemaCache.put(allSchemas);
         return allSchemas;
       });
-    setTimeout(() => {
-        delete this._setAllPromise;
-    }, 200);
-    return this._setAllPromise;
   }
 
   getOneSchema(
@@ -814,29 +803,19 @@ export default class SchemaController {
       return Promise.reject(validationError);
     }
     try {
-      if (this.schemaData[className]) {
-        return this.schemaData[className];
-      }
-      if (this._addingClasses[className]) {
-        return this._addingClasses[className];
-      }
-      this._addingClasses[className] = this._dbAdapter
-        .createClass(
+      const adapterSchema = await this._dbAdapter.createClass(
+        className,
+        convertSchemaToAdapterSchema({
+          fields,
+          classLevelPermissions,
+          indexes,
           className,
-          convertSchemaToAdapterSchema({
-            fields,
-            classLevelPermissions,
-            indexes,
-            className,
-          })
-        )
-        .then(async adapterSchema => {
-          const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
-          delete this._addingClasses[className];
-          this.schemaData[className] = parseSchema;
-          return parseSchema;
-        });
-      return this._addingClasses[className];
+        })
+      );
+      // TODO: Remove by updating schema cache directly
+      await this.reloadData({ clearCache: true });
+      const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
+      return parseSchema;
     } catch (error) {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
