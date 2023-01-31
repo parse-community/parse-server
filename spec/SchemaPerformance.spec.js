@@ -204,4 +204,37 @@ describe('Schema Performance', function () {
     );
     expect(getAllSpy.calls.count()).toBe(2);
   });
+
+  // beforeEach(async () => {
+  //   if (SIMULATE_TTL) {
+  //     jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
+  //   }
+  // });
+
+  // afterAll(() => {
+  //   jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+  // });
+
+  fit('can save objects', async () => {
+    // const user = await Parse.User.signUp('username', 'password');
+
+    // const start = Date.now();
+    // for (let i = 0; i < 2000; i++) {
+    //   const obj = new Parse.Object('TestObj');
+    //   await obj.save();
+    // }
+    // const end = Date.now() - start;
+    // console.log(end);
+
+    const start_parellel = Date.now();
+    const objects = [];
+    for (let i = 0; i < 2000; i++) {
+      const obj = new Parse.Object('TestObj');
+      obj.set('field1', 'uuid()');
+      objects.push(obj);
+    }
+    await Promise.all(objects.map(o => o.save()));
+    const end_parellel = Date.now() - start_parellel;
+    console.log(end_parellel);
+  });
 });

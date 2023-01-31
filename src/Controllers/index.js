@@ -61,6 +61,7 @@ export function getControllers(options: ParseServerOptions) {
     parseGraphQLController,
     liveQueryController,
     databaseController,
+    database: databaseController,
     hooksController,
     authDataManager,
     schemaCache: SchemaCache,

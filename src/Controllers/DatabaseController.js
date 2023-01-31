@@ -407,15 +407,13 @@ class DatabaseController {
   loadSchema(
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<SchemaController.SchemaController> {
-    if (this.schemaPromise != null) {
+    if (this.schemaPromise) {
       return this.schemaPromise;
     }
-    this.schemaPromise = SchemaController.load(this.adapter, options);
-    this.schemaPromise.then(
-      () => delete this.schemaPromise,
+    this.schemaPromise = SchemaController.load(this.adapter, options).catch(
       () => delete this.schemaPromise
     );
-    return this.loadSchema(options);
+    return this.schemaPromise;
   }
 
   loadSchemaIfNeeded(

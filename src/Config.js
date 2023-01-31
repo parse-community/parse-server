@@ -37,11 +37,7 @@ export class Config {
     const config = new Config();
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
-      if (key == 'databaseController') {
-        config.database = new DatabaseController(cacheInfo.databaseController.adapter, config);
-      } else {
         config[key] = cacheInfo[key];
-      }
     });
     config.mount = removeTrailingSlash(mount);
     config.generateSessionExpiresAt = config.generateSessionExpiresAt.bind(config);
