@@ -687,8 +687,10 @@ const typeToString = (type: SchemaField | string): string => {
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 export default class SchemaController {
   _dbAdapter: StorageAdapter;
+  _reloadingData: { [string]: any };
+  _addFieldPromises: { [string]: any };
+  _addClassPromises: { [string]: any };
   schemaData: { [string]: Schema };
-  reloadDataPromise: ?Promise<any>;
   protectedFields: any;
   userIdRegEx: RegExp;
 
@@ -696,6 +698,10 @@ export default class SchemaController {
     this._dbAdapter = databaseAdapter;
     this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
+    this._reloadingData = {
+      promise: null,
+      className: '',
+    };
 
     const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
 
@@ -709,24 +715,39 @@ export default class SchemaController {
     });
   }
 
-  reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
-    if (this.reloadDataPromise && !options.clearCache) {
-      return this.reloadDataPromise;
+  reloadData(options: LoadSchemaOptions = { clearCache: false, className: '' }): Promise<any> {
+    if (options.className) {
+      if (this._reloadingData.className === options.className) {
+        options.clearCache = false;
+      } else {
+        this._reloadingData.className = options.className;
+      }
+    } else {
+      this._reloadingData.className = '';
     }
-    this.reloadDataPromise = this.getAllClasses(options)
+    if (this._reloadingData.promise && !options.clearCache) {
+      return this._reloadingData.promise;
+    }
+    this._reloadingData.promise = this.getAllClasses(options)
       .then(
         allSchemas => {
           this.schemaData = new SchemaData(allSchemas, this.protectedFields);
-          delete this.reloadDataPromise;
+          this._reloadingData = {
+            promise: null,
+            className: '',
+          };
         },
         err => {
           this.schemaData = new SchemaData();
-          delete this.reloadDataPromise;
+          this._reloadingData = {
+            promise: null,
+            className: '',
+          };
           throw err;
         }
       )
       .then(() => {});
-    return this.reloadDataPromise;
+    return this._reloadingData.promise;
   }
 
   getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
@@ -741,9 +762,14 @@ export default class SchemaController {
   }
 
   setAllClasses(): Promise<Array<Schema>> {
+    const r = 'classes ' + (Math.random() + 1).toString(36).substring(7);
+    console.time(r);
     return this._dbAdapter
       .getAllClasses()
-      .then(allSchemas => allSchemas.map(injectDefaultSchema))
+      .then(allSchemas => {
+        // console.timeEnd(r);
+        return allSchemas.map(injectDefaultSchema);
+      })
       .then(allSchemas => {
         SchemaCache.put(allSchemas);
         return allSchemas;
@@ -787,7 +813,7 @@ export default class SchemaController {
   // on success, and rejects with an error on fail. Ensure you
   // have authorization (master key, or client class creation
   // enabled) before calling this function.
-  async addClassIfNotExists(
+  addClassIfNotExists(
     className: string,
     fields: SchemaFields = {},
     classLevelPermissions: any,
@@ -802,8 +828,14 @@ export default class SchemaController {
       }
       return Promise.reject(validationError);
     }
-    try {
-      const adapterSchema = await this._dbAdapter.createClass(
+    if (!this._addClassPromises) {
+      this._addClassPromises = {};
+    }
+    if (this._addClassPromises[className]) {
+      return this._addClassPromises[className];
+    }
+    this._addClassPromises[className] = this._dbAdapter
+      .createClass(
         className,
         convertSchemaToAdapterSchema({
           fields,
@@ -811,18 +843,24 @@ export default class SchemaController {
           indexes,
           className,
         })
-      );
-      // TODO: Remove by updating schema cache directly
-      await this.reloadData({ clearCache: true });
-      const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
-      return parseSchema;
-    } catch (error) {
-      if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
-      } else {
-        throw error;
-      }
-    }
+      )
+      .then(async adapterSchema => {
+        await this.reloadData({ clearCache: true });
+        const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
+        delete this._addClassPromises[className];
+        return parseSchema;
+      })
+      .catch(error => {
+        if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_CLASS_NAME,
+            `Class ${className} already exists.`
+          );
+        } else {
+          throw error;
+        }
+      });
+    return this._addClassPromises[className];
   }
 
   updateClass(
@@ -947,7 +985,7 @@ export default class SchemaController {
           // have failed because there's a race condition and a different
           // client is making the exact same schema update that we want.
           // So just reload the schema.
-          return this.reloadData({ clearCache: true });
+          return this.reloadData({ clearCache: true, className });
         })
         .then(() => {
           // Ensure that the schema now validates
@@ -957,7 +995,7 @@ export default class SchemaController {
             throw new Parse.Error(Parse.Error.INVALID_JSON, `Failed to add ${className}`);
           }
         })
-        .catch(() => {
+        .catch(e => {
           // The schema still doesn't validate. Give up
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
         })
@@ -1131,9 +1169,22 @@ export default class SchemaController {
       return this._dbAdapter.updateFieldOptions(className, fieldName, type);
     }
 
-    return this._dbAdapter
+    if (!this._addFieldPromises) {
+      this._addFieldPromises = {};
+    }
+
+    if (!this._addFieldPromises[className]) {
+      this._addFieldPromises[className] = {};
+    }
+
+    if (this._addFieldPromises[className][`${fieldName}-${type}`]) {
+      return this._addFieldPromises[className][`${fieldName}-${type}`];
+    }
+
+    this._addFieldPromises[className][`${fieldName}-${type}`] = this._dbAdapter
       .addFieldIfNotExists(className, fieldName, type)
       .catch(error => {
+        delete this._addFieldPromises[className][`${fieldName}-${type}`];
         if (error.code == Parse.Error.INCORRECT_TYPE) {
           // Make sure that we throw errors when it is appropriate to do so.
           throw error;
@@ -1144,12 +1195,14 @@ export default class SchemaController {
         return Promise.resolve();
       })
       .then(() => {
+        delete this._addFieldPromises[className][`${fieldName}-${type}`];
         return {
           className,
           fieldName,
           type,
         };
       });
+    return this._addFieldPromises[className][`${fieldName}-${type}`];
   }
 
   ensureFields(fields: any) {
@@ -1270,7 +1323,7 @@ export default class SchemaController {
 
     if (enforceFields.length !== 0) {
       // TODO: Remove by updating schema cache directly
-      await this.reloadData({ clearCache: true });
+      await this.reloadData({ clearCache: true, className });
     }
     this.ensureFields(enforceFields);
 

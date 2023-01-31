@@ -205,36 +205,22 @@ describe('Schema Performance', function () {
     expect(getAllSpy.calls.count()).toBe(2);
   });
 
-  // beforeEach(async () => {
-  //   if (SIMULATE_TTL) {
-  //     jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
-  //   }
-  // });
-
-  // afterAll(() => {
-  //   jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
-  // });
-
-  fit('can save objects', async () => {
-    // const user = await Parse.User.signUp('username', 'password');
-
-    // const start = Date.now();
-    // for (let i = 0; i < 2000; i++) {
-    //   const obj = new Parse.Object('TestObj');
-    //   await obj.save();
-    // }
-    // const end = Date.now() - start;
-    // console.log(end);
-
+  fit('can save objects', async done => {
     const start_parellel = Date.now();
+    await Parse.User.signUp('username', 'password');
+
     const objects = [];
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < 1000; i++) {
       const obj = new Parse.Object('TestObj');
       obj.set('field1', 'uuid()');
       objects.push(obj);
-    }
+      // if ( i == 0) {
+      //     await obj.save();
+      //   }
+      }
     await Promise.all(objects.map(o => o.save()));
     const end_parellel = Date.now() - start_parellel;
     console.log(end_parellel);
+    expect(end_parellel).toBeLessThan(6000);
   });
 });

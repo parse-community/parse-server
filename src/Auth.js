@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
+const authPromisesByUser = {};
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -174,7 +175,9 @@ Auth.prototype.getUserRoles = function () {
 
 Auth.prototype.getRolesForUser = async function () {
   //Stack all Parse.Role
-  const results = [];
+  if (authPromisesByUser[this.user.id]) {
+    return authPromisesByUser[this.user.id]
+  }
   if (this.config) {
     const restWhere = {
       users: {
@@ -184,15 +187,23 @@ Auth.prototype.getRolesForUser = async function () {
       },
     };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
-  } else {
-    await new Parse.Query(Parse.Role)
-      .equalTo('users', this.user)
-      .each(result => results.push(result.toJSON()), { useMasterKey: true });
+    const findObjects = async () => {
+      const results = [];
+      await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
+        results.push(result)
+      );
+      return results;
+    }
+    authPromisesByUser[this.user.id] = findObjects();
+    return authPromisesByUser[this.user.id];
   }
-  return results;
+  authPromisesByUser[this.user.id] = new Parse.Query(Parse.Role)
+      .equalTo('users', this.user)
+      .findAll({ useMasterKey: true }).then(response => {
+        delete authPromisesByUser[this.user.id];
+        return response;
+      });
+  return authPromisesByUser[this.user.id];
 };
 
 // Iterates through the role tree and compiles a user's roles
