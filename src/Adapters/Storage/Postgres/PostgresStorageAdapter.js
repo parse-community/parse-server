@@ -289,7 +289,6 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         continue;
       }
     }
-
     const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
     if (authDataMatch) {
       // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
@@ -1322,12 +1321,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
         return;
       }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      const authDataAlreadyExists = !!object.authData;
       if (authDataMatch) {
         var provider = authDataMatch[1];
         object['authData'] = object['authData'] || {};
         object['authData'][provider] = object[fieldName];
         delete object[fieldName];
         fieldName = 'authData';
+        // Avoid adding authData multiple times to the query
+        if (authDataAlreadyExists) {
+          return;
+        }
       }
 
       columnsArray.push(fieldName);
@@ -1807,7 +1811,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       caseInsensitive,
     });
     values.push(...where.values);
-
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const limitPattern = hasLimit ? `LIMIT $${values.length + 1}` : '';
     if (hasLimit) {
@@ -2238,8 +2241,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
           });
           stage.$match = collapse;
         }
-        for (const field in stage.$match) {
+        for (let field in stage.$match) {
           const value = stage.$match[field];
+          if (field === '_id') {
+            field = 'objectId';
+          }
           const matchPatterns = [];
           Object.keys(ParseToPosgresComparator).forEach(cmp => {
             if (value[cmp]) {

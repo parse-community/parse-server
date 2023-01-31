@@ -22,6 +22,7 @@ import { getCacheController, getDatabaseController } from '../Controllers';
 import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
+import { isDeepStrictEqual } from 'util';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -73,15 +74,25 @@ class ParseLiveQueryServer {
       parseWebsocket => this._onConnect(parseWebsocket),
       config
     );
-
-    // Initialize subscriber
     this.subscriber = ParsePubSub.createSubscriber(config);
-    this.subscriber.subscribe(Parse.applicationId + 'afterSave');
-    this.subscriber.subscribe(Parse.applicationId + 'afterDelete');
-    this.subscriber.subscribe(Parse.applicationId + 'clearCache');
-    // Register message handler for subscriber. When publisher get messages, it will publish message
-    // to the subscribers and the handler will be called.
-    this.subscriber.on('message', (channel, messageStr) => {
+    if (!this.subscriber.connect) {
+      this.connect();
+    }
+  }
+
+  async connect() {
+    if (this.subscriber.isOpen) {
+      return;
+    }
+    if (typeof this.subscriber.connect === 'function') {
+      await Promise.resolve(this.subscriber.connect());
+    } else {
+      this.subscriber.isOpen = true;
+    }
+    this._createSubscribers();
+  }
+  _createSubscribers() {
+    const messageRecieved = (channel, messageStr) => {
       logger.verbose('Subscribe message %j', messageStr);
       let message;
       try {
@@ -102,7 +113,12 @@ class ParseLiveQueryServer {
       } else {
         logger.error('Get message %s from unknown channel %j', message, channel);
       }
-    });
+    };
+    this.subscriber.on('message', (channel, messageStr) => messageRecieved(channel, messageStr));
+    for (const field of ['afterSave', 'afterDelete', 'clearCache']) {
+      const channel = `${Parse.applicationId}${field}`;
+      this.subscriber.subscribe(channel, messageStr => messageRecieved(channel, messageStr));
+    }
   }
 
   // Message is the JSON object from publisher. Message.currentParseObject is the ParseObject JSON after changes.
@@ -313,6 +329,10 @@ class ParseLiveQueryServer {
               }
             } else {
               return null;
+            }
+            const watchFieldsChanged = this._checkWatchFields(client, requestId, message);
+            if (!watchFieldsChanged && (type === 'update' || type === 'create')) {
+              return;
             }
             res = {
               event: type,
@@ -610,6 +630,7 @@ class ParseLiveQueryServer {
       }
       return DatabaseController.filterSensitiveData(
         client.hasMasterKey,
+        false,
         aclGroup,
         clientAuth,
         op,
@@ -689,6 +710,17 @@ class ParseLiveQueryServer {
     }
     const { auth } = await this.getAuthForSessionToken(sessionToken);
     return auth;
+  }
+
+  _checkWatchFields(client: any, requestId: any, message: any) {
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    const watch = subscriptionInfo?.watch;
+    if (!watch) {
+      return true;
+    }
+    const object = message.currentParseObject;
+    const original = message.originalParseObject;
+    return watch.some(field => !isDeepStrictEqual(object.get(field), original?.get(field)));
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
@@ -871,6 +903,9 @@ class ParseLiveQueryServer {
       // Add selected fields, sessionToken and installationId for this subscription if necessary
       if (request.query.fields) {
         subscriptionInfo.fields = request.query.fields;
+      }
+      if (request.query.watch) {
+        subscriptionInfo.watch = request.query.watch;
       }
       if (request.sessionToken) {
         subscriptionInfo.sessionToken = request.sessionToken;

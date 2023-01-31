@@ -322,7 +322,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       url: Parse.serverURL + '/aggregate/TestObject',
       qs: {
         explain: true,
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     let response = await request(options);
@@ -334,7 +334,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       qs: {
         explain: true,
         hint: '_id_',
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     response = await request(options);
@@ -349,7 +349,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       url: Parse.serverURL + '/aggregate/TestObject',
       qs: {
         explain: true,
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     let response = await request(options);
@@ -363,7 +363,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       qs: {
         explain: true,
         hint: '_id_',
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     response = await request(options);
@@ -382,7 +382,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       url: Parse.serverURL + '/aggregate/TestObject',
       qs: {
         explain: true,
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     let response = await request(options);
@@ -396,7 +396,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       qs: {
         explain: true,
         hint: '_id_',
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     response = await request(options);
@@ -415,7 +415,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       url: Parse.serverURL + '/aggregate/TestObject',
       qs: {
         explain: true,
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     let response = await request(options);
@@ -429,7 +429,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       qs: {
         explain: true,
         hint: '_id_',
-        group: JSON.stringify({ objectId: '$foo' }),
+        $group: JSON.stringify({ _id: '$foo' }),
       },
     });
     response = await request(options);

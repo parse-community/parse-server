@@ -1,3 +1,323 @@
+# [6.0.0-alpha.30](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.29...6.0.0-alpha.30) (2023-01-27)
+
+
+### Bug Fixes
+
+* Schema without class level permissions may cause error ([#8409](https://github.com/parse-community/parse-server/issues/8409)) ([aa2cd51](https://github.com/parse-community/parse-server/commit/aa2cd51b703388d925e4572e5c2b2d883c68e49c))
+
+# [6.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.28...6.0.0-alpha.29) (2023-01-26)
+
+
+### Features
+
+* Upgrade to Parse JavaScript SDK 4 ([#8332](https://github.com/parse-community/parse-server/issues/8332)) ([9092874](https://github.com/parse-community/parse-server/commit/9092874a9a482a24dfdce1dce56615702999d6b8))
+
+# [6.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.27...6.0.0-alpha.28) (2023-01-25)
+
+
+### Bug Fixes
+
+* Rate limiter may reject requests that contain a session token ([#8399](https://github.com/parse-community/parse-server/issues/8399)) ([c114dc8](https://github.com/parse-community/parse-server/commit/c114dc8831055d74187b9dfb4c9eeb558520237c))
+
+# [6.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.26...6.0.0-alpha.27) (2023-01-23)
+
+
+### Bug Fixes
+
+* `ParseServer.verifyServerUrl` may fail if server response headers are missing; remove unnecessary logging ([#8391](https://github.com/parse-community/parse-server/issues/8391)) ([1c37a7c](https://github.com/parse-community/parse-server/commit/1c37a7cd0715949a70b220a629071c7dab7d5e7b))
+
+# [6.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.25...6.0.0-alpha.26) (2023-01-20)
+
+
+### Bug Fixes
+
+* ES6 modules do not await the import of Cloud Code files ([#8368](https://github.com/parse-community/parse-server/issues/8368)) ([a7bd180](https://github.com/parse-community/parse-server/commit/a7bd180cddd784c8735622f22e012c342ad535fb))
+
+# [6.0.0-alpha.25](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.24...6.0.0-alpha.25) (2023-01-16)
+
+
+### Features
+
+* Add `ParseQuery.watch` to trigger LiveQuery only on update of specific fields ([#8028](https://github.com/parse-community/parse-server/issues/8028)) ([fc92faa](https://github.com/parse-community/parse-server/commit/fc92faac75107b3392eeddd916c4c5b45e3c5e0c))
+
+# [6.0.0-alpha.24](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.23...6.0.0-alpha.24) (2023-01-09)
+
+
+### Features
+
+* Reduce Docker image size by improving stages ([#8359](https://github.com/parse-community/parse-server/issues/8359)) ([40810b4](https://github.com/parse-community/parse-server/commit/40810b48ebde8b1f21d2448a3a4de0585b1b5e34))
+
+
+### BREAKING CHANGES
+
+* The Docker image does not contain the git dependency anymore; if you have been using git as a transitive dependency it now needs to be explicitly installed in your Docker file, for example with `RUN apk --no-cache add git` (#8359) ([40810b4](40810b4))
+
+# [6.0.0-alpha.23](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.22...6.0.0-alpha.23) (2023-01-08)
+
+
+### Features
+
+* Access the internal scope of Parse Server using the new `maintenanceKey`; the internal scope contains unofficial and undocumented fields (prefixed with underscore `_`) which are used internally by Parse Server; you may want to manipulate these fields for out-of-band changes such as data migration or correction tasks; changes within the internal scope of Parse Server may happen at any time without notice or changelog entry, it is therefore recommended to look at the source code of Parse Server to understand the effects of manipulating internal fields before using the key; it is discouraged to use the `maintenanceKey` for routine operations in a production environment; see [access scopes](https://github.com/parse-community/parse-server#access-scopes) ([#8212](https://github.com/parse-community/parse-server/issues/8212)) ([f3bcc93](https://github.com/parse-community/parse-server/commit/f3bcc9365cd6f08b0a32c132e8e5ff6d1b650863))
+
+
+### BREAKING CHANGES
+
+* Fields in the internal scope of Parse Server (prefixed with underscore `_`) are only returned using the new `maintenanceKey`; previously the `masterKey` allowed reading of internal fields; see [access scopes](https://github.com/parse-community/parse-server#access-scopes) for a comparison of the keys' access permissions (#8212) ([f3bcc93](f3bcc93))
+
+# [6.0.0-alpha.22](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.21...6.0.0-alpha.22) (2023-01-08)
+
+
+### Features
+
+* Adapt `verifyServerUrl` for new asynchronous Parse Server start-up states ([#8366](https://github.com/parse-community/parse-server/issues/8366)) ([ffa4974](https://github.com/parse-community/parse-server/commit/ffa4974158615fbff4a2692b9db41dcb50d3f77b))
+
+
+### BREAKING CHANGES
+
+* The method `ParseServer.verifyServerUrl` now returns a promise instead of a callback. ([ffa4974](ffa4974))
+
+# [6.0.0-alpha.21](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.20...6.0.0-alpha.21) (2023-01-06)
+
+
+### Features
+
+* Add request rate limiter based on IP address ([#8174](https://github.com/parse-community/parse-server/issues/8174)) ([6c79f6a](https://github.com/parse-community/parse-server/commit/6c79f6a69e25e47846e3b0685d6bdfd6b91086b1))
+
+# [6.0.0-alpha.20](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.19...6.0.0-alpha.20) (2023-01-06)
+
+
+### Features
+
+* Add Node 19 support ([#8363](https://github.com/parse-community/parse-server/issues/8363)) ([a4990dc](https://github.com/parse-community/parse-server/commit/a4990dcd29abcb4442f3c424aff482a0a116160f))
+
+# [6.0.0-alpha.19](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.18...6.0.0-alpha.19) (2023-01-05)
+
+
+### Features
+
+* Remove deprecation `DEPPS1`: Native MongoDB syntax in aggregation pipeline ([#8362](https://github.com/parse-community/parse-server/issues/8362)) ([d0d30c4](https://github.com/parse-community/parse-server/commit/d0d30c4f1394f563724644a8fc81734be538a2c0))
+
+
+### BREAKING CHANGES
+
+* The MongoDB aggregation pipeline requires native MongoDB syntax instead of the custom Parse Server syntax; for example pipeline stage names require a leading dollar sign like `$match` and the MongoDB document ID is referenced using `_id` instead of `objectId` (#8362) ([d0d30c4](d0d30c4))
+
+# [6.0.0-alpha.18](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.17...6.0.0-alpha.18) (2023-01-05)
+
+
+### Bug Fixes
+
+* The client IP address may be determined incorrectly in some cases; this fixes a security vulnerability in which the Parse Server option `masterKeyIps` may be circumvented, see [GHSA-vm5r-c87r-pf6x](https://github.com/parse-community/parse-server/security/advisories/GHSA-vm5r-c87r-pf6x) ([#8372](https://github.com/parse-community/parse-server/issues/8372)) ([892040d](https://github.com/parse-community/parse-server/commit/892040dc2f82a3e2abe2824e4b553521b6f894de))
+
+
+### BREAKING CHANGES
+
+* The mechanism to determine the client IP address has been rewritten; to correctly determine the IP address it is now required to set the Parse Server option `trustProxy` accordingly if Parse Server runs behind a proxy server, see the express framework's [trust proxy](https://expressjs.com/en/guide/behind-proxies.html) setting (#8372) ([892040d](892040d))
+
+# [6.0.0-alpha.17](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.16...6.0.0-alpha.17) (2022-12-22)
+
+
+### Features
+
+* Upgrade Node Package Manager lock file `package-lock.json` to version 2 ([#8285](https://github.com/parse-community/parse-server/issues/8285)) ([ee72467](https://github.com/parse-community/parse-server/commit/ee7246733d63e4bda20401f7b00262ff03299f20))
+
+
+### BREAKING CHANGES
+
+* The Node Package Manager lock file `package-lock.json` is upgraded to version 2; while it is backwards with version 1 for the npm installer, consider this if you run any non-npm analysis tools that use the lock file (#8285) ([ee72467](ee72467))
+
+# [6.0.0-alpha.16](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.15...6.0.0-alpha.16) (2022-12-21)
+
+
+### Features
+
+* Asynchronous initialization of Parse Server ([#8232](https://github.com/parse-community/parse-server/issues/8232)) ([99fcf45](https://github.com/parse-community/parse-server/commit/99fcf45e55c368de2345b0c4d780e70e0adf0e15))
+
+
+### BREAKING CHANGES
+
+* This release introduces the asynchronous initialization of Parse Server to prevent mounting Parse Server before being ready to receive request; it changes how Parse Server is imported, initialized and started; it also removes the callback `serverStartComplete`; see the [Parse Server 6 migration guide](https://github.com/parse-community/parse-server/blob/alpha/6.0.0.md) for more details (#8232) ([99fcf45](99fcf45))
+
+# [6.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.14...6.0.0-alpha.15) (2022-12-20)
+
+
+### Bug Fixes
+
+* Nested objects are encoded incorrectly for MongoDB ([#8209](https://github.com/parse-community/parse-server/issues/8209)) ([1412666](https://github.com/parse-community/parse-server/commit/1412666f75829612de6fb9d7ccae35761c9b75cb))
+
+
+### BREAKING CHANGES
+
+* Nested objects are now properly stored in the database using JSON serialization; previously, due to a bug only top-level objects were serialized, but nested objects were saved as raw JSON; for example, a nested `Date` object was saved as a JSON object like `{ "__type": "Date", "iso": "2020-01-01T00:00:00.000Z" }` instead of its serialized representation `2020-01-01T00:00:00.000Z` (#8209) ([1412666](1412666))
+
+# [6.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.13...6.0.0-alpha.14) (2022-12-16)
+
+
+### Features
+
+* Write log entry when request with master key is rejected as outside of `masterKeyIps` ([#8350](https://github.com/parse-community/parse-server/issues/8350)) ([e22b73d](https://github.com/parse-community/parse-server/commit/e22b73d4b700c8ff745aa81726c6680082294b45))
+
+# [6.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.12...6.0.0-alpha.13) (2022-12-07)
+
+
+### Features
+
+* Add option to change the log level of the logs emitted by triggers ([#8328](https://github.com/parse-community/parse-server/issues/8328)) ([8f3b694](https://github.com/parse-community/parse-server/commit/8f3b694e39d4a966567e50dbea4d62e954fa5c06))
+
+# [6.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.11...6.0.0-alpha.12) (2022-11-26)
+
+
+### Features
+
+* Upgrade Redis 3 to 4 for LiveQuery ([#8333](https://github.com/parse-community/parse-server/issues/8333)) ([b2761fb](https://github.com/parse-community/parse-server/commit/b2761fb3786b519d9bbcf35be54309d2d35da1a9))
+
+# [6.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.10...6.0.0-alpha.11) (2022-11-25)
+
+
+### Bug Fixes
+
+* Parse Server option `masterKeyIps` does not include localhost by default for IPv6 ([#8322](https://github.com/parse-community/parse-server/issues/8322)) ([ab82635](https://github.com/parse-community/parse-server/commit/ab82635b0d4cf323a07ddee51fee587b43dce95c))
+
+# [6.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.9...6.0.0-alpha.10) (2022-11-19)
+
+
+### Bug Fixes
+
+* Cloud Code trigger `beforeSave` does not work with `Parse.Role` ([#8320](https://github.com/parse-community/parse-server/issues/8320)) ([f29d972](https://github.com/parse-community/parse-server/commit/f29d9720e9b37918fd885c97a31e34c42750e724))
+
+# [6.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.8...6.0.0-alpha.9) (2022-11-16)
+
+
+### Features
+
+* Remove deprecation `DEPPS3`: Config option `enforcePrivateUsers` defaults to `true` ([#8283](https://github.com/parse-community/parse-server/issues/8283)) ([ed499e3](https://github.com/parse-community/parse-server/commit/ed499e32a21bab9a874a9e5367dc71248ce836c4))
+
+
+### BREAKING CHANGES
+
+* The Parse Server option `enforcePrivateUsers` is set to `true` by default; in previous releases this option defaults to `false`; this change improves the default security configuration of Parse Server (#8283) ([ed499e3](ed499e3))
+
+# [6.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.7...6.0.0-alpha.8) (2022-11-11)
+
+
+### Features
+
+* Restrict use of `masterKey` to localhost by default ([#8281](https://github.com/parse-community/parse-server/issues/8281)) ([6c16021](https://github.com/parse-community/parse-server/commit/6c16021a1f03a70a6d9e68cb64df362d07f3b693))
+
+
+### BREAKING CHANGES
+
+* This release restricts the use of `masterKey` to localhost by default; if you are using Parse Dashboard on a different server to connect to Parse Server you need to add the IP address of the server that hosts Parse Dashboard to this option (#8281) ([6c16021](6c16021))
+
+# [6.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.6...6.0.0-alpha.7) (2022-11-11)
+
+
+### Features
+
+* Upgrade Redis 3 to 4 ([#8293](https://github.com/parse-community/parse-server/issues/8293)) ([7d622f0](https://github.com/parse-community/parse-server/commit/7d622f06a4347e0ad2cba9a4ec07d8d4fb0f67bc))
+
+
+### BREAKING CHANGES
+
+* This release upgrades to Redis 4; if you are using the Redis cache adapter with Parse Server then this is a breaking change as the Redis client options have changed; see the [Redis migration guide](https://github.com/redis/node-redis/blob/redis%404.0.0/docs/v3-to-v4.md) for more details (#8293) ([7d622f0](7d622f0))
+
+# [6.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.5...6.0.0-alpha.6) (2022-11-10)
+
+
+### Features
+
+* Remove support for MongoDB 4.0 ([#8292](https://github.com/parse-community/parse-server/issues/8292)) ([37245f6](https://github.com/parse-community/parse-server/commit/37245f62ce83516b6b95a54b850f0274ef680478))
+
+
+### BREAKING CHANGES
+
+* This release removes support for MongoDB 4.0; the new minimum supported MongoDB version is 4.2. which also removes support for the deprecated MongoDB MMAPv1 storage engine ([37245f6](37245f6))
+
+# [6.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.4...6.0.0-alpha.5) (2022-11-10)
+
+
+### Bug Fixes
+
+* Throwing error in Cloud Code Triggers `afterLogin`, `afterLogout` crashes server ([#8280](https://github.com/parse-community/parse-server/issues/8280)) ([130d290](https://github.com/parse-community/parse-server/commit/130d29074e3f763460e5685d0b9059e5a333caff))
+
+
+### BREAKING CHANGES
+
+* Throwing an error in Cloud Code Triggers `afterLogin`, `afterLogout` returns a rejected promise; in previous releases it crashed the server if you did not handle the error on the Node.js process level; consider adapting your code if your app currently handles these errors on the Node.js process level with `process.on('unhandledRejection', ...)` ([130d290](130d290))
+
+# [6.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.3...6.0.0-alpha.4) (2022-11-10)
+
+
+### Features
+
+* Remove deprecation `DEPPS2`: Config option `directAccess` defaults to true ([#8284](https://github.com/parse-community/parse-server/issues/8284)) ([f535ee6](https://github.com/parse-community/parse-server/commit/f535ee6ec2abba63f702127258ca49fa5b4e08c9))
+
+
+### BREAKING CHANGES
+
+* Config option `directAccess` defaults to true; set this to `false` in environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`. ([f535ee6](f535ee6))
+
+# [6.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.2...6.0.0-alpha.3) (2022-11-10)
+
+
+### Features
+
+* Remove deprecation `DEPPS4`: Remove convenience method for http request `Parse.Cloud.httpRequest`  ([#8287](https://github.com/parse-community/parse-server/issues/8287)) ([2d79c08](https://github.com/parse-community/parse-server/commit/2d79c0835b6a9acaf20d5c943d9b4619bb96831c))
+
+
+### BREAKING CHANGES
+
+* The convenience method for HTTP requests `Parse.Cloud.httpRequest` is removed; use your preferred 3rd party library for making HTTP requests ([2d79c08](2d79c08))
+
+# [6.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.1...6.0.0-alpha.2) (2022-11-10)
+
+
+### Features
+
+* Improve authentication adapter interface to support multi-factor authentication (MFA), authentication challenges, and provide a more powerful interface for writing custom authentication adapters ([#8156](https://github.com/parse-community/parse-server/issues/8156)) ([5bbf9ca](https://github.com/parse-community/parse-server/commit/5bbf9cade9a527787fd1002072d4013ab5d8db2b))
+
+# [6.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.4.0-alpha.1...6.0.0-alpha.1) (2022-11-10)
+
+
+### Bug Fixes
+
+* Remove Node 12 and Node 17 support ([#8279](https://github.com/parse-community/parse-server/issues/8279)) ([2546cc8](https://github.com/parse-community/parse-server/commit/2546cc8572bea6610cb9b3c7401d9afac0e3c1d6))
+
+
+### BREAKING CHANGES
+
+* This release removes Node 12 and Node 17 support ([2546cc8](2546cc8))
+
+# [5.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/5.3.0...5.4.0-alpha.1) (2022-10-31)
+
+
+### Bug Fixes
+
+* authentication adapter app ID validation may be circumvented; this fixes a vulnerability that affects configurations which allow users to authenticate using the Parse Server authentication adapter for *Facebook* or *Spotify* and where the server-side authentication adapter configuration `appIds` is set as a string (e.g. `abc`) instead of an array of strings (e.g. `["abc"]`) ([GHSA-r657-33vp-gp22](https://github.com/parse-community/parse-server/security/advisories/GHSA-r657-33vp-gp22)) [skip release] ([#8187](https://github.com/parse-community/parse-server/issues/8187)) ([8c8ec71](https://github.com/parse-community/parse-server/commit/8c8ec715739e0f851338cfed794409ebac66c51b))
+* brute force guessing of user sensitive data via search patterns (GHSA-2m6g-crv8-p3c6) ([#8146](https://github.com/parse-community/parse-server/issues/8146)) [skip release] ([4c0c7c7](https://github.com/parse-community/parse-server/commit/4c0c7c77b76257878b9bcb05ff9de01c9d790262))
+* certificate in Apple Game Center auth adapter not validated [skip release] ([#8058](https://github.com/parse-community/parse-server/issues/8058)) ([75af9a2](https://github.com/parse-community/parse-server/commit/75af9a26cc8e9e88a33d1e452c93a0ee6e509f17))
+* graphQL query ignores condition `equalTo` with value `false` ([#8032](https://github.com/parse-community/parse-server/issues/8032)) ([7f5a15d](https://github.com/parse-community/parse-server/commit/7f5a15d5df0dfa3515e9f73709d6a49663545f9b))
+* internal indices for classes `_Idempotency` and `_Role` are not protected in defined schema ([#8121](https://github.com/parse-community/parse-server/issues/8121)) ([c16f529](https://github.com/parse-community/parse-server/commit/c16f529f74f92154401bf662f634b3c5fa45e18e))
+* invalid file request not properly handled [skip release] ([#8062](https://github.com/parse-community/parse-server/issues/8062)) ([4c9e956](https://github.com/parse-community/parse-server/commit/4c9e95674ad081f13062e8cd30b77b1962d5df57))
+* liveQuery with `containedIn` not working when object field is an array ([#8128](https://github.com/parse-community/parse-server/issues/8128)) ([1d9605b](https://github.com/parse-community/parse-server/commit/1d9605bc93009263d3811df4d4249034ba6eb8c4))
+* protected fields exposed via LiveQuery (GHSA-crrq-vr9j-fxxh) [skip release] ([#8076](https://github.com/parse-community/parse-server/issues/8076)) ([9fd4516](https://github.com/parse-community/parse-server/commit/9fd4516cde5c742f9f29dd05468b4a43a85639a6))
+* push notifications `badge` doesn't update with Installation beforeSave trigger ([#8162](https://github.com/parse-community/parse-server/issues/8162)) ([3c75c2b](https://github.com/parse-community/parse-server/commit/3c75c2ba4851fae96a8c19b11a3efde03816c9a1))
+* query aggregation pipeline cannot handle value of type `Date` when `directAccess: true` ([#8167](https://github.com/parse-community/parse-server/issues/8167)) ([e424137](https://github.com/parse-community/parse-server/commit/e4241374061caef66538de15112fb6bbafb1f5bb))
+* relation constraints in compound queries `Parse.Query.or`, `Parse.Query.and` not working ([#8203](https://github.com/parse-community/parse-server/issues/8203)) ([28f0d26](https://github.com/parse-community/parse-server/commit/28f0d2667787d2ac68726607b811d6f0ef62b9f1))
+* security upgrade undici from 5.6.0 to 5.8.0 ([#8108](https://github.com/parse-community/parse-server/issues/8108)) ([4aa016b](https://github.com/parse-community/parse-server/commit/4aa016b7322467422b9fdf05d8e29b9ecf910da7))
+* server crashes when receiving file download request with invalid byte range; this fixes a security vulnerability that allows an attacker to impact the availability of the server instance; the fix improves parsing of the range parameter to properly handle invalid range requests ([GHSA-h423-w6qv-2wj3](https://github.com/parse-community/parse-server/security/advisories/GHSA-h423-w6qv-2wj3)) [skip release] ([#8238](https://github.com/parse-community/parse-server/issues/8238)) ([c03908f](https://github.com/parse-community/parse-server/commit/c03908f74e5c9eed834874a89df6c89c1a1e849f))
+* session object properties can be updated by foreign user; this fixes a security vulnerability in which a foreign user can write to the session object of another user if the session object ID is known; the fix prevents writing to foreign session objects ([GHSA-6w4q-23cf-j9jp](https://github.com/parse-community/parse-server/security/advisories/GHSA-6w4q-23cf-j9jp)) [skip release] ([#8180](https://github.com/parse-community/parse-server/issues/8180)) ([37fed30](https://github.com/parse-community/parse-server/commit/37fed3062ccc3ef1dfd49a9fc53318e72b3e4aff))
+* sorting by non-existing value throws `INVALID_SERVER_ERROR` on Postgres ([#8157](https://github.com/parse-community/parse-server/issues/8157)) ([3b775a1](https://github.com/parse-community/parse-server/commit/3b775a1fb8a1878714e3451191438963d688f1b0))
+* updating object includes unchanged keys in client response for certain key types ([#8159](https://github.com/parse-community/parse-server/issues/8159)) ([37af1d7](https://github.com/parse-community/parse-server/commit/37af1d78fce5a15039ffe3af7b323c1f1e8582fc))
+
+### Features
+
+* add convenience access to Parse Server configuration in Cloud Code via `Parse.Server` ([#8244](https://github.com/parse-community/parse-server/issues/8244)) ([9f11115](https://github.com/parse-community/parse-server/commit/9f111158edf7fd57a65db0c4f9244b37e58cf293))
+* add option to change the default value of the `Parse.Query.limit()` constraint ([#8152](https://github.com/parse-community/parse-server/issues/8152)) ([0388956](https://github.com/parse-community/parse-server/commit/038895680894984e569dff54bf5c7b31094f3891))
+* add support for MongoDB 6 ([#8242](https://github.com/parse-community/parse-server/issues/8242)) ([aba0081](https://github.com/parse-community/parse-server/commit/aba0081ce1a166a93de57f3928c19a05562b5cc1))
+* add support for Postgres 15 ([#8215](https://github.com/parse-community/parse-server/issues/8215)) ([2feb6c4](https://github.com/parse-community/parse-server/commit/2feb6c46080946c984daa351187fa07cd582355d))
+* liveQuery support for unsorted distance queries ([#8221](https://github.com/parse-community/parse-server/issues/8221)) ([0f763da](https://github.com/parse-community/parse-server/commit/0f763da17d646b2fec2cd980d3857e46072a8a07))
+
 # [5.3.0-alpha.32](https://github.com/parse-community/parse-server/compare/5.3.0-alpha.31...5.3.0-alpha.32) (2022-10-29)
 
 

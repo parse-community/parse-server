@@ -1,6 +1,7 @@
 import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
 import Deprecator from '../Deprecator/Deprecator';
+import { addRateLimit } from '../middlewares';
 const Config = require('../Config');
 
 function isParseObjectConstructor(object) {
@@ -28,6 +29,7 @@ function validateValidator(validator) {
     skipWithMasterKey: [Boolean],
     requireUserKeys: [Array, Object],
     fields: [Array, Object],
+    rateLimit: [Object],
   };
   const getType = fn => {
     if (Array.isArray(fn)) {
@@ -72,6 +74,18 @@ function validateValidator(validator) {
     }
   }
 }
+const getRoute = parseClass => {
+  const route =
+    {
+      _User: 'users',
+      _Session: 'sessions',
+      '@File': 'files',
+    }[parseClass] || 'classes';
+  if (parseClass === '@File') {
+    return `/${route}/:id?*`;
+  }
+  return `/${route}/${parseClass}/:id?*`;
+};
 /** @namespace
  * @name Parse
  * @description The Parse SDK.
@@ -111,6 +125,12 @@ var ParseCloud = {};
 ParseCloud.define = function (functionName, handler, validationHandler) {
   validateValidator(validationHandler);
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      { requestPath: `/functions/${functionName}`, ...validationHandler.rateLimit },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -164,6 +184,16 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      {
+        requestPath: getRoute(className),
+        requestMethods: ['POST', 'PUT'],
+        ...validationHandler.rateLimit,
+      },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -200,6 +230,16 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      {
+        requestPath: getRoute(className),
+        requestMethods: 'DELETE',
+        ...validationHandler.rateLimit,
+      },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -225,15 +265,22 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
  * @name Parse.Cloud.beforeLogin
  * @param {Function} func The function to run before a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
-ParseCloud.beforeLogin = function (handler) {
+ParseCloud.beforeLogin = function (handler, validationHandler) {
   let className = '_User';
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
     className = triggers.getClassName(handler);
     handler = arguments[1];
+    validationHandler = arguments.length >= 2 ? arguments[2] : null;
   }
   triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      { requestPath: `/login`, requestMethods: 'POST', ...validationHandler.rateLimit },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -402,6 +449,16 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
+  if (validationHandler && validationHandler.rateLimit) {
+    addRateLimit(
+      {
+        requestPath: getRoute(className),
+        requestMethods: 'GET',
+        ...validationHandler.rateLimit,
+      },
+      Parse.applicationId
+    );
+  }
 };
 
 /**
@@ -713,24 +770,16 @@ ParseCloud.useMasterKey = () => {
   );
 };
 
-const request = require('./httpRequest');
-ParseCloud.httpRequest = opts => {
-  Deprecator.logRuntimeDeprecation({
-    usage: 'Parse.Cloud.httpRequest',
-    solution: 'Use a http request library instead.',
-  });
-  return request(opts);
-};
-
 module.exports = ParseCloud;
 
 /**
  * @interface Parse.Cloud.TriggerRequest
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key was used.
+ * @property {Boolean} isChallenge If true, means the current request is originally triggered by an auth challenge.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Parse.Object} object The object triggering the hook.
- * @property {String} ip The IP address of the client making the request.
+ * @property {String} ip The IP address of the client making the request. To ensure retrieving the correct IP address, set the Parse Server option `trustProxy: true` if Parse Server runs behind a proxy server, for example behind a load balancer.
  * @property {Object} headers The original HTTP headers for the request.
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`, ...)
  * @property {Object} log The current logger inside Parse Server.
