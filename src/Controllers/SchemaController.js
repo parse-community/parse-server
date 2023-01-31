@@ -814,6 +814,9 @@ export default class SchemaController {
       return Promise.reject(validationError);
     }
     try {
+      if (this.schemaData[className]) {
+        return this.schemaData[className];
+      }
       if (this._addingClasses[className]) {
         return this._addingClasses[className];
       }
