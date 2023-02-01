@@ -401,7 +401,7 @@ describe('rate limit', () => {
             requestCount: 1,
             errorResponseMessage: 'Too many requests',
             includeInternalRequests: true,
-            redisURL: 'redis://localhost:6379',
+            redisUrl: 'redis://localhost:6379',
           },
         ],
       });
