@@ -19,7 +19,6 @@
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
 [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)][open-collective-link]
-[![License][license-svg]][license-link]
 [![Forum](https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg)](https://community.parseplatform.org/c/parse-server)
 [![Twitter](https://img.shields.io/twitter/follow/ParsePlatform.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=ParsePlatform)
 [![Chat](https://img.shields.io/badge/Chat-Join!-%23fff?style=social&logo=slack)](https://chat.parseplatform.org)
@@ -92,7 +91,6 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Using automatically generated operations](#using-automatically-generated-operations)
   - [Customizing your GraphQL Schema](#customizing-your-graphql-schema)
   - [Learning more](#learning-more)
-- [Upgrading to Parse Server 3.0](#upgrading-to-parse-server-30)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Sponsors](#sponsors)
@@ -103,13 +101,13 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 Parse Server is available in different flavors on different branches:
 
 - The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
-- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-4.x.x`. LTS branches do not have pre-release branches.
+- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-5.x.x`. LTS branches do not have pre-release branches.
 
 ## Long Term Support
 
-Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 5.x will receive security updates until Parse Server 6.x is superseded by Parse Server 7.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-5.x.x` for the Parse Server 5.x LTS branch.
 
-⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-4.x.x) to see the current open vulnerabilities for that LTS branch.
+⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-5.x.x) to see the current open vulnerabilities for that LTS branch.
 
 # Getting Started
 
@@ -1154,12 +1152,6 @@ You also have a very powerful tool inside your GraphQL Playground. Please look a
 
 Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to learn more about the power of the GraphQL language.
 
-# Upgrading to Parse Server 3.0
-
-Starting Parse Server 3.0, Parse Server uses the Parse JavaScript SDK 2.0. In short, the Parse JavaScript SDK 2.0 removes the backbone style callbacks as well as the `Parse.Promise` object in favor of native promises. All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by promise style resolution.
-
-We have written up a [migration guide](3.0.0.md) to help you transition to the next major release.
-
 # Contributing
 
 Please see the [Contributing Guide](CONTRIBUTING.md).
@@ -1211,12 +1203,6 @@ Support us with a monthly donation and help us continue our activities. [Become 
 
 <a href="https://opencollective.com/parse-server#backers" target="_blank"><img src="https://opencollective.com/parse-server/backers.svg?width=890" /></a>
 
------
-
-As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.
-
-[license-svg]: https://img.shields.io/badge/license-BSD-lightgrey.svg
-[license-link]: LICENSE
 [open-collective-link]: https://opencollective.com/parse-server
 [log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
 [log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md

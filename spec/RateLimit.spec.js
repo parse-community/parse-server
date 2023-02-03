@@ -19,6 +19,27 @@ describe('rate limit', () => {
     );
   });
 
+  it('can limit cloud functions with user session token', async () => {
+    await Parse.User.signUp('myUser', 'password');
+    Parse.Cloud.define('test', () => 'Abc');
+    await reconfigureServer({
+      rateLimit: [
+        {
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+        },
+      ],
+    });
+    const response1 = await Parse.Cloud.run('test');
+    expect(response1).toBe('Abc');
+    await expectAsync(Parse.Cloud.run('test')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+  });
+
   it('can add global limit', async () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
