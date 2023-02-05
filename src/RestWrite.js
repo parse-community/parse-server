@@ -240,6 +240,11 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     identifier,
   };
 
+  const additionalData = {};
+  if (this.config.userController.shouldVerifyEmails && !originalObject) {
+    additionalData.setSendEmailVerificationEmail = true;
+    additionalData.setEmailVerified = false;
+  }
   return Promise.resolve()
     .then(() => {
       // Before calling the trigger, validate the permissions for the save operation
@@ -277,7 +282,8 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         updatedObject,
         originalObject,
         this.config,
-        this.context
+        this.context,
+        additionalData
       );
     })
     .then(response => {
@@ -299,6 +305,13 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         }
       }
       this.checkProhibitedKeywords(this.data);
+
+      if (!additionalData.setSendEmailVerificationEmail) {
+        this.storage.sendVerificationEmail = false;
+      }
+      if (additionalData.setEmailVerified) {
+        this.storage.emailVerified = true;
+      }
     });
 };
 
@@ -612,6 +625,10 @@ RestWrite.prototype.transformUser = function () {
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
 
+  if (this.storage.emailVerified) {
+    this.data.emailVerified = true;
+  }
+
   // Do not cleanup session if objectId is not set
   if (this.query && this.objectId()) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
@@ -742,10 +759,11 @@ RestWrite.prototype._validateEmail = function () {
         );
       }
       if (
-        !this.data.authData ||
-        !Object.keys(this.data.authData).length ||
-        (Object.keys(this.data.authData).length === 1 &&
-          Object.keys(this.data.authData)[0] === 'anonymous')
+        (!this.data.authData ||
+          !Object.keys(this.data.authData).length ||
+          (Object.keys(this.data.authData).length === 1 &&
+            Object.keys(this.data.authData)[0] === 'anonymous')) &&
+        this.storage.sendVerificationEmail !== false
       ) {
         // We updated the email, send a new validation
         this.storage['sendVerificationEmail'] = true;

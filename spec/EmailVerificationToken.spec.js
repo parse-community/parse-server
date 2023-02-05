@@ -288,6 +288,112 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
+  it('can conditionally send emails', async () => {
+    let sendEmailOptions;
+    const emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    const beforeSave = {
+      method(req) {
+        expect(req.setSendEmailVerificationEmail).toBeTrue();
+        expect(req.setEmailVerified).toBeFalse();
+        req.setSendEmailVerificationEmail = false;
+        req.setEmailVerified = true;
+      },
+    };
+    const saveSpy = spyOn(beforeSave, 'method').and.callThrough();
+    const emailSpy = spyOn(emailAdapter, 'sendVerificationEmail').and.callThrough();
+    Parse.Cloud.beforeSave(Parse.User, beforeSave.method);
+    const user = new Parse.User();
+    user.setUsername('sets_email_verify_token_expires_at');
+    user.setPassword('expiringToken');
+    user.set('email', 'user@example.com');
+    await user.signUp();
+
+    const config = Config.get('test');
+    const results = await config.database.find(
+      '_User',
+      {
+        username: 'sets_email_verify_token_expires_at',
+      },
+      {},
+      Auth.maintenance(config)
+    );
+
+    expect(results.length).toBe(1);
+    const user_data = results[0];
+    expect(typeof user_data).toBe('object');
+    expect(user_data.emailVerified).toEqual(true);
+    expect(user_data._email_verify_token).toBeUndefined();
+    expect(user_data._email_verify_token_expires_at).toBeUndefined();
+    expect(emailSpy).not.toHaveBeenCalled();
+    expect(saveSpy).toHaveBeenCalled();
+    expect(sendEmailOptions).toBeUndefined();
+  });
+
+  it('beforeSave options do not change existing behaviour', async () => {
+    let sendEmailOptions;
+    const emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    const beforeSave = {
+      method(req) {
+        if (!req.original) {
+          expect(req.setSendEmailVerificationEmail).toBeTrue();
+          expect(req.setEmailVerified).toBeFalse();
+        }
+      },
+    };
+    const saveSpy = spyOn(beforeSave, 'method').and.callThrough();
+    const emailSpy = spyOn(emailAdapter, 'sendVerificationEmail').and.callThrough();
+    Parse.Cloud.beforeSave(Parse.User, beforeSave.method);
+    const newUser = new Parse.User();
+    newUser.setUsername('unsets_email_verify_token_expires_at');
+    newUser.setPassword('expiringToken');
+    newUser.set('email', 'user@parse.com');
+    await newUser.signUp();
+    const response = await request({
+      url: sendEmailOptions.link,
+      followRedirects: false,
+    });
+    expect(response.status).toEqual(302);
+    const config = Config.get('test');
+    const results = await config.database.find('_User', {
+      username: 'unsets_email_verify_token_expires_at',
+    });
+
+    expect(results.length).toBe(1);
+    const user = results[0];
+    expect(typeof user).toBe('object');
+    expect(user.emailVerified).toEqual(true);
+    expect(typeof user._email_verify_token).toBe('undefined');
+    expect(typeof user._email_verify_token_expires_at).toBe('undefined');
+    expect(saveSpy).toHaveBeenCalled();
+    expect(emailSpy).toHaveBeenCalled();
+  });
+
   it('unsets the _email_verify_token_expires_at and _email_verify_token fields in the User class if email verification is successful', done => {
     const user = new Parse.User();
     let sendEmailOptions;
