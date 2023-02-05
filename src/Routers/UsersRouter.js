@@ -435,12 +435,12 @@ export class UsersRouter extends ClassesRouter {
       };
     } catch (err) {
       if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
-        if (!req.config.passwordPolicy) {
+        if (req.config.passwordPolicy?.resetPasswordSuccessOnInvalidEmail ?? true) {
           return {
             response: {},
           };
         }
-        err.message = `A user with the email ${email} does not exist.`;
+        err.message = `A user with that email does not exist.`;
       }
       throw err;
     }
