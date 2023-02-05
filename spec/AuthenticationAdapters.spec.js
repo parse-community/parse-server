@@ -1490,7 +1490,7 @@ describe('apple signin auth adapter', () => {
   it('should throw error if public key used to encode token is not available', async () => {
     const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
     try {
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
 
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -1512,7 +1512,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
@@ -2065,7 +2065,7 @@ describe('facebook limited auth adapter', () => {
       header: { kid: '789', alg: 'RS256' },
     };
     try {
-      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
 
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -2089,7 +2089,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
