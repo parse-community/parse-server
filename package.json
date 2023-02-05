@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.0.0-alpha.21",
+  "version": "6.0.0-alpha.31",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -13,11 +13,11 @@
     "public_html/",
     "views/",
     "LICENSE",
-    "PATENTS",
+    "NOTICE",
     "postinstall.js",
     "README.md"
   ],
-  "license": "BSD-3-Clause",
+  "license": "Apache-2.0",
   "dependencies": {
     "@babel/eslint-parser": "7.19.1",
     "@graphql-tools/merge": "8.3.6",
@@ -48,7 +48,7 @@
     "mime": "3.0.0",
     "mongodb": "4.10.0",
     "mustache": "4.2.0",
-    "parse": "3.4.2",
+    "parse": "4.0.1",
     "path-to-regexp": "0.1.7",
     "pg-monitor": "1.5.0",
     "pg-promise": "10.12.1",

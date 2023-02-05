@@ -45,6 +45,7 @@ export function handleParseHeaders(req, res, next) {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
     masterKey: req.get('X-Parse-Master-Key'),
+    maintenanceKey: req.get('X-Parse-Maintenance-Key'),
     installationId: req.get('X-Parse-Installation-Id'),
     clientKey: req.get('X-Parse-Client-Key'),
     javascriptKey: req.get('X-Parse-Javascript-Key'),
@@ -177,6 +178,24 @@ export function handleParseHeaders(req, res, next) {
   req.config.ip = clientIp;
   req.info = info;
 
+  const isMaintenance =
+    req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
+  if (isMaintenance) {
+    if (ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
+      req.auth = new auth.Auth({
+        config: req.config,
+        installationId: info.installationId,
+        isMaintenance: true,
+      });
+      next();
+      return;
+    }
+    const log = req.config?.loggerController || defaultLogger;
+    log.error(
+      `Request using maintenance key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
+  }
+
   let isMaster = info.masterKey === req.config.masterKey;
   if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
     const log = req.config?.loggerController || defaultLogger;
@@ -257,7 +276,13 @@ const handleRateLimit = async (req, res, next) => {
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
-              throw err;
+              if (err.code === Parse.Error.CONNECTION_FAILED) {
+                throw err;
+              }
+              req.config.loggerController.error(
+                'An unknown error occured when attempting to apply the rate limiter: ',
+                err
+              );
             }
           });
         }
@@ -265,7 +290,7 @@ const handleRateLimit = async (req, res, next) => {
     );
   } catch (error) {
     res.status(429);
-    res.json({ code: Parse.Error.CONNECTION_FAILED, error });
+    res.json({ code: Parse.Error.CONNECTION_FAILED, error: error.message });
     return;
   }
   next();
@@ -458,7 +483,10 @@ export const addRateLimit = (route, config) => {
       max: route.requestCount,
       message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
-        throw options.message;
+        throw {
+          code: Parse.Error.CONNECTION_FAILED,
+          message: options.message,
+        };
       },
       skip: request => {
         if (request.ip === '127.0.0.1' && !route.includeInternalRequests) {
@@ -479,7 +507,7 @@ export const addRateLimit = (route, config) => {
             }
           }
         }
-        return request.auth.isMaster;
+        return request.auth?.isMaster;
       },
       keyGenerator: request => {
         return request.config.ip;

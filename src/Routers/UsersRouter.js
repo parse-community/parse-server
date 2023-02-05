@@ -103,7 +103,7 @@ export class UsersRouter extends ClassesRouter {
         query = { $or: [{ username }, { email: username }] };
       }
       return req.config.database
-        .find('_User', query)
+        .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');

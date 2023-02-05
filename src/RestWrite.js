@@ -166,7 +166,7 @@ RestWrite.prototype.execute = function () {
 
 // Uses the Auth object to get the list of roles, adds the user id
 RestWrite.prototype.getUserAndRoleACL = function () {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return Promise.resolve();
   }
 
@@ -187,6 +187,7 @@ RestWrite.prototype.validateClientClassCreation = function () {
   if (
     this.config.allowClientClassCreation === false &&
     !this.auth.isMaster &&
+    !this.auth.isMaintenance &&
     SchemaController.systemClasses.indexOf(this.className) === -1
   ) {
     return this.config.database
@@ -211,7 +212,8 @@ RestWrite.prototype.validateSchema = function () {
     this.className,
     this.data,
     this.query,
-    this.runOptions
+    this.runOptions,
+    this.auth.isMaintenance
   );
 };
 
@@ -434,7 +436,7 @@ RestWrite.prototype.validateAuthData = function () {
 };
 
 RestWrite.prototype.filteredObjectsByACL = function (objects) {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return objects;
   }
   return objects.filter(object => {
@@ -605,7 +607,7 @@ RestWrite.prototype.transformUser = function () {
     return promise;
   }
 
-  if (!this.auth.isMaster && 'emailVerified' in this.data) {
+  if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
     const error = `Clients aren't allowed to manually update email verification.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
@@ -640,7 +642,7 @@ RestWrite.prototype.transformUser = function () {
       if (this.query) {
         this.storage['clearSessions'] = true;
         // Generate a new session only if the user requested
-        if (!this.auth.isMaster) {
+        if (!this.auth.isMaster && !this.auth.isMaintenance) {
           this.storage['generateNewSession'] = true;
         }
       }
@@ -813,7 +815,8 @@ RestWrite.prototype._validatePasswordHistory = function () {
       .find(
         '_User',
         { objectId: this.objectId() },
-        { keys: ['_password_history', '_hashed_password'] }
+        { keys: ['_password_history', '_hashed_password'] },
+        Auth.maintenance(this.config)
       )
       .then(results => {
         if (results.length != 1) {
@@ -1015,7 +1018,7 @@ RestWrite.prototype.handleSession = function () {
     return;
   }
 
-  if (!this.auth.user && !this.auth.isMaster) {
+  if (!this.auth.user && !this.auth.isMaster && !this.auth.isMaintenance) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token required.');
   }
 
@@ -1048,7 +1051,7 @@ RestWrite.prototype.handleSession = function () {
     }
   }
 
-  if (!this.query && !this.auth.isMaster) {
+  if (!this.query && !this.auth.isMaster && !this.auth.isMaintenance) {
     const additionalSessionData = {};
     for (var key in this.data) {
       if (key === 'objectId' || key === 'user') {
@@ -1115,7 +1118,7 @@ RestWrite.prototype.handleInstallation = function () {
   let installationId = this.data.installationId;
 
   // If data.installationId is not set and we're not master, we can lookup in auth
-  if (!installationId && !this.auth.isMaster) {
+  if (!installationId && !this.auth.isMaster && !this.auth.isMaintenance) {
     installationId = this.auth.installationId;
   }
 
@@ -1379,7 +1382,12 @@ RestWrite.prototype.runDatabaseOperation = function () {
   if (this.query) {
     // Force the user to not lockout
     // Matched with parse.com
-    if (this.className === '_User' && this.data.ACL && this.auth.isMaster !== true) {
+    if (
+      this.className === '_User' &&
+      this.data.ACL &&
+      this.auth.isMaster !== true &&
+      this.auth.isMaintenance !== true
+    ) {
       this.data.ACL[this.query.objectId] = { read: true, write: true };
     }
     // update password timestamp if user password is being changed
@@ -1406,7 +1414,8 @@ RestWrite.prototype.runDatabaseOperation = function () {
         .find(
           '_User',
           { objectId: this.objectId() },
-          { keys: ['_password_history', '_hashed_password'] }
+          { keys: ['_password_history', '_hashed_password'] },
+          Auth.maintenance(this.config)
         )
         .then(results => {
           if (results.length != 1) {

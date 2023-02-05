@@ -546,6 +546,12 @@ describe('server', () => {
     const health = await request({
       url: 'http://localhost:12701/parse/health',
     }).catch(e => e);
+    spyOn(console, 'warn').and.callFake(() => {});
+    const verify = await ParseServer.default.verifyServerUrl();
+    expect(verify).not.toBeTrue();
+    expect(console.warn).toHaveBeenCalledWith(
+      `\nWARNING, Unable to connect to 'http://localhost:12701/parse'. Cloud code and push notifications may be unavailable!\n`
+    );
     expect(health.data.status).toBe('initialized');
     expect(health.status).toBe(503);
     await new Promise(resolve => server.close(resolve));
@@ -573,6 +579,8 @@ describe('server', () => {
     expect(health.data.status).toBe('starting');
     expect(health.status).toBe(503);
     expect(health.headers['retry-after']).toBe('1');
+    const response = await ParseServer.default.verifyServerUrl();
+    expect(response).toBeTrue();
     await startingPromise;
     await new Promise(resolve => server.close(resolve));
   });
