@@ -5,6 +5,7 @@ var Parse = require('parse/node').Parse;
 
 const https = require('https');
 const jwt = require('jsonwebtoken');
+const httpsRequest = require('./httpsRequest');
 
 const TOKEN_ISSUER = 'accounts.google.com';
 const HTTPS_TOKEN_ISSUER = 'https://accounts.google.com';
@@ -87,7 +88,7 @@ async function verifyIdToken({ id_token: token, id }, { clientId }) {
     );
   }
 
-  if (jwtClaims.sub !== id) {
+  if (typeof id != 'undefined' && jwtClaims.sub !== id) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
   }
 
@@ -101,9 +102,39 @@ async function verifyIdToken({ id_token: token, id }, { clientId }) {
   return jwtClaims;
 }
 
+// Old way to validate an auth_token, only used for development purpose
+function validateAuthToken({ id, access_token }) {
+  return googleRequest('tokeninfo?access_token=' + access_token).then(response => {
+    if (response && (response.sub == id || response.user_id == id)) {
+      return;
+    }
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Google auth is invalid for this user.');
+  });
+}
+
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData(authData, options = {}) {
-  return verifyIdToken(authData, options);
+function validateAuthData({ id, id_token, access_token }, options) {
+  if (!id_token && !access_token) {
+    return Promise.reject(new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `id_token or access_token is missing for this user.`
+    ));
+  }
+  // Returns a promise that fulfills if this user id is valid.
+  if (id_token) {
+    return verifyIdToken({ id, id_token }, options);
+  } else {
+    return validateAuthToken({ id, access_token }).then(
+      () => {
+        // Validation with auth token worked
+        return;
+      },
+      () => {
+        // Try with the id_token param
+        return verifyIdToken({ id, id_token: access_token }, options);
+      }
+    );
+  }
 }
 
 // Returns a promise that fulfills if this app id is valid.
@@ -168,4 +199,9 @@ function encodeLengthHex(n) {
   const nHex = toHex(n);
   const lengthOfLengthByte = 128 + nHex.length / 2;
   return toHex(lengthOfLengthByte) + nHex;
+}
+
+// A promisey wrapper for api requests
+function googleRequest(path) {
+  return httpsRequest.get('https://www.googleapis.com/oauth2/v3/' + path);
 }

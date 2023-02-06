@@ -649,12 +649,12 @@ describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
   const jwt = require('jsonwebtoken');
 
-  it('should throw error with missing id_token', async () => {
+  it('should throw error with missing id_token or access_token', async () => {
     try {
       await google.validateAuthData({}, {});
       fail();
     } catch (e) {
-      expect(e.message).toBe('id token is invalid for this user.');
+      expect(e.message).toBe('id_token or access_token is missing for this user.');
     }
   });
 
@@ -666,20 +666,6 @@ describe('google auth adapter', () => {
       expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
-
-  // it('should throw error if public key used to encode token is not available', async () => {
-  //   const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
-  //   try {
-  //     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
-
-  //     await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
-  //     fail();
-  //   } catch (e) {
-  //     expect(e.message).toBe(
-  //       `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
-  //     );
-  //   }
-  // });
 
   it('(using client id as string) should verify id_token', async () => {
     const fakeClaim = {
