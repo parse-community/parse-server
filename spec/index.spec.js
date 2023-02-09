@@ -587,6 +587,7 @@ describe('server', () => {
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');
+    const authUtils = require('../lib/Adapters/Auth/utils');
 
     reconfigureServer({
       auth: { google: {} },
@@ -599,7 +600,7 @@ describe('server', () => {
           sub: 'the_user_id',
         };
         const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-        spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+        spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
         spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
         const user = new Parse.User();
         user
