@@ -22,6 +22,7 @@ import { getCacheController, getDatabaseController } from '../Controllers';
 import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
+import { isDeepStrictEqual } from 'util';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -329,6 +330,10 @@ class ParseLiveQueryServer {
             } else {
               return null;
             }
+            const watchFieldsChanged = this._checkWatchFields(client, requestId, message);
+            if (!watchFieldsChanged && (type === 'update' || type === 'create')) {
+              return;
+            }
             res = {
               event: type,
               sessionToken: client.sessionToken,
@@ -625,6 +630,7 @@ class ParseLiveQueryServer {
       }
       return DatabaseController.filterSensitiveData(
         client.hasMasterKey,
+        false,
         aclGroup,
         clientAuth,
         op,
@@ -704,6 +710,17 @@ class ParseLiveQueryServer {
     }
     const { auth } = await this.getAuthForSessionToken(sessionToken);
     return auth;
+  }
+
+  _checkWatchFields(client: any, requestId: any, message: any) {
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    const watch = subscriptionInfo?.watch;
+    if (!watch) {
+      return true;
+    }
+    const object = message.currentParseObject;
+    const original = message.originalParseObject;
+    return watch.some(field => !isDeepStrictEqual(object.get(field), original?.get(field)));
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
@@ -886,6 +903,9 @@ class ParseLiveQueryServer {
       // Add selected fields, sessionToken and installationId for this subscription if necessary
       if (request.query.fields) {
         subscriptionInfo.fields = request.query.fields;
+      }
+      if (request.query.watch) {
+        subscriptionInfo.watch = request.query.watch;
       }
       if (request.sessionToken) {
         subscriptionInfo.sessionToken = request.sessionToken;

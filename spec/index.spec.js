@@ -546,6 +546,12 @@ describe('server', () => {
     const health = await request({
       url: 'http://localhost:12701/parse/health',
     }).catch(e => e);
+    spyOn(console, 'warn').and.callFake(() => {});
+    const verify = await ParseServer.default.verifyServerUrl();
+    expect(verify).not.toBeTrue();
+    expect(console.warn).toHaveBeenCalledWith(
+      `\nWARNING, Unable to connect to 'http://localhost:12701/parse'. Cloud code and push notifications may be unavailable!\n`
+    );
     expect(health.data.status).toBe('initialized');
     expect(health.status).toBe(503);
     await new Promise(resolve => server.close(resolve));
@@ -573,12 +579,15 @@ describe('server', () => {
     expect(health.data.status).toBe('starting');
     expect(health.status).toBe(503);
     expect(health.headers['retry-after']).toBe('1');
+    const response = await ParseServer.default.verifyServerUrl();
+    expect(response).toBeTrue();
     await startingPromise;
     await new Promise(resolve => server.close(resolve));
   });
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');
+    const authUtils = require('../lib/Adapters/Auth/utils');
 
     reconfigureServer({
       auth: { google: {} },
@@ -591,7 +600,7 @@ describe('server', () => {
           sub: 'the_user_id',
         };
         const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-        spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+        spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
         spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
         const user = new Parse.User();
         user

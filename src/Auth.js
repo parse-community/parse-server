@@ -11,6 +11,7 @@ function Auth({
   config,
   cacheController = undefined,
   isMaster = false,
+  isMaintenance = false,
   isReadOnly = false,
   user,
   installationId,
@@ -19,6 +20,7 @@ function Auth({
   this.cacheController = cacheController || (config && config.cacheController);
   this.installationId = installationId;
   this.isMaster = isMaster;
+  this.isMaintenance = isMaintenance;
   this.user = user;
   this.isReadOnly = isReadOnly;
 
@@ -35,6 +37,9 @@ Auth.prototype.isUnauthenticated = function () {
   if (this.isMaster) {
     return false;
   }
+  if (this.isMaintenance) {
+    return false;
+  }
   if (this.user) {
     return false;
   }
@@ -44,6 +49,11 @@ Auth.prototype.isUnauthenticated = function () {
 // A helper to get a master-level Auth object
 function master(config) {
   return new Auth({ config, isMaster: true });
+}
+
+// A helper to get a maintenance-level Auth object
+function maintenance(config) {
+  return new Auth({ config, isMaintenance: true });
 }
 
 // A helper to get a master-level Auth object
@@ -149,7 +159,7 @@ var getAuthForLegacySessionToken = function ({ config, sessionToken, installatio
 
 // Returns a promise that resolves to an array of role names
 Auth.prototype.getUserRoles = function () {
-  if (this.isMaster || !this.user) {
+  if (this.isMaster || this.isMaintenance || !this.user) {
     return Promise.resolve([]);
   }
   if (this.fetchedRoles) {
@@ -493,6 +503,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
 module.exports = {
   Auth,
   master,
+  maintenance,
   nobody,
   readOnly,
   getAuthForSessionToken,

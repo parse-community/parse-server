@@ -2774,7 +2774,7 @@ describe('afterFind hooks', () => {
     const obj = new Parse.Object('MyObject');
     const pipeline = [
       {
-        group: { objectId: {} },
+        $group: { _id: {} },
       },
     ];
     obj
