@@ -127,7 +127,7 @@ export class FilesRouter {
     }
     const filesController = config.filesController;
     const { filename } = req.params;
-    const contentType = req.get('Content-type') || mime.getType(filename);
+    const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));

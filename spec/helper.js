@@ -30,7 +30,6 @@ if (global._babelPolyfill) {
   console.error('We should not use polyfilled tests');
   process.exit(1);
 }
-
 process.noDeprecation = true;
 
 const cache = require('../lib/cache').default;
