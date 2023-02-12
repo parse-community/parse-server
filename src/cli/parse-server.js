@@ -68,16 +68,26 @@ runner({
           cluster.fork();
         });
       } else {
-        ParseServer.start(options, () => {
-          printSuccessMessage();
-        });
+        ParseServer.startApp(options)
+          .then(() => {
+            printSuccessMessage();
+          })
+          .catch(e => {
+            console.error(e);
+            process.exit(1);
+          });
       }
     } else {
-      ParseServer.start(options, () => {
-        logOptions();
-        console.log('');
-        printSuccessMessage();
-      });
+      ParseServer.startApp(options)
+        .then(() => {
+          logOptions();
+          console.log('');
+          printSuccessMessage();
+        })
+        .catch(e => {
+          console.error(e);
+          process.exit(1);
+        });
     }
 
     function printSuccessMessage() {
