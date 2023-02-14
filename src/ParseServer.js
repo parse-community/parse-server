@@ -202,11 +202,6 @@ class ParseServer {
           throw err;
         }
       });
-      // verify the server url after a 'mount' event is received
-      /* istanbul ignore next */
-      api.on('mount', function () {
-        ParseServer.verifyServerUrl();
-      });
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' || directAccess) {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
@@ -294,7 +289,10 @@ class ParseServer {
       }
     }
 
-    const server = app.listen(options.port, options.host, callback);
+    const server = app.listen(options.port, options.host, (...args) => {
+      ParseServer.verifyServerUrl();
+      if (callback) callback(...args);
+    });
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
