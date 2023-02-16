@@ -1,3 +1,10 @@
+## [5.4.2](https://github.com/parse-community/parse-server/compare/5.4.1...5.4.2) (2023-02-16)
+
+
+### Bug Fixes
+
+* Security upgrade jsonwebtoken to 9.0.0 ([#8431](https://github.com/parse-community/parse-server/issues/8431)) ([2c19c2e](https://github.com/parse-community/parse-server/commit/2c19c2e4d4cfdeefe31e0ec11d2dc0e8ee508a91))
+
 ## [5.4.1](https://github.com/parse-community/parse-server/compare/5.4.0...5.4.1) (2023-01-31)
 
 
