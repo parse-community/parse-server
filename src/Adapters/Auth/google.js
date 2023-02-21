@@ -5,6 +5,7 @@ var Parse = require('parse/node').Parse;
 
 const https = require('https');
 const jwt = require('jsonwebtoken');
+const authUtils = require('./utils');
 
 const TOKEN_ISSUER = 'accounts.google.com';
 const HTTPS_TOKEN_ISSUER = 'https://accounts.google.com';
@@ -51,22 +52,12 @@ function getGoogleKeyByKeyId(keyId) {
   });
 }
 
-function getHeaderFromToken(token) {
-  const decodedToken = jwt.decode(token, { complete: true });
-
-  if (!decodedToken) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `provided token does not decode as JWT`);
-  }
-
-  return decodedToken.header;
-}
-
 async function verifyIdToken({ id_token: token, id }, { clientId }) {
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
 
-  const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
+  const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
   let jwtClaims;
   const googleKey = await getGoogleKeyByKeyId(keyId);
 
