@@ -153,8 +153,14 @@ export class FilesRouter {
           }
         });
       };
-      let extension = filename.includes('.') ? filename.split('.')[1] : contentType.split('/')[1];
+      let extension = contentType;
+      if (filename && filename.includes('.')) {
+        extension = filename.split('.')[1];
+      } else if (contentType && contentType.includes('/')) {
+        extension = contentType.split('/')[1];
+      }
       extension = extension.split(' ').join('');
+      
       if (!isValidExtension(extension)) {
         next(
           new Parse.Error(
