@@ -160,7 +160,7 @@ export class FilesRouter {
         extension = contentType.split('/')[1];
       }
       extension = extension.split(' ').join('');
-      
+
       if (!isValidExtension(extension)) {
         next(
           new Parse.Error(
