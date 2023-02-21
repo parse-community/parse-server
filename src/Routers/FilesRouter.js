@@ -140,6 +140,38 @@ export class FilesRouter {
       return;
     }
 
+    const fileExtensions = config.fileUpload?.fileExtensions;
+    if (!isMaster && fileExtensions) {
+      const isValidExtension = extension => {
+        return fileExtensions.some(ext => {
+          if (ext === '*') {
+            return true;
+          }
+          const regex = new RegExp(fileExtensions);
+          if (regex.test(extension)) {
+            return true;
+          }
+        });
+      };
+      let extension = contentType;
+      if (filename && filename.includes('.')) {
+        extension = filename.split('.')[1];
+      } else if (contentType && contentType.includes('/')) {
+        extension = contentType.split('/')[1];
+      }
+      extension = extension.split(' ').join('');
+
+      if (!isValidExtension(extension)) {
+        next(
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `File upload of extension ${extension} is disabled.`
+          )
+        );
+        return;
+      }
+    }
+
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
