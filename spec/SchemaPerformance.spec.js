@@ -211,8 +211,8 @@ describe('Schema Performance', function () {
       silent: false,
       databaseOptions: { schemaCacheTTL: 1000 },
     });
-    const schema = await config.database.loadSchema();
-    const spy = spyOn(schema, 'reloadData').and.callThrough();
+    const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
+    const spy = spyOn(SchemaController.prototype, 'reloadData').and.callThrough();
     Object.defineProperty(spy, 'reloadCalls', {
       get: () => spy.calls.all().filter(call => call.args[0].clearCache).length,
     });

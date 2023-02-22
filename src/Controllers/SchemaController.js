@@ -682,6 +682,10 @@ const typeToString = (type: SchemaField | string): string => {
   }
   return `${type.type}`;
 };
+const ttl = {
+  date: Date.now(),
+  duration: undefined,
+};
 
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
@@ -691,7 +695,6 @@ export default class SchemaController {
   reloadDataPromise: ?Promise<any>;
   protectedFields: any;
   userIdRegEx: RegExp;
-  ttl: { [string]: any };
 
   constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
@@ -710,23 +713,20 @@ export default class SchemaController {
       this.reloadData({ clearCache: true });
     });
 
-    this.ttl = {
-      date: Date.now(),
-      duration: databaseAdapter.schemaCacheTTL,
-    };
+    ttl.duration = databaseAdapter.schemaCacheTTL;
   }
 
   async reloadDataIfNeeded() {
     if (this._dbAdapter.enableSchemaHooks) {
       return;
     }
-    const { date, duration } = this.ttl || {};
+    const { date, duration } = ttl || {};
     if (!duration) {
       return;
     }
     const now = Date.now();
     if (now - date > duration) {
-      this.ttl.date = now;
+      ttl.date = now;
       await this.reloadData({ clearCache: true });
     }
   }
@@ -1461,14 +1461,9 @@ export default class SchemaController {
 }
 
 // Returns a promise for a new Schema.
-let schemaController: SchemaController;
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
-  if (!schemaController) {
-    schemaController = new SchemaController(dbAdapter);
-  }
-  schemaController._dbAdapter = dbAdapter;
-  schemaController.ttl.duration = dbAdapter.schemaCacheTTL;
-  return schemaController.reloadData(options).then(() => schemaController);
+  const schema = new SchemaController(dbAdapter);
+  return schema.reloadData(options).then(() => schema);
 };
 
 // Builds a new schema (in schema API response format) out of an
