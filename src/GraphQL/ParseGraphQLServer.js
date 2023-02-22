@@ -86,15 +86,15 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseErrors);
 
-    if (this.parseServer.options.requestContextMiddleware) {
+    if (this.parseServer.config.requestContextMiddleware) {
       let requestContextMiddleware;
-      if (typeof this.parseServer.options.requestContextMiddleware == 'string') {
+      if (typeof this.parseServer.config.requestContextMiddleware == 'string') {
         requestContextMiddleware = require(path.resolve(
           process.cwd(),
-          this.parseServer.options.requestContextMiddleware
+          this.parseServer.config.requestContextMiddleware
         ));
       } else {
-        requestContextMiddleware = this.parseServer.options.requestContextMiddleware; // use as-is let express fail
+        requestContextMiddleware = this.parseServer.config.requestContextMiddleware; // use as-is let express fail
       }
       app.use(requestContextMiddleware);
     }
