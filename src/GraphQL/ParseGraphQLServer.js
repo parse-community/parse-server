@@ -84,7 +84,6 @@ class ParseGraphQLServer {
 
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
-    app.use(this.config.graphQLPath, handleParseErrors);
 
     if (this.parseServer.config.requestContextMiddleware) {
       let requestContextMiddleware;
@@ -98,6 +97,8 @@ class ParseGraphQLServer {
       }
       app.use(requestContextMiddleware);
     }
+
+    app.use(this.config.graphQLPath, handleParseErrors);
 
     app.use(this.config.graphQLPath, async (req, res) => {
       const server = await this._getServer();

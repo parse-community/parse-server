@@ -183,12 +183,6 @@ class ParseServer {
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
-
-    const appRouter = ParseServer.promiseRouter({ appId });
-    api.use(appRouter.expressRouter());
-
-    api.use(middlewares.handleParseErrors);
-
     if (options.requestContextMiddleware) {
       let requestContextMiddleware;
       if (typeof options.requestContextMiddleware == 'string') {
@@ -201,6 +195,11 @@ class ParseServer {
       }
       api.use(requestContextMiddleware);
     }
+
+    const appRouter = ParseServer.promiseRouter({ appId });
+    api.use(appRouter.expressRouter());
+
+    api.use(middlewares.handleParseErrors);
 
     // run the following when not testing
     if (!process.env.TESTING) {
