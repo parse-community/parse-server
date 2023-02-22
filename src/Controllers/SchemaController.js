@@ -716,6 +716,9 @@ export default class SchemaController {
   }
 
   async reloadDataIfNeeded() {
+    if (this._dbAdapter.enableSchemaHooks) {
+      return;
+    }
     const { date, duration } = this.ttl || {};
     if (!duration) {
       return;
