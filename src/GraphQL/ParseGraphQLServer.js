@@ -1,4 +1,5 @@
 import corsMiddleware from 'cors';
+import path from 'path';
 import { createServer } from '@graphql-yoga/node';
 import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
 import { execute, subscribe } from 'graphql';
@@ -84,6 +85,20 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseErrors);
+
+    if (this.parseServer.options.requestContextMiddleware) {
+      let requestContextMiddleware;
+      if (typeof this.parseServer.options.requestContextMiddleware == 'string') {
+        requestContextMiddleware = require(path.resolve(
+          process.cwd(),
+          this.parseServer.options.requestContextMiddleware
+        ));
+      } else {
+        requestContextMiddleware = this.parseServer.options.requestContextMiddleware; // use as-is let express fail
+      }
+      app.use(requestContextMiddleware);
+    }
+
     app.use(this.config.graphQLPath, async (req, res) => {
       const server = await this._getServer();
       return server(req, res);

@@ -189,6 +189,19 @@ class ParseServer {
 
     api.use(middlewares.handleParseErrors);
 
+    if (options.requestContextMiddleware) {
+      let requestContextMiddleware;
+      if (typeof options.requestContextMiddleware == 'string') {
+        requestContextMiddleware = require(path.resolve(
+          process.cwd(),
+          options.requestContextMiddleware
+        ));
+      } else {
+        requestContextMiddleware = options.requestContextMiddleware; // use as-is let express fail
+      }
+      api.use(requestContextMiddleware);
+    }
+
     // run the following when not testing
     if (!process.env.TESTING) {
       //This causes tests to spew some useless warnings, so disable in test
