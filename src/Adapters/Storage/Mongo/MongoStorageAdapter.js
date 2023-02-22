@@ -139,6 +139,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
+  schemaCacheTTL: ?number;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;

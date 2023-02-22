@@ -691,6 +691,7 @@ export default class SchemaController {
   reloadDataPromise: ?Promise<any>;
   protectedFields: any;
   userIdRegEx: RegExp;
+  ttl: { [string]: any };
 
   constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
@@ -1460,7 +1461,7 @@ export default class SchemaController {
 }
 
 // Returns a promise for a new Schema.
-let schemaController = null;
+let schemaController: SchemaController;
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
   if (!schemaController) {
     schemaController = new SchemaController(dbAdapter);
