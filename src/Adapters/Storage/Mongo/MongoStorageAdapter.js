@@ -143,7 +143,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
-    this._mongoOptions = mongoOptions;
+    this._mongoOptions = { ...mongoOptions };
     this._mongoOptions.useNewUrlParser = true;
     this._mongoOptions.useUnifiedTopology = true;
     this._onchange = () => {};
@@ -152,8 +152,11 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
-    delete mongoOptions.enableSchemaHooks;
-    delete mongoOptions.maxTimeMS;
+    this.schemaCacheTTL = mongoOptions.schemaCacheTTL;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTTL', 'maxTimeMS']) {
+      delete mongoOptions[key];
+      delete this._mongoOptions[key];
+    }
   }
 
   watch(callback: () => void): void {
@@ -168,6 +171,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
+
+    console.log(this._mongoOptions);
 
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
       .then(client => {

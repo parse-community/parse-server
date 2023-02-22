@@ -694,10 +694,11 @@ export default class SchemaController {
 
   constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
+    const config = Config.get(Parse.applicationId);
     this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
-    this.protectedFields = Config.get(Parse.applicationId).protectedFields;
+    this.protectedFields = config.protectedFields;
 
-    const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
+    const customIds = config.allowCustomObjectId;
 
     const customIdRegEx = /^.{1,}$/u; // 1+ chars
     const autoIdRegEx = /^[a-zA-Z0-9]{1,}$/;
@@ -707,6 +708,23 @@ export default class SchemaController {
     this._dbAdapter.watch(() => {
       this.reloadData({ clearCache: true });
     });
+
+    this.ttl = {
+      date: Date.now(),
+      duration: databaseAdapter.schemaCacheTTL,
+    };
+  }
+
+  async reloadDataIfNeeded() {
+    const { date, duration } = this.ttl || {};
+    if (!duration) {
+      return;
+    }
+    const now = Date.now();
+    if (now - date > duration) {
+      this.ttl.date = now;
+      await this.reloadData({ clearCache: true });
+    }
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
@@ -729,10 +747,11 @@ export default class SchemaController {
     return this.reloadDataPromise;
   }
 
-  getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
+  async getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
     if (options.clearCache) {
       return this.setAllClasses();
     }
+    await this.reloadDataIfNeeded();
     const cached = SchemaCache.all();
     if (cached && cached.length) {
       return Promise.resolve(cached);
@@ -1438,9 +1457,14 @@ export default class SchemaController {
 }
 
 // Returns a promise for a new Schema.
+let schemaController = null;
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
-  const schema = new SchemaController(dbAdapter);
-  return schema.reloadData(options).then(() => schema);
+  if (!schemaController) {
+    schemaController = new SchemaController(dbAdapter);
+  }
+  schemaController._dbAdapter = dbAdapter;
+  schemaController.ttl.duration = dbAdapter.schemaCacheTTL;
+  return schemaController.reloadData(options).then(() => schemaController);
 };
 
 // Builds a new schema (in schema API response format) out of an

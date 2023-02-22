@@ -964,6 +964,13 @@ module.exports.DatabaseOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  schemaCacheTTL: {
+    env: 'PARSE_SERVER_DATABASE_SCHEMA_CACHE_TTL',
+    help:
+      'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
+    action: parsers.numberParser('schemaCacheTTL'),
+    default: 5000,
+  },
 };
 module.exports.AuthAdapter = {
   enabled: {
