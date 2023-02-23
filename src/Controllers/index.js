@@ -238,7 +238,7 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
       return new PostgresStorageAdapter({
         uri: databaseURI,
         collectionPrefix,
-        options: databaseOptions,
+        databaseOptions,
       });
     default:
       return new MongoStorageAdapter({
