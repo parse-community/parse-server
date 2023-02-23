@@ -206,8 +206,13 @@ describe('Schema Performance', function () {
   });
 
   it('does reload with schemaCacheTTL', async () => {
+    const databaseURI =
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+        ? 'postgres://localhost:5432/parse_server_postgres_adapter_test_database'
+        : 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
     await reconfigureServer({
       databaseAdapter: undefined,
+      databaseURI,
       silent: false,
       databaseOptions: { schemaCacheTTL: 1000 },
     });
