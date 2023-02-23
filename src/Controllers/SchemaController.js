@@ -712,8 +712,6 @@ export default class SchemaController {
     this._dbAdapter.watch(() => {
       this.reloadData({ clearCache: true });
     });
-
-    ttl.duration = databaseAdapter.schemaCacheTTL;
   }
 
   async reloadDataIfNeeded() {
@@ -1463,6 +1461,7 @@ export default class SchemaController {
 // Returns a promise for a new Schema.
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
   const schema = new SchemaController(dbAdapter);
+  ttl.duration = dbAdapter.schemaCacheTTL;
   return schema.reloadData(options).then(() => schema);
 };
 
