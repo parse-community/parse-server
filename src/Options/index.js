@@ -525,7 +525,7 @@ export interface PasswordPolicyOptions {
   Default is `false`.
   :DEFAULT: false */
   resetTokenReuseIfValid: ?boolean;
-  /* Set to true if password resets should return success if the email is invalid
+  /* Set to `true` if a request to reset the password should return a success response even if the provided email address is invalid, or `false` if the request should return an error response if the email address is invalid.
   <br><br>
   Default is `true`.
   :DEFAULT: true */
