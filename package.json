@@ -48,6 +48,7 @@
     "mime": "3.0.0",
     "mongodb": "4.10.0",
     "mustache": "4.2.0",
+    "otpauth": "^9.0.2",
     "parse": "4.0.1",
     "path-to-regexp": "0.1.7",
     "pg-monitor": "1.5.0",

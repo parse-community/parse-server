@@ -1248,4 +1248,35 @@ describe('Auth Adapter features', () => {
     await user.fetch({ useMasterKey: true });
     expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
   });
+
+  fit('can create 2fa adapter', async () => {
+    await reconfigureServer({
+      auth: {
+        mfa: {
+          enabled: true,
+          algorithm: 'SHA1',
+          secret: 'NB2W45DFOIZA',
+          digits: 6,
+          period: 30,
+        },
+      },
+      silent: false,
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    await user.save(
+      { authData: { mfa: { enroll: true } } },
+      { sessionToken: user.getSessionToken() }
+    );
+    console.log(user.toJSON());
+    const res = await request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/challenge',
+      body: JSON.stringify({
+        challengeData: {
+          challengeAdapter: { someData: true },
+        },
+      }),
+    });
+  });
 });

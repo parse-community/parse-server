@@ -8,6 +8,7 @@ const facebook = require('./facebook');
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
+const mfa = require('./mfa');
 const google = require('./google');
 const github = require('./github');
 const twitter = require('./twitter');
@@ -43,6 +44,7 @@ const providers = {
   instagram,
   linkedin,
   meetup,
+  mfa,
   google,
   github,
   twitter,
@@ -88,6 +90,7 @@ function authDataValidator(provider, adapter, appIds, options) {
       typeof adapter.validateLogin !== 'function' ||
       typeof adapter.validateUpdate !== 'function'
     ) {
+      console.log({adapter});
       throw new Parse.Error(
         Parse.Error.OTHER_CAUSE,
         'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
