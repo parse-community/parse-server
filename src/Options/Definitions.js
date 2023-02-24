@@ -910,7 +910,7 @@ module.exports.PasswordPolicyOptions = {
   resetPasswordSuccessOnInvalidEmail: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_PASSWORD_SUCCESS_ON_INVALID_EMAIL',
     help:
-      'Set to true if password resets should return success if the email is invalid<br><br>Default is `true`.',
+      'Set to `true` if a request to reset the password should return a success response even if the provided email address is invalid, or `false` if the request should return an error response if the email address is invalid.<br><br>Default is `true`.',
     action: parsers.booleanParser,
     default: true,
   },
