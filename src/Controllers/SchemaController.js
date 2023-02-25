@@ -1461,7 +1461,7 @@ export default class SchemaController {
 // Returns a promise for a new Schema.
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
   const schema = new SchemaController(dbAdapter);
-  ttl.duration = dbAdapter.schemaCacheTTL;
+  ttl.duration = dbAdapter.schemaCacheTtl;
   return schema.reloadData(options).then(() => schema);
 };
 

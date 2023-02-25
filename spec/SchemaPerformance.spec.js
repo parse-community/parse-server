@@ -205,7 +205,7 @@ describe('Schema Performance', function () {
     expect(getAllSpy.calls.count()).toBe(2);
   });
 
-  it('does reload with schemaCacheTTL', async () => {
+  it('does reload with schemaCacheTtl', async () => {
     const databaseURI =
       process.env.PARSE_SERVER_TEST_DB === 'postgres'
         ? process.env.PARSE_SERVER_TEST_DATABASE_URI
@@ -214,7 +214,7 @@ describe('Schema Performance', function () {
       databaseAdapter: undefined,
       databaseURI,
       silent: false,
-      databaseOptions: { schemaCacheTTL: 1000 },
+      databaseOptions: { schemaCacheTtl: 1000 },
     });
     const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
     const spy = spyOn(SchemaController.prototype, 'reloadData').and.callThrough();
@@ -255,7 +255,7 @@ describe('Schema Performance', function () {
       await expectError('enableSchemaHooks', value, 'boolean');
     }
     for (const value of [null, false, 'string', {}, []]) {
-      await expectError('schemaCacheTTL', value, 'number');
+      await expectError('schemaCacheTtl', value, 'number');
     }
   });
 });

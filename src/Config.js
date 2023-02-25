@@ -546,10 +546,10 @@ export class Config {
     } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
       throw `databaseOptions.enableSchemaHooks must be a boolean`;
     }
-    if (databaseOptions.schemaCacheTTL === undefined) {
-      databaseOptions.schemaCacheTTL = DatabaseOptions.schemaCacheTTL.default;
-    } else if (typeof databaseOptions.schemaCacheTTL !== 'number') {
-      throw `databaseOptions.schemaCacheTTL must be a number`;
+    if (databaseOptions.schemaCacheTtl === undefined) {
+      databaseOptions.schemaCacheTtl = DatabaseOptions.schemaCacheTtl.default;
+    } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
+      throw `databaseOptions.schemaCacheTtl must be a number`;
     }
   }
 

@@ -544,7 +544,7 @@ export interface DatabaseOptions {
   :DEFAULT: false */
   enableSchemaHooks: ?boolean;
   /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production */
-  schemaCacheTTL: ?number;
+  schemaCacheTtl: ?number;
 }
 
 export interface AuthAdapter {

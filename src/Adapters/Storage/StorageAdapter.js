@@ -30,7 +30,7 @@ export type FullQueryOptions = QueryOptions & UpdateQueryOptions;
 
 export interface StorageAdapter {
   canSortOnJoinTables: boolean;
-  schemaCacheTTL: ?number;
+  schemaCacheTtl: ?number;
   enableSchemaHooks: boolean;
 
   classExists(className: string): Promise<boolean>;
