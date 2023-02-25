@@ -64,6 +64,7 @@ describe('Auth Adapter features', () => {
     validateSetUp: () => Promise.resolve(),
     validateUpdate: () => Promise.resolve(),
     validateLogin: () => Promise.resolve(),
+    validateOptions: () => Promise.resolve(),
     afterFind() {
       return {
         foo: 'bar',
@@ -345,7 +346,9 @@ describe('Auth Adapter features', () => {
   });
 
   it('should strip out authData if required', async () => {
+    const spy = spyOn(modernAdapter3, 'validateOptions').and.callThrough();
     await reconfigureServer({ auth: { modernAdapter3 }, silent: false });
+    expect(spy).toHaveBeenCalled();
     const user = new Parse.User();
     await user.save({ authData: { modernAdapter3: { id: 'modernAdapter3Data' } } });
     await user.fetch({ sessionToken: user.getSessionToken() });

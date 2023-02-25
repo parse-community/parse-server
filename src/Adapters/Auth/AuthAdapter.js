@@ -103,6 +103,14 @@ export class AuthAdapter {
   afterFind(authData, options) {
     return Promise.resolve({});
   }
+
+  /**
+   * Triggered when the adapter is first attached to Parse Server
+   * @param {Object} options Adapter Options
+   */
+  validateOptions(options) {
+    /* */
+  }
 }
 
 export default AuthAdapter;

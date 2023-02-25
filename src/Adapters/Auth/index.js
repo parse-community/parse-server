@@ -167,6 +167,7 @@ function loadAuthAdapter(provider, authOptions) {
         'validateLogin',
         'validateUpdate',
         'challenge',
+        'validateOptions',
         'policy',
         'afterFind'
       ].forEach(key => {
@@ -175,6 +176,10 @@ function loadAuthAdapter(provider, authOptions) {
         }
       });
     }
+  }
+
+  if (adapter.validateOptions) {
+    adapter.validateOptions();
   }
 
   return { adapter, appIds, providerOptions };
