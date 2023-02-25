@@ -224,9 +224,6 @@ RestQuery.prototype.execute = function (executeOptions) {
       return this.runAfterFindTrigger();
     })
     .then(() => {
-      return this.handleAuthAdapters();
-    })
-    .then(() => {
       return this.response;
     });
 };
@@ -843,15 +840,6 @@ RestQuery.prototype.runAfterFindTrigger = function () {
         this.response.results = results;
       }
     });
-};
-
-RestQuery.prototype.handleAuthAdapters = async function () {
-  if (this.className !== '_User') {
-    return;
-  }
-  await Promise.all(
-    this.response.results.map(result => this.config.authDataManager.runAfterFind(result.authData))
-  );
 };
 
 // Adds included values to the response.

@@ -207,34 +207,9 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
-  const runAfterFind = async (authData) => {
-    if (!authData) {
-      return;
-    }
-    const adapters = Object.keys(authData);
-    await Promise.all(
-      adapters.map(async provider => {
-        const authAdapter = getValidatorForProvider(provider);
-        if (!authAdapter) {
-          return;
-        }
-        const {
-          adapter: { afterFind },
-        } = authAdapter;
-        if (afterFind && typeof afterFind === 'function') {
-          const result = afterFind(authData[provider]);
-          if (result) {
-            authData[provider] = result;
-          }
-        }
-      })
-    );
-  }
-
   return Object.freeze({
     getValidatorForProvider,
-    setEnableAnonymousUsers,
-    runAfterFind
+    setEnableAnonymousUsers
   });
 };
 

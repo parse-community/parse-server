@@ -10,7 +10,6 @@ class MFAAdapter extends AuthAdapter {
   validateSetUp(mfaData, options) {
     const {secret, token } = mfaData;
     if (!secret || !token || secret.length < 20) {
-      console.log('invalid', secret, token);
       throw 'Invalid MFA data'
     }
     const totp = new TOTP({
@@ -23,7 +22,6 @@ class MFAAdapter extends AuthAdapter {
       token,
     });
     if (valid === null) {
-      console.log({token, secret})
       throw 'Invalid MFA token'
     }
     const recovery = [randomString(30), randomString(30)];
