@@ -168,6 +168,7 @@ function loadAuthAdapter(provider, authOptions) {
         'validateUpdate',
         'challenge',
         'policy',
+        'afterFind'
       ].forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
@@ -195,9 +196,34 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
+  const runAfterFind = async (authData) => {
+    if (!authData) {
+      return;
+    }
+    const adapters = Object.keys(authData);
+    await Promise.all(
+      adapters.map(async provider => {
+        const authAdapter = getValidatorForProvider(provider);
+        if (!authAdapter) {
+          return;
+        }
+        const {
+          adapter: { afterFind }, providerOptions,
+        } = authAdapter;
+        if (afterFind && typeof afterFind === 'function') {
+          const result = afterFind(authData[provider], providerOptions);
+          if (result) {
+            authData[provider] = result;
+          }
+        }
+      })
+    );
+  }
+
   return Object.freeze({
     getValidatorForProvider,
     setEnableAnonymousUsers,
+    runAfterFind
   });
 };
 
