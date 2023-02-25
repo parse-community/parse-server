@@ -846,7 +846,7 @@ RestQuery.prototype.runAfterFindTrigger = function () {
 };
 
 RestQuery.prototype.handleAuthAdapters = async function () {
-  if (this.className !== '_User') {
+  if (this.className !== '_User' || this.findOptions.explain) {
     return;
   }
   await Promise.all(
