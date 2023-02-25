@@ -169,7 +169,7 @@ function loadAuthAdapter(provider, authOptions) {
   const adapter = Object.assign({}, defaultAdapter);
   const defaultAuthAdapter = new AuthAdapter();
   keys.forEach(key => {
-    const existing = defaultAdapter[key];
+    const existing = defaultAdapter?.[key];
     if (existing && typeof existing === 'function' && existing.toString() !== defaultAuthAdapter[key].toString()) {
       adapter[key] = existing
     }
