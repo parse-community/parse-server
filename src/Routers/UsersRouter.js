@@ -293,6 +293,8 @@ export class UsersRouter extends ClassesRouter {
       user.authDataResponse = authDataResponse;
     }
 
+    await req.config.authDataManager.runAfterFind(user.authData);
+
     return { response: user };
   }
 

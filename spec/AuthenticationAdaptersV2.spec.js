@@ -1249,7 +1249,7 @@ describe('Auth Adapter features', () => {
     expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
   });
 
-  fit('can create 2fa adapter', async () => {
+  it('can create 2fa adapter', async () => {
     await reconfigureServer({
       auth: {
         mfa: {
@@ -1260,23 +1260,54 @@ describe('Auth Adapter features', () => {
           period: 30,
         },
       },
-      silent: false,
     });
     const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
     await user.save(
-      { authData: { mfa: { enroll: true } } },
+      { authData: { mfa: { secret: secret.base32, token } } },
       { sessionToken: user.getSessionToken() }
     );
-    console.log(user.toJSON());
+    const response = user.get('authDataResponse');
+    expect(response.mfa).toBeDefined();
+    expect(response.mfa.recovery).toBeDefined();
+    expect(response.mfa.recovery.length).toEqual(2);
+
+    await user.fetch({ sessionToken: user.getSessionToken() });
+
     const res = await request({
-      headers: headers,
+      headers,
       method: 'POST',
-      url: 'http://localhost:8378/1/challenge',
+      url: 'http://localhost:8378/1/login',
       body: JSON.stringify({
-        challengeData: {
-          challengeAdapter: { someData: true },
+        username: 'username',
+        password: 'password',
+        authData: {
+          mfa: totp.generate(),
         },
       }),
     });
+
+    expect(res.data.objectId).toEqual(user.id);
+
+    const new_secret = new OTPAuth.Secret();
+    const new_totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: new_secret,
+    });
+    const new_token = new_totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: new_secret.base32, token: new_token, old: totp.generate() } } },
+      { sessionToken: user.getSessionToken() }
+    );
   });
 });

@@ -1,5 +1,6 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
+import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
@@ -8,7 +9,7 @@ const facebook = require('./facebook');
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
-const mfa = require('./mfa');
+import mfa from './mfa';
 const google = require('./google');
 const github = require('./github');
 const twitter = require('./twitter');
@@ -90,7 +91,6 @@ function authDataValidator(provider, adapter, appIds, options) {
       typeof adapter.validateLogin !== 'function' ||
       typeof adapter.validateUpdate !== 'function'
     ) {
-      console.log({adapter});
       throw new Parse.Error(
         Parse.Error.OTHER_CAUSE,
         'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
@@ -156,22 +156,31 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
+  const keys = [
+    'validateAuthData',
+    'validateAppId',
+    'validateSetUp',
+    'validateLogin',
+    'validateUpdate',
+    'challenge',
+    'policy',
+    'afterFind'
+  ];
   const adapter = Object.assign({}, defaultAdapter);
+  const defaultAuthAdapter = new AuthAdapter();
+  keys.forEach(key => {
+    const existing = defaultAdapter[key];
+    if (existing && typeof existing === 'function' && existing.toString() !== defaultAuthAdapter[key].toString()) {
+      adapter[key] = existing
+    }
+  });
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
   // Try the configuration methods
   if (providerOptions) {
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
-      [
-        'validateAuthData',
-        'validateAppId',
-        'validateSetUp',
-        'validateLogin',
-        'validateUpdate',
-        'challenge',
-        'policy',
-      ].forEach(key => {
+      keys.forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
@@ -198,9 +207,34 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
+  const runAfterFind = async (authData) => {
+    if (!authData) {
+      return;
+    }
+    const adapters = Object.keys(authData);
+    await Promise.all(
+      adapters.map(async provider => {
+        const authAdapter = getValidatorForProvider(provider);
+        if (!authAdapter) {
+          return;
+        }
+        const {
+          adapter: { afterFind },
+        } = authAdapter;
+        if (afterFind && typeof afterFind === 'function') {
+          const result = afterFind(authData[provider]);
+          if (result) {
+            authData[provider] = result;
+          }
+        }
+      })
+    );
+  }
+
   return Object.freeze({
     getValidatorForProvider,
     setEnableAnonymousUsers,
+    runAfterFind
   });
 };
 
