@@ -188,7 +188,7 @@ const transformInteriorValue = restValue => {
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
-    if (typeof value === 'object') {
+    if (value && typeof value === 'object') {
       if (value instanceof Date) {
         return value;
       }
