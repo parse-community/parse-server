@@ -376,6 +376,13 @@ export class Config {
       if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
         throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
       }
+
+      if (
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
+      ) {
+        throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
+      }
     }
   }
 

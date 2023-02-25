@@ -70,6 +70,22 @@ const subscribe = {
           minItems: 1,
           uniqueItems: true,
         },
+        keys: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          minItems: 1,
+          uniqueItems: true,
+        },
+        watch: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          minItems: 1,
+          uniqueItems: true,
+        },
       },
       required: ['where', 'className'],
       additionalProperties: false,
@@ -101,6 +117,22 @@ const update = {
           type: 'object',
         },
         fields: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          minItems: 1,
+          uniqueItems: true,
+        },
+        keys: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          minItems: 1,
+          uniqueItems: true,
+        },
+        watch: {
           type: 'array',
           items: {
             type: 'string',

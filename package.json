@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.0.0-alpha.32",
+  "version": "6.0.0-alpha.34",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -79,7 +79,7 @@
     "@semantic-release/github": "7.2.3",
     "@semantic-release/npm": "7.1.3",
     "@semantic-release/release-notes-generator": "9.0.3",
-    "all-node-versions": "8.0.0",
+    "all-node-versions": "11.3.0",
     "apollo-upload-client": "17.0.0",
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "7.0.2",
