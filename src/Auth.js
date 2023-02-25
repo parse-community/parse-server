@@ -422,14 +422,8 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
     await user.fetch({ useMasterKey: true });
   }
 
-  const { originalObject, updatedObject } = req.buildParseObjects();
-  const requestObject = getRequestObject(
-    undefined,
-    req.auth,
-    updatedObject,
-    originalObject || user,
-    req.config
-  );
+  const { updatedObject } = req.buildParseObjects();
+  const requestObject = getRequestObject(undefined, req.auth, updatedObject, user, req.config);
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
   const acc = { authData: {}, authDataResponse: {} };

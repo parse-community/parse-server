@@ -1249,13 +1249,13 @@ describe('Auth Adapter features', () => {
     expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
   });
 
-  it('can create 2fa adapter', async () => {
+  it('can create TOTP 2fa adapter', async () => {
     await reconfigureServer({
       auth: {
         mfa: {
           enabled: true,
+          options: ['TOTP'],
           algorithm: 'SHA1',
-          secret: 'NB2W45DFOIZA',
           digits: 6,
           period: 30,
         },
@@ -1309,5 +1309,63 @@ describe('Auth Adapter features', () => {
       { authData: { mfa: { secret: new_secret.base32, token: new_token, old: totp.generate() } } },
       { sessionToken: user.getSessionToken() }
     );
+  });
+
+  it('can create SMS 2fa adapter', async () => {
+    let code;
+    let mobile;
+    await reconfigureServer({
+      auth: {
+        mfa: {
+          enabled: true,
+          options: ['SMS'],
+          sendSMS(smsCode, number) {
+            expect(smsCode).toBeDefined();
+            expect(number).toBeDefined();
+            expect(smsCode.length).toEqual(6);
+            code = smsCode;
+            mobile = number;
+          },
+          digits: 6,
+          period: 30,
+        },
+      },
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    await user.save(
+      { authData: { mfa: { mobile: '+11111111111' } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    await user.save(
+      { authData: { mfa: { mobile, token: code } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    const res = await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: {
+          mfa: true,
+        },
+      }),
+    }).catch(e => e.data);
+    expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+    await request({
+      headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        authData: {
+          mfa: code,
+        },
+      }),
+    });
   });
 });
