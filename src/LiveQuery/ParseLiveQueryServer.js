@@ -23,6 +23,7 @@ import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
+import Deprecator from '../Deprecator/Deprecator';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -850,9 +851,6 @@ class ParseLiveQueryServer {
         await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth);
 
         const query = request.query.toJSON();
-        if (query.keys) {
-          query.fields = query.keys.split(',');
-        }
         request.query = query;
       }
 
@@ -901,8 +899,17 @@ class ParseLiveQueryServer {
         subscription: subscription,
       };
       // Add selected fields, sessionToken and installationId for this subscription if necessary
+      if (request.query.keys) {
+        subscriptionInfo.keys = Array.isArray(request.query.keys)
+          ? request.query.keys
+          : request.query.keys.split(',');
+      }
       if (request.query.fields) {
-        subscriptionInfo.fields = request.query.fields;
+        subscriptionInfo.keys = request.query.fields;
+        Deprecator.logRuntimeDeprecation({
+          usage: `Subscribing using fields parameter`,
+          solution: `Subscribe using "keys" instead.`,
+        });
       }
       if (request.query.watch) {
         subscriptionInfo.watch = request.query.watch;
