@@ -163,12 +163,12 @@ function loadAuthAdapter(provider, authOptions) {
     'challenge',
     'policy'
   ];
-  const adapter = Object.assign({}, defaultAdapter);
+  const adapter = defaultAdapter;
   const defaultAuthAdapter = new AuthAdapter();
   keys.forEach(key => {
-    const existing = defaultAdapter?.[key];
-    if (existing && typeof existing === 'function' && existing.toString() !== defaultAuthAdapter[key].toString()) {
-      adapter[key] = existing
+    const existing = adapter?.[key];
+    if (existing && typeof existing === 'function' && existing.toString() === defaultAuthAdapter[key].toString()) {
+      adapter[key] = null;
     }
   });
   const appIds = providerOptions ? providerOptions.appIds : undefined;
