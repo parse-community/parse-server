@@ -1,6 +1,5 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
-import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
