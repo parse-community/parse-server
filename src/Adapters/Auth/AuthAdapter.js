@@ -93,7 +93,6 @@ export class AuthAdapter {
   challenge(challengeData, authData, options, request) {
     return Promise.resolve({});
   }
-
 }
 
 export default AuthAdapter;
