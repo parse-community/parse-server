@@ -446,13 +446,10 @@ function addParseCloud() {
         const handler2 = {
           get(obj, prop) {
             if (prop.substring(0, 3) === 'set') {
-              const validMethod = method => {
-                if (!ParseServerDefintions[method]) {
-                  throw `${method} is not a valid Parse Server option`;
-                }
-              };
               const assignValue = (key, value) => {
-                validMethod(key);
+                if (!ParseServerDefintions[key]) {
+                  throw `${key} is not a valid Parse Server option`;
+                }
                 obj[key] = value;
                 Config.put(obj);
               };
