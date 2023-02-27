@@ -439,27 +439,38 @@ class ParseServer {
 
 function addParseCloud() {
   const ParseCloud = require('./cloud-code/Parse.Cloud');
-  Object.defineProperty(Parse, 'Server', {
-    get() {
-      const target = Config.get(Parse.applicationId);
-      const handler2 = {
-        get(obj, prop) {
-          if (prop.substring(0, 3) === 'set') {
-            const method = `${prop.charAt(3).toLowerCase()}${prop.substring(4, prop.length)}`;
-            if (!ParseServerDefintions[method]) {
-              throw `${method} is not a valid Parse Server option`;
+  if (!Parse.Server) {
+    Object.defineProperty(Parse, 'Server', {
+      get() {
+        const target = Config.get(Parse.applicationId);
+        const handler2 = {
+          get(obj, prop) {
+            if (prop.substring(0, 3) === 'set') {
+              const validMethod = method => {
+                if (!ParseServerDefintions[method]) {
+                  throw `${method} is not a valid Parse Server option`;
+                }
+              };
+              const assignValue = (key, value) => {
+                validMethod(key);
+                obj[key] = value;
+                Config.put(obj);
+              };
+              if (prop.length === 3) {
+                return assignValue;
+              }
+              const method = `${prop.charAt(3).toLowerCase()}${prop.substring(4, prop.length)}`;
+              return value => {
+                return assignValue(method, value);
+              };
             }
-            return value => {
-              obj[method] = value;
-              Config.put(obj);
-            };
-          }
-          return obj[prop];
-        },
-      };
-      return new Proxy(target, handler2);
-    },
-  });
+            return obj[prop];
+          },
+        };
+        return new Proxy(target, handler2);
+      },
+    });
+  }
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
 }
