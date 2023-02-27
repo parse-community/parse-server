@@ -414,7 +414,7 @@ export class UsersRouter extends ClassesRouter {
     }
   }
 
-  handleResetRequest(req) {
+  async handleResetRequest(req) {
     this._throwOnBadEmailConfig(req);
 
     const { email } = req.body;
@@ -428,24 +428,22 @@ export class UsersRouter extends ClassesRouter {
       );
     }
     const userController = req.config.userController;
-    return userController.sendPasswordResetEmail(email).then(
-      () => {
-        return Promise.resolve({
-          response: {},
-        });
-      },
-      err => {
-        if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
-          // Return success so that this endpoint can't
-          // be used to enumerate valid emails
-          return Promise.resolve({
+    try {
+      await userController.sendPasswordResetEmail(email);
+      return {
+        response: {},
+      };
+    } catch (err) {
+      if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
+        if (req.config.passwordPolicy?.resetPasswordSuccessOnInvalidEmail ?? true) {
+          return {
             response: {},
-          });
-        } else {
-          throw err;
+          };
         }
+        err.message = `A user with that email does not exist.`;
       }
-    );
+      throw err;
+    }
   }
 
   handleVerificationEmailRequest(req) {

@@ -71,6 +71,7 @@ class ParseServer {
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
 
+    Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
