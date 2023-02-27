@@ -139,11 +139,12 @@ export class MongoStorageAdapter implements StorageAdapter {
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
+  schemaCacheTtl: ?number;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
-    this._mongoOptions = mongoOptions;
+    this._mongoOptions = { ...mongoOptions };
     this._mongoOptions.useNewUrlParser = true;
     this._mongoOptions.useUnifiedTopology = true;
     this._onchange = () => {};
@@ -152,8 +153,11 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
-    delete mongoOptions.enableSchemaHooks;
-    delete mongoOptions.maxTimeMS;
+    this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+      delete mongoOptions[key];
+      delete this._mongoOptions[key];
+    }
   }
 
   watch(callback: () => void): void {
