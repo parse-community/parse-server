@@ -457,9 +457,7 @@ function addParseCloud() {
                 return assignValue;
               }
               const method = `${prop.charAt(3).toLowerCase()}${prop.substring(4, prop.length)}`;
-              return value => {
-                return assignValue(method, value);
-              };
+              return value => assignValue(method, value);
             }
             return obj[prop];
           },
