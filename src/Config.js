@@ -684,6 +684,15 @@ export class Config {
       ? this.pages.pagesEndpoint
       : 'apps';
   }
+
+  set(key, value) {
+    if (!ParseServerOptions[key]) {
+      throw `${key} is not a valid Parse Server option`;
+    }
+    this[key] = value;
+    Config.put(this);
+    return this;
+  }
 }
 
 export default Config;

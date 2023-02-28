@@ -45,7 +45,6 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
-import { ParseServerOptions as ParseServerDefintions } from './Options/Definitions.js';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -442,27 +441,7 @@ function addParseCloud() {
   if (!Parse.Server) {
     Object.defineProperty(Parse, 'Server', {
       get() {
-        const target = Config.get(Parse.applicationId);
-        const handler2 = {
-          get(obj, prop) {
-            if (prop.substring(0, 3) === 'set') {
-              const assignValue = (key, value) => {
-                if (!ParseServerDefintions[key]) {
-                  throw `${key} is not a valid Parse Server option`;
-                }
-                obj[key] = value;
-                Config.put(obj);
-              };
-              if (prop.length === 3) {
-                return assignValue;
-              }
-              const method = `${prop.charAt(3).toLowerCase()}${prop.substring(4, prop.length)}`;
-              return value => assignValue(method, value);
-            }
-            return obj[prop];
-          },
-        };
-        return new Proxy(target, handler2);
+        return Config.get(Parse.applicationId);
       },
     });
   }
