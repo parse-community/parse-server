@@ -137,7 +137,7 @@ function authDataValidator(provider, adapter, appIds, options) {
 
 function loadAuthAdapter(provider, authOptions) {
   // providers are auth providers implemented by default
-  let defaultAdapter = providers[provider];
+  let defaultAdapter = providers[provider] || {};
   // authOptions can contain complete custom auth adapters or
   // a default auth adapter like Facebook
   const providerOptions = authOptions[provider];
