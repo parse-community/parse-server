@@ -154,6 +154,7 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
+  const adapter = Object.assign({}, defaultAdapter);
   const keys = [
     'validateAuthData',
     'validateAppId',
@@ -163,7 +164,6 @@ function loadAuthAdapter(provider, authOptions) {
     'challenge',
     'policy'
   ];
-  const adapter = defaultAdapter;
   const defaultAuthAdapter = new AuthAdapter();
   keys.forEach(key => {
     const existing = adapter?.[key];

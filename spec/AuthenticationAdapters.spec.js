@@ -18,7 +18,7 @@ const responses = {
   microsoft: { id: 'userId', mail: 'userMail' },
 };
 
-fdescribe('AuthenticationProviders', function () {
+describe('AuthenticationProviders', function () {
   [
     'apple',
     'gcenter',
@@ -605,7 +605,7 @@ fdescribe('AuthenticationProviders', function () {
   });
 });
 
-fdescribe('instagram auth adapter', () => {
+describe('instagram auth adapter', () => {
   const instagram = require('../lib/Adapters/Auth/instagram');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
@@ -645,7 +645,7 @@ fdescribe('instagram auth adapter', () => {
   });
 });
 
-fdescribe('google auth adapter', () => {
+describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
   const jwt = require('jsonwebtoken');
   const authUtils = require('../lib/Adapters/Auth/utils');
@@ -767,7 +767,7 @@ fdescribe('google auth adapter', () => {
   });
 });
 
-fdescribe('google play games service auth', () => {
+describe('google play games service auth', () => {
   const gpgames = require('../lib/Adapters/Auth/gpgames');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
@@ -796,7 +796,7 @@ fdescribe('google play games service auth', () => {
   });
 });
 
-fdescribe('keycloak auth adapter', () => {
+describe('keycloak auth adapter', () => {
   const keycloak = require('../lib/Adapters/Auth/keycloak');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
@@ -1024,7 +1024,7 @@ fdescribe('keycloak auth adapter', () => {
   });
 });
 
-fdescribe('oauth2 auth adapter', () => {
+describe('oauth2 auth adapter', () => {
   const oauth2 = require('../lib/Adapters/Auth/oauth2');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
@@ -1451,7 +1451,7 @@ fdescribe('oauth2 auth adapter', () => {
   });
 });
 
-fdescribe('apple signin auth adapter', () => {
+describe('apple signin auth adapter', () => {
   const apple = require('../lib/Adapters/Auth/apple');
   const jwt = require('jsonwebtoken');
   const util = require('util');
@@ -1778,7 +1778,7 @@ fdescribe('apple signin auth adapter', () => {
   });
 });
 
-fdescribe('Apple Game Center Auth adapter', () => {
+describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
   const fs = require('fs');
   const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
@@ -1974,7 +1974,7 @@ fdescribe('Apple Game Center Auth adapter', () => {
   });
 });
 
-fdescribe('phant auth adapter', () => {
+describe('phant auth adapter', () => {
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
   it('validateAuthData should throw for invalid auth', async () => {
@@ -1994,7 +1994,7 @@ fdescribe('phant auth adapter', () => {
   });
 });
 
-fdescribe('microsoft graph auth adapter', () => {
+describe('microsoft graph auth adapter', () => {
   const microsoft = require('../lib/Adapters/Auth/microsoft');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
@@ -2022,7 +2022,7 @@ fdescribe('microsoft graph auth adapter', () => {
   });
 });
 
-fdescribe('facebook limited auth adapter', () => {
+describe('facebook limited auth adapter', () => {
   const facebook = require('../lib/Adapters/Auth/facebook');
   const jwt = require('jsonwebtoken');
   const util = require('util');
