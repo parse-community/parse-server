@@ -165,12 +165,12 @@ function loadAuthAdapter(provider, authOptions) {
     'policy'
   ];
   const defaultAuthAdapter = new AuthAdapter();
-  // keys.forEach(key => {
-  //   const existing = adapter?.[key];
-  //   if (existing && typeof existing === 'function' && existing.toString() === defaultAuthAdapter[key].toString()) {
-  //     adapter[key] = null;
-  //   }
-  // });
+  keys.forEach(key => {
+    const existing = adapter?.[key];
+    if (existing && typeof existing === 'function' && existing.toString() === defaultAuthAdapter[key].toString()) {
+      adapter[key] = null;
+    }
+  });
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
   // Try the configuration methods
