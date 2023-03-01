@@ -351,7 +351,6 @@ function mockCustom() {
 function mockFacebookAuthenticator(id, token) {
   const facebook = {};
   facebook.validateAuthData = function (authData) {
-    console.log({authData, id});
     if (authData.id === id && authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {

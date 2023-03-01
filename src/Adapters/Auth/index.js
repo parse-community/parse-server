@@ -154,7 +154,7 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter = defaultAdapter || {};
+  const adapter = defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
   const keys = [
     'validateAuthData',
     'validateAppId',
