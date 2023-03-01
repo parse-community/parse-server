@@ -831,8 +831,7 @@ export function maybeRunTrigger(
   parseObject,
   originalParseObject,
   config,
-  context,
-  additionalData
+  context
 ) {
   if (!parseObject) {
     return Promise.resolve({});
@@ -848,9 +847,6 @@ export function maybeRunTrigger(
       config,
       context
     );
-    if (additionalData) {
-      Object.assign(request, additionalData);
-    }
     var { success, error } = getResponseObject(
       request,
       object => {
@@ -871,9 +867,6 @@ export function maybeRunTrigger(
           triggerType === Types.afterDelete
         ) {
           Object.assign(context, request.context);
-        }
-        for (const key in additionalData || {}) {
-          additionalData[key] = request[key];
         }
         resolve(object);
       },

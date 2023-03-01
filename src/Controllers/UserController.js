@@ -32,13 +32,24 @@ export class UserController extends AdaptableController {
   }
 
   get shouldVerifyEmails() {
-    return this.options.verifyUserEmails;
+    return (this.config || this.options).verifyUserEmails;
   }
 
-  setEmailVerifyToken(user) {
-    if (this.shouldVerifyEmails) {
+  async setEmailVerifyToken(user, req, storage) {
+    let shouldSendEmail = this.shouldVerifyEmails;
+    if (typeof shouldSendEmail === 'function') {
+      const response = await Promise.resolve(this.shouldVerifyEmails(req));
+      shouldSendEmail = !!response;
+    }
+    if (shouldSendEmail) {
+      storage.sendVerificationEmail = true;
       user._email_verify_token = randomString(25);
-      user.emailVerified = false;
+      if (
+        !storage.fieldsChangedByTrigger ||
+        !storage.fieldsChangedByTrigger.includes('emailVerified')
+      ) {
+        user.emailVerified = false;
+      }
 
       if (this.config.emailVerifyTokenValidityDuration) {
         user._email_verify_token_expires_at = Parse._encode(

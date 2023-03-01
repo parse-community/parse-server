@@ -114,6 +114,9 @@ RestWrite.prototype.execute = function () {
       return this.validateAuthData();
     })
     .then(() => {
+      return this.checkRestrictedFields();
+    })
+    .then(() => {
       return this.runBeforeSaveTrigger();
     })
     .then(() => {
@@ -240,11 +243,6 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     identifier,
   };
 
-  const additionalData = {};
-  if (this.config.userController.shouldVerifyEmails && !originalObject) {
-    additionalData.setSendEmailVerificationEmail = true;
-    additionalData.setEmailVerified = false;
-  }
   return Promise.resolve()
     .then(() => {
       // Before calling the trigger, validate the permissions for the save operation
@@ -282,8 +280,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         updatedObject,
         originalObject,
         this.config,
-        this.context,
-        additionalData
+        this.context
       );
     })
     .then(response => {
@@ -305,13 +302,6 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         }
       }
       this.checkProhibitedKeywords(this.data);
-
-      if (!additionalData.setSendEmailVerificationEmail) {
-        this.storage.sendVerificationEmail = false;
-      }
-      if (additionalData.setEmailVerified) {
-        this.storage.emailVerified = true;
-      }
     });
 };
 
@@ -613,20 +603,22 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   }
 };
 
-// The non-third-party parts of User transformation
-RestWrite.prototype.transformUser = function () {
-  var promise = Promise.resolve();
+RestWrite.prototype.checkRestrictedFields = async function () {
   if (this.className !== '_User') {
-    return promise;
+    return;
   }
 
   if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
     const error = `Clients aren't allowed to manually update email verification.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
+};
 
-  if (this.storage.emailVerified) {
-    this.data.emailVerified = true;
+// The non-third-party parts of User transformation
+RestWrite.prototype.transformUser = function () {
+  var promise = Promise.resolve();
+  if (this.className !== '_User') {
+    return promise;
   }
 
   // Do not cleanup session if objectId is not set
@@ -759,15 +751,20 @@ RestWrite.prototype._validateEmail = function () {
         );
       }
       if (
-        (!this.data.authData ||
-          !Object.keys(this.data.authData).length ||
-          (Object.keys(this.data.authData).length === 1 &&
-            Object.keys(this.data.authData)[0] === 'anonymous')) &&
-        this.storage.sendVerificationEmail !== false
+        !this.data.authData ||
+        !Object.keys(this.data.authData).length ||
+        (Object.keys(this.data.authData).length === 1 &&
+          Object.keys(this.data.authData)[0] === 'anonymous')
       ) {
         // We updated the email, send a new validation
-        this.storage['sendVerificationEmail'] = true;
-        this.config.userController.setEmailVerifyToken(this.data);
+        const { originalObject, updatedObject } = this.buildParseObjects();
+        const request = {
+          original: originalObject,
+          object: updatedObject,
+          master: this.auth.isMaster,
+          ip: this.config.ip,
+        };
+        return this.config.userController.setEmailVerifyToken(this.data, request, this.storage);
       }
     });
 };
@@ -879,7 +876,7 @@ RestWrite.prototype._validatePasswordHistory = function () {
   return Promise.resolve();
 };
 
-RestWrite.prototype.createSessionTokenIfNeeded = function () {
+RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   if (this.className !== '_User') {
     return;
   }
@@ -891,13 +888,23 @@ RestWrite.prototype.createSessionTokenIfNeeded = function () {
   if (this.auth.user && this.data.authData) {
     return;
   }
-  if (
-    !this.storage.authProvider && // signup call, with
-    this.config.preventLoginWithUnverifiedEmail && // no login without verification
-    this.config.verifyUserEmails
-  ) {
-    // verification is on
-    return; // do not create the session token in that case!
+  if (!this.storage.authProvider && this.config.verifyUserEmails) {
+    let shouldPreventUnverifedLogin = this.config.preventLoginWithUnverifiedEmail;
+    if (typeof this.config.preventLoginWithUnverifiedEmail === 'function') {
+      const { originalObject, updatedObject } = this.buildParseObjects();
+      const request = {
+        original: originalObject,
+        object: updatedObject,
+        master: this.auth.isMaster,
+        ip: this.config.ip,
+      };
+      shouldPreventUnverifedLogin = await Promise.resolve(
+        this.config.preventLoginWithUnverifiedEmail(request)
+      );
+    }
+    if (shouldPreventUnverifedLogin) {
+      return;
+    }
   }
   return this.createSessionToken();
 };
