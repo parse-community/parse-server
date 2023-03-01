@@ -469,7 +469,7 @@ describe('AuthenticationProviders', function () {
     expect(providerOptions).toEqual(options.facebook);
   });
 
-  it('should throw error when Facebook request appId is wrong data type', async () => {
+  fit('should throw error when Facebook request appId is wrong data type', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
       return Promise.resolve({ id: 'a' });
@@ -654,7 +654,7 @@ describe('google auth adapter', () => {
     try {
       await google.validateAuthData({}, {});
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
     }
   });
@@ -663,7 +663,7 @@ describe('google auth adapter', () => {
     try {
       await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
@@ -675,7 +675,7 @@ describe('google auth adapter', () => {
 
   //     await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
   //     fail();
-  //   } catch (e) { console.log(e);
+  //   } catch (e) {
   //     expect(e.message).toBe(
   //       `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
   //     );
@@ -715,7 +715,7 @@ describe('google auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'id token not issued by correct provider - expected: accounts.google.com or https://accounts.google.com | from: https://not.google.com'
       );
@@ -739,7 +739,7 @@ describe('google auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('jwt audience invalid. expected: secret');
     }
   });
@@ -761,7 +761,7 @@ describe('google auth adapter', () => {
         { clientId: 'INSERT CLIENT ID HERE' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
@@ -790,7 +790,7 @@ describe('google play games service auth', () => {
         id: 'userId',
         access_token: 'access_token',
       });
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Google Play Games Services - authData is invalid for this user.');
     }
   });
@@ -807,7 +807,7 @@ describe('keycloak auth adapter', () => {
     try {
       await keycloak.validateAuthData(authData);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Missing access token and/or User id');
     }
   });
@@ -819,7 +819,7 @@ describe('keycloak auth adapter', () => {
     try {
       await keycloak.validateAuthData(authData);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Missing access token and/or User id');
     }
   });
@@ -838,7 +838,7 @@ describe('keycloak auth adapter', () => {
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Missing keycloak configuration');
     }
   });
@@ -865,7 +865,7 @@ describe('keycloak auth adapter', () => {
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Could not connect to the authentication server');
     }
   });
@@ -892,7 +892,7 @@ describe('keycloak auth adapter', () => {
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('custom error message');
     }
   });
@@ -917,7 +917,7 @@ describe('keycloak auth adapter', () => {
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Invalid authentication');
     }
   });
@@ -950,7 +950,7 @@ describe('keycloak auth adapter', () => {
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Invalid authentication');
     }
   });
@@ -983,7 +983,7 @@ describe('keycloak auth adapter', () => {
     try {
       await adapter.validateAuthData(authData, providerOptions);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Invalid authentication');
     }
   });
@@ -1079,7 +1079,7 @@ describe('oauth2 auth adapter', () => {
     );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'OAuth2 token introspection endpoint URL is missing from configuration!'
       );
@@ -1103,7 +1103,7 @@ describe('oauth2 auth adapter', () => {
     );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       // Should not reach here
       fail(e);
     }
@@ -1127,7 +1127,7 @@ describe('oauth2 auth adapter', () => {
     );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'
       );
@@ -1153,7 +1153,7 @@ describe('oauth2 auth adapter', () => {
     );
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'
       );
@@ -1182,7 +1182,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('OAuth2 access token is invalid for this user.');
     }
   });
@@ -1209,7 +1209,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration."
       );
@@ -1241,7 +1241,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       // Should not enter here
       fail(e);
     }
@@ -1272,7 +1272,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       // Should not enter here
       fail(e);
     }
@@ -1303,7 +1303,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration."
       );
@@ -1326,7 +1326,7 @@ describe('oauth2 auth adapter', () => {
     );
     try {
       await adapter.validateAuthData(authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'OAuth2 token introspection endpoint URL is missing from configuration!'
       );
@@ -1357,7 +1357,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAuthData(authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('OAuth2 access token is invalid for this user.');
     }
     expect(httpsRequest.request).toHaveBeenCalledWith(
@@ -1401,7 +1401,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAuthData(authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       // Should not enter here
       fail(e);
     }
@@ -1444,7 +1444,7 @@ describe('oauth2 auth adapter', () => {
     });
     try {
       await adapter.validateAuthData(authData, providerOptions);
-    } catch (e) { console.log(e);
+    } catch (e) {
       // Should not enter here
       fail(e);
     }
@@ -1461,7 +1461,7 @@ describe('apple signin auth adapter', () => {
     try {
       await apple.validateAuthData({}, { clientId: 'secret' });
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
     }
   });
@@ -1470,7 +1470,7 @@ describe('apple signin auth adapter', () => {
     try {
       await apple.validateAuthData({}, { clientId: ['secret'] });
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
     }
   });
@@ -1482,7 +1482,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
@@ -1497,7 +1497,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
       );
@@ -1541,7 +1541,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('jwt malformed');
     }
   });
@@ -1553,7 +1553,7 @@ describe('apple signin auth adapter', () => {
         { clientId: ['secret'] }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
@@ -1643,7 +1643,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
@@ -1674,7 +1674,7 @@ describe('apple signin auth adapter', () => {
         { clientId: ['INSERT CLIENT ID HERE'] }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
@@ -1703,7 +1703,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'INSERT CLIENT ID HERE' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
@@ -1719,7 +1719,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('jwt audience invalid. expected: secret');
     }
   });
@@ -1733,7 +1733,7 @@ describe('apple signin auth adapter', () => {
         { clientId: ['secret'] }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('jwt audience invalid. expected: secret');
     }
   });
@@ -1747,7 +1747,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'INSERT CLIENT ID HERE' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
@@ -1772,7 +1772,7 @@ describe('apple signin auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
@@ -1988,7 +1988,7 @@ describe('phant auth adapter', () => {
     try {
       await adapter.validateAuthData(authData);
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('PhantAuth auth is invalid for this user.');
     }
   });
@@ -2033,7 +2033,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData({}, { clientId: 'secret' });
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Facebook auth is not configured.');
     }
   });
@@ -2043,7 +2043,7 @@ describe('facebook limited auth adapter', () => {
     try {
       await facebook.validateAuthData({}, { clientId: ['secret'] });
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('Facebook auth is not configured.');
     }
   });
@@ -2055,7 +2055,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
@@ -2072,7 +2072,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
       );
@@ -2126,7 +2126,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('jwt malformed');
     }
   });
@@ -2138,7 +2138,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: ['secret'] }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
     }
   });
@@ -2248,7 +2248,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
       );
@@ -2284,7 +2284,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: ['INSERT CLIENT ID HERE'] }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
       );
@@ -2318,7 +2318,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'INSERT CLIENT ID HERE' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe(
         'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
       );
@@ -2337,7 +2337,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('jwt audience invalid. expected: secret');
     }
   });
@@ -2354,7 +2354,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: ['secret'] }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('jwt audience invalid. expected: secret');
     }
   });
@@ -2371,7 +2371,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'INSERT CLIENT ID HERE' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
@@ -2401,7 +2401,7 @@ describe('facebook limited auth adapter', () => {
         { clientId: 'secret' }
       );
       fail();
-    } catch (e) { console.log(e);
+    } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
