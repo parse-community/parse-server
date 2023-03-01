@@ -1,3 +1,10 @@
+# [6.0.0-alpha.35](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.34...6.0.0-alpha.35) (2023-02-27)
+
+
+### Features
+
+* Add option `schemaCacheTtl` for schema cache pulling as alternative to `enableSchemaHooks` ([#8436](https://github.com/parse-community/parse-server/issues/8436)) ([b3b76de](https://github.com/parse-community/parse-server/commit/b3b76de71b1d4265689d052e7837c38ec1fa4323))
+
 # [6.0.0-alpha.34](https://github.com/parse-community/parse-server/compare/6.0.0-alpha.33...6.0.0-alpha.34) (2023-02-24)
 
 
