@@ -39,7 +39,7 @@ export class UserController extends AdaptableController {
     let shouldSendEmail = this.shouldVerifyEmails;
     if (typeof shouldSendEmail === 'function') {
       const response = await Promise.resolve(this.shouldVerifyEmails(req));
-      shouldSendEmail = !!response;
+      shouldSendEmail = response !== false;
     }
     if (shouldSendEmail) {
       storage.sendVerificationEmail = true;

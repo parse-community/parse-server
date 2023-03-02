@@ -902,7 +902,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
         this.config.preventLoginWithUnverifiedEmail(request)
       );
     }
-    if (shouldPreventUnverifedLogin) {
+    if (shouldPreventUnverifedLogin === true) {
       return;
     }
   }
