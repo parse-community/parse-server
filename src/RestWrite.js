@@ -879,7 +879,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = function () {
     this.config.verifyUserEmails
   ) {
     // verification is on
-    return; // do not create the session token in that case!
+    throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
   }
   return this.createSessionToken();
 };

@@ -345,6 +345,23 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
+  it('does not return session token with preventLoginWithUnverified', async () => {
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+    await expectAsync(Parse.User.signUp('uername', 'password')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.')
+    );
+  });
+
   it('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
     reconfigureServer({
       appName: undefined,
