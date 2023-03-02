@@ -393,7 +393,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(verifySpy).toHaveBeenCalledTimes(4);
   });
 
-  fit('can conditionally send emails and allow conditional login', async () => {
+  it('can conditionally send emails and allow conditional login', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -404,7 +404,6 @@ describe('Email Verification Token Expiration: ', () => {
     };
     const verifyUserEmails = {
       method(req) {
-        console.log(req);
         expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip']);
         if (req.object.get('username') === 'no_email') {
           return false;
@@ -419,7 +418,7 @@ describe('Email Verification Token Expiration: ', () => {
       emailVerifyTokenValidityDuration: 5, // 5 seconds
       publicServerURL: 'http://localhost:8378/1',
       verifyUserEmails: verifyUserEmails.method,
-      preventLoginWithUnverifiedEmail: verifyUserEmails.method
+      preventLoginWithUnverifiedEmail: verifyUserEmails.method,
     });
     const user = new Parse.User();
     user.setUsername('no_email');
