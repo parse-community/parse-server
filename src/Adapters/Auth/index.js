@@ -191,9 +191,8 @@ function loadAuthAdapter(provider, authOptions) {
       });
     }
   }
-
   if (adapter.validateOptions) {
-    adapter.validateOptions();
+    adapter.validateOptions(providerOptions);
   }
 
   return { adapter, appIds, providerOptions };
