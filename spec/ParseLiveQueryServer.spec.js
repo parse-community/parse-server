@@ -754,7 +754,7 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
   });
 
-  fit('sends correct object for dates', async () => {
+  it('sends correct object for dates', async () => {
     jasmine.restoreLibrary('../lib/LiveQuery/QueryTools', 'matchesQuery');
 
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -782,8 +782,7 @@ describe('ParseLiveQueryServer', function () {
       }
       subscription.query.date = { $exists: true };
       const matchesQuery = require('../lib/LiveQuery/QueryTools').matchesQuery;
-      matchesQuery(parseObject, subscription.query);
-      return true;
+      return matchesQuery(parseObject, subscription.query);
     };
     parseLiveQueryServer._matchesACL = function () {
       return Promise.resolve(true);

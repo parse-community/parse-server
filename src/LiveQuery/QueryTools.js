@@ -1,6 +1,7 @@
 var equalObjects = require('./equalObjects');
 var Id = require('./Id');
 var Parse = require('parse/node');
+const deepcopy = require('deepcopy');
 
 /**
  * Query Hashes are deterministic hashes for Parse Queries.
@@ -124,6 +125,7 @@ function contains(haystack: Array, needle: any): boolean {
  * queries, we can avoid building a full-blown query tool.
  */
 function matchesQuery(object: any, query: any): boolean {
+  object = deepcopy(object);
   if (query instanceof Parse.Query) {
     var className = object.id instanceof Id ? object.id.className : object.className;
     if (className !== query.className) {
