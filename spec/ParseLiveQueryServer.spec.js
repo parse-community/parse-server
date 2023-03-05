@@ -776,14 +776,6 @@ describe('ParseLiveQueryServer', function () {
 
     await addMockSubscription(parseLiveQueryServer, clientId, requestId2);
 
-    parseLiveQueryServer._matchesSubscription = function (parseObject, subscription) {
-      if (!parseObject) {
-        return false;
-      }
-      subscription.query.date = { $exists: true };
-      const matchesQuery = require('../lib/LiveQuery/QueryTools').matchesQuery;
-      return matchesQuery(parseObject, subscription.query);
-    };
     parseLiveQueryServer._matchesACL = function () {
       return Promise.resolve(true);
     };
