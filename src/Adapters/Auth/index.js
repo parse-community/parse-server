@@ -1,5 +1,6 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
+import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
@@ -153,22 +154,30 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter = Object.assign({}, defaultAdapter);
+  const adapter = defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
+  const keys = [
+    'validateAuthData',
+    'validateAppId',
+    'validateSetUp',
+    'validateLogin',
+    'validateUpdate',
+    'challenge',
+    'policy'
+  ];
+  const defaultAuthAdapter = new AuthAdapter();
+  keys.forEach(key => {
+    const existing = adapter?.[key];
+    if (existing && typeof existing === 'function' && existing.toString() === defaultAuthAdapter[key].toString()) {
+      adapter[key] = null;
+    }
+  });
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
   // Try the configuration methods
   if (providerOptions) {
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
-      [
-        'validateAuthData',
-        'validateAppId',
-        'validateSetUp',
-        'validateLogin',
-        'validateUpdate',
-        'challenge',
-        'policy',
-      ].forEach(key => {
+      keys.forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
