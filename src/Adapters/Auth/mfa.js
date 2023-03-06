@@ -117,9 +117,12 @@ class MFAAdapter extends AuthAdapter {
     throw 'Invalid MFA data';
   }
   afterFind() {
-    return {
-      enabled: true,
-    };
+    // if (req.master) {
+    return;
+    // }
+    // return {
+    //   enabled: true,
+    // };
   }
 
   async setupMobileOTP(mobile) {
