@@ -362,6 +362,7 @@ const hasMutatedAuthData = (authData, userAuthData) => {
 };
 
 const checkIfUserHasProvidedConfiguredProvidersForLogin = (
+  req = {},
   authData = {},
   userAuthData = {},
   config
@@ -385,7 +386,16 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 
   const additionProvidersNotFound = [];
   const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
-    if (provider && provider.adapter && provider.adapter.policy === 'additional') {
+    let policy = provider.adapter.policy;
+    if (typeof policy === 'function') {
+      const requestObject = {
+        ip: req.config.ip,
+        user: req.auth.user,
+        master: req.auth.isMaster,
+      };
+      policy = policy.call(provider.adapter, requestObject, userAuthData[provider.name]);
+    }
+    if (policy === 'additional') {
       if (authData[provider.name]) {
         return true;
       } else {

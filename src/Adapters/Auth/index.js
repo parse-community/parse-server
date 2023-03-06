@@ -77,7 +77,11 @@ function authDataValidator(provider, adapter, appIds, options) {
     if (appIds && typeof adapter.validateAppId === 'function') {
       await Promise.resolve(adapter.validateAppId(appIds, authData, options, requestObject));
     }
-    if (adapter.policy && !authAdapterPolicies[adapter.policy]) {
+    if (
+      adapter.policy &&
+      !authAdapterPolicies[adapter.policy] &&
+      typeof adapter.policy !== 'function'
+    ) {
       throw new Parse.Error(
         Parse.Error.OTHER_CAUSE,
         'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'

@@ -2,10 +2,6 @@ import { TOTP, Secret } from 'otpauth';
 import { randomString } from '../../cryptoUtils';
 import AuthAdapter from './AuthAdapter';
 class MFAAdapter extends AuthAdapter {
-  constructor() {
-    super();
-    this.policy = 'additional';
-  }
   validateOptions(opts) {
     const validOptions = opts.options;
     if (!Array.isArray(validOptions)) {
@@ -133,6 +129,13 @@ class MFAAdapter extends AuthAdapter {
     return {
       enabled: false,
     };
+  }
+
+  policy(req, auth) {
+    if (this.sms && auth?.pending && Object.keys(auth).length === 1) {
+      return 'default';
+    }
+    return 'additional';
   }
 
   async setupMobileOTP(mobile) {

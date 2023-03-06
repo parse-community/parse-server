@@ -2645,6 +2645,9 @@ describe('OTP SMS auth adatper', () => {
 
     spy.calls.reset();
 
+    await expectAsync(Parse.User.logIn('username', 'password')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing additional authData mfa')
+    );
     const res = await request({
       headers,
       method: 'POST',
@@ -2684,5 +2687,13 @@ describe('OTP SMS auth adatper', () => {
       'sessionToken',
       'authDataResponse',
     ]);
+  });
+
+  it('partially enrolled users can still login', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    await user.save({ authData: { mfa: { mobile: '+11111111111' } } });
+    const spy = spyOn(mfa, 'sendSMS').and.callThrough();
+    await Parse.User.logIn('username', 'password');
+    expect(spy).not.toHaveBeenCalled();
   });
 });
