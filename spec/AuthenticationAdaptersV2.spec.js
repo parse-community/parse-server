@@ -354,8 +354,9 @@ describe('Auth Adapter features', () => {
     await user.fetch({ sessionToken: user.getSessionToken() });
     const authData = user.get('authData').modernAdapter3;
     expect(authData).toEqual({ foo: 'bar' });
+    user._objCount = 3;
     expect(afterSpy).toHaveBeenCalledWith(
-      { ip: '127.0.0.1', user: undefined, master: true },
+      { ip: '127.0.0.1', user, master: false },
       { id: 'modernAdapter3Data' },
       undefined
     );
