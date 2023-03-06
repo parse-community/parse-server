@@ -227,17 +227,20 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
         if (!authAdapter) {
           return;
         }
-        const {
-          adapter: { afterFind },
-          providerOptions,
-        } = authAdapter;
+        const { adapter, providerOptions } = authAdapter;
+        const afterFind = adapter.afterFind;
         if (afterFind && typeof afterFind === 'function') {
           const requestObject = {
             ip: req.config.ip,
             user: req.auth.user,
             master: req.auth.isMaster,
           };
-          const result = afterFind(requestObject, authData[provider], providerOptions);
+          const result = afterFind.call(
+            adapter,
+            requestObject,
+            authData[provider],
+            providerOptions
+          );
           if (result) {
             authData[provider] = result;
           }

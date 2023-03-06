@@ -116,12 +116,22 @@ class MFAAdapter extends AuthAdapter {
     }
     throw 'Invalid MFA data';
   }
-  afterFind(req) {
+  afterFind(req, authData) {
     if (req.master) {
       return;
     }
+    if (this.totp && authData.secret) {
+      return {
+        enabled: true,
+      };
+    }
+    if (this.sms && authData.mobile) {
+      return {
+        enabled: true,
+      };
+    }
     return {
-      enabled: true,
+      enabled: false,
     };
   }
 
