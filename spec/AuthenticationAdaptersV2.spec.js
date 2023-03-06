@@ -347,12 +347,18 @@ describe('Auth Adapter features', () => {
 
   it('should strip out authData if required', async () => {
     const spy = spyOn(modernAdapter3, 'validateOptions').and.callThrough();
+    const afterSpy = spyOn(modernAdapter3, 'afterFind').and.callThrough();
     await reconfigureServer({ auth: { modernAdapter3 }, silent: false });
     const user = new Parse.User();
     await user.save({ authData: { modernAdapter3: { id: 'modernAdapter3Data' } } });
     await user.fetch({ sessionToken: user.getSessionToken() });
     const authData = user.get('authData').modernAdapter3;
     expect(authData).toEqual({ foo: 'bar' });
+    expect(afterSpy).toHaveBeenCalledWith(
+      { ip: '127.0.0.1', user: undefined, master: true },
+      { id: 'modernAdapter3Data' },
+      undefined
+    );
     expect(spy).toHaveBeenCalled();
   });
 
