@@ -1,3 +1,10 @@
+# [6.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.2...6.1.0-alpha.3) (2023-03-06)
+
+
+### Features
+
+* Add `afterFind` trigger to authentication adapters ([#8444](https://github.com/parse-community/parse-server/issues/8444)) ([c793bb8](https://github.com/parse-community/parse-server/commit/c793bb88e7485743c7ceb65fe419cde75833ff33))
+
 # [6.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.1...6.1.0-alpha.2) (2023-03-05)
 
 
