@@ -154,7 +154,8 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter = defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
+  const adapter =
+    defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
   const keys = [
     'validateAuthData',
     'validateAppId',
@@ -162,12 +163,18 @@ function loadAuthAdapter(provider, authOptions) {
     'validateLogin',
     'validateUpdate',
     'challenge',
-    'policy'
+    'validateOptions',
+    'policy',
+    'afterFind',
   ];
   const defaultAuthAdapter = new AuthAdapter();
   keys.forEach(key => {
     const existing = adapter?.[key];
-    if (existing && typeof existing === 'function' && existing.toString() === defaultAuthAdapter[key].toString()) {
+    if (
+      existing &&
+      typeof existing === 'function' &&
+      existing.toString() === defaultAuthAdapter[key].toString()
+    ) {
       adapter[key] = null;
     }
   });
@@ -183,6 +190,9 @@ function loadAuthAdapter(provider, authOptions) {
         }
       });
     }
+  }
+  if (adapter.validateOptions) {
+    adapter.validateOptions(providerOptions);
   }
 
   return { adapter, appIds, providerOptions };
@@ -204,9 +214,35 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
+  const runAfterFind = async authData => {
+    if (!authData) {
+      return;
+    }
+    const adapters = Object.keys(authData);
+    await Promise.all(
+      adapters.map(async provider => {
+        const authAdapter = getValidatorForProvider(provider);
+        if (!authAdapter) {
+          return;
+        }
+        const {
+          adapter: { afterFind },
+          providerOptions,
+        } = authAdapter;
+        if (afterFind && typeof afterFind === 'function') {
+          const result = afterFind(authData[provider], providerOptions);
+          if (result) {
+            authData[provider] = result;
+          }
+        }
+      })
+    );
+  };
+
   return Object.freeze({
     getValidatorForProvider,
     setEnableAnonymousUsers,
+    runAfterFind,
   });
 };
 

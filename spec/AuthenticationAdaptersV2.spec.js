@@ -59,6 +59,19 @@ describe('Auth Adapter features', () => {
     validateLogin: () => Promise.resolve(),
   };
 
+  const modernAdapter3 = {
+    validateAppId: () => Promise.resolve(),
+    validateSetUp: () => Promise.resolve(),
+    validateUpdate: () => Promise.resolve(),
+    validateLogin: () => Promise.resolve(),
+    validateOptions: () => Promise.resolve(),
+    afterFind() {
+      return {
+        foo: 'bar',
+      };
+    },
+  };
+
   const wrongAdapter = {
     validateAppId: () => Promise.resolve(),
   };
@@ -330,6 +343,17 @@ describe('Auth Adapter features', () => {
     expect(call[2].user.id).toEqual(user.id);
     expect(call.length).toEqual(3);
     expect(user.getSessionToken()).toBeDefined();
+  });
+
+  it('should strip out authData if required', async () => {
+    const spy = spyOn(modernAdapter3, 'validateOptions').and.callThrough();
+    await reconfigureServer({ auth: { modernAdapter3 }, silent: false });
+    const user = new Parse.User();
+    await user.save({ authData: { modernAdapter3: { id: 'modernAdapter3Data' } } });
+    await user.fetch({ sessionToken: user.getSessionToken() });
+    const authData = user.get('authData').modernAdapter3;
+    expect(authData).toEqual({ foo: 'bar' });
+    expect(spy).toHaveBeenCalled();
   });
 
   it('should throw if no triggers found', async () => {
