@@ -850,7 +850,12 @@ RestQuery.prototype.handleAuthAdapters = async function () {
     return;
   }
   await Promise.all(
-    this.response.results.map(result => this.config.authDataManager.runAfterFind(result.authData))
+    this.response.results.map(result =>
+      this.config.authDataManager.runAfterFind(
+        { config: this.config, auth: this.auth },
+        result.authData
+      )
+    )
   );
 };
 

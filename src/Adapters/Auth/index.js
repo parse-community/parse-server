@@ -216,7 +216,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
-  const runAfterFind = async authData => {
+  const runAfterFind = async (req, authData) => {
     if (!authData) {
       return;
     }
@@ -232,7 +232,12 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
           providerOptions,
         } = authAdapter;
         if (afterFind && typeof afterFind === 'function') {
-          const result = afterFind(authData[provider], providerOptions);
+          const requestObject = {
+            ip: req.config.ip,
+            user: req.auth.user,
+            master: req.auth.isMaster,
+          };
+          const result = afterFind(requestObject, authData[provider], providerOptions);
           if (result) {
             authData[provider] = result;
           }
