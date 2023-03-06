@@ -2632,7 +2632,7 @@ describe('OTP SMS auth adatper', () => {
     expect(user.get('authData')).toEqual({ mfa: { enabled: true } });
   });
 
-  fit('future logins require SMS code', async () => {
+  it('future logins require SMS code', async () => {
     const user = await Parse.User.signUp('username', 'password');
     const spy = spyOn(mfa, 'sendSMS').and.callThrough();
     await user.save(
