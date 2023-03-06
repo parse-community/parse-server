@@ -1,3 +1,10 @@
+# [6.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.3...6.1.0-alpha.4) (2023-03-06)
+
+
+### Bug Fixes
+
+* Parameters missing in `afterFind` trigger of authentication adapters ([#8458](https://github.com/parse-community/parse-server/issues/8458)) ([ce34747](https://github.com/parse-community/parse-server/commit/ce34747e8af54cb0b6b975da38f779a5955d2d59))
+
 # [6.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.2...6.1.0-alpha.3) (2023-03-06)
 
 
