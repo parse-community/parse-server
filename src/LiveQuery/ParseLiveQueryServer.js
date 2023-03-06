@@ -24,6 +24,7 @@ import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
 import Deprecator from '../Deprecator/Deprecator';
+import deepcopy from 'deepcopy';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -496,7 +497,7 @@ class ParseLiveQueryServer {
     if (!parseObject) {
       return false;
     }
-    return matchesQuery(parseObject, subscription.query);
+    return matchesQuery(deepcopy(parseObject), subscription.query);
   }
 
   async _clearCachedRoles(userId: string) {
