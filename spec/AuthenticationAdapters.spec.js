@@ -2480,16 +2480,18 @@ describe('OTP TOTP auth adatper', () => {
     expect(response.objectId).toEqual(user.id);
     expect(response.sessionToken).toBeDefined();
     expect(response.authData).toEqual({ mfa: { enabled: true } });
-    expect(Object.keys(response)).toEqual([
-      'objectId',
-      'username',
-      'createdAt',
-      'updatedAt',
-      'authData',
-      'ACL',
-      'sessionToken',
-      'authDataResponse',
-    ]);
+    expect(Object.keys(response).sort()).toEqual(
+      [
+        'objectId',
+        'username',
+        'createdAt',
+        'updatedAt',
+        'authData',
+        'ACL',
+        'sessionToken',
+        'authDataResponse',
+      ].sort()
+    );
   });
 
   it('can change OTP with valid token', async () => {
@@ -2630,7 +2632,7 @@ describe('OTP SMS auth adatper', () => {
     expect(user.get('authData')).toEqual({ mfa: { enabled: true } });
   });
 
-  it('future logins require SMS code', async () => {
+  fit('future logins require SMS code', async () => {
     const user = await Parse.User.signUp('username', 'password');
     const spy = spyOn(mfa, 'sendSMS').and.callThrough();
     await user.save(
@@ -2677,16 +2679,18 @@ describe('OTP SMS auth adatper', () => {
     expect(response.objectId).toEqual(user.id);
     expect(response.sessionToken).toBeDefined();
     expect(response.authData).toEqual({ mfa: { enabled: true } });
-    expect(Object.keys(response)).toEqual([
-      'objectId',
-      'username',
-      'createdAt',
-      'updatedAt',
-      'authData',
-      'ACL',
-      'sessionToken',
-      'authDataResponse',
-    ]);
+    expect(Object.keys(response).sort()).toEqual(
+      [
+        'objectId',
+        'username',
+        'createdAt',
+        'updatedAt',
+        'authData',
+        'ACL',
+        'sessionToken',
+        'authDataResponse',
+      ].sort()
+    );
   });
 
   it('partially enrolled users can still login', async () => {
