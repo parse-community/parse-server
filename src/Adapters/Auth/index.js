@@ -9,6 +9,7 @@ const facebook = require('./facebook');
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
+import mfa from './mfa';
 const google = require('./google');
 const github = require('./github');
 const twitter = require('./twitter');
@@ -44,6 +45,7 @@ const providers = {
   instagram,
   linkedin,
   meetup,
+  mfa,
   google,
   github,
   twitter,
