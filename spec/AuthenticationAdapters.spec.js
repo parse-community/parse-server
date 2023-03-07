@@ -1975,6 +1975,7 @@ describe('Apple Game Center Auth adapter', () => {
         rootCertificateUrl: 'https://example.com',
       },
     };
+    authenticationLoader.initializeAuthAdapter('gcenter', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       options
