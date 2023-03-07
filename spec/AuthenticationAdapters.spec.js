@@ -449,6 +449,7 @@ describe('AuthenticationProviders', function () {
         appSecret: 'secret',
       },
     };
+    authenticationLoader.initializeAuthAdapter('facebook', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'facebook',
       options
@@ -495,6 +496,7 @@ describe('AuthenticationProviders', function () {
     const authData = {
       access_token: 'badtoken',
     };
+    authenticationLoader.initializeAuthAdapter('facebook', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'facebook',
       options
@@ -824,6 +826,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('keycloak', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
@@ -851,6 +854,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('keycloak', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
@@ -878,6 +882,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('keycloak', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
@@ -903,6 +908,7 @@ describe('keycloak auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('keycloak', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
@@ -936,6 +942,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
+    authenticationLoader.initializeAuthAdapter('keycloak', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
@@ -969,6 +976,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
+    authenticationLoader.initializeAuthAdapter('keycloak', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     try {
       await adapter.validateAuthData(authData, providerOptions);
@@ -1002,6 +1010,7 @@ describe('keycloak auth adapter', () => {
       roles: ['role1'],
       groups: ['group1'],
     };
+    authenticationLoader.initializeAuthAdapter('keycloak', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('keycloak', options);
     await adapter.validateAuthData(authData, providerOptions);
     expect(httpsRequest.get).toHaveBeenCalledWith({
@@ -1842,6 +1851,7 @@ describe('Apple Game Center Auth adapter', () => {
   it('validateAuthData invalid signature id', async () => {
     gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
     gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-6.cer'] = testCert2;
+    authenticationLoader.initializeAuthAdapter('gcenter', {});
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       {}
@@ -1989,6 +1999,7 @@ describe('phant auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('phantauth', {});
     const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
 
     spyOn(httpsRequest, 'get').and.callFake(() => Promise.resolve({ sub: 'invalidID' }));
