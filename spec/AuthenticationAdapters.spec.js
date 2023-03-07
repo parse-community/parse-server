@@ -1024,6 +1024,7 @@ describe('oauth2 auth adapter', () => {
         oauth2: true,
       },
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const loadedAuthAdapter = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
     expect(loadedAuthAdapter.adapter).toEqual(oauth2);
   });
@@ -1040,6 +1041,7 @@ describe('oauth2 auth adapter', () => {
         debug: true,
       },
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const loadedAuthAdapter = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
     const appIds = loadedAuthAdapter.appIds;
     const providerOptions = loadedAuthAdapter.providerOptions;
@@ -1063,6 +1065,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1087,6 +1090,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1111,6 +1115,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1137,6 +1142,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1163,6 +1169,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1190,6 +1197,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1219,6 +1227,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1250,6 +1259,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1281,6 +1291,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1310,6 +1321,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1338,6 +1350,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1379,6 +1392,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1422,6 +1436,7 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
+    authenticationLoader.initializeAuthAdapter('oauth2Authentication', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
@@ -1781,6 +1796,7 @@ describe('Apple Game Center Auth adapter', () => {
           'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
       },
     };
+    authenticationLoader.initializeAuthAdapter('gcenter', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       options
@@ -1799,6 +1815,7 @@ describe('Apple Game Center Auth adapter', () => {
           'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
       },
     };
+    authenticationLoader.initializeAuthAdapter('gcenter', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       options

@@ -1,6 +1,7 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
+import { isDeepStrictEqual } from 'util';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
@@ -202,9 +203,17 @@ function loadAuthAdapter(provider, authOptions) {
   return { adapter, appIds, providerOptions };
 }
 
+let lastConfig = {};
 function validateAuthConfig(auth) {
+  if (!auth.anonymous) {
+    auth.anonymous = { enabled: true };
+  }
+  if (isDeepStrictEqual(lastConfig, auth)) {
+    return;
+  }
   authAdapters = {};
   Object.keys(auth).map(key => initializeAuthAdapter(key, auth, true));
+  lastConfig = auth;
 }
 
 module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
