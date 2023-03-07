@@ -184,12 +184,10 @@ function initializeAuthAdapter(provider, authOptions) {
     }
   }
 
-  if (adapter.validateOptions) {
-    console.log({ provider });
-    adapter.validateOptions(providerOptions);
-  }
-
   if (providerOptions?.enabled !== false) {
+    if (adapter.validateOptions) {
+      adapter.validateOptions(providerOptions);
+    }
     authAdapters[provider] = adapter;
   }
 }
@@ -206,8 +204,6 @@ function loadAuthAdapter(provider, authOptions) {
 
 function validateAuthConfig(auth) {
   authAdapters = {};
-  // console.log({auth});
-  // console.log(Object.keys(auth));
   Object.keys(auth).map(key => initializeAuthAdapter(key, auth, true));
 }
 
