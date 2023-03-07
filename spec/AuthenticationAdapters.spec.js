@@ -473,6 +473,7 @@ describe('AuthenticationProviders', function () {
     const authData = {
       access_token: 'badtoken',
     };
+    authenticationLoader.initializeAuthAdapter('facebook', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'facebook',
       options
@@ -519,6 +520,7 @@ describe('AuthenticationProviders', function () {
     const authData = {
       access_token: 'badtoken',
     };
+    authenticationLoader.initializeAuthAdapter('facebook', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'facebook',
       options
@@ -1946,6 +1948,7 @@ describe('Apple Game Center Auth adapter', () => {
     const options = {
       gcenter: {},
     };
+    authenticationLoader.initializeAuthAdapter('gcenter', options);
     const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
       'gcenter',
       options
