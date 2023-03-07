@@ -443,17 +443,17 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       }
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
       const authProvider = (req.config.auth || {})[provider] || {};
-      if (authProvider.enabled == null) {
-        Deprecator.logRuntimeDeprecation({
-          usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
-          solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
-        });
-      }
       if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(
           Parse.Error.UNSUPPORTED_SERVICE,
           'This authentication method is unsupported.'
         );
+      }
+      if (authProvider.enabled == null) {
+        Deprecator.logRuntimeDeprecation({
+          usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
+          solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
+        });
       }
       let validationResult = await validator(authData[provider], req, user, requestObject);
       method = validationResult && validationResult.method;

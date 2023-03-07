@@ -357,7 +357,7 @@ describe('AuthenticationProviders', function () {
     expect(typeof authAdapter.validateAppId).toBe('function');
   }
 
-  it('properly loads custom adapter', done => {
+  it('properly loads custom adapter', async () => {
     const validAuthData = {
       id: 'hello',
       token: 'world',
@@ -377,6 +377,9 @@ describe('AuthenticationProviders', function () {
     const authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
     const appIdSpy = spyOn(adapter, 'validateAppId').and.callThrough();
 
+    authenticationLoader.initializeAuthAdapter('customAuthentication', {
+      customAuthentication: adapter,
+    });
     const authenticationHandler = authenticationLoader({
       customAuthentication: adapter,
     });
@@ -385,52 +388,38 @@ describe('AuthenticationProviders', function () {
     const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator(validAuthData, {}, {}).then(
-      () => {
-        expect(authDataSpy).toHaveBeenCalled();
-        // AppIds are not provided in the adapter, should not be called
-        expect(appIdSpy).not.toHaveBeenCalled();
-        done();
-      },
-      err => {
-        jfail(err);
-        done();
-      }
-    );
+    await validator(validAuthData, {}, {});
+    expect(authDataSpy).toHaveBeenCalled();
+
+    expect(appIdSpy).not.toHaveBeenCalled();
   });
 
-  it('properly loads custom adapter module object', done => {
-    const authenticationHandler = authenticationLoader({
+  it('properly loads custom adapter module object', async () => {
+    authenticationLoader.initializeAuthAdapter('customAuthentication', {
       customAuthentication: path.resolve('./spec/support/CustomAuth.js'),
     });
+    const authenticationHandler = authenticationLoader();
 
     validateAuthenticationHandler(authenticationHandler);
     const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
-    validator(
+    await validator(
       {
         token: 'my-token',
       },
       {},
       {}
-    ).then(
-      () => {
-        done();
-      },
-      err => {
-        jfail(err);
-        done();
-      }
     );
   });
 
   it('properly loads custom adapter module object (again)', done => {
-    const authenticationHandler = authenticationLoader({
+    authenticationLoader.initializeAuthAdapter('customAuthentication', {
       customAuthentication: {
         module: path.resolve('./spec/support/CustomAuthFunction.js'),
         options: { token: 'valid-token' },
       },
     });
+    const authenticationHandler = authenticationLoader();
 
     validateAuthenticationHandler(authenticationHandler);
     const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
@@ -552,6 +541,7 @@ describe('AuthenticationProviders', function () {
       id: 'test',
       access_token: 'test',
     };
+    authenticationLoader.initializeAuthAdapter('facebook', options);
     const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter('facebook', options);
     await adapter.validateAuthData(authData, providerOptions);
     expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
