@@ -1,5 +1,6 @@
 import AppCache from './cache';
 import SchemaCache from './Adapters/Cache/SchemaCache';
+
 /**
  * Destroys all data in the database
  * @param {boolean} fast set to true if it's ok to just drop objects and not indexes.
