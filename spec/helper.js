@@ -82,7 +82,7 @@ on_db(
 );
 
 let logLevel;
-let silent = true;
+let silent = false;
 if (process.env.VERBOSE) {
   silent = false;
   logLevel = 'verbose';
