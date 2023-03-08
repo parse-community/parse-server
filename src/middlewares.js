@@ -483,9 +483,9 @@ export const addRateLimit = (route, config, cloud) => {
     store: null,
     connected: false,
   };
-  if (route.redisrUrl) {
+  if (route.redisUrl) {
     const client = createClient({
-      url: route.redisrUrl,
+      url: route.redisUrl,
     });
     redisStore.connectionPromise = async () => {
       if (redisStore.connected) {
