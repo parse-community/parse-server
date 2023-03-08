@@ -47,6 +47,7 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     if (path === '/batch') {
+      console.log({ path });
       const batch = transactionRetries => {
         let initialPromise = Promise.resolve();
         if (data.transaction === true) {
@@ -87,6 +88,7 @@ function ParseServerRESTController(applicationId, router) {
               }
             })
             .catch(error => {
+              console.log({ error });
               if (
                 error &&
                 error.find(
@@ -94,6 +96,7 @@ function ParseServerRESTController(applicationId, router) {
                 ) &&
                 transactionRetries > 0
               ) {
+                console.log(transactionRetries - 1);
                 return batch(transactionRetries - 1);
               }
               throw error;
