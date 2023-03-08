@@ -1,5 +1,5 @@
 import AppCache from './cache';
-
+import SchemaCache from './Adapters/Cache/SchemaCache';
 /**
  * Destroys all data in the database
  * @param {boolean} fast set to true if it's ok to just drop objects and not indexes.
@@ -13,8 +13,10 @@ export function destroyAllDataPermanently(fast) {
       const app = AppCache.get(appId);
       if (app.databaseController) {
         return app.databaseController.deleteEverything(fast);
+      } else if (app.databaseAdapter) {
+        SchemaCache.clear();
+        return app.databaseAdapter.deleteAllClasses(fast);
       } else {
-        console.log('Could not delete: ', app.databaseAdapter);
         return Promise.resolve();
       }
     })
