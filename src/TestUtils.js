@@ -18,8 +18,7 @@ export function destroyAllDataPermanently(fast) {
       }
       if (app.databaseController) {
         deletePromises.push(app.databaseController.deleteEverything(fast));
-      }
-      if (app.databaseAdapter) {
+      } else if (app.databaseAdapter) {
         SchemaCache.clear();
         deletePromises.push(app.databaseAdapter.deleteAllClasses(fast));
       }
