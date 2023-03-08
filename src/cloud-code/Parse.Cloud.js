@@ -766,7 +766,8 @@ ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandle
 
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
-  Config.get(Parse.applicationId).unregisterRateLimiters();
+  const config = Config.get(Parse.applicationId);
+  config?.unregisterRateLimiters();
 };
 
 ParseCloud.useMasterKey = () => {
