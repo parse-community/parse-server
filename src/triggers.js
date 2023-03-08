@@ -159,6 +159,7 @@ export function removeTrigger(type, className, applicationId) {
 
 export function _unregisterAll() {
   Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
+  console.log(_triggerStore);
 }
 
 export function toJSONwithObjects(object, className) {
