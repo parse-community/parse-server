@@ -53,7 +53,6 @@ function ParseServerRESTController(applicationId, router) {
         if (data.transaction === true) {
           initialPromise = config.database.createTransactionalSession();
         }
-        console.log('inital promise');
         return initialPromise.then(() => {
           const promises = data.requests.map(request => {
             return handleRequest(request.method, request.path, request.body, options, config).then(
@@ -72,10 +71,8 @@ function ParseServerRESTController(applicationId, router) {
               }
             );
           });
-          console.log('promises', promises);
           return Promise.all(promises)
             .then(result => {
-              console.log('result', result);
               if (data.transaction === true) {
                 if (result.find(resultItem => typeof resultItem.error === 'object')) {
                   return config.database.abortTransactionalSession().then(() => {
@@ -91,7 +88,6 @@ function ParseServerRESTController(applicationId, router) {
               }
             })
             .catch(error => {
-              console.log({ error });
               if (
                 error &&
                 error.find(
