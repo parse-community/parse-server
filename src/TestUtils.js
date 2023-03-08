@@ -22,11 +22,7 @@ export function destroyAllDataPermanently(fast) {
         SchemaCache.clear();
         deletePromises.push(app.databaseAdapter.deleteAllClasses(fast));
       }
-      try {
-        return Promise.all(deletePromises);
-      } catch (e) {
-        /* ignore */
-      }
+      return Promise.all(deletePromises);
     })
   );
 }
