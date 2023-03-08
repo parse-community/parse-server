@@ -214,6 +214,7 @@ afterEach(function (done) {
     done();
   };
   Parse.Cloud._removeAllHooks();
+  Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient();
   defaults.protectedFields = { _User: { '*': ['email'] } };
   databaseAdapter
     .getAllClasses()
