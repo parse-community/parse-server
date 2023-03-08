@@ -12,14 +12,20 @@ export function destroyAllDataPermanently(fast) {
   return Promise.all(
     Object.keys(AppCache.cache).map(appId => {
       const app = AppCache.get(appId);
-      if (app.databaseController) {
-        return app.databaseController.deleteEverything(fast);
-      } else if (app.databaseAdapter) {
-        SchemaCache.clear();
-        return app.databaseAdapter.deleteAllClasses(fast);
-      } else {
-        return Promise.resolve();
+      const deletePromises = [];
+      if (app.cacheAdapter) {
+        deletePromises.push(app.cacheAdapter.clear());
       }
+      if (app.databaseController) {
+        deletePromises.push(app.databaseController.deleteEverything(fast));
+      }
+      if (app.databaseAdapter) {
+        SchemaCache.clear();
+        deletePromises.push(app.databaseAdapter.deleteAllClasses(fast));
+      } else {
+        console.log('could not delete', app);
+      }
+      return Promise.all(deletePromises);
     })
   );
 }
