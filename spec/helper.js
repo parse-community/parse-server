@@ -198,8 +198,11 @@ beforeAll(async () => {
   Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
-afterEach(function (done) {
+beforeEach(() => {
   jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+});
+
+afterEach(function (done) {
   const afterLogOut = async () => {
     if (Object.keys(openConnections).length > 0) {
       console.warn('There were open connections to the server left after the test finished');
