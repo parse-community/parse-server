@@ -11,7 +11,6 @@ if (dns.setDefaultResultOrder) {
 }
 
 // Sets up a Parse API server for testing.
-jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
 
@@ -196,6 +195,7 @@ beforeAll(async () => {
 
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = 'http://localhost:' + port + '/1';
+  jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 });
 
 afterEach(function (done) {
