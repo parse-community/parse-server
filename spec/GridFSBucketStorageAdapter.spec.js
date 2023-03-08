@@ -24,9 +24,10 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const databaseURI = 'mongodb://localhost:27017/parse';
     const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
       retryWrites: true,
-      // these are not supported by mongo
+      // these are not supported by the mongo client
       enableSchemaHooks: true,
       schemaCacheTtl: 5000,
+      maxTimeMS: 30000,
     });
 
     const db = await gfsAdapter._connect();

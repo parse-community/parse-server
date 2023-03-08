@@ -35,7 +35,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
       useUnifiedTopology: true,
     };
     const mongoOptions = { ...databaseOptions };
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl']) {
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
       delete mongoOptions[key];
     }
     this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
