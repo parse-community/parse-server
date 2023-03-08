@@ -14,7 +14,7 @@ export function destroyAllDataPermanently(fast) {
       if (app.databaseController) {
         return app.databaseController.deleteEverything(fast);
       } else {
-        console.log('Could not delete: ', Object.keys(app));
+        console.log('Could not delete: ', app.databaseAdapter);
         return Promise.resolve();
       }
     })
