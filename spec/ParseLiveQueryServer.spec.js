@@ -115,6 +115,7 @@ describe('ParseLiveQueryServer', function () {
   });
 
   describe_only_db('mongo')('initialization', () => {
+    beforeEach(() => reconfigureServer({ appId: 'mongo_init_test' }));
     it('can be initialized through ParseServer without liveQueryServerOptions', async () => {
       const parseServer = await ParseServer.startApp({
         appId: 'hello',

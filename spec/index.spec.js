@@ -558,7 +558,7 @@ describe('server', () => {
   });
 
   it('can get starting state', async () => {
-    await reconfigureServer({ appId: 'test2', silent: false });
+    await reconfigureServer({ appId: 'test2' });
     const parseServer = new ParseServer.ParseServer({
       ...defaultConfiguration,
       appId: 'test2',
