@@ -55,6 +55,8 @@ describe('FilesController', () => {
     const config = Config.get(Parse.applicationId);
     expect(config.database.adapter._mongoOptions.retryWrites).toBeTrue();
     expect(config.filesController.adapter._mongoOptions.retryWrites).toBeTrue();
+    expect(config.filesController.adapter._mongoOptions.enableSchemaHooks).toBeUndefined();
+    expect(config.filesController.adapter._mongoOptions.schemaCacheTtl).toBeUndefined();
   });
 
   it('should create a server log on failure', done => {
