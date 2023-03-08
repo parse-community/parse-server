@@ -21,31 +21,31 @@ const masterKeyOptions = {
 };
 
 describe('JobSchedule', () => {
-  beforeEach(async () => {
-    const jobs = await request(
-      Object.assign(
-        {
-          url: Parse.serverURL + '/cloud_code/jobs',
-        },
-        masterKeyOptions
-      )
-    );
-    if (jobs.data.length) {
-      await Promise.all(
-        jobs.data.map(({ objectId }) =>
-          request(
-            Object.assign(
-              {
-                method: 'DELETE',
-                url: `${Parse.serverURL}/cloud_code/jobs/${objectId}`,
-              },
-              masterKeyOptions
-            )
-          )
-        )
-      );
-    }
-  });
+  // beforeEach(async () => {
+  //   const jobs = await request(
+  //     Object.assign(
+  //       {
+  //         url: Parse.serverURL + '/cloud_code/jobs',
+  //       },
+  //       masterKeyOptions
+  //     )
+  //   );
+  //   if (jobs.data.length) {
+  //     await Promise.all(
+  //       jobs.data.map(({ objectId }) =>
+  //         request(
+  //           Object.assign(
+  //             {
+  //               method: 'DELETE',
+  //               url: `${Parse.serverURL}/cloud_code/jobs/${objectId}`,
+  //             },
+  //             masterKeyOptions
+  //           )
+  //         )
+  //       )
+  //     );
+  //   }
+  // });
   it('should create _JobSchedule with masterKey', done => {
     const jobSchedule = new Parse.Object('_JobSchedule');
     jobSchedule.set({

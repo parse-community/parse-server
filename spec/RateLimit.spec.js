@@ -21,7 +21,7 @@ describe('rate limit', () => {
   });
 
   it('can limit cloud functions with user session token', async () => {
-    await Parse.User.signUp('rateLimitMyUser', 'password');
+    await Parse.User.signUp('myUser', 'password');
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
       rateLimit: [
