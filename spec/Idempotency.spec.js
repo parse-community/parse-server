@@ -45,10 +45,6 @@ describe('Idempotency', () => {
     });
   });
 
-  afterAll(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
-  });
-
   // Tests
   it('should enforce idempotency for cloud code function', async () => {
     let counter = 0;
