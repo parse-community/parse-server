@@ -220,9 +220,13 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
 
   const { originalObject, updatedObject } = this.buildParseObjects();
 
+  const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
-  this.pendingOps = { ...pending };
+  const [pending] = stateController.getPendingOps(identifier);
+  this.pendingOps = {
+    operations: { ...pending },
+    identifier,
+  };
 
   return Promise.resolve()
     .then(() => {
