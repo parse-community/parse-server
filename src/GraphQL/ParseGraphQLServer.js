@@ -83,6 +83,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
+    this.applyRequestContextMiddleware(app, this.parseServer.config);
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(this.config.graphQLPath, async (req, res) => {
       const server = await this._getServer();
