@@ -1,4 +1,4 @@
-const { ApolloClient, gql, InMemoryCache } = require('@apollo/client');
+const { ApolloClient, gql, InMemoryCache } = require('@apollo/client/core');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 describe('requestContextMiddleware', () => {
   const requestContextMiddleware = (req, res, next) => {
