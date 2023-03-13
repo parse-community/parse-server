@@ -466,7 +466,7 @@ export function promiseEnforceMasterKeyAccess(request) {
   return Promise.resolve();
 }
 
-export const addRateLimit = (route, config) => {
+export const addRateLimit = (route, config, cloud) => {
   if (typeof config === 'string') {
     config = Config.get(config);
   }
@@ -483,9 +483,9 @@ export const addRateLimit = (route, config) => {
     store: null,
     connected: false,
   };
-  if (route.redisrUrl) {
+  if (route.redisUrl) {
     const client = createClient({
-      url: route.redisrUrl,
+      url: route.redisUrl,
     });
     redisStore.connectionPromise = async () => {
       if (redisStore.connected) {
@@ -545,6 +545,7 @@ export const addRateLimit = (route, config) => {
       },
       store: redisStore.store,
     }),
+    cloud,
   });
   Config.put(config);
 };
