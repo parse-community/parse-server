@@ -4,6 +4,7 @@ const semver = require('semver');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
+const AuthAdapters = require('../lib/Adapters/Auth');
 
 // Ensure localhost resolves to ipv4 address first on node v17+
 if (dns.setDefaultResultOrder) {
@@ -210,6 +211,7 @@ afterEach(function (done) {
     destroyAliveConnections();
     await TestUtils.destroyAllDataPermanently(true);
     SchemaCache.clear();
+    AuthAdapters.validateAuthConfig(defaultConfiguration.auth);
     if (didChangeConfiguration) {
       await reconfigureServer();
     } else {

@@ -1237,7 +1237,7 @@ describe('Auth Adapter features', () => {
 
     spyOn(challengeAdapter, 'validateAuthData').and.rejectWith({});
     const authenticationLoader = require('../lib/Adapters/Auth');
-    authenticationLoader.initializeAuthAdapter('challengeAdapter', {
+    authenticationLoader.loadAuthAdapter('challengeAdapter', {
       challengeAdapter,
     });
 

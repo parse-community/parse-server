@@ -1,7 +1,6 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
-import { isDeepStrictEqual } from 'util';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
@@ -64,7 +63,7 @@ const providers = {
   ldap,
 };
 
-let authAdapters = {};
+const authAdapters = {};
 
 // Indexed auth policies
 const authAdapterPolicies = {
@@ -138,62 +137,61 @@ function authDataValidator(provider, adapter, appIds, options) {
   };
 }
 
-function initializeAuthAdapter(provider, authOptions) {
-  let defaultAdapter = providers[provider];
-  // authOptions can contain complete custom auth adapters or
-  // a default auth adapter like Facebook
-  const providerOptions = authOptions[provider];
-  if (
-    providerOptions &&
-    Object.prototype.hasOwnProperty.call(providerOptions, 'oauth2') &&
-    providerOptions['oauth2'] === true
-  ) {
-    defaultAdapter = oauth2;
-  }
+function loadAuthAdapter(provider, authOptions, cached) {
+  if (!cached) {
+    let defaultAdapter = providers[provider];
+    // authOptions can contain complete custom auth adapters or
+    // a default auth adapter like Facebook
+    const providerOptions = authOptions[provider];
+    if (
+      providerOptions &&
+      Object.prototype.hasOwnProperty.call(providerOptions, 'oauth2') &&
+      providerOptions['oauth2'] === true
+    ) {
+      defaultAdapter = oauth2;
+    }
 
-  // Default provider not found and a custom auth provider was not provided
-  if (!defaultAdapter && !providerOptions) {
-    return;
-  }
+    // Default provider not found and a custom auth provider was not provided
+    if (!defaultAdapter && !providerOptions) {
+      return;
+    }
 
-  const keys = [
-    'validateAuthData',
-    'validateAppId',
-    'validateSetUp',
-    'validateLogin',
-    'validateUpdate',
-    'challenge',
-    'validateOptions',
-    'policy',
-    'afterFind',
-  ];
+    const keys = [
+      'validateAuthData',
+      'validateAppId',
+      'validateSetUp',
+      'validateLogin',
+      'validateUpdate',
+      'challenge',
+      'validateOptions',
+      'policy',
+      'afterFind',
+    ];
 
-  let adapter = Object.assign({}, defaultAdapter);
-  if (defaultAdapter instanceof AuthAdapter) {
-    adapter = new defaultAdapter.constructor();
-    defaultAdapter._clearDefaultKeys(keys);
-  }
+    let adapter = Object.assign({}, defaultAdapter);
+    if (defaultAdapter instanceof AuthAdapter) {
+      adapter = new defaultAdapter.constructor();
+      defaultAdapter._clearDefaultKeys(keys);
+    }
 
-  if (providerOptions) {
-    const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
-    if (optionalAdapter) {
-      keys.forEach(key => {
-        if (optionalAdapter[key]) {
-          adapter[key] = optionalAdapter[key];
-        }
-      });
+    if (providerOptions) {
+      const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
+      if (optionalAdapter) {
+        keys.forEach(key => {
+          if (optionalAdapter[key]) {
+            adapter[key] = optionalAdapter[key];
+          }
+        });
+      }
+    }
+
+    if (providerOptions?.enabled !== false) {
+      if (adapter.validateOptions) {
+        adapter.validateOptions(providerOptions);
+      }
+      authAdapters[provider] = adapter;
     }
   }
-
-  if (providerOptions?.enabled !== false) {
-    if (adapter.validateOptions) {
-      adapter.validateOptions(providerOptions);
-    }
-    authAdapters[provider] = adapter;
-  }
-}
-
-function loadAuthAdapter(provider, authOptions) {
   const adapter = authAdapters[provider];
   if (!adapter) {
     return;
@@ -203,17 +201,11 @@ function loadAuthAdapter(provider, authOptions) {
   return { adapter, appIds, providerOptions };
 }
 
-let lastConfig = {};
 function validateAuthConfig(auth) {
   if (!auth.anonymous) {
     auth.anonymous = { enabled: true };
   }
-  if (isDeepStrictEqual(lastConfig, auth)) {
-    return;
-  }
-  authAdapters = {};
-  Object.keys(auth).map(key => initializeAuthAdapter(key, auth, true));
-  lastConfig = auth;
+  Object.keys(auth).forEach(key => loadAuthAdapter(key, auth));
 }
 
 module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
@@ -226,7 +218,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return { validator: undefined };
     }
-    const authAdapter = loadAuthAdapter(provider, authOptions);
+    const authAdapter = loadAuthAdapter(provider, authOptions, true);
     if (!authAdapter) {
       return { validator: undefined };
     }
@@ -271,6 +263,5 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
   });
 };
 
-module.exports.initializeAuthAdapter = initializeAuthAdapter;
 module.exports.loadAuthAdapter = loadAuthAdapter;
 module.exports.validateAuthConfig = validateAuthConfig;
