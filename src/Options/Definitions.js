@@ -557,6 +557,11 @@ module.exports.RateLimitOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  redisUrl: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REDIS_URL',
+    help:
+      'Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.',
+  },
   requestCount: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_COUNT',
     help:
