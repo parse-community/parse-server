@@ -63,7 +63,7 @@ const providers = {
   ldap,
 };
 
-const authAdapters = {};
+let authAdapters = {};
 
 // Indexed auth policies
 const authAdapterPolicies = {
@@ -202,6 +202,7 @@ function loadAuthAdapter(provider, authOptions, cached) {
 }
 
 function validateAuthConfig(auth) {
+  authAdapters = {};
   if (!auth.anonymous) {
     auth.anonymous = { enabled: true };
   }

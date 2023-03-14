@@ -377,6 +377,8 @@ describe('AuthenticationProviders', function () {
     const authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
     const appIdSpy = spyOn(adapter, 'validateAppId').and.callThrough();
 
+    await reconfigureServer({ auth: { customAuthentication: adapter } });
+
     const authenticationHandler = authenticationLoader({
       customAuthentication: adapter,
     });
@@ -392,6 +394,14 @@ describe('AuthenticationProviders', function () {
   });
 
   it('properly loads custom adapter module object', async () => {
+    await reconfigureServer({
+      auth: {
+        customAuthentication: {
+          validateAppId() {},
+          validateAuthData() {},
+        },
+      },
+    });
     const authenticationHandler = authenticationLoader();
 
     validateAuthenticationHandler(authenticationHandler);
@@ -406,27 +416,27 @@ describe('AuthenticationProviders', function () {
     );
   });
 
-  it('properly loads custom adapter module object (again)', done => {
+  it('properly loads custom adapter module object (again)', async () => {
+    await reconfigureServer({
+      auth: {
+        customAuthentication: {
+          validateAppId() {},
+          validateAuthData() {},
+        },
+      },
+    });
     const authenticationHandler = authenticationLoader();
 
     validateAuthenticationHandler(authenticationHandler);
     const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    validator(
+    await validator(
       {
         token: 'valid-token',
       },
       {},
       {}
-    ).then(
-      () => {
-        done();
-      },
-      err => {
-        jfail(err);
-        done();
-      }
     );
   });
 
