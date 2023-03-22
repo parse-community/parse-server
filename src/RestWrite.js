@@ -87,7 +87,10 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
   // Once set the schemaData should be immutable
   this.validSchemaController = null;
-  this.pendingOps = {};
+  this.pendingOps = {
+    operations: null,
+    identifier: null,
+  };
 }
 
 // A convenient method to perform all the steps of processing the
@@ -219,10 +222,13 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-
+  const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
-  this.pendingOps = { ...pending };
+  const [pending] = stateController.getPendingOps(identifier);
+  this.pendingOps = {
+    operations: { ...pending },
+    identifier,
+  };
 
   return Promise.resolve()
     .then(() => {
@@ -1569,7 +1575,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
-        this.pendingOps = {};
+        this.pendingOps.operations = {};
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
@@ -1673,10 +1679,9 @@ RestWrite.prototype.cleanUserAuthData = function () {
 };
 
 RestWrite.prototype._updateResponseWithData = function (response, data) {
-  const { updatedObject } = this.buildParseObjects();
   const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
-  for (const key in this.pendingOps) {
+  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  for (const key in this.pendingOps.operations) {
     if (!pending[key]) {
       data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
       this.storage.fieldsChangedByTrigger.push(key);
