@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.0.0-alpha.35",
+  "version": "6.1.0-alpha.7",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -50,9 +50,10 @@
     "mustache": "4.2.0",
     "parse": "4.0.1",
     "path-to-regexp": "0.1.7",
-    "pg-monitor": "1.5.0",
-    "pg-promise": "10.12.1",
+    "pg-monitor": "2.0.0",
+    "pg-promise": "11.3.0",
     "pluralize": "8.0.0",
+    "rate-limit-redis": "3.0.1",
     "redis": "4.0.6",
     "semver": "7.3.8",
     "subscriptions-transport-ws": "0.11.0",
