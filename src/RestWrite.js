@@ -160,7 +160,7 @@ RestWrite.prototype.execute = function () {
           this.response.response.authDataResponse = this.authDataResponse;
         }
       }
-      if (this.storage.rejectSignup) {
+      if (this.storage.rejectSignup && this.config.preventSignupWithUnverifiedEmail) {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
       }
       return this.response;

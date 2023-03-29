@@ -319,7 +319,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('does not allow signup with preventLoginWithUnverified', async () => {
+  it('does not allow signup with preventSignupWithUnverified', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -333,6 +333,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       publicServerURL: 'http://localhost:1337/1',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
+      preventSignupWithUnverifiedEmail: true,
       emailAdapter,
     });
     const newUser = new Parse.User();

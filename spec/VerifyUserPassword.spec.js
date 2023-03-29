@@ -367,13 +367,11 @@ describe('Verify User Password', () => {
       }),
     });
     const user = new Parse.User();
-    await expectAsync(
-      user.save({
-        username: 'unverified-user',
-        password: 'mypass',
-        email: 'unverified-email@example.com',
-      })
-    ).toBeRejectedWith(new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.'));
+    await user.save({
+      username: 'unverified-user',
+      password: 'mypass',
+      email: 'unverified-email@example.com',
+    });
     const res = await verifyPassword('unverified-email@example.com', 'mypass', true);
     expect(res.status).toBe(400);
     expect(res.data).toEqual({
