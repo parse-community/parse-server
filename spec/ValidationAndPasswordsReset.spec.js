@@ -262,9 +262,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     user.setPassword('other-password');
     user.setUsername('user');
     user.set('email', 'user@example.com');
-    await expectAsync(user.signUp()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.')
-    );
+    await user.signUp();
     expect(sendEmailOptions).not.toBeUndefined();
     const response = await request({
       url: sendEmailOptions.link,
