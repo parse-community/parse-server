@@ -1031,7 +1031,7 @@ RestWrite.prototype.handleFollowup = function () {
   if (this.storage && this.storage['sendVerificationEmail']) {
     delete this.storage['sendVerificationEmail'];
     // Fire and forget!
-    this.config.userController.sendVerificationEmail(this.data);
+    this.config.userController.sendVerificationEmail(this.data, { auth: this.auth });
     return this.handleFollowup.bind(this);
   }
 };

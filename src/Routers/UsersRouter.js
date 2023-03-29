@@ -446,7 +446,7 @@ export class UsersRouter extends ClassesRouter {
     }
   }
 
-  handleVerificationEmailRequest(req) {
+  async handleVerificationEmailRequest(req) {
     this._throwOnBadEmailConfig(req);
 
     const { email } = req.body;
@@ -460,25 +460,25 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
-    return req.config.database.find('_User', { email: email }).then(results => {
-      if (!results.length || results.length < 1) {
-        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
-      }
-      const user = results[0];
+    const results = await req.config.database.find('_User', { email: email });
+    if (!results.length || results.length < 1) {
+      throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
+    }
+    const user = results[0];
 
-      // remove password field, messes with saving on postgres
-      delete user.password;
+    // remove password field, messes with saving on postgres
+    delete user.password;
 
-      if (user.emailVerified) {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
-      }
+    if (user.emailVerified) {
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
+    }
 
-      const userController = req.config.userController;
-      return userController.regenerateEmailVerifyToken(user).then(() => {
-        userController.sendVerificationEmail(user);
-        return { response: {} };
-      });
-    });
+    const userController = req.config.userController;
+    const send = await userController.regenerateEmailVerifyToken(user, req.auth.isMaster);
+    if (send) {
+      userController.sendVerificationEmail(user, req);
+    }
+    return { response: {} };
   }
 
   async handleChallenge(req) {

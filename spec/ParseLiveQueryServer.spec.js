@@ -1138,8 +1138,7 @@ describe('ParseLiveQueryServer', function () {
     expect(toSend.original).toBeUndefined();
     expect(spy).toHaveBeenCalledWith({
       usage: 'Subscribing using fields parameter',
-      solution:
-        `Subscribe using "keys" instead.`,
+      solution: `Subscribe using "keys" instead.`,
     });
   });
 

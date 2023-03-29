@@ -438,6 +438,39 @@ describe('Email Verification Token Expiration: ', () => {
     expect(verifySpy).toHaveBeenCalledTimes(4);
   });
 
+  it('can conditionally send user email verification', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    const sendVerificationEmail = {
+      method(req) {
+        expect(req.user).toBeDefined();
+        expect(req.master).toBeDefined();
+        return false;
+      },
+    };
+    const sendSpy = spyOn(sendVerificationEmail, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+      sendUserEmailVerification: sendVerificationEmail.method,
+    });
+    const emailSpy = spyOn(emailAdapter, 'sendVerificationEmail').and.callThrough();
+    const newUser = new Parse.User();
+    newUser.setUsername('unsets_email_verify_token_expires_at');
+    newUser.setPassword('expiringToken');
+    newUser.set('email', 'user@example.com');
+    await newUser.signUp();
+    await Parse.User.requestEmailVerification('user@example.com');
+    expect(sendSpy).toHaveBeenCalledTimes(2);
+    expect(emailSpy).toHaveBeenCalledTimes(0);
+  });
+
   it('beforeSave options do not change existing behaviour', async () => {
     let sendEmailOptions;
     const emailAdapter = {
@@ -454,17 +487,7 @@ describe('Email Verification Token Expiration: ', () => {
       emailVerifyTokenValidityDuration: 5, // 5 seconds
       publicServerURL: 'http://localhost:8378/1',
     });
-    const beforeSave = {
-      method(req) {
-        if (!req.original) {
-          expect(req.setSendEmailVerificationEmail).toBeTrue();
-          expect(req.setEmailVerified).toBeFalse();
-        }
-      },
-    };
-    const saveSpy = spyOn(beforeSave, 'method').and.callThrough();
     const emailSpy = spyOn(emailAdapter, 'sendVerificationEmail').and.callThrough();
-    Parse.Cloud.beforeSave(Parse.User, beforeSave.method);
     const newUser = new Parse.User();
     newUser.setUsername('unsets_email_verify_token_expires_at');
     newUser.setPassword('expiringToken');
@@ -486,7 +509,6 @@ describe('Email Verification Token Expiration: ', () => {
     expect(user.emailVerified).toEqual(true);
     expect(typeof user._email_verify_token).toBe('undefined');
     expect(typeof user._email_verify_token_expires_at).toBe('undefined');
-    expect(saveSpy).toHaveBeenCalled();
     expect(emailSpy).toHaveBeenCalled();
   });
 

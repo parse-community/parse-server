@@ -152,7 +152,7 @@ export interface ParseServerOptions {
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Set to `true` to require users to verify their email address to complete the sign-up process.
+  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for condiitonal verification.
   <br><br>
   Default is `false`.
   :DEFAULT: false */
@@ -180,6 +180,12 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   emailVerifyTokenReuseIfValid: ?boolean;
+  /* Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for condiitonal email sending.
+  <br><br>
+  Default is `true`.
+  <br>
+  :DEFAULT: true */
+  sendUserEmailVerification: ?boolean;
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
