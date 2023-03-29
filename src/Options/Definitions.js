@@ -404,6 +404,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  preventSignupWithUnverifiedEmail: {
+    env: 'PARSE_SERVER_PREVENT_SIGNUP_WITH_UNVERIFIED_EMAIL',
+    help:
+      'Set to `true` to prevent a user from signing up if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
     help: 'Protected fields that should be treated with extra security when fetching details.',
