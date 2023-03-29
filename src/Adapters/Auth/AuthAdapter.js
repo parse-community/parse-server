@@ -93,6 +93,24 @@ export class AuthAdapter {
   challenge(challengeData, authData, options, request) {
     return Promise.resolve({});
   }
+
+  /**
+   * Triggered when auth data is fetched
+   * @param {Object} authData authData
+   * @param {Object} options additional adapter options
+   * @returns {Promise<Object>} Any overrides required to authData
+   */
+  afterFind(authData, options) {
+    return Promise.resolve({});
+  }
+
+  /**
+   * Triggered when the adapter is first attached to Parse Server
+   * @param {Object} options Adapter Options
+   */
+  validateOptions(options) {
+    /* */
+  }
 }
 
 export default AuthAdapter;
