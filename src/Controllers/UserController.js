@@ -211,7 +211,7 @@ export class UserController extends AdaptableController {
     if (!aUser || aUser.emailVerified) {
       throw undefined;
     }
-    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth.isMaster);
+    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster);
     if (generate) {
       this.sendVerificationEmail(aUser, req);
     }
