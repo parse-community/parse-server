@@ -1,3 +1,38 @@
+# [6.1.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.6...6.1.0-alpha.7) (2023-03-10)
+
+
+### Bug Fixes
+
+* Rate limiting across multiple servers via Redis not working ([#8469](https://github.com/parse-community/parse-server/issues/8469)) ([d9e347d](https://github.com/parse-community/parse-server/commit/d9e347d7413f30f58ffbb8397fc8b5ae23be6ff0))
+
+# [6.1.0-alpha.6](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.5...6.1.0-alpha.6) (2023-03-06)
+
+
+### Features
+
+* Add rate limiting across multiple servers via Redis ([#8394](https://github.com/parse-community/parse-server/issues/8394)) ([34833e4](https://github.com/parse-community/parse-server/commit/34833e42eec08b812b733be78df0535ab0e096b6))
+
+# [6.1.0-alpha.5](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.4...6.1.0-alpha.5) (2023-03-06)
+
+
+### Bug Fixes
+
+* LiveQuery can return incorrectly formatted date ([#8456](https://github.com/parse-community/parse-server/issues/8456)) ([4ce135a](https://github.com/parse-community/parse-server/commit/4ce135a4fe930776044bc8fd786a4e17a0144e03))
+
+# [6.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.3...6.1.0-alpha.4) (2023-03-06)
+
+
+### Bug Fixes
+
+* Parameters missing in `afterFind` trigger of authentication adapters ([#8458](https://github.com/parse-community/parse-server/issues/8458)) ([ce34747](https://github.com/parse-community/parse-server/commit/ce34747e8af54cb0b6b975da38f779a5955d2d59))
+
+# [6.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.2...6.1.0-alpha.3) (2023-03-06)
+
+
+### Features
+
+* Add `afterFind` trigger to authentication adapters ([#8444](https://github.com/parse-community/parse-server/issues/8444)) ([c793bb8](https://github.com/parse-community/parse-server/commit/c793bb88e7485743c7ceb65fe419cde75833ff33))
+
 # [6.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.1...6.1.0-alpha.2) (2023-03-05)
 
 
