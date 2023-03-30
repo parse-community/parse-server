@@ -1215,6 +1215,7 @@ describe('ParseLiveQuery', function () {
 
   it('does shutdown liveQuery server', async () => {
     const server = await reconfigureServer({
+      appId: 'shutdownAppId',
       liveQuery: {
         classNames: ['TestObject'],
       },
@@ -1226,5 +1227,6 @@ describe('ParseLiveQuery', function () {
     server.config.databaseAdapter.connectionPromise = null;
     server.config.databaseAdapter.connect();
     await new Promise(resolve => setTimeout(resolve, 100));
+    await reconfigureServer();
   });
 });
