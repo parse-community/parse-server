@@ -11,7 +11,7 @@ const views = path.resolve(__dirname, '../../views');
 
 export class PublicAPIRouter extends PromiseRouter {
   verifyEmail(req) {
-    const { token: rawToken } = req.query;
+    const { username, token: rawToken } = req.query;
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     const appId = req.params.appId;
@@ -25,16 +25,17 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.missingPublicServerURL();
     }
 
-    if (!token) {
+    if (!token || !username) {
       return this.invalidLink(req);
     }
 
     const userController = config.userController;
-    return userController.verifyEmail(token).then(
+    return userController.verifyEmail(username, token).then(
       () => {
+        const params = qs.stringify({ username });
         return Promise.resolve({
           status: 302,
-          location: `${config.verifyEmailSuccessURL}`,
+          location: `${config.verifyEmailSuccessURL}?${params}`,
         });
       },
       () => {
@@ -116,18 +117,19 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.missingPublicServerURL();
     }
 
-    const { token: rawToken } = req.query;
+    const { username, token: rawToken } = req.query;
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
-    if (!token) {
+    if (!username || !token) {
       return this.invalidLink(req);
     }
 
-    return config.userController.checkResetTokenValidity(token).then(
+    return config.userController.checkResetTokenValidity(username, token).then(
       () => {
         const params = qs.stringify({
           token,
           id: config.applicationId,
+          username,
           app: config.appName,
         });
         return Promise.resolve({
@@ -152,11 +154,15 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.missingPublicServerURL();
     }
 
-    const { new_password, token: rawToken } = req.body;
+    const { username, new_password, token: rawToken } = req.body;
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
-    if ((!token || !new_password) && req.xhr === false) {
+    if ((!username || !token || !new_password) && req.xhr === false) {
       return this.invalidLink(req);
+    }
+
+    if (!username) {
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'Missing username');
     }
 
     if (!token) {
@@ -168,7 +174,7 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     return config.userController
-      .updatePassword(token, new_password)
+      .updatePassword(username, token, new_password)
       .then(
         () => {
           return Promise.resolve({
@@ -184,6 +190,7 @@ export class PublicAPIRouter extends PromiseRouter {
       )
       .then(result => {
         const params = qs.stringify({
+          username: username,
           token: token,
           id: config.applicationId,
           error: result.err,
@@ -202,8 +209,9 @@ export class PublicAPIRouter extends PromiseRouter {
           }
         }
 
+        const encodedUsername = encodeURIComponent(username);
         const location = result.success
-          ? `${config.passwordResetSuccessURL}`
+          ? `${config.passwordResetSuccessURL}?username=${encodedUsername}`
           : `${config.choosePasswordURL}?${params}`;
 
         return Promise.resolve({
@@ -222,8 +230,9 @@ export class PublicAPIRouter extends PromiseRouter {
 
   invalidVerificationLink(req) {
     const config = req.config;
-    if (req.params.appId) {
+    if (req.query.username && req.params.appId) {
       const params = qs.stringify({
+        username: req.query.username,
         appId: req.params.appId,
       });
       return Promise.resolve({

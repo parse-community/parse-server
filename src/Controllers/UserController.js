@@ -48,14 +48,14 @@ export class UserController extends AdaptableController {
     }
   }
 
-  async verifyEmail(token) {
+  verifyEmail(username, token) {
     if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
       // TODO: Better error here.
       throw undefined;
     }
 
-    const query = { _email_verify_token: token };
+    const query = { username: username, _email_verify_token: token };
     const updateFields = {
       emailVerified: true,
       _email_verify_token: { __op: 'Delete' },
@@ -70,37 +70,44 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const maintenanceAuth = Auth.maintenance(this.config);
-    const result = await new RestQuery(this.config, maintenanceAuth, '_User', query).execute();
-    if (result.results.length && result.results[0].emailVerified) {
-      query.objectId = result.results[0].objectId;
-    }
-    return await rest.update(this.config, maintenanceAuth, '_User', query, updateFields);
+    var findUserForEmailVerification = new RestQuery(this.config, maintenanceAuth, '_User', {
+      username,
+    });
+    return findUserForEmailVerification.execute().then(result => {
+      if (result.results.length && result.results[0].emailVerified) {
+        return Promise.resolve(result.results.length[0]);
+      } else if (result.results.length) {
+        query.objectId = result.results[0].objectId;
+      }
+      return rest.update(this.config, maintenanceAuth, '_User', query, updateFields);
+    });
   }
 
-  async checkResetTokenValidity(token) {
-    const results = await this.config.database.find(
-      '_User',
-      {
-        _perishable_token: token,
-      },
-      { limit: 1 },
-      Auth.maintenance(this.config)
-    );
-    if (results.length !== 1) {
-      throw 'Failed to reset password: username / email / token is invalid';
-    }
+  checkResetTokenValidity(username, token) {
+    return this.config.database
+      .find(
+        '_User',
+        {
+          username: username,
+          _perishable_token: token,
+        },
+        { limit: 1 },
+        Auth.maintenance(this.config)
+      )
+      .then(results => {
+        if (results.length != 1) {
+          throw 'Failed to reset password: username / email / token is invalid';
+        }
 
-    if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
-      let expiresDate = results[0]._perishable_token_expires_at;
-      if (expiresDate && expiresDate.__type == 'Date') {
-        expiresDate = new Date(expiresDate.iso);
-      }
-      if (expiresDate < new Date()) {
-        throw 'The password reset link has expired';
-      }
-    }
-
-    return results[0];
+        if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
+          let expiresDate = results[0]._perishable_token_expires_at;
+          if (expiresDate && expiresDate.__type == 'Date') {
+            expiresDate = new Date(expiresDate.iso);
+          }
+          if (expiresDate < new Date()) throw 'The password reset link has expired';
+        }
+        return results[0];
+      });
   }
 
   getUserIfNeeded(user) {
@@ -131,7 +138,9 @@ export class UserController extends AdaptableController {
     const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then(user => {
-      const link = buildEmailLink(this.config.verifyEmailURL, token, this.config);
+      const username = encodeURIComponent(user.username);
+
+      const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
       const options = {
         appName: this.config.appName,
         link: link,
@@ -234,8 +243,9 @@ export class UserController extends AdaptableController {
       user = await this.setPasswordResetToken(email);
     }
     const token = encodeURIComponent(user._perishable_token);
+    const username = encodeURIComponent(user.username);
 
-    const link = buildEmailLink(this.config.requestResetPasswordURL, token, this.config);
+    const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
     const options = {
       appName: this.config.appName,
       link: link,
@@ -251,20 +261,21 @@ export class UserController extends AdaptableController {
     return Promise.resolve(user);
   }
 
-  async updatePassword(token, password) {
-    try {
-      const rawUser = await this.checkResetTokenValidity(token);
-      const user = await updateUserPassword(rawUser, password, this.config);
-
-      const accountLockoutPolicy = new AccountLockout(user, this.config);
-      return await accountLockoutPolicy.unlockAccount();
-    } catch (error) {
-      if (error && error.message) {
-        // in case of Parse.Error, fail with the error message only
-        return Promise.reject(error.message);
-      }
-      return Promise.reject(error);
-    }
+  updatePassword(username, token, password) {
+    return this.checkResetTokenValidity(username, token)
+      .then(user => updateUserPassword(user, password, this.config))
+      .then(user => {
+        const accountLockoutPolicy = new AccountLockout(user, this.config);
+        return accountLockoutPolicy.unlockAccount();
+      })
+      .catch(error => {
+        if (error && error.message) {
+          // in case of Parse.Error, fail with the error message only
+          return Promise.reject(error.message);
+        } else {
+          return Promise.reject(error);
+        }
+      });
   }
 
   defaultVerificationEmail({ link, user, appName }) {
@@ -314,14 +325,17 @@ function updateUserPassword(user, password, config) {
     .then(() => user);
 }
 
-function buildEmailLink(destination, token, config) {
-  token = `token=${token}`;
+function buildEmailLink(destination, username, token, config) {
+  const usernameAndToken = `token=${token}&username=${username}`;
+
   if (config.parseFrameURL) {
     const destinationWithoutHost = destination.replace(config.publicServerURL, '');
 
-    return `${config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${token}`;
+    return `${config.parseFrameURL}?link=${encodeURIComponent(
+      destinationWithoutHost
+    )}&${usernameAndToken}`;
   } else {
-    return `${destination}?${token}`;
+    return `${destination}?${usernameAndToken}`;
   }
 }
 
