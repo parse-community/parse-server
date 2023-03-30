@@ -1215,6 +1215,7 @@ describe('ParseLiveQuery', function () {
   });
 
   it('does shutdown liveQuery server', async () => {
+    await reconfigureServer({ appId: 'test_app_id' });
     const server = await ParseServer.startApp({
       appId: 'hello_test',
       masterKey: 'world',
@@ -1231,10 +1232,9 @@ describe('ParseLiveQuery', function () {
       }),
       filesAdapter: defaultConfiguration.filesAdapter,
     });
-    await new Promise(resolve => setTimeout(resolve, 1000));
     await server.handleShutdown();
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(server.liveQueryServer.server.address()).toBeNull();
-    await reconfigureServer({ appId: 'test_app_id' });
+    await new Promise(resolve => server.server.close(resolve));
   });
 });
