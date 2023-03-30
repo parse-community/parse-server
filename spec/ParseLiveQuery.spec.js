@@ -1214,7 +1214,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('does shutdown liveQuery server', async () => {
+  fit('does shutdown liveQuery server', async () => {
     const server = await ParseServer.startApp({
       appId: 'hello_test',
       masterKey: 'world',
@@ -1225,6 +1225,8 @@ describe('ParseLiveQuery', function () {
         classNames: ['Yolo'],
       },
       startLiveQueryServer: true,
+      databaseAdapter: defaultConfiguration.databaseAdapter,
+      filesAdapter: defaultConfiguration.filesAdapter,
     });
     await server.handleShutdown();
     await new Promise(resolve => setTimeout(resolve, 100));
