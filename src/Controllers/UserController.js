@@ -71,7 +71,7 @@ export class UserController extends AdaptableController {
     }
     const maintenanceAuth = Auth.maintenance(this.config);
     const result = await new RestQuery(this.config, maintenanceAuth, '_User', query).execute();
-    if (result.results.length) {
+    if (result.results.length && result.results[0].emailVerified) {
       query.objectId = result.results[0].objectId;
     }
     return await rest.update(this.config, maintenanceAuth, '_User', query, updateFields);

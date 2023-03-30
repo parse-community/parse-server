@@ -100,7 +100,7 @@ export class PagesRouter extends PromiseRouter {
         return this.goToPage(req, pages.emailVerificationSuccess);
       },
       () => {
-        return this.goToPage(req, pages.emailVerificationLinkInvalid);
+        return this.goToPage(req, pages.emailVerificationLinkExpired);
       }
     );
   }
