@@ -1224,9 +1224,5 @@ describe('ParseLiveQuery', function () {
     await server.handleShutdown();
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(server.liveQueryServer.server.address()).toBeNull();
-    server.config.databaseAdapter.connectionPromise = null;
-    server.config.databaseAdapter.connect();
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await reconfigureServer();
   });
 });
