@@ -2,6 +2,7 @@
 const Auth = require('../lib/Auth');
 const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
+const ParseServer = require('../lib/index').ParseServer;
 const validatorFail = () => {
   throw 'you are not authorized';
 };
@@ -1214,10 +1215,14 @@ describe('ParseLiveQuery', function () {
   });
 
   it('does shutdown liveQuery server', async () => {
-    const server = await reconfigureServer({
-      appId: 'shutdownAppId',
+    const server = await ParseServer.startApp({
+      appId: 'hello_test',
+      masterKey: 'world',
+      port: 345,
+      mountPath: '/1',
+      serverURL: 'http://localhost:345/1',
       liveQuery: {
-        classNames: ['TestObject'],
+        classNames: ['Yolo'],
       },
       startLiveQueryServer: true,
     });
