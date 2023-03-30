@@ -107,7 +107,7 @@ describe('Password Policy: ', () => {
           })
             .then(response => {
               expect(response.status).toEqual(302);
-              const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=testResetTokenValidity/;
+              const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&/;
               expect(response.text.match(re)).not.toBe(null);
               done();
             })
@@ -622,7 +622,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -634,7 +634,7 @@ describe('Password Policy: ', () => {
             request({
               method: 'POST',
               url: 'http://localhost:8378/1/apps/test/request_password_reset',
-              body: `new_password=has2init&token=${token}&username=user1`,
+              body: `new_password=has2init&token=${token}`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
@@ -645,7 +645,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
+                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
                 );
 
                 Parse.User.logIn('user1', 'has2init')
@@ -714,7 +714,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -726,7 +726,7 @@ describe('Password Policy: ', () => {
             request({
               method: 'POST',
               url: 'http://localhost:8378/1/apps/test/request_password_reset',
-              body: `new_password=hasnodigit&token=${token}&username=user1`,
+              body: `new_password=hasnodigit&token=${token}`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
@@ -737,7 +737,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20should%20contain%20at%20least%20one%20digit.&app=passwordPolicy`
+                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?token=${token}&id=test&error=Password%20should%20contain%20at%20least%20one%20digit.&app=passwordPolicy`
                 );
 
                 Parse.User.logIn('user1', 'has 1 digit')
@@ -900,7 +900,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -912,7 +912,7 @@ describe('Password Policy: ', () => {
             request({
               method: 'POST',
               url: 'http://localhost:8378/1/apps/test/request_password_reset',
-              body: `new_password=xuser12&token=${token}&username=user1`,
+              body: `new_password=xuser12&token=${token}`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
@@ -923,7 +923,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20cannot%20contain%20your%20username.&app=passwordPolicy`
+                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?token=${token}&id=test&error=Password%20cannot%20contain%20your%20username.&app=passwordPolicy`
                 );
 
                 Parse.User.logIn('user1', 'r@nd0m')
@@ -991,7 +991,7 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         });
         expect(response.status).toEqual(302);
-        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
         const match = response.text.match(re);
         if (!match) {
           fail('should have a token');
@@ -1003,7 +1003,7 @@ describe('Password Policy: ', () => {
           await request({
             method: 'POST',
             url: 'http://localhost:8378/1/apps/test/request_password_reset',
-            body: `new_password=xuser12&token=${token}&username=user1`,
+            body: `new_password=xuser12&token=${token}`,
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
               'X-Requested-With': 'XMLHttpRequest',
@@ -1051,7 +1051,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1063,7 +1063,7 @@ describe('Password Policy: ', () => {
             request({
               method: 'POST',
               url: 'http://localhost:8378/1/apps/test/request_password_reset',
-              body: `new_password=uuser11&token=${token}&username=user1`,
+              body: `new_password=uuser11&token=${token}`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
@@ -1074,7 +1074,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
+                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
                 );
 
                 Parse.User.logIn('user1', 'uuser11')
@@ -1317,7 +1317,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1329,7 +1329,7 @@ describe('Password Policy: ', () => {
             request({
               method: 'POST',
               url: 'http://localhost:8378/1/apps/test/request_password_reset',
-              body: `new_password=uuser11&token=${token}&username=user1`,
+              body: `new_password=uuser11&token=${token}`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
@@ -1340,7 +1340,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
+                  'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html'
                 );
 
                 Parse.User.logIn('user1', 'uuser11')
@@ -1472,7 +1472,7 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
             const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
@@ -1484,7 +1484,7 @@ describe('Password Policy: ', () => {
             return request({
               method: 'POST',
               url: 'http://localhost:8378/1/apps/test/request_password_reset',
-              body: `new_password=user1&token=${token}&username=user1`,
+              body: `new_password=user1&token=${token}`,
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
@@ -1500,7 +1500,7 @@ describe('Password Policy: ', () => {
             const token = data[1];
             expect(response.status).toEqual(302);
             expect(response.text).toEqual(
-              `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`
+              `Found. Redirecting to http://localhost:8378/1/apps/choose_password?token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`
             );
             done();
             return Promise.resolve();

@@ -419,7 +419,7 @@ describe('lockout with password reset option', () => {
     await request({
       method: 'POST',
       url: `${config.publicServerURL}/apps/test/request_password_reset`,
-      body: `new_password=${newPassword}&token=${token}&username=${username}`,
+      body: `new_password=${newPassword}&token=${token}`,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -454,7 +454,7 @@ describe('lockout with password reset option', () => {
     await request({
       method: 'POST',
       url: `${config.publicServerURL}/apps/test/request_password_reset`,
-      body: `new_password=${newPassword}&token=${token}&username=${username}`,
+      body: `new_password=${newPassword}&token=${token}`,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },

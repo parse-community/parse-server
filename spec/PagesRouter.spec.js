@@ -108,7 +108,7 @@ describe('Pages Router', () => {
       const res = await request({
         method: 'POST',
         url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=user1&token=43634643&username=username`,
+        body: `new_password=user1&token=43634643`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-Requested-With': 'XMLHttpRequest',
@@ -124,7 +124,7 @@ describe('Pages Router', () => {
         await request({
           method: 'POST',
           url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=&token=132414&username=Johnny`,
+          body: `new_password=&token=132414`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest',
@@ -137,30 +137,12 @@ describe('Pages Router', () => {
       }
     });
 
-    it('request_password_reset: responds with AJAX error on missing username', async () => {
-      try {
-        await request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=user1&token=43634643&username=`,
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          followRedirects: false,
-        });
-      } catch (error) {
-        expect(error.status).not.toBe(302);
-        expect(error.text).toEqual('{"code":200,"error":"Missing username"}');
-      }
-    });
-
     it('request_password_reset: responds with AJAX error on missing token', async () => {
       try {
         await request({
           method: 'POST',
           url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=user1&token=&username=Johnny`,
+          body: `new_password=user1&token=`,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest',
@@ -577,7 +559,7 @@ describe('Pages Router', () => {
         spyOnProperty(Page.prototype, 'defaultFile').and.returnValue(jsonPageFile);
 
         const response = await request({
-          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
+          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=${exampleLocale}`,
           followRedirects: false,
         }).catch(e => e);
         expect(response.status).toEqual(200);
@@ -626,7 +608,7 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=de-AT',
           followRedirects: false,
           method: 'POST',
         });
@@ -640,7 +622,7 @@ describe('Pages Router', () => {
         await reconfigureServer(config);
         const response = await request({
           url:
-            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+            'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&locale=de-AT',
           followRedirects: false,
           method: 'GET',
         });
