@@ -168,6 +168,9 @@ class ParseServer {
     if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
       promises.push(cacheAdapter.handleShutdown());
     }
+    if (this.liveQueryServer?.server?.close) {
+      promises.push(new Promise(resolve => this.liveQueryServer.server.close(resolve)));
+    }
     return (promises.length > 0 ? Promise.all(promises) : Promise.resolve()).then(() => {
       if (this.config.serverCloseComplete) {
         this.config.serverCloseComplete();

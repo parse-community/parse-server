@@ -1212,4 +1212,19 @@ describe('ParseLiveQuery', function () {
     object.set({ location: secondPoint });
     await object.save();
   });
+
+  it('does shutdown liveQuery server', async () => {
+    const server = await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+    });
+    await server.handleShutdown();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(server.liveQueryServer.server.address()).toBeNull();
+    server.config.databaseAdapter.connectionPromise = null;
+    server.config.databaseAdapter.connect();
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
 });
