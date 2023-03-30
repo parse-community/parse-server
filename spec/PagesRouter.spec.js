@@ -658,13 +658,11 @@ describe('Pages Router', () => {
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const token = linkResponse.headers['x-parse-page-param-token'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(token).toBeDefined();
         expect(locale).toBeDefined();
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(passwordResetPagePath).toMatch(
           new RegExp(`\/${exampleLocale}\/${pages.passwordReset.defaultFile}`)
@@ -678,7 +676,6 @@ describe('Pages Router', () => {
           body: {
             token,
             locale,
-            username,
             new_password: 'newPassword',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -773,15 +770,13 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkInvalid.defaultFile}`)
         );
 
         const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
@@ -790,7 +785,7 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             locale,
-            username,
+            username: 'exampleUsername',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           followRedirects: false,
@@ -826,15 +821,13 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkInvalid.defaultFile}`)
         );
 
         spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() =>
@@ -847,7 +840,7 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             locale,
-            username,
+            username: 'exampleUsername',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           followRedirects: false,
@@ -1132,12 +1125,10 @@ describe('Pages Router', () => {
 
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const token = linkResponse.headers['x-parse-page-param-token'];
-        const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
         const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(token).toBeDefined();
-        expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(passwordResetPagePath).toMatch(new RegExp(`\/${pages.passwordReset.defaultFile}`));
         pageResponse.calls.reset();
@@ -1148,7 +1139,6 @@ describe('Pages Router', () => {
           method: 'POST',
           body: {
             token,
-            username,
             new_password: 'newPassword',
           },
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
