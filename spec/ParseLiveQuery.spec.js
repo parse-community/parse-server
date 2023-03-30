@@ -1216,7 +1216,7 @@ describe('ParseLiveQuery', function () {
 
   it('does shutdown liveQuery server', async () => {
     await reconfigureServer({ appId: 'test_app_id' });
-    const server = await ParseServer.startApp({
+    const config = {
       appId: 'hello_test',
       masterKey: 'world',
       port: 1345,
@@ -1226,12 +1226,15 @@ describe('ParseLiveQuery', function () {
         classNames: ['Yolo'],
       },
       startLiveQueryServer: true,
-      databaseAdapter: new databaseAdapter.constructor({
+    };
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      config.databaseAdapter = new databaseAdapter.constructor({
         uri: databaseURI,
         collectionPrefix: 'test_',
-      }),
-      filesAdapter: defaultConfiguration.filesAdapter,
-    });
+      });
+      config.filesAdapter = defaultConfiguration.filesAdapter;
+    }
+    const server = await ParseServer.startApp(config);
     await server.handleShutdown();
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(server.liveQueryServer.server.address()).toBeNull();
