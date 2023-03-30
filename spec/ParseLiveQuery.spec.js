@@ -1218,9 +1218,9 @@ describe('ParseLiveQuery', function () {
     const server = await ParseServer.startApp({
       appId: 'hello_test',
       masterKey: 'world',
-      port: 345,
+      port: 1345,
       mountPath: '/1',
-      serverURL: 'http://localhost:345/1',
+      serverURL: 'http://localhost:1345/1',
       liveQuery: {
         classNames: ['Yolo'],
       },
@@ -1229,5 +1229,6 @@ describe('ParseLiveQuery', function () {
     await server.handleShutdown();
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(server.liveQueryServer.server.address()).toBeNull();
+    await reconfigureServer({ appId: 'test_app_id' });
   });
 });
