@@ -1235,6 +1235,8 @@ describe('ParseLiveQuery', function () {
       config.filesAdapter = defaultConfiguration.filesAdapter;
     }
     const server = await ParseServer.startApp(config);
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.serverURL = 'ws://localhost:1345/1';
     const query = await new Parse.Query('Yolo').subscribe();
     await Promise.all([
       server.handleShutdown(),
