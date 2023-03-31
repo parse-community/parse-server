@@ -1235,9 +1235,14 @@ describe('ParseLiveQuery', function () {
       config.filesAdapter = defaultConfiguration.filesAdapter;
     }
     const server = await ParseServer.startApp(config);
-    await server.handleShutdown();
+    const query = await new Parse.Query('Yolo').subscribe();
+    await Promise.all([
+      server.handleShutdown(),
+      new Promise(resolve => query.on('close', resolve)),
+    ]);
     await new Promise(resolve => setTimeout(resolve, 100));
     expect(server.liveQueryServer.server.address()).toBeNull();
+    expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
     await new Promise(resolve => server.server.close(resolve));
   });
 });
