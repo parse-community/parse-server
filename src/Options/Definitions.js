@@ -103,6 +103,13 @@ module.exports.ParseServerOptions = {
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
     action: parsers.arrayParser,
   },
+  azureCosmosMongoDbCompatibleMode: {
+    env: 'PARSE_SERVER_AZURE_COSMOS_MONGO_DB_COMPATIBLE_MODE',
+    help:
+      'Set to true for running against Azure Cosmos for Mongo DB. This can bring some performance loss.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
     help: 'Adapter module for the cache',

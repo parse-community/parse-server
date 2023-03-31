@@ -85,6 +85,7 @@ export class Config {
     allowExpiredAuthDataToken,
     logLevels,
     rateLimit,
+    azureCosmosMongoDbCompatibleMode,
     databaseOptions,
   }) {
     if (masterKey === readOnlyMasterKey) {
@@ -120,6 +121,7 @@ export class Config {
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
+    this.validateAzureCosmosMongoDbCompatibleMode(azureCosmosMongoDbCompatibleMode);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
@@ -163,6 +165,12 @@ export class Config {
   static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
+    }
+  }
+
+  static validateAzureCosmosMongoDbCompatibleMode(azureCosmosMongoDbCompatibleMode) {
+    if (typeof azureCosmosMongoDbCompatibleMode !== 'boolean') {
+      throw 'Parse Server option azureCosmosMongoDbCompatibleMode must be a boolean.';
     }
   }
 
