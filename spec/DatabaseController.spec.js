@@ -508,22 +508,22 @@ describe('DatabaseController', () => {
 
       const query = new Parse.Query(Parse.User);
       query.equalTo('username', 'EXAMPLE');
-      const result = await query.find();
+      const result = await query.find({ useMasterKey: true });
       expect(result.length).toEqual(0);
 
       const query2 = new Parse.Query(Parse.User);
       query2.equalTo('email', 'EXAMPLE@EXAMPLE.COM');
-      const result2 = await query2.find();
+      const result2 = await query2.find({ useMasterKey: true });
       expect(result2.length).toEqual(0);
 
       const query3 = new Parse.Query(Parse.User);
       query3.equalTo('username', 'example');
-      const result3 = await query3.find();
+      const result3 = await query3.find({ useMasterKey: true });
       expect(result3.length).toEqual(1);
 
       const query4 = new Parse.Query(Parse.User);
       query4.equalTo('email', 'example@example.com');
-      const result4 = await query4.find();
+      const result4 = await query4.find({ useMasterKey: true });
       expect(result4.length).toEqual(1);
     });
   });
