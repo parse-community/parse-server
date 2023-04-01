@@ -61,12 +61,12 @@ describe('AuthenticationProviders', function () {
       jequal(validateAuthDataPromise.constructor, Promise.prototype.constructor);
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
       validateAuthDataPromise.then(
-        () => { },
-        () => { }
+        () => {},
+        () => {}
       );
       validateAppIdPromise.then(
-        () => { },
-        () => { }
+        () => {},
+        () => {}
       );
       done();
     });
@@ -79,9 +79,9 @@ describe('AuthenticationProviders', function () {
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(options => {
         if (
           options ===
-          'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
+            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
           options ===
-          'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
+            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
         ) {
           return {
             access_token: 'access_token',
@@ -570,8 +570,8 @@ describe('AuthenticationProviders', function () {
   it('properly loads a custom adapter with options', () => {
     const options = {
       custom: {
-        validateAppId: () => { },
-        validateAuthData: () => { },
+        validateAppId: () => {},
+        validateAuthData: () => {},
         appIds: ['a', 'b'],
       },
     };
@@ -603,7 +603,7 @@ describe('AuthenticationProviders', function () {
   it('can deprecate', async () => {
     await reconfigureServer();
     const Deprecator = require('../lib/Deprecator/Deprecator');
-    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => { });
+    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
     await Parse.User._logInWith('myoauth');

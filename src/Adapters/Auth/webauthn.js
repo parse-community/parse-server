@@ -42,7 +42,7 @@ const getBaseDomain = domain => {
   if (splittedDomain.length === 1) return domain.trim();
   // Classic domains
   return `${splittedDomain[splittedDomain.length - 2]}.${splittedDomain[splittedDomain.length - 1]
-    }`.trim();
+  }`.trim();
 };
 
 export const getOrigin = config =>

@@ -1,5 +1,4 @@
 import corsMiddleware from 'cors';
-import path from 'path';
 import { createServer } from '@graphql-yoga/node';
 import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
 import { execute, subscribe } from 'graphql';
