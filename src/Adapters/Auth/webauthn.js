@@ -41,9 +41,8 @@ const getBaseDomain = domain => {
   // Handle localhost
   if (splittedDomain.length === 1) return domain.trim();
   // Classic domains
-  return `${splittedDomain[splittedDomain.length - 2]}.${
-    splittedDomain[splittedDomain.length - 1]
-  }`.trim();
+  return `${splittedDomain[splittedDomain.length - 2]}.${splittedDomain[splittedDomain.length - 1]
+    }`.trim();
 };
 
 export const getOrigin = config =>
@@ -166,32 +165,32 @@ const verifyLogin = ({ authentication, signedChallenge }, options = {}, config, 
   }
 };
 
-export const challenge = async (challengeData, authData, adapterConfig = {}, request, config) => {
+export const challenge = async (challengeData, authData, adapterConfig = {}, request) => {
   // Allow logged user to update/setUp webauthn
   if (request.user && request.user.id) {
-    return registerOptions(request.user, adapterConfig.options, config);
+    return registerOptions(request.user, adapterConfig.options, request.config);
   }
 
-  return loginOptions(config);
+  return loginOptions(request.config);
 };
 
-export const validateSetUp = async (authData, adapterConfig = {}, request, config) => {
+export const validateSetUp = async (authData, adapterConfig = {}, request) => {
   if (!request.user && !request.master)
     throw new Parse.Error(
       Parse.Error.OTHER_CAUSE,
       'Webauthn can only be configured on an already logged in user.'
     );
-  return { save: await verifyRegister(authData, adapterConfig.options, config) };
+  return { save: await verifyRegister(authData, adapterConfig.options, request.config) };
 };
 
 export const validateUpdate = validateSetUp;
 
-export const validateLogin = async (authData, adapterConfig = {}, request, config) => {
+export const validateLogin = async (authData, adapterConfig = {}, request) => {
   if (!request.original)
     throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found for webauthn login.');
   // Will save updated counter of the credential
   // and avoid cloned/bugged authenticators
-  return { save: verifyLogin(authData, adapterConfig.options, config, request.original) };
+  return { save: verifyLogin(authData, adapterConfig.options, request.config, request.original) };
 };
 
 export const policy = 'solo';

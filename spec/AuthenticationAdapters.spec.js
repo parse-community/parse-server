@@ -61,12 +61,12 @@ describe('AuthenticationProviders', function () {
       jequal(validateAuthDataPromise.constructor, Promise.prototype.constructor);
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
       validateAuthDataPromise.then(
-        () => {},
-        () => {}
+        () => { },
+        () => { }
       );
       validateAppIdPromise.then(
-        () => {},
-        () => {}
+        () => { },
+        () => { }
       );
       done();
     });
@@ -79,9 +79,9 @@ describe('AuthenticationProviders', function () {
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(options => {
         if (
           options ===
-            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
+          'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
           options ===
-            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
+          'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
         ) {
           return {
             access_token: 'access_token',
@@ -570,8 +570,8 @@ describe('AuthenticationProviders', function () {
   it('properly loads a custom adapter with options', () => {
     const options = {
       custom: {
-        validateAppId: () => {},
-        validateAuthData: () => {},
+        validateAppId: () => { },
+        validateAuthData: () => { },
         appIds: ['a', 'b'],
       },
     };
@@ -603,7 +603,7 @@ describe('AuthenticationProviders', function () {
   it('can deprecate', async () => {
     await reconfigureServer();
     const Deprecator = require('../lib/Deprecator/Deprecator');
-    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
+    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => { });
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
     await Parse.User._logInWith('myoauth');
@@ -2574,7 +2574,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[2].original).toBeUndefined();
     expect(firstCall[2].user).toBeUndefined();
     expect(firstCall[2].isChallenge).toBeUndefined();
-    expect(firstCall[3] instanceof Config).toBeTruthy();
+    expect(firstCall[2].config instanceof Config).toBeTruthy();
 
     await request({
       headers: headers,
@@ -2597,7 +2597,7 @@ describe('Auth Adapter features', () => {
     expect(secondCall[2].object.id).toEqual(user.id);
     expect(secondCall[2].isChallenge).toBeUndefined();
     expect(secondCall[2].user).toBeUndefined();
-    expect(secondCall[3] instanceof Config).toBeTruthy();
+    expect(secondCall[2].config instanceof Config).toBeTruthy();
   });
 
   it('should trigger correctly validateSetUp', async () => {
@@ -2624,7 +2624,7 @@ describe('Auth Adapter features', () => {
     expect(call[2].object instanceof Parse.User).toBeTruthy();
     expect(call[2].user).toBeUndefined();
     expect(call[2].original).toBeUndefined();
-    expect(call[3] instanceof Config).toBeTruthy();
+    expect(call[2].config instanceof Config).toBeTruthy();
     expect(user.getSessionToken()).toBeDefined();
 
     await user.save(
@@ -2646,7 +2646,7 @@ describe('Auth Adapter features', () => {
     expect(call2[2].original.id).toEqual(call2[2].object.id);
     expect(call2[2].user.id).toEqual(call2[2].object.id);
     expect(call2[2].object.id).toEqual(user.id);
-    expect(call2[3] instanceof Config).toBeTruthy();
+    expect(call2[2].config instanceof Config).toBeTruthy();
 
     const user2 = new Parse.User();
     user2.id = user.id;
@@ -2685,7 +2685,7 @@ describe('Auth Adapter features', () => {
     expect(call[2].original.id).toEqual(user2.id);
     expect(call[2].object.id).toEqual(user2.id);
     expect(call[2].object.id).toEqual(user.id);
-    expect(call[3] instanceof Config).toBeTruthy();
+    expect(call[2].config instanceof Config).toBeTruthy();
     expect(user2.getSessionToken()).toBeDefined();
   });
 
@@ -2736,7 +2736,7 @@ describe('Auth Adapter features', () => {
     expect(call[2].object.id).toEqual(user.id);
     expect(call[2].original.id).toEqual(user.id);
     expect(call[2].user.id).toEqual(user.id);
-    expect(call[3] instanceof Config).toBeTruthy();
+    expect(call[2].config instanceof Config).toBeTruthy();
     expect(user.getSessionToken()).toBeDefined();
   });
 
@@ -3166,7 +3166,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[2].object.id).toEqual(user.id);
     expect(firstCall[2].original.id).toEqual(user.id);
     expect(firstCall[2].user.id).toEqual(user.id);
-    expect(firstCall[3] instanceof Config).toBeTruthy();
+    expect(firstCall[2].config instanceof Config).toBeTruthy();
 
     await user.save({ authData: { baseAdapter2: payload } }, { useMasterKey: true });
 
@@ -3180,7 +3180,7 @@ describe('Auth Adapter features', () => {
     expect(secondCall[2].original instanceof Parse.User).toBeTruthy();
     expect(secondCall[2].object.id).toEqual(user.id);
     expect(secondCall[2].original.id).toEqual(user.id);
-    expect(secondCall[3] instanceof Config).toBeTruthy();
+    expect(secondCall[2].config instanceof Config).toBeTruthy();
   });
 
   it('should return challenge with no logged user', async () => {
@@ -3246,7 +3246,7 @@ describe('Auth Adapter features', () => {
     expect(challengeCall[3].original).toBeUndefined();
     expect(challengeCall[3].user).toBeUndefined();
     expect(challengeCall[3].isChallenge).toBeTruthy();
-    expect(challengeCall[4] instanceof Config).toBeTruthy();
+    expect(challengeCall[3].config instanceof Config).toBeTruthy();
   });
 
   it('should return empty challenge data response if challenged provider does not exists', async () => {
@@ -3308,7 +3308,7 @@ describe('Auth Adapter features', () => {
         }),
       })
     ).toBeRejectedWithError(
-      'You cant provide username/email and authData, only use one identification method.'
+      'You cannot provide username/email and authData, only use one identification method.'
     );
 
     const res = await request({
@@ -3344,7 +3344,7 @@ describe('Auth Adapter features', () => {
     expect(challengeCall[3].original instanceof Parse.User).toBeTruthy();
     expect(challengeCall[3].object.id).toEqual(user.id);
     expect(challengeCall[3].original.id).toEqual(user.id);
-    expect(challengeCall[4] instanceof Config).toBeTruthy();
+    expect(challengeCall[3].config instanceof Config).toBeTruthy();
   });
 
   it('should return challenge with authData created user', async () => {
@@ -3392,7 +3392,7 @@ describe('Auth Adapter features', () => {
           },
         }),
       })
-    ).toBeRejectedWithError('You cant provide more than one authData provider with an id.');
+    ).toBeRejectedWithError('You cannot provide more than one authData provider with an id.');
 
     const res = await request({
       headers: headers,
@@ -3430,7 +3430,7 @@ describe('Auth Adapter features', () => {
     expect(challengeCall[3].original instanceof Parse.User).toBeTruthy();
     expect(challengeCall[3].object.id).toEqual(user.id);
     expect(challengeCall[3].original.id).toEqual(user.id);
-    expect(challengeCall[4] instanceof Config).toBeTruthy();
+    expect(challengeCall[3].config instanceof Config).toBeTruthy();
   });
 
   it('should validate provided authData and prevent guess id attack', async () => {
@@ -3487,6 +3487,6 @@ describe('Auth Adapter features', () => {
     expect(validateCall[2].original instanceof Parse.User).toBeTruthy();
     expect(validateCall[2].object.id).toEqual(user.id);
     expect(validateCall[2].original.id).toEqual(user.id);
-    expect(validateCall[3] instanceof Config).toBeTruthy();
+    expect(validateCall[2].config instanceof Config).toBeTruthy();
   });
 });
