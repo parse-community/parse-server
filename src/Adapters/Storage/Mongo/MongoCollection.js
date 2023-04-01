@@ -15,17 +15,7 @@ export default class MongoCollection {
   // idea. Or even if this behavior is a good idea.
   find(
     query,
-    {
-      skip,
-      limit,
-      sort,
-      keys,
-      maxTimeMS,
-      readPreference,
-      hint,
-      caseInsensitive,
-      explain,
-    } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
   ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
@@ -44,10 +34,7 @@ export default class MongoCollection {
       explain,
     }).catch(error => {
       // Check for "no geoindex" error
-      if (
-        error.code != 17007 &&
-        !error.message.match(/unable to find index for .geoNear/)
-      ) {
+      if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
         throw error;
       }
       // Figure out what key needs an index
@@ -88,17 +75,7 @@ export default class MongoCollection {
 
   _rawFind(
     query,
-    {
-      skip,
-      limit,
-      sort,
-      keys,
-      maxTimeMS,
-      readPreference,
-      hint,
-      caseInsensitive,
-      explain,
-    } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, caseInsensitive, explain } = {}
   ) {
     let findOperation = this._mongoCollection.find(query, {
       skip,
@@ -113,9 +90,7 @@ export default class MongoCollection {
     }
 
     if (caseInsensitive) {
-      findOperation = findOperation.collation(
-        MongoCollection.caseInsensitiveCollation()
-      );
+      findOperation = findOperation.collation(MongoCollection.caseInsensitiveCollation());
     }
 
     if (maxTimeMS) {

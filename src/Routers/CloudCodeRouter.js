@@ -56,28 +56,24 @@ export class CloudCodeRouter extends PromiseRouter {
   }
 
   static getJobs(req) {
-    return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {})
-      .then(scheduledJobs => {
-        return {
-          response: scheduledJobs.results,
-        };
-      });
+    return rest.find(req.config, req.auth, '_JobSchedule', {}, {}).then(scheduledJobs => {
+      return {
+        response: scheduledJobs.results,
+      };
+    });
   }
 
   static getJobsData(req) {
     const config = req.config;
     const jobs = triggers.getJobs(config.applicationId) || {};
-    return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {})
-      .then(scheduledJobs => {
-        return {
-          response: {
-            in_use: scheduledJobs.results.map(job => job.jobName),
-            jobs: Object.keys(jobs),
-          },
-        };
-      });
+    return rest.find(req.config, req.auth, '_JobSchedule', {}, {}).then(scheduledJobs => {
+      return {
+        response: {
+          in_use: scheduledJobs.results.map(job => job.jobName),
+          jobs: Object.keys(jobs),
+        },
+      };
+    });
   }
 
   static createJob(req) {
@@ -88,7 +84,8 @@ export class CloudCodeRouter extends PromiseRouter {
       req.auth,
       '_JobSchedule',
       formatJobSchedule(job_schedule),
-      req.client
+      req.client,
+      req.info.context
     );
   }
 
@@ -102,7 +99,9 @@ export class CloudCodeRouter extends PromiseRouter {
         req.auth,
         '_JobSchedule',
         { objectId },
-        formatJobSchedule(job_schedule)
+        formatJobSchedule(job_schedule),
+        undefined,
+        req.info.context
       )
       .then(response => {
         return {
@@ -114,7 +113,7 @@ export class CloudCodeRouter extends PromiseRouter {
   static deleteJob(req) {
     const { objectId } = req.params;
     return rest
-      .del(req.config, req.auth, '_JobSchedule', objectId)
+      .del(req.config, req.auth, '_JobSchedule', objectId, req.info.context)
       .then(response => {
         return {
           response,

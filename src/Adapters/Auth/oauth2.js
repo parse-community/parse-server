@@ -54,7 +54,6 @@
  */
 
 const Parse = require('parse/node').Parse;
-const url = require('url');
 const querystring = require('querystring');
 const httpsRequest = require('./httpsRequest');
 
@@ -63,8 +62,7 @@ const INVALID_ACCESS_APPID =
   "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration.";
 const MISSING_APPIDS =
   'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).';
-const MISSING_URL =
-  'OAuth2 token introspection endpoint URL is missing from configuration!';
+const MISSING_URL = 'OAuth2 token introspection endpoint URL is missing from configuration!';
 
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData, options) {
@@ -113,7 +111,7 @@ function requestTokenInfo(options, access_token) {
   if (!options || !options.tokenIntrospectionEndpointUrl) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_URL);
   }
-  const parsedUrl = url.parse(options.tokenIntrospectionEndpointUrl);
+  const parsedUrl = new URL(options.tokenIntrospectionEndpointUrl);
   const postData = querystring.stringify({
     token: access_token,
   });

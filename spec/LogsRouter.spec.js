@@ -2,14 +2,15 @@
 
 const request = require('../lib/request');
 const LogsRouter = require('../lib/Routers/LogsRouter').LogsRouter;
-const LoggerController = require('../lib/Controllers/LoggerController')
-  .LoggerController;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
 const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter')
   .WinstonLoggerAdapter;
 
 const loggerController = new LoggerController(new WinstonLoggerAdapter());
 
-describe('LogsRouter', () => {
+describe_only(() => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
+})('LogsRouter', () => {
   it('can check valid master key of request', done => {
     // Make mock request
     const request = {
@@ -77,11 +78,10 @@ describe('LogsRouter', () => {
   it('does scrub simple passwords on GET login', done => {
     reconfigureServer({
       verbose: true,
-    }).then(function() {
+    }).then(function () {
       request({
         headers: headers,
-        url:
-          'http://localhost:8378/1/login?username=test&password=simplepass.com',
+        url: 'http://localhost:8378/1/login?username=test&password=simplepass.com',
       })
         .catch(() => {})
         .then(() => {
@@ -92,9 +92,7 @@ describe('LogsRouter', () => {
             const body = response.data;
             expect(response.status).toEqual(200);
             // 4th entry is our actual GET request
-            expect(body[2].url).toEqual(
-              '/1/login?username=test&password=********'
-            );
+            expect(body[2].url).toEqual('/1/login?username=test&password=********');
             expect(body[2].message).toEqual(
               'REQUEST for [GET] /1/login?username=test&password=********: {}'
             );
@@ -111,7 +109,7 @@ describe('LogsRouter', () => {
     reconfigureServer({
       verbose: true,
     })
-      .then(function() {
+      .then(function () {
         return request({
           headers: headers,
           // using urlencoded password, 'simple @,/?:&=+$#pass.com'
@@ -127,9 +125,7 @@ describe('LogsRouter', () => {
               const body = response.data;
               expect(response.status).toEqual(200);
               // 4th entry is our actual GET request
-              expect(body[2].url).toEqual(
-                '/1/login?username=test&password=********'
-              );
+              expect(body[2].url).toEqual('/1/login?username=test&password=********');
               expect(body[2].message).toEqual(
                 'REQUEST for [GET] /1/login?username=test&password=********: {}'
               );
@@ -146,7 +142,7 @@ describe('LogsRouter', () => {
   it('does not have password field in POST login', done => {
     reconfigureServer({
       verbose: true,
-    }).then(function() {
+    }).then(function () {
       request({
         method: 'POST',
         headers: headers,

@@ -19,31 +19,19 @@ export class GraphQLRouter extends PromiseRouter {
         "read-only masterKey isn't allowed to update the GraphQL config."
       );
     }
-    const data = await req.config.parseGraphQLController.updateGraphQLConfig(
-      req.body.params
-    );
+    const data = await req.config.parseGraphQLController.updateGraphQLConfig(req.body.params);
     return {
       response: data,
     };
   }
 
   mountRoutes() {
-    this.route(
-      'GET',
-      GraphQLConfigPath,
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.getGraphQLConfig(req);
-      }
-    );
-    this.route(
-      'PUT',
-      GraphQLConfigPath,
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.updateGraphQLConfig(req);
-      }
-    );
+    this.route('GET', GraphQLConfigPath, middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.getGraphQLConfig(req);
+    });
+    this.route('PUT', GraphQLConfigPath, middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.updateGraphQLConfig(req);
+    });
   }
 }
 

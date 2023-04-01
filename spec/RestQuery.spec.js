@@ -96,6 +96,7 @@ describe('rest query', () => {
     let user = {
       username: 'aUsername',
       password: 'aPassword',
+      ACL: { '*': { read: true } },
     };
     const activity = {
       type: 'comment',
@@ -137,13 +138,7 @@ describe('rest query', () => {
       })
       .then(() => {
         queryWhere.photo.objectId = photo.objectId;
-        return rest.find(
-          config,
-          nobody,
-          'TestActivity',
-          queryWhere,
-          queryOptions
-        );
+        return rest.find(config, nobody, 'TestActivity', queryWhere, queryOptions);
       })
       .then(response => {
         const results = response.results;
@@ -163,22 +158,19 @@ describe('rest query', () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    rest
-      .find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
-      .then(
-        () => {
-          fail('Should throw an error');
-          done();
-        },
-        err => {
-          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-          expect(err.message).toEqual(
-            'This user is not allowed to access ' +
-              'non-existent class: ClientClassCreation'
-          );
-          done();
-        }
-      );
+    rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
+      () => {
+        fail('Should throw an error');
+        done();
+      },
+      err => {
+        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        expect(err.message).toEqual(
+          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
+        );
+        done();
+      }
+    );
   });
 
   it('query existent class when disabled client class creation', async () => {
@@ -186,10 +178,7 @@ describe('rest query', () => {
       allowClientClassCreation: false,
     });
     const schema = await config.database.loadSchema();
-    const actualSchema = await schema.addClassIfNotExists(
-      'ClientClassCreation',
-      {}
-    );
+    const actualSchema = await schema.addClassIfNotExists('ClientClassCreation', {});
     expect(actualSchema.className).toEqual('ClientClassCreation');
 
     await schema.reloadData({ clearCache: true });
@@ -201,6 +190,79 @@ describe('rest query', () => {
       {}
     );
     expect(result.results.length).toEqual(0);
+  });
+
+  it('query internal field', async () => {
+    const internalFields = [
+      '_email_verify_token',
+      '_perishable_token',
+      '_tombstone',
+      '_email_verify_token_expires_at',
+      '_failed_login_count',
+      '_account_lockout_expires_at',
+      '_password_changed_at',
+      '_password_history',
+    ];
+    await Promise.all([
+      ...internalFields.map(field =>
+        expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
+          new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
+        )
+      ),
+      ...internalFields.map(field =>
+        new Parse.Query(Parse.User).exists(field).find({ useMasterKey: true })
+      ),
+    ]);
+  });
+
+  it('query protected field', async () => {
+    const user = new Parse.User();
+    user.setUsername('username1');
+    user.setPassword('password');
+    await user.signUp();
+    const config = Config.get(Parse.applicationId);
+    const obj = new Parse.Object('Test');
+
+    obj.set('owner', user);
+    obj.set('test', 'test');
+    obj.set('zip', 1234);
+    await obj.save();
+
+    const schema = await config.database.loadSchema();
+    await schema.updateClass(
+      'Test',
+      {},
+      {
+        get: { '*': true },
+        find: { '*': true },
+        protectedFields: { [user.id]: ['zip'] },
+      }
+    );
+    await Promise.all([
+      new Parse.Query('Test').exists('test').find(),
+      expectAsync(new Parse.Query('Test').exists('zip').find()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.OPERATION_FORBIDDEN,
+          'This user is not allowed to query zip on class Test'
+        )
+      ),
+    ]);
+  });
+
+  it('query protected field with matchesQuery', async () => {
+    const user = new Parse.User();
+    user.setUsername('username1');
+    user.setPassword('password');
+    await user.signUp();
+    const test = new Parse.Object('TestObject', { user });
+    await test.save();
+    const subQuery = new Parse.Query(Parse.User);
+    subQuery.exists('_perishable_token');
+    await expectAsync(
+      new Parse.Query('TestObject').matchesQuery('user', subQuery).find()
+    ).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: _perishable_token')
+    );
   });
 
   it('query with wrongly encoded parameter', done => {
@@ -277,13 +339,7 @@ describe('rest query', () => {
         return rest.create(config, nobody, 'TestObject', { foo: 'qux' });
       })
       .then(() => {
-        return rest.find(
-          config,
-          nobody,
-          'TestObject',
-          {},
-          { limit: 0, count: 1 }
-        );
+        return rest.find(config, nobody, 'TestObject', {}, { limit: 0, count: 1 });
       })
       .then(response => {
         expect(response.results.length).toEqual(0);
@@ -333,6 +389,9 @@ describe('rest query', () => {
 });
 
 describe('RestQuery.each', () => {
+  beforeEach(() => {
+    config = Config.get('test');
+  });
   it('should run each', async () => {
     const objects = [];
     while (objects.length != 10) {
@@ -421,12 +480,12 @@ describe('RestQuery.each', () => {
   });
 
   it('test afterSave response object is return', done => {
-    Parse.Cloud.beforeSave('TestObject2', function(req) {
+    Parse.Cloud.beforeSave('TestObject2', function (req) {
       req.object.set('tobeaddbefore', true);
       req.object.set('tobeaddbeforeandremoveafter', true);
     });
 
-    Parse.Cloud.afterSave('TestObject2', function(req) {
+    Parse.Cloud.afterSave('TestObject2', function (req) {
       const jsonObject = req.object.toJSON();
       delete jsonObject.todelete;
       delete jsonObject.tobeaddbeforeandremoveafter;
@@ -435,15 +494,34 @@ describe('RestQuery.each', () => {
       return jsonObject;
     });
 
-    rest
-      .create(config, nobody, 'TestObject2', { todelete: true, tokeep: true })
-      .then(response => {
-        expect(response.response.toadd).toBeTruthy();
-        expect(response.response.tokeep).toBeTruthy();
-        expect(response.response.tobeaddbefore).toBeTruthy();
-        expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
-        expect(response.response.todelete).toBeUndefined();
-        done();
-      });
+    rest.create(config, nobody, 'TestObject2', { todelete: true, tokeep: true }).then(response => {
+      expect(response.response.toadd).toBeTruthy();
+      expect(response.response.tokeep).toBeTruthy();
+      expect(response.response.tobeaddbefore).toBeTruthy();
+      expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
+      expect(response.response.todelete).toBeUndefined();
+      done();
+    });
+  });
+
+  it('test afterSave should not affect save response', async () => {
+    Parse.Cloud.beforeSave('TestObject2', ({ object }) => {
+      object.set('addedBeforeSave', true);
+    });
+    Parse.Cloud.afterSave('TestObject2', ({ object }) => {
+      object.set('addedAfterSave', true);
+      object.unset('initialToRemove');
+    });
+    const { response } = await rest.create(config, nobody, 'TestObject2', {
+      initialSave: true,
+      initialToRemove: true,
+    });
+    expect(Object.keys(response).sort()).toEqual([
+      'addedAfterSave',
+      'addedBeforeSave',
+      'createdAt',
+      'initialToRemove',
+      'objectId',
+    ]);
   });
 });

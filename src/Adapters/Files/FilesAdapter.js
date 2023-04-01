@@ -38,12 +38,7 @@ export class FilesAdapter {
    *
    * @return {Promise} a promise that should fail if the storage didn't succeed
    */
-  createFile(
-    filename: string,
-    data,
-    contentType: string,
-    options: Object
-  ): Promise {}
+  createFile(filename: string, data, contentType: string, options: Object): Promise {}
 
   /** Responsible for deleting the specified file
    *
@@ -88,6 +83,14 @@ export class FilesAdapter {
    * @returns {Promise} Data for byte range
    */
   // handleFileStream(filename: string, res: any, req: any, contentType: string): Promise
+
+  /** Responsible for retrieving metadata and tags
+   *
+   * @param {string} filename - the filename to retrieve metadata
+   *
+   * @return {Promise} a promise that should pass with metadata
+   */
+  // getMetadata(filename: string): Promise<any> {}
 }
 
 /**
@@ -103,10 +106,7 @@ export function validateFilename(filename): ?Parse.Error {
 
   const regx = /^[_a-zA-Z0-9][a-zA-Z0-9@. ~_-]*$/;
   if (!filename.match(regx)) {
-    return new Parse.Error(
-      Parse.Error.INVALID_FILE_NAME,
-      'Filename contains invalid characters.'
-    );
+    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename contains invalid characters.');
   }
   return null;
 }

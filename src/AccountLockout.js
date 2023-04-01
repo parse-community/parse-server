@@ -82,27 +82,23 @@ export class AccountLockout {
 
     const updateFields = {
       _account_lockout_expires_at: Parse._encode(
-        new Date(
-          now.getTime() + this._config.accountLockout.duration * 60 * 1000
-        )
+        new Date(now.getTime() + this._config.accountLockout.duration * 60 * 1000)
       ),
     };
 
-    return this._config.database
-      .update('_User', query, updateFields)
-      .catch(err => {
-        if (
-          err &&
-          err.code &&
-          err.message &&
-          err.code === 101 &&
-          err.message === 'Object not found.'
-        ) {
-          return; // nothing to update so we are good
-        } else {
-          throw err; // unknown error
-        }
-      });
+    return this._config.database.update('_User', query, updateFields).catch(err => {
+      if (
+        err &&
+        err.code &&
+        err.message &&
+        err.code === Parse.Error.OBJECT_NOT_FOUND &&
+        err.message === 'Object not found.'
+      ) {
+        return; // nothing to update so we are good
+      } else {
+        throw err; // unknown error
+      }
+    });
   }
 
   /**
@@ -161,6 +157,23 @@ export class AccountLockout {
         return this._handleFailedLoginAttempt();
       }
     });
+  }
+
+  /**
+   * Removes the account lockout.
+   */
+  unlockAccount() {
+    if (!this._config.accountLockout || !this._config.accountLockout.unlockOnPasswordReset) {
+      return Promise.resolve();
+    }
+    return this._config.database.update(
+      '_User',
+      { username: this._user.username },
+      {
+        _failed_login_count: { __op: 'Delete' },
+        _account_lockout_expires_at: { __op: 'Delete' },
+      }
+    );
   }
 }
 

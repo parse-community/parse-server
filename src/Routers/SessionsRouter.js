@@ -2,6 +2,7 @@ import ClassesRouter from './ClassesRouter';
 import Parse from 'parse/node';
 import rest from '../rest';
 import Auth from '../Auth';
+import RestWrite from '../RestWrite';
 
 export class SessionsRouter extends ClassesRouter {
   className() {
@@ -11,10 +12,7 @@ export class SessionsRouter extends ClassesRouter {
   handleMe(req) {
     // TODO: Verify correct behavior
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_SESSION_TOKEN,
-        'Session token required.'
-      );
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token required.');
     }
     return rest
       .find(
@@ -23,14 +21,12 @@ export class SessionsRouter extends ClassesRouter {
         '_Session',
         { sessionToken: req.info.sessionToken },
         undefined,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_SESSION_TOKEN,
-            'Session token not found.'
-          );
+          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
         }
         return {
           response: response.results[0],
@@ -46,7 +42,7 @@ export class SessionsRouter extends ClassesRouter {
     if (!user) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid session');
     }
-    const { sessionData, createSession } = Auth.createSession(config, {
+    const { sessionData, createSession } = RestWrite.createSession(config, {
       userId: user.id,
       createdWith: {
         action: 'upgrade',

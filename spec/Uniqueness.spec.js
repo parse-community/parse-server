@@ -3,7 +3,7 @@
 const Parse = require('parse/node');
 const Config = require('../lib/Config');
 
-describe('Uniqueness', function() {
+describe('Uniqueness', function () {
   it('fail when create duplicate value in unique field', done => {
     const obj = new Parse.Object('UniqueField');
     obj.set('unique', 'value');

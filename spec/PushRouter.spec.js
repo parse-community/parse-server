@@ -42,7 +42,7 @@ describe('PushRouter', () => {
       body: {},
     };
 
-    expect(function() {
+    expect(function () {
       PushRouter.getQueryCondition(request);
     }).toThrow();
     done();
@@ -61,7 +61,7 @@ describe('PushRouter', () => {
       },
     };
 
-    expect(function() {
+    expect(function () {
       PushRouter.getQueryCondition(request);
     }).toThrow();
     done();

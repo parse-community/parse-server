@@ -1,0 +1,295 @@
+name: ci
+on:
+  push:
+    branches: [ release*, alpha, beta ]
+  pull_request:
+    branches:
+      - '**'
+env:
+  NODE_VERSION: 19.3.0
+  PARSE_SERVER_TEST_TIMEOUT: 20000
+jobs:
+  check-code-analysis:
+    name: Code Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript' ]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        source-root: src
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+  check-ci:
+    name: Node Engine Check
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - name: CI Node Engine Check
+        run: npm run ci:checkNodeEngine
+  check-lint:
+     name: Lint
+     timeout-minutes: 15
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v2
+       - name: Use Node.js ${{ matrix.NODE_VERSION }}
+         uses: actions/setup-node@v2
+         with:
+           node-version: ${{ matrix.node-version }}
+       - name: Cache Node.js modules
+         uses: actions/cache@v2
+         with:
+           path: ~/.npm
+           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+           restore-keys: |
+             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+       - name: Install dependencies
+         run: npm ci
+       - run: npm run lint
+  check-definitions:
+     name: Check Definitions
+     timeout-minutes: 5
+     runs-on: ubuntu-18.04
+     steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - name: CI Definitions Check
+        run: npm run ci:definitionsCheck
+  check-circular:
+     name: Circular Dependencies
+     timeout-minutes: 5
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v2
+       - name: Use Node.js ${{ matrix.NODE_VERSION }}
+         uses: actions/setup-node@v2
+         with:
+           node-version: ${{ matrix.node-version }}
+       - name: Cache Node.js modules
+         uses: actions/cache@v2
+         with:
+           path: ~/.npm
+           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+           restore-keys: |
+             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+       - name: Install dependencies
+         run: npm ci
+       - run: npm run madge:circular
+  check-docker:
+    name: Docker Build
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Build docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          platforms: linux/amd64
+  check-lock-file-version:
+    name: NPM Lock File Version
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check NPM lock file version
+        uses: mansona/npm-lockfile-version@v1
+        with:
+          version: 2
+  check-mongo:
+    strategy:
+      matrix:
+        include:
+          - name: MongoDB 4.2, ReplicaSet
+            MONGODB_VERSION: 4.2.19
+            MONGODB_TOPOLOGY: replicaset
+            NODE_VERSION: 19.3.0
+          - name: MongoDB 4.4, ReplicaSet
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: replicaset
+            NODE_VERSION: 19.3.0
+          - name: MongoDB 5, ReplicaSet
+            MONGODB_VERSION: 5.3.2
+            MONGODB_TOPOLOGY: replicaset
+            NODE_VERSION: 19.3.0
+          - name: MongoDB 6, ReplicaSet
+            MONGODB_VERSION: 6.0.2
+            MONGODB_TOPOLOGY: replicaset
+            NODE_VERSION: 19.3.0
+          - name: Redis Cache
+            PARSE_SERVER_TEST_CACHE: redis
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            NODE_VERSION: 19.3.0
+          - name: Node 14
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            NODE_VERSION: 14.21.1
+          - name: Node 16
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            NODE_VERSION: 16.18.1
+          - name: Node 18
+            MONGODB_VERSION: 4.4.13
+            MONGODB_TOPOLOGY: standalone
+            NODE_VERSION: 18.12.1
+      fail-fast: false
+    name: ${{ matrix.name }}
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        ports:
+            - 6379:6379
+    env:
+      MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
+      MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
+      MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
+      PARSE_SERVER_TEST_CACHE: ${{ matrix.PARSE_SERVER_TEST_CACHE }}
+      NODE_VERSION: ${{ matrix.NODE_VERSION }}
+    steps:
+      - name: Fix usage of insecure GitHub protocol
+        run: sudo git config --system url."https://github".insteadOf "git://github"
+      - name: Fix git protocol for Node 14
+        if: ${{ startsWith(matrix.NODE_VERSION, '14.') }}
+        run: sudo git config --system url."https://github".insteadOf "ssh://git@github"
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.NODE_VERSION }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run pretest
+      - run: npm run coverage
+        env:
+          CI: true
+      - run: bash <(curl -s https://codecov.io/bash)
+  check-postgres:
+    strategy:
+      matrix:
+        include:
+          - name: PostgreSQL 11, PostGIS 3.0
+            POSTGRES_IMAGE: postgis/postgis:11-3.0
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 11, PostGIS 3.1
+            POSTGRES_IMAGE: postgis/postgis:11-3.1
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 11, PostGIS 3.2
+            POSTGRES_IMAGE: postgis/postgis:11-3.2
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 11, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:11-3.3
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 12, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:12-3.3
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 13, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:13-3.3
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 14, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:14-3.3
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 15, PostGIS 3.3
+            POSTGRES_IMAGE: postgis/postgis:15-3.3
+            NODE_VERSION: 19.3.0
+      fail-fast: false
+    name: ${{ matrix.name }}
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      postgres:
+        image: ${{ matrix.POSTGRES_IMAGE }}
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PARSE_SERVER_TEST_DB: postgres
+      PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
+      NODE_VERSION: ${{ matrix.NODE_VERSION }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.NODE_VERSION }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - run: |
+          bash scripts/before_script_postgres_conf.sh
+          bash scripts/before_script_postgres.sh
+      - run: npm run coverage
+        env:
+          CI: true
+      - run: bash <(curl -s https://codecov.io/bash)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true

@@ -15,7 +15,6 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
-import { GraphQLUpload } from 'graphql-upload';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -119,8 +118,7 @@ const ANY = new GraphQLScalarType({
 
 const OBJECT = new GraphQLScalarType({
   name: 'Object',
-  description:
-    'The Object scalar type is used in operations and types that involve objects.',
+  description: 'The Object scalar type is used in operations and types that involve objects.',
   parseValue(value) {
     if (typeof value === 'object') {
       return value;
@@ -162,7 +160,7 @@ const serializeDateIso = value => {
     return value;
   }
   if (value instanceof Date) {
-    return value.toUTCString();
+    return value.toISOString();
   }
 
   throw new TypeValidationError(value, 'Date');
@@ -178,19 +176,14 @@ const parseDateIsoLiteral = ast => {
 
 const DATE = new GraphQLScalarType({
   name: 'Date',
-  description:
-    'The Date scalar type is used in operations and types that involve dates.',
+  description: 'The Date scalar type is used in operations and types that involve dates.',
   parseValue(value) {
     if (typeof value === 'string' || value instanceof Date) {
       return {
         __type: 'Date',
         iso: parseDateIsoValue(value),
       };
-    } else if (
-      typeof value === 'object' &&
-      value.__type === 'Date' &&
-      value.iso
-    ) {
+    } else if (typeof value === 'object' && value.__type === 'Date' && value.iso) {
       return {
         __type: value.__type,
         iso: parseDateIsoValue(value.iso),
@@ -202,11 +195,7 @@ const DATE = new GraphQLScalarType({
   serialize(value) {
     if (typeof value === 'string' || value instanceof Date) {
       return serializeDateIso(value);
-    } else if (
-      typeof value === 'object' &&
-      value.__type === 'Date' &&
-      value.iso
-    ) {
+    } else if (typeof value === 'object' && value.__type === 'Date' && value.iso) {
       return serializeDateIso(value.iso);
     }
 
@@ -231,6 +220,11 @@ const DATE = new GraphQLScalarType({
 
     throw new TypeValidationError(ast.kind, 'Date');
   },
+});
+
+const GraphQLUpload = new GraphQLScalarType({
+  name: 'Upload',
+  description: 'The Upload scalar type represents a file upload.',
 });
 
 const BYTES = new GraphQLScalarType({
@@ -314,8 +308,7 @@ const parseFileValue = value => {
 
 const FILE = new GraphQLScalarType({
   name: 'File',
-  description:
-    'The File scalar type is used in operations and types that involve files.',
+  description: 'The File scalar type is used in operations and types that involve files.',
   parseValue: parseFileValue,
   serialize: value => {
     if (typeof value === 'string') {
@@ -353,8 +346,7 @@ const FILE = new GraphQLScalarType({
 
 const FILE_INFO = new GraphQLObjectType({
   name: 'FileInfo',
-  description:
-    'The FileInfo object type is used to return the information about files.',
+  description: 'The FileInfo object type is used to return the information about files.',
   fields: {
     name: {
       description: 'This is the file name.',
@@ -369,6 +361,8 @@ const FILE_INFO = new GraphQLObjectType({
 
 const FILE_INPUT = new GraphQLInputObjectType({
   name: 'FileInput',
+  description:
+    'If this field is set to null the file will be unlinked (the file will not be deleted on cloud storage).',
   fields: {
     file: {
       description: 'A File Scalar can be an url or a FileInfo object.',
@@ -401,8 +395,7 @@ const GEO_POINT_INPUT = new GraphQLInputObjectType({
 
 const GEO_POINT = new GraphQLObjectType({
   name: 'GeoPoint',
-  description:
-    'The GeoPoint object type is used to return the information about geo point fields.',
+  description: 'The GeoPoint object type is used to return the information about geo point fields.',
   fields: GEO_POINT_FIELDS,
 });
 
@@ -438,13 +431,11 @@ const ROLE_ACL_INPUT = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     read: {
-      description:
-        'Allow users who are members of the role to read the current object.',
+      description: 'Allow users who are members of the role to read the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
     write: {
-      description:
-        'Allow users who are members of the role to write on the current object.',
+      description: 'Allow users who are members of the role to write on the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
   },
@@ -515,13 +506,11 @@ const ROLE_ACL = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLID),
     },
     read: {
-      description:
-        'Allow users who are members of the role to read the current object.',
+      description: 'Allow users who are members of the role to read the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
     write: {
-      description:
-        'Allow users who are members of the role to write on the current object.',
+      description: 'Allow users who are members of the role to write on the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
   },
@@ -604,8 +593,7 @@ const CLASS_NAME_ATT = {
 };
 
 const GLOBAL_OR_OBJECT_ID_ATT = {
-  description:
-    'This is the object id. You can use either the global or the object id.',
+  description: 'This is the object id. You can use either the global or the object id.',
   type: OBJECT_ID,
 };
 
@@ -680,8 +668,7 @@ const READ_PREFERENCE_ATT = {
 };
 
 const INCLUDE_READ_PREFERENCE_ATT = {
-  description:
-    'The read preference for the queries to be executed to include fields.',
+  description: 'The read preference for the queries to be executed to include fields.',
   type: READ_PREFERENCE,
 };
 
@@ -707,8 +694,7 @@ const READ_OPTIONS_ATT = {
 };
 
 const WHERE_ATT = {
-  description:
-    'These are the conditions that the objects need to match in order to be found',
+  description: 'These are the conditions that the objects need to match in order to be found',
   type: OBJECT,
 };
 
@@ -730,8 +716,7 @@ const COUNT_ATT = {
 
 const SEARCH_INPUT = new GraphQLInputObjectType({
   name: 'SearchInput',
-  description:
-    'The SearchInput type is used to specifiy a search operation on a full text search.',
+  description: 'The SearchInput type is used to specifiy a search operation on a full text search.',
   fields: {
     term: {
       description: 'This is the term to be searched.',
@@ -743,13 +728,11 @@ const SEARCH_INPUT = new GraphQLInputObjectType({
       type: GraphQLString,
     },
     caseSensitive: {
-      description:
-        'This is the flag to enable or disable case sensitive search.',
+      description: 'This is the flag to enable or disable case sensitive search.',
       type: GraphQLBoolean,
     },
     diacriticSensitive: {
-      description:
-        'This is the flag to enable or disable diacritic sensitive search.',
+      description: 'This is the flag to enable or disable diacritic sensitive search.',
       type: GraphQLBoolean,
     },
   },
@@ -757,8 +740,7 @@ const SEARCH_INPUT = new GraphQLInputObjectType({
 
 const TEXT_INPUT = new GraphQLInputObjectType({
   name: 'TextInput',
-  description:
-    'The TextInput type is used to specify a text operation on a constraint.',
+  description: 'The TextInput type is used to specify a text operation on a constraint.',
   fields: {
     search: {
       description: 'This is the search to be executed.',
@@ -769,8 +751,7 @@ const TEXT_INPUT = new GraphQLInputObjectType({
 
 const BOX_INPUT = new GraphQLInputObjectType({
   name: 'BoxInput',
-  description:
-    'The BoxInput type is used to specifiy a box operation on a within geo query.',
+  description: 'The BoxInput type is used to specifiy a box operation on a within geo query.',
   fields: {
     bottomLeft: {
       description: 'This is the bottom left coordinates of the box.',
@@ -785,8 +766,7 @@ const BOX_INPUT = new GraphQLInputObjectType({
 
 const WITHIN_INPUT = new GraphQLInputObjectType({
   name: 'WithinInput',
-  description:
-    'The WithinInput type is used to specify a within operation on a constraint.',
+  description: 'The WithinInput type is used to specify a within operation on a constraint.',
   fields: {
     box: {
       description: 'This is the box to be specified.',
@@ -813,8 +793,7 @@ const CENTER_SPHERE_INPUT = new GraphQLInputObjectType({
 
 const GEO_WITHIN_INPUT = new GraphQLInputObjectType({
   name: 'GeoWithinInput',
-  description:
-    'The GeoWithinInput type is used to specify a geoWithin operation on a constraint.',
+  description: 'The GeoWithinInput type is used to specify a geoWithin operation on a constraint.',
   fields: {
     polygon: {
       description: 'This is the polygon to be specified.',
@@ -907,8 +886,7 @@ const options = {
 
 const SUBQUERY_INPUT = new GraphQLInputObjectType({
   name: 'SubqueryInput',
-  description:
-    'The SubqueryInput type is used to specify a sub query to another class.',
+  description: 'The SubqueryInput type is used to specify a sub query to another class.',
   fields: {
     className: CLASS_NAME_ATT,
     where: Object.assign({}, WHERE_ATT, {
@@ -982,8 +960,7 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
     matchesRegex,
     options,
     text: {
-      description:
-        'This is the $text operator to specify a full text search constraint.',
+      description: 'This is the $text operator to specify a full text search constraint.',
       type: TEXT_INPUT,
     },
     inQueryKey,
@@ -1217,18 +1194,13 @@ const ELEMENT = new GraphQLObjectType({
 // Default static union type, we update types and resolveType function later
 let ARRAY_RESULT;
 
-const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
-  const classTypes = parseClasses
+const loadArrayResult = (parseGraphQLSchema, parseClassesArray) => {
+  const classTypes = parseClassesArray
     .filter(parseClass =>
-      parseGraphQLSchema.parseClassTypes[parseClass.className]
-        .classGraphQLOutputType
-        ? true
-        : false
+      parseGraphQLSchema.parseClassTypes[parseClass.className].classGraphQLOutputType ? true : false
     )
     .map(
-      parseClass =>
-        parseGraphQLSchema.parseClassTypes[parseClass.className]
-          .classGraphQLOutputType
+      parseClass => parseGraphQLSchema.parseClassTypes[parseClass.className].classGraphQLOutputType
     );
   ARRAY_RESULT = new GraphQLUnionType({
     name: 'ArrayResult',
@@ -1238,13 +1210,12 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
     resolveType: value => {
       if (value.__type === 'Object' && value.className && value.objectId) {
         if (parseGraphQLSchema.parseClassTypes[value.className]) {
-          return parseGraphQLSchema.parseClassTypes[value.className]
-            .classGraphQLOutputType;
+          return parseGraphQLSchema.parseClassTypes[value.className].classGraphQLOutputType.name;
         } else {
-          return ELEMENT;
+          return ELEMENT.name;
         }
       } else {
-        return ELEMENT;
+        return ELEMENT.name;
       }
     },
   });
@@ -1298,6 +1269,7 @@ const load = parseGraphQLSchema => {
 };
 
 export {
+  GraphQLUpload,
   TypeValidationError,
   parseStringValue,
   parseIntValue,

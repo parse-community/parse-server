@@ -1,0 +1,115 @@
+name: release-automated
+on:
+  push:
+    branches: [ release, alpha, beta, next-major, 'release-[0-9]+.x.x' ]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      current_tag: ${{ steps.tag.outputs.current_tag }}
+      trigger_branch: ${{ steps.branch.outputs.trigger_branch }}
+    steps:
+      - name: Determine trigger branch name
+        id: branch
+        run: echo "::set-output name=trigger_branch::${GITHUB_REF#refs/*/}"
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 18.1.0
+          registry-url: https://registry.npmjs.org/
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+              ${{ runner.os }}-node-
+      - run: npm ci
+      - run: npx semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Determine tag on current commit
+        id: tag
+        run: echo "::set-output name=current_tag::$(git describe --tags --abbrev=0 --exact-match || echo '')"
+
+  docker:
+    needs: release
+    if: needs.release.outputs.current_tag != ''
+    env:
+      REGISTRY: docker.io
+      IMAGE_NAME: parseplatform/parse-server
+    runs-on: ubuntu-18.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Determine branch name
+        id: branch
+        run: echo "::set-output name=branch_name::${GITHUB_REF#refs/*/}"
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.release.outputs.current_tag }}
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Log into Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=${{ steps.branch.outputs.branch_name == 'release' }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.current_tag }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          platforms: linux/amd64, linux/arm/v6, linux/arm/v7, linux/arm64/v8
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  docs:
+    needs: release
+    if: needs.release.outputs.current_tag != '' && github.ref == 'refs/heads/release'
+    runs-on: ubuntu-18.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18.1.0
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+              ${{ runner.os }}-node-
+      - name: Generate Docs
+        run: |
+          echo $SOURCE_TAG
+          npm ci
+          ./release_docs.sh
+        env:
+          SOURCE_TAG: ${{ needs.release.outputs.current_tag }}
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3.7.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs

@@ -8,31 +8,23 @@ function validateAuthData(authData) {
     if (data && data.id == authData.id) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Spotify auth is invalid for this user.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify auth is invalid for this user.');
   });
 }
 
 // Returns a promise that fulfills if this app id is valid.
-function validateAppId(appIds, authData) {
-  var access_token = authData.access_token;
-  if (!appIds.length) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Spotify auth is not configured.'
-    );
+async function validateAppId(appIds, authData) {
+  const access_token = authData.access_token;
+  if (!Array.isArray(appIds)) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.');
   }
-  return request('me', access_token).then(data => {
-    if (data && appIds.indexOf(data.id) != -1) {
-      return;
-    }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Spotify auth is invalid for this user.'
-    );
-  });
+  if (!appIds.length) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify auth is not configured.');
+  }
+  const data = await request('me', access_token);
+  if (!data || !appIds.includes(data.id)) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify auth is invalid for this user.');
+  }
 }
 
 // A promisey wrapper for Spotify API requests.

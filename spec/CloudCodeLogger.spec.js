@@ -1,5 +1,4 @@
-const LoggerController = require('../lib/Controllers/LoggerController')
-  .LoggerController;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
 const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter')
   .WinstonLoggerAdapter;
 const fs = require('fs');
@@ -15,6 +14,7 @@ describe('Cloud Code Logger', () => {
     return reconfigureServer({
       // useful to flip to false for fine tuning :).
       silent: true,
+      logLevel: undefined,
     })
       .then(() => {
         return Parse.User.signUp('tester', 'abc')
@@ -23,10 +23,7 @@ describe('Cloud Code Logger', () => {
           .then(() => Parse.User.logIn(user.get('username'), 'abc'));
       })
       .then(() => {
-        spy = spyOn(
-          Config.get('test').loggerController.adapter,
-          'log'
-        ).and.callThrough();
+        spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
       });
   });
 
@@ -34,10 +31,7 @@ describe('Cloud Code Logger', () => {
   // see helpers.js:afterEach
 
   it('should expose log to functions', () => {
-    const spy = spyOn(
-      Config.get('test').loggerController,
-      'log'
-    ).and.callThrough();
+    const spy = spyOn(Config.get('test').loggerController, 'log').and.callThrough();
     Parse.Cloud.define('loggerTest', req => {
       req.log.info('logTest', 'info log', { info: 'some log' });
       req.log.error('logTest', 'error log', { error: 'there was an error' });
@@ -54,9 +48,7 @@ describe('Cloud Code Logger', () => {
       expect(cloudFunctionMessage.args[1][0]).toMatch(
         /Ran cloud function loggerTest for user [^ ]* with:\n {2}Input: {}\n {2}Result: {}/
       );
-      expect(cloudFunctionMessage.args[1][1].functionName).toEqual(
-        'loggerTest'
-      );
+      expect(cloudFunctionMessage.args[1][1].functionName).toEqual('loggerTest');
       expect(errorMessage.args[0]).toBe('error');
       expect(errorMessage.args[1][2].error).toBe('there was an error');
       expect(errorMessage.args[1][0]).toBe('logTest');
@@ -106,14 +98,10 @@ describe('Cloud Code Logger', () => {
       expect(cloudTriggerMessage[2].user).toBe(user.id);
       expect(errorMessage[0]).toBe('error');
       expect(errorMessage[3].error).toBe('there was an error');
-      expect(errorMessage[1] + ' ' + errorMessage[2]).toBe(
-        'beforeSave MyObject error log'
-      );
+      expect(errorMessage[1] + ' ' + errorMessage[2]).toBe('beforeSave MyObject error log');
       expect(infoMessage[0]).toBe('info');
       expect(infoMessage[3].info).toBe('some log');
-      expect(infoMessage[1] + ' ' + infoMessage[2]).toBe(
-        'beforeSave MyObject info log'
-      );
+      expect(infoMessage[1] + ' ' + infoMessage[2]).toBe('beforeSave MyObject info log');
       done();
     });
   });
@@ -173,7 +161,7 @@ describe('Cloud Code Logger', () => {
         expect(log[0]).toEqual('error');
         const error = log[2].error;
         expect(error instanceof Parse.Error).toBeTruthy();
-        expect(error.code).toBe(141);
+        expect(error.code).toBe(Parse.Error.SCRIPT_FAILED);
         expect(error.message).toBe('uh oh!');
         done();
       });
@@ -194,6 +182,41 @@ describe('Cloud Code Logger', () => {
     });
   });
 
+  it('should log cloud function triggers using the custom log level', async () => {
+    Parse.Cloud.beforeSave('TestClass', () => {});
+    Parse.Cloud.afterSave('TestClass', () => {});
+
+    const execTest = async (logLevel, triggerBeforeSuccess, triggerAfter) => {
+      await reconfigureServer({
+        silent: true,
+        logLevel,
+        logLevels: {
+          triggerAfter,
+          triggerBeforeSuccess,
+        },
+      });
+
+      spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+      const obj = new Parse.Object('TestClass');
+      await obj.save();
+
+      return {
+        beforeSave: spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('beforeSave triggered for TestClass for user '))?.[0],
+        afterSave: spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('afterSave triggered for TestClass for user '))?.[0],
+      };
+    };
+
+    let calls = await execTest('silly', 'silly', 'debug');
+    expect(calls).toEqual({ beforeSave: 'silly', afterSave: 'debug' });
+
+    calls = await execTest('info', 'warn', 'debug');
+    expect(calls).toEqual({ beforeSave: 'warn', afterSave: undefined });
+  });
+
   it('should log cloud function failure', done => {
     Parse.Cloud.define('aFunction', () => {
       throw 'it failed!';
@@ -211,7 +234,9 @@ describe('Cloud Code Logger', () => {
         expect(log[1]).toMatch(
           /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error:/
         );
-        const errorString = JSON.stringify(new Parse.Error(141, 'it failed!'));
+        const errorString = JSON.stringify(
+          new Parse.Error(Parse.Error.SCRIPT_FAILED, 'it failed!')
+        );
         expect(log[1].indexOf(errorString)).toBeGreaterThan(0);
         done();
       })

@@ -1,8 +1,6 @@
 node_modules
 npm-debug.log
 *.md
-PATENTS
-LICENSE
 Dockerfile
 .dockerignore
 .gitignore
@@ -16,6 +14,8 @@ lib/
 
 # Tests
 spec/
+# Keep local dependencies used to CI tests
+!spec/dependencies/
 
 # IDEs
 .idea/

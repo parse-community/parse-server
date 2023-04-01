@@ -1,4 +1,5 @@
 const parser = require('../lib/Adapters/Storage/Postgres/PostgresConfigParser');
+const fs = require('fs');
 
 const queryParamTests = {
   'a=1&b=2': { a: '1', b: '2' },
@@ -23,20 +24,47 @@ describe('PostgresConfigParser.parseQueryParams', () => {
 });
 
 const baseURI = 'postgres://username:password@localhost:5432/db-name';
-
+const testfile = fs.readFileSync('./Dockerfile').toString();
 const dbOptionsTest = {};
 dbOptionsTest[
-  `${baseURI}?ssl=true&binary=true&application_name=app_name&fallback_application_name=f_app_name&poolSize=10`
+  `${baseURI}?ssl=true&binary=true&application_name=app_name&fallback_application_name=f_app_name&poolSize=12`
 ] = {
   ssl: true,
   binary: true,
   application_name: 'app_name',
   fallback_application_name: 'f_app_name',
-  poolSize: 10,
+  max: 12,
 };
 dbOptionsTest[`${baseURI}?ssl=&binary=aa`] = {
-  ssl: false,
   binary: false,
+};
+dbOptionsTest[
+  `${baseURI}?ssl=true&ca=./Dockerfile&pfx=./Dockerfile&cert=./Dockerfile&key=./Dockerfile&binary=aa&passphrase=word&secureOptions=20`
+] = {
+  ssl: {
+    ca: testfile,
+    pfx: testfile,
+    cert: testfile,
+    key: testfile,
+    passphrase: 'word',
+    secureOptions: 20,
+  },
+  binary: false,
+};
+dbOptionsTest[
+  `${baseURI}?ssl=false&ca=./Dockerfile&pfx=./Dockerfile&cert=./Dockerfile&key=./Dockerfile&binary=aa`
+] = {
+  ssl: { ca: testfile, pfx: testfile, cert: testfile, key: testfile },
+  binary: false,
+};
+dbOptionsTest[`${baseURI}?rejectUnauthorized=true`] = {
+  ssl: { rejectUnauthorized: true },
+};
+dbOptionsTest[`${baseURI}?max=5&query_timeout=100&idleTimeoutMillis=1000&keepAlive=true`] = {
+  max: 5,
+  query_timeout: 100,
+  idleTimeoutMillis: 1000,
+  keepAlive: true,
 };
 
 describe('PostgresConfigParser.getDatabaseOptionsFromURI', () => {
@@ -55,6 +83,20 @@ describe('PostgresConfigParser.getDatabaseOptionsFromURI', () => {
   it('sets the poolSize to 10 if the it is not a number', () => {
     const result = parser.getDatabaseOptionsFromURI(`${baseURI}?poolSize=sdf`);
 
-    expect(result.poolSize).toEqual(10);
+    expect(result.max).toEqual(10);
+  });
+
+  it('sets the max to 10 if the it is not a number', () => {
+    const result = parser.getDatabaseOptionsFromURI(`${baseURI}?&max=sdf`);
+
+    expect(result.poolSize).toBeUndefined();
+    expect(result.max).toEqual(10);
+  });
+
+  it('max should take precedence over poolSize', () => {
+    const result = parser.getDatabaseOptionsFromURI(`${baseURI}?poolSize=20&max=12`);
+
+    expect(result.poolSize).toBeUndefined();
+    expect(result.max).toEqual(12);
   });
 });

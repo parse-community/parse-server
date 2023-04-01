@@ -2,16 +2,8 @@
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
 import { StorageAdapter } from '../StorageAdapter';
-import type {
-  SchemaType,
-  QueryType,
-  StorageClass,
-  QueryOptions,
-} from '../StorageAdapter';
-import {
-  parse as parseUrl,
-  format as formatUrl,
-} from '../../../vendor/mongodbUrl';
+import type { SchemaType, QueryType, StorageClass, QueryOptions } from '../StorageAdapter';
+import { parse as parseUrl, format as formatUrl } from '../../../vendor/mongodbUrl';
 import {
   parseObjectToMongoObjectForCreate,
   mongoObjectToParseObject,
@@ -34,20 +26,18 @@ const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
-const storageAdapterAllCollections = (mongoAdapter) => {
+const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter
     .connect()
     .then(() => mongoAdapter.database.collections())
-    .then((collections) => {
-      return collections.filter((collection) => {
+    .then(collections => {
+      return collections.filter(collection => {
         if (collection.namespace.match(/\.system\./)) {
           return false;
         }
         // TODO: If you have one app with a collection prefix that happens to be a prefix of another
         // apps prefix, this will go very very badly. We should fix that somehow.
-        return (
-          collection.collectionName.indexOf(mongoAdapter._collectionPrefix) == 0
-        );
+        return collection.collectionName.indexOf(mongoAdapter._collectionPrefix) == 0;
       });
     });
 };
@@ -85,16 +75,13 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (
 
   for (const fieldName in fields) {
     const { type, targetClass, ...fieldOptions } = fields[fieldName];
-    mongoObject[
-      fieldName
-    ] = MongoSchemaCollection.parseFieldTypeToMongoFieldType({
+    mongoObject[fieldName] = MongoSchemaCollection.parseFieldTypeToMongoFieldType({
       type,
       targetClass,
     });
     if (fieldOptions && Object.keys(fieldOptions).length > 0) {
       mongoObject._metadata = mongoObject._metadata || {};
-      mongoObject._metadata.fields_options =
-        mongoObject._metadata.fields_options || {};
+      mongoObject._metadata.fields_options = mongoObject._metadata.fields_options || {};
       mongoObject._metadata.fields_options[fieldName] = fieldOptions;
     }
   }
@@ -108,11 +95,7 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (
     }
   }
 
-  if (
-    indexes &&
-    typeof indexes === 'object' &&
-    Object.keys(indexes).length > 0
-  ) {
+  if (indexes && typeof indexes === 'object' && Object.keys(indexes).length > 0) {
     mongoObject._metadata = mongoObject._metadata || {};
     mongoObject._metadata.indexes = indexes;
   }
@@ -125,33 +108,65 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (
   return mongoObject;
 };
 
+function validateExplainValue(explain) {
+  if (explain) {
+    // The list of allowed explain values is from node-mongodb-native/lib/explain.js
+    const explainAllowedValues = [
+      'queryPlanner',
+      'queryPlannerExtended',
+      'executionStats',
+      'allPlansExecution',
+      false,
+      true,
+    ];
+    if (!explainAllowedValues.includes(explain)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Invalid value for explain');
+    }
+  }
+}
+
 export class MongoStorageAdapter implements StorageAdapter {
   // Private
   _uri: string;
   _collectionPrefix: string;
   _mongoOptions: Object;
+  _onchange: any;
+  _stream: any;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
   client: MongoClient;
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
+  enableSchemaHooks: boolean;
+  schemaCacheTtl: ?number;
+  disableIndexFieldValidation: boolean;
 
-  constructor({
-    uri = defaults.DefaultMongoURI,
-    collectionPrefix = '',
-    mongoOptions = {},
-  }: any) {
+  constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
-    this._mongoOptions = mongoOptions;
+    this._mongoOptions = { ...mongoOptions };
     this._mongoOptions.useNewUrlParser = true;
     this._mongoOptions.useUnifiedTopology = true;
+    this._onchange = () => {};
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
+    this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
+    this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+      delete mongoOptions[key];
+      delete this._mongoOptions[key];
+    }
+    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    delete mongoOptions.enableSchemaHooks;
+    delete mongoOptions.disableIndexFieldValidation;
     delete mongoOptions.maxTimeMS;
+  }
+
+  watch(callback: () => void): void {
+    this._onchange = callback;
   }
 
   connect() {
@@ -164,7 +179,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const encodedUri = formatUrl(parseUrl(this._uri));
 
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
-      .then((client) => {
+      .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
         // https://github.com/mongodb/node-mongodb-native/blob/2c35d76f08574225b8db02d7bef687123e6bb018/lib/mongo_client.js#L885
@@ -174,16 +189,16 @@ export class MongoStorageAdapter implements StorageAdapter {
           delete this.connectionPromise;
           return;
         }
-        database.on('error', () => {
+        client.on('error', () => {
           delete this.connectionPromise;
         });
-        database.on('close', () => {
+        client.on('close', () => {
           delete this.connectionPromise;
         });
         this.client = client;
         this.database = database;
       })
-      .catch((err) => {
+      .catch(err => {
         delete this.connectionPromise;
         return Promise.reject(err);
       });
@@ -212,37 +227,41 @@ export class MongoStorageAdapter implements StorageAdapter {
   _adaptiveCollection(name: string) {
     return this.connect()
       .then(() => this.database.collection(this._collectionPrefix + name))
-      .then((rawCollection) => new MongoCollection(rawCollection))
-      .catch((err) => this.handleError(err));
+      .then(rawCollection => new MongoCollection(rawCollection))
+      .catch(err => this.handleError(err));
   }
 
   _schemaCollection(): Promise<MongoSchemaCollection> {
     return this.connect()
       .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
-      .then((collection) => new MongoSchemaCollection(collection));
+      .then(collection => {
+        if (!this._stream && this.enableSchemaHooks) {
+          this._stream = collection._mongoCollection.watch();
+          this._stream.on('change', () => this._onchange());
+        }
+        return new MongoSchemaCollection(collection);
+      });
   }
 
   classExists(name: string) {
     return this.connect()
       .then(() => {
-        return this.database
-          .listCollections({ name: this._collectionPrefix + name })
-          .toArray();
+        return this.database.listCollections({ name: this._collectionPrefix + name }).toArray();
       })
-      .then((collections) => {
+      .then(collections => {
         return collections.length > 0;
       })
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   setClassLevelPermissions(className: string, CLPs: any): Promise<void> {
     return this._schemaCollection()
-      .then((schemaCollection) =>
+      .then(schemaCollection =>
         schemaCollection.updateSchema(className, {
           $set: { '_metadata.class_permissions': CLPs },
         })
       )
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   setIndexesWithSchemaFormat(
@@ -259,13 +278,10 @@ export class MongoStorageAdapter implements StorageAdapter {
     }
     const deletePromises = [];
     const insertedIndexes = [];
-    Object.keys(submittedIndexes).forEach((name) => {
+    Object.keys(submittedIndexes).forEach(name => {
       const field = submittedIndexes[name];
       if (existingIndexes[name] && field.__op !== 'Delete') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Index ${name} exists, cannot update.`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
       }
       if (!existingIndexes[name] && field.__op === 'Delete') {
         throw new Parse.Error(
@@ -278,8 +294,14 @@ export class MongoStorageAdapter implements StorageAdapter {
         deletePromises.push(promise);
         delete existingIndexes[name];
       } else {
-        Object.keys(field).forEach((key) => {
-          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
+        Object.keys(field).forEach(key => {
+          if (
+            !this.disableIndexFieldValidation &&
+            !Object.prototype.hasOwnProperty.call(
+              fields,
+              key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
+            )
+          ) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -300,17 +322,17 @@ export class MongoStorageAdapter implements StorageAdapter {
     return Promise.all(deletePromises)
       .then(() => insertPromise)
       .then(() => this._schemaCollection())
-      .then((schemaCollection) =>
+      .then(schemaCollection =>
         schemaCollection.updateSchema(className, {
           $set: { '_metadata.indexes': existingIndexes },
         })
       )
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   setIndexesFromMongo(className: string) {
     return this.getIndexes(className)
-      .then((indexes) => {
+      .then(indexes => {
         indexes = indexes.reduce((obj, index) => {
           if (index.key._fts) {
             delete index.key._fts;
@@ -322,13 +344,13 @@ export class MongoStorageAdapter implements StorageAdapter {
           obj[index.name] = index.key;
           return obj;
         }, {});
-        return this._schemaCollection().then((schemaCollection) =>
+        return this._schemaCollection().then(schemaCollection =>
           schemaCollection.updateSchema(className, {
             $set: { '_metadata.indexes': indexes },
           })
         );
       })
-      .catch((err) => this.handleError(err))
+      .catch(err => this.handleError(err))
       .catch(() => {
         // Ignore if collection not found
         return Promise.resolve();
@@ -344,28 +366,22 @@ export class MongoStorageAdapter implements StorageAdapter {
       schema.indexes
     );
     mongoObject._id = className;
-    return this.setIndexesWithSchemaFormat(
-      className,
-      schema.indexes,
-      {},
-      schema.fields
-    )
+    return this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields)
       .then(() => this._schemaCollection())
-      .then((schemaCollection) => schemaCollection.insertSchema(mongoObject))
-      .catch((err) => this.handleError(err));
+      .then(schemaCollection => schemaCollection.insertSchema(mongoObject))
+      .catch(err => this.handleError(err));
   }
 
-  addFieldIfNotExists(
-    className: string,
-    fieldName: string,
-    type: any
-  ): Promise<void> {
+  async updateFieldOptions(className: string, fieldName: string, type: any) {
+    const schemaCollection = await this._schemaCollection();
+    await schemaCollection.updateFieldOptions(className, fieldName, type);
+  }
+
+  addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void> {
     return this._schemaCollection()
-      .then((schemaCollection) =>
-        schemaCollection.addFieldIfNotExists(className, fieldName, type)
-      )
+      .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type))
       .then(() => this.createIndexesIfNeeded(className, fieldName, type))
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
@@ -373,8 +389,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   deleteClass(className: string) {
     return (
       this._adaptiveCollection(className)
-        .then((collection) => collection.drop())
-        .catch((error) => {
+        .then(collection => collection.drop())
+        .catch(error => {
           // 'ns not found' means collection was already gone. Ignore deletion attempt.
           if (error.message == 'ns not found') {
             return;
@@ -383,19 +399,15 @@ export class MongoStorageAdapter implements StorageAdapter {
         })
         // We've dropped the collection, now remove the _SCHEMA document
         .then(() => this._schemaCollection())
-        .then((schemaCollection) =>
-          schemaCollection.findAndDeleteSchema(className)
-        )
-        .catch((err) => this.handleError(err))
+        .then(schemaCollection => schemaCollection.findAndDeleteSchema(className))
+        .catch(err => this.handleError(err))
     );
   }
 
   deleteAllClasses(fast: boolean) {
-    return storageAdapterAllCollections(this).then((collections) =>
+    return storageAdapterAllCollections(this).then(collections =>
       Promise.all(
-        collections.map((collection) =>
-          fast ? collection.deleteMany({}) : collection.drop()
-        )
+        collections.map(collection => (fast ? collection.deleteMany({}) : collection.drop()))
       )
     );
   }
@@ -421,7 +433,7 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   // Returns a Promise.
   deleteFields(className: string, schema: SchemaType, fieldNames: string[]) {
-    const mongoFormatNames = fieldNames.map((fieldName) => {
+    const mongoFormatNames = fieldNames.map(fieldName => {
       if (schema.fields[fieldName].type === 'Pointer') {
         return `_p_${fieldName}`;
       } else {
@@ -429,23 +441,26 @@ export class MongoStorageAdapter implements StorageAdapter {
       }
     });
     const collectionUpdate = { $unset: {} };
-    mongoFormatNames.forEach((name) => {
+    mongoFormatNames.forEach(name => {
       collectionUpdate['$unset'][name] = null;
     });
 
+    const collectionFilter = { $or: [] };
+    mongoFormatNames.forEach(name => {
+      collectionFilter['$or'].push({ [name]: { $exists: true } });
+    });
+
     const schemaUpdate = { $unset: {} };
-    fieldNames.forEach((name) => {
+    fieldNames.forEach(name => {
       schemaUpdate['$unset'][name] = null;
       schemaUpdate['$unset'][`_metadata.fields_options.${name}`] = null;
     });
 
     return this._adaptiveCollection(className)
-      .then((collection) => collection.updateMany({}, collectionUpdate))
+      .then(collection => collection.updateMany(collectionFilter, collectionUpdate))
       .then(() => this._schemaCollection())
-      .then((schemaCollection) =>
-        schemaCollection.updateSchema(className, schemaUpdate)
-      )
-      .catch((err) => this.handleError(err));
+      .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate))
+      .catch(err => this.handleError(err));
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
@@ -453,10 +468,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   // rejection reason are TBD.
   getAllClasses(): Promise<StorageClass[]> {
     return this._schemaCollection()
-      .then((schemasCollection) =>
-        schemasCollection._fetchAllSchemasFrom_SCHEMA()
-      )
-      .catch((err) => this.handleError(err));
+      .then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA())
+      .catch(err => this.handleError(err));
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
@@ -464,32 +477,20 @@ export class MongoStorageAdapter implements StorageAdapter {
   // undefined as the reason.
   getClass(className: string): Promise<StorageClass> {
     return this._schemaCollection()
-      .then((schemasCollection) =>
-        schemasCollection._fetchOneSchemaFrom_SCHEMA(className)
-      )
-      .catch((err) => this.handleError(err));
+      .then(schemasCollection => schemasCollection._fetchOneSchemaFrom_SCHEMA(className))
+      .catch(err => this.handleError(err));
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schema only for the legacy mongo format. We'll figure that out later.
-  createObject(
-    className: string,
-    schema: SchemaType,
-    object: any,
-    transactionalSession: ?any
-  ) {
+  createObject(className: string, schema: SchemaType, object: any, transactionalSession: ?any) {
     schema = convertParseSchemaToMongoSchema(schema);
-    const mongoObject = parseObjectToMongoObjectForCreate(
-      className,
-      object,
-      schema
-    );
+    const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
     return this._adaptiveCollection(className)
-      .then((collection) =>
-        collection.insertOne(mongoObject, transactionalSession)
-      )
-      .catch((error) => {
+      .then(collection => collection.insertOne(mongoObject, transactionalSession))
+      .then(() => ({ ops: [mongoObject] }))
+      .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
           const err = new Parse.Error(
@@ -498,9 +499,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           );
           err.underlyingError = error;
           if (error.message) {
-            const matches = error.message.match(
-              /index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/
-            );
+            const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
             if (matches && Array.isArray(matches)) {
               err.userInfo = { duplicated_field: matches[1] };
             }
@@ -509,7 +508,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
         throw error;
       })
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   // Remove all objects that match the given Parse Query.
@@ -523,26 +522,20 @@ export class MongoStorageAdapter implements StorageAdapter {
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     return this._adaptiveCollection(className)
-      .then((collection) => {
+      .then(collection => {
         const mongoWhere = transformWhere(className, query, schema);
         return collection.deleteMany(mongoWhere, transactionalSession);
       })
-      .catch((err) => this.handleError(err))
+      .catch(err => this.handleError(err))
       .then(
-        ({ result }) => {
-          if (result.n === 0) {
-            throw new Parse.Error(
-              Parse.Error.OBJECT_NOT_FOUND,
-              'Object not found.'
-            );
+        ({ deletedCount }) => {
+          if (deletedCount === 0) {
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
           }
           return Promise.resolve();
         },
         () => {
-          throw new Parse.Error(
-            Parse.Error.INTERNAL_SERVER_ERROR,
-            'Database adapter error'
-          );
+          throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error');
         }
       );
   }
@@ -559,10 +552,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then((collection) =>
-        collection.updateMany(mongoWhere, mongoUpdate, transactionalSession)
-      )
-      .catch((err) => this.handleError(err));
+      .then(collection => collection.updateMany(mongoWhere, mongoUpdate, transactionalSession))
+      .catch(err => this.handleError(err));
   }
 
   // Atomically finds and updates an object based on query.
@@ -578,16 +569,14 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then((collection) =>
+      .then(collection =>
         collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
-          returnOriginal: false,
+          returnDocument: 'after',
           session: transactionalSession || undefined,
         })
       )
-      .then((result) =>
-        mongoObjectToParseObject(className, result.value, schema)
-      )
-      .catch((error) => {
+      .then(result => mongoObjectToParseObject(className, result.value, schema))
+      .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
@@ -596,7 +585,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
         throw error;
       })
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
@@ -611,10 +600,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then((collection) =>
-        collection.upsertOne(mongoWhere, mongoUpdate, transactionalSession)
-      )
-      .catch((err) => this.handleError(err));
+      .then(collection => collection.upsertOne(mongoWhere, mongoUpdate, transactionalSession))
+      .catch(err => this.handleError(err));
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
@@ -622,17 +609,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    {
-      skip,
-      limit,
-      sort,
-      keys,
-      readPreference,
-      hint,
-      caseInsensitive,
-      explain,
-    }: QueryOptions
+    { skip, limit, sort, keys, readPreference, hint, caseInsensitive, explain }: QueryOptions
   ): Promise<any> {
+    validateExplainValue(explain);
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
     const mongoSort = _.mapKeys(sort, (value, fieldName) =>
@@ -662,7 +641,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     readPreference = this._parseReadPreference(readPreference);
     return this.createTextIndexesIfNeeded(className, query, schema)
       .then(() => this._adaptiveCollection(className))
-      .then((collection) =>
+      .then(collection =>
         collection.find(mongoWhere, {
           skip,
           limit,
@@ -675,15 +654,13 @@ export class MongoStorageAdapter implements StorageAdapter {
           explain,
         })
       )
-      .then((objects) => {
+      .then(objects => {
         if (explain) {
           return objects;
         }
-        return objects.map((object) =>
-          mongoObjectToParseObject(className, object, schema)
-        );
+        return objects.map(object => mongoObjectToParseObject(className, object, schema));
       })
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   ensureIndex(
@@ -692,19 +669,18 @@ export class MongoStorageAdapter implements StorageAdapter {
     fieldNames: string[],
     indexName: ?string,
     caseInsensitive: boolean = false,
-    indexType: any = 1
+    options?: Object = {}
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
-    const mongoFieldNames = fieldNames.map((fieldName) =>
-      transformKey(className, fieldName, schema)
-    );
-    mongoFieldNames.forEach((fieldName) => {
-      indexCreationRequest[fieldName] = indexType;
+    const mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
+    mongoFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = options.indexType !== undefined ? options.indexType : 1;
     });
 
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
+    const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
@@ -712,20 +688,19 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...defaultOptions,
       ...caseInsensitiveOptions,
       ...indexNameOptions,
+      ...ttlOptions,
     };
 
     return this._adaptiveCollection(className)
       .then(
-        (collection) =>
+        collection =>
           new Promise((resolve, reject) =>
-            collection._mongoCollection.createIndex(
-              indexCreationRequest,
-              indexOptions,
-              (error) => (error ? reject(error) : resolve())
+            collection._mongoCollection.createIndex(indexCreationRequest, indexOptions, error =>
+              error ? reject(error) : resolve()
             )
           )
       )
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
@@ -733,24 +708,16 @@ export class MongoStorageAdapter implements StorageAdapter {
   // As such, we shouldn't expose this function to users of parse until we have an out-of-band
   // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
   // which is why we use sparse indexes.
-  ensureUniqueness(
-    className: string,
-    schema: SchemaType,
-    fieldNames: string[]
-  ) {
+  ensureUniqueness(className: string, schema: SchemaType, fieldNames: string[]) {
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
-    const mongoFieldNames = fieldNames.map((fieldName) =>
-      transformKey(className, fieldName, schema)
-    );
-    mongoFieldNames.forEach((fieldName) => {
+    const mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
+    mongoFieldNames.forEach(fieldName => {
       indexCreationRequest[fieldName] = 1;
     });
     return this._adaptiveCollection(className)
-      .then((collection) =>
-        collection._ensureSparseUniqueIndexInBackground(indexCreationRequest)
-      )
-      .catch((error) => {
+      .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
+      .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
@@ -759,18 +726,18 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
         throw error;
       })
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   // Used in tests
   _rawFind(className: string, query: QueryType) {
     return this._adaptiveCollection(className)
-      .then((collection) =>
+      .then(collection =>
         collection.find(query, {
           maxTimeMS: this._maxTimeMS,
         })
       )
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   // Executes a count.
@@ -784,44 +751,35 @@ export class MongoStorageAdapter implements StorageAdapter {
     schema = convertParseSchemaToMongoSchema(schema);
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
-      .then((collection) =>
+      .then(collection =>
         collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
           hint,
         })
       )
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
-  distinct(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    fieldName: string
-  ) {
+  distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
     schema = convertParseSchemaToMongoSchema(schema);
-    const isPointerField =
-      schema.fields[fieldName] && schema.fields[fieldName].type === 'Pointer';
+    const isPointerField = schema.fields[fieldName] && schema.fields[fieldName].type === 'Pointer';
     const transformField = transformKey(className, fieldName, schema);
 
     return this._adaptiveCollection(className)
-      .then((collection) =>
-        collection.distinct(
-          transformField,
-          transformWhere(className, query, schema)
-        )
+      .then(collection =>
+        collection.distinct(transformField, transformWhere(className, query, schema))
       )
-      .then((objects) => {
-        objects = objects.filter((obj) => obj != null);
-        return objects.map((object) => {
+      .then(objects => {
+        objects = objects.filter(obj => obj != null);
+        return objects.map(object => {
           if (isPointerField) {
             return transformPointerString(schema, fieldName, object);
           }
           return mongoObjectToParseObject(className, object, schema);
         });
       })
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   aggregate(
@@ -832,8 +790,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     hint: ?mixed,
     explain?: boolean
   ) {
+    validateExplainValue(explain);
     let isPointerField = false;
-    pipeline = pipeline.map((stage) => {
+    pipeline = pipeline.map(stage => {
       if (stage.$group) {
         stage.$group = this._parseAggregateGroupArgs(schema, stage.$group);
         if (
@@ -848,22 +807,16 @@ export class MongoStorageAdapter implements StorageAdapter {
         stage.$match = this._parseAggregateArgs(schema, stage.$match);
       }
       if (stage.$project) {
-        stage.$project = this._parseAggregateProjectArgs(
-          schema,
-          stage.$project
-        );
+        stage.$project = this._parseAggregateProjectArgs(schema, stage.$project);
       }
-      if (stage.$geoNear) {
-        stage.$geoNear.query = this._parseAggregateArgs(
-          schema,
-          stage.$geoNear.query
-        );
+      if (stage.$geoNear && stage.$geoNear.query) {
+        stage.$geoNear.query = this._parseAggregateArgs(schema, stage.$geoNear.query);
       }
       return stage;
     });
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
-      .then((collection) =>
+      .then(collection =>
         collection.aggregate(pipeline, {
           readPreference,
           maxTimeMS: this._maxTimeMS,
@@ -871,8 +824,8 @@ export class MongoStorageAdapter implements StorageAdapter {
           explain,
         })
       )
-      .then((results) => {
-        results.forEach((result) => {
+      .then(results => {
+        results.forEach(result => {
           if (Object.prototype.hasOwnProperty.call(result, '_id')) {
             if (isPointerField && result._id) {
               result._id = result._id.split('$')[1];
@@ -880,8 +833,7 @@ export class MongoStorageAdapter implements StorageAdapter {
             if (
               result._id == null ||
               result._id == undefined ||
-              (['object', 'string'].includes(typeof result._id) &&
-                _.isEmpty(result._id))
+              (['object', 'string'].includes(typeof result._id) && _.isEmpty(result._id))
             ) {
               result._id = null;
             }
@@ -891,12 +843,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
         return results;
       })
-      .then((objects) =>
-        objects.map((object) =>
-          mongoObjectToParseObject(className, object, schema)
-        )
-      )
-      .catch((err) => this.handleError(err));
+      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
+      .catch(err => this.handleError(err));
   }
 
   // This function will recursively traverse the pipeline and convert any Pointer or Date columns.
@@ -922,7 +870,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     if (pipeline === null) {
       return null;
     } else if (Array.isArray(pipeline)) {
-      return pipeline.map((value) => this._parseAggregateArgs(schema, value));
+      return pipeline.map(value => this._parseAggregateArgs(schema, value));
     } else if (typeof pipeline === 'object') {
       const returnValue = {};
       for (const field in pipeline) {
@@ -931,20 +879,12 @@ export class MongoStorageAdapter implements StorageAdapter {
             // Pass objects down to MongoDB...this is more than likely an $exists operator.
             returnValue[`_p_${field}`] = pipeline[field];
           } else {
-            returnValue[
-              `_p_${field}`
-            ] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
+            returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
-        } else if (
-          schema.fields[field] &&
-          schema.fields[field].type === 'Date'
-        ) {
+        } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
           returnValue[field] = this._convertToDate(pipeline[field]);
         } else {
-          returnValue[field] = this._parseAggregateArgs(
-            schema,
-            pipeline[field]
-          );
+          returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
         }
 
         if (field === 'objectId') {
@@ -997,16 +937,11 @@ export class MongoStorageAdapter implements StorageAdapter {
   // updatedAt or objectId and change it accordingly.
   _parseAggregateGroupArgs(schema: any, pipeline: any): any {
     if (Array.isArray(pipeline)) {
-      return pipeline.map((value) =>
-        this._parseAggregateGroupArgs(schema, value)
-      );
+      return pipeline.map(value => this._parseAggregateGroupArgs(schema, value));
     } else if (typeof pipeline === 'object') {
       const returnValue = {};
       for (const field in pipeline) {
-        returnValue[field] = this._parseAggregateGroupArgs(
-          schema,
-          pipeline[field]
-        );
+        returnValue[field] = this._parseAggregateGroupArgs(schema, pipeline[field]);
       }
       return returnValue;
     } else if (typeof pipeline === 'string') {
@@ -1027,6 +962,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
   // recursive method to traverse down to the "leaf node" which is going to be the string.
   _convertToDate(value: any): any {
+    if (value instanceof Date) {
+      return value;
+    }
     if (typeof value === 'string') {
       return new Date(value);
     }
@@ -1063,10 +1001,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       case '':
         break;
       default:
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          'Not supported read preference.'
-        );
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
     }
     return readPreference;
   }
@@ -1077,14 +1012,14 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   createIndex(className: string, index: any) {
     return this._adaptiveCollection(className)
-      .then((collection) => collection._mongoCollection.createIndex(index))
-      .catch((err) => this.handleError(err));
+      .then(collection => collection._mongoCollection.createIndex(index))
+      .catch(err => this.handleError(err));
   }
 
   createIndexes(className: string, indexes: any) {
     return this._adaptiveCollection(className)
-      .then((collection) => collection._mongoCollection.createIndexes(indexes))
-      .catch((err) => this.handleError(err));
+      .then(collection => collection._mongoCollection.createIndexes(indexes))
+      .catch(err => this.handleError(err));
   }
 
   createIndexesIfNeeded(className: string, fieldName: string, type: any) {
@@ -1097,11 +1032,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return Promise.resolve();
   }
 
-  createTextIndexesIfNeeded(
-    className: string,
-    query: QueryType,
-    schema: any
-  ): Promise<void> {
+  createTextIndexesIfNeeded(className: string, query: QueryType, schema: any): Promise<void> {
     for (const fieldName in query) {
       if (!query[fieldName] || !query[fieldName].$text) {
         continue;
@@ -1122,7 +1053,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         textIndex,
         existingIndexes,
         schema.fields
-      ).catch((error) => {
+      ).catch(error => {
         if (error.code === 85) {
           // Index exist with different options
           return this.setIndexesFromMongo(className);
@@ -1135,31 +1066,31 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   getIndexes(className: string) {
     return this._adaptiveCollection(className)
-      .then((collection) => collection._mongoCollection.indexes())
-      .catch((err) => this.handleError(err));
+      .then(collection => collection._mongoCollection.indexes())
+      .catch(err => this.handleError(err));
   }
 
   dropIndex(className: string, index: any) {
     return this._adaptiveCollection(className)
-      .then((collection) => collection._mongoCollection.dropIndex(index))
-      .catch((err) => this.handleError(err));
+      .then(collection => collection._mongoCollection.dropIndex(index))
+      .catch(err => this.handleError(err));
   }
 
   dropAllIndexes(className: string) {
     return this._adaptiveCollection(className)
-      .then((collection) => collection._mongoCollection.dropIndexes())
-      .catch((err) => this.handleError(err));
+      .then(collection => collection._mongoCollection.dropIndexes())
+      .catch(err => this.handleError(err));
   }
 
   updateSchemaWithIndexes(): Promise<any> {
     return this.getAllClasses()
-      .then((classes) => {
-        const promises = classes.map((schema) => {
+      .then(classes => {
+        const promises = classes.map(schema => {
           return this.setIndexesFromMongo(schema.className);
         });
         return Promise.all(promises);
       })
-      .catch((err) => this.handleError(err));
+      .catch(err => this.handleError(err));
   }
 
   createTransactionalSession(): Promise<any> {
@@ -1169,9 +1100,20 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   commitTransactionalSession(transactionalSection: any): Promise<void> {
-    return transactionalSection.commitTransaction().then(() => {
-      transactionalSection.endSession();
-    });
+    const commit = retries => {
+      return transactionalSection
+        .commitTransaction()
+        .catch(error => {
+          if (error && error.hasErrorLabel('TransientTransactionError') && retries > 0) {
+            return commit(retries - 1);
+          }
+          throw error;
+        })
+        .then(() => {
+          transactionalSection.endSession();
+        });
+    };
+    return commit(5);
   }
 
   abortTransactionalSession(transactionalSection: any): Promise<void> {

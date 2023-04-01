@@ -6,8 +6,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLQuery(
     'health',
     {
-      description:
-        'The health query can be used to check if the server is up and running.',
+      description: 'The health query can be used to check if the server is up and running.',
       type: new GraphQLNonNull(GraphQLBoolean),
       resolve: () => true,
     },

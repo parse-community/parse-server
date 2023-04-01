@@ -31,18 +31,23 @@ export class FilesController extends AdaptableController {
     }
 
     const location = this.adapter.getFileLocation(config, filename);
-    return this.adapter
-      .createFile(filename, data, contentType, options)
-      .then(() => {
-        return Promise.resolve({
-          url: location,
-          name: filename,
-        });
+    return this.adapter.createFile(filename, data, contentType, options).then(() => {
+      return Promise.resolve({
+        url: location,
+        name: filename,
       });
+    });
   }
 
   deleteFile(config, filename) {
     return this.adapter.deleteFile(filename);
+  }
+
+  getMetadata(filename) {
+    if (typeof this.adapter.getMetadata === 'function') {
+      return this.adapter.getMetadata(filename);
+    }
+    return Promise.resolve({});
   }
 
   /**
@@ -73,16 +78,10 @@ export class FilesController extends AdaptableController {
         } else {
           if (filename.indexOf('tfss-') === 0) {
             fileObject['url'] =
-              'http://files.parsetfss.com/' +
-              config.fileKey +
-              '/' +
-              encodeURIComponent(filename);
+              'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
           } else if (legacyFilesRegex.test(filename)) {
             fileObject['url'] =
-              'http://files.parse.com/' +
-              config.fileKey +
-              '/' +
-              encodeURIComponent(filename);
+              'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
           } else {
             fileObject['url'] = this.adapter.getFileLocation(config, filename);
           }

@@ -1,5 +1,5 @@
 function numberParser(key) {
-  return function(opt) {
+  return function (opt) {
     const intOpt = parseInt(opt);
     if (!Number.isInteger(intOpt)) {
       throw new Error(`Key ${key} has invalid value ${opt}`);
@@ -9,7 +9,7 @@ function numberParser(key) {
 }
 
 function numberOrBoolParser(key) {
-  return function(opt) {
+  return function (opt) {
     if (typeof opt === 'boolean') {
       return opt;
     }

@@ -3,7 +3,6 @@ const AppCache = require('../lib/cache').AppCache;
 
 describe('middlewares', () => {
   let fakeReq, fakeRes;
-
   beforeEach(() => {
     fakeReq = {
       originalUrl: 'http://example.com/parse/',
@@ -12,7 +11,7 @@ describe('middlewares', () => {
         _ApplicationId: 'FakeAppId',
       },
       headers: {},
-      get: (key) => {
+      get: key => {
         return fakeReq.headers[key.toLowerCase()];
       },
     };
@@ -24,7 +23,7 @@ describe('middlewares', () => {
     AppCache.del(fakeReq.body._ApplicationId);
   });
 
-  it('should use _ContentType if provided', (done) => {
+  it('should use _ContentType if provided', done => {
     expect(fakeReq.headers['content-type']).toEqual(undefined);
     const contentType = 'image/jpeg';
     fakeReq.body._ContentType = contentType;
@@ -64,7 +63,7 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed when any one of the configured keys supplied', (done) => {
+  it('should succeed when any one of the configured keys supplied', done => {
     AppCache.put(fakeReq.body._ApplicationId, {
       clientKey: 'clientKey',
       masterKey: 'masterKey',
@@ -77,7 +76,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should succeed when client key supplied but empty', (done) => {
+  it('should succeed when client key supplied but empty', done => {
     AppCache.put(fakeReq.body._ApplicationId, {
       clientKey: '',
       masterKey: 'masterKey',
@@ -90,7 +89,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should succeed when no keys are configured and none supplied', (done) => {
+  it('should succeed when no keys are configured and none supplied', done => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
     });
@@ -110,22 +109,24 @@ describe('middlewares', () => {
 
   const BodyKeys = Object.keys(BodyParams);
 
-  BodyKeys.forEach((infoKey) => {
+  BodyKeys.forEach(infoKey => {
     const bodyKey = BodyParams[infoKey];
     const keyValue = 'Fake' + bodyKey;
     // javascriptKey is the only one that gets defaulted,
     const otherKeys = BodyKeys.filter(
-      (otherKey) => otherKey !== infoKey && otherKey !== 'javascriptKey'
+      otherKey => otherKey !== infoKey && otherKey !== 'javascriptKey'
     );
-
-    it(`it should pull ${bodyKey} into req.info`, (done) => {
+    it(`it should pull ${bodyKey} into req.info`, done => {
+      AppCache.put(fakeReq.body._ApplicationId, {
+        masterKeyIps: ['0.0.0.0/0'],
+      });
+      fakeReq.ip = '127.0.0.1';
       fakeReq.body[bodyKey] = keyValue;
-
       middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
         expect(fakeReq.body[bodyKey]).toEqual(undefined);
         expect(fakeReq.info[infoKey]).toEqual(keyValue);
 
-        otherKeys.forEach((otherKey) => {
+        otherKeys.forEach(otherKey => {
           expect(fakeReq.info[otherKey]).toEqual(undefined);
         });
 
@@ -134,161 +135,74 @@ describe('middlewares', () => {
     });
   });
 
-  it('should not succeed if the ip does not belong to masterKeyIps list', () => {
+  it('should not succeed and log if the ip does not belong to masterKeyIps list', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
+      masterKeyIps: ['10.0.0.1'],
     });
-    fakeReq.ip = 'ip3';
+    fakeReq.ip = '127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
-    expect(fakeRes.status).toHaveBeenCalledWith(403);
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'masterKeyIps'.`
+    );
   });
 
-  it('should succeed if the ip does belong to masterKeyIps list', (done) => {
+  it('should not succeed if the ip does not belong to masterKeyIps list', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
+      masterKeyIps: ['10.0.0.1'],
     });
-    fakeReq.ip = 'ip1';
+    fakeReq.ip = '127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(false);
   });
 
-  it('should not succeed if the connection.remoteAddress does not belong to masterKeyIps list', () => {
+  it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
     AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
+      maintenanceKey: 'masterKey',
+      maintenanceKeyIps: ['10.0.0.0', '10.0.0.1'],
     });
-    fakeReq.connection = { remoteAddress: 'ip3' };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
-    expect(fakeRes.status).toHaveBeenCalledWith(403);
+    fakeReq.ip = '10.0.0.2';
+    fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaintenance).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using maintenance key rejected as the request IP address '10.0.0.2' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
   });
 
-  it('should succeed if the connection.remoteAddress does belong to masterKeyIps list', (done) => {
+  it('should succeed if the ip does belong to masterKeyIps list', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
+      masterKeyIps: ['10.0.0.1'],
     });
-    fakeReq.connection = { remoteAddress: 'ip1' };
+    fakeReq.ip = '10.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
   });
 
-  it('should not succeed if the socket.remoteAddress does not belong to masterKeyIps list', () => {
+  it('should allow any ip to use masterKey if masterKeyIps is empty', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
+      masterKeyIps: ['0.0.0.0/0'],
     });
-    fakeReq.socket = { remoteAddress: 'ip3' };
+    fakeReq.ip = '10.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
-    expect(fakeRes.status).toHaveBeenCalledWith(403);
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
   });
 
-  it('should succeed if the socket.remoteAddress does belong to masterKeyIps list', (done) => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
-    });
-    fakeReq.socket = { remoteAddress: 'ip1' };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
-  });
-
-  it('should not succeed if the connection.socket.remoteAddress does not belong to masterKeyIps list', () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
-    });
-    fakeReq.connection = { socket: { remoteAddress: 'ip3' } };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
-    expect(fakeRes.status).toHaveBeenCalledWith(403);
-  });
-
-  it('should succeed if the connection.socket.remoteAddress does belong to masterKeyIps list', (done) => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip1', 'ip2'],
-    });
-    fakeReq.connection = { socket: { remoteAddress: 'ip1' } };
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
-  });
-
-  it('should allow any ip to use masterKey if masterKeyIps is empty', (done) => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: [],
-    });
-    fakeReq.ip = 'ip1';
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
-  });
-
-  it('should succeed if xff header does belong to masterKeyIps', (done) => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip1'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = 'ip1, ip2, ip3';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
-  });
-
-  it('should succeed if xff header with one ip does belong to masterKeyIps', (done) => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip1'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = 'ip1';
-    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-      expect(fakeRes.status).not.toHaveBeenCalled();
-      done();
-    });
-  });
-
-  it('should not succeed if xff header does not belong to masterKeyIps', () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip4'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = 'ip1, ip2, ip3';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
-    expect(fakeRes.status).toHaveBeenCalledWith(403);
-  });
-
-  it('should not succeed if xff header is empty and masterKeyIps is set', () => {
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['ip1'],
-    });
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    fakeReq.headers['x-forwarded-for'] = '';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
-    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  it('can set trust proxy', async () => {
+    const server = await reconfigureServer({ trustProxy: 1 });
+    expect(server.app.parent.settings['trust proxy']).toBe(1);
   });
 
   it('should properly expose the headers', () => {
@@ -298,9 +212,7 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
     expect(Object.keys(headers).length).toBe(4);
     expect(headers['Access-Control-Expose-Headers']).toBe(
@@ -318,21 +230,15 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
 
     AppCache.put(fakeReq.body._ApplicationId, {
       allowHeaders: [],
     });
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
   });
 
   it('should append custom headers to Access-Control-Allow-Headers if allowHeaders provided', () => {
@@ -345,19 +251,43 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      'Header-1, Header-2'
-    );
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain('Header-1, Header-2');
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
   });
 
-  it('should use user provided on field userFromJWT', (done) => {
+  it('should set default Access-Control-Allow-Origin if allowOrigin is empty', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowOrigin: undefined,
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual('*');
+  });
+
+  it('should set custom origin to Access-Control-Allow-Origin if allowOrigin is provided', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowOrigin: 'https://parseplatform.org/',
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual('https://parseplatform.org/');
+  });
+
+  it('should use user provided on field userFromJWT', done => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
     });

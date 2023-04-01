@@ -1,33 +1,26 @@
 import corsMiddleware from 'cors';
-import bodyParser from 'body-parser';
-import { graphqlUploadExpress } from 'graphql-upload';
-import { graphqlExpress } from 'apollo-server-express/dist/expressApollo';
-import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
+import { createServer } from '@graphql-yoga/node';
+import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
-import { handleParseErrors, handleParseHeaders } from '../middlewares';
+import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
-import ParseGraphQLController, {
-  ParseGraphQLConfig,
-} from '../Controllers/ParseGraphQLController';
+import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
 
   constructor(parseServer, config) {
-    this.parseServer =
-      parseServer ||
-      requiredParameter('You must provide a parseServer instance!');
+    this.parseServer = parseServer || requiredParameter('You must provide a parseServer instance!');
     if (!config || !config.graphQLPath) {
       requiredParameter('You must provide a config.graphQLPath!');
     }
     this.config = config;
     this.parseGraphQLController = this.parseServer.config.parseGraphQLController;
     this.log =
-      (this.parseServer.config && this.parseServer.config.loggerController) ||
-      defaultLogger;
+      (this.parseServer.config && this.parseServer.config.loggerController) || defaultLogger;
     this.parseGraphQLSchema = new ParseGraphQLSchema({
       parseGraphQLController: this.parseGraphQLController,
       databaseController: this.parseServer.config.databaseController,
@@ -37,26 +30,37 @@ class ParseGraphQLServer {
     });
   }
 
-  async _getGraphQLOptions(req) {
+  async _getGraphQLOptions() {
     try {
       return {
         schema: await this.parseGraphQLSchema.load(),
-        context: {
-          info: req.info,
-          config: req.config,
-          auth: req.auth,
-        },
-        formatError: error => {
-          // Allow to console.log here to debug
-          return error;
+        context: ({ req: { info, config, auth } }) => ({
+          info,
+          config,
+          auth,
+        }),
+        maskedErrors: false,
+        multipart: {
+          fileSize: this._transformMaxUploadSizeToBytes(
+            this.parseServer.config.maxUploadSize || '20mb'
+          ),
         },
       };
     } catch (e) {
-      this.log.error(
-        e.stack || (typeof e.toString === 'function' && e.toString()) || e
-      );
+      this.log.error(e.stack || (typeof e.toString === 'function' && e.toString()) || e);
       throw e;
     }
+  }
+
+  async _getServer() {
+    const schemaRef = this.parseGraphQLSchema.graphQLSchema;
+    const newSchemaRef = await this.parseGraphQLSchema.load();
+    if (schemaRef === newSchemaRef && this._server) {
+      return this._server;
+    }
+    const options = await this._getGraphQLOptions();
+    this._server = createServer(options);
+    return this._server;
   }
 
   _transformMaxUploadSizeToBytes(maxUploadSize) {
@@ -72,27 +76,34 @@ class ParseGraphQLServer {
     );
   }
 
+  /**
+   * @static
+   * Allow developers to customize each request with inversion of control/dependency injection
+   */
+  applyRequestContextMiddleware(api, options) {
+    if (options.requestContextMiddleware) {
+      if (typeof options.requestContextMiddleware !== 'function') {
+        throw new Error('requestContextMiddleware must be a function');
+      }
+      api.use(options.requestContextMiddleware);
+    }
+  }
+
   applyGraphQL(app) {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
 
-    app.use(
-      this.config.graphQLPath,
-      graphqlUploadExpress({
-        maxFileSize: this._transformMaxUploadSizeToBytes(
-          this.parseServer.config.maxUploadSize || '20mb'
-        ),
-      })
-    );
     app.use(this.config.graphQLPath, corsMiddleware());
-    app.use(this.config.graphQLPath, bodyParser.json());
     app.use(this.config.graphQLPath, handleParseHeaders);
+    app.use(this.config.graphQLPath, handleParseSession);
+    this.applyRequestContextMiddleware(app, this.parseServer.config);
     app.use(this.config.graphQLPath, handleParseErrors);
-    app.use(
-      this.config.graphQLPath,
-      graphqlExpress(async req => await this._getGraphQLOptions(req))
-    );
+
+    app.use(this.config.graphQLPath, async (req, res) => {
+      const server = await this._getServer();
+      return server(req, res);
+    });
   }
 
   applyPlayground(app) {
@@ -101,19 +112,17 @@ class ParseGraphQLServer {
     }
     app.get(
       this.config.playgroundPath ||
-        requiredParameter(
-          'You must provide a config.playgroundPath to applyPlayground!'
-        ),
+        requiredParameter('You must provide a config.playgroundPath to applyPlayground!'),
       (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.write(
-          renderPlaygroundPage({
+          renderGraphiQL({
             endpoint: this.config.graphQLPath,
             subscriptionEndpoint: this.config.subscriptionsPath,
-            headers: {
+            headers: JSON.stringify({
               'X-Parse-Application-Id': this.parseServer.config.appId,
               'X-Parse-Master-Key': this.parseServer.config.masterKey,
-            },
+            }),
           })
         );
         res.end();
@@ -127,19 +136,13 @@ class ParseGraphQLServer {
         execute,
         subscribe,
         onOperation: async (_message, params, webSocket) =>
-          Object.assign(
-            {},
-            params,
-            await this._getGraphQLOptions(webSocket.upgradeReq)
-          ),
+          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
       },
       {
         server,
         path:
           this.config.subscriptionsPath ||
-          requiredParameter(
-            'You must provide a config.subscriptionsPath to createSubscriptions!'
-          ),
+          requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!'),
       }
     );
   }

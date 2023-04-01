@@ -6,6 +6,58 @@ const RestQuery = require('../lib/RestQuery');
 const Auth = require('../lib/Auth').Auth;
 const Config = require('../lib/Config');
 
+function testLoadRoles(config, done) {
+  const rolesNames = ['FooRole', 'BarRole', 'BazRole'];
+  const roleIds = {};
+  createTestUser()
+    .then(user => {
+      // Put the user on the 1st role
+      return createRole(rolesNames[0], null, user)
+        .then(aRole => {
+          roleIds[aRole.get('name')] = aRole.id;
+          // set the 1st role as a sibling of the second
+          // user will should have 2 role now
+          return createRole(rolesNames[1], aRole, null);
+        })
+        .then(anotherRole => {
+          roleIds[anotherRole.get('name')] = anotherRole.id;
+          // set this role as a sibling of the last
+          // the user should now have 3 roles
+          return createRole(rolesNames[2], anotherRole, null);
+        })
+        .then(lastRole => {
+          roleIds[lastRole.get('name')] = lastRole.id;
+          const auth = new Auth({ config, isMaster: true, user: user });
+          return auth._loadRoles();
+        });
+    })
+    .then(
+      roles => {
+        expect(roles.length).toEqual(3);
+        rolesNames.forEach(name => {
+          expect(roles.indexOf('role:' + name)).not.toBe(-1);
+        });
+        done();
+      },
+      function () {
+        fail('should succeed');
+        done();
+      }
+    );
+}
+
+const createRole = function (name, sibling, user) {
+  const role = new Parse.Role(name, new Parse.ACL());
+  if (user) {
+    const users = role.relation('users');
+    users.add(user);
+  }
+  if (sibling) {
+    role.relation('roles').add(sibling);
+  }
+  return role.save({}, { useMasterKey: true });
+};
+
 describe('Parse Role testing', () => {
   it('Do a bunch of basic role testing', done => {
     let user;
@@ -74,27 +126,15 @@ describe('Parse Role testing', () => {
       );
   });
 
-  const createRole = function(name, sibling, user) {
-    const role = new Parse.Role(name, new Parse.ACL());
-    if (user) {
-      const users = role.relation('users');
-      users.add(user);
-    }
-    if (sibling) {
-      role.relation('roles').add(sibling);
-    }
-    return role.save({}, { useMasterKey: true });
-  };
-
   it('should not recursively load the same role multiple times', done => {
     const rootRole = 'RootRole';
     const roleNames = ['FooRole', 'BarRole', 'BazRole'];
     const allRoles = [rootRole].concat(roleNames);
 
     const roleObjs = {};
-    const createAllRoles = function(user) {
-      const promises = allRoles.map(function(roleName) {
-        return createRole(roleName, null, user).then(function(roleObj) {
+    const createAllRoles = function (user) {
+      const promises = allRoles.map(function (roleName) {
+        return createRole(roleName, null, user).then(function (roleObj) {
           roleObjs[roleName] = roleObj;
           return roleObj;
         });
@@ -112,7 +152,7 @@ describe('Parse Role testing', () => {
       })
       .then(roles => {
         const rootRoleObj = roleObjs[rootRole];
-        roles.forEach(function(role, i) {
+        roles.forEach(function (role, i) {
           // Add all roles to the RootRole
           if (role.id !== rootRoleObj.id) {
             role.relation('roles').add(rootRoleObj);
@@ -131,17 +171,14 @@ describe('Parse Role testing', () => {
           isMaster: true,
           user: user,
         });
-        getAllRolesSpy = spyOn(
-          auth,
-          '_getAllRolesNamesForRoleIds'
-        ).and.callThrough();
+        getAllRolesSpy = spyOn(auth, '_getAllRolesNamesForRoleIds').and.callThrough();
 
         return auth._loadRoles();
       })
       .then(roles => {
         expect(roles.length).toEqual(4);
 
-        allRoles.forEach(function(name) {
+        allRoles.forEach(function (name) {
           expect(roles.indexOf('role:' + name)).not.toBe(-1);
         });
 
@@ -159,46 +196,6 @@ describe('Parse Role testing', () => {
         done();
       });
   });
-
-  function testLoadRoles(config, done) {
-    const rolesNames = ['FooRole', 'BarRole', 'BazRole'];
-    const roleIds = {};
-    createTestUser()
-      .then(user => {
-        // Put the user on the 1st role
-        return createRole(rolesNames[0], null, user)
-          .then(aRole => {
-            roleIds[aRole.get('name')] = aRole.id;
-            // set the 1st role as a sibling of the second
-            // user will should have 2 role now
-            return createRole(rolesNames[1], aRole, null);
-          })
-          .then(anotherRole => {
-            roleIds[anotherRole.get('name')] = anotherRole.id;
-            // set this role as a sibling of the last
-            // the user should now have 3 roles
-            return createRole(rolesNames[2], anotherRole, null);
-          })
-          .then(lastRole => {
-            roleIds[lastRole.get('name')] = lastRole.id;
-            const auth = new Auth({ config, isMaster: true, user: user });
-            return auth._loadRoles();
-          });
-      })
-      .then(
-        roles => {
-          expect(roles.length).toEqual(3);
-          rolesNames.forEach(name => {
-            expect(roles.indexOf('role:' + name)).not.toBe(-1);
-          });
-          done();
-        },
-        function() {
-          fail('should succeed');
-          done();
-        }
-      );
-  }
 
   it('should recursively load roles', done => {
     testLoadRoles(Config.get('test'), done);
@@ -230,7 +227,8 @@ describe('Parse Role testing', () => {
     );
   });
 
-  it('Different _Role objects cannot have the same name.', done => {
+  it('Different _Role objects cannot have the same name.', async done => {
+    await reconfigureServer();
     const roleName = 'MyRole';
     let aUser;
     createTestUser()
@@ -259,26 +257,16 @@ describe('Parse Role testing', () => {
     const moderator = new Parse.Role('Moderator', new Parse.ACL());
     const superModerator = new Parse.Role('SuperModerator', new Parse.ACL());
     const contentManager = new Parse.Role('ContentManager', new Parse.ACL());
-    const superContentManager = new Parse.Role(
-      'SuperContentManager',
-      new Parse.ACL()
-    );
-    Parse.Object.saveAll(
-      [admin, moderator, contentManager, superModerator, superContentManager],
-      { useMasterKey: true }
-    )
+    const superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {
+      useMasterKey: true,
+    })
       .then(() => {
         contentManager.getRoles().add([moderator, superContentManager]);
         moderator.getRoles().add([admin, superModerator]);
         superContentManager.getRoles().add(superModerator);
         return Parse.Object.saveAll(
-          [
-            admin,
-            moderator,
-            contentManager,
-            superModerator,
-            superContentManager,
-          ],
+          [admin, moderator, contentManager, superModerator, superContentManager],
           { useMasterKey: true }
         );
       })
@@ -286,17 +274,15 @@ describe('Parse Role testing', () => {
         const auth = new Auth({ config: Config.get('test'), isMaster: true });
         // For each role, fetch their sibling, what they inherit
         // return with result and roleId for later comparison
-        const promises = [admin, moderator, contentManager, superModerator].map(
-          role => {
-            return auth._getAllRolesNamesForRoleIds([role.id]).then(result => {
-              return Promise.resolve({
-                id: role.id,
-                name: role.get('name'),
-                roleNames: result,
-              });
+        const promises = [admin, moderator, contentManager, superModerator].map(role => {
+          return auth._getAllRolesNamesForRoleIds([role.id]).then(result => {
+            return Promise.resolve({
+              id: role.id,
+              name: role.get('name'),
+              roleNames: result,
             });
-          }
-        );
+          });
+        });
 
         return Promise.all(promises);
       })
@@ -442,7 +428,7 @@ describe('Parse Role testing', () => {
         },
         e => {
           if (e) {
-            expect(e.code).toEqual(101);
+            expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
           } else {
             fail('should return an error');
           }
@@ -563,7 +549,7 @@ describe('Parse Role testing', () => {
         const query = new Parse.Query(Parse.Role);
         query.equalTo('name', 'admin');
         query.equalTo('users', user);
-        query.find().then(function(roles) {
+        query.find().then(function (roles) {
           expect(roles.length).toEqual(1);
           done();
         });
@@ -582,17 +568,15 @@ describe('Parse Role testing', () => {
       users.add(user);
       role.save({}, { useMasterKey: true }).then(() => {
         const otherUser = new Parse.User();
-        otherUser
-          .save({ username: 'otherUser', password: 'otherUser' })
-          .then(otherUser => {
-            const query = new Parse.Query(Parse.Role);
-            query.equalTo('name', 'admin');
-            query.equalTo('users', otherUser);
-            query.find().then(function(roles) {
-              expect(roles.length).toEqual(0);
-              done();
-            });
+        otherUser.save({ username: 'otherUser', password: 'otherUser' }).then(otherUser => {
+          const query = new Parse.Query(Parse.Role);
+          query.equalTo('name', 'admin');
+          query.equalTo('users', otherUser);
+          query.find().then(function (roles) {
+            expect(roles.length).toEqual(0);
+            done();
           });
+        });
       });
     });
   });
@@ -610,7 +594,7 @@ describe('Parse Role testing', () => {
         const query = new Parse.Query(Parse.Role);
         query.equalTo('name', 'admin');
         query.equalTo('users', null);
-        query.find().then(function(roles) {
+        query.find().then(function (roles) {
           expect(roles.length).toEqual(0);
           done();
         });

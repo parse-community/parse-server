@@ -1,8 +1,8 @@
 module.exports = {
-  validateAppId: function() {
+  validateAppId: function () {
     return Promise.resolve();
   },
-  validateAuthData: function(authData) {
+  validateAuthData: function (authData) {
     if (authData.token == 'my-token') {
       return Promise.resolve();
     }

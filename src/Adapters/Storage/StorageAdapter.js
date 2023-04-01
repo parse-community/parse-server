@@ -30,22 +30,17 @@ export type FullQueryOptions = QueryOptions & UpdateQueryOptions;
 
 export interface StorageAdapter {
   canSortOnJoinTables: boolean;
+  schemaCacheTtl: ?number;
+  enableSchemaHooks: boolean;
 
   classExists(className: string): Promise<boolean>;
   setClassLevelPermissions(className: string, clps: any): Promise<void>;
   createClass(className: string, schema: SchemaType): Promise<void>;
-  addFieldIfNotExists(
-    className: string,
-    fieldName: string,
-    type: any
-  ): Promise<void>;
+  addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void>;
+  updateFieldOptions(className: string, fieldName: string, type: any): Promise<void>;
   deleteClass(className: string): Promise<void>;
   deleteAllClasses(fast: boolean): Promise<void>;
-  deleteFields(
-    className: string,
-    schema: SchemaType,
-    fieldNames: Array<string>
-  ): Promise<void>;
+  deleteFields(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void>;
   getAllClasses(): Promise<StorageClass[]>;
   getClass(className: string): Promise<StorageClass>;
   createObject(
@@ -93,13 +88,9 @@ export interface StorageAdapter {
     fieldNames: string[],
     indexName?: string,
     caseSensitive?: boolean,
-    indexType?: any
+    options?: Object
   ): Promise<any>;
-  ensureUniqueness(
-    className: string,
-    schema: SchemaType,
-    fieldNames: Array<string>
-  ): Promise<void>;
+  ensureUniqueness(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void>;
   count(
     className: string,
     schema: SchemaType,
@@ -123,6 +114,7 @@ export interface StorageAdapter {
     explain?: boolean
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
+  watch(callback: () => void): void;
 
   // Indexing
   createIndexes(className: string, indexes: any, conn: ?any): Promise<void>;

@@ -99,15 +99,22 @@ function contains(haystack: Array, needle: any): boolean {
       if (typeof ptr === 'string' && ptr === needle.objectId) {
         return true;
       }
-      if (
-        ptr.className === needle.className &&
-        ptr.objectId === needle.objectId
-      ) {
+      if (ptr.className === needle.className && ptr.objectId === needle.objectId) {
         return true;
       }
     }
+
     return false;
   }
+
+  if (Array.isArray(needle)) {
+    for (const need of needle) {
+      if (contains(haystack, need)) {
+        return true;
+      }
+    }
+  }
+
   return haystack.indexOf(needle) > -1;
 }
 /**
@@ -118,8 +125,7 @@ function contains(haystack: Array, needle: any): boolean {
  */
 function matchesQuery(object: any, query: any): boolean {
   if (query instanceof Parse.Query) {
-    var className =
-      object.id instanceof Id ? object.id.className : object.className;
+    var className = object.id instanceof Id ? object.id.className : object.className;
     if (className !== query.className) {
       return false;
     }
@@ -158,11 +164,7 @@ function matchesKeyConstraints(object, key, constraints) {
     var keyComponents = key.split('.');
     var subObjectKey = keyComponents[0];
     var keyRemainder = keyComponents.slice(1).join('.');
-    return matchesKeyConstraints(
-      object[subObjectKey] || {},
-      keyRemainder,
-      constraints
-    );
+    return matchesKeyConstraints(object[subObjectKey] || {}, keyRemainder, constraints);
   }
   var i;
   if (key === '$or') {
@@ -172,6 +174,22 @@ function matchesKeyConstraints(object, key, constraints) {
       }
     }
     return false;
+  }
+  if (key === '$and') {
+    for (i = 0; i < constraints.length; i++) {
+      if (!matchesQuery(object, constraints[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (key === '$nor') {
+    for (i = 0; i < constraints.length; i++) {
+      if (matchesQuery(object, constraints[i])) {
+        return false;
+      }
+    }
+    return true;
   }
   if (key === '$relatedTo') {
     // Bail! We can't handle relational queries locally
@@ -191,7 +209,7 @@ function matchesKeyConstraints(object, key, constraints) {
   var compareTo;
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
-      return equalObjectsGeneric(object[key], constraints, function(obj, ptr) {
+      return equalObjectsGeneric(object[key], constraints, function (obj, ptr) {
         return (
           typeof obj !== 'undefined' &&
           ptr.className === obj.className &&
@@ -200,11 +218,7 @@ function matchesKeyConstraints(object, key, constraints) {
       });
     }
 
-    return equalObjectsGeneric(
-      object[key],
-      Parse._decode(key, constraints),
-      equalObjects
-    );
+    return equalObjectsGeneric(object[key], Parse._decode(key, constraints), equalObjects);
   }
   // More complex cases
   for (var condition in constraints) {
@@ -249,6 +263,9 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       case '$all':
+        if (!object[key]) {
+          return false;
+        }
         for (i = 0; i < compareTo.length; i++) {
           if (object[key].indexOf(compareTo[i]) < 0) {
             return false;
@@ -263,10 +280,7 @@ function matchesKeyConstraints(object, key, constraints) {
           // tries to submit a non-boolean for $exits outside the SDKs, just ignore it.
           break;
         }
-        if (
-          (!propertyExists && existenceIsRequired) ||
-          (propertyExists && !existenceIsRequired)
-        ) {
+        if ((!propertyExists && existenceIsRequired) || (propertyExists && !existenceIsRequired)) {
           return false;
         }
         break;
@@ -311,10 +325,7 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         var southWest = compareTo.$box[0];
         var northEast = compareTo.$box[1];
-        if (
-          southWest.latitude > northEast.latitude ||
-          southWest.longitude > northEast.longitude
-        ) {
+        if (southWest.latitude > northEast.latitude || southWest.longitude > northEast.longitude) {
           // Invalid box, crosses the date line
           return false;
         }
@@ -324,6 +335,40 @@ function matchesKeyConstraints(object, key, constraints) {
           object[key].longitude > southWest.longitude &&
           object[key].longitude < northEast.longitude
         );
+      case '$containedBy': {
+        for (const value of object[key]) {
+          if (!contains(compareTo, value)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      case '$geoWithin': {
+        if (compareTo.$polygon) {
+          const points = compareTo.$polygon.map(geoPoint => [
+            geoPoint.latitude,
+            geoPoint.longitude,
+          ]);
+          const polygon = new Parse.Polygon(points);
+          return polygon.containsPoint(object[key]);
+        }
+        if (compareTo.$centerSphere) {
+          const [WGS84Point, maxDistance] = compareTo.$centerSphere;
+          const centerPoint = new Parse.GeoPoint({
+            latitude: WGS84Point[1],
+            longitude: WGS84Point[0],
+          });
+          const point = new Parse.GeoPoint(object[key]);
+          const distance = point.radiansTo(centerPoint);
+          return distance <= maxDistance;
+        }
+        break;
+      }
+      case '$geoIntersects': {
+        const polygon = new Parse.Polygon(object[key].coordinates);
+        const point = new Parse.GeoPoint(compareTo.$point);
+        return polygon.containsPoint(point);
+      }
       case '$options':
         // Not a query type, but a way to add options to $regex. Ignore and
         // avoid the default
