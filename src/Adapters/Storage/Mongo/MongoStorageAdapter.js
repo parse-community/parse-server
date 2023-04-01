@@ -148,21 +148,18 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._mongoOptions = { ...mongoOptions };
     this._mongoOptions.useNewUrlParser = true;
     this._mongoOptions.useUnifiedTopology = true;
-    this._onchange = () => {};
+    this._onchange = () => { };
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
     this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
-    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS', 'disableIndexFieldValidation']) {
       delete mongoOptions[key];
       delete this._mongoOptions[key];
     }
-    this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
-    delete mongoOptions.enableSchemaHooks;
-    delete mongoOptions.disableIndexFieldValidation;
-    delete mongoOptions.maxTimeMS;
   }
 
   watch(callback: () => void): void {
