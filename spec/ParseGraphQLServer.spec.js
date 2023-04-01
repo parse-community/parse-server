@@ -9,7 +9,7 @@ require('./helper');
 const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
-const { getMainDefinition } = require('@apollo/client/utilities')
+const { getMainDefinition } = require('@apollo/client/utilities');
 const { createUploadLink } = require('apollo-upload-client');
 const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('@apollo/client/link/ws');
@@ -293,30 +293,37 @@ describe('ParseGraphQLServer', () => {
     let objects = [];
 
     async function prepareData() {
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
       user1 = new Parse.User();
       user1.setUsername('user1');
       user1.setPassword('user1');
       user1.setEmail('user1@user1.user1');
+      user1.setACL(acl);
       await user1.signUp();
 
       user2 = new Parse.User();
       user2.setUsername('user2');
       user2.setPassword('user2');
+      user2.setACL(acl);
       await user2.signUp();
 
       user3 = new Parse.User();
       user3.setUsername('user3');
       user3.setPassword('user3');
+      user3.setACL(acl);
       await user3.signUp();
 
       user4 = new Parse.User();
       user4.setUsername('user4');
       user4.setPassword('user4');
+      user4.setACL(acl);
       await user4.signUp();
 
       user5 = new Parse.User();
       user5.setUsername('user5');
       user5.setPassword('user5');
+      user5.setACL(acl);
       await user5.signUp();
 
       const roleACL = new Parse.ACL();
@@ -426,7 +433,7 @@ describe('ParseGraphQLServer', () => {
       const expressApp = express();
       httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
-      parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {
+      parseLiveQueryServer = await ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
       });
       parseGraphQLServer.applyGraphQL(expressApp);
@@ -7067,6 +7074,11 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             },
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
           });
 
           expect(result.data.createUser.clientMutationId).toEqual(clientMutationId);
@@ -7124,6 +7136,7 @@ describe('ParseGraphQLServer', () => {
                       username: 'user2',
                       password: 'user2',
                       someField: 'someValue2',
+                      ACL: { public: { read: true, write: true } },
                     },
                   },
                   someField: 'someValue',
@@ -7196,6 +7209,7 @@ describe('ParseGraphQLServer', () => {
                       username: 'user2',
                       password: 'user2',
                       someField: 'someValue2',
+                      ACL: { public: { read: true, write: true } },
                     },
                   },
                 },
@@ -7259,7 +7273,6 @@ describe('ParseGraphQLServer', () => {
           expect(challengeCall[3].isChallenge).toBeTruthy();
           expect(challengeCall[3].object.id).toEqual(user.id);
           expect(challengeCall[3].original.id).toEqual(user.id);
-          expect(challengeCall[4] instanceof Config).toBeTruthy();
           expect(result.data.challenge.clientMutationId).toEqual(clientMutationId);
           expect(result.data.challenge.challengeData).toEqual({
             challengeAdapter: { someData: true },
@@ -8310,18 +8323,20 @@ describe('ParseGraphQLServer', () => {
           const someClass = new Parse.Object('SomeClass');
           await someClass.save();
 
+          const roleACL = new Parse.ACL();
+          roleACL.setPublicReadAccess(true);
+
           const user = new Parse.User();
           user.set('username', 'username');
           user.set('password', 'password');
+          user.setACL(roleACL);
           await user.signUp();
 
           const user2 = new Parse.User();
           user2.set('username', 'username2');
           user2.set('password', 'password2');
+          user2.setACL(roleACL);
           await user2.signUp();
-
-          const roleACL = new Parse.ACL();
-          roleACL.setPublicReadAccess(true);
 
           const role = new Parse.Role('aRole', roleACL);
           await role.save();
@@ -10599,6 +10614,9 @@ describe('ParseGraphQLServer', () => {
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
+          const acl = new Parse.ACL();
+          acl.setPublicReadAccess(true);
+          user.setACL(acl);
           await user.signUp();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();

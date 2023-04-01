@@ -29,27 +29,20 @@ describe('Server Url Checks', () => {
     server.close(done);
   });
 
-  it('validate good server url', done => {
+  it('validate good server url', async () => {
     Parse.serverURL = 'http://localhost:13376';
-    ParseServer.verifyServerUrl(async result => {
-      if (!result) {
-        done.fail('Did not pass valid url');
-      }
-      await reconfigureServer();
-      done();
-    });
+    const response = await ParseServer.verifyServerUrl();
+    expect(response).toBeTrue();
   });
 
-  it('mark bad server url', done => {
+  it('mark bad server url', async () => {
     spyOn(console, 'warn').and.callFake(() => {});
     Parse.serverURL = 'notavalidurl';
-    ParseServer.verifyServerUrl(async result => {
-      if (result) {
-        done.fail('Did not mark invalid url');
-      }
-      await reconfigureServer();
-      done();
-    });
+    const response = await ParseServer.verifyServerUrl();
+    expect(response).not.toBeTrue();
+    expect(console.warn).toHaveBeenCalledWith(
+      `\nWARNING, Unable to connect to 'notavalidurl' as the URL is invalid. Cloud code and push notifications may be unavailable!\n`
+    );
   });
 
   xit('handleShutdown, close connection', done => {
@@ -92,7 +85,7 @@ describe('Server Url Checks', () => {
         close = true;
       },
     });
-    const parseServer = ParseServer.start(newConfiguration);
+    const parseServer = ParseServer.startApp(newConfiguration);
   });
 
   it('does not have unhandled promise rejection in the case of load error', done => {

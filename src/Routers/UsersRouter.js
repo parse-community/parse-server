@@ -7,10 +7,15 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
-import { maybeRunTrigger, Types as TriggerTypes, getRequestObject } from '../triggers';
+import {
+  maybeRunTrigger,
+  Types as TriggerTypes,
+  getRequestObject,
+  resolveError,
+} from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
-import { logger } from '../../lib/Adapters/Logger/WinstonLogger';
+import { logger } from '../logger';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -98,7 +103,7 @@ export class UsersRouter extends ClassesRouter {
         query = { $or: [{ username }, { email: username }] };
       }
       return req.config.database
-        .find('_User', query)
+        .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
@@ -276,7 +281,7 @@ export class UsersRouter extends ClassesRouter {
     await createSession();
 
     const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
-    maybeRunTrigger(
+    await maybeRunTrigger(
       TriggerTypes.afterLogin,
       { ...req.auth, user: afterLoginUser },
       afterLoginUser,
@@ -287,6 +292,7 @@ export class UsersRouter extends ClassesRouter {
     if (authDataResponse) {
       user.authDataResponse = authDataResponse;
     }
+    await req.config.authDataManager.runAfterFind(req, user.authData);
 
     return { response: user };
   }
@@ -355,49 +361,36 @@ export class UsersRouter extends ClassesRouter {
       });
   }
 
-  handleLogOut(req) {
+  async handleLogOut(req) {
     const success = { response: {} };
     if (req.info && req.info.sessionToken) {
-      return rest
-        .find(
+      const records = await rest.find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { sessionToken: req.info.sessionToken },
+        undefined,
+        req.info.clientSDK,
+        req.info.context
+      );
+      if (records.results && records.results.length) {
+        await rest.del(
           req.config,
           Auth.master(req.config),
           '_Session',
-          { sessionToken: req.info.sessionToken },
-          undefined,
-          req.info.clientSDK,
+          records.results[0].objectId,
           req.info.context
-        )
-        .then(records => {
-          if (records.results && records.results.length) {
-            return rest
-              .del(
-                req.config,
-                Auth.master(req.config),
-                '_Session',
-                records.results[0].objectId,
-                req.info.context
-              )
-              .then(() => {
-                this._runAfterLogoutTrigger(req, records.results[0]);
-                return Promise.resolve(success);
-              });
-          }
-          return Promise.resolve(success);
-        });
+        );
+        await maybeRunTrigger(
+          TriggerTypes.afterLogout,
+          req.auth,
+          Parse.Session.fromJSON(Object.assign({ className: '_Session' }, records.results[0])),
+          null,
+          req.config
+        );
+      }
     }
-    return Promise.resolve(success);
-  }
-
-  _runAfterLogoutTrigger(req, session) {
-    // After logout trigger
-    maybeRunTrigger(
-      TriggerTypes.afterLogout,
-      req.auth,
-      Parse.Session.fromJSON(Object.assign({ className: '_Session' }, session)),
-      null,
-      req.config
-    );
+    return success;
   }
 
   _throwOnBadEmailConfig(req) {
@@ -422,7 +415,7 @@ export class UsersRouter extends ClassesRouter {
     }
   }
 
-  handleResetRequest(req) {
+  async handleResetRequest(req) {
     this._throwOnBadEmailConfig(req);
 
     const { email } = req.body;
@@ -436,24 +429,22 @@ export class UsersRouter extends ClassesRouter {
       );
     }
     const userController = req.config.userController;
-    return userController.sendPasswordResetEmail(email).then(
-      () => {
-        return Promise.resolve({
-          response: {},
-        });
-      },
-      err => {
-        if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
-          // Return success so that this endpoint can't
-          // be used to enumerate valid emails
-          return Promise.resolve({
+    try {
+      await userController.sendPasswordResetEmail(email);
+      return {
+        response: {},
+      };
+    } catch (err) {
+      if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
+        if (req.config.passwordPolicy?.resetPasswordSuccessOnInvalidEmail ?? true) {
+          return {
             response: {},
-          });
-        } else {
-          throw err;
+          };
         }
+        err.message = `A user with that email does not exist.`;
       }
-    );
+      throw err;
+    }
   }
 
   handleVerificationEmailRequest(req) {
@@ -497,18 +488,22 @@ export class UsersRouter extends ClassesRouter {
     // if username or email provided with password try to authenticate the user by username
     let user;
     if (username || email) {
-      if (!password)
+      if (!password) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
           'You provided username or email, you need to also provide password.'
         );
+      }
       user = await this._authenticateUserFromRequest(req);
     }
 
-    if (!challengeData) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge.');
+    if (!challengeData) {
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge.');
+    }
 
-    if (typeof challengeData !== 'object')
+    if (typeof challengeData !== 'object') {
       throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'challengeData should be an object.');
+    }
 
     let request;
     let parseUser;
@@ -521,14 +516,14 @@ export class UsersRouter extends ClassesRouter {
       if (user) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          'You cant provide username/email and authData, only use one identification method.'
+          'You cannot provide username/email and authData, only use one identification method.'
         );
       }
 
       if (Object.keys(authData).filter(key => authData[key].id).length > 1) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          'You cant provide more than one authData provider with an id.'
+          'You cannot provide more than one authData provider with an id.'
         );
       }
 
@@ -536,7 +531,7 @@ export class UsersRouter extends ClassesRouter {
 
       try {
         if (!results[0] || results.length > 1) {
-          throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
         }
         // Find the provider used to find the user
         const provider = Object.keys(authData).find(key => authData[key].id);
@@ -546,11 +541,14 @@ export class UsersRouter extends ClassesRouter {
         request.isChallenge = true;
         // Validate authData used to identify the user to avoid brute-force attack on `id`
         const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
-        await validator(authData[provider], req, parseUser, request);
+        const validatorResponse = await validator(authData[provider], req, parseUser, request);
+        if (validatorResponse && validatorResponse.validator) {
+          await validatorResponse.validator();
+        }
       } catch (e) {
         // Rewrite the error to avoid guess id attack
         logger.error(e);
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
       }
     }
 
@@ -562,14 +560,15 @@ export class UsersRouter extends ClassesRouter {
       request = getRequestObject(undefined, req.auth, parseUser, parseUser, req.config);
       request.isChallenge = true;
     }
-
+    const acc = {};
     // Execute challenge step-by-step with consistent order for better error feedback
     // and to avoid to trigger others challenges if one of them fails
-    const challenge = await Auth.reducePromise(
-      Object.keys(challengeData).sort(),
-      async (acc, provider) => {
+    for (const provider of Object.keys(challengeData).sort()) {
+      try {
         const authAdapter = req.config.authDataManager.getValidatorForProvider(provider);
-        if (!authAdapter) return acc;
+        if (!authAdapter) {
+          continue;
+        }
         const {
           adapter: { challenge },
         } = authAdapter;
@@ -578,17 +577,30 @@ export class UsersRouter extends ClassesRouter {
             challengeData[provider],
             authData && authData[provider],
             req.config.auth[provider],
-            request,
-            req.config
+            request
           );
           acc[provider] = providerChallengeResponse || true;
-          return acc;
         }
-      },
-      {}
-    );
-
-    return { response: { challengeData: challenge } };
+      } catch (err) {
+        const e = resolveError(err, {
+          code: Parse.Error.SCRIPT_FAILED,
+          message: 'Challenge failed. Unknown error.',
+        });
+        const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
+        logger.error(
+          `Failed running auth step challenge for ${provider} for user ${userString} with Error: ` +
+            JSON.stringify(e),
+          {
+            authenticationStep: 'challenge',
+            error: e,
+            user: userString,
+            provider,
+          }
+        );
+        throw e;
+      }
+    }
+    return { response: { challengeData: acc } };
   }
 
   mountRoutes() {

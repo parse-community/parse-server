@@ -139,12 +139,13 @@ export class MongoStorageAdapter implements StorageAdapter {
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
   enableSchemaHooks: boolean;
+  schemaCacheTtl: ?number;
   disableIndexFieldValidation: boolean;
 
   constructor({ uri = defaults.DefaultMongoURI, collectionPrefix = '', mongoOptions = {} }: any) {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
-    this._mongoOptions = mongoOptions;
+    this._mongoOptions = { ...mongoOptions };
     this._mongoOptions.useNewUrlParser = true;
     this._mongoOptions.useUnifiedTopology = true;
     this._onchange = () => {};
@@ -153,6 +154,11 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     this.enableSchemaHooks = !!mongoOptions.enableSchemaHooks;
+    this.schemaCacheTtl = mongoOptions.schemaCacheTtl;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+      delete mongoOptions[key];
+      delete this._mongoOptions[key];
+    }
     this.disableIndexFieldValidation = !!mongoOptions.disableIndexFieldValidation;
     delete mongoOptions.enableSchemaHooks;
     delete mongoOptions.disableIndexFieldValidation;
@@ -956,6 +962,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
   // recursive method to traverse down to the "leaf node" which is going to be the string.
   _convertToDate(value: any): any {
+    if (value instanceof Date) {
+      return value;
+    }
     if (typeof value === 'string') {
       return new Date(value);
     }

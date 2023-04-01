@@ -196,14 +196,13 @@ describe('Parse.User testing', () => {
     const ACL = user.getACL();
     expect(ACL.getReadAccess(user)).toBe(true);
     expect(ACL.getWriteAccess(user)).toBe(true);
-    expect(ACL.getPublicReadAccess()).toBe(true);
+    expect(ACL.getPublicReadAccess()).toBe(false);
     expect(ACL.getPublicWriteAccess()).toBe(false);
     const perms = ACL.permissionsById;
-    expect(Object.keys(perms).length).toBe(2);
+    expect(Object.keys(perms).length).toBe(1);
     expect(perms[user.id].read).toBe(true);
     expect(perms[user.id].write).toBe(true);
-    expect(perms['*'].read).toBe(true);
-    expect(perms['*'].write).not.toBe(true);
+    expect(perms['*']).toBeUndefined();
     done();
   });
 
@@ -875,8 +874,8 @@ describe('Parse.User testing', () => {
     kevin.set('password', 'mypass');
     await kevin.signUp();
     const query = new Parse.Query(Parse.User);
-    const count = await query.count();
-    equal(count, 2);
+    const count = await query.find({ useMasterKey: true });
+    equal(count.length, 2);
     done();
   });
 
@@ -2153,7 +2152,15 @@ describe('Parse.User testing', () => {
   });
 
   it("querying for users doesn't get session tokens", done => {
-    Parse.User.signUp('finn', 'human', { foo: 'bar' })
+    const user = new Parse.User();
+    user.set('username', 'finn');
+    user.set('password', 'human');
+    user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
+    user
+      .signUp()
       .then(function () {
         return Parse.User.logOut();
       })
@@ -2162,6 +2169,9 @@ describe('Parse.User testing', () => {
         user.set('username', 'jake');
         user.set('password', 'dog');
         user.set('foo', 'baz');
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        user.setACL(acl);
         return user.signUp();
       })
       .then(function () {
@@ -2188,7 +2198,14 @@ describe('Parse.User testing', () => {
   });
 
   it('querying for users only gets the expected fields', done => {
-    Parse.User.signUp('finn', 'human', { foo: 'bar' }).then(() => {
+    const user = new Parse.User();
+    user.setUsername('finn');
+    user.setPassword('human');
+    user.set('foo', 'bar');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
+    user.signUp().then(() => {
       request({
         headers: {
           'X-Parse-Application-Id': 'test',
@@ -3426,6 +3443,9 @@ describe('Parse.User testing', () => {
       password: 'world',
       email: 'test@email.com',
     });
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    user.setACL(acl);
 
     reconfigureServer({
       appName: 'unused',
@@ -3502,40 +3522,128 @@ describe('Parse.User testing', () => {
       });
   });
 
-  it('should not allow updates to hidden fields', done => {
+  it('should not allow updates to hidden fields', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
-
     const user = new Parse.User();
     user.set({
       username: 'hello',
       password: 'world',
       email: 'test@email.com',
     });
-
-    reconfigureServer({
+    await reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
-    })
-      .then(() => {
-        return user.signUp();
-      })
-      .then(() => {
-        return Parse.User.current().set('_email_verify_token', 'bad').save();
-      })
-      .then(() => {
-        fail('Should not be able to update email verification token');
-        done();
-      })
-      .catch(err => {
-        expect(err).toBeDefined();
-        done();
-      });
+    });
+    await user.signUp();
+    user.set('_email_verify_token', 'bad', { ignoreValidation: true });
+    await expectAsync(user.save()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid field name: _email_verify_token.')
+    );
+  });
+
+  it('should allow updates to fields with maintenanceKey', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve(),
+    };
+    const user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world',
+      email: 'test@example.com',
+    });
+    await reconfigureServer({
+      appName: 'unused',
+      maintenanceKey: 'test2',
+      verifyUserEmails: true,
+      emailVerifyTokenValidityDuration: 5,
+      accountLockout: {
+        duration: 1,
+        threshold: 1,
+      },
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    await user.signUp();
+    for (let i = 0; i < 2; i++) {
+      try {
+        await Parse.User.logIn(user.getEmail(), 'abc');
+      } catch (e) {
+        expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        expect(
+          e.message === 'Invalid username/password.' ||
+            e.message ===
+              'Your account is locked due to multiple failed login attempts. Please try again after 1 minute(s)'
+        ).toBeTrue();
+      }
+    }
+    await Parse.User.requestPasswordReset(user.getEmail());
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Rest-API-Key': 'rest',
+      'X-Parse-Maintenance-Key': 'test2',
+      'Content-Type': 'application/json',
+    };
+    const userMaster = await request({
+      method: 'GET',
+      url: `http://localhost:8378/1/classes/_User`,
+      json: true,
+      headers,
+    }).then(res => res.data.results[0]);
+    expect(Object.keys(userMaster).sort()).toEqual(
+      [
+        'ACL',
+        '_account_lockout_expires_at',
+        '_email_verify_token',
+        '_email_verify_token_expires_at',
+        '_failed_login_count',
+        '_perishable_token',
+        'createdAt',
+        'email',
+        'emailVerified',
+        'objectId',
+        'updatedAt',
+        'username',
+      ].sort()
+    );
+    const toSet = {
+      _account_lockout_expires_at: new Date(),
+      _email_verify_token: 'abc',
+      _email_verify_token_expires_at: new Date(),
+      _failed_login_count: 0,
+      _perishable_token_expires_at: new Date(),
+      _perishable_token: 'abc',
+    };
+    await request({
+      method: 'PUT',
+      headers,
+      url: Parse.serverURL + '/users/' + userMaster.objectId,
+      json: true,
+      body: toSet,
+    }).then(res => res.data);
+    const update = await request({
+      method: 'GET',
+      url: `http://localhost:8378/1/classes/_User`,
+      json: true,
+      headers,
+    }).then(res => res.data.results[0]);
+    for (const key in toSet) {
+      const value = toSet[key];
+      if (update[key] && update[key].iso) {
+        expect(update[key].iso).toEqual(value.toISOString());
+      } else if (value.toISOString) {
+        expect(update[key]).toEqual(value.toISOString());
+      } else {
+        expect(update[key]).toEqual(value);
+      }
+    }
   });
 
   it('should revoke sessions when setting paswword with masterKey (#3289)', done => {
@@ -4055,6 +4163,12 @@ describe('Parse.User testing', () => {
       startLiveQueryServer: true,
       verbose: false,
       silent: true,
+    });
+
+    Parse.Cloud.beforeSave(Parse.User, ({ object }) => {
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      object.setACL(acl);
     });
 
     const query = new Parse.Query(Parse.User);

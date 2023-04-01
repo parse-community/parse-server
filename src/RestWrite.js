@@ -12,6 +12,7 @@ var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
+const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
@@ -63,18 +64,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
     }
   }
 
-  if (this.config.requestKeywordDenylist) {
-    // Scan request data for denied keywords
-    for (const keyword of this.config.requestKeywordDenylist) {
-      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
-      if (match) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
-        );
-      }
-    }
-  }
+  this.checkProhibitedKeywords(data);
 
   // When the operation is complete, this.response may have several
   // fields.
@@ -96,7 +86,10 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
   // Once set the schemaData should be immutable
   this.validSchemaController = null;
-  this.pendingOps = {};
+  this.pendingOps = {
+    operations: null,
+    identifier: null,
+  };
 }
 
 // A convenient method to perform all the steps of processing the
@@ -173,7 +166,7 @@ RestWrite.prototype.execute = function () {
 
 // Uses the Auth object to get the list of roles, adds the user id
 RestWrite.prototype.getUserAndRoleACL = function () {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return Promise.resolve();
   }
 
@@ -194,6 +187,7 @@ RestWrite.prototype.validateClientClassCreation = function () {
   if (
     this.config.allowClientClassCreation === false &&
     !this.auth.isMaster &&
+    !this.auth.isMaintenance &&
     SchemaController.systemClasses.indexOf(this.className) === -1
   ) {
     return this.config.database
@@ -218,14 +212,15 @@ RestWrite.prototype.validateSchema = function () {
     this.className,
     this.data,
     this.query,
-    this.runOptions
+    this.runOptions,
+    this.auth.isMaintenance
   );
 };
 
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeSaveTrigger = function () {
-  if (this.response) {
+  if (this.response || this.runOptions.many) {
     return;
   }
 
@@ -237,10 +232,13 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-
+  const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
-  this.pendingOps = { ...pending };
+  const [pending] = stateController.getPendingOps(identifier);
+  this.pendingOps = {
+    operations: { ...pending },
+    identifier,
+  };
 
   return Promise.resolve()
     .then(() => {
@@ -300,6 +298,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
           delete this.data.objectId;
         }
       }
+      this.checkProhibitedKeywords(this.data);
     });
 };
 
@@ -437,7 +436,7 @@ RestWrite.prototype.validateAuthData = function () {
 };
 
 RestWrite.prototype.filteredObjectsByACL = function (objects) {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || this.auth.isMaintenance) {
     return objects;
   }
   return objects.filter(object => {
@@ -608,7 +607,7 @@ RestWrite.prototype.transformUser = function () {
     return promise;
   }
 
-  if (!this.auth.isMaster && 'emailVerified' in this.data) {
+  if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
     const error = `Clients aren't allowed to manually update email verification.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
@@ -643,7 +642,7 @@ RestWrite.prototype.transformUser = function () {
       if (this.query) {
         this.storage['clearSessions'] = true;
         // Generate a new session only if the user requested
-        if (!this.auth.isMaster) {
+        if (!this.auth.isMaster && !this.auth.isMaintenance) {
           this.storage['generateNewSession'] = true;
         }
       }
@@ -816,7 +815,8 @@ RestWrite.prototype._validatePasswordHistory = function () {
       .find(
         '_User',
         { objectId: this.objectId() },
-        { keys: ['_password_history', '_hashed_password'] }
+        { keys: ['_password_history', '_hashed_password'] },
+        Auth.maintenance(this.config)
       )
       .then(results => {
         if (results.length != 1) {
@@ -1018,7 +1018,7 @@ RestWrite.prototype.handleSession = function () {
     return;
   }
 
-  if (!this.auth.user && !this.auth.isMaster) {
+  if (!this.auth.user && !this.auth.isMaster && !this.auth.isMaintenance) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token required.');
   }
 
@@ -1035,9 +1035,23 @@ RestWrite.prototype.handleSession = function () {
     } else if (this.data.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
     }
+    if (!this.auth.isMaster) {
+      this.query = {
+        $and: [
+          this.query,
+          {
+            user: {
+              __type: 'Pointer',
+              className: '_User',
+              objectId: this.auth.user.id,
+            },
+          },
+        ],
+      };
+    }
   }
 
-  if (!this.query && !this.auth.isMaster) {
+  if (!this.query && !this.auth.isMaster && !this.auth.isMaintenance) {
     const additionalSessionData = {};
     for (var key in this.data) {
       if (key === 'objectId' || key === 'user') {
@@ -1104,7 +1118,7 @@ RestWrite.prototype.handleInstallation = function () {
   let installationId = this.data.installationId;
 
   // If data.installationId is not set and we're not master, we can lookup in auth
-  if (!installationId && !this.auth.isMaster) {
+  if (!installationId && !this.auth.isMaster && !this.auth.isMaintenance) {
     installationId = this.auth.installationId;
   }
 
@@ -1368,7 +1382,12 @@ RestWrite.prototype.runDatabaseOperation = function () {
   if (this.query) {
     // Force the user to not lockout
     // Matched with parse.com
-    if (this.className === '_User' && this.data.ACL && this.auth.isMaster !== true) {
+    if (
+      this.className === '_User' &&
+      this.data.ACL &&
+      this.auth.isMaster !== true &&
+      this.auth.isMaintenance !== true
+    ) {
       this.data.ACL[this.query.objectId] = { read: true, write: true };
     }
     // update password timestamp if user password is being changed
@@ -1395,7 +1414,8 @@ RestWrite.prototype.runDatabaseOperation = function () {
         .find(
           '_User',
           { objectId: this.objectId() },
-          { keys: ['_password_history', '_hashed_password'] }
+          { keys: ['_password_history', '_hashed_password'] },
+          Auth.maintenance(this.config)
         )
         .then(results => {
           if (results.length != 1) {
@@ -1539,7 +1559,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
 // Returns nothing - doesn't wait for the trigger.
 RestWrite.prototype.runAfterSaveTrigger = function () {
-  if (!this.response || !this.response.response) {
+  if (!this.response || !this.response.response || this.runOptions.many) {
     return;
   }
 
@@ -1581,7 +1601,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
-        this.pendingOps = {};
+        this.pendingOps.operations = {};
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
@@ -1685,27 +1705,32 @@ RestWrite.prototype.cleanUserAuthData = function () {
 };
 
 RestWrite.prototype._updateResponseWithData = function (response, data) {
-  const { updatedObject } = this.buildParseObjects();
   const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
-  for (const key in this.pendingOps) {
+  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  for (const key in this.pendingOps.operations) {
     if (!pending[key]) {
       data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
       this.storage.fieldsChangedByTrigger.push(key);
     }
   }
-  const skipKeys = [
-    'objectId',
-    'createdAt',
-    'updatedAt',
-    ...(requiredColumns.read[this.className] || []),
-  ];
+  const skipKeys = [...(requiredColumns.read[this.className] || [])];
+  if (!this.query) {
+    skipKeys.push('objectId', 'createdAt');
+  } else {
+    skipKeys.push('updatedAt');
+    delete response.objectId;
+  }
   for (const key in response) {
     if (skipKeys.includes(key)) {
       continue;
     }
     const value = response[key];
-    if (value == null || (value.__type && value.__type === 'Pointer') || data[key] === value) {
+    if (
+      value == null ||
+      (value.__type && value.__type === 'Pointer') ||
+      util.isDeepStrictEqual(data[key], value) ||
+      util.isDeepStrictEqual((this.originalData || {})[key], value)
+    ) {
       delete response[key];
     }
   }
@@ -1729,6 +1754,21 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     }
   });
   return response;
+};
+
+RestWrite.prototype.checkProhibitedKeywords = function (data) {
+  if (this.config.requestKeywordDenylist) {
+    // Scan request data for denied keywords
+    for (const keyword of this.config.requestKeywordDenylist) {
+      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+      if (match) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+        );
+      }
+    }
+  }
 };
 
 export default RestWrite;

@@ -631,7 +631,7 @@ describe('DefinedSchemas', () => {
     const logger = require('../lib/logger').logger;
     spyOn(DefinedSchemas.prototype, 'wait').and.resolveTo();
     spyOn(logger, 'error').and.callThrough();
-    spyOn(Parse.Schema, 'all').and.callFake(() => {
+    spyOn(DefinedSchemas.prototype, 'createDeleteSession').and.callFake(() => {
       throw error;
     });
 
@@ -676,5 +676,34 @@ describe('DefinedSchemas', () => {
     expect(testSchema.fields.aField).toEqual({ type: 'String' });
     expect(testSchema.classLevelPermissions.create).toEqual({ requiresAuthentication: true });
     expect(logger.error).toHaveBeenCalledTimes(0);
+  });
+
+  it('should not affect cacheAdapter', async () => {
+    const server = await reconfigureServer();
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callThrough();
+    const migrationOptions = {
+      definitions: [
+        {
+          className: 'Test',
+          fields: { aField: { type: 'String' } },
+          indexes: { aField: { aField: 1 } },
+          classLevelPermissions: {
+            create: { requiresAuthentication: true },
+          },
+        },
+      ],
+    };
+
+    const cacheAdapter = {
+      get: () => Promise.resolve(null),
+      put: () => {},
+      del: () => {},
+      clear: () => {},
+      connect: jasmine.createSpy('clear'),
+    };
+    server.config.cacheAdapter = cacheAdapter;
+    await new DefinedSchemas(migrationOptions, server.config).execute();
+    expect(cacheAdapter.connect).not.toHaveBeenCalled();
   });
 });

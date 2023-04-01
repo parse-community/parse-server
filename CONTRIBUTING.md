@@ -2,8 +2,15 @@
 
 ## Table of Contents <!-- omit in toc -->
 - [Contributing](#contributing)
+  - [Issue vs. Pull Request](#issue-vs-pull-request)
+  - [Scope](#scope)
   - [Templates](#templates)
 - [Why Contributing?](#why-contributing)
+- [Contribution FAQs](#contribution-faqs)
+  - [Reviewer Role](#reviewer-role)
+  - [Review Feedback](#review-feedback)
+  - [Merge Readiness](#merge-readiness)
+  - [Review Validity](#review-validity)
 - [Environment Setup](#environment-setup)
   - [Recommended Tools](#recommended-tools)
   - [Setting up your local machine](#setting-up-your-local-machine)
@@ -26,6 +33,7 @@
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
   - [Reverting](#reverting)
+  - [Security Vulnerability](#security-vulnerability)
 - [Releasing](#releasing)
   - [General Considerations](#general-considerations)
   - [Major Release / Long-Term-Support](#major-release--long-term-support)
@@ -58,6 +66,14 @@ An issue is required to be linked in every pull request. We understand that no-o
 - The discussion in the issue is different from the discussion in the pull request. The issue discussion is focused on the issue and how to address it, whereas the discussion in the pull request is focused on a specific implemention. An issue may even have multiple pull requests because either the issue requires multiple implementations or multiple pull requests are opened to compare and test different approaches to later decide for one.
 - High-level conceptual discussions about the issue should be still available, even if a pull request is closed because its appraoch was discarded. If these discussions are in the pull request instead, they can easily become fragmented over multiple pull requests and issues, which can make it very hard to make sense of all aspects of an issue.
 
+### Scope
+
+An issue and pull request must limit its scope on a distinct issue. Pull requests can only contain changes that are required to address the scoped issue. While it may seem quick and easy to add unrelated changes to the pull request, it can cause singificant complications after merging. Some of the reasons are:
+
+- A pull request corresponds to a single changelog entry. A changelog entry should not describe multiple unrelated changes in one entry for better readability.
+- A pull request creates a distinct commit; having an individual commit for each limited scope makes it easier for others to go back in the commit history and debug. Bugs are generally more difficult to identify and fix if there are various unrelated changes merged at once.
+- If a pull request needs to be reverted, unrelated changes will be reverted as well. That makes it more complex and time consuming to revert, having to consider its effects and possibly publishing a broken release or requiring a follow-up pull request with code manipulation.
+
 ### Templates
 
 You are required to use and completely fill out the templates for new issues and pull requests. We understand that no-one enjoys filling out forms, but here is why this is beneficial for everyone:
@@ -86,6 +102,46 @@ Consider the benefits you get:
   You learn to better understand the inner workings of Parse Server, which will help you to write more efficient and resilient code for your own application.
 
 Most importantly, with every contribution you improve your skills so that future contributions take even less time and you get all the benefits above for free — easy choice, right?
+
+## Contribution FAQs
+
+### Reviewer Role
+
+> *Instead of writing review comments back-and-forth, why doesn't the reviewer just write the code themselves?*
+
+A reviewer is already helping you to make a code contribution through their review. A reviewer *may* even help you to write code by actually writing it for you, but is not obliged to do so.
+
+GitHub allows reviewers to suggest and write code changes as part of the review feedback. These code suggestions are likely to contain mistakes due to the lack of code syntax checks when writing code directly on GitHub. You should therefore always review these suggestions before accepting them, ideally in an IDE. If you merge a code suggestion and the CI then fails, take another look at the code change before asking the reviewer for help.
+
+### Review Feedback
+
+> *It takes too much effort to incorporate the review feedback, why why can't you just merge my pull request?*
+
+If you are a new contributor, it's naturally a learning experience for you and therefore takes longer. We welcome contributors of any experience levels and gladly support you in getting familiar with the code base and our quality standards and contribution requirements. In return we expect you to be open to and appreciative of the reviewers' feedback.
+
+In a large pull request, it can be a significant effort to bring it over the finish line. Luckily this is a collaborative environment and others are free to jump in to contribute to the pull request to share the effort. You can either give others access to your fork or they can open their own pull request based on your previous work.
+
+If you are out of resources stay calm, explain your personal constraints (expertise or time) and ask for help. Wasting time by complaining about the amount of review comments will neither use your own time in a meaningful way, nor the time of others who read your complaint.
+
+This is a collaborative enviroment in which everyone works on a common goal - to get a pull request ready for merging. Reviewers are working *with* you to get your pull request ready, *not against you*.
+
+**❗️ Always be mindful that the reviewers' efforts are an integral part of code contribution. Their review is as important as your written code and their review time is a valuable as your coding time.**
+
+### Merge Readiness
+
+> *The feature already works, why do you request more changes instead of just merging my pull request?*
+
+A feature may work for your own use case or in your own environment, but that doesn't necessarily mean that it's ready for merging. Aside from code quality and code style requirements, reviewers also review based on strategic and architectural considerations. It's often easy to just get a feature to work, but it needs to be also maintained in the future, robust therefore well tested and validated, intuitive for other developers to use, well documented, and not cause a forseeable breaking change in the near future.
+
+### Review Validity
+
+> *The reviewer has never worked on the issue and was never part of any previous discussion, why would I care about their opinion?*
+
+It's contrary to an open, collaborative environment to expect others to be involved in an issue or discussion since its beginning. Such a mindset would close out any new views, which are important for a differentiated discussion.
+
+> *The reviewer doesn't have any expertise in that matter, why would I care about their opinion?*
+
+Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the Parse Platform PMC.
 
 ## Environment Setup
 
@@ -405,6 +461,24 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   This reverts commit 1234567890abcdef.
   ```
 
+### Security Vulnerability
+
+#### Local Testing
+
+Fixes for securify vulnerabilities are developed in private forks with a closed audience, inaccessible to the public. A current GitHub limitation does not allow to run CI tests on pull requests in private forks. Whether a pull requests fully passes all CI tests can only be determined by publishing the fix as a public pull request and running the CI. This means the fix and implicitly information about the vulnerabilty are made accessible to the public. This increases the risk that a vulnerability fix is published, but then cannot be merged immediately due to a CI issue. To mitigate that risk, before publishing a vulnerability fix, the following tests needs to be run locally and pass:
+
+- `npm run test` (MongoDB)
+- `npm run test` (Postgres)
+- `npm run madge:circular` (circular dependencies)
+- `npm run lint` (Lint)
+- `npm run definitions` (Parse Server options definitions)
+
+#### Merging
+
+A current GitHub limitation does not allow to customize the commit message when merging pull requests of a private fork that was created to fix a security vulnerabilty. Our release automation framework demands a specific commit message syntax which therefore cannot be met. This prohibits to follow the process that GitHub suggest, which is to merge a pull request from a private fork directly to a public branch. Instead, after [local testing](#local-testing), a public pull request needs to be created with the code fix copied over from the private pull request.
+
+This creates a risk that a vulnerability is indirectly disclosed by publishing a pull request with the fix, but the fix cannot be merged due to a CI issue. To mitigate that risk, the pull request title and description should be kept marginal or generic, not hiting to a vulnerabilty or giving any details about the vulnerabilty, until the pull request has been successfully merged.
+
 ## Releasing
 
 ### General Considerations
@@ -453,7 +527,7 @@ The following changes are done in the `alpha` branch, before publishing the last
 3. Pull all remote branches into local branches.
 4. Create a new temporary branch `backmerge` on branch `release`.
 5. Create PR to merge `backmerge` into `beta`:
-   - PR title: `<pr-name> [skip release]` where `<pr-name>` is the PR title of step 1.
+   - PR title: `refactor: <commit-summary>` where `<commit-summary>` is the commit summary of step 1. The commit type needs to be `refactor`, otherwise the commit will show in the changelog of the `release` branch, once the `beta` branch is merged into release; this would a duplicate entry because the same changelog entry has already been generated when the PR was merged into the `release` branch in step 1.
    - PR description: (leave empty)
 6. Resolve any conflicts:
    - During back-merging, usually all changes are preserved; current changes come from the hotfix in the `release` branch, the incoming changes come from the `beta` branch usually being ahead of the `release` branch. This makes back-merging so complex and bug-prone and is the main reason why it should be avoided if possible.

@@ -4,7 +4,7 @@ import { createServer } from '@graphql-yoga/node';
 import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
-import { handleParseErrors, handleParseHeaders } from '../middlewares';
+import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
@@ -77,6 +77,19 @@ class ParseGraphQLServer {
     );
   }
 
+  /**
+   * @static
+   * Allow developers to customize each request with inversion of control/dependency injection
+   */
+  applyRequestContextMiddleware(api, options) {
+    if (options.requestContextMiddleware) {
+      if (typeof options.requestContextMiddleware !== 'function') {
+        throw new Error('requestContextMiddleware must be a function');
+      }
+      api.use(options.requestContextMiddleware);
+    }
+  }
+
   applyGraphQL(app) {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
@@ -84,20 +97,8 @@ class ParseGraphQLServer {
 
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
-
-    if (this.parseServer.config.requestContextMiddleware) {
-      let requestContextMiddleware;
-      if (typeof this.parseServer.config.requestContextMiddleware == 'string') {
-        requestContextMiddleware = require(path.resolve(
-          process.cwd(),
-          this.parseServer.config.requestContextMiddleware
-        ));
-      } else {
-        requestContextMiddleware = this.parseServer.config.requestContextMiddleware; // use as-is let express fail
-      }
-      app.use(requestContextMiddleware);
-    }
-
+    app.use(this.config.graphQLPath, handleParseSession);
+    this.applyRequestContextMiddleware(app, this.parseServer.config);
     app.use(this.config.graphQLPath, handleParseErrors);
 
     app.use(this.config.graphQLPath, async (req, res) => {

@@ -1,5 +1,6 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
+import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
@@ -64,51 +65,75 @@ const providers = {
   webauthn,
 };
 
+// Indexed auth policies
+const authAdapterPolicies = {
+  default: true,
+  solo: true,
+  additional: true,
+};
+
 function authDataValidator(provider, adapter, appIds, options) {
   return async function (authData, req, user, requestObject) {
     if (appIds && typeof adapter.validateAppId === 'function') {
-      await Promise.resolve(
-        adapter.validateAppId(appIds, authData, options, requestObject, req.config)
+      await Promise.resolve(adapter.validateAppId(appIds, authData, options, requestObject));
+    }
+    if (adapter.policy && !authAdapterPolicies[adapter.policy]) {
+      throw new Parse.Error(
+        Parse.Error.OTHER_CAUSE,
+        'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
       );
     }
     if (typeof adapter.validateAuthData === 'function') {
-      return adapter.validateAuthData(authData, options, requestObject, req.config);
-    } else if (
-      typeof adapter.validateSetUp === 'function' &&
-      typeof adapter.validateLogin === 'function' &&
-      typeof adapter.validateUpdate === 'function'
-    ) {
-      // When masterKey is detected, we should trigger a logged in user
-      const isLoggedIn =
-        (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
-      let hasAuthDataConfigured = false;
-
-      if (user && user.get('authData') && user.get('authData')[provider]) {
-        hasAuthDataConfigured = true;
-      }
-
-      if (isLoggedIn) {
-        // User is updating their authData
-        if (hasAuthDataConfigured) {
-          return adapter.validateUpdate(authData, options, requestObject, req.config);
-        }
-        // Set up if the user does not have the provider configured
-        return adapter.validateSetUp(authData, options, requestObject, req.config);
-      }
-
-      // Not logged in and authData is configured on the user
-      if (hasAuthDataConfigured) {
-        return adapter.validateLogin(authData, options, requestObject, req.config);
-      }
-
-      // User not logged in and the provider is not set up, for example when a new user
-      // signs up or an existing user uses a new auth provider
-      return adapter.validateSetUp(authData, options, requestObject, req.config);
+      return adapter.validateAuthData(authData, options, requestObject);
     }
-    throw new Parse.Error(
-      Parse.Error.OTHER_CAUSE,
-      'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
-    );
+    if (
+      typeof adapter.validateSetUp !== 'function' ||
+      typeof adapter.validateLogin !== 'function' ||
+      typeof adapter.validateUpdate !== 'function'
+    ) {
+      throw new Parse.Error(
+        Parse.Error.OTHER_CAUSE,
+        'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
+      );
+    }
+    // When masterKey is detected, we should trigger a logged in user
+    const isLoggedIn =
+      (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
+    let hasAuthDataConfigured = false;
+
+    if (user && user.get('authData') && user.get('authData')[provider]) {
+      hasAuthDataConfigured = true;
+    }
+
+    if (isLoggedIn) {
+      // User is updating their authData
+      if (hasAuthDataConfigured) {
+        return {
+          method: 'validateUpdate',
+          validator: () => adapter.validateUpdate(authData, options, requestObject),
+        };
+      }
+      // Set up if the user does not have the provider configured
+      return {
+        method: 'validateSetUp',
+        validator: () => adapter.validateSetUp(authData, options, requestObject),
+      };
+    }
+
+    // Not logged in and authData is configured on the user
+    if (hasAuthDataConfigured) {
+      return {
+        method: 'validateLogin',
+        validator: () => adapter.validateLogin(authData, options, requestObject),
+      };
+    }
+
+    // User not logged in and the provider is not set up, for example when a new user
+    // signs up or an existing user uses a new auth provider
+    return {
+      method: 'validateSetUp',
+      validator: () => adapter.validateSetUp(authData, options, requestObject),
+    };
   };
 }
 
@@ -131,27 +156,45 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter = Object.assign({}, defaultAdapter);
+  const adapter =
+    defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
+  const keys = [
+    'validateAuthData',
+    'validateAppId',
+    'validateSetUp',
+    'validateLogin',
+    'validateUpdate',
+    'challenge',
+    'validateOptions',
+    'policy',
+    'afterFind',
+  ];
+  const defaultAuthAdapter = new AuthAdapter();
+  keys.forEach(key => {
+    const existing = adapter?.[key];
+    if (
+      existing &&
+      typeof existing === 'function' &&
+      existing.toString() === defaultAuthAdapter[key].toString()
+    ) {
+      adapter[key] = null;
+    }
+  });
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
   // Try the configuration methods
   if (providerOptions) {
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
-      [
-        'validateAuthData',
-        'validateAppId',
-        'validateSetUp',
-        'validateLogin',
-        'validateUpdate',
-        'challenge',
-        'policy',
-      ].forEach(key => {
+      keys.forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
       });
     }
+  }
+  if (adapter.validateOptions) {
+    adapter.validateOptions(providerOptions);
   }
 
   return { adapter, appIds, providerOptions };
@@ -173,9 +216,40 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
+  const runAfterFind = async (req, authData) => {
+    if (!authData) {
+      return;
+    }
+    const adapters = Object.keys(authData);
+    await Promise.all(
+      adapters.map(async provider => {
+        const authAdapter = getValidatorForProvider(provider);
+        if (!authAdapter) {
+          return;
+        }
+        const {
+          adapter: { afterFind },
+          providerOptions,
+        } = authAdapter;
+        if (afterFind && typeof afterFind === 'function') {
+          const requestObject = {
+            ip: req.config.ip,
+            user: req.auth.user,
+            master: req.auth.isMaster,
+          };
+          const result = afterFind(requestObject, authData[provider], providerOptions);
+          if (result) {
+            authData[provider] = result;
+          }
+        }
+      })
+    );
+  };
+
   return Object.freeze({
     getValidatorForProvider,
     setEnableAnonymousUsers,
+    runAfterFind,
   });
 };
 
