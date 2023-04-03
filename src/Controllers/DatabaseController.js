@@ -1706,7 +1706,7 @@ class DatabaseController {
       throw error;
     });
 
-    if (!this.options.azureCosmosMongoDbCompatibleMode) {
+    if (!this.options.databaseOptions?.disableEnsureUsernameCaseInsensitiveIndex) {
       await this.adapter
         .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
         .catch(error => {
@@ -1725,7 +1725,7 @@ class DatabaseController {
       throw error;
     });
 
-    if (!this.options.azureCosmosMongoDbCompatibleMode) {
+    if (!this.options.databaseOptions?.disableEnsureEmailCaseInsensitiveIndex) {
       await this.adapter
         .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
         .catch(error => {
@@ -1758,7 +1758,7 @@ class DatabaseController {
         options = this.idempotencyOptions;
         options.setIdempotencyFunction = true;
       }
-      if (!this.options.azureCosmosMongoDbCompatibleMode) {
+      if (!this.options.databaseOptions.disableEnsureIdempotencyExpireIndex) {
         await this.adapter
           .ensureIndex('_Idempotency', requiredIdempotencyFields, ['expire'], 'ttl', false, options)
           .catch(error => {

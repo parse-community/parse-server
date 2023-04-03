@@ -300,9 +300,6 @@ export interface ParseServerOptions {
   /* Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>ℹ️ Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.
   :DEFAULT: [] */
   rateLimit: ?(RateLimitOptions[]);
-  /* Set to true for running against Azure Cosmos for Mongo DB. This can bring some performance loss.
-  :DEFAULT: false */
-  azureCosmosMongoDbCompatibleMode: ?boolean;
 }
 
 export interface RateLimitOptions {
@@ -556,6 +553,15 @@ export interface DatabaseOptions {
   enableSchemaHooks: ?boolean;
   /* The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires. */
   schemaCacheTtl: ?number;
+  /* Disables behavior to ensure case-insensitive index on field username on _User collection. Set to `true` if using a database not supporting case-insensitive indexes.
+  :DEFAULT: false */
+  disableEnsureUsernameCaseInsensitiveIndex: ?boolean;
+  /* Disables behavior to ensure case-insensitive index on field email on _User collection. Set to `true` if using a database not supporting case-insensitive indexes.
+  :DEFAULT: false */
+  disableEnsureEmailCaseInsensitiveIndex: ?boolean;
+  /* Disables behavior to ensure time to live index on field expire on _Idempotency collection. Set to `true` if using a database not supporting TTL index on this field.
+  :DEFAULT: false */
+  disableEnsureIdempotencyExpireIndex: ?boolean;
 }
 
 export interface AuthAdapter {

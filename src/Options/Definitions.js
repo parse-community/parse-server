@@ -103,13 +103,6 @@ module.exports.ParseServerOptions = {
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
     action: parsers.arrayParser,
   },
-  azureCosmosMongoDbCompatibleMode: {
-    env: 'PARSE_SERVER_AZURE_COSMOS_MONGO_DB_COMPATIBLE_MODE',
-    help:
-      'Set to true for running against Azure Cosmos for Mongo DB. This can bring some performance loss.',
-    action: parsers.booleanParser,
-    default: false,
-  },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
     help: 'Adapter module for the cache',
@@ -976,6 +969,27 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  disableEnsureEmailCaseInsensitiveIndex: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_ENSURE_EMAIL_CASE_INSENSITIVE_INDEX',
+    help:
+      'Disables behavior to ensure case-insensitive index on field email on _User collection. Set to `true` if using a database not supporting case-insensitive indexes.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  disableEnsureIdempotencyExpireIndex: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_ENSURE_IDEMPOTENCY_EXPIRE_INDEX',
+    help:
+      'Disables behavior to ensure time to live index on field expire on _Idempotency collection. Set to `true` if using a database not supporting TTL index on this field.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  disableEnsureUsernameCaseInsensitiveIndex: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_ENSURE_USERNAME_CASE_INSENSITIVE_INDEX',
+    help:
+      'Disables behavior to ensure case-insensitive index on field username on _User collection. Set to `true` if using a database not supporting case-insensitive indexes.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
     help:

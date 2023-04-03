@@ -85,7 +85,6 @@ export class Config {
     allowExpiredAuthDataToken,
     logLevels,
     rateLimit,
-    azureCosmosMongoDbCompatibleMode,
     databaseOptions,
   }) {
     if (masterKey === readOnlyMasterKey) {
@@ -121,7 +120,6 @@ export class Config {
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
-    this.validateAzureCosmosMongoDbCompatibleMode(azureCosmosMongoDbCompatibleMode);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
@@ -165,12 +163,6 @@ export class Config {
   static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
-    }
-  }
-
-  static validateAzureCosmosMongoDbCompatibleMode(azureCosmosMongoDbCompatibleMode) {
-    if (typeof azureCosmosMongoDbCompatibleMode !== 'boolean') {
-      throw 'Parse Server option azureCosmosMongoDbCompatibleMode must be a boolean.';
     }
   }
 
@@ -565,6 +557,24 @@ export class Config {
       databaseOptions.schemaCacheTtl = DatabaseOptions.schemaCacheTtl.default;
     } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
       throw `databaseOptions.schemaCacheTtl must be a number`;
+    }
+    if (databaseOptions.disableEnsureUsernameCaseInsensitiveIndex === undefined) {
+      databaseOptions.disableEnsureUsernameCaseInsensitiveIndex =
+        DatabaseOptions.disableEnsureUsernameCaseInsensitiveIndex.default;
+    } else if (typeof databaseOptions.disableEnsureUsernameCaseInsensitiveIndex !== 'boolean') {
+      throw `databaseOptions.disableEnsureUsernameCaseInsensitiveIndex must be a boolean`;
+    }
+    if (databaseOptions.disableEnsureEmailCaseInsensitiveIndex === undefined) {
+      databaseOptions.disableEnsureEmailCaseInsensitiveIndex =
+        DatabaseOptions.disableEnsureEmailCaseInsensitiveIndex.default;
+    } else if (typeof databaseOptions.disableEnsureEmailCaseInsensitiveIndex !== 'boolean') {
+      throw `databaseOptions.disableEnsureEmailCaseInsensitiveIndex must be a boolean`;
+    }
+    if (databaseOptions.disableEnsureIdempotencyExpireIndex === undefined) {
+      databaseOptions.disableEnsureIdempotencyExpireIndex =
+        DatabaseOptions.disableEnsureIdempotencyExpireIndex.default;
+    } else if (typeof databaseOptions.disableEnsureIdempotencyExpireIndex !== 'boolean') {
+      throw `databaseOptions.disableEnsureIdempotencyExpireIndex must be a boolean`;
     }
   }
 
