@@ -41,7 +41,6 @@ export class GridFSBucketAdapter extends FilesAdapter {
       'maxTimeMS',
       'disableIndexFieldValidation',
     ]) {
-      delete mongoOptions[key];
       delete this._mongoOptions[key];
     }
   }
