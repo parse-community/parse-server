@@ -35,7 +35,15 @@ export class GridFSBucketAdapter extends FilesAdapter {
       useUnifiedTopology: true,
     };
     this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
-    delete this._mongoOptions.disableIndexFieldValidation;
+    for (const key of [
+      'enableSchemaHooks',
+      'schemaCacheTtl',
+      'maxTimeMS',
+      'disableIndexFieldValidation',
+    ]) {
+      delete mongoOptions[key];
+      delete this._mongoOptions[key];
+    }
   }
 
   _connect() {

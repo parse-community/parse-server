@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.1.0-alpha.7.3.moumouls",
+  "version": "6.1.0-alpha.7.4.moumouls",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
