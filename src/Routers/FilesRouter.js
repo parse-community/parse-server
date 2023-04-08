@@ -53,12 +53,14 @@ export class FilesRouter {
         limit: maxUploadSize,
       }), // Allow uploads without Content-Type, or with any Content-Type.
       Middlewares.handleParseHeaders,
+      Middlewares.handleParseSession,
       this.createHandler
     );
 
     router.delete(
       '/files/:filename',
       Middlewares.handleParseHeaders,
+      Middlewares.handleParseSession,
       Middlewares.enforceMasterKeyAccess,
       this.deleteHandler
     );

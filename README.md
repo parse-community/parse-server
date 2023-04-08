@@ -19,7 +19,6 @@
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
 [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)][open-collective-link]
-[![License][license-svg]][license-link]
 [![Forum](https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg)](https://community.parseplatform.org/c/parse-server)
 [![Twitter](https://img.shields.io/twitter/follow/ParsePlatform.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=ParsePlatform)
 [![Chat](https://img.shields.io/badge/Chat-Join!-%23fff?style=social&logo=slack)](https://chat.parseplatform.org)
@@ -40,7 +39,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 
 ---
 
-- [Flavors & Branches](#flavors--branches)
+- [Flavors \& Branches](#flavors--branches)
   - [Long Term Support](#long-term-support)
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
@@ -55,9 +54,12 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Running Parse Server elsewhere](#running-parse-server-elsewhere)
     - [Sample Application](#sample-application)
     - [Parse Server + Express](#parse-server--express)
+  - [Parse Server Health](#parse-server-health)
+    - [Status Values](#status-values)
 - [Configuration](#configuration)
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
+  - [Access Scopes](#access-scopes)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
   - [Password and Account Policy](#password-and-account-policy)
   - [Custom Routes](#custom-routes)
@@ -89,7 +91,6 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
   - [Using automatically generated operations](#using-automatically-generated-operations)
   - [Customizing your GraphQL Schema](#customizing-your-graphql-schema)
   - [Learning more](#learning-more)
-- [Upgrading to Parse Server 3.0](#upgrading-to-parse-server-30)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Sponsors](#sponsors)
@@ -100,13 +101,13 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 Parse Server is available in different flavors on different branches:
 
 - The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
-- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-4.x.x`. LTS branches do not have pre-release branches.
+- The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-5.x.x`. LTS branches do not have pre-release branches.
 
 ## Long Term Support
 
-Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 4.x will receive security updates until Parse Server 5.x is superseded by Parse Server 6.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-4.x.x` for the Parse Server 4.x LTS branch.
+Long-Term-Support (LTS) is provided for the previous Parse Server major version. For example, Parse Server 5.x will receive security updates until Parse Server 6.x is superseded by Parse Server 7.x and becomes the new LTS version. While the current major version is published on branch `release`, a LTS version is published on branch `release-#.x.x`, for example `release-5.x.x` for the Parse Server 5.x LTS branch.
 
-⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-4.x.x) to see the current open vulnerabilities for that LTS branch.
+⚠️ LTS versions are provided to help you transition as soon as possible to the current major version. While we aim to fix security vulnerabilities in the LTS version, our main focus is on developing the current major version and preparing the next major release. Therefore we may leave certain vulnerabilities up to the community to fix. Search for [pull requests with the specific LTS base branch](https://github.com/parse-community/parse-server/pulls?q=is%3Aopen+is%3Apr+base%3Arelease-5.x.x) to see the current open vulnerabilities for that LTS branch.
 
 # Getting Started
 
@@ -130,19 +131,20 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 |------------|----------------|-------------|------------|
 | Node.js 14 | 14.19.1        | April 2023  | ✅ Yes      |
 | Node.js 16 | 16.14.2        | April 2024  | ✅ Yes      |
-| Node.js 18 | 18.1.0         | April 2025  | ✅ Yes      |
+| Node.js 18 | 18.12.1         | April 2025  | ✅ Yes      |
+| Node.js 19 | 19.3.0         | June 2023  | ✅ Yes      |
 
 #### MongoDB
 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. We consider the end-of-life date of a MongoDB "rapid release" to be the same as its major version release.
 
-| Version     | Latest Version | End-of-Life   | Compatible   |
-|-------------|----------------|---------------|--------------|
-| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes        |
-| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes        |
-| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes        |
-| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes        |
-| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes        |
+| Version     | Latest Version | End-of-Life   | Compatible |
+|-------------|----------------|---------------|------------|
+| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes      |
+| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes      |
+| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes      |
+| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes      |
+| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes      |
 
 #### PostgreSQL
 
@@ -282,11 +284,11 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 You can also create an instance of Parse Server, and mount it on a new or existing Express website:
 
 ```js
-var express = require('express');
-var ParseServer = require('parse-server').ParseServer;
-var app = express();
+const express = require('express');
+const ParseServer = require('parse-server').ParseServer;
+const app = express();
 
-var api = new ParseServer({
+const server = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
   cloud: './cloud/main.js', // Path to your Cloud Code
   appId: 'myAppId',
@@ -295,8 +297,11 @@ var api = new ParseServer({
   serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
 });
 
+// Start server
+await server.start();
+
 // Serve the Parse API on the /parse URL prefix
-app.use('/parse', api);
+app.use('/parse', server.app);
 
 app.listen(1337, function() {
   console.log('parse-server-example running on port 1337.');
@@ -304,6 +309,27 @@ app.listen(1337, function() {
 ```
 
 For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
+
+## Parse Server Health
+
+Check the Parse Server health by sending a request to the `/parse/health` endpoint.
+
+The response looks like this:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### Status Values
+
+| Value         | Description                                                                 |
+|---------------|-----------------------------------------------------------------------------|
+| `initialized` | The server has been created but the `start` method has not been called yet. |
+| `starting`    | The server is starting up.                                                  |
+| `ok`          | The server started and is running.                                          |
+| `error`       | There was a startup error, see the logs for details.                        |
 
 # Configuration
 
@@ -329,6 +355,15 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `javascriptKey`
 * `restAPIKey`
 * `dotNetKey`
+
+## Access Scopes
+
+| Scope          | Internal data | Custom data | Restricted by CLP, ACL | Key                 |
+|----------------|---------------|-------------|------------------------|---------------------|
+| Internal       | r/w           | r/w         | no                     | `maintenanceKey`    |
+| Master         | -/-           | r/w         | no                     | `masterKey`         |
+| ReadOnlyMaster | -/-           | r/-         | no                     | `readOnlyMasterKey` |
+| Session        | -/-           | r/w         | yes                    | `sessionToken`      |
 
 ## Email Verification and Password Reset
 
@@ -461,7 +496,7 @@ The following paths are already used by Parse Server's built-in features and are
 It’s possible to change the default pages of the app and redirect the user to another path or domain.
 
 ```js
-var server = ParseServer({
+const server = ParseServer({
   ...otherOptions,
 
   customPages: {
@@ -851,7 +886,7 @@ Then, create an `index.js` file with the following content:
 
 ```js
 const express = require('express');
-const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
+const { ParseServer, ParseGraphQLServer } = require('parse-server');
 
 const app = express();
 
@@ -875,6 +910,7 @@ app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
 parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
 parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
 
+await parseServer.start();
 app.listen(1337, function() {
   console.log('REST API running on http://localhost:1337/parse');
   console.log('GraphQL API running on http://localhost:1337/graphql');
@@ -1116,12 +1152,6 @@ You also have a very powerful tool inside your GraphQL Playground. Please look a
 
 Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to learn more about the power of the GraphQL language.
 
-# Upgrading to Parse Server 3.0
-
-Starting Parse Server 3.0, Parse Server uses the Parse JavaScript SDK 2.0. In short, the Parse JavaScript SDK 2.0 removes the backbone style callbacks as well as the `Parse.Promise` object in favor of native promises. All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by promise style resolution.
-
-We have written up a [migration guide](3.0.0.md) to help you transition to the next major release.
-
 # Contributing
 
 Please see the [Contributing Guide](CONTRIBUTING.md).
@@ -1173,12 +1203,6 @@ Support us with a monthly donation and help us continue our activities. [Become 
 
 <a href="https://opencollective.com/parse-server#backers" target="_blank"><img src="https://opencollective.com/parse-server/backers.svg?width=890" /></a>
 
------
-
-As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.
-
-[license-svg]: https://img.shields.io/badge/license-BSD-lightgrey.svg
-[license-link]: LICENSE
 [open-collective-link]: https://opencollective.com/parse-server
 [log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
 [log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md

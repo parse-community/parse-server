@@ -3,6 +3,7 @@
 ## Table of Contents <!-- omit in toc -->
 - [Contributing](#contributing)
   - [Issue vs. Pull Request](#issue-vs-pull-request)
+  - [Scope](#scope)
   - [Templates](#templates)
 - [Why Contributing?](#why-contributing)
 - [Contribution FAQs](#contribution-faqs)
@@ -32,6 +33,7 @@
 - [Merging](#merging)
   - [Breaking Change](#breaking-change-1)
   - [Reverting](#reverting)
+  - [Security Vulnerability](#security-vulnerability)
 - [Releasing](#releasing)
   - [General Considerations](#general-considerations)
   - [Major Release / Long-Term-Support](#major-release--long-term-support)
@@ -63,6 +65,14 @@ An issue is required to be linked in every pull request. We understand that no-o
 - An issue get more visibility than a pull request as issues can be pinned, receive bounties and it is primarily the issue list that people browse through rather than the more technical pull request list. Visibility is a key aspect so others can weigh in on issues and contribute their opinion.
 - The discussion in the issue is different from the discussion in the pull request. The issue discussion is focused on the issue and how to address it, whereas the discussion in the pull request is focused on a specific implemention. An issue may even have multiple pull requests because either the issue requires multiple implementations or multiple pull requests are opened to compare and test different approaches to later decide for one.
 - High-level conceptual discussions about the issue should be still available, even if a pull request is closed because its appraoch was discarded. If these discussions are in the pull request instead, they can easily become fragmented over multiple pull requests and issues, which can make it very hard to make sense of all aspects of an issue.
+
+### Scope
+
+An issue and pull request must limit its scope on a distinct issue. Pull requests can only contain changes that are required to address the scoped issue. While it may seem quick and easy to add unrelated changes to the pull request, it can cause singificant complications after merging. Some of the reasons are:
+
+- A pull request corresponds to a single changelog entry. A changelog entry should not describe multiple unrelated changes in one entry for better readability.
+- A pull request creates a distinct commit; having an individual commit for each limited scope makes it easier for others to go back in the commit history and debug. Bugs are generally more difficult to identify and fix if there are various unrelated changes merged at once.
+- If a pull request needs to be reverted, unrelated changes will be reverted as well. That makes it more complex and time consuming to revert, having to consider its effects and possibly publishing a broken release or requiring a follow-up pull request with code manipulation.
 
 ### Templates
 
@@ -450,6 +460,24 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
   
   This reverts commit 1234567890abcdef.
   ```
+
+### Security Vulnerability
+
+#### Local Testing
+
+Fixes for securify vulnerabilities are developed in private forks with a closed audience, inaccessible to the public. A current GitHub limitation does not allow to run CI tests on pull requests in private forks. Whether a pull requests fully passes all CI tests can only be determined by publishing the fix as a public pull request and running the CI. This means the fix and implicitly information about the vulnerabilty are made accessible to the public. This increases the risk that a vulnerability fix is published, but then cannot be merged immediately due to a CI issue. To mitigate that risk, before publishing a vulnerability fix, the following tests needs to be run locally and pass:
+
+- `npm run test` (MongoDB)
+- `npm run test` (Postgres)
+- `npm run madge:circular` (circular dependencies)
+- `npm run lint` (Lint)
+- `npm run definitions` (Parse Server options definitions)
+
+#### Merging
+
+A current GitHub limitation does not allow to customize the commit message when merging pull requests of a private fork that was created to fix a security vulnerabilty. Our release automation framework demands a specific commit message syntax which therefore cannot be met. This prohibits to follow the process that GitHub suggest, which is to merge a pull request from a private fork directly to a public branch. Instead, after [local testing](#local-testing), a public pull request needs to be created with the code fix copied over from the private pull request.
+
+This creates a risk that a vulnerability is indirectly disclosed by publishing a pull request with the fix, but the fix cannot be merged due to a CI issue. To mitigate that risk, the pull request title and description should be kept marginal or generic, not hiting to a vulnerabilty or giving any details about the vulnerabilty, until the pull request has been successfully merged.
 
 ## Releasing
 

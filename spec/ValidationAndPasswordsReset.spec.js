@@ -276,7 +276,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user'
           );
           user
-            .fetch()
+            .fetch({ useMasterKey: true })
             .then(
               () => {
                 expect(user.get('emailVerified')).toEqual(true);
@@ -1081,5 +1081,44 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         fail(JSON.stringify(error));
         done();
       });
+  });
+
+  it('should throw on an invalid reset password', async () => {
+    await reconfigureServer({
+      appName: 'coolapp',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+      passwordPolicy: {
+        resetPasswordSuccessOnInvalidEmail: false,
+      },
+    });
+
+    await expectAsync(Parse.User.requestPasswordReset('test@example.com')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'A user with that email does not exist.')
+    );
+  });
+
+  it('validate resetPasswordSuccessonInvalidEmail', async () => {
+    const invalidValues = [[], {}, 1, 'string'];
+    for (const value of invalidValues) {
+      await expectAsync(
+        reconfigureServer({
+          appName: 'coolapp',
+          publicServerURL: 'http://localhost:1337/1',
+          emailAdapter: MockEmailAdapterWithOptions({
+            fromAddress: 'parse@example.com',
+            apiKey: 'k',
+            domain: 'd',
+          }),
+          passwordPolicy: {
+            resetPasswordSuccessOnInvalidEmail: value,
+          },
+        })
+      ).toBeRejectedWith('resetPasswordSuccessOnInvalidEmail must be a boolean value');
+    }
   });
 });

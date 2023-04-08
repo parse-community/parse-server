@@ -1,5 +1,6 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
+import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
@@ -153,27 +154,45 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter = Object.assign({}, defaultAdapter);
+  const adapter =
+    defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
+  const keys = [
+    'validateAuthData',
+    'validateAppId',
+    'validateSetUp',
+    'validateLogin',
+    'validateUpdate',
+    'challenge',
+    'validateOptions',
+    'policy',
+    'afterFind',
+  ];
+  const defaultAuthAdapter = new AuthAdapter();
+  keys.forEach(key => {
+    const existing = adapter?.[key];
+    if (
+      existing &&
+      typeof existing === 'function' &&
+      existing.toString() === defaultAuthAdapter[key].toString()
+    ) {
+      adapter[key] = null;
+    }
+  });
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
   // Try the configuration methods
   if (providerOptions) {
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
-      [
-        'validateAuthData',
-        'validateAppId',
-        'validateSetUp',
-        'validateLogin',
-        'validateUpdate',
-        'challenge',
-        'policy',
-      ].forEach(key => {
+      keys.forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
       });
     }
+  }
+  if (adapter.validateOptions) {
+    adapter.validateOptions(providerOptions);
   }
 
   return { adapter, appIds, providerOptions };
@@ -195,9 +214,40 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
+  const runAfterFind = async (req, authData) => {
+    if (!authData) {
+      return;
+    }
+    const adapters = Object.keys(authData);
+    await Promise.all(
+      adapters.map(async provider => {
+        const authAdapter = getValidatorForProvider(provider);
+        if (!authAdapter) {
+          return;
+        }
+        const {
+          adapter: { afterFind },
+          providerOptions,
+        } = authAdapter;
+        if (afterFind && typeof afterFind === 'function') {
+          const requestObject = {
+            ip: req.config.ip,
+            user: req.auth.user,
+            master: req.auth.isMaster,
+          };
+          const result = afterFind(requestObject, authData[provider], providerOptions);
+          if (result) {
+            authData[provider] = result;
+          }
+        }
+      })
+    );
+  };
+
   return Object.freeze({
     getValidatorForProvider,
     setEnableAnonymousUsers,
+    runAfterFind,
   });
 };
 
