@@ -24,9 +24,18 @@ const getMountForRequest = function (req) {
 };
 
 const checkIPRange = (ip, ranges = []) => {
+  if (!ip) {
+    return false;
+  }
   const allowAll = ['::', '::/0', '0.0.0.0/0'];
   const addr = ipaddr.parse(ip);
   for (const range of ranges) {
+    if (
+      (range === '::1' || range === '127.0.0.1') &&
+      (ip === '::ffff:127.0.0.1' || ip === '127.0.0.1')
+    ) {
+      return true;
+    }
     try {
       if (allowAll.includes(range)) {
         return true;
