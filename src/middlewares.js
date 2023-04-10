@@ -10,7 +10,7 @@ import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageA
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import pathToRegexp from 'path-to-regexp';
-import ipRangeCheck from 'ip-range-check';
+import ipaddr from 'ipaddr.js';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 
@@ -21,6 +21,23 @@ const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
   const mountPath = req.originalUrl.slice(0, mountPathLength);
   return req.protocol + '://' + req.get('host') + mountPath;
+};
+
+const checkIPRange = (ip, ranges = []) => {
+  const addr = ipaddr.parse(ip);
+  for (const range of ranges) {
+    try {
+      const cidr = ipaddr.parseCIDR(range);
+      if (addr.match(cidr)) {
+        return true;
+      }
+    } catch (e) {
+      if (range === ip) {
+        return true;
+      }
+    }
+  }
+  return false;
 };
 
 // Checks that the request is authorized for this app and checks user
@@ -183,7 +200,7 @@ export function handleParseHeaders(req, res, next) {
   const isMaintenance =
     req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
   if (isMaintenance) {
-    if (ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
+    if (checkIPRange(clientIp, req.config.maintenanceKeyIps)) {
       req.auth = new auth.Auth({
         config: req.config,
         installationId: info.installationId,
@@ -199,7 +216,7 @@ export function handleParseHeaders(req, res, next) {
   }
 
   let isMaster = info.masterKey === req.config.masterKey;
-  if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
+  if (isMaster && !checkIPRange(clientIp, req.config.masterKeyIps)) {
     const log = req.config?.loggerController || defaultLogger;
     log.error(
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`

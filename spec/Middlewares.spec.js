@@ -151,6 +151,19 @@ describe('middlewares', () => {
     );
   });
 
+  it('can allow all with masterKeyIPs', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['::/0'],
+    });
+    fakeReq.ip = '::ffff:192.168.0.101';
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
+  });
+
   it('should not succeed if the ip does not belong to masterKeyIps list', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
