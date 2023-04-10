@@ -24,9 +24,13 @@ const getMountForRequest = function (req) {
 };
 
 const checkIPRange = (ip, ranges = []) => {
+  const allowAll = ['::', '::/0', '0.0.0.0/0'];
   const addr = ipaddr.parse(ip);
   for (const range of ranges) {
     try {
+      if (allowAll.includes(range)) {
+        return true;
+      }
       const cidr = ipaddr.parseCIDR(range);
       if (addr.match(cidr)) {
         return true;
