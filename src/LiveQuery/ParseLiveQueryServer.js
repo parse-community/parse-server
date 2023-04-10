@@ -94,7 +94,7 @@ class ParseLiveQueryServer {
     this._createSubscribers();
   }
 
-  async handleShutdown() {
+  async shutdown() {
     if (this.subscriber.isOpen) {
       await Promise.all([
         ...[...this.clients.values()].map(client => client.parseWebSocket.ws.close()),

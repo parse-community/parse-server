@@ -172,7 +172,7 @@ class ParseServer {
       promises.push(new Promise(resolve => this.liveQueryServer.server.close(resolve)));
     }
     if (this.liveQueryServer) {
-      promises.push(this.liveQueryServer.handleShutdown());
+      promises.push(this.liveQueryServer.shutdown());
     }
     return (promises.length > 0 ? Promise.all(promises) : Promise.resolve()).then(() => {
       if (this.config.serverCloseComplete) {
