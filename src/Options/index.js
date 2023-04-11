@@ -320,6 +320,9 @@ export interface RateLimitOptions {
   /* Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to attacks.
   :DEFAULT: false */
   includeInternalRequests: ?boolean;
+  /* Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.
+   */
+  redisUrl: ?string;
 }
 
 export interface SecurityOptions {
@@ -525,6 +528,11 @@ export interface PasswordPolicyOptions {
   Default is `false`.
   :DEFAULT: false */
   resetTokenReuseIfValid: ?boolean;
+  /* Set to `true` if a request to reset the password should return a success response even if the provided email address is invalid, or `false` if the request should return an error response if the email address is invalid.
+  <br><br>
+  Default is `true`.
+  :DEFAULT: true */
+  resetPasswordSuccessOnInvalidEmail: ?boolean;
 }
 
 export interface FileUploadOptions {
@@ -549,6 +557,8 @@ export interface DatabaseOptions {
   /* Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
   :DEFAULT: false */
   enableSchemaHooks: ?boolean;
+  /* The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires. */
+  schemaCacheTtl: ?number;
 }
 
 export interface AuthAdapter {

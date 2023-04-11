@@ -71,6 +71,7 @@ class ParseServer {
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
 
+    Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
@@ -124,7 +125,7 @@ class ParseServer {
             json = require(process.env.npm_package_json);
           }
           if (process.env.npm_package_type === 'module' || json?.type === 'module') {
-            await import(path.resolve(process.cwd(), cloud)).default;
+            await import(path.resolve(process.cwd(), cloud));
           } else {
             require(path.resolve(process.cwd(), cloud));
           }
@@ -255,7 +256,8 @@ class ParseServer {
       });
       // verify the server url after a 'mount' event is received
       /* istanbul ignore next */
-      api.on('mount', function () {
+      api.on('mount', async function () {
+        await new Promise(resolve => setTimeout(resolve, 1000));
         ParseServer.verifyServerUrl();
       });
     }
@@ -430,8 +432,7 @@ class ParseServer {
       const request = require('./request');
       const response = await request({ url }).catch(response => response);
       const json = response.data || null;
-      console.log(response.status, { json });
-      const retry = response.headers['retry-after'];
+      const retry = response.headers?.['retry-after'];
       if (retry) {
         await new Promise(resolve => setTimeout(resolve, retry * 1000));
         return this.verifyServerUrl();

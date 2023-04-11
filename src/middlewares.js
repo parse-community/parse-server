@@ -11,6 +11,8 @@ import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import pathToRegexp from 'path-to-regexp';
 import ipRangeCheck from 'ip-range-check';
+import RedisStore from 'rate-limit-redis';
+import { createClient } from 'redis';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -276,7 +278,13 @@ const handleRateLimit = async (req, res, next) => {
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
-              throw err;
+              if (err.code === Parse.Error.CONNECTION_FAILED) {
+                throw err;
+              }
+              req.config.loggerController.error(
+                'An unknown error occured when attempting to apply the rate limiter: ',
+                err
+              );
             }
           });
         }
@@ -284,7 +292,7 @@ const handleRateLimit = async (req, res, next) => {
     );
   } catch (error) {
     res.status(429);
-    res.json({ code: Parse.Error.CONNECTION_FAILED, error });
+    res.json({ code: Parse.Error.CONNECTION_FAILED, error: error.message });
     return;
   }
   next();
@@ -458,7 +466,7 @@ export function promiseEnforceMasterKeyAccess(request) {
   return Promise.resolve();
 }
 
-export const addRateLimit = (route, config) => {
+export const addRateLimit = (route, config, cloud) => {
   if (typeof config === 'string') {
     config = Config.get(config);
   }
@@ -470,6 +478,35 @@ export const addRateLimit = (route, config) => {
   if (!config.rateLimits) {
     config.rateLimits = [];
   }
+  const redisStore = {
+    connectionPromise: Promise.resolve(),
+    store: null,
+    connected: false,
+  };
+  if (route.redisUrl) {
+    const client = createClient({
+      url: route.redisUrl,
+    });
+    redisStore.connectionPromise = async () => {
+      if (redisStore.connected) {
+        return;
+      }
+      try {
+        await client.connect();
+        redisStore.connected = true;
+      } catch (e) {
+        const log = config?.loggerController || defaultLogger;
+        log.error(`Could not connect to redisURL in rate limit: ${e}`);
+      }
+    };
+    redisStore.connectionPromise();
+    redisStore.store = new RedisStore({
+      sendCommand: async (...args) => {
+        await redisStore.connectionPromise();
+        return client.sendCommand(args);
+      },
+    });
+  }
   config.rateLimits.push({
     path: pathToRegexp(route.requestPath),
     handler: rateLimit({
@@ -477,7 +514,10 @@ export const addRateLimit = (route, config) => {
       max: route.requestCount,
       message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
-        throw options.message;
+        throw {
+          code: Parse.Error.CONNECTION_FAILED,
+          message: options.message,
+        };
       },
       skip: request => {
         if (request.ip === '127.0.0.1' && !route.includeInternalRequests) {
@@ -498,12 +538,14 @@ export const addRateLimit = (route, config) => {
             }
           }
         }
-        return request.auth.isMaster;
+        return request.auth?.isMaster;
       },
       keyGenerator: request => {
         return request.config.ip;
       },
+      store: redisStore.store,
     }),
+    cloud,
   });
   Config.put(config);
 };

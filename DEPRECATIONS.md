@@ -12,6 +12,7 @@ The following is a list of deprecations, according to the [Deprecation Policy](h
 | DEPPS6 | Auth providers disabled by default | [#7953](https://github.com/parse-community/parse-server/pull/7953)   | 5.3.0 (2022)                    | 7.0.0 (2024)                    | deprecated            | -     |
 | DEPPS7 | Remove file trigger syntax `Parse.Cloud.beforeSaveFile((request) => {})` | [#7966](https://github.com/parse-community/parse-server/pull/7966)   | 5.3.0 (2022)                    | 7.0.0 (2024)                    | deprecated            | -     |
 | DEPPS8 | Login with expired 3rd party authentication token defaults to `false` | [#7079](https://github.com/parse-community/parse-server/pull/7079)   | 5.3.0 (2022)                    | 7.0.0 (2024)                    | deprecated            | -     |
+| DEPPS9 | Rename LiveQuery `fields` option to `keys` | [#8389](https://github.com/parse-community/parse-server/issues/8389)   | 6.0.0 (2023)                    | 7.0.0 (2024)                    | deprecated            | -     |
 
 [i_deprecation]: ## "The version and date of the deprecation."
 [i_removal]: ## "The version and date of the planned removal."
