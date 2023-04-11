@@ -3,7 +3,8 @@ on:
   push:
     branches: [ release*, alpha, beta ]
   pull_request:
-    branches: [ release*, alpha, beta ]
+    branches:
+      - '**'
 env:
   NODE_VERSION: 19.3.0
   PARSE_SERVER_TEST_TIMEOUT: 20000

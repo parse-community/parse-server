@@ -1,5 +1,27 @@
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 describe('rate limit', () => {
   it('can limit cloud functions', async () => {
+    Parse.Cloud.define('test', () => 'Abc');
+    await reconfigureServer({
+      rateLimit: [
+        {
+          requestPath: '/functions/*',
+          requestTimeWindow: 10000,
+          requestCount: 1,
+          errorResponseMessage: 'Too many requests',
+          includeInternalRequests: true,
+        },
+      ],
+    });
+    const response1 = await Parse.Cloud.run('test');
+    expect(response1).toBe('Abc');
+    await expectAsync(Parse.Cloud.run('test')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+  });
+
+  it('can limit cloud functions with user session token', async () => {
+    await Parse.User.signUp('myUser', 'password');
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
       rateLimit: [
@@ -366,5 +388,34 @@ describe('rate limit', () => {
         rateLimit: [{ requestTimeWindow: 3, requestCount: 1, path: 'abc', requestPath: 'a' }],
       })
     ).toBeRejectedWith(`Invalid rate limit option "path"`);
+  });
+  describe_only(() => {
+    return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
+  })('with RedisCache', function () {
+    it('does work with cache', async () => {
+      await reconfigureServer({
+        rateLimit: [
+          {
+            requestPath: '/classes/*',
+            requestTimeWindow: 10000,
+            requestCount: 1,
+            errorResponseMessage: 'Too many requests',
+            includeInternalRequests: true,
+            redisUrl: 'redis://localhost:6379',
+          },
+        ],
+      });
+      const obj = new Parse.Object('Test');
+      await obj.save();
+      await expectAsync(obj.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+      );
+      const cache = new RedisCacheAdapter();
+      await cache.connect();
+      const value = await cache.get('rl:127.0.0.1');
+      expect(value).toEqual(2);
+      const ttl = await cache.client.ttl('rl:127.0.0.1');
+      expect(ttl).toEqual(10);
+    });
   });
 });
