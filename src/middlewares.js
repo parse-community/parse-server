@@ -27,14 +27,22 @@ const checkIPRange = (ip, ranges = []) => {
   if (!ip) {
     return false;
   }
+  const transformIp = ip => {
+    if (ip === '::1') {
+      ip = '::ffff:127.0.0.1';
+    }
+    return ip;
+  };
+
   const getCIDR = ip => {
+    ip = transformIp(ip);
     try {
       return ipaddr.parseCIDR(ip);
     } catch (e) {
-      return ipaddr.parseCIDR(`${ip}/32`);
+      return ipaddr.parseCIDR(`${ip}/128`);
     }
   };
-  const addr = ipaddr.parse(ip);
+  const addr = ipaddr.parse(transformIp(ip));
   for (const range of ranges) {
     try {
       const cidr = getCIDR(range);

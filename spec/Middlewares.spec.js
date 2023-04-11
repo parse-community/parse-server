@@ -164,12 +164,38 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(true);
   });
 
-  it('should not succeed if the ip does not belong to masterKeyIps list', async () => {
+  it('can allow localhost with masterKeyIPs', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['::1'],
+    });
+    fakeReq.ip = '::ffff:127.0.0.1';
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(true);
+  });
+
+  it('should not succeed if the ip does not belong to masterKeyIps list (ipv4)', async () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['10.0.0.1'],
     });
     fakeReq.ip = '127.0.0.1';
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    expect(fakeReq.auth.isMaster).toBe(false);
+  });
+
+  it('should not succeed if the ip does not belong to masterKeyIps list (ipv6)', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['::1'],
+    });
+    fakeReq.ip = '::ffff:101.10.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
     await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
     expect(fakeReq.auth.isMaster).toBe(false);
