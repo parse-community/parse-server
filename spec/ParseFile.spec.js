@@ -271,7 +271,7 @@ describe('Parse.File testing', () => {
           enableForPublic: true,
           enableForAnonymousUser: true,
           enableForAuthenticatedUser: true,
-          enableLegacyAccess: true,
+          enableLegacyAccess: false,
         },
       });
       let file = new Parse.File('hello.txt', data, 'text/plain');

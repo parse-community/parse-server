@@ -3765,6 +3765,7 @@ describe('saveFile hooks', () => {
   });
 
   fit('legacy hooks', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
     const logger = require('../lib/logger').logger;
     const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
     const triggers = {
@@ -3818,7 +3819,7 @@ describe('saveFile hooks', () => {
         enableForPublic: true,
         enableForAnonymousUser: true,
         enableForAuthenticatedUser: true,
-        enableLegacyAccess: true,
+        enableLegacyAccess: false,
       },
     });
     const user = new Parse.User();

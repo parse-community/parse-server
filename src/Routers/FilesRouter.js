@@ -116,7 +116,7 @@ export class FilesRouter {
       const fileObject = new Parse.File(filename);
       const conf = { ...config };
       if (!conf.mount) {
-        conf.mount = conf.serverURL;
+        conf.mount = conf.publicServerURL || conf.serverURL;
       }
       fileObject._url = filesController.adapter.getFileLocation(conf, filename);
       fileObject.contentType = contentType;
