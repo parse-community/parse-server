@@ -3683,7 +3683,7 @@ describe('saveFile hooks', () => {
     await file.save({ useMasterKey: true });
   });
 
-  fit('beforeDeleteFile should call with fileObject', async () => {
+  it('beforeDeleteFile should call with fileObject', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeDelete(Parse.File, req => {
       expect(req.file).toBeInstanceOf(Parse.File);
@@ -3695,7 +3695,7 @@ describe('saveFile hooks', () => {
     await file.destroy({ useMasterKey: true });
   });
 
-  fit('beforeDeleteFile should throw error', async done => {
+  it('beforeDeleteFile should throw error', async done => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeDelete(Parse.File, () => {
       throw new Error('some error message');
@@ -3709,7 +3709,7 @@ describe('saveFile hooks', () => {
     }
   });
 
-  fit('afterDeleteFile should call with fileObject', async done => {
+  it('afterDeleteFile should call with fileObject', async done => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeDelete(Parse.File, req => {
       expect(req.file).toBeInstanceOf(Parse.File);
@@ -3764,7 +3764,7 @@ describe('saveFile hooks', () => {
     }
   });
 
-  fit('legacy hooks', async () => {
+  it('legacy hooks', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const logger = require('../lib/logger').logger;
     const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
@@ -3813,7 +3813,7 @@ describe('saveFile hooks', () => {
     }
   });
 
-  fit('can run find hooks', async () => {
+  it('can run find hooks', async () => {
     await reconfigureServer({
       fileUpload: {
         enableForPublic: true,
