@@ -328,27 +328,27 @@ export class FilesRouter {
         req.config,
         req.auth
       );
-      (async () => {
-        if (!files.results[0]?.objectId) {
-          return;
-        }
-        const fileObj = Parse.Object.extend('_FileObject').createWithoutData(
-          files.results[0].objectId
-        );
-        new Parse.Query('_FileReference').equalTo({ file: fileObj }).each(
-          obj => {
-            obj.destroy(null, { useMasterKey: true });
-          },
-          { useMasterKey: true }
-        );
-        new Parse.Query('_FileSession').equalTo({ file: fileObj }).each(
-          obj => {
-            obj.destroy(null, { useMasterKey: true });
-          },
-          { useMasterKey: true }
-        );
-        await fileObj.destroy({ useMasterKey: true });
-      })();
+      const fileId = files.results[0]?.objectId;
+      if (fileId) {
+        const fileObj = Parse.Object.extend('_FileObject').createWithoutData(fileId);
+        fileObj
+          .destroy({ useMasterKey: true })
+          .then(() => {
+            new Parse.Query('_FileReference').equalTo({ file: fileObj }).each(
+              obj => {
+                obj.destroy(null, { useMasterKey: true });
+              },
+              { useMasterKey: true }
+            );
+            new Parse.Query('_FileSession').equalTo({ file: fileObj }).each(
+              obj => {
+                obj.destroy(null, { useMasterKey: true });
+              },
+              { useMasterKey: true }
+            );
+          })
+          .catch(e => e);
+      }
       res.status(200);
       // TODO: return useful JSON here?
       res.end();
