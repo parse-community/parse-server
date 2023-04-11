@@ -23,7 +23,7 @@ const getMountForRequest = function (req) {
   return req.protocol + '://' + req.get('host') + mountPath;
 };
 
-const checkIPRange = (ip, ranges = []) => {
+const checkIpRanges = (ip, ranges = []) => {
   if (!ip) {
     return false;
   }
@@ -218,7 +218,7 @@ export function handleParseHeaders(req, res, next) {
   const isMaintenance =
     req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
   if (isMaintenance) {
-    if (checkIPRange(clientIp, req.config.maintenanceKeyIps)) {
+    if (checkIpRanges(clientIp, req.config.maintenanceKeyIps)) {
       req.auth = new auth.Auth({
         config: req.config,
         installationId: info.installationId,
@@ -234,7 +234,7 @@ export function handleParseHeaders(req, res, next) {
   }
 
   let isMaster = info.masterKey === req.config.masterKey;
-  if (isMaster && !checkIPRange(clientIp, req.config.masterKeyIps)) {
+  if (isMaster && !checkIpRanges(clientIp, req.config.masterKeyIps)) {
     const log = req.config?.loggerController || defaultLogger;
     log.error(
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
