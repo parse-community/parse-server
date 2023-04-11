@@ -972,7 +972,7 @@ module.exports.FileUploadOptions = {
     help:
       'Is true if files that do not have a corresponding _FileObject should be publicly accessable.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   tokenValidityDuration: {
     env: 'PARSE_SERVER_FILE_UPLOAD_TOKEN_VALIDITY_DURATION',
