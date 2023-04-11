@@ -266,6 +266,14 @@ describe('Parse.File testing', () => {
     });
 
     it('autosave file in object', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          enableForAnonymousUser: true,
+          enableForAuthenticatedUser: true,
+          enableLegacyAccess: true,
+        },
+      });
       let file = new Parse.File('hello.txt', data, 'text/plain');
       ok(!file.url());
       const object = new Parse.Object('TestObject');

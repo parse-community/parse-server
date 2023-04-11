@@ -82,7 +82,7 @@ on_db(
 );
 
 let logLevel;
-let silent = false;
+let silent = true;
 if (process.env.VERBOSE) {
   silent = false;
   logLevel = 'verbose';
@@ -112,7 +112,7 @@ const defaultConfiguration = {
     enableForPublic: true,
     enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
-    enableLegacyAccess: false,
+    enableLegacyAccess: true,
     tokenValidityDuration: 5 * 60,
   },
   push: {

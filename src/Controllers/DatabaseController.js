@@ -1774,13 +1774,6 @@ class DatabaseController {
       });
 
     await this.adapter
-      .ensureUniqueness('_FileObject', requiredFileObjectFields, ['file'])
-      .catch(error => {
-        logger.warn('Unable to ensure uniqueness for file object: ', error);
-        throw error;
-      });
-
-    await this.adapter
       .ensureUniqueness('_FileSession', requiredFileSessionFields, ['token'])
       .catch(error => {
         logger.warn('Unable to ensure uniqueness for file object: ', error);

@@ -538,7 +538,7 @@ export interface FileUploadOptions {
   :DEFAULT: false */
   enableForPublic: ?boolean;
   /* Is true if files that do not have a corresponding _FileObject should be publicly accessable.
-  :DEFAULT: false */
+  :DEFAULT: true */
   enableLegacyAccess: ?boolean;
   /* Duration of the file token in seconds
   :DEFAULT: 300 */

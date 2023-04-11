@@ -97,24 +97,28 @@ export class FilesRouter {
         throw 'File not found';
       }
       let auth = new Auth.Auth({
-        config: req.config,
+        config,
         isMaster: false,
       });
       if (fileSession.get('master')) {
         auth = new Auth.Auth({
-          config: req.config,
+          config,
           installationId: fileSession.get('installationId'),
           isMaster: true,
         });
       } else if (fileSession.get('sessionToken')) {
         auth = await Auth.getAuthForSessionToken({
-          config: req.config,
+          config,
           installationId: fileSession.get('installationId'),
           sessionToken: await fileSession.get('sessionToken'),
         });
       }
       const fileObject = new Parse.File(filename);
-      fileObject._url = filesController.adapter.getFileLocation(req.config, filename);
+      const conf = { ...config };
+      if (!conf.mount) {
+        conf.mount = conf.serverURL;
+      }
+      fileObject._url = filesController.adapter.getFileLocation(conf, filename);
       fileObject.contentType = contentType;
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
@@ -307,9 +311,7 @@ export class FilesRouter {
         { limit: 1 }
       ).execute();
       if (files.results.length === 0 && !req.config.fileUpload.enableLegacyAccess) {
-        const error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'File not found.');
-        next(error);
-        return;
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'File not found.');
       }
       await triggers.maybeRunFileTrigger(
         triggers.Types.beforeDelete,

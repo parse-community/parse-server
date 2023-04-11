@@ -136,6 +136,14 @@ export class FilesController extends AdaptableController {
       installationId: auth?.installationId,
     });
     await fileSession.save(null, { useMasterKey: true });
+
+    clearTimeout(this.clearExpiredFileSessions);
+    this.clearExpiredFileSessions = setTimeout(() => {
+      new Parse.Query('_FileSession')
+        .lessThan('expiry', new Date())
+        .each(session => session.destroy({ useMasterKey: true }), { useMasterKey: true });
+    }, 5000);
+
     return token;
   }
 
