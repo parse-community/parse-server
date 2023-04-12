@@ -434,13 +434,12 @@ describe('server', () => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' }).catch(done);
   });
 
-  it('fails if you provides invalid ip in masterKeyIps', done => {
-    reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
-      expect(error).toEqual(
-        'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
-      );
-      done();
-    });
+  it('fails if you provides invalid ip in masterKeyIps', async () => {
+    await expectAsync(
+      reconfigureServer({ masterKeyIps: ['1.2.3.4/0', 'invalidIp'] })
+    ).toBeRejectedWith(
+      'The Parse Server option "masterKeyIps" contains an invalid IP address "invalidIp".'
+    );
   });
 
   it('should succeed if you provide valid ip in masterKeyIps', done => {

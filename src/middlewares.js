@@ -10,9 +10,9 @@ import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageA
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import pathToRegexp from 'path-to-regexp';
-import ipaddr from 'ipaddr.js';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
+import { BlockList, isIPv4 } from 'net';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -24,40 +24,25 @@ const getMountForRequest = function (req) {
 };
 
 const checkIpRanges = (ip, ranges = []) => {
-  if (!ip) {
-    return false;
-  }
   const transformIp = ip => {
     if (ip === '::1' || ip === '::') {
       ip = '127.0.0.1';
     }
-    let asIp = ipaddr.parse(ip);
-    if (asIp.kind() === 'ipv4') {
-      asIp = ipaddr.parse(`::ffff:${ip}`);
-    }
-    return asIp.toString();
+    return ip;
   };
-
-  const getCIDR = ip => {
-    if (ip.includes('/')) {
-      return ipaddr.parseCIDR(ip);
-    }
-    return ipaddr.parseCIDR(`${transformIp(ip)}/128`);
-  };
-  const addr = ipaddr.parse(transformIp(ip));
+  const blocklist = new BlockList();
   for (const range of ranges) {
-    try {
-      const cidr = getCIDR(range);
-      if (addr.match(cidr)) {
-        return true;
-      }
-    } catch (e) {
-      if (range === ip) {
-        return true;
-      }
+    if (range.includes('/')) {
+      const [net, prefix] = range.split('/');
+      const addr = transformIp(net);
+      blocklist.addSubnet(addr, Number(prefix), isIPv4(addr) ? 'ipv4' : 'ipv6');
+    } else {
+      const addr = transformIp(range);
+      blocklist.addAddress(addr, isIPv4(addr) ? 'ipv4' : 'ipv6');
     }
   }
-  return false;
+  const client = transformIp(ip);
+  return blocklist.check(client, isIPv4(client) ? 'ipv4' : 'ipv6');
 };
 
 // Checks that the request is authorized for this app and checks user
