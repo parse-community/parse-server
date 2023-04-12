@@ -850,13 +850,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
   _pgp: any;
   _stream: any;
   _uuid: any;
+  schemaCacheTtl: ?number;
 
   constructor({ uri, collectionPrefix = '', databaseOptions = {} }: any) {
+    const options = { ...databaseOptions };
     this._collectionPrefix = collectionPrefix;
     this.enableSchemaHooks = !!databaseOptions.enableSchemaHooks;
-    delete databaseOptions.enableSchemaHooks;
+    this.schemaCacheTtl = databaseOptions.schemaCacheTtl;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl']) {
+      delete options[key];
+    }
 
-    const { client, pgp } = createClient(uri, databaseOptions);
+    const { client, pgp } = createClient(uri, options);
     this._client = client;
     this._onchange = () => {};
     this._pgp = pgp;
@@ -2241,8 +2246,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
           });
           stage.$match = collapse;
         }
-        for (const field in stage.$match) {
+        for (let field in stage.$match) {
           const value = stage.$match[field];
+          if (field === '_id') {
+            field = 'objectId';
+          }
           const matchPatterns = [];
           Object.keys(ParseToPosgresComparator).forEach(cmp => {
             if (value[cmp]) {

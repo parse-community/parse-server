@@ -9,6 +9,7 @@ import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
 import {
   AccountLockoutOptions,
+  DatabaseOptions,
   FileUploadOptions,
   IdempotencyOptions,
   LogLevels,
@@ -52,31 +53,29 @@ export class Config {
   }
 
   static put(serverConfiguration) {
-    Config.validate(serverConfiguration);
+    Config.validateOptions(serverConfiguration);
+    Config.validateControllers(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
   }
 
-  static validate({
-    verifyUserEmails,
-    userController,
-    appName,
+  static validateOptions({
     publicServerURL,
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
     defaultLimit,
     maxLimit,
-    emailVerifyTokenValidityDuration,
     accountLockout,
     passwordPolicy,
     masterKeyIps,
     masterKey,
+    maintenanceKey,
+    maintenanceKeyIps,
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
-    emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
     security,
@@ -85,20 +84,15 @@ export class Config {
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
     logLevels,
+    rateLimit,
+    databaseOptions,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
     }
 
-    const emailAdapter = userController.adapter;
-    if (verifyUserEmails) {
-      this.validateEmailConfiguration({
-        emailAdapter,
-        appName,
-        publicServerURL,
-        emailVerifyTokenValidityDuration,
-        emailVerifyTokenReuseIfValid,
-      });
+    if (masterKey === maintenanceKey) {
+      throw new Error('masterKey and maintenanceKey should be different');
     }
 
     this.validateAccountLockoutPolicy(accountLockout);
@@ -115,7 +109,8 @@ export class Config {
       }
     }
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
-    this.validateMasterKeyIps(masterKeyIps);
+    this.validateIps('masterKeyIps', masterKeyIps);
+    this.validateIps('maintenanceKeyIps', maintenanceKeyIps);
     this.validateDefaultLimit(defaultLimit);
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
@@ -126,7 +121,29 @@ export class Config {
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
+    this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
+    this.validateDatabaseOptions(databaseOptions);
+  }
+
+  static validateControllers({
+    verifyUserEmails,
+    userController,
+    appName,
+    publicServerURL,
+    emailVerifyTokenValidityDuration,
+    emailVerifyTokenReuseIfValid,
+  }) {
+    const emailAdapter = userController.adapter;
+    if (verifyUserEmails) {
+      this.validateEmailConfiguration({
+        emailAdapter,
+        appName,
+        publicServerURL,
+        emailVerifyTokenValidityDuration,
+        emailVerifyTokenReuseIfValid,
+      });
+    }
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -367,6 +384,13 @@ export class Config {
       if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
         throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
       }
+
+      if (
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
+      ) {
+        throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
+      }
     }
   }
 
@@ -438,13 +462,13 @@ export class Config {
     }
   }
 
-  static validateMasterKeyIps(masterKeyIps) {
+  static validateIps(field, masterKeyIps) {
     for (let ip of masterKeyIps) {
       if (ip.includes('/')) {
         ip = ip.split('/')[0];
       }
       if (!net.isIP(ip)) {
-        throw `The Parse Server option "masterKeyIps" contains an invalid IP address "${ip}".`;
+        throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
       }
     }
   }
@@ -517,6 +541,67 @@ export class Config {
     }
   }
 
+  static validateDatabaseOptions(databaseOptions) {
+    if (databaseOptions == undefined) {
+      return;
+    }
+    if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
+      throw `databaseOptions must be an object`;
+    }
+    if (databaseOptions.enableSchemaHooks === undefined) {
+      databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
+    } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
+      throw `databaseOptions.enableSchemaHooks must be a boolean`;
+    }
+    if (databaseOptions.schemaCacheTtl === undefined) {
+      databaseOptions.schemaCacheTtl = DatabaseOptions.schemaCacheTtl.default;
+    } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
+      throw `databaseOptions.schemaCacheTtl must be a number`;
+    }
+  }
+
+  static validateRateLimit(rateLimit) {
+    if (!rateLimit) {
+      return;
+    }
+    if (
+      Object.prototype.toString.call(rateLimit) !== '[object Object]' &&
+      !Array.isArray(rateLimit)
+    ) {
+      throw `rateLimit must be an array or object`;
+    }
+    const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
+    for (const option of options) {
+      if (Object.prototype.toString.call(option) !== '[object Object]') {
+        throw `rateLimit must be an array of objects`;
+      }
+      if (option.requestPath == null) {
+        throw `rateLimit.requestPath must be defined`;
+      }
+      if (typeof option.requestPath !== 'string') {
+        throw `rateLimit.requestPath must be a string`;
+      }
+      if (option.requestTimeWindow == null) {
+        throw `rateLimit.requestTimeWindow must be defined`;
+      }
+      if (typeof option.requestTimeWindow !== 'number') {
+        throw `rateLimit.requestTimeWindow must be a number`;
+      }
+      if (option.includeInternalRequests && typeof option.includeInternalRequests !== 'boolean') {
+        throw `rateLimit.includeInternalRequests must be a boolean`;
+      }
+      if (option.requestCount == null) {
+        throw `rateLimit.requestCount must be defined`;
+      }
+      if (typeof option.requestCount !== 'number') {
+        throw `rateLimit.requestCount must be a number`;
+      }
+      if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
+        throw `rateLimit.errorResponseMessage must be a string`;
+      }
+    }
+  }
+
   generateEmailVerifyTokenExpiresAt() {
     if (!this.verifyUserEmails || !this.emailVerifyTokenValidityDuration) {
       return undefined;
@@ -539,6 +624,16 @@ export class Config {
     }
     var now = new Date();
     return new Date(now.getTime() + this.sessionLength * 1000);
+  }
+
+  unregisterRateLimiters() {
+    let i = this.rateLimits?.length;
+    while (i--) {
+      const limit = this.rateLimits[i];
+      if (limit.cloud) {
+        this.rateLimits.splice(i, 1);
+      }
+    }
   }
 
   get invalidLinkURL() {

@@ -188,6 +188,16 @@ const transformInteriorValue = restValue => {
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
+    if (value && typeof value === 'object') {
+      if (value instanceof Date) {
+        return value;
+      }
+      if (value instanceof Array) {
+        value = value.map(transformInteriorValue);
+      } else {
+        value = mapValues(value, transformInteriorValue);
+      }
+    }
     return value;
   }
 

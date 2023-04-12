@@ -1,6 +1,7 @@
 'use strict';
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
+const ParseServer = require('../lib/index').ParseServer;
 const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
   .InMemoryCacheAdapter;
@@ -37,6 +38,47 @@ describe('Cloud Code', () => {
         done();
       });
     });
+  });
+
+  it('can load cloud code as a module', async () => {
+    process.env.npm_package_type = 'module';
+    await reconfigureServer({ appId: 'test1', cloud: './spec/cloud/cloudCodeModuleFile.js' });
+    const result = await Parse.Cloud.run('cloudCodeInFile');
+    expect(result).toEqual('It is possible to define cloud code in a file.');
+    delete process.env.npm_package_type;
+  });
+
+  it('cloud code must be valid type', async () => {
+    await expectAsync(reconfigureServer({ cloud: true })).toBeRejectedWith(
+      "argument 'cloud' must either be a string or a function"
+    );
+  });
+
+  it('should wait for cloud code to load', async () => {
+    await reconfigureServer({ appId: 'test3' });
+    const initiated = new Date();
+    const parseServer = await new ParseServer({
+      ...defaultConfiguration,
+      appId: 'test3',
+      masterKey: 'test',
+      serverURL: 'http://localhost:12668/parse',
+      async cloud() {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        Parse.Cloud.beforeSave('Test', () => {
+          throw 'Cannot save.';
+        });
+      },
+    }).start();
+    const express = require('express');
+    const app = express();
+    app.use('/parse', parseServer.app);
+    const server = app.listen(12668);
+    const now = new Date();
+    expect(now.getTime() - initiated.getTime() > 1000).toBeTrue();
+    await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
+      new Parse.Error(141, 'Cannot save.')
+    );
+    await new Promise(resolve => server.close(resolve));
   });
 
   it('can create functions', done => {
@@ -2732,7 +2774,7 @@ describe('afterFind hooks', () => {
     const obj = new Parse.Object('MyObject');
     const pipeline = [
       {
-        group: { objectId: {} },
+        $group: { _id: {} },
       },
     ];
     obj

@@ -22,6 +22,9 @@ import { getCacheController, getDatabaseController } from '../Controllers';
 import LRU from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
+import { isDeepStrictEqual } from 'util';
+import Deprecator from '../Deprecator/Deprecator';
+import deepcopy from 'deepcopy';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -329,6 +332,10 @@ class ParseLiveQueryServer {
             } else {
               return null;
             }
+            const watchFieldsChanged = this._checkWatchFields(client, requestId, message);
+            if (!watchFieldsChanged && (type === 'update' || type === 'create')) {
+              return;
+            }
             res = {
               event: type,
               sessionToken: client.sessionToken,
@@ -490,7 +497,7 @@ class ParseLiveQueryServer {
     if (!parseObject) {
       return false;
     }
-    return matchesQuery(parseObject, subscription.query);
+    return matchesQuery(deepcopy(parseObject), subscription.query);
   }
 
   async _clearCachedRoles(userId: string) {
@@ -625,6 +632,7 @@ class ParseLiveQueryServer {
       }
       return DatabaseController.filterSensitiveData(
         client.hasMasterKey,
+        false,
         aclGroup,
         clientAuth,
         op,
@@ -704,6 +712,17 @@ class ParseLiveQueryServer {
     }
     const { auth } = await this.getAuthForSessionToken(sessionToken);
     return auth;
+  }
+
+  _checkWatchFields(client: any, requestId: any, message: any) {
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    const watch = subscriptionInfo?.watch;
+    if (!watch) {
+      return true;
+    }
+    const object = message.currentParseObject;
+    const original = message.originalParseObject;
+    return watch.some(field => !isDeepStrictEqual(object.get(field), original?.get(field)));
   }
 
   async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
@@ -833,9 +852,6 @@ class ParseLiveQueryServer {
         await runTrigger(trigger, `beforeSubscribe.${className}`, request, auth);
 
         const query = request.query.toJSON();
-        if (query.keys) {
-          query.fields = query.keys.split(',');
-        }
         request.query = query;
       }
 
@@ -884,8 +900,20 @@ class ParseLiveQueryServer {
         subscription: subscription,
       };
       // Add selected fields, sessionToken and installationId for this subscription if necessary
+      if (request.query.keys) {
+        subscriptionInfo.keys = Array.isArray(request.query.keys)
+          ? request.query.keys
+          : request.query.keys.split(',');
+      }
       if (request.query.fields) {
-        subscriptionInfo.fields = request.query.fields;
+        subscriptionInfo.keys = request.query.fields;
+        Deprecator.logRuntimeDeprecation({
+          usage: `Subscribing using fields parameter`,
+          solution: `Subscribe using "keys" instead.`,
+        });
+      }
+      if (request.query.watch) {
+        subscriptionInfo.watch = request.query.watch;
       }
       if (request.sessionToken) {
         subscriptionInfo.sessionToken = request.sessionToken;
