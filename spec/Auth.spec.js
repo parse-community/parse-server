@@ -107,6 +107,7 @@ describe('Auth', () => {
     const session = await new Parse.Query(Parse.Session).first();
     const updatedAt = new Date('2010');
     const expiry = new Date();
+    expiry.setHours(expiry.getHours() + 1);
 
     await Parse.Server.database.update(
       '_Session',
