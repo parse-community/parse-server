@@ -1349,12 +1349,14 @@ RestWrite.prototype.handleInstallation = function () {
 // since this might not have a query, meaning it won't return the full result back.
 // TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
 RestWrite.prototype.expandFilesForExistingObjects = async function () {
-  await this.config.filesController.expandFilesInObject(
-    this.config,
-    this.data,
-    this.className,
-    this.auth
-  );
+  if (this.response?.response) {
+    await this.config.filesController.expandFilesInObject(
+      this.config,
+      this.response.response,
+      this.className,
+      this.auth
+    );
+  }
 };
 
 RestWrite.prototype.runDatabaseOperation = function () {

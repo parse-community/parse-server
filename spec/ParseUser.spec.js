@@ -1361,30 +1361,19 @@ describe('Parse.User testing', () => {
       .catch(done.fail);
   });
 
-  it('log in with provider with files', done => {
+  it('log in with provider with files', async () => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     const file = new Parse.File('yolo.txt', [1, 2, 3], 'text/plain');
-    file
-      .save()
-      .then(file => {
-        const user = new Parse.User();
-        user.set('file', file);
-        return user._linkWith('facebook', {});
-      })
-      .then(user => {
-        expect(user._isLinked('facebook')).toBeTruthy();
-        return Parse.User._logInWith('facebook', {});
-      })
-      .then(user => {
-        const fileAgain = user.get('file');
-        expect(fileAgain.name()).toMatch(/yolo.txt$/);
-        expect(fileAgain.url()).toMatch(/yolo.txt$/);
-      })
-      .then(() => {
-        done();
-      })
-      .catch(done.fail);
+    await file.save();
+    let user = new Parse.User();
+    user.set('file', file);
+    await user._linkWith('facebook', {});
+    expect(user._isLinked('facebook')).toBeTruthy();
+    user = await Parse.User._logInWith('facebook', {});
+    const fileAgain = user.get('file');
+    expect(fileAgain.name()).toMatch(/yolo.txt$/);
+    expect(fileAgain.url()).toMatch(/yolo.txt$/);
   });
 
   it('log in with provider twice', async done => {
