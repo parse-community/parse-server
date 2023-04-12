@@ -169,9 +169,9 @@ describe('middlewares', () => {
     spyOn(logger, 'error').and.callFake(() => {});
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
-      masterKeyIps: ['::1'],
+      masterKeyIps: ['::'],
     });
-    fakeReq.ip = '::ffff:127.0.0.1';
+    fakeReq.ip = '127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
     await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
     expect(fakeReq.auth.isMaster).toBe(true);

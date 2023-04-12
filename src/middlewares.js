@@ -28,10 +28,14 @@ const checkIpRanges = (ip, ranges = []) => {
     return false;
   }
   const transformIp = ip => {
-    if (ip === '::1') {
-      ip = '::ffff:127.0.0.1';
+    if (ip === '::1' || ip === '::') {
+      ip = '127.0.0.1';
     }
-    return ip;
+    let asIp = ipaddr.parse(ip);
+    if (asIp.kind() === 'ipv4') {
+      asIp = ipaddr.parse(`::ffff:${ip}`);
+    }
+    return asIp.toString();
   };
 
   const getCIDR = ip => {
