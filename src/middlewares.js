@@ -30,19 +30,20 @@ const checkIpRanges = (ip, ranges = []) => {
     }
     return ip;
   };
+  const getType = address => (isIPv4(address) ? 'ipv4' : 'ipv6');
   const blocklist = new BlockList();
   for (const range of ranges) {
     if (range.includes('/')) {
       const [net, prefix] = range.split('/');
       const addr = transformIp(net);
-      blocklist.addSubnet(addr, Number(prefix), isIPv4(addr) ? 'ipv4' : 'ipv6');
+      blocklist.addSubnet(addr, Number(prefix), getType(addr));
     } else {
       const addr = transformIp(range);
-      blocklist.addAddress(addr, isIPv4(addr) ? 'ipv4' : 'ipv6');
+      blocklist.addAddress(addr, getType(addr));
     }
   }
   const client = transformIp(ip);
-  return blocklist.check(client, isIPv4(client) ? 'ipv4' : 'ipv6');
+  return blocklist.check(client, getType(client));
 };
 
 // Checks that the request is authorized for this app and checks user
