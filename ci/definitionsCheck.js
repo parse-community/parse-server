@@ -26,6 +26,14 @@ const { AbortController } = require("node-abort-controller");
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
     fs.readFile('./src/Options/docs.js', 'utf8'),
   ]);
+  if (currentDefinitions !== newDefinitions) {
+    console.log(currentDefinitions);
+    console.log(newDefinitions);
+  }
+  if (currentDocs !== newDocs) {
+    console.log(currentDocs);
+    console.log(newDocs);
+  }
   if (currentDefinitions !== newDefinitions || currentDocs !== newDocs) {
     console.error(
       '\x1b[31m%s\x1b[0m',
