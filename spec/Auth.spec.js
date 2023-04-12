@@ -94,6 +94,31 @@ describe('Auth', () => {
     });
   });
 
+  it('can use renewSessions', async () => {
+    await reconfigureServer({
+      renewSessions: true,
+    });
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const session = await new Parse.Query(Parse.Session).first();
+    const updatedAt = new Date('2010');
+    const expiry = new Date();
+
+    await Parse.Server.database.update(
+      '_Session',
+      { objectId: session.id },
+      { updatedAt: Parse._encode(updatedAt), expiresAt: Parse._encode(expiry) }
+    );
+    await session.fetch();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await session.fetch();
+    expect(session.get('expiresAt') > expiry).toBeTrue();
+  });
+
   it('should load auth without a config', async () => {
     const user = new Parse.User();
     await user.signUp({
