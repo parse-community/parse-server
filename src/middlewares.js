@@ -39,12 +39,10 @@ const checkIpRanges = (ip, ranges = []) => {
   };
 
   const getCIDR = ip => {
-    ip = transformIp(ip);
-    try {
+    if (ip.includes('/')) {
       return ipaddr.parseCIDR(ip);
-    } catch (e) {
-      return ipaddr.parseCIDR(`${ip}/128`);
     }
+    return ipaddr.parseCIDR(`${transformIp(ip)}/128`);
   };
   const addr = ipaddr.parse(transformIp(ip));
   for (const range of ranges) {
