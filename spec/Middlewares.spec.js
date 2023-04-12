@@ -27,6 +27,7 @@ describe('middlewares', () => {
     expect(fakeReq.headers['content-type']).toEqual(undefined);
     const contentType = 'image/jpeg';
     fakeReq.body._ContentType = contentType;
+    fakeReq.ip = '127.0.0.1';
     middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
       expect(fakeReq.headers['content-type']).toEqual(contentType);
       expect(fakeReq.body._ContentType).toEqual(undefined);
