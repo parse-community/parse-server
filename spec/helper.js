@@ -119,6 +119,7 @@ const defaultConfiguration = {
       apiKey: 'yolo',
     },
   },
+  rateLimit: [],
   auth: {
     // Override the facebook provider
     custom: mockCustom(),
