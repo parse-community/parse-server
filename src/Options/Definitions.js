@@ -429,7 +429,38 @@ module.exports.ParseServerOptions = {
     help:
       "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.",
     action: parsers.arrayParser,
-    default: [],
+    default: [
+      {
+        requestPath: '/users',
+        requestTimeWindow: 3600000,
+        requestCount: 2,
+        errorResponseMessage: 'Too many requests',
+      },
+      {
+        requestPath: '/login|verifyPassword',
+        requestTimeWindow: 3600000,
+        requestCount: 2,
+        errorResponseMessage: 'Too many requests',
+      },
+      {
+        requestPath: '/requestPasswordReset|verificationEmailRequest',
+        requestTimeWindow: 3600000,
+        requestCount: 2,
+        errorResponseMessage: 'Too many requests',
+      },
+      {
+        requestPath: '/sessions/me',
+        requestTimeWindow: 3600000,
+        requestCount: 2,
+        errorResponseMessage: 'Too many requests',
+      },
+      {
+        requestPath: '*',
+        requestTimeWindow: 900000,
+        requestCount: 200,
+        errorResponseMessage: 'Too many requests',
+      },
+    ],
   },
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',

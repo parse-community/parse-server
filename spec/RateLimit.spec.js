@@ -316,6 +316,91 @@ describe('rate limit', () => {
     );
   });
 
+  fit('can define default rateLimit', async () => {
+    const rateLimit = require('../lib/Options/Definitions.js').ParseServerOptions.rateLimit.default;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => {},
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      rateLimit: rateLimit.map(limit => {
+        limit.includeInternalRequests = true;
+        return limit;
+      }),
+
+      appName: 'passwordPolicy',
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    await Promise.all([
+      Parse.User.signUp('username', 'pass'),
+      Parse.User.signUp('username2', 'pass'),
+    ]);
+    await expectAsync(Parse.User.signUp('username3', 'pass')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+
+    const failedLogin = async () => {
+      try {
+        await Parse.User.logIn('user', 'pass');
+      } catch (e) {
+        if (e.code !== Parse.Error.OBJECT_NOT_FOUND) {
+          throw e;
+        }
+      }
+    };
+
+    await Promise.all([failedLogin(), failedLogin()]);
+    await expectAsync(failedLogin()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+
+    await expectAsync(Parse.User.verifyPassword('username', 'password')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+
+    const mockUser = new Parse.User();
+    mockUser.set('email', 'test@example.com');
+    mockUser.set('username', 'test');
+    mockUser.set('password', 'password');
+    await mockUser.signUp(null, { useMasterKey: true });
+
+    await Promise.all([
+      Parse.User.requestPasswordReset('test@example.com'),
+      Parse.User.requestPasswordReset('test@example.com'),
+    ]);
+    await expectAsync(Parse.User.requestPasswordReset('test@example.com')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+    await expectAsync(Parse.User.requestEmailVerification('test@example.com')).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+
+    const getMe = async () => {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': 'abc',
+      };
+      const request = require('../lib/request');
+      const res = await request({
+        headers,
+        url: 'http://localhost:8378/1/sessions/me',
+      }).catch(e => e);
+      if (res.data.code === Parse.Error.CONNECTION_FAILED) {
+        throw new Parse.Error(res.data.code, res.data.error);
+      }
+    };
+
+    await Promise.all([getMe(), getMe()]);
+    await expectAsync(getMe()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
+    );
+  });
+
   it('does not limit internal calls', async () => {
     await reconfigureServer({
       rateLimit: [
