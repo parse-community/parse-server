@@ -10,9 +10,9 @@ import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageA
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import pathToRegexp from 'path-to-regexp';
-import { cidrSubnet } from 'ip';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
+import { cidrSubnet, isEqual, isV4Format } from 'ip';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -23,7 +23,33 @@ const getMountForRequest = function (req) {
   return req.protocol + '://' + req.get('host') + mountPath;
 };
 
-const checkRanges = (allowedIps, ip) => allowedIps.some(range => cidrSubnet(range).contains(ip));
+export const checkIp = (ip, ipRangeList, store) => {
+  if (store && store.get(ip)) {
+    return true;
+  }
+  return ipRangeList.some(range => {
+    const ipIsV4 = isV4Format(ip);
+    if (ipIsV4 && range === '0.0.0.0') {
+      return true;
+    }
+    if (!ipIsV4 && range === '::') {
+      return true;
+    }
+    const isASimpleIp = range.indexOf('/') === -1;
+    if (isASimpleIp) {
+      const result = isEqual(ip, range);
+      // We can optimize the next call by storing the positive result
+      // it's safe since the store will only grow to the number of unique ips mentioned in the config
+      if (result && store) store.set(ip, result);
+      return result;
+    }
+    // Do not allow cross version subnet matching
+    if (ipIsV4 !== isV4Format(range.split('/')[0])) {
+      return false;
+    }
+    return cidrSubnet(range).contains(ip);
+  });
+};
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -185,7 +211,7 @@ export function handleParseHeaders(req, res, next) {
   const isMaintenance =
     req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
   if (isMaintenance) {
-    if (checkRanges(clientIp, req.config.maintenanceKeyIps || [])) {
+    if (checkIp(clientIp, req.config.maintenanceKeyIps || [], req.config.maintenanceKeyIpsStore)) {
       req.auth = new auth.Auth({
         config: req.config,
         installationId: info.installationId,
@@ -201,7 +227,8 @@ export function handleParseHeaders(req, res, next) {
   }
 
   let isMaster = info.masterKey === req.config.masterKey;
-  if (isMaster && !checkRanges(clientIp, req.config.masterKeyIps || [])) {
+
+  if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
     const log = req.config?.loggerController || defaultLogger;
     log.error(
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`

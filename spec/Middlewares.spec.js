@@ -306,4 +306,67 @@ describe('middlewares', () => {
     middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
+
+  it('should match address', () => {
+    const ipv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
+    const anotherIpv6 = '::ffff:101.10.0.1';
+    const ipv4 = '192.168.0.101';
+    const localhostV6 = '::1';
+    const localhostV62 = '::ffff:127.0.0.1';
+    const localhostV4 = '127.0.0.1';
+
+    const v6 = [ipv6, anotherIpv6];
+    v6.forEach(ip => {
+      expect(middlewares.checkIp(ip, ['::/0'], new Map())).toBe(true);
+      expect(middlewares.checkIp(ip, ['::'], new Map())).toBe(true);
+      expect(middlewares.checkIp(ip, ['0.0.0.0'], new Map())).toBe(false);
+      expect(middlewares.checkIp(ip, ['123.123.123.123'], new Map())).toBe(false);
+    });
+
+    expect(middlewares.checkIp(ipv6, [anotherIpv6], new Map())).toBe(false);
+    expect(middlewares.checkIp(ipv6, [ipv6], new Map())).toBe(true);
+    expect(middlewares.checkIp(ipv6, ['2001:db8:85a3::/81'], new Map())).toBe(true);
+
+    expect(middlewares.checkIp(ipv4, ['::'], new Map())).toBe(false);
+    expect(middlewares.checkIp(ipv4, ['::/0'], new Map())).toBe(false);
+    expect(middlewares.checkIp(ipv4, ['0.0.0.0'], new Map())).toBe(true);
+    expect(middlewares.checkIp(ipv4, ['123.123.123.123'], new Map())).toBe(false);
+    expect(middlewares.checkIp(ipv4, [ipv4], new Map())).toBe(true);
+    expect(middlewares.checkIp(ipv4, ['192.168.0.0/24'], new Map())).toBe(true);
+
+    expect(middlewares.checkIp(localhostV4, ['::1'], new Map())).toBe(false);
+    expect(middlewares.checkIp(localhostV6, ['::1'], new Map())).toBe(true);
+    expect(middlewares.checkIp(localhostV6, ['::1'], new Map())).toBe(true);
+    expect(middlewares.checkIp(localhostV6, ['::1'], new Map())).toBe(true);
+    // ::ffff:127.0.0.1 is a padded ipv4 address but not ::1
+    expect(middlewares.checkIp(localhostV62, ['::1'], new Map())).toBe(false);
+    // but match the ipv4 address
+    expect(middlewares.checkIp(localhostV62, ['127.0.0.1'], new Map())).toBe(true);
+  });
+
+  it('should match address with cache', () => {
+    const ipv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
+    const cache = new Map();
+    // should not cache allow all
+    expect(middlewares.checkIp(ipv6, ['::'], cache)).toBe(true);
+    expect(cache.get('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe(undefined);
+    expect(middlewares.checkIp('::1', ['::1'], cache)).toBe(true);
+    expect(cache.get('::1')).toBe(true);
+    // should cache positive match
+    expect(middlewares.checkIp('127.0.0.1', ['127.0.0.1'], cache)).toBe(true);
+    expect(cache.get('127.0.0.1')).toBe(true);
+    // should use the cache
+    const ipRangeList = ['127.0.0.1'];
+    const spy = spyOn(ipRangeList, 'some').and.callThrough();
+    expect(middlewares.checkIp('127.0.0.1', ['127.0.0.1'], cache)).toBe(true);
+    expect(spy).not.toHaveBeenCalled();
+
+    // should not cache negative match
+    expect(middlewares.checkIp('123.123.123.123', ['127.0.0.1'], cache)).toBe(false);
+    expect(cache.get('123.123.123.123')).toBe(undefined);
+
+    // should not cache cidr
+    expect(middlewares.checkIp('192.168.0.101', ['192.168.0.0/24'], cache)).toBe(true);
+    expect(cache.get('192.168.0.101')).toBe(undefined);
+  });
 });
