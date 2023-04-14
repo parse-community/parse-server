@@ -316,7 +316,7 @@ describe('rate limit', () => {
     );
   });
 
-  fit('can define default rateLimit', async () => {
+  it('can define default rateLimit', async () => {
     const rateLimit = require('../lib/Options/Definitions.js').ParseServerOptions.rateLimit.default;
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
