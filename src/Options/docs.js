@@ -109,7 +109,7 @@
  * @property {String[]} requestMethods Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.
  * @property {String} requestPath The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html
  * @property {Number} requestTimeWindow The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied.
- * @property {String} zone The type of rate limit to apply. The following types are supported:- `global`: rate limit based on the number of requests made by all users- `ip`: rate limit based on the IP address of the request- `user`: rate limit based on the user ID of the request- `session`: rate limit based on the session token of the request:default: 'ip'
+ * @property {String} zone The type of rate limit to apply. The following types are supported:<br><br>- `global`: rate limit based on the number of requests made by all users <br>- `ip`: rate limit based on the IP address of the request <br>- `user`: rate limit based on the user ID of the request <br>- `session`: rate limit based on the session token of the request <br><br><br>:default: 'ip'
  */
 
 /**
