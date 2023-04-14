@@ -599,6 +599,9 @@ export class Config {
       if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
         throw `rateLimit.errorResponseMessage must be a string`;
       }
+      if (option.zone && !['global', 'session', 'user', 'ip'].includes(option.zone)) {
+        throw `rateLimit.zone must be one of global, session, user or ip`;
+      }
     }
   }
 

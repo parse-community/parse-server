@@ -586,6 +586,11 @@ module.exports.RateLimitOptions = {
       'The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied.',
     action: parsers.numberParser('requestTimeWindow'),
   },
+  zone: {
+    env: 'PARSE_SERVER_RATE_LIMIT_ZONE',
+    help:
+      "The type of rate limit to apply. The following types are supported:- `global`: rate limit based on the number of requests made by all users- `ip`: rate limit based on the IP address of the request- `user`: rate limit based on the user ID of the request- `session`: rate limit based on the session token of the request:default: 'ip'",
+  },
 };
 module.exports.SecurityOptions = {
   checkGroups: {
