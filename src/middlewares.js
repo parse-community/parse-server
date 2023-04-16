@@ -12,7 +12,7 @@ import { RateLimitOptions } from './Options/Definitions';
 import pathToRegexp from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
-import { cidrSubnet, isEqual, isV4Format } from 'ip';
+import { BlockList, isIPv4 } from 'net';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -23,32 +23,44 @@ const getMountForRequest = function (req) {
   return req.protocol + '://' + req.get('host') + mountPath;
 };
 
-export const checkIp = (ip, ipRangeList, store) => {
-  if (store && store.get(ip)) {
-    return true;
-  }
-  return ipRangeList.some(range => {
-    const ipIsV4 = isV4Format(ip);
-    if (ipIsV4 && range === '0.0.0.0') {
-      return true;
+const getBlockList = (ipRangeList, store) => {
+  if (store.get('blockList')) return store.get('blockList');
+  const blockList = new BlockList();
+  ipRangeList.forEach(fullIp => {
+    if (fullIp === '::/0' || fullIp === '::') {
+      store.set('allowAllIpv6', true);
+      return;
     }
-    if (!ipIsV4 && range === '::') {
-      return true;
+    if (fullIp === '0.0.0.0') {
+      store.set('allowAllIpv4', true);
+      return;
     }
-    const isASimpleIp = range.indexOf('/') === -1;
-    if (isASimpleIp) {
-      const result = isEqual(ip, range);
-      // We can optimize the next call by storing the positive result
-      // it's safe since the store will only grow to the number of unique ips mentioned in the config
-      if (result && store) store.set(ip, result);
-      return result;
+    const [ip, mask] = fullIp.split('/');
+    if (!mask) {
+      blockList.addAddress(ip, isIPv4(ip) ? 'ipv4' : 'ipv6');
+    } else {
+      blockList.addSubnet(ip, Number(mask), isIPv4(ip) ? 'ipv4' : 'ipv6');
     }
-    // Do not allow cross version subnet matching
-    if (ipIsV4 !== isV4Format(range.split('/')[0])) {
-      return false;
-    }
-    return cidrSubnet(range).contains(ip);
   });
+  store.set('blockList', blockList);
+  return blockList;
+};
+
+export const checkIp = (ip, ipRangeList, store) => {
+  const incomingIpIsV4 = isIPv4(ip);
+  const blockList = getBlockList(ipRangeList, store);
+
+  if (store.get(ip)) return true;
+  if (store.get('allowAllIpv4') && incomingIpIsV4) return true;
+  if (store.get('allowAllIpv6') && !incomingIpIsV4) return true;
+  const result = blockList.check(ip, incomingIpIsV4 ? 'ipv4' : 'ipv6');
+
+  // If the ip is in the list, we store the result in the store
+  // so we have a optimized path for the next request
+  if (ipRangeList.includes(ip) && result) {
+    store.set(ip, result);
+  }
+  return result;
 };
 
 // Checks that the request is authorized for this app and checks user
