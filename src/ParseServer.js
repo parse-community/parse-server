@@ -75,6 +75,8 @@ class ParseServer {
     const allControllers = controllers.getControllers(options);
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
+    this.config.masterKeyIpsStore = new Map();
+    this.config.maintenanceKeyIpsStore = new Map();
     logging.setLogger(allControllers.loggerController);
   }
 
