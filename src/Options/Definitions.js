@@ -81,7 +81,7 @@ module.exports.ParseServerOptions = {
   },
   allowOrigin: {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
-    help: 'Sets the origin to Access-Control-Allow-Origin',
+    help: 'Sets the origins to Access-Control-Allow-Origin',
   },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',

@@ -16,7 +16,7 @@
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {Boolean} allowExpiredAuthDataToken Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
- * @property {String} allowOrigin Sets the origin to Access-Control-Allow-Origin
+ * @property {String[]} allowOrigin Sets the origins to Access-Control-Allow-Origin
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
