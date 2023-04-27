@@ -386,10 +386,13 @@ export function allowCrossDomain(appId) {
     }
 
     // Support for multiple origins
-    const allowedOrigins =
-      config && config.allowOrigin
-        ? config.allowOrigin.split(',').map(domain => domain.trim())
-        : ['*'];
+    let allowedOrigins = config && config.allowOrigin ? config.allowOrigin : ['*'];
+
+    // Convert comma-separated string to an array if needed
+    if (typeof allowedOrigins === 'string') {
+      allowedOrigins = allowedOrigins.split(',').map(domain => domain.trim());
+    }
+
     const requestOrigin = req.headers.origin;
     const originToSet =
       requestOrigin && allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
