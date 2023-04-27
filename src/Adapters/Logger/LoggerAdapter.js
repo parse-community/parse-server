@@ -1,9 +1,7 @@
 /*eslint no-unused-vars: "off"*/
 /**
- * @module Adapters
- */
-/**
- * @interface LoggerAdapter
+ * @interface
+ * @memberof module:Adapters
  * Logger Adapter
  * Allows you to change the logger mechanism
  * Default is WinstonLoggerAdapter.js

@@ -1,10 +1,10 @@
 {
   "plugins": ["node_modules/jsdoc-babel", "plugins/markdown"],
   "babel": {
-      "plugins": ["@babel/plugin-transform-flow-strip-types"]
+    "plugins": ["@babel/plugin-transform-flow-strip-types"]
   },
   "source": {
-    "include":  ["./README.md", "./src/cloud-code", "./src/Options/docs.js", "./src/ParseServer.js", "./src/Adapters"],
+    "include": ["src", "README.md"],
     "excludePattern": "(^|\\/|\\\\)_"
   },
   "templates": {
@@ -17,7 +17,17 @@
     "monospaceLinks": false
   },
   "opts": {
-    "template": "node_modules/@parse/minami",
-    "recurse": true
+    "encoding": "utf8",
+    "readme": "./README.md",
+    "recurse": true,
+    "template": "./node_modules/clean-jsdoc-theme",
+    "theme_opts": {
+      "default_theme": "dark",
+      "title": "Parse Server"
+    }
+  },
+  "markdown": {
+    "hardwrap": false,
+    "idInHeadings": true
   }
 }
