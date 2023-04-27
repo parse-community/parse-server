@@ -62,7 +62,7 @@ export interface ParseServerOptions {
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
-  /* Sets the origin to Access-Control-Allow-Origin. Can be a string for a single origin or a comma separated string or array for multiple */
+  /* Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins. */
   allowOrigin: ?StringOrStringArray;
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
