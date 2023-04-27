@@ -82,7 +82,7 @@ module.exports.ParseServerOptions = {
   allowOrigin: {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
     help:
-      'Sets the origin to Access-Control-Allow-Origin. Can be a string for a single origin or a comma separated string or array for multiple',
+      'Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.',
     action: parsers.arrayParser,
   },
   analyticsAdapter: {
