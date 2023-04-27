@@ -4,7 +4,13 @@
     "plugins": ["@babel/plugin-transform-flow-strip-types"]
   },
   "source": {
-    "include": ["src", "README.md"],
+    "include": [
+      "README.md",
+      "./src/cloud-code",
+      "./src/Options/docs.js",
+      "./src/ParseServer.js",
+      "./src/Adapters"
+    ],
     "excludePattern": "(^|\\/|\\\\)_"
   },
   "templates": {
