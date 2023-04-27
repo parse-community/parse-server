@@ -385,18 +385,10 @@ export function allowCrossDomain(appId) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
 
-    // Support for multiple origins
-    let allowedOrigins = config && config.allowOrigin ? config.allowOrigin : ['*'];
-
-    // Convert comma-separated string to an array if needed
-    if (typeof allowedOrigins === 'string') {
-      allowedOrigins = allowedOrigins.split(',').map(domain => domain.trim());
-    }
-
+    const baseOrigins = config?.allowOrigin ?? ['*'];
     const requestOrigin = req.headers.origin;
-    const originToSet =
-      requestOrigin && allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
-    res.header('Access-Control-Allow-Origin', originToSet);
+    const allowOrigins = requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
+    res.header('Access-Control-Allow-Origin', allowOrigins);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
