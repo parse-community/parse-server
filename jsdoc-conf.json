@@ -29,7 +29,8 @@
     "template": "./node_modules/clean-jsdoc-theme",
     "theme_opts": {
       "default_theme": "dark",
-      "title": "Parse Server"
+      "title": "Parse Server",
+      "create_style": "header, .sidebar-section-title, .sidebar-title { color: #139cee !important }"
     }
   },
   "markdown": {
