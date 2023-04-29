@@ -1,5 +1,5 @@
 import Parse from 'parse/node';
-import { GraphQLYogaError } from '@graphql-yoga/node';
+import { GraphQLError } from 'graphql';
 
 export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {
@@ -16,7 +16,7 @@ export function toGraphQLError(error) {
     code = Parse.Error.INTERNAL_SERVER_ERROR;
     message = 'Internal server error';
   }
-  return new GraphQLYogaError(message, { code });
+  return new GraphQLError(message, { extensions: { code } });
 }
 
 export const extractKeysAndInclude = selectedFields => {
