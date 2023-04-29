@@ -1,8 +1,7 @@
 const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-const FormData = require('form-data');
+const { fetch, FormData, File } = require('@whatwg-node/fetch');
 const ws = require('ws');
 require('./helper');
 const { updateCLP } = require('./support/dev');
@@ -30,6 +29,7 @@ const {
   GraphQLInputObjectType,
   GraphQLSchema,
   GraphQLList,
+  GraphQLError,
 } = require('graphql');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
@@ -99,9 +99,8 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  describe('_getServer', () => {
+  describe('createYoga', () => {
     it('should only return new server on schema changes', async () => {
-      parseGraphQLServer.server = undefined;
       const server1 = await parseGraphQLServer._getServer();
       const server2 = await parseGraphQLServer._getServer();
       expect(server1).toBe(server2);
@@ -114,36 +113,6 @@ describe('ParseGraphQLServer', () => {
       const server4 = await parseGraphQLServer._getServer();
       expect(server3).not.toBe(server2);
       expect(server3).toBe(server4);
-    });
-  });
-
-  describe('_getGraphQLOptions', () => {
-    const req = {
-      info: new Object(),
-      config: new Object(),
-      auth: new Object(),
-    };
-
-    it("should return schema and context with req's info, config and auth", async () => {
-      const options = await parseGraphQLServer._getGraphQLOptions();
-      expect(options.multipart).toEqual({
-        fileSize: 20971520,
-      });
-      expect(options.schema).toEqual(parseGraphQLServer.parseGraphQLSchema.graphQLSchema);
-      const contextResponse = options.context({ req });
-      expect(contextResponse.info).toEqual(req.info);
-      expect(contextResponse.config).toEqual(req.config);
-      expect(contextResponse.auth).toEqual(req.auth);
-    });
-
-    it('should load GraphQL schema in every call', async () => {
-      const originalLoad = parseGraphQLServer.parseGraphQLSchema.load;
-      let counter = 0;
-      parseGraphQLServer.parseGraphQLSchema.load = () => ++counter;
-      expect((await parseGraphQLServer._getGraphQLOptions(req)).schema).toEqual(1);
-      expect((await parseGraphQLServer._getGraphQLOptions(req)).schema).toEqual(2);
-      expect((await parseGraphQLServer._getGraphQLOptions(req)).schema).toEqual(3);
-      parseGraphQLServer.parseGraphQLSchema.load = originalLoad;
     });
   });
 
@@ -531,41 +500,6 @@ describe('ParseGraphQLServer', () => {
         });
         expect(healthResponse.data.health).toBeTruthy();
         expect(checked).toBeTruthy();
-      });
-
-      it('should handle Parse headers', async () => {
-        const test = {
-          context: ({ req: { info, config, auth } }) => {
-            expect(req.info).toBeDefined();
-            expect(req.config).toBeDefined();
-            expect(req.auth).toBeDefined();
-            return {
-              info,
-              config,
-              auth,
-            };
-          },
-        };
-        const contextSpy = spyOn(test, 'context');
-        const originalGetGraphQLOptions = parseGraphQLServer._getGraphQLOptions;
-        parseGraphQLServer._getGraphQLOptions = async () => {
-          return {
-            schema: await parseGraphQLServer.parseGraphQLSchema.load(),
-            context: test.context,
-          };
-        };
-        const health = (
-          await apolloClient.query({
-            query: gql`
-              query Health {
-                health
-              }
-            `,
-          })
-        ).data.health;
-        expect(health).toBeTruthy();
-        expect(contextSpy).toHaveBeenCalledTimes(1);
-        parseGraphQLServer._getGraphQLOptions = originalGetGraphQLOptions;
       });
     });
 
@@ -1404,24 +1338,28 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.setGraphQLConfig(graphQLConfig);
           await resetGraphQLCache();
 
-          const { data } = await apolloClient.query({
-            query: gql`
-              query UserType {
-                userType: __type(name: "User") {
-                  fields {
-                    name
+          try {
+            const { data } = await apolloClient.query({
+              query: gql`
+                query UserType {
+                  userType: __type(name: "User") {
+                    fields {
+                      name
+                    }
+                  }
+                  superCarType: __type(name: "SuperCar") {
+                    fields {
+                      name
+                    }
                   }
                 }
-                superCarType: __type(name: "SuperCar") {
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          });
-          expect(data.userType).toBeNull();
-          expect(data.superCarType).toBeTruthy();
+              `,
+            });
+            expect(data.userType).toBeNull();
+            expect(data.superCarType).toBeTruthy();
+          } catch (e) {
+            expect(e).toBeFalsy();
+          }
         });
         it('should not include types in the disabledForClasses list', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
@@ -6864,10 +6802,13 @@ describe('ParseGraphQLServer', () => {
               })
             );
             body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
-            body.append('1', 'My File Content', {
-              filename: 'myFileName.txt',
-              contentType: 'text/plain',
-            });
+            body.append(
+              '1',
+              new File(['My File Content'], 'myFileName.txt', {
+                type: 'text/plain',
+              }),
+              'myFileName.txt'
+            );
 
             let res = await fetch('http://localhost:13377/graphql', {
               method: 'POST',
@@ -9327,10 +9268,13 @@ describe('ParseGraphQLServer', () => {
               })
             );
             body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
-            body.append('1', 'My File Content', {
-              filename: 'myFileName.txt',
-              contentType: 'text/plain',
-            });
+            body.append(
+              '1',
+              new File(['My File Content'], 'myFileName.txt', {
+                type: 'text/plain',
+              }),
+              'myFileName.txt'
+            );
 
             let res = await fetch('http://localhost:13377/graphql', {
               method: 'POST',
@@ -9439,10 +9383,13 @@ describe('ParseGraphQLServer', () => {
               })
             );
             body2.append('map', JSON.stringify({ 1: ['variables.fields3.someField.upload'] }));
-            body2.append('1', 'My File Content', {
-              filename: 'myFileName.txt',
-              contentType: 'text/plain',
-            });
+            body2.append(
+              '1',
+              new File(['My File Content'], 'myFileName.txt', {
+                type: 'text/plain',
+              }),
+              'myFileName.txt'
+            );
 
             res = await fetch('http://localhost:13377/graphql', {
               method: 'POST',
@@ -9574,11 +9521,14 @@ describe('ParseGraphQLServer', () => {
           body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
           body.append(
             '1',
-            Buffer.alloc(parseGraphQLServer._transformMaxUploadSizeToBytes('2kb'), 1),
-            {
-              filename: 'myFileName.txt',
-              contentType: 'text/plain',
-            }
+            new File(
+              [Buffer.alloc(parseGraphQLServer._transformMaxUploadSizeToBytes('2kb'), 1)],
+              'myFileName.txt',
+              {
+                type: 'text/plain',
+              }
+            ),
+            'myFileName.txt'
           );
 
           const res = await fetch('http://localhost:13377/graphql', {
@@ -10945,7 +10895,7 @@ describe('ParseGraphQLServer', () => {
                   errorQuery: {
                     type: new GraphQLNonNull(GraphQLString),
                     resolve: () => {
-                      throw new Error('A test error');
+                      throw new GraphQLError('A test error');
                     },
                   },
                   customQueryWithAutoTypeReturn: {

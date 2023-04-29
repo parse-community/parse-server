@@ -1,5 +1,5 @@
-import corsMiddleware from 'cors';
-import { createServer, renderGraphiQL } from '@graphql-yoga/node';
+import { createYoga, renderGraphiQL } from 'graphql-yoga';
+import { createFetch } from '@whatwg-node/fetch';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
@@ -20,6 +20,7 @@ class ParseGraphQLServer {
     this.parseGraphQLController = this.parseServer.config.parseGraphQLController;
     this.log =
       (this.parseServer.config && this.parseServer.config.loggerController) || defaultLogger;
+
     this.parseGraphQLSchema = new ParseGraphQLSchema({
       parseGraphQLController: this.parseGraphQLController,
       databaseController: this.parseServer.config.databaseController,
@@ -29,36 +30,37 @@ class ParseGraphQLServer {
     });
   }
 
-  async _getGraphQLOptions() {
-    try {
-      return {
-        schema: await this.parseGraphQLSchema.load(),
-        context: ({ req: { info, config, auth } }) => ({
-          info,
-          config,
-          auth,
-        }),
-        maskedErrors: false,
-        multipart: {
-          fileSize: this._transformMaxUploadSizeToBytes(
-            this.parseServer.config.maxUploadSize || '20mb'
-          ),
-        },
-      };
-    } catch (e) {
-      this.log.error(e.stack || (typeof e.toString === 'function' && e.toString()) || e);
-      throw e;
-    }
-  }
-
   async _getServer() {
     const schemaRef = this.parseGraphQLSchema.graphQLSchema;
     const newSchemaRef = await this.parseGraphQLSchema.load();
     if (schemaRef === newSchemaRef && this._server) {
       return this._server;
     }
-    const options = await this._getGraphQLOptions();
-    this._server = createServer(options);
+
+    this._server = createYoga({
+      graphqlEndpoint: this.config.graphQLPath,
+      schema: () => this.parseGraphQLSchema.load(),
+      context: ({ req }) => req,
+      fetchAPI: createFetch({
+        useNodeFetch: true,
+        formDataLimits: {
+          fileSize: this._transformMaxUploadSizeToBytes(
+            this.parseServer.config.maxUploadSize || '20mb'
+          ),
+        },
+      }),
+      logging: this.log,
+      maskedErrors: false,
+      graphiql: false,
+      // Validation cache doesn't work with lazy schemas
+      validationCache: {
+        get() {},
+        set() {},
+        clear() {},
+        reset() {},
+      },
+    });
+
     return this._server;
   }
 
@@ -80,10 +82,8 @@ class ParseGraphQLServer {
       requiredParameter('You must provide an Express.js app instance!');
     }
 
-    app.use(this.config.graphQLPath, corsMiddleware());
-    app.use(this.config.graphQLPath, handleParseHeaders);
-    app.use(this.config.graphQLPath, handleParseSession);
-    app.use(this.config.graphQLPath, handleParseErrors);
+    app.use(this.config.graphQLPath, handleParseHeaders, handleParseSession, handleParseErrors);
+
     app.use(this.config.graphQLPath, async (req, res) => {
       const server = await this._getServer();
       return server(req, res);
@@ -101,6 +101,7 @@ class ParseGraphQLServer {
         res.setHeader('Content-Type', 'text/html');
         res.write(
           renderGraphiQL({
+            title: 'ParseGraphiQL',
             endpoint: this.config.graphQLPath,
             subscriptionEndpoint: this.config.subscriptionsPath,
             headers: JSON.stringify({
@@ -120,7 +121,10 @@ class ParseGraphQLServer {
         execute,
         subscribe,
         onOperation: async (_message, params, webSocket) =>
-          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
+          Object.assign({}, params, {
+            schema: await this.parseGraphQLSchema.load(),
+            context: webSocket.upgradeReq,
+          }),
       },
       {
         server,
