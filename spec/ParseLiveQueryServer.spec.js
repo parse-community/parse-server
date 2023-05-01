@@ -115,6 +115,7 @@ describe('ParseLiveQueryServer', function () {
   });
 
   describe_only_db('mongo')('initialization', () => {
+    beforeEach(() => reconfigureServer({ appId: 'mongo_init_test' }));
     it('can be initialized through ParseServer without liveQueryServerOptions', async () => {
       const parseServer = await ParseServer.startApp({
         appId: 'hello',
@@ -754,6 +755,49 @@ describe('ParseLiveQueryServer', function () {
     parseLiveQueryServer._onAfterSave(message);
   });
 
+  it('sends correct object for dates', async () => {
+    jasmine.restoreLibrary('../lib/LiveQuery/QueryTools', 'matchesQuery');
+
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+
+    const date = new Date();
+    const message = {
+      currentParseObject: {
+        date: { __type: 'Date', iso: date.toISOString() },
+        __type: 'Object',
+        key: 'value',
+        className: testClassName,
+      },
+    };
+    // Add mock client
+    const clientId = 1;
+    const client = addMockClient(parseLiveQueryServer, clientId);
+
+    const requestId2 = 2;
+
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId2);
+
+    parseLiveQueryServer._matchesACL = function () {
+      return Promise.resolve(true);
+    };
+
+    parseLiveQueryServer._inflateParseObject(message);
+    parseLiveQueryServer._onAfterSave(message);
+
+    // Make sure we send leave and enter command to client
+    await timeout();
+
+    expect(client.pushCreate).toHaveBeenCalledWith(
+      requestId2,
+      {
+        className: 'TestObject',
+        key: 'value',
+        date: { __type: 'Date', iso: date.toISOString() },
+      },
+      null
+    );
+  });
+
   it('can handle object save command which does not match any subscription', async done => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
@@ -1138,8 +1182,7 @@ describe('ParseLiveQueryServer', function () {
     expect(toSend.original).toBeUndefined();
     expect(spy).toHaveBeenCalledWith({
       usage: 'Subscribing using fields parameter',
-      solution:
-        `Subscribe using "keys" instead.`,
+      solution: `Subscribe using "keys" instead.`,
     });
   });
 
@@ -1945,6 +1988,7 @@ describe('ParseLiveQueryServer', function () {
     } else {
       subscription.clientRequestIds = new Map([[clientId, [requestId]]]);
     }
+    subscription.query = query.where;
     return subscription;
   }
 

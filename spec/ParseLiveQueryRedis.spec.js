@@ -6,6 +6,7 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
     });
     it('can connect', async () => {
       await reconfigureServer({
+        appId: 'redis_live_query',
         startLiveQueryServer: true,
         liveQuery: {
           classNames: ['TestObject'],
@@ -36,6 +37,7 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 
     it('can call connect twice', async () => {
       const server = await reconfigureServer({
+        appId: 'redis_live_query',
         startLiveQueryServer: true,
         liveQuery: {
           classNames: ['TestObject'],

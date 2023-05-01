@@ -81,7 +81,9 @@ module.exports.ParseServerOptions = {
   },
   allowOrigin: {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
-    help: 'Sets the origin to Access-Control-Allow-Origin',
+    help:
+      'Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.',
+    action: parsers.arrayParser,
   },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
@@ -556,6 +558,11 @@ module.exports.RateLimitOptions = {
       'Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.',
     action: parsers.booleanParser,
     default: false,
+  },
+  redisUrl: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REDIS_URL',
+    help:
+      'Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.',
   },
   requestCount: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_COUNT',

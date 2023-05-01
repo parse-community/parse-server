@@ -626,6 +626,16 @@ export class Config {
     return new Date(now.getTime() + this.sessionLength * 1000);
   }
 
+  unregisterRateLimiters() {
+    let i = this.rateLimits?.length;
+    while (i--) {
+      const limit = this.rateLimits[i];
+      if (limit.cloud) {
+        this.rateLimits.splice(i, 1);
+      }
+    }
+  }
+
   get invalidLinkURL() {
     return this.customPages.invalidLink || `${this.publicServerURL}/apps/invalid_link.html`;
   }
