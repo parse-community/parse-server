@@ -35,6 +35,7 @@ type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
 type NumberOrString = number | string;
 type ProtectedFields = any;
+type StringOrStringArray = string | string[];
 type RequestKeywordDenylist = {
   key: string | any,
   value: any,
@@ -61,8 +62,8 @@ export interface ParseServerOptions {
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
-  /* Sets the origin to Access-Control-Allow-Origin */
-  allowOrigin: ?string;
+  /* Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins. */
+  allowOrigin: ?StringOrStringArray;
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */

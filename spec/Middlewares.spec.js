@@ -287,6 +287,35 @@ describe('middlewares', () => {
     expect(headers['Access-Control-Allow-Origin']).toEqual('https://parseplatform.org/');
   });
 
+  it('should support multiple origins if several are defined in allowOrigin as an array', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowOrigin: ['https://a.com', 'https://b.com', 'https://c.com'],
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
+    // Test with the first domain
+    fakeReq.headers.origin = 'https://a.com';
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual('https://a.com');
+    // Test with the second domain
+    fakeReq.headers.origin = 'https://b.com';
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual('https://b.com');
+    // Test with the third domain
+    fakeReq.headers.origin = 'https://c.com';
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual('https://c.com');
+    // Test with an unauthorized domain
+    fakeReq.headers.origin = 'https://unauthorized.com';
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual('https://a.com');
+  });
+
   it('should use user provided on field userFromJWT', done => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
