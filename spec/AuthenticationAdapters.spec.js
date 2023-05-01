@@ -648,6 +648,7 @@ describe('instagram auth adapter', () => {
 describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
   const jwt = require('jsonwebtoken');
+  const authUtils = require('../lib/Adapters/Auth/utils');
 
   it('should throw error with missing id_token', async () => {
     try {
@@ -670,7 +671,7 @@ describe('google auth adapter', () => {
   // it('should throw error if public key used to encode token is not available', async () => {
   //   const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
   //   try {
-  //     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+  //     spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
 
   //     await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
   //     fail();
@@ -689,7 +690,7 @@ describe('google auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await google.validateAuthData(
@@ -705,7 +706,7 @@ describe('google auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -729,7 +730,7 @@ describe('google auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -751,7 +752,7 @@ describe('google auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -1454,6 +1455,7 @@ describe('apple signin auth adapter', () => {
   const apple = require('../lib/Adapters/Auth/apple');
   const jwt = require('jsonwebtoken');
   const util = require('util');
+  const authUtils = require('../lib/Adapters/Auth/utils');
 
   it('(using client id as string) should throw error with missing id_token', async () => {
     try {
@@ -1488,7 +1490,7 @@ describe('apple signin auth adapter', () => {
   it('should throw error if public key used to encode token is not available', async () => {
     const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
     try {
-      spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
 
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -1510,7 +1512,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
@@ -1527,7 +1529,7 @@ describe('apple signin auth adapter', () => {
 
   it('should not verify invalid id_token', async () => {
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -1564,7 +1566,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -1586,7 +1588,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -1608,7 +1610,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -1628,7 +1630,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -1656,7 +1658,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -1685,7 +1687,7 @@ describe('apple signin auth adapter', () => {
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -1757,7 +1759,7 @@ describe('apple signin auth adapter', () => {
       sub: 'a_different_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
@@ -2024,6 +2026,7 @@ describe('facebook limited auth adapter', () => {
   const facebook = require('../lib/Adapters/Auth/facebook');
   const jwt = require('jsonwebtoken');
   const util = require('util');
+  const authUtils = require('../lib/Adapters/Auth/utils');
 
   // TODO: figure out a way to run this test alongside facebook classic tests
   xit('(using client id as string) should throw error with missing id_token', async () => {
@@ -2062,7 +2065,7 @@ describe('facebook limited auth adapter', () => {
       header: { kid: '789', alg: 'RS256' },
     };
     try {
-      spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
 
       await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -2086,7 +2089,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
@@ -2108,7 +2111,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',
@@ -2150,7 +2153,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',
@@ -2177,7 +2180,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',
@@ -2204,7 +2207,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',
@@ -2229,7 +2232,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',
@@ -2262,7 +2265,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',
@@ -2296,7 +2299,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',
@@ -2382,7 +2385,7 @@ describe('facebook limited auth adapter', () => {
     const fakeDecodedToken = {
       header: { kid: '123', alg: 'RS256' },
     };
-    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
       return {
         kid: '123',

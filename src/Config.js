@@ -9,6 +9,7 @@ import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
 import {
   AccountLockoutOptions,
+  DatabaseOptions,
   FileUploadOptions,
   IdempotencyOptions,
   LogLevels,
@@ -52,23 +53,20 @@ export class Config {
   }
 
   static put(serverConfiguration) {
-    Config.validate(serverConfiguration);
+    Config.validateOptions(serverConfiguration);
+    Config.validateControllers(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
   }
 
-  static validate({
-    verifyUserEmails,
-    userController,
-    appName,
+  static validateOptions({
     publicServerURL,
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
     defaultLimit,
     maxLimit,
-    emailVerifyTokenValidityDuration,
     accountLockout,
     passwordPolicy,
     masterKeyIps,
@@ -78,7 +76,6 @@ export class Config {
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
-    emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
     security,
@@ -88,6 +85,7 @@ export class Config {
     allowExpiredAuthDataToken,
     logLevels,
     rateLimit,
+    databaseOptions,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -95,17 +93,6 @@ export class Config {
 
     if (masterKey === maintenanceKey) {
       throw new Error('masterKey and maintenanceKey should be different');
-    }
-
-    const emailAdapter = userController.adapter;
-    if (verifyUserEmails) {
-      this.validateEmailConfiguration({
-        emailAdapter,
-        appName,
-        publicServerURL,
-        emailVerifyTokenValidityDuration,
-        emailVerifyTokenReuseIfValid,
-      });
     }
 
     this.validateAccountLockoutPolicy(accountLockout);
@@ -136,6 +123,27 @@ export class Config {
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
+    this.validateDatabaseOptions(databaseOptions);
+  }
+
+  static validateControllers({
+    verifyUserEmails,
+    userController,
+    appName,
+    publicServerURL,
+    emailVerifyTokenValidityDuration,
+    emailVerifyTokenReuseIfValid,
+  }) {
+    const emailAdapter = userController.adapter;
+    if (verifyUserEmails) {
+      this.validateEmailConfiguration({
+        emailAdapter,
+        appName,
+        publicServerURL,
+        emailVerifyTokenValidityDuration,
+        emailVerifyTokenReuseIfValid,
+      });
+    }
   }
 
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
@@ -376,6 +384,13 @@ export class Config {
       if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
         throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
       }
+
+      if (
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
+      ) {
+        throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
+      }
     }
   }
 
@@ -526,6 +541,25 @@ export class Config {
     }
   }
 
+  static validateDatabaseOptions(databaseOptions) {
+    if (databaseOptions == undefined) {
+      return;
+    }
+    if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
+      throw `databaseOptions must be an object`;
+    }
+    if (databaseOptions.enableSchemaHooks === undefined) {
+      databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
+    } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
+      throw `databaseOptions.enableSchemaHooks must be a boolean`;
+    }
+    if (databaseOptions.schemaCacheTtl === undefined) {
+      databaseOptions.schemaCacheTtl = DatabaseOptions.schemaCacheTtl.default;
+    } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
+      throw `databaseOptions.schemaCacheTtl must be a number`;
+    }
+  }
+
   static validateRateLimit(rateLimit) {
     if (!rateLimit) {
       return;
@@ -590,6 +624,16 @@ export class Config {
     }
     var now = new Date();
     return new Date(now.getTime() + this.sessionLength * 1000);
+  }
+
+  unregisterRateLimiters() {
+    let i = this.rateLimits?.length;
+    while (i--) {
+      const limit = this.rateLimits[i];
+      if (limit.cloud) {
+        this.rateLimits.splice(i, 1);
+      }
+    }
   }
 
   get invalidLinkURL() {

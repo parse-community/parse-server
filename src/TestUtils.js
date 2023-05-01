@@ -1,4 +1,5 @@
 import AppCache from './cache';
+import SchemaCache from './Adapters/Cache/SchemaCache';
 
 /**
  * Destroys all data in the database
@@ -11,11 +12,17 @@ export function destroyAllDataPermanently(fast) {
   return Promise.all(
     Object.keys(AppCache.cache).map(appId => {
       const app = AppCache.get(appId);
-      if (app.databaseController) {
-        return app.databaseController.deleteEverything(fast);
-      } else {
-        return Promise.resolve();
+      const deletePromises = [];
+      if (app.cacheAdapter) {
+        deletePromises.push(app.cacheAdapter.clear());
       }
+      if (app.databaseController) {
+        deletePromises.push(app.databaseController.deleteEverything(fast));
+      } else if (app.databaseAdapter) {
+        SchemaCache.clear();
+        deletePromises.push(app.databaseAdapter.deleteAllClasses(fast));
+      }
+      return Promise.all(deletePromises);
     })
   );
 }

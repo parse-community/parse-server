@@ -81,7 +81,9 @@ module.exports.ParseServerOptions = {
   },
   allowOrigin: {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
-    help: 'Sets the origin to Access-Control-Allow-Origin',
+    help:
+      'Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.',
+    action: parsers.arrayParser,
   },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
@@ -557,6 +559,11 @@ module.exports.RateLimitOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  redisUrl: {
+    env: 'PARSE_SERVER_RATE_LIMIT_REDIS_URL',
+    help:
+      'Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.',
+  },
   requestCount: {
     env: 'PARSE_SERVER_RATE_LIMIT_REQUEST_COUNT',
     help:
@@ -907,6 +914,13 @@ module.exports.PasswordPolicyOptions = {
       'Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.<br><br>Valid values are >= `0` and <= `20`.<br>Default is `0`.',
     action: parsers.numberParser('maxPasswordHistory'),
   },
+  resetPasswordSuccessOnInvalidEmail: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_PASSWORD_SUCCESS_ON_INVALID_EMAIL',
+    help:
+      'Set to `true` if a request to reset the password should return a success response even if the provided email address is invalid, or `false` if the request should return an error response if the email address is invalid.<br><br>Default is `true`.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   resetTokenReuseIfValid: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID',
     help:
@@ -963,6 +977,12 @@ module.exports.DatabaseOptions = {
       'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
+  },
+  schemaCacheTtl: {
+    env: 'PARSE_SERVER_DATABASE_SCHEMA_CACHE_TTL',
+    help:
+      'The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.',
+    action: parsers.numberParser('schemaCacheTtl'),
   },
 };
 module.exports.AuthAdapter = {

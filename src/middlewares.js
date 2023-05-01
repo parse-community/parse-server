@@ -11,6 +11,8 @@ import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import pathToRegexp from 'path-to-regexp';
 import ipRangeCheck from 'ip-range-check';
+import RedisStore from 'rate-limit-redis';
+import { createClient } from 'redis';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -382,8 +384,13 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    const allowOrigin = (config && config.allowOrigin) || '*';
-    res.header('Access-Control-Allow-Origin', allowOrigin);
+
+    const baseOrigins =
+      typeof config?.allowOrigin === 'string' ? [config.allowOrigin] : config?.allowOrigin ?? ['*'];
+    const requestOrigin = req.headers.origin;
+    const allowOrigins =
+      requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
+    res.header('Access-Control-Allow-Origin', allowOrigins);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
@@ -464,7 +471,7 @@ export function promiseEnforceMasterKeyAccess(request) {
   return Promise.resolve();
 }
 
-export const addRateLimit = (route, config) => {
+export const addRateLimit = (route, config, cloud) => {
   if (typeof config === 'string') {
     config = Config.get(config);
   }
@@ -475,6 +482,35 @@ export const addRateLimit = (route, config) => {
   }
   if (!config.rateLimits) {
     config.rateLimits = [];
+  }
+  const redisStore = {
+    connectionPromise: Promise.resolve(),
+    store: null,
+    connected: false,
+  };
+  if (route.redisUrl) {
+    const client = createClient({
+      url: route.redisUrl,
+    });
+    redisStore.connectionPromise = async () => {
+      if (redisStore.connected) {
+        return;
+      }
+      try {
+        await client.connect();
+        redisStore.connected = true;
+      } catch (e) {
+        const log = config?.loggerController || defaultLogger;
+        log.error(`Could not connect to redisURL in rate limit: ${e}`);
+      }
+    };
+    redisStore.connectionPromise();
+    redisStore.store = new RedisStore({
+      sendCommand: async (...args) => {
+        await redisStore.connectionPromise();
+        return client.sendCommand(args);
+      },
+    });
   }
   config.rateLimits.push({
     path: pathToRegexp(route.requestPath),
@@ -512,7 +548,9 @@ export const addRateLimit = (route, config) => {
       keyGenerator: request => {
         return request.config.ip;
       },
+      store: redisStore.store,
     }),
+    cloud,
   });
   Config.put(config);
 };
