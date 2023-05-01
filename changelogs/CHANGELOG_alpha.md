@@ -1,3 +1,10 @@
+# [6.1.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.7...6.1.0-alpha.8) (2023-05-01)
+
+
+### Features
+
+* Allow multiple origins for header `Access-Control-Allow-Origin` ([#8517](https://github.com/parse-community/parse-server/issues/8517)) ([4f15539](https://github.com/parse-community/parse-server/commit/4f15539ac244aa2d393ac5177f7604b43f69e271))
+
 # [6.1.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.6...6.1.0-alpha.7) (2023-03-10)
 
 
