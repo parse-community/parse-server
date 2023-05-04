@@ -140,7 +140,7 @@ export class FunctionsRouter extends PromiseRouter {
         result => {
           try {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-            logger.info(
+            logger[req.config.logLevels.cloudFunctionRan](
               `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
               {
                 functionName,
