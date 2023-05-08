@@ -29,7 +29,7 @@
     "template": "./node_modules/clean-jsdoc-theme",
     "theme_opts": {
       "default_theme": "dark",
-      "title": "<img src='../.github/parse-server-logo.png' class='logo'/>",
+      "title": "Parse Server",
       "create_style": "header, .sidebar-section-title, .sidebar-title { color: #139cee !important } .logo { margin-left : 40px; margin-right: 40px }"
     }
   },
