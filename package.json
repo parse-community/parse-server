@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.1.0-alpha.7",
+  "version": "6.1.0-beta.2",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -71,7 +71,6 @@
     "@babel/plugin-proposal-object-rest-spread": "7.10.0",
     "@babel/plugin-transform-flow-strip-types": "7.9.0",
     "@babel/preset-env": "7.10.0",
-    "@parse/minami": "1.0.0",
     "@saithodev/semantic-release-backmerge": "2.1.2",
     "@semantic-release/changelog": "5.0.1",
     "@semantic-release/commit-analyzer": "8.0.1",
@@ -82,6 +81,7 @@
     "all-node-versions": "11.3.0",
     "apollo-upload-client": "17.0.0",
     "bcrypt-nodejs": "0.0.3",
+    "clean-jsdoc-theme": "4.2.7",
     "cross-env": "7.0.2",
     "deep-diff": "1.0.2",
     "eslint": "8.26.0",
