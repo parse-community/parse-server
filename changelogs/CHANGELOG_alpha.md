@@ -1,3 +1,10 @@
+# [6.1.0-alpha.9](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.8...6.1.0-alpha.9) (2023-05-09)
+
+
+### Features
+
+* Add option to change the log level of logs emitted by Cloud Functions ([#8530](https://github.com/parse-community/parse-server/issues/8530)) ([2caea31](https://github.com/parse-community/parse-server/commit/2caea310be412d82b04a85716bc769ccc410316d))
+
 # [6.1.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.7...6.1.0-alpha.8) (2023-05-01)
 
 
