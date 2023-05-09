@@ -580,5 +580,5 @@ export interface LogLevels {
   /* Log level used by the Cloud Code Functions. Default is `info`.
   :DEFAULT: info
   */
-  cloudFunctionRan: ?string;
+  cloudFunctionSuccess: ?string;
 }
