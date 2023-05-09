@@ -198,9 +198,7 @@ describe('Cloud Code Logger', () => {
 
     Parse.Cloud.run('aFunction', { foo: 'bar' }).then(() => {
       const log = spy.calls.allArgs().find(log => log[1].startsWith('Ran cloud function '))?.[0];
-
       expect(log).toEqual('warn');
-
       done();
     });
   });
