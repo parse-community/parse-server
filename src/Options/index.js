@@ -577,4 +577,12 @@ export interface LogLevels {
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
+  /* Log level used by the Cloud Code Functions on success. Default is `info`.
+  :DEFAULT: info
+  */
+  cloudFunctionSuccess: ?string;
+  /* Log level used by the Cloud Code Functions on error. Default is `error`.
+  :DEFAULT: error
+  */
+  cloudFunctionError: ?string;
 }

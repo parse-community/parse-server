@@ -993,6 +993,16 @@ module.exports.AuthAdapter = {
   },
 };
 module.exports.LogLevels = {
+  cloudFunctionError: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_ERROR',
+    help: 'Log level used by the Cloud Code Functions on error. Default is `error`.',
+    default: 'error',
+  },
+  cloudFunctionSuccess: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_SUCCESS',
+    help: 'Log level used by the Cloud Code Functions on success. Default is `info`.',
+    default: 'info',
+  },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
