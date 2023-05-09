@@ -182,7 +182,7 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it('should log cloud function ran using the custom log level', async done => {
+  it('should log cloud function execution using the custom log level', async done => {
     await reconfigureServer({
       silent: true,
       logLevels: {
