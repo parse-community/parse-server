@@ -327,6 +327,32 @@ describe('DefinedSchemas', () => {
   });
 
   describe('Indexes', () => {
+    it('should create _p_ prefix for pointer indexes', async () => {
+      const server = await reconfigureServer();
+      const schema = {
+        definitions: [
+          {
+            className: 'Test',
+            fields: {
+              recipient: { type: 'Pointer', targetClass: '_User', required: true },
+            },
+            indexes: {
+              recipient: { recipient: 1 },
+            },
+          },
+        ],
+      };
+
+      await new DefinedSchemas(schema, server.config).execute();
+
+      const testSchema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(testSchema);
+      expect(testSchema.indexes).toBeDefined();
+      expect(testSchema.indexes['_p_recipient']).toEqual({
+        _p_recipient: 1,
+      });
+    });
+
     it('should create new indexes', async () => {
       const server = await reconfigureServer();
 
