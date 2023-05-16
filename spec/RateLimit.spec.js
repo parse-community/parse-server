@@ -447,7 +447,7 @@ describe('rate limit', () => {
       validateRateLimit({
         rateLimit: [{ requestPath: 'a', requestTimeWindow: 1000, requestCount: 3, zone: 'abc' }],
       })
-    ).toThrow('rateLimit.zone must be one of global, session, user or ip');
+    ).toThrow('rateLimit.zone must be one of global, session, user, or ip');
     expect(() =>
       validateRateLimit({
         rateLimit: [
