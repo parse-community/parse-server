@@ -68,7 +68,7 @@ function nobody(config) {
 
 const throttle = {};
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
-  if (!config?.renewSessions) {
+  if (!config?.extendSessionOnUse) {
     return;
   }
   clearTimeout(throttle[sessionToken]);

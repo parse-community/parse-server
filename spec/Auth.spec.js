@@ -94,9 +94,9 @@ describe('Auth', () => {
     });
   });
 
-  it('can use renewSessions', async () => {
+  it('can use extendSessionOnUse', async () => {
     await reconfigureServer({
-      renewSessions: true,
+      extendSessionOnUse: true,
     });
 
     const user = new Parse.User();

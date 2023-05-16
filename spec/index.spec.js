@@ -367,12 +367,12 @@ describe('server', () => {
     });
   });
 
-  it('should throw when renewSessions is invalid', async () => {
+  it('should throw when extendSessionOnUse is invalid', async () => {
     await expectAsync(
       reconfigureServer({
-        renewSessions: 'yolo',
+        extendSessionOnUse: 'yolo',
       })
-    ).toBeRejectedWith('renewSessions must be a boolean value');
+    ).toBeRejectedWith('extendSessionOnUse must be a boolean value');
   });
 
   it('should throw when revokeSessionOnPasswordReset is invalid', async () => {

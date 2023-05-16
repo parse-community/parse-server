@@ -205,7 +205,7 @@ export interface ParseServerOptions {
   sessionLength: ?number;
   /* Whether Parse Server should automatically extend a valid session by the sessionLength
   :DEFAULT: false */
-  renewSessions: ?boolean;
+  extendSessionOnUse: ?boolean;
   /* Default value for limit option on queries, defaults to `100`.
   :DEFAULT: 100 */
   defaultLimit: ?number;

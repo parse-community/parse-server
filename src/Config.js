@@ -86,7 +86,7 @@ export class Config {
     logLevels,
     rateLimit,
     databaseOptions,
-    renewSessions,
+    extendSessionOnUse,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -104,8 +104,8 @@ export class Config {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
     }
 
-    if (typeof renewSessions !== 'boolean') {
-      throw 'renewSessions must be a boolean value';
+    if (typeof extendSessionOnUse !== 'boolean') {
+      throw 'extendSessionOnUse must be a boolean value';
     }
 
     if (publicServerURL) {
