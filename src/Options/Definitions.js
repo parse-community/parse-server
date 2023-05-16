@@ -227,6 +227,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  extendSessionOnUse: {
+    env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
+    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    action: parsers.booleanParser,
+    default: false,
+  },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
     help: 'Key for your files',
@@ -436,12 +442,6 @@ module.exports.ParseServerOptions = {
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
-  },
-  extendSessionOnUse: {
-    env: 'PARSE_SERVER_RENEW_SESSIONS',
-    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
-    action: parsers.booleanParser,
-    default: false,
   },
   requestKeywordDenylist: {
     env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',
