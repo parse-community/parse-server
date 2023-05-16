@@ -112,7 +112,10 @@ describe('Auth', () => {
     await Parse.Server.database.update(
       '_Session',
       { objectId: session.id },
-      { updatedAt: Parse._encode(updatedAt), expiresAt: Parse._encode(expiry) }
+      {
+        expiresAt: { __type: 'Date', iso: expiry.toISOString() },
+        updatedAt: updatedAt.toISOString(),
+      }
     );
     await session.fetch();
     await new Promise(resolve => setTimeout(resolve, 1000));

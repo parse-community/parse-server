@@ -3,6 +3,8 @@ import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
+import RestQuery from './RestQuery';
+import RestWrite from './RestWrite';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -75,7 +77,6 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   throttle[sessionToken] = setTimeout(async () => {
     try {
       if (!session) {
-        const RestQuery = require('./RestQuery');
         const { results } = await new RestQuery(
           config,
           master(config),
@@ -83,6 +84,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
           { sessionToken },
           { limit: 1 }
         ).execute();
+        console.log({ results });
         session = results[0];
       }
       const lastUpdated = new Date(session?.updatedAt);
@@ -91,14 +93,14 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
       if (lastUpdated > yesterday || !session) {
         return;
       }
-      await config.database.update(
+      const expiresAt = config.generateSessionExpiresAt();
+      await new RestWrite(
+        config,
+        master(config),
         '_Session',
         { objectId: session.objectId },
-        {
-          expiresAt: Parse._encode(config.generateSessionExpiresAt()),
-          updatedAt: Parse._encode(new Date()),
-        }
-      );
+        { expiresAt: Parse._encode(expiresAt) }
+      ).execute();
     } catch (e) {
       if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
         logger.error('Could not update session expiry: ', e);
