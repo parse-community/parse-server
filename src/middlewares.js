@@ -24,26 +24,24 @@ const getMountForRequest = function (req) {
 };
 
 const checkIpRanges = (ip, ranges = []) => {
-  const transformIp = ip => {
-    if (ip === '::1' || ip === '::') {
-      ip = '127.0.0.1';
-    }
-    return ip;
-  };
   const getType = address => (isIPv4(address) ? 'ipv4' : 'ipv6');
+  const clientType = getType(ip);
   const blocklist = new BlockList();
   for (const range of ranges) {
-    if (range.includes('/')) {
-      const [net, prefix] = range.split('/');
-      const addr = transformIp(net);
+    if ((range === '::/0' || range === '::') && clientType === 'ipv6') {
+      return true;
+    }
+    if (range === '0.0.0.0' && clientType === 'ipv6') {
+      return true;
+    }
+    const [addr, prefix] = range.split('/');
+    if (prefix) {
       blocklist.addSubnet(addr, Number(prefix), getType(addr));
     } else {
-      const addr = transformIp(range);
       blocklist.addAddress(addr, getType(addr));
     }
   }
-  const client = transformIp(ip);
-  return blocklist.check(client, getType(client));
+  return blocklist.check(ip, clientType);
 };
 
 // Checks that the request is authorized for this app and checks user
