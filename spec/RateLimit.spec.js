@@ -345,7 +345,7 @@ describe('rate limit', () => {
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
           includeInternalRequests: true,
-          zone: 'global',
+          zone: Parse.Server.RateLimitZone.global,
         },
       });
       const fakeReq = {
@@ -391,7 +391,7 @@ describe('rate limit', () => {
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
           includeInternalRequests: true,
-          zone: 'session',
+          zone: Parse.Server.RateLimitZone.session,
         },
       });
       Parse.Cloud.define('test', () => 'Abc');
@@ -412,7 +412,7 @@ describe('rate limit', () => {
           requestCount: 1,
           errorResponseMessage: 'Too many requests',
           includeInternalRequests: true,
-          zone: 'user',
+          zone: Parse.Server.RateLimitZone.user,
         },
       });
       Parse.Cloud.define('test', () => 'Abc');
