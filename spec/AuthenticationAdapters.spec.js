@@ -43,7 +43,10 @@ describe('AuthenticationProviders', function () {
     'keycloak',
   ].map(function (providerName) {
     it('Should validate structure of ' + providerName, done => {
-      const provider = require('../lib/Adapters/Auth/' + providerName);
+      let provider = require('../lib/Adapters/Auth/' + providerName);
+      if (provider.default) {
+        provider = provider.default;
+      }
       jequal(typeof provider.validateAuthData, 'function');
       jequal(typeof provider.validateAppId, 'function');
       const validateAuthDataPromise = provider.validateAuthData({}, {});
@@ -82,7 +85,10 @@ describe('AuthenticationProviders', function () {
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'request').and.callFake(() => {
         return Promise.resolve(responses[providerName] || { id: 'userId' });
       });
-      const provider = require('../lib/Adapters/Auth/' + providerName);
+      let provider = require('../lib/Adapters/Auth/' + providerName);
+      if (provider.default) {
+        provider = provider.default;
+      }
       let params = {};
       if (providerName === 'vkontakte') {
         params = {
@@ -469,27 +475,28 @@ describe('AuthenticationProviders', function () {
     expect(providerOptions).toEqual(options.facebook);
   });
 
-  it('should throw error when Facebook request appId is wrong data type', async () => {
-    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ id: 'a' });
-    });
-    const options = {
+  it('should throw error when Facebook config appId is wrong data type', async () => {
+    const auth = {
       facebook: {
         appIds: 'abcd',
         appSecret: 'secret_sauce',
       },
     };
-    const authData = {
-      access_token: 'badtoken',
-    };
-    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebook',
-      options
-    );
-    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
-      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
-    );
+    await expectAsync(
+      reconfigureServer({
+        auth,
+      })
+    ).toBeRejectedWith('facebook.appIds must be an array.');
+
+    await expectAsync(
+      reconfigureServer({
+        auth: {
+          facebook: {
+            appIds: [],
+          },
+        },
+      })
+    ).toBeRejectedWith('facebook.appIds must have at least one appId.');
   });
 
   it('should handle Facebook appSecret for validating appIds', async () => {
@@ -512,29 +519,6 @@ describe('AuthenticationProviders', function () {
     );
     await adapter.validateAppId(appIds, authData, providerOptions);
     expect(httpsRequest.get.calls.first().args[0].includes('appsecret_proof')).toBe(true);
-  });
-
-  it('should throw error when Facebook request appId is wrong data type', async () => {
-    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ id: 'a' });
-    });
-    const options = {
-      facebook: {
-        appIds: 'abcd',
-        appSecret: 'secret_sauce',
-      },
-    };
-    const authData = {
-      access_token: 'badtoken',
-    };
-    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebook',
-      options
-    );
-    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
-      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
-    );
   });
 
   it('should handle Facebook appSecret for validating auth data', async () => {
@@ -2023,7 +2007,7 @@ describe('microsoft graph auth adapter', () => {
 });
 
 describe('facebook limited auth adapter', () => {
-  const facebook = require('../lib/Adapters/Auth/facebook');
+  const facebook = require('../lib/Adapters/Auth/facebook').default;
   const jwt = require('jsonwebtoken');
   const util = require('util');
   const authUtils = require('../lib/Adapters/Auth/utils');

@@ -5,7 +5,7 @@ import AuthAdapter from './AuthAdapter';
 const apple = require('./apple');
 const gcenter = require('./gcenter');
 const gpgames = require('./gpgames');
-const facebook = require('./facebook');
+import facebook from './facebook';
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
@@ -135,7 +135,7 @@ function authDataValidator(provider, adapter, appIds, options) {
   };
 }
 
-function loadAuthAdapter(provider, authOptions) {
+function loadAuthAdapter(provider, authOptions, validate) {
   // providers are auth providers implemented by default
   let defaultAdapter = providers[provider];
   // authOptions can contain complete custom auth adapters or
@@ -154,7 +154,7 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter =
+  let adapter =
     defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
   const keys = [
     'validateAuthData',
@@ -182,6 +182,10 @@ function loadAuthAdapter(provider, authOptions) {
 
   // Try the configuration methods
   if (providerOptions) {
+    adapter =
+      defaultAdapter instanceof AuthAdapter
+        ? new defaultAdapter.constructor()
+        : Object.assign({}, defaultAdapter);
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
       keys.forEach(key => {
@@ -191,11 +195,24 @@ function loadAuthAdapter(provider, authOptions) {
       });
     }
   }
-  if (adapter.validateOptions) {
-    adapter.validateOptions(providerOptions);
+
+  const isOverriden = keys.some(key => providerOptions?.[key]);
+  if (adapter.validateOptions && !isOverriden) {
+    try {
+      adapter.validateOptions(providerOptions);
+    } catch (e) {
+      adapter.enabled = false;
+      if (validate) {
+        throw e;
+      }
+    }
   }
 
   return { adapter, appIds, providerOptions };
+}
+
+function validateAuthConfig(auth) {
+  Object.keys(auth).map(key => loadAuthAdapter(key, auth, true));
 }
 
 module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
@@ -252,3 +269,4 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
 };
 
 module.exports.loadAuthAdapter = loadAuthAdapter;
+module.exports.validateAuthConfig = validateAuthConfig;

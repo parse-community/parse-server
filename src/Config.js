@@ -7,6 +7,7 @@ import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
+import AuthAdapter from './Adapters/Auth';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
@@ -86,6 +87,7 @@ export class Config {
     logLevels,
     rateLimit,
     databaseOptions,
+    auth,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -124,6 +126,9 @@ export class Config {
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
+    if (auth) {
+      AuthAdapter.validateAuthConfig(auth);
+    }
   }
 
   static validateControllers({

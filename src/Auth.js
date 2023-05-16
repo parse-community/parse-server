@@ -441,19 +441,19 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         acc.authData[provider] = null;
         continue;
       }
-      const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
+      const { validator, adapter } = req.config.authDataManager.getValidatorForProvider(provider);
       const authProvider = (req.config.auth || {})[provider] || {};
+      if (!validator || authProvider.enabled === false || adapter.enabled === false) {
+        throw new Parse.Error(
+          Parse.Error.UNSUPPORTED_SERVICE,
+          'This authentication method is unsupported.'
+        );
+      }
       if (authProvider.enabled == null) {
         Deprecator.logRuntimeDeprecation({
           usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
           solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
         });
-      }
-      if (!validator || authProvider.enabled === false) {
-        throw new Parse.Error(
-          Parse.Error.UNSUPPORTED_SERVICE,
-          'This authentication method is unsupported.'
-        );
       }
       let validationResult = await validator(authData[provider], req, user, requestObject);
       method = validationResult && validationResult.method;
