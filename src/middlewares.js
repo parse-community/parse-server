@@ -384,8 +384,13 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    const allowOrigin = (config && config.allowOrigin) || '*';
-    res.header('Access-Control-Allow-Origin', allowOrigin);
+
+    const baseOrigins =
+      typeof config?.allowOrigin === 'string' ? [config.allowOrigin] : config?.allowOrigin ?? ['*'];
+    const requestOrigin = req.headers.origin;
+    const allowOrigins =
+      requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
+    res.header('Access-Control-Allow-Origin', allowOrigins);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
