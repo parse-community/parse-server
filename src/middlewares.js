@@ -541,14 +541,14 @@ export const addRateLimit = (route, config, cloud) => {
         return request.auth?.isMaster;
       },
       keyGenerator: async request => {
-        if (route.zone === 'global') {
+        if (route.zone === Parse.Server.RateLimitOptions.global) {
           return request.config.appId;
         }
         const token = request.info.sessionToken;
-        if (route.zone === 'session' && token) {
+        if (route.zone === Parse.Server.RateLimitOptions.session && token) {
           return token;
         }
-        if (route.zone === 'user' && token) {
+        if (route.zone === Parse.Server.RateLimitOptions.user && token) {
           if (!request.auth) {
             await new Promise(resolve => handleParseSession(request, null, resolve));
           }
