@@ -67,8 +67,6 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     logLevels,
-    rateLimit,
-    databaseOptions,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -93,9 +91,7 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
-    this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
-    this.validateDatabaseOptions(databaseOptions);
   }
 
   static validateControllers({
@@ -340,9 +336,6 @@ export class Config {
   }
 
   static validateDefaultLimit(defaultLimit) {
-    if (typeof defaultLimit !== 'number') {
-      throw 'Default limit must be a number.';
-    }
     if (defaultLimit <= 0) {
       throw 'Default limit must be a value greater than 0.';
     }
