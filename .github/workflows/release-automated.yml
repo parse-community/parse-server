@@ -42,7 +42,7 @@ jobs:
     env:
       REGISTRY: docker.io
       IMAGE_NAME: parseplatform/parse-server
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -86,7 +86,7 @@ jobs:
   docs:
     needs: release
     if: needs.release.outputs.current_tag != '' && github.ref == 'refs/heads/release'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v2
