@@ -19,10 +19,8 @@
 import type { Config } from '../../Config';
 import Parse from 'parse/node';
 /**
- * @module Adapters
- */
-/**
- * @interface FilesAdapter
+ * @interface
+ * @memberof module:Adapters
  */
 export class FilesAdapter {
   /** Responsible for storing the file in order to be retrieved later by its filename

@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: [ release*, alpha, beta ]
+    branches: [ release, alpha, beta, next-major, 'release-[0-9]+.x.x' ]
   pull_request:
     branches:
       - '**'
