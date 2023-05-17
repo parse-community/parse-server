@@ -104,7 +104,6 @@ module.exports.ParseServerOptions = {
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
     action: parsers.objectParser,
-    group: 'Object',
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -682,7 +681,6 @@ module.exports.PagesOptions = {
       'The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.',
     action: parsers.objectParser,
     default: {},
-    group: 'Object',
   },
 };
 module.exports.PagesRoute = {
