@@ -88,6 +88,7 @@ export class Config {
     rateLimit,
     databaseOptions,
     auth,
+    extendSessionOnUse,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -103,6 +104,10 @@ export class Config {
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
+    }
+
+    if (typeof extendSessionOnUse !== 'boolean') {
+      throw 'extendSessionOnUse must be a boolean value';
     }
 
     if (publicServerURL) {
