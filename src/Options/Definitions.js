@@ -103,7 +103,8 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
-    action: parsers.arrayParser,
+    action: parsers.objectParser,
+    group: 'Object',
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -145,6 +146,7 @@ module.exports.ParseServerOptions = {
     help: 'custom pages for password validation and reset',
     action: parsers.objectParser,
     default: {},
+    group: 'CustomPagesOptions',
   },
   databaseAdapter: {
     env: 'PARSE_SERVER_DATABASE_ADAPTER',
@@ -156,6 +158,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
     help: 'Options to pass to the database client',
     action: parsers.objectParser,
+    group: 'DatabaseOptions',
   },
   databaseURI: {
     env: 'PARSE_SERVER_DATABASE_URI',
@@ -241,6 +244,7 @@ module.exports.ParseServerOptions = {
     help: 'Options for file uploads',
     action: parsers.objectParser,
     default: {},
+    group: 'FileUploadOptions',
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
@@ -262,6 +266,7 @@ module.exports.ParseServerOptions = {
       'Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.',
     action: parsers.objectParser,
     default: {},
+    group: 'IdempotencyOptions',
   },
   javascriptKey: {
     env: 'PARSE_SERVER_JAVASCRIPT_KEY',
@@ -296,6 +301,7 @@ module.exports.ParseServerOptions = {
     help: '(Optional) Overrides the log levels used internally by Parse Server to log events.',
     action: parsers.objectParser,
     default: {},
+    group: 'LogLevels',
   },
   logsFolder: {
     env: 'PARSE_SERVER_LOGS_FOLDER',
@@ -376,11 +382,13 @@ module.exports.ParseServerOptions = {
       'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
     action: parsers.objectParser,
     default: {},
+    group: 'PagesOptions',
   },
   passwordPolicy: {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
     help: 'The password policy for enforcing password related rules.',
     action: parsers.objectParser,
+    group: 'PasswordPolicyOptions',
   },
   playgroundPath: {
     env: 'PARSE_SERVER_PLAYGROUND_PATH',
@@ -476,12 +484,14 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_SCHEMA',
     help: 'Defined schema',
     action: parsers.objectParser,
+    group: 'SchemaOptions',
   },
   security: {
     env: 'PARSE_SERVER_SECURITY',
     help: 'The security options to identify and report weak security settings.',
     action: parsers.objectParser,
     default: {},
+    group: 'SecurityOptions',
   },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
@@ -622,6 +632,7 @@ module.exports.PagesOptions = {
     help: 'The URLs to the custom pages.',
     action: parsers.objectParser,
     default: {},
+    group: 'PagesCustomUrlsOptions',
   },
   enableLocalization: {
     env: 'PARSE_SERVER_PAGES_ENABLE_LOCALIZATION',
@@ -671,6 +682,7 @@ module.exports.PagesOptions = {
       'The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.',
     action: parsers.objectParser,
     default: {},
+    group: 'Object',
   },
 };
 module.exports.PagesRoute = {
