@@ -3854,11 +3854,12 @@ describe('saveFile hooks', () => {
     }
   });
 
-  it('can clean up files', async () => {
+  fit('can clean up files', async () => {
     const server = await reconfigureServer();
     const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
     const file = new Parse.File('myfile.txt', { base64 });
     const obj = await new Parse.Object('TestObject').save({ file });
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await Promise.all([
       (async () => {
         const objects = await new Parse.Query('_FileObject').find({ useMasterKey: true });

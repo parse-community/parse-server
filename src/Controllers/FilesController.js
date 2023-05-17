@@ -54,7 +54,7 @@ export class FilesController extends AdaptableController {
    * Object may be a single object or list of REST-format objects.
    */
   async expandFilesInObject(config, object, className, auth, op) {
-    if (object instanceof Array) {
+    if (Array.isArray(object)) {
       return Promise.all(
         object.map(obj => this.expandFilesInObject(config, obj, className, auth, op))
       );

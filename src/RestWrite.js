@@ -151,6 +151,9 @@ RestWrite.prototype.execute = function () {
       return this.runAfterSaveTrigger();
     })
     .then(() => {
+      return this.buildFileReferences();
+    })
+    .then(() => {
       return this.cleanUserAuthData();
     })
     .then(() => {
@@ -1357,6 +1360,15 @@ RestWrite.prototype.expandFilesForExistingObjects = async function () {
       this.auth
     );
   }
+};
+
+RestWrite.prototype.buildFileReferences = async function () {
+  await this.config.filesController.expandFilesInObject(
+    this.config,
+    this.data,
+    this.className,
+    this.auth
+  );
 };
 
 RestWrite.prototype.runDatabaseOperation = function () {
