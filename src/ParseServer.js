@@ -158,7 +158,9 @@ class ParseServer {
     new Parse.Query('_FileObject').each(
       async obj => {
         const file = obj.get('file');
-        const reference = await new Parse.Query('_FileReference').equalTo('file', obj).first();
+        const reference = await new Parse.Query('_FileReference')
+          .equalTo('file', obj)
+          .first({ useMasterKey: true });
         if (!reference) {
           console.log(`Deleting orphaned file ${file.url()}`);
           await file.destroy({ useMasterKey: true });
