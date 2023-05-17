@@ -1,3 +1,10 @@
+# [6.1.0-alpha.11](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.10...6.1.0-alpha.11) (2023-05-17)
+
+
+### Features
+
+* `extendSessionOnUse` to automatically renew Parse Sessions ([#8505](https://github.com/parse-community/parse-server/issues/8505)) ([6f885d3](https://github.com/parse-community/parse-server/commit/6f885d36b94902fdfea873fc554dee83589e6029))
+
 # [6.1.0-alpha.10](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.9...6.1.0-alpha.10) (2023-05-12)
 
 
