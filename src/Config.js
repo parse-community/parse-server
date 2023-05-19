@@ -67,8 +67,6 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     logLevels,
-    rateLimit,
-    databaseOptions,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -80,7 +78,6 @@ export class Config {
 
     this.validateAccountLockoutPolicy(accountLockout);
     this.validatePasswordPolicy(passwordPolicy);
-
 
     if (publicServerURL) {
       if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
