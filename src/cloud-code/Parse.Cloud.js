@@ -128,7 +128,8 @@ ParseCloud.define = function (functionName, handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       { requestPath: `/functions/${functionName}`, ...validationHandler.rateLimit },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -191,7 +192,8 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
         requestMethods: ['POST', 'PUT'],
         ...validationHandler.rateLimit,
       },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -237,7 +239,8 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
         requestMethods: 'DELETE',
         ...validationHandler.rateLimit,
       },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -278,7 +281,8 @@ ParseCloud.beforeLogin = function (handler, validationHandler) {
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
       { requestPath: `/login`, requestMethods: 'POST', ...validationHandler.rateLimit },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -456,7 +460,8 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
         requestMethods: 'GET',
         ...validationHandler.rateLimit,
       },
-      Parse.applicationId
+      Parse.applicationId,
+      true
     );
   }
 };
@@ -761,6 +766,8 @@ ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandle
 
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
+  const config = Config.get(Parse.applicationId);
+  config?.unregisterRateLimiters();
 };
 
 ParseCloud.useMasterKey = () => {
