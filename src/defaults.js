@@ -25,7 +25,7 @@ export const getDefaults = () => {
       memo[key] = def.default;
     }
     const group = def.group;
-    if (group) {
+    if (group && group !== 'SchemaOptions') {
       const options = ServerOptions[group] || {};
       for (const _key in options) {
         const val = options[_key];

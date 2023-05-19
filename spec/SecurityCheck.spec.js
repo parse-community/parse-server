@@ -80,7 +80,7 @@ describe('Security Check', () => {
 
   describe('server options', () => {
     it('uses default configuration when none is set', async () => {
-      await reconfigureServerWithSecurityConfig({});
+      await reconfigureServer();
       expect(Config.get(Parse.applicationId).security.enableCheck).toBe(
         Definitions.SecurityOptions.enableCheck.default
       );
