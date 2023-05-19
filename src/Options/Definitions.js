@@ -229,6 +229,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  extendSessionOnUse: {
+    env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
+    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    action: parsers.booleanParser,
+    default: false,
+  },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
     help: 'Key for your files',
