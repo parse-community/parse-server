@@ -601,4 +601,12 @@ describe('Parse Role testing', () => {
       });
     });
   });
+
+  it('should save role when beforeSave hook for _Role is present.', async done => {
+    Parse.Cloud.beforeSave('_Role', () => {});
+    const role = new Parse.Role('roleName', new Parse.ACL());
+    await role.save({}, { useMasterKey: true });
+    expect(role.id).toBeDefined();
+    done();
+  });
 });

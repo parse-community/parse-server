@@ -1,3 +1,10 @@
+## [5.4.3](https://github.com/parse-community/parse-server/compare/5.4.2...5.4.3) (2023-03-22)
+
+
+### Bug Fixes
+
+* Unable to create new role if `beforeSave` hook exists ([#8474](https://github.com/parse-community/parse-server/issues/8474)) ([4f0f0ec](https://github.com/parse-community/parse-server/commit/4f0f0ec4bb7334adf64fcbfb80589727dc46906d))
+
 ## [5.4.2](https://github.com/parse-community/parse-server/compare/5.4.1...5.4.2) (2023-02-16)
 
 
