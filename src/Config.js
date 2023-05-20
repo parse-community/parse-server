@@ -424,6 +424,11 @@ export class Config {
     } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
       throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
     }
+    if (fileUpload.fileExtensions === undefined) {
+      fileUpload.fileExtensions = FileUploadOptions.fileExtensions.default;
+    } else if (!Array.isArray(fileUpload.fileExtensions)) {
+      throw 'fileUpload.fileExtensions must be an array.';
+    }
   }
 
   static validateMasterKeyIps(masterKeyIps) {
