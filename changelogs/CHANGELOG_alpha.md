@@ -1,3 +1,17 @@
+# [6.1.0-alpha.12](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.11...6.1.0-alpha.12) (2023-05-19)
+
+
+### Bug Fixes
+
+* GridFS file storage doesn't work with certain `enableSchemaHooks` settings ([#8467](https://github.com/parse-community/parse-server/issues/8467)) ([d4cda4b](https://github.com/parse-community/parse-server/commit/d4cda4b26c9bde8c812549b8780bea1cfabdb394))
+
+# [6.1.0-alpha.11](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.10...6.1.0-alpha.11) (2023-05-17)
+
+
+### Features
+
+* `extendSessionOnUse` to automatically renew Parse Sessions ([#8505](https://github.com/parse-community/parse-server/issues/8505)) ([6f885d3](https://github.com/parse-community/parse-server/commit/6f885d36b94902fdfea873fc554dee83589e6029))
+
 # [6.1.0-alpha.10](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.9...6.1.0-alpha.10) (2023-05-12)
 
 
