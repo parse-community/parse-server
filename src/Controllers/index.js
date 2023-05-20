@@ -153,7 +153,8 @@ export function getDatabaseController(options: ParseServerOptions): DatabaseCont
   const { databaseURI, collectionPrefix, databaseOptions } = options;
   let { databaseAdapter } = options;
   if (
-    (databaseOptions ||
+    ((databaseOptions &&
+      JSON.stringify(databaseOptions) !== JSON.stringify(defaults.databaseOptions)) ||
       (databaseURI && databaseURI !== defaults.databaseURI) ||
       collectionPrefix !== defaults.collectionPrefix) &&
     databaseAdapter

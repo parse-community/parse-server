@@ -285,6 +285,9 @@ function inject(t, list) {
         type = 'String|String[]';
       }
       comments += ` * @property {${type}} ${elt.name} ${elt.help}\n`;
+      if (nestedOptionTypes.includes(type) && type !== 'Object') {
+        props.push(t.objectProperty(t.stringLiteral('group'), t.stringLiteral(`${type}`)));
+      }
       const obj = t.objectExpression(props);
       return t.objectProperty(t.stringLiteral(elt.name), obj);
     })

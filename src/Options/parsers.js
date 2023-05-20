@@ -36,7 +36,7 @@ function arrayParser(opt) {
   } else if (typeof opt === 'string') {
     return opt.split(',');
   } else {
-    throw new Error(`${opt} should be a comma separated string or an array`);
+    throw new Error(`${JSON.stringify(opt)} should be a comma separated string or an array`);
   }
 }
 

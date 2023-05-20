@@ -10,7 +10,7 @@ var batch = require('./batch'),
   fs = require('fs');
 
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
-import defaults from './defaults';
+import { getDefaults } from './defaults';
 import * as logging from './logger';
 import Config from './Config';
 import PromiseRouter from './PromiseRouter';
@@ -453,6 +453,7 @@ function addParseCloud() {
 }
 
 function injectDefaults(options: ParseServerOptions) {
+  const defaults = getDefaults();
   Object.keys(defaults).forEach(key => {
     if (!Object.prototype.hasOwnProperty.call(options, key)) {
       options[key] = defaults[key];

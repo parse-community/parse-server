@@ -2,22 +2,12 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
-import { isBoolean, isString } from 'lodash';
 import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
-import {
-  AccountLockoutOptions,
-  DatabaseOptions,
-  FileUploadOptions,
-  IdempotencyOptions,
-  LogLevels,
-  PagesOptions,
-  ParseServerOptions,
-  SchemaOptions,
-  SecurityOptions,
-} from './Options/Definitions';
+import Definitions from './Options/Definitions';
+const { LogLevels, ParseServerOptions } = Definitions;
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -53,6 +43,7 @@ export class Config {
   }
 
   static put(serverConfiguration) {
+    Config._validateTypes(serverConfiguration);
     Config.validateOptions(serverConfiguration);
     Config.validateControllers(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
@@ -62,7 +53,6 @@ export class Config {
 
   static validateOptions({
     publicServerURL,
-    revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
     defaultLimit,
@@ -76,17 +66,7 @@ export class Config {
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
-    fileUpload,
-    pages,
-    security,
-    enforcePrivateUsers,
-    schema,
-    requestKeywordDenylist,
-    allowExpiredAuthDataToken,
     logLevels,
-    rateLimit,
-    databaseOptions,
-    extendSessionOnUse,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -98,15 +78,6 @@ export class Config {
 
     this.validateAccountLockoutPolicy(accountLockout);
     this.validatePasswordPolicy(passwordPolicy);
-    this.validateFileUploadOptions(fileUpload);
-
-    if (typeof revokeSessionOnPasswordReset !== 'boolean') {
-      throw 'revokeSessionOnPasswordReset must be a boolean value';
-    }
-
-    if (typeof extendSessionOnUse !== 'boolean') {
-      throw 'extendSessionOnUse must be a boolean value';
-    }
 
     if (publicServerURL) {
       if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
@@ -120,15 +91,7 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
-    this.validatePagesOptions(pages);
-    this.validateSecurityOptions(security);
-    this.validateSchemaOptions(schema);
-    this.validateEnforcePrivateUsers(enforcePrivateUsers);
-    this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
-    this.validateRequestKeywordDenylist(requestKeywordDenylist);
-    this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
-    this.validateDatabaseOptions(databaseOptions);
   }
 
   static validateControllers({
@@ -151,140 +114,53 @@ export class Config {
     }
   }
 
-  static validateRequestKeywordDenylist(requestKeywordDenylist) {
-    if (requestKeywordDenylist === undefined) {
-      requestKeywordDenylist = requestKeywordDenylist.default;
-    } else if (!Array.isArray(requestKeywordDenylist)) {
-      throw 'Parse Server option requestKeywordDenylist must be an array.';
-    }
-  }
+  static _validateTypes(serverOpts) {
+    const getType = fn => {
+      if (Array.isArray(fn)) {
+        return 'array';
+      }
+      if (fn === 'Any' || fn === 'function') {
+        return fn;
+      }
+      const type = typeof fn;
+      if (typeof fn === 'function') {
+        const match = fn && fn.toString().match(/^\s*function (\w+)/);
+        return (match ? match[1] : 'function').toLowerCase();
+      }
+      return type;
+    };
 
-  static validateEnforcePrivateUsers(enforcePrivateUsers) {
-    if (typeof enforcePrivateUsers !== 'boolean') {
-      throw 'Parse Server option enforcePrivateUsers must be a boolean.';
-    }
-  }
-
-  static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
-    if (typeof allowExpiredAuthDataToken !== 'boolean') {
-      throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
-    }
-  }
-
-  static validateSecurityOptions(security) {
-    if (Object.prototype.toString.call(security) !== '[object Object]') {
-      throw 'Parse Server option security must be an object.';
-    }
-    if (security.enableCheck === undefined) {
-      security.enableCheck = SecurityOptions.enableCheck.default;
-    } else if (!isBoolean(security.enableCheck)) {
-      throw 'Parse Server option security.enableCheck must be a boolean.';
-    }
-    if (security.enableCheckLog === undefined) {
-      security.enableCheckLog = SecurityOptions.enableCheckLog.default;
-    } else if (!isBoolean(security.enableCheckLog)) {
-      throw 'Parse Server option security.enableCheckLog must be a boolean.';
-    }
-  }
-
-  static validateSchemaOptions(schema: SchemaOptions) {
-    if (!schema) return;
-    if (Object.prototype.toString.call(schema) !== '[object Object]') {
-      throw 'Parse Server option schema must be an object.';
-    }
-    if (schema.definitions === undefined) {
-      schema.definitions = SchemaOptions.definitions.default;
-    } else if (!Array.isArray(schema.definitions)) {
-      throw 'Parse Server option schema.definitions must be an array.';
-    }
-    if (schema.strict === undefined) {
-      schema.strict = SchemaOptions.strict.default;
-    } else if (!isBoolean(schema.strict)) {
-      throw 'Parse Server option schema.strict must be a boolean.';
-    }
-    if (schema.deleteExtraFields === undefined) {
-      schema.deleteExtraFields = SchemaOptions.deleteExtraFields.default;
-    } else if (!isBoolean(schema.deleteExtraFields)) {
-      throw 'Parse Server option schema.deleteExtraFields must be a boolean.';
-    }
-    if (schema.recreateModifiedFields === undefined) {
-      schema.recreateModifiedFields = SchemaOptions.recreateModifiedFields.default;
-    } else if (!isBoolean(schema.recreateModifiedFields)) {
-      throw 'Parse Server option schema.recreateModifiedFields must be a boolean.';
-    }
-    if (schema.lockSchemas === undefined) {
-      schema.lockSchemas = SchemaOptions.lockSchemas.default;
-    } else if (!isBoolean(schema.lockSchemas)) {
-      throw 'Parse Server option schema.lockSchemas must be a boolean.';
-    }
-    if (schema.beforeMigration === undefined) {
-      schema.beforeMigration = null;
-    } else if (schema.beforeMigration !== null && typeof schema.beforeMigration !== 'function') {
-      throw 'Parse Server option schema.beforeMigration must be a function.';
-    }
-    if (schema.afterMigration === undefined) {
-      schema.afterMigration = null;
-    } else if (schema.afterMigration !== null && typeof schema.afterMigration !== 'function') {
-      throw 'Parse Server option schema.afterMigration must be a function.';
-    }
-  }
-
-  static validatePagesOptions(pages) {
-    if (Object.prototype.toString.call(pages) !== '[object Object]') {
-      throw 'Parse Server option pages must be an object.';
-    }
-    if (pages.enableRouter === undefined) {
-      pages.enableRouter = PagesOptions.enableRouter.default;
-    } else if (!isBoolean(pages.enableRouter)) {
-      throw 'Parse Server option pages.enableRouter must be a boolean.';
-    }
-    if (pages.enableLocalization === undefined) {
-      pages.enableLocalization = PagesOptions.enableLocalization.default;
-    } else if (!isBoolean(pages.enableLocalization)) {
-      throw 'Parse Server option pages.enableLocalization must be a boolean.';
-    }
-    if (pages.localizationJsonPath === undefined) {
-      pages.localizationJsonPath = PagesOptions.localizationJsonPath.default;
-    } else if (!isString(pages.localizationJsonPath)) {
-      throw 'Parse Server option pages.localizationJsonPath must be a string.';
-    }
-    if (pages.localizationFallbackLocale === undefined) {
-      pages.localizationFallbackLocale = PagesOptions.localizationFallbackLocale.default;
-    } else if (!isString(pages.localizationFallbackLocale)) {
-      throw 'Parse Server option pages.localizationFallbackLocale must be a string.';
-    }
-    if (pages.placeholders === undefined) {
-      pages.placeholders = PagesOptions.placeholders.default;
-    } else if (
-      Object.prototype.toString.call(pages.placeholders) !== '[object Object]' &&
-      typeof pages.placeholders !== 'function'
-    ) {
-      throw 'Parse Server option pages.placeholders must be an object or a function.';
-    }
-    if (pages.forceRedirect === undefined) {
-      pages.forceRedirect = PagesOptions.forceRedirect.default;
-    } else if (!isBoolean(pages.forceRedirect)) {
-      throw 'Parse Server option pages.forceRedirect must be a boolean.';
-    }
-    if (pages.pagesPath === undefined) {
-      pages.pagesPath = PagesOptions.pagesPath.default;
-    } else if (!isString(pages.pagesPath)) {
-      throw 'Parse Server option pages.pagesPath must be a string.';
-    }
-    if (pages.pagesEndpoint === undefined) {
-      pages.pagesEndpoint = PagesOptions.pagesEndpoint.default;
-    } else if (!isString(pages.pagesEndpoint)) {
-      throw 'Parse Server option pages.pagesEndpoint must be a string.';
-    }
-    if (pages.customUrls === undefined) {
-      pages.customUrls = PagesOptions.customUrls.default;
-    } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
-      throw 'Parse Server option pages.customUrls must be an object.';
-    }
-    if (pages.customRoutes === undefined) {
-      pages.customRoutes = PagesOptions.customRoutes.default;
-    } else if (!(pages.customRoutes instanceof Array)) {
-      throw 'Parse Server option pages.customRoutes must be an array.';
+    const checkKey = (setValue, path, action, original) => {
+      if (setValue === undefined || !action) {
+        return;
+      }
+      const requiredType = getType(original == null ? action(setValue) : original);
+      const thisType = getType(setValue);
+      if (requiredType !== thisType) {
+        throw `${path} must be a${
+          requiredType.charAt(0).match(/[aeiou]/i) ? 'n' : ''
+        } ${requiredType} value.`;
+      }
+      if (requiredType === 'number' && isNaN(setValue)) {
+        throw `${path} must be a valid number.`;
+      }
+    };
+    for (const key in ParseServerOptions) {
+      const definition = ParseServerOptions[key];
+      const setValue = serverOpts[key];
+      checkKey(setValue, key, definition.action, definition.default);
+      if (setValue && definition.group) {
+        const group = Definitions[definition.group];
+        for (const subkey in group) {
+          const subdefinition = group[subkey];
+          checkKey(
+            setValue[subkey],
+            `${key}.${subkey}`,
+            subdefinition.action,
+            subdefinition.default
+          );
+        }
+      }
     }
   }
 
@@ -292,17 +168,10 @@ export class Config {
     if (!idempotencyOptions) {
       return;
     }
-    if (idempotencyOptions.ttl === undefined) {
-      idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
-    } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
+    if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
       throw 'idempotency TTL value must be greater than 0 seconds';
     } else if (isNaN(idempotencyOptions.ttl)) {
       throw 'idempotency TTL value must be a number';
-    }
-    if (!idempotencyOptions.paths) {
-      idempotencyOptions.paths = IdempotencyOptions.paths.default;
-    } else if (!(idempotencyOptions.paths instanceof Array)) {
-      throw 'idempotency paths must be of an array of strings';
     }
   }
 
@@ -322,12 +191,6 @@ export class Config {
         accountLockout.threshold > 999
       ) {
         throw 'Account lockout threshold should be an integer greater than 0 and less than 1000';
-      }
-
-      if (accountLockout.unlockOnPasswordReset === undefined) {
-        accountLockout.unlockOnPasswordReset = AccountLockoutOptions.unlockOnPasswordReset.default;
-      } else if (!isBoolean(accountLockout.unlockOnPasswordReset)) {
-        throw 'Parse Server option accountLockout.unlockOnPasswordReset must be a boolean.';
       }
     }
   }
@@ -439,34 +302,6 @@ export class Config {
     }
   }
 
-  static validateFileUploadOptions(fileUpload) {
-    try {
-      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
-        throw 'fileUpload must be an object value.';
-      }
-    } catch (e) {
-      if (e instanceof ReferenceError) {
-        return;
-      }
-      throw e;
-    }
-    if (fileUpload.enableForAnonymousUser === undefined) {
-      fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
-    } else if (typeof fileUpload.enableForAnonymousUser !== 'boolean') {
-      throw 'fileUpload.enableForAnonymousUser must be a boolean value.';
-    }
-    if (fileUpload.enableForPublic === undefined) {
-      fileUpload.enableForPublic = FileUploadOptions.enableForPublic.default;
-    } else if (typeof fileUpload.enableForPublic !== 'boolean') {
-      throw 'fileUpload.enableForPublic must be a boolean value.';
-    }
-    if (fileUpload.enableForAuthenticatedUser === undefined) {
-      fileUpload.enableForAuthenticatedUser = FileUploadOptions.enableForAuthenticatedUser.default;
-    } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
-      throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
-    }
-  }
-
   static validateIps(field, masterKeyIps) {
     for (let ip of masterKeyIps) {
       if (ip.includes('/')) {
@@ -501,12 +336,6 @@ export class Config {
   }
 
   static validateDefaultLimit(defaultLimit) {
-    if (defaultLimit == null) {
-      defaultLimit = ParseServerOptions.defaultLimit.default;
-    }
-    if (typeof defaultLimit !== 'number') {
-      throw 'Default limit must be a number.';
-    }
     if (defaultLimit <= 0) {
       throw 'Default limit must be a value greater than 0.';
     }
@@ -536,73 +365,8 @@ export class Config {
 
   static validateLogLevels(logLevels) {
     for (const key of Object.keys(LogLevels)) {
-      if (logLevels[key]) {
-        if (validLogLevels.indexOf(logLevels[key]) === -1) {
-          throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
-        }
-      } else {
-        logLevels[key] = LogLevels[key].default;
-      }
-    }
-  }
-
-  static validateDatabaseOptions(databaseOptions) {
-    if (databaseOptions == undefined) {
-      return;
-    }
-    if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
-      throw `databaseOptions must be an object`;
-    }
-    if (databaseOptions.enableSchemaHooks === undefined) {
-      databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
-    } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
-      throw `databaseOptions.enableSchemaHooks must be a boolean`;
-    }
-    if (databaseOptions.schemaCacheTtl === undefined) {
-      databaseOptions.schemaCacheTtl = DatabaseOptions.schemaCacheTtl.default;
-    } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
-      throw `databaseOptions.schemaCacheTtl must be a number`;
-    }
-  }
-
-  static validateRateLimit(rateLimit) {
-    if (!rateLimit) {
-      return;
-    }
-    if (
-      Object.prototype.toString.call(rateLimit) !== '[object Object]' &&
-      !Array.isArray(rateLimit)
-    ) {
-      throw `rateLimit must be an array or object`;
-    }
-    const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
-    for (const option of options) {
-      if (Object.prototype.toString.call(option) !== '[object Object]') {
-        throw `rateLimit must be an array of objects`;
-      }
-      if (option.requestPath == null) {
-        throw `rateLimit.requestPath must be defined`;
-      }
-      if (typeof option.requestPath !== 'string') {
-        throw `rateLimit.requestPath must be a string`;
-      }
-      if (option.requestTimeWindow == null) {
-        throw `rateLimit.requestTimeWindow must be defined`;
-      }
-      if (typeof option.requestTimeWindow !== 'number') {
-        throw `rateLimit.requestTimeWindow must be a number`;
-      }
-      if (option.includeInternalRequests && typeof option.includeInternalRequests !== 'boolean') {
-        throw `rateLimit.includeInternalRequests must be a boolean`;
-      }
-      if (option.requestCount == null) {
-        throw `rateLimit.requestCount must be defined`;
-      }
-      if (typeof option.requestCount !== 'number') {
-        throw `rateLimit.requestCount must be a number`;
-      }
-      if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
-        throw `rateLimit.errorResponseMessage must be a string`;
+      if (validLogLevels.indexOf(logLevels[key]) === -1) {
+        throw `'${key}' must be one of ${JSON.stringify(validLogLevels)}`;
       }
     }
   }

@@ -446,6 +446,42 @@ describe('server', () => {
     });
   });
 
+  it('default interface keys are set', async () => {
+    delete process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID;
+    delete process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION;
+    await reconfigureServer();
+    const config = Config.get('test');
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeDefined();
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeFalse();
+  });
+
+  it('can set subkeys via environment variables', async () => {
+    process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID = true;
+    process.env.PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION = 3000;
+    await reconfigureServer();
+    const config = Config.get('test');
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeDefined();
+    expect(config.passwordPolicy.resetTokenReuseIfValid).toBeTrue();
+  });
+
+  it('can set throw on invalid type', async () => {
+    await expectAsync(
+      reconfigureServer({
+        revokeSessionOnPasswordReset: [],
+      })
+    ).toBeRejectedWith('revokeSessionOnPasswordReset must be a boolean value.');
+  });
+
+  it('can set throw on invalid subkeys', async () => {
+    await expectAsync(
+      reconfigureServer({
+        fileUpload: {
+          enableForAnonymousUser: [],
+        },
+      })
+    ).toBeRejectedWith('fileUpload.enableForAnonymousUser must be a boolean value.');
+  });
+
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' }).catch(done);
   });
