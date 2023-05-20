@@ -5,6 +5,8 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
+import Auth from '../Auth';
+import RestQuery from '../RestQuery';
 const triggers = require('../triggers');
 const http = require('http');
 const Utils = require('../Utils');
@@ -67,7 +69,7 @@ export class FilesRouter {
     return router;
   }
 
-  getHandler(req, res) {
+  async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
@@ -75,6 +77,7 @@ export class FilesRouter {
       res.json({ code: err.code, error: err.message });
       return;
     }
+    const token = req.param('token');
     const filesController = config.filesController;
     const filename = req.params.filename;
     const contentType = mime.getType(filename);
@@ -84,20 +87,61 @@ export class FilesRouter {
         res.set('Content-Type', 'text/plain');
         res.end('File not found.');
       });
-    } else {
-      filesController
-        .getFileData(config, filename)
-        .then(data => {
-          res.status(200);
-          res.set('Content-Type', contentType);
-          res.set('Content-Length', data.length);
-          res.end(data);
-        })
-        .catch(() => {
-          res.status(404);
-          res.set('Content-Type', 'text/plain');
-          res.end('File not found.');
+      return;
+    }
+    try {
+      const fileSession = await new Parse.Query('_FileSession')
+        .equalTo('token', token)
+        .first({ useMasterKey: true });
+      if (!fileSession) {
+        throw 'File not found';
+      }
+      let auth = new Auth.Auth({
+        config,
+        isMaster: false,
+      });
+      if (fileSession.get('master')) {
+        auth = new Auth.Auth({
+          config,
+          installationId: fileSession.get('installationId'),
+          isMaster: true,
         });
+      } else if (fileSession.get('sessionToken')) {
+        auth = await Auth.getAuthForSessionToken({
+          config,
+          installationId: fileSession.get('installationId'),
+          sessionToken: await fileSession.get('sessionToken'),
+        });
+      }
+      const fileObject = new Parse.File(filename);
+      const conf = { ...config };
+      if (!conf.mount) {
+        conf.mount = conf.publicServerURL || conf.serverURL;
+      }
+      fileObject._url = filesController.adapter.getFileLocation(conf, filename);
+      fileObject.contentType = contentType;
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file: fileObject },
+        config,
+        auth
+      );
+      const data = await filesController.getFileData(config, triggerResult.file.name());
+      fileObject._data = data;
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        { file: fileObject },
+        config,
+        auth
+      );
+      res.status(200);
+      res.set('Content-Type', contentType);
+      res.set('Content-Length', data.length);
+      res.end(data);
+    } catch (e) {
+      res.status(404);
+      res.set('Content-Type', 'text/plain');
+      res.end(e || 'File not found.');
     }
   }
 
@@ -126,7 +170,7 @@ export class FilesRouter {
       return;
     }
     const filesController = config.filesController;
-    const { filename } = req.params;
+    const { filename, acl } = req.params;
     const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
@@ -218,6 +262,23 @@ export class FilesRouter {
           url: createFileResult.url,
           name: createFileResult.name,
         };
+        const fileObj = new Parse.Object('_FileObject');
+        const file = new Parse.File(fileObject.file._name);
+        file._url = fileObject.file._url;
+        fileObj.set('file', file);
+        fileObj.setACL(
+          new Parse.ACL(
+            acl ||
+              user?.id || {
+              '*': {
+                read: true,
+              },
+            }
+          )
+        );
+        await fileObj.save(null, { useMasterKey: true });
+        const token = await filesController.createFileSession(config, req.auth, fileObj.id);
+        saveResult.url = saveResult.url + '?token=' + token;
       }
       // run afterSaveFile trigger
       await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
@@ -242,6 +303,16 @@ export class FilesRouter {
       const file = new Parse.File(filename);
       file._url = filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
+      const files = await new RestQuery(
+        req.config,
+        req.auth,
+        '_FileObject',
+        { file: file.toJSON() },
+        { limit: 1 }
+      ).execute();
+      if (files.results.length === 0 && !req.config.fileUpload.enableLegacyAccess) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'File not found.');
+      }
       await triggers.maybeRunFileTrigger(
         triggers.Types.beforeDelete,
         fileObject,
@@ -257,6 +328,27 @@ export class FilesRouter {
         req.config,
         req.auth
       );
+      const fileId = files.results[0]?.objectId;
+      if (fileId) {
+        const fileObj = Parse.Object.extend('_FileObject').createWithoutData(fileId);
+        fileObj
+          .destroy({ useMasterKey: true })
+          .then(() => {
+            new Parse.Query('_FileReference').equalTo({ file: fileObj }).each(
+              obj => {
+                obj.destroy(null, { useMasterKey: true });
+              },
+              { useMasterKey: true }
+            );
+            new Parse.Query('_FileSession').equalTo({ file: fileObj }).each(
+              obj => {
+                obj.destroy(null, { useMasterKey: true });
+              },
+              { useMasterKey: true }
+            );
+          })
+          .catch(e => e);
+      }
       res.status(200);
       // TODO: return useful JSON here?
       res.end();

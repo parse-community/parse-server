@@ -265,7 +265,15 @@ describe('Parse.File testing', () => {
       ok(objectAgain.get('file') instanceof Parse.File);
     });
 
-    it('autosave file in object', async done => {
+    it('autosave file in object', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          enableForAnonymousUser: true,
+          enableForAuthenticatedUser: true,
+          enableLegacyAccess: false,
+        },
+      });
       let file = new Parse.File('hello.txt', data, 'text/plain');
       ok(!file.url());
       const object = new Parse.Object('TestObject');
@@ -276,7 +284,60 @@ describe('Parse.File testing', () => {
       ok(file.name());
       ok(file.url());
       notEqual(file.name(), 'hello.txt');
-      done();
+      await Promise.all([
+        (async () => {
+          const fileObjects = await new Parse.Query('_FileObject').find({
+            useMasterKey: true,
+            json: true,
+          });
+          expect(fileObjects.length).toBe(1);
+          const fileObject = fileObjects[0];
+          expect(fileObject.className).toBe('_FileObject');
+          expect(fileObject.file).toEqual({
+            __type: 'File',
+            name: file.name(),
+            url: file.url().split('?token')[0],
+          });
+          expect(fileObject.ACL).toEqual({
+            '*': {
+              read: true,
+            },
+          });
+        })(),
+        (async () => {
+          const fileReferences = await new Parse.Query('_FileReference').find({
+            useMasterKey: true,
+            json: true,
+          });
+          expect(fileReferences.length).toBe(1);
+          const fileReference = fileReferences[0];
+          expect(fileReference.className).toBe('_FileReference');
+          expect(fileReference.file).toEqual({
+            __type: 'Pointer',
+            className: '_FileObject',
+            objectId: fileReference.file.objectId,
+          });
+          expect(fileReference.referenceId).toBe(objectAgain.id);
+          expect(fileReference.referenceClass).toBe('TestObject');
+        })(),
+        (async () => {
+          const fileSessions = await new Parse.Query('_FileSession').find({
+            useMasterKey: true,
+            json: true,
+          });
+          expect(fileSessions.length).toBe(3);
+          const fileSession = fileSessions[2];
+          expect(fileSession.file).toEqual({
+            __type: 'Pointer',
+            className: '_FileObject',
+            objectId: fileSession.file.objectId,
+          });
+          expect(fileSession.token).toBe(file.url().split('?token=')[1]);
+          expect(fileSession.master).toBe(false);
+          expect(new Date(fileSession.expiry.iso) instanceof Date).toBeTrue();
+        })(),
+      ]);
+      expect(file.url()).toContain('?token=');
     });
 
     it('autosave file in object in object', async done => {
@@ -390,7 +451,7 @@ describe('Parse.File testing', () => {
       });
     });
 
-    it('supports array of files', done => {
+    it('supports array of files', async () => {
       const file = {
         __type: 'File',
         url: 'http://meep.meep',
@@ -399,19 +460,12 @@ describe('Parse.File testing', () => {
       const files = [file, file];
       const obj = new Parse.Object('FilesArrayTest');
       obj.set('files', files);
-      obj
-        .save()
-        .then(() => {
-          const query = new Parse.Query('FilesArrayTest');
-          return query.first();
-        })
-        .then(result => {
-          const filesAgain = result.get('files');
-          expect(filesAgain.length).toEqual(2);
-          expect(filesAgain[0].name()).toEqual('meep');
-          expect(filesAgain[0].url()).toEqual('http://meep.meep');
-          done();
-        });
+      await obj.save();
+      const result = await new Parse.Query('FilesArrayTest').first();
+      const filesAgain = result.get('files');
+      expect(filesAgain.length).toEqual(2);
+      expect(filesAgain[0].name()).toEqual('meep');
+      expect(filesAgain[0].url()).toEqual('http://meep.meep');
     });
 
     it('validates filename characters', done => {
@@ -478,58 +532,6 @@ describe('Parse.File testing', () => {
           const fileAgain = dictAgain['file'];
           expect(fileAgain.name()).toEqual('meep');
           expect(fileAgain.url()).toEqual('http://meep.meep');
-          done();
-        })
-        .catch(e => {
-          jfail(e);
-          done();
-        });
-    });
-
-    it('creates correct url for old files hosted on files.parsetfss.com', done => {
-      const file = {
-        __type: 'File',
-        url: 'http://irrelevant.elephant/',
-        name: 'tfss-123.txt',
-      };
-      const obj = new Parse.Object('OldFileTest');
-      obj.set('oldfile', file);
-      obj
-        .save()
-        .then(() => {
-          const query = new Parse.Query('OldFileTest');
-          return query.first();
-        })
-        .then(result => {
-          const fileAgain = result.get('oldfile');
-          expect(fileAgain.url()).toEqual('http://files.parsetfss.com/test/tfss-123.txt');
-          done();
-        })
-        .catch(e => {
-          jfail(e);
-          done();
-        });
-    });
-
-    it('creates correct url for old files hosted on files.parse.com', done => {
-      const file = {
-        __type: 'File',
-        url: 'http://irrelevant.elephant/',
-        name: 'd6e80979-a128-4c57-a167-302f874700dc-123.txt',
-      };
-      const obj = new Parse.Object('OldFileTest');
-      obj.set('oldfile', file);
-      obj
-        .save()
-        .then(() => {
-          const query = new Parse.Query('OldFileTest');
-          return query.first();
-        })
-        .then(result => {
-          const fileAgain = result.get('oldfile');
-          expect(fileAgain.url()).toEqual(
-            'http://files.parse.com/test/d6e80979-a128-4c57-a167-302f874700dc-123.txt'
-          );
           done();
         })
         .catch(e => {

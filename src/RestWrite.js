@@ -151,6 +151,9 @@ RestWrite.prototype.execute = function () {
       return this.runAfterSaveTrigger();
     })
     .then(() => {
+      return this.buildFileReferences();
+    })
+    .then(() => {
       return this.cleanUserAuthData();
     })
     .then(() => {
@@ -314,7 +317,12 @@ RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
   const extraData = { className: this.className };
 
   // Expand file objects
-  this.config.filesController.expandFilesInObject(this.config, userData);
+  await this.config.filesController.expandFilesInObject(
+    this.config,
+    userData,
+    this.className,
+    this.auth
+  );
 
   const user = triggers.inflate(extraData, userData);
 
@@ -1343,11 +1351,24 @@ RestWrite.prototype.handleInstallation = function () {
 // If we short-circuited the object response - then we need to make sure we expand all the files,
 // since this might not have a query, meaning it won't return the full result back.
 // TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
-RestWrite.prototype.expandFilesForExistingObjects = function () {
-  // Check whether we have a short-circuited response - only then run expansion.
-  if (this.response && this.response.response) {
-    this.config.filesController.expandFilesInObject(this.config, this.response.response);
+RestWrite.prototype.expandFilesForExistingObjects = async function () {
+  if (this.response?.response) {
+    await this.config.filesController.expandFilesInObject(
+      this.config,
+      this.response.response,
+      this.className,
+      this.auth
+    );
   }
+};
+
+RestWrite.prototype.buildFileReferences = async function () {
+  await this.config.filesController.expandFilesInObject(
+    this.config,
+    this.data,
+    this.className,
+    this.auth
+  );
 };
 
 RestWrite.prototype.runDatabaseOperation = function () {
