@@ -16,7 +16,7 @@
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {Boolean} allowExpiredAuthDataToken Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
- * @property {String} allowOrigin Sets the origin to Access-Control-Allow-Origin
+ * @property {String|String[]} allowOrigin Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
@@ -43,6 +43,7 @@
  * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} enforcePrivateUsers Set to true if new users should be created without public read and write access.
  * @property {Boolean} expireInactiveSessions Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
+ * @property {Boolean} extendSessionOnUse Whether Parse Server should automatically extend a valid session by the sessionLength
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {FileUploadOptions} fileUpload Options for file uploads
@@ -104,6 +105,7 @@
  * @property {String} errorResponseMessage The error message that should be returned in the body of the HTTP 429 response when the rate limit is hit. Default is `Too many requests.`.
  * @property {Boolean} includeInternalRequests Optional, if `true` the rate limit will also apply to requests that are made in by Cloud Code, default is `false`. Note that a public Cloud Code function that triggers internal requests may circumvent rate limiting and be vulnerable to attacks.
  * @property {Boolean} includeMasterKey Optional, if `true` the rate limit will also apply to requests using the `masterKey`, default is `false`. Note that a public Cloud Code function that triggers internal requests using the `masterKey` may circumvent rate limiting and be vulnerable to attacks.
+ * @property {String} redisUrl Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.
  * @property {Number} requestCount The number of requests that can be made per IP address within the time window set in `requestTimeWindow` before the rate limit is applied.
  * @property {String[]} requestMethods Optional, the HTTP request methods to which the rate limit should be applied, default is all methods.
  * @property {String} requestPath The path of the API route to be rate limited. Route paths, in combination with a request method, define the endpoints at which requests can be made. Route paths can be strings, string patterns, or regular expression. See: https://expressjs.com/en/guide/routing.html
@@ -207,6 +209,7 @@
  * @property {Boolean} doNotAllowUsername Set to `true` to disallow the username as part of the password.<br><br>Default is `false`.
  * @property {Number} maxPasswordAge Set the number of days after which a password expires. Login attempts fail if the user does not reset the password before expiration.
  * @property {Number} maxPasswordHistory Set the number of previous password that will not be allowed to be set as new password. If the option is not set or set to `0`, no previous passwords will be considered.<br><br>Valid values are >= `0` and <= `20`.<br>Default is `0`.
+ * @property {Boolean} resetPasswordSuccessOnInvalidEmail Set to `true` if a request to reset the password should return a success response even if the provided email address is invalid, or `false` if the request should return an error response if the email address is invalid.<br><br>Default is `true`.
  * @property {Boolean} resetTokenReuseIfValid Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.
  * @property {Number} resetTokenValidityDuration Set the validity duration of the password reset token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.
  * @property {String} validationError Set the error message to be sent.<br><br>Default is `Password does not meet the Password Policy requirements.`
@@ -225,6 +228,7 @@
 /**
  * @interface DatabaseOptions
  * @property {Boolean} enableSchemaHooks Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
+ * @property {Number} schemaCacheTtl The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.
  */
 
 /**
@@ -234,6 +238,8 @@
 
 /**
  * @interface LogLevels
+ * @property {String} cloudFunctionError Log level used by the Cloud Code Functions on error. Default is `error`.
+ * @property {String} cloudFunctionSuccess Log level used by the Cloud Code Functions on success. Default is `info`.
  * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
  * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
  * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.

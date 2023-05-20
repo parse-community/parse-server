@@ -1,7 +1,3 @@
-/**
- * @module SecurityCheck
- */
-
 import Utils from '../Utils';
 import { CheckState } from './Check';
 import * as CheckGroups from './CheckGroups/CheckGroups';
@@ -10,6 +6,7 @@ import { isArray, isBoolean } from 'lodash';
 
 /**
  * The security check runner.
+ * @memberof module:SecurityCheck
  */
 class CheckRunner {
   /**
