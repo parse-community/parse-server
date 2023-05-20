@@ -1,3 +1,10 @@
+# [5.5.0](https://github.com/parse-community/parse-server/compare/5.4.3...5.5.0) (2023-05-20)
+
+
+### Features
+
+* Add new Parse Server option `fileUpload.fileExtensions` to restrict file upload by file extension; this fixes a security vulnerability in which a phishing attack could be performed using an uploaded HTML file; by default the new option only allows file extensions matching the regex pattern `^[^hH][^tT][^mM][^lL]?$`, which excludes HTML files; this fix is released as a patch version given the severity of this vulnerability, however, if your app currently depends on uploading files with HTML file extensions then this may be a breaking change and you could allow HTML file upload by setting the option to `['.*']` ([#8537](https://github.com/parse-community/parse-server/issues/8537)) ([196e05f](https://github.com/parse-community/parse-server/commit/196e05f047a65f0fa96910905bb5bf24b6d30338))
+
 ## [5.4.3](https://github.com/parse-community/parse-server/compare/5.4.2...5.4.3) (2023-03-22)
 
 
