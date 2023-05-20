@@ -248,6 +248,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(object.date[0] instanceof Date).toBeTrue();
     expect(object.bar.date[0] instanceof Date).toBeTrue();
     expect(object.foo.test.date[0] instanceof Date).toBeTrue();
+    const obj = await new Parse.Query('MyClass').first({ useMasterKey: true });
+    expect(obj.get('date')[0] instanceof Date).toBeTrue();
+    expect(obj.get('bar').date[0] instanceof Date).toBeTrue();
+    expect(obj.get('foo').test.date[0] instanceof Date).toBeTrue();
   });
 
   it('handles updating a single object with array, object date', done => {

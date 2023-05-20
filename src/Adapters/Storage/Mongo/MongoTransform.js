@@ -188,6 +188,16 @@ const transformInteriorValue = restValue => {
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
+    if (value && typeof value === 'object') {
+      if (value instanceof Date) {
+        return value;
+      }
+      if (value instanceof Array) {
+        value = value.map(transformInteriorValue);
+      } else {
+        value = mapValues(value, transformInteriorValue);
+      }
+    }
     return value;
   }
 
@@ -1014,9 +1024,6 @@ function mapValues(object, iterator) {
   const result = {};
   Object.keys(object).forEach(key => {
     result[key] = iterator(object[key]);
-    if (result[key] && JSON.stringify(result[key]).includes(`"__type"`)) {
-      result[key] = mapValues(object[key], iterator);
-    }
   });
   return result;
 }
