@@ -32,7 +32,7 @@ jobs:
   check-ci:
     name: Node Engine Check
     timeout-minutes: 15
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -53,7 +53,7 @@ jobs:
   check-lint:
      name: Lint
      timeout-minutes: 15
-     runs-on: ubuntu-20.04
+     runs-on: ubuntu-latest
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -73,7 +73,7 @@ jobs:
   check-circular:
      name: Circular Dependencies
      timeout-minutes: 5
-     runs-on: ubuntu-20.04
+     runs-on: ubuntu-latest
      steps:
        - uses: actions/checkout@v2
        - name: Use Node.js ${{ matrix.NODE_VERSION }}
@@ -93,7 +93,7 @@ jobs:
   check-docker:
     name: Docker Build
     timeout-minutes: 15
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -110,7 +110,7 @@ jobs:
   check-lock-file-version:
     name: NPM Lock File Version
     timeout-minutes: 5
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Check NPM lock file version
@@ -180,7 +180,7 @@ jobs:
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     services:
       redis:
         image: redis
@@ -245,7 +245,7 @@ jobs:
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     services:
       redis:
         image: redis
