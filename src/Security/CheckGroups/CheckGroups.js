@@ -1,5 +1,5 @@
 /**
- * @module SecurityCheck
+ * @memberof module:SecurityCheck
  */
 
 /**

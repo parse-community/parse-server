@@ -81,7 +81,9 @@ module.exports.ParseServerOptions = {
   },
   allowOrigin: {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
-    help: 'Sets the origin to Access-Control-Allow-Origin',
+    help:
+      'Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.',
+    action: parsers.arrayParser,
   },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
@@ -224,6 +226,12 @@ module.exports.ParseServerOptions = {
       'Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.',
     action: parsers.booleanParser,
     default: true,
+  },
+  extendSessionOnUse: {
+    env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
+    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    action: parsers.booleanParser,
+    default: false,
   },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
@@ -974,6 +982,13 @@ module.exports.FileUploadOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  fileExtensions: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
+    help:
+      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.",
+    action: parsers.arrayParser,
+    default: ['^[^hH][^tT][^mM][^lL]?$'],
+  },
 };
 module.exports.DatabaseOptions = {
   enableSchemaHooks: {
@@ -998,6 +1013,16 @@ module.exports.AuthAdapter = {
   },
 };
 module.exports.LogLevels = {
+  cloudFunctionError: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_ERROR',
+    help: 'Log level used by the Cloud Code Functions on error. Default is `error`.',
+    default: 'error',
+  },
+  cloudFunctionSuccess: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_SUCCESS',
+    help: 'Log level used by the Cloud Code Functions on success. Default is `info`.',
+    default: 'info',
+  },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
