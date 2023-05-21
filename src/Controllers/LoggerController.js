@@ -16,7 +16,7 @@ export const LogOrder = {
   ASCENDING: 'asc',
 };
 
-const logLevels = ['error', 'warn', 'info', 'debug', 'verbose', 'silly'];
+export const logLevels = ['error', 'warn', 'info', 'debug', 'verbose', 'silly'];
 
 export class LoggerController extends AdaptableController {
   constructor(adapter, appId, options = { logLevel: 'info' }) {

@@ -1,5 +1,10 @@
-const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
+import { isDeepStrictEqual } from 'util';
+import { getRequestObject, resolveError } from './triggers';
+import Deprecator from './Deprecator/Deprecator';
+import { logger } from './logger';
+import RestQuery from './RestQuery';
+import RestWrite from './RestWrite';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -8,6 +13,7 @@ function Auth({
   config,
   cacheController = undefined,
   isMaster = false,
+  isMaintenance = false,
   isReadOnly = false,
   user,
   installationId,
@@ -16,6 +22,7 @@ function Auth({
   this.cacheController = cacheController || (config && config.cacheController);
   this.installationId = installationId;
   this.isMaster = isMaster;
+  this.isMaintenance = isMaintenance;
   this.user = user;
   this.isReadOnly = isReadOnly;
 
@@ -32,6 +39,9 @@ Auth.prototype.isUnauthenticated = function () {
   if (this.isMaster) {
     return false;
   }
+  if (this.isMaintenance) {
+    return false;
+  }
   if (this.user) {
     return false;
   }
@@ -43,6 +53,11 @@ function master(config) {
   return new Auth({ config, isMaster: true });
 }
 
+// A helper to get a maintenance-level Auth object
+function maintenance(config) {
+  return new Auth({ config, isMaintenance: true });
+}
+
 // A helper to get a master-level Auth object
 function readOnly(config) {
   return new Auth({ config, isMaster: true, isReadOnly: true });
@@ -52,6 +67,47 @@ function readOnly(config) {
 function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
+
+const throttle = {};
+const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
+  if (!config?.extendSessionOnUse) {
+    return;
+  }
+  clearTimeout(throttle[sessionToken]);
+  throttle[sessionToken] = setTimeout(async () => {
+    try {
+      if (!session) {
+        const { results } = await new RestQuery(
+          config,
+          master(config),
+          '_Session',
+          { sessionToken },
+          { limit: 1 }
+        ).execute();
+        console.log({ results });
+        session = results[0];
+      }
+      const lastUpdated = new Date(session?.updatedAt);
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (lastUpdated > yesterday || !session) {
+        return;
+      }
+      const expiresAt = config.generateSessionExpiresAt();
+      await new RestWrite(
+        config,
+        master(config),
+        '_Session',
+        { objectId: session.objectId },
+        { expiresAt: Parse._encode(expiresAt) }
+      ).execute();
+    } catch (e) {
+      if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
+        logger.error('Could not update session expiry: ', e);
+      }
+    }
+  }, 500);
+};
 
 // Returns a promise that resolves to an Auth object
 const getAuthForSessionToken = async function ({
@@ -65,6 +121,7 @@ const getAuthForSessionToken = async function ({
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
+      renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
         new Auth({
           config,
@@ -83,7 +140,7 @@ const getAuthForSessionToken = async function ({
       limit: 1,
       include: 'user',
     };
-
+    const RestQuery = require('./RestQuery');
     const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
     results = (await query.execute()).results;
   } else {
@@ -99,18 +156,20 @@ const getAuthForSessionToken = async function ({
   if (results.length !== 1 || !results[0]['user']) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
+  const session = results[0];
   const now = new Date(),
-    expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
+    expiresAt = session.expiresAt ? new Date(session.expiresAt.iso) : undefined;
   if (expiresAt < now) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
-  const obj = results[0]['user'];
+  const obj = session.user;
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
   if (cacheController) {
     cacheController.user.put(sessionToken, obj);
   }
+  renewSessionIfNeeded({ config, session, sessionToken });
   const userObject = Parse.Object.fromJSON(obj);
   return new Auth({
     config,
@@ -125,6 +184,7 @@ var getAuthForLegacySessionToken = function ({ config, sessionToken, installatio
   var restOptions = {
     limit: 1,
   };
+  const RestQuery = require('./RestQuery');
   var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
   return query.execute().then(response => {
     var results = response.results;
@@ -145,7 +205,7 @@ var getAuthForLegacySessionToken = function ({ config, sessionToken, installatio
 
 // Returns a promise that resolves to an array of role names
 Auth.prototype.getUserRoles = function () {
-  if (this.isMaster || !this.user) {
+  if (this.isMaster || this.isMaintenance || !this.user) {
     return Promise.resolve([]);
   }
   if (this.fetchedRoles) {
@@ -169,6 +229,7 @@ Auth.prototype.getRolesForUser = async function () {
         objectId: this.user.id,
       },
     };
+    const RestQuery = require('./RestQuery');
     await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
       results.push(result)
     );
@@ -262,6 +323,7 @@ Auth.prototype.getRolesByIds = async function (ins) {
       };
     });
     const restWhere = { roles: { $in: roles } };
+    const RestQuery = require('./RestQuery');
     await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
       results.push(result)
     );
@@ -307,11 +369,193 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
     });
 };
 
+const findUsersWithAuthData = (config, authData) => {
+  const providers = Object.keys(authData);
+  const query = providers
+    .reduce((memo, provider) => {
+      if (!authData[provider] || (authData && !authData[provider].id)) {
+        return memo;
+      }
+      const queryKey = `authData.${provider}.id`;
+      const query = {};
+      query[queryKey] = authData[provider].id;
+      memo.push(query);
+      return memo;
+    }, [])
+    .filter(q => {
+      return typeof q !== 'undefined';
+    });
+
+  return query.length > 0
+    ? config.database.find('_User', { $or: query }, { limit: 2 })
+    : Promise.resolve([]);
+};
+
+const hasMutatedAuthData = (authData, userAuthData) => {
+  if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
+  const mutatedAuthData = {};
+  Object.keys(authData).forEach(provider => {
+    // Anonymous provider is not handled this way
+    if (provider === 'anonymous') return;
+    const providerData = authData[provider];
+    const userProviderAuthData = userAuthData[provider];
+    if (!isDeepStrictEqual(providerData, userProviderAuthData)) {
+      mutatedAuthData[provider] = providerData;
+    }
+  });
+  const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
+  return { hasMutatedAuthData, mutatedAuthData };
+};
+
+const checkIfUserHasProvidedConfiguredProvidersForLogin = (
+  authData = {},
+  userAuthData = {},
+  config
+) => {
+  const savedUserProviders = Object.keys(userAuthData).map(provider => ({
+    name: provider,
+    adapter: config.authDataManager.getValidatorForProvider(provider).adapter,
+  }));
+
+  const hasProvidedASoloProvider = savedUserProviders.some(
+    provider =>
+      provider && provider.adapter && provider.adapter.policy === 'solo' && authData[provider.name]
+  );
+
+  // Solo providers can be considered as safe, so we do not have to check if the user needs
+  // to provide an additional provider to login. An auth adapter with "solo" (like webauthn) means
+  // no "additional" auth needs to be provided to login (like OTP, MFA)
+  if (hasProvidedASoloProvider) {
+    return;
+  }
+
+  const additionProvidersNotFound = [];
+  const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
+    if (provider && provider.adapter && provider.adapter.policy === 'additional') {
+      if (authData[provider.name]) {
+        return true;
+      } else {
+        // Push missing provider for error message
+        additionProvidersNotFound.push(provider.name);
+      }
+    }
+  });
+  if (hasProvidedAtLeastOneAdditionalProvider || !additionProvidersNotFound.length) {
+    return;
+  }
+
+  throw new Parse.Error(
+    Parse.Error.OTHER_CAUSE,
+    `Missing additional authData ${additionProvidersNotFound.join(',')}`
+  );
+};
+
+// Validate each authData step-by-step and return the provider responses
+const handleAuthDataValidation = async (authData, req, foundUser) => {
+  let user;
+  if (foundUser) {
+    user = Parse.User.fromJSON({ className: '_User', ...foundUser });
+    // Find user by session and current objectId; only pass user if it's the current user or master key is provided
+  } else if (
+    (req.auth &&
+      req.auth.user &&
+      typeof req.getUserId === 'function' &&
+      req.getUserId() === req.auth.user.id) ||
+    (req.auth && req.auth.isMaster && typeof req.getUserId === 'function' && req.getUserId())
+  ) {
+    user = new Parse.User();
+    user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
+    await user.fetch({ useMasterKey: true });
+  }
+
+  const { originalObject, updatedObject } = req.buildParseObjects();
+  const requestObject = getRequestObject(
+    undefined,
+    req.auth,
+    updatedObject,
+    originalObject || user,
+    req.config
+  );
+  // Perform validation as step-by-step pipeline for better error consistency
+  // and also to avoid to trigger a provider (like OTP SMS) if another one fails
+  const acc = { authData: {}, authDataResponse: {} };
+  const authKeys = Object.keys(authData).sort();
+  for (const provider of authKeys) {
+    let method = '';
+    try {
+      if (authData[provider] === null) {
+        acc.authData[provider] = null;
+        continue;
+      }
+      const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
+      const authProvider = (req.config.auth || {})[provider] || {};
+      if (authProvider.enabled == null) {
+        Deprecator.logRuntimeDeprecation({
+          usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
+          solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
+        });
+      }
+      if (!validator || authProvider.enabled === false) {
+        throw new Parse.Error(
+          Parse.Error.UNSUPPORTED_SERVICE,
+          'This authentication method is unsupported.'
+        );
+      }
+      let validationResult = await validator(authData[provider], req, user, requestObject);
+      method = validationResult && validationResult.method;
+      requestObject.triggerName = method;
+      if (validationResult && validationResult.validator) {
+        validationResult = await validationResult.validator();
+      }
+      if (!validationResult) {
+        acc.authData[provider] = authData[provider];
+        continue;
+      }
+      if (!Object.keys(validationResult).length) {
+        acc.authData[provider] = authData[provider];
+        continue;
+      }
+
+      if (validationResult.response) {
+        acc.authDataResponse[provider] = validationResult.response;
+      }
+      // Some auth providers after initialization will avoid to replace authData already stored
+      if (!validationResult.doNotSave) {
+        acc.authData[provider] = validationResult.save || authData[provider];
+      }
+    } catch (err) {
+      const e = resolveError(err, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Auth failed. Unknown error.',
+      });
+      const userString =
+        req.auth && req.auth.user ? req.auth.user.id : req.data.objectId || undefined;
+      logger.error(
+        `Failed running auth step ${method} for ${provider} for user ${userString} with Error: ` +
+          JSON.stringify(e),
+        {
+          authenticationStep: method,
+          error: e,
+          user: userString,
+          provider,
+        }
+      );
+      throw e;
+    }
+  }
+  return acc;
+};
+
 module.exports = {
   Auth,
   master,
+  maintenance,
   nobody,
   readOnly,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
+  findUsersWithAuthData,
+  hasMutatedAuthData,
+  checkIfUserHasProvidedConfiguredProvidersForLogin,
+  handleAuthDataValidation,
 };

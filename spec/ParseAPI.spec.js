@@ -951,57 +951,154 @@ describe('miscellaneous', function () {
       );
   });
 
-  it('should return the updated fields on PUT', done => {
+  it('return the updated fields on PUT', async () => {
     const obj = new Parse.Object('GameScore');
-    obj
-      .save({ a: 'hello', c: 1, d: ['1'], e: ['1'], f: ['1', '2'] })
-      .then(() => {
-        const headers = {
-          'Content-Type': 'application/json',
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Installation-Id': 'yolo',
-        };
-        request({
-          method: 'PUT',
-          headers: headers,
-          url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
-          body: JSON.stringify({
-            a: 'b',
-            c: { __op: 'Increment', amount: 2 },
-            d: { __op: 'Add', objects: ['2'] },
-            e: { __op: 'AddUnique', objects: ['1', '2'] },
-            f: { __op: 'Remove', objects: ['2'] },
-            selfThing: {
-              __type: 'Pointer',
-              className: 'GameScore',
-              objectId: obj.id,
-            },
-          }),
-        }).then(response => {
-          try {
-            const body = response.data;
-            expect(body.a).toBeUndefined();
-            expect(body.c).toEqual(3); // 2+1
-            expect(body.d.length).toBe(2);
-            expect(body.d.indexOf('1') > -1).toBe(true);
-            expect(body.d.indexOf('2') > -1).toBe(true);
-            expect(body.e.length).toBe(2);
-            expect(body.e.indexOf('1') > -1).toBe(true);
-            expect(body.e.indexOf('2') > -1).toBe(true);
-            expect(body.f.length).toBe(1);
-            expect(body.f.indexOf('1') > -1).toBe(true);
-            // return nothing on other self
-            expect(body.selfThing).toBeUndefined();
-            // updatedAt is always set
-            expect(body.updatedAt).not.toBeUndefined();
-          } catch (e) {
-            fail(e);
-          }
-          done();
-        });
+    const pointer = new Parse.Object('Child');
+    await pointer.save();
+    obj.set(
+      'point',
+      new Parse.GeoPoint({
+        latitude: 37.4848,
+        longitude: -122.1483,
       })
-      .catch(done.fail);
+    );
+    obj.set('array', ['obj1', 'obj2']);
+    obj.set('objects', { a: 'b' });
+    obj.set('string', 'abc');
+    obj.set('bool', true);
+    obj.set('number', 1);
+    obj.set('date', new Date());
+    obj.set('pointer', pointer);
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'X-Parse-Installation-Id': 'yolo',
+    };
+    const saveResponse = await request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore',
+      body: JSON.stringify({
+        a: 'hello',
+        c: 1,
+        d: ['1'],
+        e: ['1'],
+        f: ['1', '2'],
+        ...obj.toJSON(),
+      }),
+    });
+    expect(Object.keys(saveResponse.data).sort()).toEqual(['createdAt', 'objectId']);
+    obj.id = saveResponse.data.objectId;
+    const response = await request({
+      method: 'PUT',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
+      body: JSON.stringify({
+        a: 'b',
+        c: { __op: 'Increment', amount: 2 },
+        d: { __op: 'Add', objects: ['2'] },
+        e: { __op: 'AddUnique', objects: ['1', '2'] },
+        f: { __op: 'Remove', objects: ['2'] },
+        selfThing: {
+          __type: 'Pointer',
+          className: 'GameScore',
+          objectId: obj.id,
+        },
+      }),
+    });
+    const body = response.data;
+    expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'updatedAt']);
+    expect(body.a).toBeUndefined();
+    expect(body.c).toEqual(3); // 2+1
+    expect(body.d.length).toBe(2);
+    expect(body.d.indexOf('1') > -1).toBe(true);
+    expect(body.d.indexOf('2') > -1).toBe(true);
+    expect(body.e.length).toBe(2);
+    expect(body.e.indexOf('1') > -1).toBe(true);
+    expect(body.e.indexOf('2') > -1).toBe(true);
+    expect(body.f.length).toBe(1);
+    expect(body.f.indexOf('1') > -1).toBe(true);
+    expect(body.selfThing).toBeUndefined();
+    expect(body.updatedAt).not.toBeUndefined();
+  });
+
+  it('should response should not change with triggers', async () => {
+    const obj = new Parse.Object('GameScore');
+    const pointer = new Parse.Object('Child');
+    Parse.Cloud.beforeSave('GameScore', request => {
+      return request.object;
+    });
+    Parse.Cloud.afterSave('GameScore', request => {
+      return request.object;
+    });
+    await pointer.save();
+    obj.set(
+      'point',
+      new Parse.GeoPoint({
+        latitude: 37.4848,
+        longitude: -122.1483,
+      })
+    );
+    obj.set('array', ['obj1', 'obj2']);
+    obj.set('objects', { a: 'b' });
+    obj.set('string', 'abc');
+    obj.set('bool', true);
+    obj.set('number', 1);
+    obj.set('date', new Date());
+    obj.set('pointer', pointer);
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'X-Parse-Installation-Id': 'yolo',
+    };
+    const saveResponse = await request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore',
+      body: JSON.stringify({
+        a: 'hello',
+        c: 1,
+        d: ['1'],
+        e: ['1'],
+        f: ['1', '2'],
+        ...obj.toJSON(),
+      }),
+    });
+    expect(Object.keys(saveResponse.data).sort()).toEqual(['createdAt', 'objectId']);
+    obj.id = saveResponse.data.objectId;
+    const response = await request({
+      method: 'PUT',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
+      body: JSON.stringify({
+        a: 'b',
+        c: { __op: 'Increment', amount: 2 },
+        d: { __op: 'Add', objects: ['2'] },
+        e: { __op: 'AddUnique', objects: ['1', '2'] },
+        f: { __op: 'Remove', objects: ['2'] },
+        selfThing: {
+          __type: 'Pointer',
+          className: 'GameScore',
+          objectId: obj.id,
+        },
+      }),
+    });
+    const body = response.data;
+    expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'updatedAt']);
+    expect(body.a).toBeUndefined();
+    expect(body.c).toEqual(3); // 2+1
+    expect(body.d.length).toBe(2);
+    expect(body.d.indexOf('1') > -1).toBe(true);
+    expect(body.d.indexOf('2') > -1).toBe(true);
+    expect(body.e.length).toBe(2);
+    expect(body.e.indexOf('1') > -1).toBe(true);
+    expect(body.e.indexOf('2') > -1).toBe(true);
+    expect(body.f.length).toBe(1);
+    expect(body.f.indexOf('1') > -1).toBe(true);
+    expect(body.selfThing).toBeUndefined();
+    expect(body.updatedAt).not.toBeUndefined();
   });
 
   it('test cloud function error handling', done => {

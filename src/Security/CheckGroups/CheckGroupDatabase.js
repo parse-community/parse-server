@@ -1,16 +1,13 @@
-/**
- * @module SecurityCheck
- */
-
 import { Check } from '../Check';
 import CheckGroup from '../CheckGroup';
 import Config from '../../Config';
 import Parse from 'parse/node';
 
 /**
-* The security checks group for Parse Server configuration.
-* Checks common Parse Server parameters such as access keys.
-*/
+ * The security checks group for Parse Server configuration.
+ * Checks common Parse Server parameters such as access keys
+ * @memberof module:SecurityCheck
+ */
 class CheckGroupDatabase extends CheckGroup {
   setName() {
     return 'Database';
@@ -23,7 +20,8 @@ class CheckGroupDatabase extends CheckGroup {
       new Check({
         title: 'Secure database password',
         warning: 'The database password is insecure and vulnerable to brute force attacks.',
-        solution: 'Choose a longer and/or more complex password with a combination of upper- and lowercase characters, numbers and special characters.',
+        solution:
+          'Choose a longer and/or more complex password with a combination of upper- and lowercase characters, numbers and special characters.',
         check: () => {
           const password = databaseUrl.match(/\/\/\S+:(\S+)@/)[1];
           const hasUpperCase = /[A-Z]/.test(password);
