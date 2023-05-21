@@ -492,7 +492,7 @@ module.exports.ParseServerOptions = {
   sendUserEmailVerification: {
     env: 'PARSE_SERVER_SEND_USER_EMAIL_VERIFICATION',
     help:
-      'Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for condiitonal email sending.<br><br>Default is `true`.<br>',
+      'Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.<br><br>Default is `true`.<br>',
     action: parsers.booleanParser,
     default: true,
   },

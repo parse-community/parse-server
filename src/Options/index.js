@@ -181,7 +181,7 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   emailVerifyTokenReuseIfValid: ?boolean;
-  /* Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for condiitonal email sending.
+  /* Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.
   <br><br>
   Default is `true`.
   <br>

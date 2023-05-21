@@ -97,7 +97,7 @@
  * @property {Any} trustProxy The trust proxy settings. It is important to understand the exact setup of the reverse proxy, since this setting will trust values provided in the Parse Server API request. See the <a href="https://expressjs.com/en/guide/behind-proxies.html">express trust proxy settings</a> documentation. Defaults to `false`.
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
- * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for condiitonal verification.<br><br>Default is `false`.
+ * @property {Boolean} verifyUserEmails Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.
  * @property {String} webhookKey Key sent with outgoing webhook calls
  */
 
