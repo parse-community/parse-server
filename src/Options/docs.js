@@ -88,7 +88,7 @@
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
  * @property {SchemaOptions} schema Defined schema
  * @property {SecurityOptions} security The security options to identify and report weak security settings.
- * @property {Boolean} sendUserEmailVerification Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for condiitonal email sending.<br><br>Default is `true`.<br>
+ * @property {Boolean} sendUserEmailVerification Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.<br><br>Default is `true`.<br>
  * @property {Function} serverCloseComplete Callback when server has closed
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year

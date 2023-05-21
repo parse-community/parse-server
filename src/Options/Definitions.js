@@ -542,7 +542,7 @@ module.exports.ParseServerOptions = {
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
     help:
-      'Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for condiitonal verification.<br><br>Default is `false`.',
+      'Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.',
     action: parsers.booleanParser,
     default: false,
   },
