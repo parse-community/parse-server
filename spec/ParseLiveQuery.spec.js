@@ -2,6 +2,7 @@
 const Auth = require('../lib/Auth');
 const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
+const triggers = require('../lib/triggers');
 const validatorFail = () => {
   throw 'you are not authorized';
 };
@@ -1211,5 +1212,26 @@ describe('ParseLiveQuery', function () {
     const secondPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
     object.set({ location: secondPoint });
     await object.save();
+  });
+
+  it('prevent afterSave trigger if not exists', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    spyOn(triggers, 'maybeRunTrigger').and.callThrough();
+    const object1 = new TestObject();
+    const object2 = new TestObject();
+    const object3 = new TestObject();
+    await Parse.Object.saveAll([object1, object2, object3]);
+
+    expect(triggers.maybeRunTrigger).toHaveBeenCalledTimes(0);
+    expect(object1.id).toBeDefined();
+    expect(object2.id).toBeDefined();
+    expect(object3.id).toBeDefined();
   });
 });

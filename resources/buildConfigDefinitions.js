@@ -161,6 +161,9 @@ function mapperFor(elt, t) {
     if (type == 'NumberOrBoolean') {
       return wrap(t.identifier('numberOrBooleanParser'));
     }
+    if (type === 'StringOrStringArray') {
+      return wrap(t.identifier('arrayParser'));
+    }
     return wrap(t.identifier('objectParser'));
   }
 }
@@ -277,6 +280,9 @@ function inject(t, list) {
       if (type === 'Adapter') {
         const adapterType = elt.typeAnnotation.typeParameters.params[0].id.name;
         type = `Adapter<${adapterType}>`;
+      }
+      if (type === 'StringOrStringArray') {
+        type = 'String|String[]';
       }
       comments += ` * @property {${type}} ${elt.name} ${elt.help}\n`;
       const obj = t.objectExpression(props);

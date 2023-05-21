@@ -146,7 +146,7 @@ export class FunctionsRouter extends PromiseRouter {
         result => {
           try {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-            logger.info(
+            logger[req.config.logLevels.cloudFunctionSuccess](
               `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
               {
                 functionName,
@@ -161,7 +161,7 @@ export class FunctionsRouter extends PromiseRouter {
         },
         error => {
           try {
-            logger.error(
+            logger[req.config.logLevels.cloudFunctionError](
               `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
                 JSON.stringify(error),
               {
