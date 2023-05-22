@@ -342,20 +342,7 @@ Auth.prototype._loadRoles = async function () {
     return this.userRoles;
   }
 
-  const rolesMap = results.reduce(
-    (m, r) => {
-      m.names.push(r.name);
-      m.ids.push(r.objectId);
-      return m;
-    },
-    { ids: [], names: [] }
-  );
-
-  // run the recursive finding
-  const roleNames = await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
-  this.userRoles = roleNames.map(r => {
-    return 'role:' + r;
-  });
+  this.userRoles = [...new Set(results.map(({ name }) => `role:${name}`))];
   this.fetchedRoles = true;
   this.rolePromise = null;
   this.cacheRoles();

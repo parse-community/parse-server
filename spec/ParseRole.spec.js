@@ -184,11 +184,11 @@ describe('Parse Role testing', () => {
 
         // 1 Query for the initial setup
         // 1 query for the parent roles
-        expect(restExecute.calls.count()).toEqual(2);
+        expect(restExecute.calls.count()).toEqual(1);
 
         // 1 call for the 1st layer of roles
         // 1 call for the 2nd layer
-        expect(getAllRolesSpy.calls.count()).toEqual(2);
+        expect(getAllRolesSpy.calls.count()).toEqual(0);
         done();
       })
       .catch(() => {
