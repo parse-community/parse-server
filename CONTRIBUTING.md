@@ -496,7 +496,6 @@ The following changes are done in the `alpha` branch, before publishing the last
 - Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
 - Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
 
-
 ### Publishing Release (forward-merge):
 
 1. Create new temporary branch `build` on branch `beta`.
@@ -547,6 +546,7 @@ The following changes are done in the `alpha` branch, before publishing the last
 1. Create LTS branch `release-#.x.x` off the latest version tag on `release` branch.
 2. Create temporary branch `build-release` off branch `beta` and create a pull request with `release` as the base branch.
 3. Merge branch `build-release` into `release`. Given that there will be breaking changes, a new major release will be created. In the unlikely case that there have been no breaking changes between the previous major release and the upcoming release, a major version increment has to be triggered manually. See the docs of the release automation framework for how to do that.
+4. Add newly created LTS branch `release-#.x.x` from step 1 to [Snyk](https://snyk.io) so that Snyk opens pull requests for the LTS branch; remove previously existing LTS branch `release-#.x.x` from Snyk.
 
 ## Versioning
 
