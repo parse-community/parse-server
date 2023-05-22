@@ -1,5 +1,5 @@
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
-fdescribe('rate limit', () => {
+describe('rate limit', () => {
   it('can limit cloud functions', async () => {
     Parse.Cloud.define('test', () => 'Abc');
     await reconfigureServer({
