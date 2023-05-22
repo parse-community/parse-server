@@ -493,7 +493,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_SEND_USER_EMAIL_VERIFICATION',
     help:
       'Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.<br><br>Default is `true`.<br>',
-    action: parsers.booleanParser,
     default: true,
   },
   serverCloseComplete: {
@@ -543,7 +542,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
     help:
       'Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.',
-    action: parsers.booleanParser,
     default: false,
   },
   webhookKey: {

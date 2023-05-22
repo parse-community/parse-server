@@ -157,7 +157,7 @@ export interface ParseServerOptions {
   <br><br>
   Default is `false`.
   :DEFAULT: false */
-  verifyUserEmails: ?boolean;
+  verifyUserEmails: ?(boolean | void);
   /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.
   <br><br>
   Default is `false`.
@@ -186,7 +186,7 @@ export interface ParseServerOptions {
   Default is `true`.
   <br>
   :DEFAULT: true */
-  sendUserEmailVerification: ?boolean;
+  sendUserEmailVerification: ?(boolean | void);
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
