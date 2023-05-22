@@ -9,7 +9,7 @@ import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
-import pathToRegexp from 'path-to-regexp';
+import { pathToRegexp } from 'path-to-regexp';
 import ipRangeCheck from 'ip-range-check';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
@@ -512,8 +512,12 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
+  let transformPath = route.requestPath.replaceAll('/*', '/(.*)');
+  if (transformPath === '*') {
+    transformPath = '(.*)';
+  }
   config.rateLimits.push({
-    path: pathToRegexp(route.requestPath),
+    path: pathToRegexp(transformPath),
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
