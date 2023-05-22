@@ -317,54 +317,41 @@ describe('AudiencesRouter', () => {
     );
   });
 
-  it_exclude_dbs(['postgres'])('should support legacy parse.com audience fields', done => {
+  it_exclude_dbs(['postgres'])('should support legacy parse.com audience fields', async () => {
     const database = Config.get(Parse.applicationId).database.adapter.database;
     const now = new Date();
-    Parse._request(
+    let audience = await Parse._request(
       'POST',
       'push_audiences',
       { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
       { useMasterKey: true }
-    ).then(audience => {
-      database
-        .collection('test__Audience')
-        .updateOne(
-          { _id: audience.objectId },
-          {
-            $set: {
-              times_used: 1,
-              _last_used: now,
-            },
-          }
-        )
-        .then(result => {
-          expect(result).toBeTruthy();
-          database
-            .collection('test__Audience')
-            .find({ _id: audience.objectId })
-            .toArray((error, rows) => {
-              expect(error).toEqual(undefined);
-              expect(rows[0]['times_used']).toEqual(1);
-              expect(rows[0]['_last_used']).toEqual(now);
-              Parse._request(
-                'GET',
-                'push_audiences/' + audience.objectId,
-                {},
-                { useMasterKey: true }
-              )
-                .then(audience => {
-                  expect(audience.name).toEqual('My Audience');
-                  expect(audience.query.deviceType).toEqual('ios');
-                  expect(audience.timesUsed).toEqual(1);
-                  expect(audience.lastUsed).toEqual(now.toISOString());
-                  done();
-                })
-                .catch(error => {
-                  done.fail(error);
-                });
-            });
-        });
-    });
+    );
+    const result = await database.collection('test__Audience').updateOne(
+      { _id: audience.objectId },
+      {
+        $set: {
+          times_used: 1,
+          _last_used: now,
+        },
+      }
+    );
+    expect(result).toBeTruthy();
+    const rows = await database
+      .collection('test__Audience')
+      .find({ _id: audience.objectId })
+      .toArray();
+    expect(rows[0]['times_used']).toEqual(1);
+    expect(rows[0]['_last_used']).toEqual(now);
+    audience = await Parse._request(
+      'GET',
+      'push_audiences/' + audience.objectId,
+      {},
+      { useMasterKey: true }
+    );
+    expect(audience.name).toEqual('My Audience');
+    expect(audience.query.deviceType).toEqual('ios');
+    expect(audience.timesUsed).toEqual(1);
+    expect(audience.lastUsed).toEqual(now.toISOString());
   });
 
   it('should be able to search on audiences', done => {
