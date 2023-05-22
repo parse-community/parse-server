@@ -1283,7 +1283,7 @@ class DatabaseController {
                   return this.adapter.distinct(className, schema, query, distinct);
                 }
               } else if (pipeline) {
-                if (!classExists) {
+                if (!classExists && className.slice(0, 5) !== '_Join') {
                   return [];
                 } else {
                   return this.adapter.aggregate(

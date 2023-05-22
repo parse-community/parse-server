@@ -222,17 +222,96 @@ Auth.prototype.getRolesForUser = async function () {
   //Stack all Parse.Role
   const results = [];
   if (this.config) {
-    const restWhere = {
-      users: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.user.id,
-      },
-    };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
+    const prefix = this.config.databaseAdapter._collectionPrefix;
+    const result = await new RestQuery(
+      this.config,
+      master(this.config),
+      '_Join:users:_Role',
+      {},
+      {
+        pipeline: [
+          {
+            $match: {
+              relatedId: this.user.id,
+            },
+          },
+          {
+            $graphLookup: {
+              from: `${prefix}_Join:roles:_Role`,
+              startWith: '$owningId',
+              connectFromField: 'owningId',
+              connectToField: 'relatedId',
+              as: 'childRolePath',
+            },
+          },
+          {
+            $facet: {
+              directRoles: [
+                {
+                  $lookup: {
+                    from: `${prefix}_Role`,
+                    localField: 'owningId',
+                    foreignField: '_id',
+                    as: 'Roles',
+                  },
+                },
+                {
+                  $unwind: {
+                    path: '$Roles',
+                  },
+                },
+                {
+                  $replaceRoot: {
+                    newRoot: {
+                      $ifNull: ['$Roles', { $literal: {} }],
+                    },
+                  },
+                },
+                {
+                  $project: {
+                    name: 1,
+                  },
+                },
+              ],
+              childRoles: [
+                {
+                  $lookup: {
+                    from: `${prefix}_Role`,
+                    localField: 'childRolePath.owningId',
+                    foreignField: '_id',
+                    as: 'Roles',
+                  },
+                },
+                {
+                  $unwind: {
+                    path: '$Roles',
+                  },
+                },
+                {
+                  $replaceRoot: {
+                    newRoot: {
+                      $ifNull: ['$Roles', { $literal: {} }],
+                    },
+                  },
+                },
+                {
+                  $project: {
+                    name: 1,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      }
+    ).execute();
+    const { directRoles, childRoles } = result.results[0] || {
+      directRoles: [],
+      childRoles: [],
+    };
+    results.push(...directRoles);
+    results.push(...childRoles);
   } else {
     await new Parse.Query(Parse.Role)
       .equalTo('users', this.user)
