@@ -1,7 +1,3 @@
-/**
- * @module SecurityCheck
- */
-
 import { Check } from '../Check';
 import CheckGroup from '../CheckGroup';
 import Config from '../../Config';
@@ -10,6 +6,7 @@ import Parse from 'parse/node';
 /**
  * The security checks group for Parse Server configuration.
  * Checks common Parse Server parameters such as access keys.
+ * @memberof module:SecurityCheck
  */
 class CheckGroupServerConfig extends CheckGroup {
   setName() {

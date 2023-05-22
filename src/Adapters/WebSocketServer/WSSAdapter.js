@@ -11,10 +11,8 @@
 // Default is WSAdapter. The above functions will be binded.
 
 /**
- * @module Adapters
- */
-/**
- * @interface WSSAdapter
+ * @interface
+ * @memberof module:Adapters
  */
 export class WSSAdapter {
   /**
