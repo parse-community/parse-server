@@ -223,7 +223,7 @@ Auth.prototype.getRolesForUser = async function () {
   const results = [];
   if (this.config) {
     const RestQuery = require('./RestQuery');
-    const prefix = this.config.databaseAdapter._collectionPrefix;
+    const prefix = this.config.databaseAdapter._collectionPrefix || '';
     const result = await new RestQuery(
       this.config,
       master(this.config),
