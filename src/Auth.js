@@ -310,8 +310,13 @@ Auth.prototype.getRolesForUser = async function () {
       directRoles: [],
       childRoles: [],
     };
-    results.push(...directRoles);
-    results.push(...childRoles);
+    const roles = [...directRoles, ...childRoles];
+    for (const role of roles) {
+      const roleName = `role:${role.name}`;
+      if (!results.includes(roleName)) {
+        results.push(role);
+      }
+    }
   } else {
     await new Parse.Query(Parse.Role)
       .equalTo('users', this.user)
@@ -337,12 +342,29 @@ Auth.prototype._loadRoles = async function () {
     this.userRoles = [];
     this.fetchedRoles = true;
     this.rolePromise = null;
-
     this.cacheRoles();
     return this.userRoles;
   }
 
-  this.userRoles = [...new Set(results.map(({ name }) => `role:${name}`))];
+  if (typeof results[0] === 'object') {
+    const rolesMap = results.reduce(
+      (m, r) => {
+        m.names.push(r.name);
+        m.ids.push(r.objectId);
+        return m;
+      },
+      { ids: [], names: [] }
+    );
+
+    // run the recursive finding
+    const roleNames = await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
+    this.userRoles = roleNames.map(r => {
+      return 'role:' + r;
+    });
+  } else {
+    this.userRoles = results;
+  }
+
   this.fetchedRoles = true;
   this.rolePromise = null;
   this.cacheRoles();
