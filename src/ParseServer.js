@@ -391,6 +391,7 @@ function addParseCloud() {
   Parse.Query.prototype._subscribe = Parse.Query.prototype.subscribe;
   Parse.Query.prototype.subscribe = async function (...args) {
     try {
+      Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient(null);
       return await this._subscribe(...args);
     } catch (e) {
       const emitter = {
