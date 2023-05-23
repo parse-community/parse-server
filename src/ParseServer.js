@@ -388,6 +388,22 @@ function addParseCloud() {
     configurable: true,
   });
   Object.assign(Parse.Cloud, ParseCloud);
+  Parse.Query.prototype._subscribe = Parse.Query.prototype.subscribe;
+  Parse.Query.prototype.subscribe = async function (...args) {
+    try {
+      return await this._subscribe(...args);
+    } catch (e) {
+      const emitter = {
+        on(message, func) {
+          this[message] = func;
+        },
+      };
+      setTimeout(() => {
+        emitter.error?.call(emitter, e.message);
+      }, 0);
+      return emitter;
+    }
+  };
   global.Parse = Parse;
 }
 
