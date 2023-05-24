@@ -1,3 +1,10 @@
+## [5.5.1](https://github.com/parse-community/parse-server/compare/5.5.0...5.5.1) (2023-05-23)
+
+
+### Bug Fixes
+
+* Security upgrade @parse/push-adapter from 4.1.2 to 4.1.3 ([#8571](https://github.com/parse-community/parse-server/issues/8571)) ([8e83cac](https://github.com/parse-community/parse-server/commit/8e83cac02d6258e9b84b69d4e76da7d771a5eac7))
+
 # [5.5.0](https://github.com/parse-community/parse-server/compare/5.4.3...5.5.0) (2023-05-20)
 
 
