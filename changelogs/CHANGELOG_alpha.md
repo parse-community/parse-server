@@ -1,3 +1,10 @@
+# [6.1.0-alpha.13](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.12...6.1.0-alpha.13) (2023-05-25)
+
+
+### Bug Fixes
+
+* Rate limit feature is incompatible with Node 14 ([#8578](https://github.com/parse-community/parse-server/issues/8578)) ([f911f2c](https://github.com/parse-community/parse-server/commit/f911f2cd3a8c45cd326272dcd681532764a3761e))
+
 # [6.1.0-alpha.12](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.11...6.1.0-alpha.12) (2023-05-19)
 
 
