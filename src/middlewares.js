@@ -512,7 +512,7 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
-  let transformPath = route.requestPath.replaceAll('/*', '/(.*)');
+  let transformPath = route.requestPath.split('/*').join('/(.*)');
   if (transformPath === '*') {
     transformPath = '(.*)';
   }
