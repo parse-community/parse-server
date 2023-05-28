@@ -1352,6 +1352,27 @@ describe('Cloud Code', () => {
       });
   });
 
+  it('allow cloud to encode Parse Objects', async () => {
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('deleted', false);
+    await user.signUp();
+    Parse.Cloud.define(
+      'deleteAccount',
+      async req => {
+        expect(req.params.object instanceof Parse.Object).toBeTrue();
+        req.params.object.set('deleted', true);
+        await req.params.object.save(null, { useMasterKey: true });
+        return 'Object deleted';
+      },
+      {
+        requireMaster: true,
+      }
+    );
+    await Parse.Cloud.run('deleteAccount', { object: user.toPointer() }, { useMasterKey: true });
+  });
+
   it('beforeSave should not affect fetched pointers', done => {
     Parse.Cloud.beforeSave('BeforeSaveUnchanged', () => {});
 
