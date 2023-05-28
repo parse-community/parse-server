@@ -2040,7 +2040,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (where.pattern.length > 0 || !estimate) {
       qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
-      qs = 'SELECT n_live_tup AS approximate_row_count FROM pg_stat_all_tables WHERE relname = $1;';
+      qs = 'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
     }
 
     return this._client
