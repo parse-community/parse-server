@@ -747,9 +747,11 @@ RestWrite.prototype._validateEmail = function () {
         (Object.keys(this.data.authData).length === 1 &&
           Object.keys(this.data.authData)[0] === 'anonymous')
       ) {
-        // We updated the email, send a new validation
-        this.storage['sendVerificationEmail'] = true;
-        this.config.userController.setEmailVerifyToken(this.data);
+        // We updated the email, send a new verification unless the master key explicitly suppresses it
+        if (!this.auth.isMaster || !this.data['emailVerified']) {
+          this.storage['sendVerificationEmail'] = true;
+          this.config.userController.setEmailVerifyToken(this.data);
+        }
       }
     });
 };
@@ -878,8 +880,10 @@ RestWrite.prototype.createSessionTokenIfNeeded = function () {
     this.config.preventLoginWithUnverifiedEmail && // no login without verification
     this.config.verifyUserEmails
   ) {
-    // verification is on
-    return; // do not create the session token in that case!
+    // verification is on and the master key has not explicitly suppressed verification
+    if (!this.auth.isMaster || !this.data['emailVerified']) {
+      return; // do not create the session token in that case!
+    }
   }
   return this.createSessionToken();
 };
