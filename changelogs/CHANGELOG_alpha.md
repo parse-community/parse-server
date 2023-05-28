@@ -1,3 +1,10 @@
+# [6.1.0-alpha.15](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.14...6.1.0-alpha.15) (2023-05-28)
+
+
+### Bug Fixes
+
+* Inaccurate table total row count for PostgreSQL ([#8511](https://github.com/parse-community/parse-server/issues/8511)) ([0823a02](https://github.com/parse-community/parse-server/commit/0823a02fbf80bc88dc403bc47e9f5c6597ea78b4))
+
 # [6.1.0-alpha.14](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.13...6.1.0-alpha.14) (2023-05-27)
 
 
