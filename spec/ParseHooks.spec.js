@@ -208,7 +208,7 @@ describe('Hooks', () => {
           expect(err).not.toBe(null);
           if (err) {
             expect(err.code).toBe(143);
-            expect(err.message).toBe('function name: my_new_function already exits');
+            expect(err.message).toBe('function name: my_new_function already exists');
           }
           return Parse.Hooks.removeFunction('my_new_function');
         }
