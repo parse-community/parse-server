@@ -42,7 +42,7 @@
     "ip-range-check": "0.2.0",
     "jsonwebtoken": "9.0.0",
     "jwks-rsa": "2.1.5",
-    "ldapjs": "2.3.3",
+    "ldapjs": "3.0.2",
     "lodash": "4.17.21",
     "lru-cache": "9.1.1",
     "mime": "3.0.0",
