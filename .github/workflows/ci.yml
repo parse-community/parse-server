@@ -94,7 +94,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-definitions:
+  check-éefinitions-a:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
@@ -115,7 +115,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-definitions:
+  check-definitions-b:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
@@ -136,7 +136,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-definitions:
+  check-definitions-c:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
@@ -157,7 +157,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-definitions:
+  check-definitions-d:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
@@ -178,7 +178,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-definitions:
+  check-definitions-e:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
@@ -199,7 +199,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-definitions:
+  check-definitions-f:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
@@ -220,7 +220,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-definitions:
+  check-definitions-g:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
