@@ -136,5 +136,5 @@ Command.prototype.getOptions = function () {
   }, {});
 };
 
-export default new Command();
+export default new Command().storeOptionsAsProperties();
 /* eslint-enable no-console */
