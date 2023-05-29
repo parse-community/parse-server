@@ -26,17 +26,14 @@ const { AbortController } = require("node-abort-controller");
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
     fs.readFile('./src/Options/docs.js', 'utf8'),
   ]);
-  const getDifference = (s, t) => {
-    s = [...s].sort();
-    t = [...t].sort();
-    return t.find((char, i) => char !== s[i]);
-  };
 
   if (currentDefinitions !== newDefinitions) {
-    console.log("DEFINITIONS ARE DIFFERENT: ", getDifference(currentDefinitions, newDefinitions));
+    console.log(JSON.stringify(currentDefinitions, null, 2));
+    console.log(JSON.stringify(newDefinitions, null, 2));
   }
   if (currentDocs !== newDocs) {
-    console.log("DOCS ARE DIFFERENT: ", getDifference(currentDocs, newDocs));
+    console.log(JSON.stringify(currentDocs, null, 2));
+    console.log(JSON.stringify(newDocs, null, 2));
   }
   if (currentDefinitions !== newDefinitions || currentDocs !== newDocs) {
     console.error(
