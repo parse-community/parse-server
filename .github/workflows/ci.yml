@@ -94,7 +94,7 @@ jobs:
         run: npm ci
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
-  check-éefinitions-a:
+  check-definitions-a:
      name: Check Definitions
      timeout-minutes: 5
      runs-on: ubuntu-latest
