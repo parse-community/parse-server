@@ -53,7 +53,7 @@
     "pg-monitor": "2.0.0",
     "pg-promise": "11.5.0",
     "pluralize": "8.0.0",
-    "rate-limit-redis": "3.0.1",
+    "rate-limit-redis": "3.0.2",
     "redis": "4.6.6",
     "semver": "7.3.8",
     "subscriptions-transport-ws": "0.11.0",
