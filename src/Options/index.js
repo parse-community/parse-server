@@ -165,7 +165,7 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   preventLoginWithUnverifiedEmail: ?boolean;
-  /* Set to `true` to prevent a user from signing up if the email has not yet been verified and email verification is required.
+  /* If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.
   <br><br>
   Default is `false`.
   <br>
