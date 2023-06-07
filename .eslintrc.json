@@ -25,5 +25,8 @@
         "space-infix-ops": "error",
         "no-useless-escape": "off",
         "require-atomic-updates": "off"
+    },
+    "globals": {
+        "Parse": true
     }
 }
