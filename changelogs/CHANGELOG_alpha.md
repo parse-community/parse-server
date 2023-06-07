@@ -1,3 +1,10 @@
+# [6.1.0-alpha.17](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.16...6.1.0-alpha.17) (2023-06-07)
+
+
+### Features
+
+* Add new Parse Server option `preventSignupWithUnverifiedEmail` to prevent returning a user without session token on sign-up with unverified email address ([#8451](https://github.com/parse-community/parse-server/issues/8451)) ([82da308](https://github.com/parse-community/parse-server/commit/82da30842a55980aa90cb7680fbf6db37ee16dab))
+
 # [6.1.0-alpha.16](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.15...6.1.0-alpha.16) (2023-05-28)
 
 
