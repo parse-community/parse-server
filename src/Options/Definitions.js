@@ -415,7 +415,7 @@ module.exports.ParseServerOptions = {
   preventSignupWithUnverifiedEmail: {
     env: 'PARSE_SERVER_PREVENT_SIGNUP_WITH_UNVERIFIED_EMAIL',
     help:
-      'Set to `true` to prevent a user from signing up if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
+      "If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.",
     action: parsers.booleanParser,
     default: false,
   },
