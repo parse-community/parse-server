@@ -1,3 +1,10 @@
+# [6.1.0-alpha.18](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.17...6.1.0-alpha.18) (2023-06-08)
+
+
+### Features
+
+* Add support for `$eq` query constraint in LiveQuery ([#8614](https://github.com/parse-community/parse-server/issues/8614)) ([656d673](https://github.com/parse-community/parse-server/commit/656d673cf5dea354e4f2b3d4dc2b29a41d311b3e))
+
 # [6.1.0-alpha.17](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.16...6.1.0-alpha.17) (2023-06-07)
 
 
