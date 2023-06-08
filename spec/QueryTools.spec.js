@@ -125,6 +125,35 @@ describe('matchesQuery', function () {
     expect(matchesQuery(obj, q)).toBe(false);
   });
 
+  it('matches queries with eq constraint', function () {
+    const obj = {
+      objectId: 'Person2',
+      score: 12,
+      name: 'Tom',
+    };
+
+    const q1 = {
+      objectId: {
+        $eq: 'Person2',
+      },
+    };
+
+    const q2 = {
+      score: {
+        $eq: 12,
+      },
+    };
+
+    const q3 = {
+      name: {
+        $eq: 'Tom',
+      },
+    };
+    expect(matchesQuery(obj, q1)).toBe(true);
+    expect(matchesQuery(obj, q2)).toBe(true);
+    expect(matchesQuery(obj, q3)).toBe(true);
+  });
+
   it('matches on equality queries', function () {
     const day = new Date();
     const location = new Parse.GeoPoint({
