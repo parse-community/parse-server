@@ -18,7 +18,7 @@ const responses = {
   microsoft: { id: 'userId', mail: 'userMail' },
 };
 
-fdescribe('AuthenticationProviders', function () {
+describe('AuthenticationProviders', function () {
   [
     'apple',
     'gcenter',
@@ -357,7 +357,7 @@ fdescribe('AuthenticationProviders', function () {
     expect(typeof authAdapter.validateAppId).toBe('function');
   }
 
-  it('properly loads custom adapter', async () => {
+  it('properly loads custom adapter', done => {
     const validAuthData = {
       id: 'hello',
       token: 'world',
@@ -377,8 +377,6 @@ fdescribe('AuthenticationProviders', function () {
     const authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
     const appIdSpy = spyOn(adapter, 'validateAppId').and.callThrough();
 
-    await reconfigureServer({ auth: { customAuthentication: adapter } });
-
     const authenticationHandler = authenticationLoader({
       customAuthentication: adapter,
     });
@@ -387,56 +385,98 @@ fdescribe('AuthenticationProviders', function () {
     const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    await validator(validAuthData, {}, {});
-    expect(authDataSpy).toHaveBeenCalled();
-
-    expect(appIdSpy).not.toHaveBeenCalled();
+    validator(validAuthData, {}, {}).then(
+      () => {
+        expect(authDataSpy).toHaveBeenCalled();
+        // AppIds are not provided in the adapter, should not be called
+        expect(appIdSpy).not.toHaveBeenCalled();
+        done();
+      },
+      err => {
+        jfail(err);
+        done();
+      }
+    );
   });
 
-  it('properly loads custom adapter module object', async () => {
-    await reconfigureServer({
-      auth: {
-        customAuthentication: {
-          validateAppId() {},
-          validateAuthData() {},
-        },
+  it('should cache adapter', async () => {
+    const adapter = {
+      validateAppId() {
+        return Promise.resolve();
       },
+      validateAuthData() {
+        return Promise.resolve();
+      },
+      validateOptions() {},
+    };
+
+    const authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
+    const optionsSpy = spyOn(adapter, 'validateOptions').and.callThrough();
+
+    await reconfigureServer({ auth: { customAuthentication: adapter } });
+
+    expect(optionsSpy).toHaveBeenCalled();
+    await Parse.User.logInWith('customAuthentication', {
+      authData: { id: 'user1', token: 'fakeToken1' },
     });
-    const authenticationHandler = authenticationLoader();
+    await Parse.User.logInWith('customAuthentication', {
+      authData: { id: 'user2', token: 'fakeToken2' },
+    });
+    expect(authDataSpy).toHaveBeenCalled();
+    expect(optionsSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('properly loads custom adapter module object', done => {
+    const authenticationHandler = authenticationLoader({
+      customAuthentication: path.resolve('./spec/support/CustomAuth.js'),
+    });
 
     validateAuthenticationHandler(authenticationHandler);
     const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
-    await validator(
+    validator(
       {
         token: 'my-token',
       },
       {},
       {}
+    ).then(
+      () => {
+        done();
+      },
+      err => {
+        jfail(err);
+        done();
+      }
     );
   });
 
-  it('properly loads custom adapter module object (again)', async () => {
-    await reconfigureServer({
-      auth: {
-        customAuthentication: {
-          validateAppId() {},
-          validateAuthData() {},
-        },
+  it('properly loads custom adapter module object (again)', done => {
+    const authenticationHandler = authenticationLoader({
+      customAuthentication: {
+        module: path.resolve('./spec/support/CustomAuthFunction.js'),
+        options: { token: 'valid-token' },
       },
     });
-    const authenticationHandler = authenticationLoader();
 
     validateAuthenticationHandler(authenticationHandler);
     const { validator } = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
-    await validator(
+    validator(
       {
         token: 'valid-token',
       },
       {},
       {}
+    ).then(
+      () => {
+        done();
+      },
+      err => {
+        jfail(err);
+        done();
+      }
     );
   });
 

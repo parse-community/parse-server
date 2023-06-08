@@ -7,7 +7,6 @@ import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
-import AuthAdapter from './Adapters/Auth';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
@@ -58,9 +57,6 @@ export class Config {
     Config.validateControllers(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
-    if (serverConfiguration.auth) {
-      serverConfiguration.authStore = AuthAdapter.validateAuthConfig(serverConfiguration.auth);
-    }
     return serverConfiguration;
   }
 

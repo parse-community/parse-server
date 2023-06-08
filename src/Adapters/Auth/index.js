@@ -1,7 +1,6 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
-import Config from '../../Config';
 const apple = require('./apple');
 const gcenter = require('./gcenter');
 const gpgames = require('./gpgames');
@@ -135,9 +134,8 @@ function authDataValidator(provider, adapter, appIds, options) {
   };
 }
 
-function loadAuthAdapter(provider, authOptions, cached) {
-  const config = Config.get(Parse.applicationId);
-  if (!cached) {
+function loadAuthAdapter(provider, authOptions, adapter) {
+  if (!adapter) {
     let defaultAdapter = providers[provider];
     // authOptions can contain complete custom auth adapters or
     // a default auth adapter like Facebook
@@ -167,7 +165,7 @@ function loadAuthAdapter(provider, authOptions, cached) {
       'afterFind',
     ];
 
-    let adapter = Object.assign({}, defaultAdapter);
+    adapter = Object.assign({}, defaultAdapter);
     if (defaultAdapter instanceof AuthAdapter) {
       adapter = new defaultAdapter.constructor();
       defaultAdapter._clearDefaultKeys(keys);
@@ -188,13 +186,8 @@ function loadAuthAdapter(provider, authOptions, cached) {
       if (adapter.validateOptions) {
         adapter.validateOptions(providerOptions);
       }
-      if (!config.authCache) {
-        config.authCache = new Map();
-      }
-      config.authCache.set(provider, adapter);
     }
   }
-  const adapter = config.authCache?.get(provider);
   if (!adapter) {
     return;
   }
@@ -209,8 +202,8 @@ function validateAuthConfig(auth) {
     auth.anonymous = { enabled: true };
   }
   Object.keys(auth).forEach(key => {
-    const adapter = loadAuthAdapter(key, auth);
-    authCache.set(key, adapter);
+    const authObject = loadAuthAdapter(key, auth);
+    authCache.set(key, authObject.adapter);
   });
   return authCache;
 }
@@ -220,12 +213,13 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
   const setEnableAnonymousUsers = function (enable) {
     _enableAnonymousUsers = enable;
   };
+  const authCache = validateAuthConfig(authOptions);
   // To handle the test cases on configuration
   const getValidatorForProvider = function (provider) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return { validator: undefined };
     }
-    const authAdapter = loadAuthAdapter(provider, authOptions, true);
+    const authAdapter = loadAuthAdapter(provider, authOptions, authCache.get(provider));
     if (!authAdapter) {
       return { validator: undefined };
     }
@@ -267,8 +261,8 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     getValidatorForProvider,
     setEnableAnonymousUsers,
     runAfterFind,
+    authCache,
   });
 };
 
 module.exports.loadAuthAdapter = loadAuthAdapter;
-module.exports.validateAuthConfig = validateAuthConfig;
