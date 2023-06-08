@@ -35,6 +35,7 @@ type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
 type NumberOrString = number | string;
 type ProtectedFields = any;
+type StringOrStringArray = string | string[];
 type RequestKeywordDenylist = {
   key: string | any,
   value: any,
@@ -61,8 +62,8 @@ export interface ParseServerOptions {
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
-  /* Sets the origin to Access-Control-Allow-Origin */
-  allowOrigin: ?string;
+  /* Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins. */
+  allowOrigin: ?StringOrStringArray;
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */
@@ -164,6 +165,13 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   preventLoginWithUnverifiedEmail: ?boolean;
+  /* If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.
+  <br><br>
+  Default is `false`.
+  <br>
+  Requires option `verifyUserEmails: true`.
+  :DEFAULT: false */
+  preventSignupWithUnverifiedEmail: ?boolean;
   /* Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.
   <br><br>
   For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).
@@ -202,6 +210,9 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
+  /* Whether Parse Server should automatically extend a valid session by the sessionLength
+  :DEFAULT: false */
+  extendSessionOnUse: ?boolean;
   /* Default value for limit option on queries, defaults to `100`.
   :DEFAULT: 100 */
   defaultLimit: ?number;
@@ -536,6 +547,9 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
+  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.
+  :DEFAULT: ["^[^hH][^tT][^mM][^lL]?$"] */
+  fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
   enableForAnonymousUser: ?boolean;
@@ -576,4 +590,12 @@ export interface LogLevels {
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
+  /* Log level used by the Cloud Code Functions on success. Default is `info`.
+  :DEFAULT: info
+  */
+  cloudFunctionSuccess: ?string;
+  /* Log level used by the Cloud Code Functions on error. Default is `error`.
+  :DEFAULT: error
+  */
+  cloudFunctionError: ?string;
 }
