@@ -3,6 +3,7 @@ import _ from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 const Utils = require('../../../Utils');
+const bson = require('bson');
 
 const transformKey = (className, fieldName, schema) => {
   // Check if the schema is known since it's a built-in field.
@@ -458,12 +459,11 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
   }
   value = mapValues(restValue, transformInteriorValue);
 
-  if (
-    typeof value === 'object' &&
-    '_bsontype' in value &&
-    !value[Symbol.for('@@mdb.bson.version')]
-  ) {
-    value[Symbol.for('@@mdb.bson.version')] = 5.0;
+  if (typeof value === 'object' && '_bsontype' in value) {
+    const type = value._bsontype;
+    if (type === 'Code') {
+      value = new bson.Code(value.code);
+    }
   }
 
   return { key: restKey, value };
