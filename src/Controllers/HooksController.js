@@ -144,7 +144,7 @@ export class HooksController {
     if (aHook.functionName) {
       return this.getFunction(aHook.functionName).then(result => {
         if (result) {
-          throw new Parse.Error(143, `function name: ${aHook.functionName} already exits`);
+          throw new Parse.Error(143, `function name: ${aHook.functionName} already exists`);
         } else {
           return this.createOrUpdateHook(aHook);
         }

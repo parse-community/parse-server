@@ -5,6 +5,8 @@ on:
   pull_request:
     branches:
       - '**'
+    paths-ignore:
+      - '**/**.md'
 env:
   NODE_VERSION: 19.3.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
