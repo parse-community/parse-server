@@ -412,6 +412,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  preventSignupWithUnverifiedEmail: {
+    env: 'PARSE_SERVER_PREVENT_SIGNUP_WITH_UNVERIFIED_EMAIL',
+    help:
+      "If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.",
+    action: parsers.booleanParser,
+    default: false,
+  },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
     help: 'Protected fields that should be treated with extra security when fetching details.',
@@ -974,6 +981,13 @@ module.exports.FileUploadOptions = {
     help: 'Is true if file upload should be allowed for anyone, regardless of user authentication.',
     action: parsers.booleanParser,
     default: false,
+  },
+  fileExtensions: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
+    help:
+      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.",
+    action: parsers.arrayParser,
+    default: ['^[^hH][^tT][^mM][^lL]?$'],
   },
 };
 module.exports.DatabaseOptions = {

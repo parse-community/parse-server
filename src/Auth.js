@@ -84,7 +84,6 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
           { sessionToken },
           { limit: 1 }
         ).execute();
-        console.log({ results });
         session = results[0];
       }
       const lastUpdated = new Date(session?.updatedAt);
