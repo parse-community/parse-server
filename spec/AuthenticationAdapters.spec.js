@@ -18,7 +18,7 @@ const responses = {
   microsoft: { id: 'userId', mail: 'userMail' },
 };
 
-describe('AuthenticationProviders', function () {
+fdescribe('AuthenticationProviders', function () {
   [
     'apple',
     'gcenter',

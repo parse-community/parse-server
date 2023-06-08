@@ -58,6 +58,9 @@ export class Config {
     Config.validateControllers(serverConfiguration);
     AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
+    if (serverConfiguration.auth) {
+      serverConfiguration.authStore = AuthAdapter.validateAuthConfig(serverConfiguration.auth);
+    }
     return serverConfiguration;
   }
 
@@ -87,7 +90,6 @@ export class Config {
     logLevels,
     rateLimit,
     databaseOptions,
-    auth,
     extendSessionOnUse,
   }) {
     if (masterKey === readOnlyMasterKey) {
@@ -131,9 +133,6 @@ export class Config {
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
-    if (auth) {
-      AuthAdapter.validateAuthConfig(auth);
-    }
   }
 
   static validateControllers({

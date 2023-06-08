@@ -1,7 +1,7 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
-
+import Config from '../../Config';
 const apple = require('./apple');
 const gcenter = require('./gcenter');
 const gpgames = require('./gpgames');
@@ -62,8 +62,6 @@ const providers = {
   keycloak,
   ldap,
 };
-
-let authAdapters = {};
 
 // Indexed auth policies
 const authAdapterPolicies = {
@@ -138,6 +136,7 @@ function authDataValidator(provider, adapter, appIds, options) {
 }
 
 function loadAuthAdapter(provider, authOptions, cached) {
+  const config = Config.get(Parse.applicationId);
   if (!cached) {
     let defaultAdapter = providers[provider];
     // authOptions can contain complete custom auth adapters or
@@ -189,10 +188,13 @@ function loadAuthAdapter(provider, authOptions, cached) {
       if (adapter.validateOptions) {
         adapter.validateOptions(providerOptions);
       }
-      authAdapters[provider] = adapter;
+      if (!config.authCache) {
+        config.authCache = new Map();
+      }
+      config.authCache.set(provider, adapter);
     }
   }
-  const adapter = authAdapters[provider];
+  const adapter = config.authCache?.get(provider);
   if (!adapter) {
     return;
   }
@@ -202,11 +204,15 @@ function loadAuthAdapter(provider, authOptions, cached) {
 }
 
 function validateAuthConfig(auth) {
-  authAdapters = {};
+  const authCache = new Map();
   if (!auth.anonymous) {
     auth.anonymous = { enabled: true };
   }
-  Object.keys(auth).forEach(key => loadAuthAdapter(key, auth));
+  Object.keys(auth).forEach(key => {
+    const adapter = loadAuthAdapter(key, auth);
+    authCache.set(key, adapter);
+  });
+  return authCache;
 }
 
 module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
