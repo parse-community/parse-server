@@ -160,6 +160,9 @@ RestWrite.prototype.execute = function () {
           this.response.response.authDataResponse = this.authDataResponse;
         }
       }
+      if (this.storage.rejectSignup && this.config.preventSignupWithUnverifiedEmail) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+      }
       return this.response;
     });
 };
@@ -879,7 +882,8 @@ RestWrite.prototype.createSessionTokenIfNeeded = function () {
     this.config.verifyUserEmails
   ) {
     // verification is on
-    return; // do not create the session token in that case!
+    this.storage.rejectSignup = true;
+    return;
   }
   return this.createSessionToken();
 };
