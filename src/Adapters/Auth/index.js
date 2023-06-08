@@ -134,64 +134,59 @@ function authDataValidator(provider, adapter, appIds, options) {
   };
 }
 
-function loadAuthAdapter(provider, authOptions, adapter) {
-  if (!adapter) {
-    let defaultAdapter = providers[provider];
-    // authOptions can contain complete custom auth adapters or
-    // a default auth adapter like Facebook
-    const providerOptions = authOptions[provider];
-    if (
-      providerOptions &&
-      Object.prototype.hasOwnProperty.call(providerOptions, 'oauth2') &&
-      providerOptions['oauth2'] === true
-    ) {
-      defaultAdapter = oauth2;
-    }
-
-    // Default provider not found and a custom auth provider was not provided
-    if (!defaultAdapter && !providerOptions) {
-      return;
-    }
-
-    const keys = [
-      'validateAuthData',
-      'validateAppId',
-      'validateSetUp',
-      'validateLogin',
-      'validateUpdate',
-      'challenge',
-      'validateOptions',
-      'policy',
-      'afterFind',
-    ];
-
-    adapter = Object.assign({}, defaultAdapter);
-    if (defaultAdapter instanceof AuthAdapter) {
-      adapter = new defaultAdapter.constructor();
-      defaultAdapter._clearDefaultKeys(keys);
-    }
-
-    if (providerOptions) {
-      const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
-      if (optionalAdapter) {
-        keys.forEach(key => {
-          if (optionalAdapter[key]) {
-            adapter[key] = optionalAdapter[key];
-          }
-        });
-      }
-    }
-
-    if (providerOptions?.enabled !== false) {
-      if (adapter.validateOptions) {
-        adapter.validateOptions(providerOptions);
-      }
-    }
+function loadAuthAdapter(provider, authOptions) {
+  let defaultAdapter = providers[provider];
+  // authOptions can contain complete custom auth adapters or
+  // a default auth adapter like Facebook
+  const providerOptions = authOptions[provider];
+  if (
+    providerOptions &&
+    Object.prototype.hasOwnProperty.call(providerOptions, 'oauth2') &&
+    providerOptions['oauth2'] === true
+  ) {
+    defaultAdapter = oauth2;
   }
-  if (!adapter) {
+
+  // Default provider not found and a custom auth provider was not provided
+  if (!defaultAdapter && !providerOptions) {
     return;
   }
-  const providerOptions = authOptions[provider];
+
+  const keys = [
+    'validateAuthData',
+    'validateAppId',
+    'validateSetUp',
+    'validateLogin',
+    'validateUpdate',
+    'challenge',
+    'validateOptions',
+    'policy',
+    'afterFind',
+  ];
+
+  let adapter = Object.assign({}, defaultAdapter);
+  if (defaultAdapter instanceof AuthAdapter) {
+    adapter = new defaultAdapter.constructor();
+    defaultAdapter._clearDefaultKeys(keys);
+  }
+
+  if (providerOptions) {
+    const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
+    if (optionalAdapter) {
+      keys.forEach(key => {
+        if (optionalAdapter[key]) {
+          adapter[key] = optionalAdapter[key];
+        }
+      });
+    }
+  }
+
+  if (providerOptions?.enabled !== false) {
+    if (adapter.validateOptions) {
+      adapter.validateOptions(providerOptions);
+    }
+  }
+
   const appIds = providerOptions ? providerOptions.appIds : undefined;
   return { adapter, appIds, providerOptions };
 }
@@ -203,7 +198,7 @@ function validateAuthConfig(auth) {
   }
   Object.keys(auth).forEach(key => {
     const authObject = loadAuthAdapter(key, auth);
-    authCache.set(key, authObject.adapter);
+    authCache.set(key, authObject);
   });
   return authCache;
 }
@@ -219,7 +214,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return { validator: undefined };
     }
-    const authAdapter = loadAuthAdapter(provider, authOptions, authCache.get(provider));
+    const authAdapter = authCache.get(provider);
     if (!authAdapter) {
       return { validator: undefined };
     }

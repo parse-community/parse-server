@@ -1236,9 +1236,9 @@ describe('Auth Adapter features', () => {
     await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
 
     spyOn(challengeAdapter, 'validateAuthData').and.rejectWith({});
-    const authenticationLoader = require('../lib/Adapters/Auth');
-    authenticationLoader.loadAuthAdapter('challengeAdapter', {
-      challengeAdapter,
+
+    await reconfigureServer({
+      auth: { challengeAdapter, soloAdapter },
     });
 
     await expectAsync(
