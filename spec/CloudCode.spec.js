@@ -95,7 +95,8 @@ describe('Cloud Code', () => {
   it('can get config', () => {
     const config = Parse.Server;
     let currentConfig = Config.get('test');
-    expect(Object.keys(config)).toEqual(Object.keys(currentConfig));
+    const server = require('../lib/cloud-code/Parse.Server');
+    expect(Object.keys(config)).toEqual(Object.keys({ ...currentConfig, ...server }));
     config.silent = false;
     Parse.Server = config;
     currentConfig = Config.get('test');

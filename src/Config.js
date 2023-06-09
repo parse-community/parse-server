@@ -18,6 +18,7 @@ import {
   SchemaOptions,
   SecurityOptions,
 } from './Options/Definitions';
+import ParseServer from './cloud-code/Parse.Server';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -608,6 +609,11 @@ export class Config {
       }
       if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
         throw `rateLimit.errorResponseMessage must be a string`;
+      }
+      const options = Object.keys(ParseServer.RateLimitZone);
+      if (option.zone && !options.includes(option.zone)) {
+        const formatter = new Intl.ListFormat('en', { style: 'short', type: 'disjunction' });
+        throw `rateLimit.zone must be one of ${formatter.format(options)}`;
       }
     }
   }
