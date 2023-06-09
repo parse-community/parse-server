@@ -92,14 +92,16 @@ describe('Cloud Code', () => {
     });
   });
 
-  it('can get config', () => {
-    const config = Parse.Server;
+  it('can get and set config', () => {
     let currentConfig = Config.get('test');
-    expect(Object.keys(config)).toEqual(Object.keys(currentConfig));
-    config.silent = false;
-    Parse.Server = config;
+    expect(Object.keys(Parse.Server)).toEqual(Object.keys(currentConfig));
+    Parse.Server.set('silent', ['abc']);
     currentConfig = Config.get('test');
-    expect(currentConfig.silent).toBeFalse();
+    expect(currentConfig.silent).toEqual(['abc']);
+  });
+
+  it('can throw on invalid config', () => {
+    expect(() => Parse.Server.set('foo', true)).toThrow('foo is not a valid Parse Server option');
   });
 
   it('show warning on duplicate cloud functions', done => {
