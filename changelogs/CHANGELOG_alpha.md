@@ -1,3 +1,10 @@
+# [6.1.0-alpha.20](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.19...6.1.0-alpha.20) (2023-06-09)
+
+
+### Features
+
+* Add zones for rate limiting by `ip`, `user`, `session`, `global` ([#8508](https://github.com/parse-community/parse-server/issues/8508)) ([03fba97](https://github.com/parse-community/parse-server/commit/03fba97e0549bfcaeee9f2fa4c9905dbcc91840e))
+
 # [6.1.0-alpha.19](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.18...6.1.0-alpha.19) (2023-06-08)
 
 
