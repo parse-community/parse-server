@@ -163,6 +163,9 @@ RestWrite.prototype.execute = function () {
           this.response.response.authDataResponse = this.authDataResponse;
         }
       }
+      if (this.storage.rejectSignup && this.config.preventSignupWithUnverifiedEmail) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+      }
       return this.response;
     });
 };
@@ -905,6 +908,15 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
     if (shouldPreventUnverifedLogin === true) {
       return;
     }
+  }
+  if (
+    !this.storage.authProvider && // signup call, with
+    this.config.preventLoginWithUnverifiedEmail && // no login without verification
+    this.config.verifyUserEmails
+  ) {
+    // verification is on
+    this.storage.rejectSignup = true;
+    return;
   }
   return this.createSessionToken();
 };

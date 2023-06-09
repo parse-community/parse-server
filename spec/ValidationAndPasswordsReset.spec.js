@@ -317,6 +317,35 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
+  it('does not allow signup with preventSignupWithUnverified', async () => {
+    let sendEmailOptions;
+    const emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter,
+    });
+    const newUser = new Parse.User();
+    newUser.setPassword('asdf');
+    newUser.setUsername('zxcv');
+    newUser.set('email', 'test@example.com');
+    await expectAsync(newUser.signUp()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.')
+    );
+    const user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
+    expect(user).toBeDefined();
+    expect(sendEmailOptions).toBeDefined();
+  });
+
   it('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
     reconfigureServer({
       appName: undefined,
