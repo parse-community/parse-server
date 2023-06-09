@@ -93,6 +93,21 @@ class ParseLiveQueryServer {
     }
     this._createSubscribers();
   }
+
+  async shutdown() {
+    if (this.subscriber.isOpen) {
+      await Promise.all([
+        ...[...this.clients.values()].map(client => client.parseWebSocket.ws.close()),
+        this.parseWebSocketServer.close(),
+        ...Array.from(this.subscriber.subscriptions.keys()).map(key =>
+          this.subscriber.unsubscribe(key)
+        ),
+        this.subscriber.close?.(),
+      ]);
+    }
+    this.subscriber.isOpen = false;
+  }
+
   _createSubscribers() {
     const messageRecieved = (channel, messageStr) => {
       logger.verbose('Subscribe message %j', messageStr);
