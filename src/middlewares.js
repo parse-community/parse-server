@@ -549,7 +549,22 @@ export const addRateLimit = (route, config, cloud) => {
         }
         return request.auth?.isMaster;
       },
-      keyGenerator: request => {
+      keyGenerator: async request => {
+        if (route.zone === Parse.Server.RateLimitZone.global) {
+          return request.config.appId;
+        }
+        const token = request.info.sessionToken;
+        if (route.zone === Parse.Server.RateLimitZone.session && token) {
+          return token;
+        }
+        if (route.zone === Parse.Server.RateLimitZone.user && token) {
+          if (!request.auth) {
+            await new Promise(resolve => handleParseSession(request, null, resolve));
+          }
+          if (request.auth?.user?.id && request.zone === 'user') {
+            return request.auth.user.id;
+          }
+        }
         return request.config.ip;
       },
       store: redisStore.store,
