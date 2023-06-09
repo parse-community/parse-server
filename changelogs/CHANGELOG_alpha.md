@@ -1,3 +1,10 @@
+# [6.1.0-alpha.19](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.18...6.1.0-alpha.19) (2023-06-08)
+
+
+### Bug Fixes
+
+* LiveQuery server is not shut down properly when `handleShutdown` is called ([#8491](https://github.com/parse-community/parse-server/issues/8491)) ([967700b](https://github.com/parse-community/parse-server/commit/967700bdbc94c74f75ba84d2b3f4b9f3fd2dca0b))
+
 # [6.1.0-alpha.18](https://github.com/parse-community/parse-server/compare/6.1.0-alpha.17...6.1.0-alpha.18) (2023-06-08)
 
 
