@@ -891,6 +891,15 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   if (this.auth.user && this.data.authData) {
     return;
   }
+  if (
+    !this.storage.authProvider && // signup call, with
+    this.config.preventLoginWithUnverifiedEmail && // no login without verification
+    this.config.verifyUserEmails
+  ) {
+    // verification is on
+    this.storage.rejectSignup = true;
+    return;
+  }
   if (!this.storage.authProvider && this.config.verifyUserEmails) {
     let shouldPreventUnverifedLogin = this.config.preventLoginWithUnverifiedEmail;
     if (typeof this.config.preventLoginWithUnverifiedEmail === 'function') {
@@ -908,15 +917,6 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
     if (shouldPreventUnverifedLogin === true) {
       return;
     }
-  }
-  if (
-    !this.storage.authProvider && // signup call, with
-    this.config.preventLoginWithUnverifiedEmail && // no login without verification
-    this.config.verifyUserEmails
-  ) {
-    // verification is on
-    this.storage.rejectSignup = true;
-    return;
   }
   return this.createSessionToken();
 };
