@@ -160,6 +160,9 @@ RestWrite.prototype.execute = function () {
           this.response.response.authDataResponse = this.authDataResponse;
         }
       }
+      if (this.storage.rejectSignup && this.config.preventSignupWithUnverifiedEmail) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+      }
       return this.response;
     });
 };
@@ -879,7 +882,8 @@ RestWrite.prototype.createSessionTokenIfNeeded = function () {
     this.config.verifyUserEmails
   ) {
     // verification is on
-    return; // do not create the session token in that case!
+    this.storage.rejectSignup = true;
+    return;
   }
   return this.createSessionToken();
 };
@@ -1577,17 +1581,21 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   const { originalObject, updatedObject } = this.buildParseObjects();
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
-  this.config.database.loadSchema().then(schemaController => {
-    // Notifiy LiveQueryServer if possible
-    const perms = schemaController.getClassLevelPermissions(updatedObject.className);
-    this.config.liveQueryController.onAfterSave(
-      updatedObject.className,
-      updatedObject,
-      originalObject,
-      perms
-    );
-  });
-
+  if (hasLiveQuery) {
+    this.config.database.loadSchema().then(schemaController => {
+      // Notify LiveQueryServer if possible
+      const perms = schemaController.getClassLevelPermissions(updatedObject.className);
+      this.config.liveQueryController.onAfterSave(
+        updatedObject.className,
+        updatedObject,
+        originalObject,
+        perms
+      );
+    });
+  }
+  if (!hasAfterSaveHook) {
+    return Promise.resolve();
+  }
   // Run afterSave trigger
   return triggers
     .maybeRunTrigger(

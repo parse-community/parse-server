@@ -165,6 +165,13 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   preventLoginWithUnverifiedEmail: ?boolean;
+  /* If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.
+  <br><br>
+  Default is `false`.
+  <br>
+  Requires option `verifyUserEmails: true`.
+  :DEFAULT: false */
+  preventSignupWithUnverifiedEmail: ?boolean;
   /* Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.
   <br><br>
   For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).
@@ -203,6 +210,9 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
+  /* Whether Parse Server should automatically extend a valid session by the sessionLength
+  :DEFAULT: false */
+  extendSessionOnUse: ?boolean;
   /* Default value for limit option on queries, defaults to `100`.
   :DEFAULT: 100 */
   defaultLimit: ?number;
@@ -324,6 +334,17 @@ export interface RateLimitOptions {
   /* Optional, the URL of the Redis server to store rate limit data. This allows to rate limit requests for multiple servers by calculating the sum of all requests across all servers. This is useful if multiple servers are processing requests behind a load balancer. For example, the limit of 10 requests is reached if each of 2 servers processed 5 requests.
    */
   redisUrl: ?string;
+  /*
+  The type of rate limit to apply. The following types are supported:
+  <br><br>
+  - `global`: rate limit based on the number of requests made by all users <br>
+  - `ip`: rate limit based on the IP address of the request <br>
+  - `user`: rate limit based on the user ID of the request <br>
+  - `session`: rate limit based on the session token of the request <br>
+  <br><br>
+  :default: 'ip'
+  */
+  zone: ?string;
 }
 
 export interface SecurityOptions {
@@ -580,4 +601,12 @@ export interface LogLevels {
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
+  /* Log level used by the Cloud Code Functions on success. Default is `info`.
+  :DEFAULT: info
+  */
+  cloudFunctionSuccess: ?string;
+  /* Log level used by the Cloud Code Functions on error. Default is `error`.
+  :DEFAULT: error
+  */
+  cloudFunctionError: ?string;
 }

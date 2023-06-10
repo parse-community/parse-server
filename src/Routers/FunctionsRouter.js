@@ -18,6 +18,12 @@ function parseObject(obj) {
     return Object.assign(new Date(obj.iso), obj);
   } else if (obj && obj.__type == 'File') {
     return Parse.File.fromJSON(obj);
+  } else if (obj && obj.__type == 'Pointer') {
+    return Parse.Object.fromJSON({
+      __type: 'Pointer',
+      className: obj.className,
+      objectId: obj.objectId,
+    });
   } else if (obj && typeof obj === 'object') {
     return parseParams(obj);
   } else {
@@ -140,7 +146,7 @@ export class FunctionsRouter extends PromiseRouter {
         result => {
           try {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-            logger.info(
+            logger[req.config.logLevels.cloudFunctionSuccess](
               `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
               {
                 functionName,
@@ -155,7 +161,7 @@ export class FunctionsRouter extends PromiseRouter {
         },
         error => {
           try {
-            logger.error(
+            logger[req.config.logLevels.cloudFunctionError](
               `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
                 JSON.stringify(error),
               {
