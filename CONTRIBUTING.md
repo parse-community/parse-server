@@ -165,7 +165,7 @@ Keeping our products safe and secure is one of your top priorities. Our security
 
 > *Can I get a new private repository within the Parse Platform organization to work on some stuff?*
 
-Private repositories are not provided unless there is a significant constraint or requirement that makes it necessary. For example, when collaborating on fixing security vulnerability we provide private repositories to share sentitive information within a select group of collaborators.
+Private repositories are not provided unless there is a significant constraint or requirement that makes it necessary. For example, when collaborating on fixing a security vulnerability we provide private repositories to allow collaborators to share sensitive information within a select group.
 
 ### New Public Repository
 
