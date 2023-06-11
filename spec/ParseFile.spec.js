@@ -1313,10 +1313,10 @@ describe('Parse.File testing', () => {
       ).toBeRejectedWith('fileUpload.fileExtensions must be an array.');
     });
   });
+
   describe('fileExtensions', () => {
     it('works with _ContentType', async () => {
       await reconfigureServer({
-        silent: false,
         fileUpload: {
           enableForPublic: true,
           fileExtensions: ['png'],
