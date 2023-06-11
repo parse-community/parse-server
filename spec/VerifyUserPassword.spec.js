@@ -353,8 +353,9 @@ describe('Verify User Password', () => {
         done();
       });
   });
-  it('fails to verify password when preventLoginWithUnverifiedEmail is set to true REST API', done => {
-    reconfigureServer({
+
+  it('fails to verify password when preventLoginWithUnverifiedEmail is set to true REST API', async () => {
+    await reconfigureServer({
       publicServerURL: 'http://localhost:8378/',
       appName: 'emailVerify',
       verifyUserEmails: true,
@@ -364,28 +365,21 @@ describe('Verify User Password', () => {
         apiKey: 'k',
         domain: 'd',
       }),
-    })
-      .then(() => {
-        const user = new Parse.User();
-        return user.save({
-          username: 'unverified-user',
-          password: 'mypass',
-          email: 'unverified-email@user.com',
-        });
-      })
-      .then(() => {
-        return verifyPassword('unverified-email@user.com', 'mypass', true);
-      })
-      .then(res => {
-        expect(res.status).toBe(400);
-        expect(res.text).toMatch('{"code":205,"error":"User email is not verified."}');
-        done();
-      })
-      .catch(err => {
-        fail(err);
-        done();
-      });
+    });
+    const user = new Parse.User();
+    await user.save({
+      username: 'unverified-user',
+      password: 'mypass',
+      email: 'unverified-email@example.com',
+    });
+    const res = await verifyPassword('unverified-email@example.com', 'mypass', true);
+    expect(res.status).toBe(400);
+    expect(res.data).toEqual({
+      code: Parse.Error.EMAIL_NOT_FOUND,
+      error: 'User email is not verified.',
+    });
   });
+
   it('verify password lock account if failed verify password attempts are above threshold', done => {
     reconfigureServer({
       appName: 'lockout threshold',

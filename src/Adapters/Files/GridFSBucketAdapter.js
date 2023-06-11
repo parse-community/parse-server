@@ -34,7 +34,11 @@ export class GridFSBucketAdapter extends FilesAdapter {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     };
-    this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+      delete _mongoOptions[key];
+    }
+    this._mongoOptions = _mongoOptions;
   }
 
   _connect() {
