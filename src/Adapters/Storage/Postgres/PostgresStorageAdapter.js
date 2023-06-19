@@ -231,7 +231,7 @@ const transformAggregateField = fieldName => {
   if (fieldName === '$_updated_at') {
     return 'updatedAt';
   }
-  return fieldName.substr(1);
+  return fieldName.substring(1);
 };
 
 const validateKeys = object => {
@@ -1922,7 +1922,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
         let coords = object[fieldName];
-        coords = coords.substr(2, coords.length - 4).split('),(');
+        coords = coords.substring(2, coords.length - 4).split('),(');
         coords = coords.map(point => {
           return [parseFloat(point.split(',')[1]), parseFloat(point.split(',')[0])];
         });
@@ -2634,7 +2634,7 @@ function literalizeRegexPart(s: string) {
   const result1: any = s.match(matcher1);
   if (result1 && result1.length > 1 && result1.index > -1) {
     // process regex that has a beginning and an end specified for the literal text
-    const prefix = s.substr(0, result1.index);
+    const prefix = s.substring(0, result1.index);
     const remaining = result1[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
@@ -2644,7 +2644,7 @@ function literalizeRegexPart(s: string) {
   const matcher2 = /\\Q((?!\\E).*)$/;
   const result2: any = s.match(matcher2);
   if (result2 && result2.length > 1 && result2.index > -1) {
-    const prefix = s.substr(0, result2.index);
+    const prefix = s.substring(0, result2.index);
     const remaining = result2[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
