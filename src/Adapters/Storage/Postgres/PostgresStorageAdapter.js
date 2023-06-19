@@ -1922,7 +1922,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
         let coords = object[fieldName];
-        coords = coords.substring(2, coords.length - 4).split('),(');
+        coords = coords.substr(2, coords.length - 4).split('),(');
         coords = coords.map(point => {
           return [parseFloat(point.split(',')[1]), parseFloat(point.split(',')[0])];
         });
