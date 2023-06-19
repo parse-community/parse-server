@@ -40,6 +40,7 @@
  * @property {Number} emailVerifyTokenValidityDuration Set the validity duration of the email verification token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.<br>Requires option `verifyUserEmails: true`.
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
+ * @property {Boolean} encodeCloudPointers Whether Parse Pointers should be encoded in Cloud Code.
  * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} enforcePrivateUsers Set to true if new users should be created without public read and write access.
  * @property {Boolean} expireInactiveSessions Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.

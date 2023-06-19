@@ -196,6 +196,9 @@ export interface ParseServerOptions {
   cacheAdapter: ?Adapter<CacheAdapter>;
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
+  /* Whether Parse Pointers should be encoded in Cloud Code.
+  :DEFAULT: false */
+  encodeCloudPointers: ?boolean;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;

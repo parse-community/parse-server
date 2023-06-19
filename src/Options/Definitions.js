@@ -210,6 +210,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  encodeCloudPointers: {
+    env: 'PARSE_SERVER_ENCODE_CLOUD_POINTERS',
+    help: 'Whether Parse Pointers should be encoded in Cloud Code.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
     help: 'Key for encrypting your files',
