@@ -1353,7 +1353,7 @@ describe('Cloud Code', () => {
       });
   });
 
-  it('should not enode Parse Objects', async () => {
+  it('should not encode Parse Objects', async () => {
     const user = new Parse.User();
     user.setUsername('username');
     user.setPassword('password');
