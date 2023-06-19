@@ -1921,14 +1921,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
         };
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
-        let coords = object[fieldName];
-        coords = coords.substr(2, coords.length - 4).split('),(');
-        coords = coords.map(point => {
+        let coords = new String(object[fieldName]);
+        coords = coords.substring(2, coords.length - 2).split('),(');
+        const updatedCoords = coords.map(point => {
           return [parseFloat(point.split(',')[1]), parseFloat(point.split(',')[0])];
         });
         object[fieldName] = {
           __type: 'Polygon',
-          coordinates: coords,
+          coordinates: updatedCoords,
         };
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'File') {
