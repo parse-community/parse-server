@@ -893,7 +893,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   }
   if (
     !this.storage.authProvider && // signup call, with
-    this.config.preventLoginWithUnverifiedEmail && // no login without verification
+    this.config.preventLoginWithUnverifiedEmail === true && // no login without verification
     this.config.verifyUserEmails
   ) {
     // verification is on
