@@ -74,7 +74,7 @@ describe('commander additions', () => {
     done();
   });
 
-  it('should load properly use args over env', done => {
+  it('should load properly use args over env', () => {
     commander.loadDefinitions(testDefinitions);
     commander.parse(['node', './CLI.spec.js', '--arg0', 'arg0Value', '--arg4', ''], {
       PROGRAM_ARG_0: 'arg0ENVValue',
@@ -86,7 +86,6 @@ describe('commander additions', () => {
     expect(commander.arg1).toEqual('arg1ENVValue');
     expect(commander.arg2).toEqual(4);
     expect(commander.arg4).toEqual('');
-    done();
   });
 
   it('should fail in action as port is invalid', done => {

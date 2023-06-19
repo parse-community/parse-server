@@ -367,6 +367,22 @@ describe('server', () => {
     });
   });
 
+  it('should throw when extendSessionOnUse is invalid', async () => {
+    await expectAsync(
+      reconfigureServer({
+        extendSessionOnUse: 'yolo',
+      })
+    ).toBeRejectedWith('extendSessionOnUse must be a boolean value');
+  });
+
+  it('should throw when revokeSessionOnPasswordReset is invalid', async () => {
+    await expectAsync(
+      reconfigureServer({
+        revokeSessionOnPasswordReset: 'yolo',
+      })
+    ).toBeRejectedWith('revokeSessionOnPasswordReset must be a boolean value');
+  });
+
   it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
       .then(done.fail)
