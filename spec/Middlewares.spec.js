@@ -216,8 +216,6 @@ describe('middlewares', () => {
   });
 
   it('should not succeed if the ip does not belong to masterKeyIps list (ipv6)', async () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['::1'],
