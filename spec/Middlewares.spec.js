@@ -192,13 +192,11 @@ describe('middlewares', () => {
   });
 
   it('can allow localhost with masterKeyIPs', async () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['::'],
     });
-    fakeReq.ip = '127.0.0.1';
+    fakeReq.ip = '::ffff:127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
     await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
     expect(fakeReq.auth.isMaster).toBe(true);
