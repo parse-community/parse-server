@@ -153,16 +153,42 @@ describe('middlewares', () => {
   });
 
   it('can allow all with masterKeyIPs', async () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    AppCache.put(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['::/0'],
-    });
-    fakeReq.ip = '::ffff:192.168.0.101';
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(true);
+    const combinations = [
+      {
+        masterKeyIps: ['::/0'],
+        ips: ['::ffff:192.168.0.101', '192.168.0.101'],
+        id: 'allowAllIpV6',
+      },
+      {
+        masterKeyIps: ['0.0.0.0'],
+        ips: ['192.168.0.101'],
+        id: 'allowAllIpV4',
+      },
+    ];
+    for (const combination of combinations) {
+      AppCache.put(combination.id, {
+        masterKey: 'masterKey',
+        masterKeyIps: combination.masterKeyIps,
+      });
+      await new Promise(resolve => setTimeout(resolve, 10));
+      for (const ip of combination.ips) {
+        fakeReq = {
+          originalUrl: 'http://example.com/parse/',
+          url: 'http://example.com/',
+          body: {
+            _ApplicationId: combination.id,
+          },
+          headers: {},
+          get: key => {
+            return fakeReq.headers[key.toLowerCase()];
+          },
+        };
+        fakeReq.ip = ip;
+        fakeReq.headers['x-parse-master-key'] = 'masterKey';
+        await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+        expect(fakeReq.auth.isMaster).toBe(true);
+      }
+    }
   });
 
   it('can allow localhost with masterKeyIPs', async () => {
