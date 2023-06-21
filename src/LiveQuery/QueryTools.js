@@ -247,6 +247,11 @@ function matchesKeyConstraints(object, key, constraints) {
           return false;
         }
         break;
+      case '$eq':
+        if (!equalObjects(object[key], compareTo)) {
+          return false;
+        }
+        break;
       case '$ne':
         if (equalObjects(object[key], compareTo)) {
           return false;
