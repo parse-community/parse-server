@@ -227,6 +227,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  extendSessionOnUse: {
+    env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
+    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    action: parsers.booleanParser,
+    default: false,
+  },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
     help: 'Key for your files',
@@ -403,6 +409,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL',
     help:
       'Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  preventSignupWithUnverifiedEmail: {
+    env: 'PARSE_SERVER_PREVENT_SIGNUP_WITH_UNVERIFIED_EMAIL',
+    help:
+      "If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.",
     action: parsers.booleanParser,
     default: false,
   },
@@ -587,6 +600,11 @@ module.exports.RateLimitOptions = {
     help:
       'The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied.',
     action: parsers.numberParser('requestTimeWindow'),
+  },
+  zone: {
+    env: 'PARSE_SERVER_RATE_LIMIT_ZONE',
+    help:
+      "The type of rate limit to apply. The following types are supported:<br><br>- `global`: rate limit based on the number of requests made by all users <br>- `ip`: rate limit based on the IP address of the request <br>- `user`: rate limit based on the user ID of the request <br>- `session`: rate limit based on the session token of the request <br><br><br>:default: 'ip'",
   },
 };
 module.exports.SecurityOptions = {
@@ -1000,6 +1018,16 @@ module.exports.AuthAdapter = {
   },
 };
 module.exports.LogLevels = {
+  cloudFunctionError: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_ERROR',
+    help: 'Log level used by the Cloud Code Functions on error. Default is `error`.',
+    default: 'error',
+  },
+  cloudFunctionSuccess: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_SUCCESS',
+    help: 'Log level used by the Cloud Code Functions on success. Default is `info`.',
+    default: 'info',
+  },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:

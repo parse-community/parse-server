@@ -11,6 +11,10 @@
   - [Review Feedback](#review-feedback)
   - [Merge Readiness](#merge-readiness)
   - [Review Validity](#review-validity)
+  - [Code Ownership](#code-ownership)
+  - [Access Permissions](#access-permissions)
+  - [New Private Repository](#new-private-repository)
+  - [New Public Repository](#new-public-repository)
 - [Environment Setup](#environment-setup)
   - [Recommended Tools](#recommended-tools)
   - [Setting up your local machine](#setting-up-your-local-machine)
@@ -34,6 +38,8 @@
   - [Breaking Change](#breaking-change-1)
   - [Reverting](#reverting)
   - [Security Vulnerability](#security-vulnerability)
+    - [Local Testing](#local-testing)
+    - [Merging](#merging-1)
 - [Releasing](#releasing)
   - [General Considerations](#general-considerations)
   - [Major Release / Long-Term-Support](#major-release--long-term-support)
@@ -142,6 +148,30 @@ It's contrary to an open, collaborative environment to expect others to be invol
 > *The reviewer doesn't have any expertise in that matter, why would I care about their opinion?*
 
 Your arguments must focus on the issue, not on your assumption of someone else's personal experience. We will take immediate and appropriate action in case of personal attacks, regardless of your previous contributions. Personal attacks are not permissible. If you became a victim of personal attacks, you can privately [report](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam) the GitHub comment to the Parse Platform PMC.
+
+### Code Ownership
+
+> *Can I open a new pull request based on another author's pull request?*
+
+If your pull request contains work from someone else then you are required to get their permission to use their work in your pull request. Please make sure to observe the [license](LICENSE) for more details. In addition, as an appreciative gesture you should clearly mention that your pull request is based on another pull request with a link in the top-most comment of your pull request. To avoid this issue we encourage contributors to collaborate on a single pull request to preserve the commit history and clearly identify each author's contribution. To do so, you can review the other author's pull request and submit your code suggestions, or ask the original author to grant you write access to their repository to also be able to make commits directly to their pull request.
+
+### Access Permissions
+
+> *Can I get write access to the repository to make changes faster?*
+
+Keeping our products safe and secure is one of your top priorities. Our security policy mandates that write access to repositories is only provided to as few people as necessary. All usual contributions can be made via public pull requests. If you think you need write access, contact the repository team and explain in detail what the constraint is that you are trying to overcome. We want to make contributing for you as easy as possible. If there are any bottlenecks that are slowing you down we are happy to receive your feedback to see where we can improve.
+
+### New Private Repository
+
+> *Can I get a new private repository within the Parse Platform organization to work on some stuff?*
+
+Private repositories are not provided unless there is a significant constraint or requirement that makes it necessary. For example, when collaborating on fixing a security vulnerability we provide private repositories to allow collaborators to share sensitive information within a select group.
+
+### New Public Repository
+
+> *Can I get a new public repository within the Parse Platform organization to work on some stuff?*
+
+First of all, we appreciate your contribution. In rare cases, where we consider it beneficial to the advancement of the repository, a new public repository for a specific purpose may be provided, for example for increased visibility or to provide the organization's GitHub ressources. In other cases, we encourage you to start your contribution in a personal repository of your own GitHub account, and later transfer it to the Parse Platform organization. We will be happy to assist you in the repository transfer.
 
 ## Environment Setup
 
@@ -496,7 +526,6 @@ The following changes are done in the `alpha` branch, before publishing the last
 - Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
 - Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
 
-
 ### Publishing Release (forward-merge):
 
 1. Create new temporary branch `build` on branch `beta`.
@@ -547,6 +576,7 @@ The following changes are done in the `alpha` branch, before publishing the last
 1. Create LTS branch `release-#.x.x` off the latest version tag on `release` branch.
 2. Create temporary branch `build-release` off branch `beta` and create a pull request with `release` as the base branch.
 3. Merge branch `build-release` into `release`. Given that there will be breaking changes, a new major release will be created. In the unlikely case that there have been no breaking changes between the previous major release and the upcoming release, a major version increment has to be triggered manually. See the docs of the release automation framework for how to do that.
+4. Add newly created LTS branch `release-#.x.x` from step 1 to [Snyk](https://snyk.io) so that Snyk opens pull requests for the LTS branch; remove previously existing LTS branch `release-#.x.x` from Snyk.
 
 ## Versioning
 
