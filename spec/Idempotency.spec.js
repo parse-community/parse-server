@@ -69,6 +69,14 @@ describe('Idempotency', () => {
     expect(counter).toBe(1);
   });
 
+  fit_retry(
+    'failing test',
+    () => {
+      expect(0).toBe(1);
+    },
+    3
+  );
+
   it('should delete request entry after TTL', async () => {
     let counter = 0;
     Parse.Cloud.define('myFunction', () => {

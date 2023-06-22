@@ -395,6 +395,29 @@ function mockShortLivedAuth() {
   return auth;
 }
 
+function retryTest(jasmineOriginalMethod, description, testFunction, maxRetries) {
+  let retryCount = 0;
+
+  afterEach(function () {
+    const failedExpectations = currentSpec.failedExpectations;
+    if (failedExpectations.length > 0 && retryCount < maxRetries) {
+      retryCount++;
+      console.log(`Retrying "${description}", attempt ${retryCount}`);
+      currentSpec.failedExpectations = [];
+      currentSpec.passedExpectations = [];
+      currentSpec.pendingReason = '';
+      currentSpec.duration = null;
+      testFunction();
+    } else if (failedExpectations.length > 0) {
+      fail(`Test "${description}" failed after ${maxRetries} retries.`);
+    }
+  });
+
+  jasmineOriginalMethod(description, function () {
+    testFunction();
+  });
+}
+
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -418,6 +441,11 @@ global.databaseURI = databaseURI;
 global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
+
+global.it_retry = (description, testFunction, maxRetries) =>
+  retryTest(it, description, testFunction, maxRetries);
+global.fit_retry = (description, testFunction, maxRetries) =>
+  retryTest(fit, description, testFunction, maxRetries);
 
 global.it_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
