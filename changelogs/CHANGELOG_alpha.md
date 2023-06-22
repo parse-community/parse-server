@@ -1,3 +1,10 @@
+# [6.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.1...6.3.0-alpha.2) (2023-06-20)
+
+
+### Features
+
+* Add conditional email verification via dynamic Parse Server options `verifyUserEmails`, `sendUserEmailVerification` that now accept functions ([#8425](https://github.com/parse-community/parse-server/issues/8425)) ([44acd6d](https://github.com/parse-community/parse-server/commit/44acd6d9ed157ad4842200c9d01f9c77a05fec3a))
+
 # [6.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.2.0...6.3.0-alpha.1) (2023-06-18)
 
 
