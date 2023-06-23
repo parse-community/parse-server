@@ -211,7 +211,7 @@ module.exports.ParseServerOptions = {
     default: false,
   },
   encodeParseObjectInCloudFunction: {
-    env: 'PARSE_SERVER_ENCODE_POINTER_IN_CLOUD_FUNCTION',
+    env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
     help:
       'If set to `true`, a `Parse.Pointer` that is in the payload when calling a Cloud Function will be converted to an instance of a `Parse.Pointer`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Pointer` but is not an actual instance of a `Parse.Pointer`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Pointer`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where `Parse.Pointer` objects are not converted to actual instances of `Parse.Pointer`.',
     action: parsers.booleanParser,
