@@ -1373,7 +1373,7 @@ describe('Cloud Code', () => {
   });
 
   it('allow cloud to encode Parse Objects', async () => {
-    await reconfigureServer({ encodeCloudPointers: true });
+    await reconfigureServer({ encodeParseObjectInCloudFunction: true });
     const user = new Parse.User();
     user.setUsername('username');
     user.setPassword('password');
