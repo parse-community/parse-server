@@ -28,13 +28,21 @@ export class GridFSBucketAdapter extends FilesAdapter {
     this._algorithm = 'aes-256-gcm';
     this._encryptionKey =
       encryptionKey !== undefined
-        ? crypto.createHash('sha256').update(String(encryptionKey)).digest('base64').substr(0, 32)
+        ? crypto
+          .createHash('sha256')
+          .update(String(encryptionKey))
+          .digest('base64')
+          .substring(0, 32)
         : null;
     const defaultMongoOptions = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     };
-    this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+      delete _mongoOptions[key];
+    }
+    this._mongoOptions = _mongoOptions;
   }
 
   _connect() {
@@ -134,8 +142,8 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   async rotateEncryptionKey(options = {}) {
-    var fileNames = [];
-    var oldKeyFileAdapter = {};
+    let fileNames = [];
+    let oldKeyFileAdapter = {};
     const bucket = await this._getBucket();
     if (options.oldKey !== undefined) {
       oldKeyFileAdapter = new GridFSBucketAdapter(
@@ -154,51 +162,22 @@ export class GridFSBucketAdapter extends FilesAdapter {
         fileNames.push(file.filename);
       });
     }
-    return new Promise(resolve => {
-      var fileNamesNotRotated = fileNames;
-      var fileNamesRotated = [];
-      var fileNameTotal = fileNames.length;
-      var fileNameIndex = 0;
-      fileNames.forEach(fileName => {
-        oldKeyFileAdapter
-          .getFileData(fileName)
-          .then(plainTextData => {
-            //Overwrite file with data encrypted with new key
-            this.createFile(fileName, plainTextData)
-              .then(() => {
-                fileNamesRotated.push(fileName);
-                fileNamesNotRotated = fileNamesNotRotated.filter(function (value) {
-                  return value !== fileName;
-                });
-                fileNameIndex += 1;
-                if (fileNameIndex == fileNameTotal) {
-                  resolve({
-                    rotated: fileNamesRotated,
-                    notRotated: fileNamesNotRotated,
-                  });
-                }
-              })
-              .catch(() => {
-                fileNameIndex += 1;
-                if (fileNameIndex == fileNameTotal) {
-                  resolve({
-                    rotated: fileNamesRotated,
-                    notRotated: fileNamesNotRotated,
-                  });
-                }
-              });
-          })
-          .catch(() => {
-            fileNameIndex += 1;
-            if (fileNameIndex == fileNameTotal) {
-              resolve({
-                rotated: fileNamesRotated,
-                notRotated: fileNamesNotRotated,
-              });
-            }
-          });
-      });
-    });
+    let fileNamesNotRotated = fileNames;
+    const fileNamesRotated = [];
+    for (const fileName of fileNames) {
+      try {
+        const plainTextData = await oldKeyFileAdapter.getFileData(fileName);
+        // Overwrite file with data encrypted with new key
+        await this.createFile(fileName, plainTextData);
+        fileNamesRotated.push(fileName);
+        fileNamesNotRotated = fileNamesNotRotated.filter(function (value) {
+          return value !== fileName;
+        });
+      } catch (err) {
+        continue;
+      }
+    }
+    return { rotated: fileNamesRotated, notRotated: fileNamesNotRotated };
   }
 
   getFileLocation(config, filename) {
