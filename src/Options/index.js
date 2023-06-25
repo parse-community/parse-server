@@ -153,11 +153,11 @@ export interface ParseServerOptions {
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;
-  /* Set to `true` to require users to verify their email address to complete the sign-up process.
+  /* Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.
   <br><br>
   Default is `false`.
   :DEFAULT: false */
-  verifyUserEmails: ?boolean;
+  verifyUserEmails: ?(boolean | void);
   /* Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.
   <br><br>
   Default is `false`.
@@ -188,6 +188,12 @@ export interface ParseServerOptions {
   Requires option `verifyUserEmails: true`.
   :DEFAULT: false */
   emailVerifyTokenReuseIfValid: ?boolean;
+  /* Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.
+  <br><br>
+  Default is `true`.
+  <br>
+  :DEFAULT: true */
+  sendUserEmailVerification: ?(boolean | void);
   /* The account lockout policy for failed login attempts. */
   accountLockout: ?AccountLockoutOptions;
   /* The password policy for enforcing password related rules. */
@@ -196,6 +202,9 @@ export interface ParseServerOptions {
   cacheAdapter: ?Adapter<CacheAdapter>;
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
+  /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
+  :DEFAULT: false */
+  encodeParseObjectInCloudFunction: ?boolean;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
