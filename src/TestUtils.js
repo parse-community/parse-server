@@ -13,7 +13,7 @@ export function destroyAllDataPermanently(fast) {
     Object.keys(AppCache.cache).map(appId => {
       const app = AppCache.get(appId);
       const deletePromises = [];
-      if (app.cacheAdapter) {
+      if (app.cacheAdapter && app.cacheAdapter.clear) {
         deletePromises.push(app.cacheAdapter.clear());
       }
       if (app.databaseController) {
