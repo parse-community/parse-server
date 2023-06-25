@@ -1020,11 +1020,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
         await this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
         return toParseSchema(schema);
       })
-      .catch(err => {
-        if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
+      .catch(error => {
+        if (error.code === PostgresUniqueIndexViolationError && error.detail.includes(className)) {
           throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`);
         }
-        throw err;
+        throw error;
       });
     this._notifySchemaChange();
     return parseSchema;
@@ -1444,18 +1444,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .then(() => ({ ops: [object] }))
       .catch(error => {
         if (error.code === PostgresUniqueIndexViolationError) {
-          const err = new Parse.Error(
+          const parseError = new Parse.Error(
             Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided'
           );
-          err.underlyingError = error;
+          parseError.underlyingError = error;
           if (error.constraint) {
             const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
             if (matches && Array.isArray(matches)) {
-              err.userInfo = { duplicated_field: matches[1] };
+              parseError.userInfo = { duplicated_field: matches[1] };
             }
           }
-          error = err;
+          error = parseError;
         }
         throw error;
       });
@@ -2337,14 +2337,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .tx('perform-initialization', async t => {
         for (const schema of VolatileClassesSchemas) {
           await this.createTable(schema.className, schema, t)
-            .catch(err => {
+            .catch(error => {
               if (
-                err.code === PostgresDuplicateRelationError ||
-                err.code === Parse.Error.INVALID_CLASS_NAME
+                !(
+                  error.code === PostgresDuplicateRelationError ||
+                  error.code === Parse.Error.INVALID_CLASS_NAME
+                )
               ) {
-                return Promise.resolve();
+                throw error;
               }
-              throw err;
             })
             .then(() => this.schemaUpgrade(schema.className, schema, t));
         }
