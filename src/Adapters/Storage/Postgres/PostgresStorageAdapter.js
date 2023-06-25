@@ -873,7 +873,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._onchange = callback;
   }
 
-  //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
+  // Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
   createExplainableQuery(query: string, analyze: boolean = false) {
     if (analyze) {
       return 'EXPLAIN (ANALYZE, FORMAT JSON) ' + query;
@@ -1933,7 +1933,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         };
       }
     });
-    //TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.
+    // TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.
     if (object.createdAt) {
       object.createdAt = object.createdAt.toISOString();
     }
