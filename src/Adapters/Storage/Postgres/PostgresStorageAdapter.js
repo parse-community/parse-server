@@ -1998,6 +1998,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return this._client.none(qs, [className, constraintName, ...fieldNames]).catch(error => {
       if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
         // Index already exists. Ignore error.
+        return;
       } else if (
         error.code === PostgresUniqueIndexViolationError &&
         error.message.includes(constraintName)
