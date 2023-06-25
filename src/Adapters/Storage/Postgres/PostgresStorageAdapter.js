@@ -1627,11 +1627,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
         );
         values.push(fieldName, JSON.stringify(fieldValue.objects));
         index += 2;
-      } else if (fieldName === 'updatedAt') {
-        //TODO: stop special casing this. It should check for __type === 'Date' and use .iso
-        updatePatterns.push(`$${index}:name = $${index + 1}`);
-        values.push(fieldName, fieldValue);
-        index += 2;
       } else if (typeof fieldValue === 'string') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
@@ -2336,37 +2331,34 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async performInitialization({ VolatileClassesSchemas }: any) {
-    // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
     await this._ensureSchemaCollectionExists();
-    const promises = VolatileClassesSchemas.map(schema => {
-      return this.createTable(schema.className, schema)
-        .catch(err => {
-          if (
-            err.code === PostgresDuplicateRelationError ||
-            err.code === Parse.Error.INVALID_CLASS_NAME
-          ) {
-            return Promise.resolve();
-          }
-          throw err;
-        })
-        .then(() => this.schemaUpgrade(schema.className, schema));
-    });
-    promises.push(this._listenToSchema());
-    return Promise.all(promises)
-      .then(() => {
-        return this._client.tx('perform-initialization', async t => {
-          await t.none(sql.misc.jsonObjectSetKeys);
-          await t.none(sql.array.add);
-          await t.none(sql.array.addUnique);
-          await t.none(sql.array.remove);
-          await t.none(sql.array.containsAll);
-          await t.none(sql.array.containsAllRegex);
-          await t.none(sql.array.contains);
-          return t.ctx;
-        });
+    return this._client
+      .tx('perform-initialization', async t => {
+        for (const schema of VolatileClassesSchemas) {
+          await this.createTable(schema.className, schema, t)
+            .catch(err => {
+              if (
+                err.code === PostgresDuplicateRelationError ||
+                err.code === Parse.Error.INVALID_CLASS_NAME
+              ) {
+                return Promise.resolve();
+              }
+              throw err;
+            })
+            .then(() => this.schemaUpgrade(schema.className, schema, t));
+        }
+        await t.none(sql.misc.jsonObjectSetKeys);
+        await t.none(sql.array.add);
+        await t.none(sql.array.addUnique);
+        await t.none(sql.array.remove);
+        await t.none(sql.array.containsAll);
+        await t.none(sql.array.containsAllRegex);
+        await t.none(sql.array.contains);
+        return t.ctx;
       })
       .then(ctx => {
+        this._listenToSchema();
         debug(`initializationDone in ${ctx.duration}`);
       })
       .catch(error => {
