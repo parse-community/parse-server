@@ -96,7 +96,7 @@ class MFAAdapter extends AuthAdapter {
     }
     return saveResponse;
   }
-  validateUpdate(authData, _, req) {
+  async validateUpdate(authData, _, req) {
     if (req.master) {
       return;
     }
@@ -107,7 +107,7 @@ class MFAAdapter extends AuthAdapter {
       return this.confirmSMSOTP(authData, req.original.get('authData')?.mfa || {});
     }
     if (this.totp) {
-      this.validateLogin(authData.old, null, req);
+      await this.validateLogin(authData.old, null, req);
       return this.validateSetUp(authData);
     }
     throw 'Invalid MFA data';
@@ -118,16 +118,16 @@ class MFAAdapter extends AuthAdapter {
     }
     if (this.totp && authData.secret) {
       return {
-        enabled: true,
+        status: 'enabled',
       };
     }
     if (this.sms && authData.mobile) {
       return {
-        enabled: true,
+        status: 'enabled',
       };
     }
     return {
-      enabled: false,
+      status: 'disabled',
     };
   }
 
@@ -204,7 +204,7 @@ class MFAAdapter extends AuthAdapter {
     }
     const recovery = [randomString(30), randomString(30)];
     return {
-      response: { recovery },
+      response: { recovery: recovery.join(', ') },
       save: { secret, recovery },
     };
   }
