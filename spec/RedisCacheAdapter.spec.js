@@ -171,7 +171,7 @@ describe_only(() => {
   it('should start and connect cache adapter', async () => {
     const server = await reconfigureServer({
       cacheAdapter: {
-        module: __dirname.replace('/spec', '') + '/lib/Adapters/Cache/RedisCacheAdapter',
+        module: `${__dirname.replace('/spec', '')}/lib/Adapters/Cache/RedisCacheAdapter`,
         options: {
           url: 'redis://127.0.0.1:6379/1',
         },
