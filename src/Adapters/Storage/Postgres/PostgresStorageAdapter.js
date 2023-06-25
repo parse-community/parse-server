@@ -2337,18 +2337,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return this._client
       .tx('perform-initialization', async t => {
         for (const schema of VolatileClassesSchemas) {
-          await this.createTable(schema.className, schema, t)
-            .catch(error => {
-              if (
-                !(
-                  error.code === PostgresDuplicateRelationError ||
-                  error.code === Parse.Error.INVALID_CLASS_NAME
-                )
-              ) {
-                throw error;
-              }
-            })
-            .then(() => this.schemaUpgrade(schema.className, schema, t));
+          try {
+            await this.createTable(schema.className, schema, t);
+          } catch (error) {
+            if (
+              !(
+                error.code === PostgresDuplicateRelationError ||
+                error.code === Parse.Error.INVALID_CLASS_NAME
+              )
+            ) {
+              throw error;
+            }
+          }
+          this.schemaUpgrade(schema.className, schema, t);
         }
         await t.none(sql.misc.jsonObjectSetKeys);
         await t.none(sql.array.add);
