@@ -142,9 +142,6 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should handle a batch request with transaction = true', async () => {
-        const otherObject = new Parse.Object('OtherObject'); // This is important because transaction only works on pre-existing collections
-        await otherObject.save();
-        await otherObject.destroy();
         spyOn(databaseAdapter, 'createObject').and.callThrough();
         const response = await RESTController.request('POST', 'batch', {
           requests: [
@@ -287,6 +284,7 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should generate separate session for each call', async () => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
