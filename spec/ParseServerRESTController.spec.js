@@ -147,12 +147,12 @@ describe('ParseServerRESTController', () => {
           requests: [
             {
               method: 'POST',
-              path: '/1/classes/OtherObject',
+              path: '/1/classes/MyObject',
               body: { key: 'value1' },
             },
             {
               method: 'POST',
-              path: '/1/classes/OtherObject',
+              path: '/1/classes/MyObject',
               body: { key: 'value2' },
             },
           ],
@@ -163,7 +163,7 @@ describe('ParseServerRESTController', () => {
         expect(response[0].success.createdAt).toBeDefined();
         expect(response[1].success.objectId).toBeDefined();
         expect(response[1].success.createdAt).toBeDefined();
-        const query = new Parse.Query('OtherObject');
+        const query = new Parse.Query('MyObject');
         const results = await query.find();
         expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
         for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
