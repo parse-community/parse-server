@@ -2334,7 +2334,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
   async performInitialization({ VolatileClassesSchemas }: any) {
     debug('performInitialization');
     await this._ensureSchemaCollectionExists();
-    this._listenToSchema();
     return this._client
       .tx('perform-initialization', async t => {
         for (const schema of VolatileClassesSchemas) {
@@ -2362,6 +2361,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         return t.ctx;
       })
       .then(ctx => {
+        this._listenToSchema();
         debug(`initializationDone in ${ctx.duration}`);
       })
       .catch(error => {
