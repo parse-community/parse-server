@@ -142,22 +142,20 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should handle a batch request with transaction = true', async () => {
-        if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
-          const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-          await myObject.save();
-          await myObject.destroy();
-        }
+        const otherObject = new Parse.Object('OtherObject'); // This is important because transaction only works on pre-existing collections
+        await otherObject.save();
+        await otherObject.destroy();
         spyOn(databaseAdapter, 'createObject').and.callThrough();
         const response = await RESTController.request('POST', 'batch', {
           requests: [
             {
               method: 'POST',
-              path: '/1/classes/MyObject',
+              path: '/1/classes/OtherObject',
               body: { key: 'value1' },
             },
             {
               method: 'POST',
-              path: '/1/classes/MyObject',
+              path: '/1/classes/OtherObject',
               body: { key: 'value2' },
             },
           ],
@@ -168,7 +166,7 @@ describe('ParseServerRESTController', () => {
         expect(response[0].success.createdAt).toBeDefined();
         expect(response[1].success.objectId).toBeDefined();
         expect(response[1].success.createdAt).toBeDefined();
-        const query = new Parse.Query('MyObject');
+        const query = new Parse.Query('OtherObject');
         const results = await query.find();
         expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
         for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
