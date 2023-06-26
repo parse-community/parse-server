@@ -2,14 +2,16 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
   .ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
+const TestUtils = require('../lib/TestUtils');
 
 let RESTController;
-let router;
 
 describe('ParseServerRESTController', () => {
   beforeEach(() => {
-    router = ParseServer.promiseRouter({ appId: Parse.applicationId });
-    RESTController = ParseServerRESTController(Parse.applicationId, router);
+    RESTController = ParseServerRESTController(
+      Parse.applicationId,
+      ParseServer.promiseRouter({ appId: Parse.applicationId })
+    );
   });
 
   it('should handle a get request', async () => {
@@ -66,7 +68,9 @@ describe('ParseServerRESTController', () => {
   });
 
   it('should handle response status', async () => {
+    const router = ParseServer.promiseRouter({ appId: Parse.applicationId });
     spyOn(router, 'tryRouteRequest').and.callThrough();
+    RESTController = ParseServerRESTController(Parse.applicationId, router);
     const resp = await RESTController.request('POST', '/classes/MyObject');
     const { status, response, location } = await router.tryRouteRequest.calls.all()[0].returnValue;
 
@@ -76,7 +80,9 @@ describe('ParseServerRESTController', () => {
   });
 
   it('should handle response status in batch', async () => {
+    const router = ParseServer.promiseRouter({ appId: Parse.applicationId });
     spyOn(router, 'tryRouteRequest').and.callThrough();
+    RESTController = ParseServerRESTController(Parse.applicationId, router);
     const resp = await RESTController.request(
       'POST',
       'batch',
@@ -128,16 +134,22 @@ describe('ParseServerRESTController', () => {
   ) {
     describe('transactions', () => {
       beforeEach(async () => {
+        await TestUtils.destroyAllDataPermanently(true);
         if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
           await reconfigureServer({
             databaseAdapter: undefined,
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
+        } else {
+          await reconfigureServer();
         }
       });
 
       it('should handle a batch request with transaction = true', async () => {
+        const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
+        await myObject.save();
+        await myObject.destroy();
         spyOn(databaseAdapter, 'createObject').and.callThrough();
         const response = await RESTController.request('POST', 'batch', {
           requests: [
@@ -280,9 +292,7 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should generate separate session for each call', async () => {
-        if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
-          await reconfigureServer();
-        }
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
