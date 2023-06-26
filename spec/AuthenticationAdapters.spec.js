@@ -2473,7 +2473,9 @@ describe('OTP TOTP auth adatper', () => {
         username: 'username',
         password: 'password',
         authData: {
-          mfa: totp.generate(),
+          mfa: {
+            token: totp.generate(),
+          },
         },
       }),
     }).then(res => res.data);
@@ -2608,7 +2610,9 @@ describe('OTP TOTP auth adatper', () => {
           username: 'username',
           password: 'password',
           authData: {
-            mfa: 'abcd',
+            mfa: {
+              token: 'abcd',
+            },
           },
         }),
       }).catch(e => {
@@ -2694,7 +2698,9 @@ describe('OTP SMS auth adatper', () => {
         username: 'username',
         password: 'password',
         authData: {
-          mfa: true,
+          mfa: {
+            token: 'request',
+          },
         },
       }),
     }).catch(e => e.data);
@@ -2708,7 +2714,9 @@ describe('OTP SMS auth adatper', () => {
         username: 'username',
         password: 'password',
         authData: {
-          mfa: code,
+          mfa: {
+            token: code,
+          },
         },
       }),
     }).then(res => res.data);

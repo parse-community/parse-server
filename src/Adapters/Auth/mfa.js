@@ -44,14 +44,15 @@ class MFAAdapter extends AuthAdapter {
     }
     throw 'Invalid MFA data';
   }
-  async validateLogin(token, _, req) {
+  async validateLogin(loginData, _, req) {
     const saveResponse = {
       doNotSave: true,
     };
+    const token = loginData.token;
     const auth = req.original.get('authData') || {};
     const { secret, recovery, mobile, token: saved, expiry } = auth.mfa || {};
     if (this.sms && mobile) {
-      if (typeof token === 'boolean') {
+      if (token === 'request') {
         const { token: sendToken, expiry } = await this.sendSMS(mobile);
         auth.mfa.token = sendToken;
         auth.mfa.expiry = expiry;
@@ -107,7 +108,7 @@ class MFAAdapter extends AuthAdapter {
       return this.confirmSMSOTP(authData, req.original.get('authData')?.mfa || {});
     }
     if (this.totp) {
-      await this.validateLogin(authData.old, null, req);
+      await this.validateLogin({ token: authData.old }, null, req);
       return this.validateSetUp(authData);
     }
     throw 'Invalid MFA data';
