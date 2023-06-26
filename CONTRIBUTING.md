@@ -12,6 +12,9 @@
   - [Merge Readiness](#merge-readiness)
   - [Review Validity](#review-validity)
   - [Code Ownership](#code-ownership)
+  - [Access Permissions](#access-permissions)
+  - [New Private Repository](#new-private-repository)
+  - [New Public Repository](#new-public-repository)
 - [Environment Setup](#environment-setup)
   - [Recommended Tools](#recommended-tools)
   - [Setting up your local machine](#setting-up-your-local-machine)
@@ -151,6 +154,24 @@ Your arguments must focus on the issue, not on your assumption of someone else's
 > *Can I open a new pull request based on another author's pull request?*
 
 If your pull request contains work from someone else then you are required to get their permission to use their work in your pull request. Please make sure to observe the [license](LICENSE) for more details. In addition, as an appreciative gesture you should clearly mention that your pull request is based on another pull request with a link in the top-most comment of your pull request. To avoid this issue we encourage contributors to collaborate on a single pull request to preserve the commit history and clearly identify each author's contribution. To do so, you can review the other author's pull request and submit your code suggestions, or ask the original author to grant you write access to their repository to also be able to make commits directly to their pull request.
+
+### Access Permissions
+
+> *Can I get write access to the repository to make changes faster?*
+
+Keeping our products safe and secure is one of your top priorities. Our security policy mandates that write access to repositories is only provided to as few people as necessary. All usual contributions can be made via public pull requests. If you think you need write access, contact the repository team and explain in detail what the constraint is that you are trying to overcome. We want to make contributing for you as easy as possible. If there are any bottlenecks that are slowing you down we are happy to receive your feedback to see where we can improve.
+
+### New Private Repository
+
+> *Can I get a new private repository within the Parse Platform organization to work on some stuff?*
+
+Private repositories are not provided unless there is a significant constraint or requirement that makes it necessary. For example, when collaborating on fixing a security vulnerability we provide private repositories to allow collaborators to share sensitive information within a select group.
+
+### New Public Repository
+
+> *Can I get a new public repository within the Parse Platform organization to work on some stuff?*
+
+First of all, we appreciate your contribution. In rare cases, where we consider it beneficial to the advancement of the repository, a new public repository for a specific purpose may be provided, for example for increased visibility or to provide the organization's GitHub ressources. In other cases, we encourage you to start your contribution in a personal repository of your own GitHub account, and later transfer it to the Parse Platform organization. We will be happy to assist you in the repository transfer.
 
 ## Environment Setup
 

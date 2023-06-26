@@ -25,7 +25,7 @@ function removeTrailingSlash(str) {
     return str;
   }
   if (str.endsWith('/')) {
-    str = str.substr(0, str.length - 1);
+    str = str.substring(0, str.length - 1);
   }
   return str;
 }
