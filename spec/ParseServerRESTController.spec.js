@@ -2,7 +2,6 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
   .ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
-const TestUtils = require('../lib/TestUtils');
 
 let RESTController;
 let router;
@@ -129,15 +128,12 @@ describe('ParseServerRESTController', () => {
   ) {
     describe('transactions', () => {
       beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
         if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
           await reconfigureServer({
             databaseAdapter: undefined,
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
-        } else {
-          await reconfigureServer();
         }
       });
 
@@ -284,7 +280,9 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should generate separate session for each call', async () => {
-        await reconfigureServer();
+        if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
+          await reconfigureServer();
+        }
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
