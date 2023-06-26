@@ -142,6 +142,11 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should handle a batch request with transaction = true', async () => {
+        if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
+          const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
+          await myObject.save();
+          await myObject.destroy();
+        }
         spyOn(databaseAdapter, 'createObject').and.callThrough();
         const response = await RESTController.request('POST', 'batch', {
           requests: [
