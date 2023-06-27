@@ -23,7 +23,7 @@ const getMountForRequest = function (req) {
   return req.protocol + '://' + req.get('host') + mountPath;
 };
 
-const checkIpRanges = (ip, ranges = []) => {
+export const checkIpRanges = (ip, ranges = []) => {
   const getType = address => (isIPv4(address) ? 'ipv4' : 'ipv6');
   const clientType = getType(ip);
   const blocklist = new BlockList();

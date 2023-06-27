@@ -152,6 +152,41 @@ describe('middlewares', () => {
     );
   });
 
+  it('should match address', () => {
+    const ipv6 = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
+    const anotherIpv6 = '::ffff:101.10.0.1';
+    const ipv4 = '192.168.0.101';
+    const localhostV6 = '::1';
+    const localhostV62 = '::ffff:127.0.0.1';
+    const localhostV4 = '127.0.0.1';
+
+    const v6 = [ipv6, anotherIpv6];
+    v6.forEach(ip => {
+      expect(middlewares.checkIpRanges(ip, ['::/0'])).toBe(true);
+      expect(middlewares.checkIpRanges(ip, ['::'])).toBe(true);
+      expect(middlewares.checkIpRanges(ip, ['0.0.0.0'])).toBe(false);
+      expect(middlewares.checkIpRanges(ip, ['123.123.123.123'])).toBe(false);
+    });
+
+    expect(middlewares.checkIpRanges(ipv6, [anotherIpv6])).toBe(false);
+    expect(middlewares.checkIpRanges(ipv6, [ipv6])).toBe(true);
+    expect(middlewares.checkIpRanges(ipv6, ['2001:db8:85a3:0:0:8a2e:0:0/100'])).toBe(true);
+
+    expect(middlewares.checkIpRanges(ipv4, ['::'])).toBe(false);
+    expect(middlewares.checkIpRanges(ipv4, ['::/0'])).toBe(true);
+    expect(middlewares.checkIpRanges(ipv4, ['0.0.0.0'])).toBe(true);
+    expect(middlewares.checkIpRanges(ipv4, ['123.123.123.123'])).toBe(false);
+    expect(middlewares.checkIpRanges(ipv4, [ipv4])).toBe(true);
+    expect(middlewares.checkIpRanges(ipv4, ['192.168.0.0/24'])).toBe(true);
+
+    expect(middlewares.checkIpRanges(localhostV4, ['::1'])).toBe(false);
+    expect(middlewares.checkIpRanges(localhostV6, ['::1'])).toBe(true);
+    // ::ffff:127.0.0.1 is a padded ipv4 address but not ::1
+    expect(middlewares.checkIpRanges(localhostV62, ['::1'])).toBe(false);
+    // ::ffff:127.0.0.1 is a padded ipv4 address and is a match for  127.0.0.1
+    expect(middlewares.checkIpRanges(localhostV62, ['127.0.0.1'])).toBe(true);
+  });
+
   it('can allow all with masterKeyIPs', async () => {
     const combinations = [
       {
