@@ -95,7 +95,8 @@ describe('Cloud Code', () => {
   it('can get config', () => {
     const config = Parse.Server;
     let currentConfig = Config.get('test');
-    expect(Object.keys(config)).toEqual(Object.keys(currentConfig));
+    const server = require('../lib/cloud-code/Parse.Server');
+    expect(Object.keys(config)).toEqual(Object.keys({ ...currentConfig, ...server }));
     config.silent = false;
     Parse.Server = config;
     currentConfig = Config.get('test');
@@ -1352,7 +1353,27 @@ describe('Cloud Code', () => {
       });
   });
 
+  it('should not encode Parse Objects', async () => {
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('deleted', false);
+    await user.signUp();
+    Parse.Cloud.define(
+      'deleteAccount',
+      async req => {
+        expect(req.params.object instanceof Parse.Object).not.toBeTrue();
+        return 'Object deleted';
+      },
+      {
+        requireMaster: true,
+      }
+    );
+    await Parse.Cloud.run('deleteAccount', { object: user.toPointer() }, { useMasterKey: true });
+  });
+
   it('allow cloud to encode Parse Objects', async () => {
+    await reconfigureServer({ encodeParseObjectInCloudFunction: true });
     const user = new Parse.User();
     user.setUsername('username');
     user.setPassword('password');

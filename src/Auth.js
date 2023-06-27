@@ -495,6 +495,7 @@ const hasMutatedAuthData = (authData, userAuthData) => {
 };
 
 const checkIfUserHasProvidedConfiguredProvidersForLogin = (
+  req = {},
   authData = {},
   userAuthData = {},
   config
@@ -518,7 +519,16 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 
   const additionProvidersNotFound = [];
   const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
-    if (provider && provider.adapter && provider.adapter.policy === 'additional') {
+    let policy = provider.adapter.policy;
+    if (typeof policy === 'function') {
+      const requestObject = {
+        ip: req.config.ip,
+        user: req.auth.user,
+        master: req.auth.isMaster,
+      };
+      policy = policy.call(provider.adapter, requestObject, userAuthData[provider.name]);
+    }
+    if (policy === 'additional') {
       if (authData[provider.name]) {
         return true;
       } else {
@@ -555,14 +565,8 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
     await user.fetch({ useMasterKey: true });
   }
 
-  const { originalObject, updatedObject } = req.buildParseObjects();
-  const requestObject = getRequestObject(
-    undefined,
-    req.auth,
-    updatedObject,
-    originalObject || user,
-    req.config
-  );
+  const { updatedObject } = req.buildParseObjects();
+  const requestObject = getRequestObject(undefined, req.auth, updatedObject, user, req.config);
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
   const acc = { authData: {}, authDataResponse: {} };
