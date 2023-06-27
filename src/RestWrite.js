@@ -556,6 +556,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // we need to be sure that the user has provided
         // required authData
         Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
+          { config: this.config, auth: this.auth },
           authData,
           userResult.authData,
           this.config
