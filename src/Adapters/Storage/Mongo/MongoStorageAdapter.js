@@ -282,7 +282,6 @@ export class MongoStorageAdapter implements StorageAdapter {
         indexOptions = field._options;
         delete field._options;
       }
-      console.log(existingIndexes[name], field);
       if (existingIndexes[name] && field.__op !== 'Delete') {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
       }
