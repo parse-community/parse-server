@@ -1,3 +1,10 @@
+## [6.2.1](https://github.com/parse-community/parse-server/compare/6.2.0...6.2.1) (2023-06-28)
+
+
+### Bug Fixes
+
+* Remote code execution via MongoDB BSON parser through prototype pollution; fixes security vulnerability [GHSA-462x-c3jw-7vr6](https://github.com/parse-community/parse-server/security/advisories/GHSA-462x-c3jw-7vr6) ([#8674](https://github.com/parse-community/parse-server/issues/8674)) ([3dd99dd](https://github.com/parse-community/parse-server/commit/3dd99dd80e27e5e1d99b42844180546d90c7aa90))
+
 # [6.2.0](https://github.com/parse-community/parse-server/compare/6.1.0...6.2.0) (2023-05-20)
 
 
