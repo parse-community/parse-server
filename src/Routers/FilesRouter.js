@@ -175,22 +175,12 @@ export class FilesRouter {
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
-    if (req.config && req.config.requestKeywordDenylist) {
-      // Scan request data for denied keywords
-      for (const keyword of req.config.requestKeywordDenylist) {
-        const match =
-          Utils.objectContainsKeyValue(metadata, keyword.key, keyword.value) ||
-          Utils.objectContainsKeyValue(tags, keyword.key, keyword.value);
-        if (match) {
-          next(
-            new Parse.Error(
-              Parse.Error.INVALID_KEY_NAME,
-              `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
-            )
-          );
-          return;
-        }
-      }
+    try {
+      Utils.checkProhibitedKeywords(config, metadata);
+      Utils.checkProhibitedKeywords(config, tags);
+    } catch (error) {
+      next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return;
     }
     file.setTags(tags);
     file.setMetadata(metadata);
