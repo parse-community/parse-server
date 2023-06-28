@@ -315,7 +315,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           ...indexOptions,
         });
         const fieldCopy = deepcopy(field);
-        if (indexOptions) {
+        if (Object.keys(indexOptions).length) {
           fieldCopy._options = indexOptions;
         }
         existingIndexes[name] = fieldCopy;
