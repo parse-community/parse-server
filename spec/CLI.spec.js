@@ -303,7 +303,7 @@ describe('execution', () => {
     });
   });
 
-  fit('can start Parse Server with auth via CLI', done => {
+  it('can start Parse Server with auth via CLI', done => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first';
     childProcess = spawn(
