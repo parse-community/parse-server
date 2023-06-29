@@ -296,9 +296,7 @@ describe('execution', () => {
   });
 
   it('can start Parse Server with auth via CLI', done => {
-    const env = { ...process.env };
-    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
-    childProcess = spawn(binPath, ['./spec/configs/CLIConfigAuth.json'], { env });
+    childProcess = spawn(binPath, ['./spec/configs/CLIConfigAuth.json'], { env: process.env });
     childProcess.stdout.on('data', data => {
       data = data.toString();
       if (data.includes('parse-server running on')) {
