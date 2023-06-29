@@ -1,3 +1,10 @@
+## [5.5.3](https://github.com/parse-community/parse-server/compare/5.5.2...5.5.3) (2023-06-29)
+
+
+### Bug Fixes
+
+* Server does not start via CLI when `auth` option is set ([#8669](https://github.com/parse-community/parse-server/issues/8669)) ([601da1e](https://github.com/parse-community/parse-server/commit/601da1ee3c8a22c48fa0209054a2e0f0474cf521))
+
 ## [5.5.2](https://github.com/parse-community/parse-server/compare/5.5.1...5.5.2) (2023-06-28)
 
 
