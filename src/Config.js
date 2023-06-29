@@ -569,6 +569,24 @@ export class Config {
     } else if (typeof databaseOptions.schemaCacheTtl !== 'number') {
       throw `databaseOptions.schemaCacheTtl must be a number`;
     }
+    if (databaseOptions.disableEnsureUsernameCaseInsensitiveIndex === undefined) {
+      databaseOptions.disableEnsureUsernameCaseInsensitiveIndex =
+        DatabaseOptions.disableEnsureUsernameCaseInsensitiveIndex.default;
+    } else if (typeof databaseOptions.disableEnsureUsernameCaseInsensitiveIndex !== 'boolean') {
+      throw `databaseOptions.disableEnsureUsernameCaseInsensitiveIndex must be a boolean`;
+    }
+    if (databaseOptions.disableEnsureEmailCaseInsensitiveIndex === undefined) {
+      databaseOptions.disableEnsureEmailCaseInsensitiveIndex =
+        DatabaseOptions.disableEnsureEmailCaseInsensitiveIndex.default;
+    } else if (typeof databaseOptions.disableEnsureEmailCaseInsensitiveIndex !== 'boolean') {
+      throw `databaseOptions.disableEnsureEmailCaseInsensitiveIndex must be a boolean`;
+    }
+    if (databaseOptions.disableEnsureIdempotencyExpireIndex === undefined) {
+      databaseOptions.disableEnsureIdempotencyExpireIndex =
+        DatabaseOptions.disableEnsureIdempotencyExpireIndex.default;
+    } else if (typeof databaseOptions.disableEnsureIdempotencyExpireIndex !== 'boolean') {
+      throw `databaseOptions.disableEnsureIdempotencyExpireIndex must be a boolean`;
+    }
   }
 
   static validateRateLimit(rateLimit) {

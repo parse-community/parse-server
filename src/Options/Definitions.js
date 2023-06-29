@@ -1008,6 +1008,27 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  disableEnsureEmailCaseInsensitiveIndex: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_ENSURE_EMAIL_CASE_INSENSITIVE_INDEX',
+    help:
+      'Disables behavior to ensure case-insensitive index on field email on _User collection. Set to `true` if using a database not supporting case-insensitive indexes.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  disableEnsureIdempotencyExpireIndex: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_ENSURE_IDEMPOTENCY_EXPIRE_INDEX',
+    help:
+      'Disables behavior to ensure time to live index on field expire on _Idempotency collection. Set to `true` if using a database not supporting TTL index on this field.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  disableEnsureUsernameCaseInsensitiveIndex: {
+    env: 'PARSE_SERVER_DATABASE_DISABLE_ENSURE_USERNAME_CASE_INSENSITIVE_INDEX',
+    help:
+      'Disables behavior to ensure case-insensitive index on field username on _User collection. Set to `true` if using a database not supporting case-insensitive indexes.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
     help:
