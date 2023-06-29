@@ -475,6 +475,11 @@ class DatabaseController {
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
+    try {
+      Utils.checkProhibitedKeywords(this.options, update);
+    } catch (error) {
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+    }
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
@@ -805,6 +810,11 @@ class DatabaseController {
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
+    try {
+      Utils.checkProhibitedKeywords(this.options, object);
+    } catch (error) {
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+    }
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
     object = transformObjectACL(object);
