@@ -1,10 +1,7 @@
 /**
- * @module SecurityCheck
- */
-
-/**
  * A group of security checks.
- * @interface CheckGroup
+ * @interface
+ * @memberof module:SecurityCheck
  */
 class CheckGroup {
   constructor() {

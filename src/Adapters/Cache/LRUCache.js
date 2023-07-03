@@ -1,4 +1,4 @@
-import LRU from 'lru-cache';
+import { LRUCache as LRU } from 'lru-cache';
 import defaults from '../../defaults';
 
 export class LRUCache {
@@ -18,11 +18,11 @@ export class LRUCache {
   }
 
   del(key) {
-    this.cache.del(key);
+    this.cache.delete(key);
   }
 
   clear() {
-    this.cache.reset();
+    this.cache.clear();
   }
 }
 

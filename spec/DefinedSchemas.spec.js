@@ -432,6 +432,42 @@ describe('DefinedSchemas', () => {
       expect(testSchema.indexes).toBeUndefined();
       expect(userSchema.indexes).toEqual(expectedIndexes);
     });
+
+    it('should detect protected indexes for _User class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      const protectedUserIndexes = ['_id_', 'case_insensitive_email', 'username_1', 'email_1'];
+      protectedUserIndexes.forEach(field => {
+        expect(definedSchema.isProtectedIndex('_User', field)).toEqual(true);
+      });
+      expect(definedSchema.isProtectedIndex('_User', 'test')).toEqual(false);
+    });
+
+    it('should detect protected indexes for _Role class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      expect(definedSchema.isProtectedIndex('_Role', 'name_1')).toEqual(true);
+      expect(definedSchema.isProtectedIndex('_Role', 'test')).toEqual(false);
+    });
+
+    it('should detect protected indexes for _Idempotency class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'reqId_1')).toEqual(true);
+      expect(definedSchema.isProtectedIndex('_Idempotency', 'test')).toEqual(false);
+    });
+
+    it('should not detect protected indexes on user defined class', () => {
+      const definedSchema = new DefinedSchemas({}, {});
+      const protectedIndexes = [
+        'case_insensitive_email',
+        'username_1',
+        'email_1',
+        'reqId_1',
+        'name_1',
+      ];
+      protectedIndexes.forEach(field => {
+        expect(definedSchema.isProtectedIndex('ExampleClass', field)).toEqual(false);
+      });
+      expect(definedSchema.isProtectedIndex('ExampleClass', '_id_')).toEqual(true);
+    });
   });
 
   describe('ClassLevelPermissions', () => {
@@ -518,7 +554,7 @@ describe('DefinedSchemas', () => {
     });
   });
 
-  it('should not delete automatically classes', async () => {
+  it('should not delete classes automatically', async () => {
     await reconfigureServer({
       schema: { definitions: [{ className: '_User' }, { className: 'Test' }] },
     });
@@ -595,7 +631,7 @@ describe('DefinedSchemas', () => {
     const logger = require('../lib/logger').logger;
     spyOn(DefinedSchemas.prototype, 'wait').and.resolveTo();
     spyOn(logger, 'error').and.callThrough();
-    spyOn(Parse.Schema, 'all').and.callFake(() => {
+    spyOn(DefinedSchemas.prototype, 'createDeleteSession').and.callFake(() => {
       throw error;
     });
 
@@ -640,5 +676,34 @@ describe('DefinedSchemas', () => {
     expect(testSchema.fields.aField).toEqual({ type: 'String' });
     expect(testSchema.classLevelPermissions.create).toEqual({ requiresAuthentication: true });
     expect(logger.error).toHaveBeenCalledTimes(0);
+  });
+
+  it('should not affect cacheAdapter', async () => {
+    const server = await reconfigureServer();
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callThrough();
+    const migrationOptions = {
+      definitions: [
+        {
+          className: 'Test',
+          fields: { aField: { type: 'String' } },
+          indexes: { aField: { aField: 1 } },
+          classLevelPermissions: {
+            create: { requiresAuthentication: true },
+          },
+        },
+      ],
+    };
+
+    const cacheAdapter = {
+      get: () => Promise.resolve(null),
+      put: () => {},
+      del: () => {},
+      clear: () => {},
+      connect: jasmine.createSpy('clear'),
+    };
+    server.config.cacheAdapter = cacheAdapter;
+    await new DefinedSchemas(migrationOptions, server.config).execute();
+    expect(cacheAdapter.connect).not.toHaveBeenCalled();
   });
 });

@@ -1,10 +1,16 @@
 {
   "plugins": ["node_modules/jsdoc-babel", "plugins/markdown"],
   "babel": {
-      "plugins": ["@babel/plugin-transform-flow-strip-types"]
+    "plugins": ["@babel/plugin-transform-flow-strip-types"]
   },
   "source": {
-    "include":  ["./README.md", "./src/cloud-code", "./src/Options/docs.js", "./src/ParseServer.js", "./src/Adapters"],
+    "include": [
+      "README.md",
+      "./src/cloud-code",
+      "./src/Options/docs.js",
+      "./src/ParseServer.js",
+      "./src/Adapters"
+    ],
     "excludePattern": "(^|\\/|\\\\)_"
   },
   "templates": {
@@ -17,7 +23,18 @@
     "monospaceLinks": false
   },
   "opts": {
-    "template": "node_modules/@parse/minami",
-    "recurse": true
+    "encoding": "utf8",
+    "readme": "./README.md",
+    "recurse": true,
+    "template": "./node_modules/clean-jsdoc-theme",
+    "theme_opts": {
+      "default_theme": "dark",
+      "title": "<img src='../.github/parse-server-logo.png' class='logo'/>",
+      "create_style": "header, .sidebar-section-title, .sidebar-title { color: #139cee !important } .logo { margin-left : 40px; margin-right: 40px }"
+    }
+  },
+  "markdown": {
+    "hardwrap": false,
+    "idInHeadings": true
   }
 }

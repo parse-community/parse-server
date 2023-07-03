@@ -5,6 +5,7 @@ const jwksClient = require('jwks-rsa');
 const util = require('util');
 const jwt = require('jsonwebtoken');
 const httpsRequest = require('./httpsRequest');
+const authUtils = require('./utils');
 
 const TOKEN_ISSUER = 'https://facebook.com';
 
@@ -32,22 +33,23 @@ function validateGraphToken(authData, options) {
   });
 }
 
-function validateGraphAppId(appIds, authData, options) {
+async function validateGraphAppId(appIds, authData, options) {
   var access_token = authData.access_token;
   if (process.env.TESTING && access_token === 'test') {
-    return Promise.resolve();
+    return;
+  }
+  if (!Array.isArray(appIds)) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.');
   }
   if (!appIds.length) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is not configured.');
   }
-  return graphRequest(
-    'app?access_token=' + access_token + getAppSecretPath(authData, options)
-  ).then(data => {
-    if (data && appIds.indexOf(data.id) != -1) {
-      return;
-    }
+  const data = await graphRequest(
+    `app?access_token=${access_token}${getAppSecretPath(authData, options)}`
+  );
+  if (!data || !appIds.includes(data.id)) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
-  });
+  }
 }
 
 const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
@@ -72,21 +74,12 @@ const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   return key;
 };
 
-const getHeaderFromToken = token => {
-  const decodedToken = jwt.decode(token, { complete: true });
-  if (!decodedToken) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'provided token does not decode as JWT');
-  }
-
-  return decodedToken.header;
-};
-
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
   if (!token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'id token is invalid for this user.');
   }
 
-  const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
+  const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
   const ONE_HOUR_IN_MS = 3600000;
   let jwtClaims;
 

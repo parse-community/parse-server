@@ -203,6 +203,9 @@ RestQuery.prototype.execute = function (executeOptions) {
       return this.buildRestWhere();
     })
     .then(() => {
+      return this.denyProtectedFields();
+    })
+    .then(() => {
       return this.handleIncludeAll();
     })
     .then(() => {
@@ -219,6 +222,9 @@ RestQuery.prototype.execute = function (executeOptions) {
     })
     .then(() => {
       return this.runAfterFindTrigger();
+    })
+    .then(() => {
+      return this.handleAuthAdapters();
     })
     .then(() => {
       return this.response;
@@ -590,7 +596,7 @@ RestQuery.prototype.replaceDontSelect = function () {
   });
 };
 
-const cleanResultAuthData = function (result) {
+RestQuery.prototype.cleanResultAuthData = function (result) {
   delete result.password;
   if (result.authData) {
     Object.keys(result.authData).forEach(provider => {
@@ -659,7 +665,7 @@ RestQuery.prototype.runFind = function (options = {}) {
     .then(results => {
       if (this.className === '_User' && !findOptions.explain) {
         for (var result of results) {
-          cleanResultAuthData(result);
+          this.cleanResultAuthData(result);
         }
       }
 
@@ -686,6 +692,30 @@ RestQuery.prototype.runCount = function () {
   return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
     this.response.count = c;
   });
+};
+
+RestQuery.prototype.denyProtectedFields = async function () {
+  if (this.auth.isMaster) {
+    return;
+  }
+  const schemaController = await this.config.database.loadSchema();
+  const protectedFields =
+    this.config.database.addProtectedFields(
+      schemaController,
+      this.className,
+      this.restWhere,
+      this.findOptions.acl,
+      this.auth,
+      this.findOptions
+    ) || [];
+  for (const key of protectedFields) {
+    if (this.restWhere[key]) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        `This user is not allowed to query ${key} on class ${this.className}`
+      );
+    }
+  }
 };
 
 // Augments this.response with all pointers on an object
@@ -813,6 +843,20 @@ RestQuery.prototype.runAfterFindTrigger = function () {
         this.response.results = results;
       }
     });
+};
+
+RestQuery.prototype.handleAuthAdapters = async function () {
+  if (this.className !== '_User' || this.findOptions.explain) {
+    return;
+  }
+  await Promise.all(
+    this.response.results.map(result =>
+      this.config.authDataManager.runAfterFind(
+        { config: this.config, auth: this.auth },
+        result.authData
+      )
+    )
+  );
 };
 
 // Adds included values to the response.

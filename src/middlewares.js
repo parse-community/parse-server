@@ -7,6 +7,12 @@ import defaultLogger from './logger';
 import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
+import rateLimit from 'express-rate-limit';
+import { RateLimitOptions } from './Options/Definitions';
+import { pathToRegexp } from 'path-to-regexp';
+import ipRangeCheck from 'ip-range-check';
+import RedisStore from 'rate-limit-redis';
+import { createClient } from 'redis';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
@@ -41,6 +47,7 @@ export function handleParseHeaders(req, res, next) {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
     masterKey: req.get('X-Parse-Master-Key'),
+    maintenanceKey: req.get('X-Parse-Maintenance-Key'),
     installationId: req.get('X-Parse-Installation-Id'),
     clientKey: req.get('X-Parse-Client-Key'),
     javascriptKey: req.get('X-Parse-Javascript-Key'),
@@ -157,23 +164,48 @@ export function handleParseHeaders(req, res, next) {
   }
 
   const clientIp = getClientIp(req);
+  const config = Config.get(info.appId, mount);
+  if (config.state && config.state !== 'ok') {
+    res.status(500);
+    res.json({
+      code: Parse.Error.INTERNAL_SERVER_ERROR,
+      error: `Invalid server state: ${config.state}`,
+    });
+    return;
+  }
 
   info.app = AppCache.get(info.appId);
-  req.config = Config.get(info.appId, mount);
+  req.config = config;
   req.config.headers = req.headers || {};
   req.config.ip = clientIp;
   req.info = info;
 
-  if (
-    info.masterKey &&
-    req.config.masterKeyIps &&
-    req.config.masterKeyIps.length !== 0 &&
-    req.config.masterKeyIps.indexOf(clientIp) === -1
-  ) {
-    return invalidRequest(req, res);
+  const isMaintenance =
+    req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
+  if (isMaintenance) {
+    if (ipRangeCheck(clientIp, req.config.maintenanceKeyIps || [])) {
+      req.auth = new auth.Auth({
+        config: req.config,
+        installationId: info.installationId,
+        isMaintenance: true,
+      });
+      next();
+      return;
+    }
+    const log = req.config?.loggerController || defaultLogger;
+    log.error(
+      `Request using maintenance key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
   }
 
-  var isMaster = info.masterKey === req.config.masterKey;
+  let isMaster = info.masterKey === req.config.masterKey;
+  if (isMaster && !ipRangeCheck(clientIp, req.config.masterKeyIps || [])) {
+    const log = req.config?.loggerController || defaultLogger;
+    log.error(
+      `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
+    );
+    isMaster = false;
+  }
 
   if (isMaster) {
     req.auth = new auth.Auth({
@@ -181,8 +213,7 @@ export function handleParseHeaders(req, res, next) {
       installationId: info.installationId,
       isMaster: true,
     });
-    next();
-    return;
+    return handleRateLimit(req, res, next);
   }
 
   var isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
@@ -197,8 +228,7 @@ export function handleParseHeaders(req, res, next) {
       isMaster: true,
       isReadOnly: true,
     });
-    next();
-    return;
+    return handleRateLimit(req, res, next);
   }
 
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
@@ -226,8 +256,7 @@ export function handleParseHeaders(req, res, next) {
       isMaster: false,
       user: req.userFromJWT,
     });
-    next();
-    return;
+    return handleRateLimit(req, res, next);
   }
 
   if (!info.sessionToken) {
@@ -236,66 +265,79 @@ export function handleParseHeaders(req, res, next) {
       installationId: info.installationId,
       isMaster: false,
     });
-    next();
-    return;
   }
-
-  return Promise.resolve()
-    .then(() => {
-      // handle the upgradeToRevocableSession path on it's own
-      if (
-        info.sessionToken &&
-        req.url === '/upgradeToRevocableSession' &&
-        info.sessionToken.indexOf('r:') != 0
-      ) {
-        return auth.getAuthForLegacySessionToken({
-          config: req.config,
-          installationId: info.installationId,
-          sessionToken: info.sessionToken,
-        });
-      } else {
-        return auth.getAuthForSessionToken({
-          config: req.config,
-          installationId: info.installationId,
-          sessionToken: info.sessionToken,
-        });
-      }
-    })
-    .then(auth => {
-      if (auth) {
-        req.auth = auth;
-        next();
-      }
-    })
-    .catch(error => {
-      if (error instanceof Parse.Error) {
-        next(error);
-        return;
-      } else {
-        // TODO: Determine the correct error scenario.
-        req.config.loggerController.error('error getting auth for sessionToken', error);
-        throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
-      }
-    });
+  handleRateLimit(req, res, next);
 }
 
-function getClientIp(req) {
-  if (req.headers['x-forwarded-for']) {
-    // try to get from x-forwared-for if it set (behind reverse proxy)
-    return req.headers['x-forwarded-for'].split(',')[0];
-  } else if (req.connection && req.connection.remoteAddress) {
-    // no proxy, try getting from connection.remoteAddress
-    return req.connection.remoteAddress;
-  } else if (req.socket) {
-    // try to get it from req.socket
-    return req.socket.remoteAddress;
-  } else if (req.connection && req.connection.socket) {
-    // try to get it form the connection.socket
-    return req.connection.socket.remoteAddress;
-  } else {
-    // if non above, fallback.
-    return req.ip;
+const handleRateLimit = async (req, res, next) => {
+  const rateLimits = req.config.rateLimits || [];
+  try {
+    await Promise.all(
+      rateLimits.map(async limit => {
+        const pathExp = new RegExp(limit.path);
+        if (pathExp.test(req.url)) {
+          await limit.handler(req, res, err => {
+            if (err) {
+              if (err.code === Parse.Error.CONNECTION_FAILED) {
+                throw err;
+              }
+              req.config.loggerController.error(
+                'An unknown error occured when attempting to apply the rate limiter: ',
+                err
+              );
+            }
+          });
+        }
+      })
+    );
+  } catch (error) {
+    res.status(429);
+    res.json({ code: Parse.Error.CONNECTION_FAILED, error: error.message });
+    return;
   }
+  next();
+};
+
+export const handleParseSession = async (req, res, next) => {
+  try {
+    const info = req.info;
+    if (req.auth) {
+      next();
+      return;
+    }
+    let requestAuth = null;
+    if (
+      info.sessionToken &&
+      req.url === '/upgradeToRevocableSession' &&
+      info.sessionToken.indexOf('r:') != 0
+    ) {
+      requestAuth = await auth.getAuthForLegacySessionToken({
+        config: req.config,
+        installationId: info.installationId,
+        sessionToken: info.sessionToken,
+      });
+    } else {
+      requestAuth = await auth.getAuthForSessionToken({
+        config: req.config,
+        installationId: info.installationId,
+        sessionToken: info.sessionToken,
+      });
+    }
+    req.auth = requestAuth;
+    next();
+  } catch (error) {
+    if (error instanceof Parse.Error) {
+      next(error);
+      return;
+    }
+    // TODO: Determine the correct error scenario.
+    req.config.loggerController.error('error getting auth for sessionToken', error);
+    throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+  }
+};
+
+function getClientIp(req) {
+  return req.ip;
 }
 
 function httpAuth(req) {
@@ -342,8 +384,13 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    const allowOrigin = (config && config.allowOrigin) || '*';
-    res.header('Access-Control-Allow-Origin', allowOrigin);
+
+    const baseOrigins =
+      typeof config?.allowOrigin === 'string' ? [config.allowOrigin] : config?.allowOrigin ?? ['*'];
+    const requestOrigin = req.headers.origin;
+    const allowOrigins =
+      requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
+    res.header('Access-Control-Allow-Origin', allowOrigins);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
@@ -423,6 +470,109 @@ export function promiseEnforceMasterKeyAccess(request) {
   }
   return Promise.resolve();
 }
+
+export const addRateLimit = (route, config, cloud) => {
+  if (typeof config === 'string') {
+    config = Config.get(config);
+  }
+  for (const key in route) {
+    if (!RateLimitOptions[key]) {
+      throw `Invalid rate limit option "${key}"`;
+    }
+  }
+  if (!config.rateLimits) {
+    config.rateLimits = [];
+  }
+  const redisStore = {
+    connectionPromise: Promise.resolve(),
+    store: null,
+    connected: false,
+  };
+  if (route.redisUrl) {
+    const client = createClient({
+      url: route.redisUrl,
+    });
+    redisStore.connectionPromise = async () => {
+      if (redisStore.connected) {
+        return;
+      }
+      try {
+        await client.connect();
+        redisStore.connected = true;
+      } catch (e) {
+        const log = config?.loggerController || defaultLogger;
+        log.error(`Could not connect to redisURL in rate limit: ${e}`);
+      }
+    };
+    redisStore.connectionPromise();
+    redisStore.store = new RedisStore({
+      sendCommand: async (...args) => {
+        await redisStore.connectionPromise();
+        return client.sendCommand(args);
+      },
+    });
+  }
+  let transformPath = route.requestPath.split('/*').join('/(.*)');
+  if (transformPath === '*') {
+    transformPath = '(.*)';
+  }
+  config.rateLimits.push({
+    path: pathToRegexp(transformPath),
+    handler: rateLimit({
+      windowMs: route.requestTimeWindow,
+      max: route.requestCount,
+      message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
+      handler: (request, response, next, options) => {
+        throw {
+          code: Parse.Error.CONNECTION_FAILED,
+          message: options.message,
+        };
+      },
+      skip: request => {
+        if (request.ip === '127.0.0.1' && !route.includeInternalRequests) {
+          return true;
+        }
+        if (route.includeMasterKey) {
+          return false;
+        }
+        if (route.requestMethods) {
+          if (Array.isArray(route.requestMethods)) {
+            if (!route.requestMethods.includes(request.method)) {
+              return true;
+            }
+          } else {
+            const regExp = new RegExp(route.requestMethods);
+            if (!regExp.test(request.method)) {
+              return true;
+            }
+          }
+        }
+        return request.auth?.isMaster;
+      },
+      keyGenerator: async request => {
+        if (route.zone === Parse.Server.RateLimitZone.global) {
+          return request.config.appId;
+        }
+        const token = request.info.sessionToken;
+        if (route.zone === Parse.Server.RateLimitZone.session && token) {
+          return token;
+        }
+        if (route.zone === Parse.Server.RateLimitZone.user && token) {
+          if (!request.auth) {
+            await new Promise(resolve => handleParseSession(request, null, resolve));
+          }
+          if (request.auth?.user?.id && request.zone === 'user') {
+            return request.auth.user.id;
+          }
+        }
+        return request.config.ip;
+      },
+      store: redisStore.store,
+    }),
+    cloud,
+  });
+  Config.put(config);
+};
 
 /**
  * Deduplicates a request to ensure idempotency. Duplicates are determined by the request ID

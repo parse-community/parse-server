@@ -231,7 +231,7 @@ const transformAggregateField = fieldName => {
   if (fieldName === '$_updated_at') {
     return 'updatedAt';
   }
-  return fieldName.substr(1);
+  return fieldName.substring(1);
 };
 
 const validateKeys = object => {
@@ -289,7 +289,6 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
         continue;
       }
     }
-
     const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
     if (authDataMatch) {
       // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
@@ -851,13 +850,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
   _pgp: any;
   _stream: any;
   _uuid: any;
+  schemaCacheTtl: ?number;
 
   constructor({ uri, collectionPrefix = '', databaseOptions = {} }: any) {
+    const options = { ...databaseOptions };
     this._collectionPrefix = collectionPrefix;
     this.enableSchemaHooks = !!databaseOptions.enableSchemaHooks;
-    delete databaseOptions.enableSchemaHooks;
+    this.schemaCacheTtl = databaseOptions.schemaCacheTtl;
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl']) {
+      delete options[key];
+    }
 
-    const { client, pgp } = createClient(uri, databaseOptions);
+    const { client, pgp } = createClient(uri, options);
     this._client = client;
     this._onchange = () => {};
     this._pgp = pgp;
@@ -1190,7 +1194,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const now = new Date().getTime();
     const helpers = this._pgp.helpers;
     debug('deleteAllClasses');
-
+    if (this._client?.$pool.ended) {
+      return;
+    }
     await this._client
       .task('delete-all-classes', async t => {
         try {
@@ -1322,12 +1328,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
         return;
       }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      const authDataAlreadyExists = !!object.authData;
       if (authDataMatch) {
         var provider = authDataMatch[1];
         object['authData'] = object['authData'] || {};
         object['authData'][provider] = object[fieldName];
         delete object[fieldName];
         fieldName = 'authData';
+        // Avoid adding authData multiple times to the query
+        if (authDataAlreadyExists) {
+          return;
+        }
       }
 
       columnsArray.push(fieldName);
@@ -1807,7 +1818,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       caseInsensitive,
     });
     values.push(...where.values);
-
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const limitPattern = hasLimit ? `LIMIT $${values.length + 1}` : '';
     if (hasLimit) {
@@ -1911,14 +1921,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
         };
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
-        let coords = object[fieldName];
-        coords = coords.substr(2, coords.length - 4).split('),(');
-        coords = coords.map(point => {
+        let coords = new String(object[fieldName]);
+        coords = coords.substring(2, coords.length - 2).split('),(');
+        const updatedCoords = coords.map(point => {
           return [parseFloat(point.split(',')[1]), parseFloat(point.split(',')[0])];
         });
         object[fieldName] = {
           __type: 'Polygon',
-          coordinates: coords,
+          coordinates: updatedCoords,
         };
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'File') {
@@ -2238,8 +2248,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
           });
           stage.$match = collapse;
         }
-        for (const field in stage.$match) {
+        for (let field in stage.$match) {
           const value = stage.$match[field];
+          if (field === '_id') {
+            field = 'objectId';
+          }
           const matchPatterns = [];
           Object.keys(ParseToPosgresComparator).forEach(cmp => {
             if (value[cmp]) {
@@ -2621,7 +2634,7 @@ function literalizeRegexPart(s: string) {
   const result1: any = s.match(matcher1);
   if (result1 && result1.length > 1 && result1.index > -1) {
     // process regex that has a beginning and an end specified for the literal text
-    const prefix = s.substr(0, result1.index);
+    const prefix = s.substring(0, result1.index);
     const remaining = result1[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
@@ -2631,7 +2644,7 @@ function literalizeRegexPart(s: string) {
   const matcher2 = /\\Q((?!\\E).*)$/;
   const result2: any = s.match(matcher2);
   if (result2 && result2.length > 1 && result2.index > -1) {
-    const prefix = s.substr(0, result2.index);
+    const prefix = s.substring(0, result2.index);
     const remaining = result2[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
