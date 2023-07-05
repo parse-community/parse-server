@@ -103,7 +103,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
-    action: parsers.arrayParser,
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -207,6 +206,13 @@ module.exports.ParseServerOptions = {
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
     help: 'Enables the default express error handler for all errors',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  encodeParseObjectInCloudFunction: {
+    env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
+    help:
+      'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -496,6 +502,12 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     default: {},
   },
+  sendUserEmailVerification: {
+    env: 'PARSE_SERVER_SEND_USER_EMAIL_VERIFICATION',
+    help:
+      'Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.<br><br>Default is `true`.<br>',
+    default: true,
+  },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
     help: 'Callback when server has closed',
@@ -542,8 +554,7 @@ module.exports.ParseServerOptions = {
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
     help:
-      'Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.',
-    action: parsers.booleanParser,
+      'Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.',
     default: false,
   },
   webhookKey: {
