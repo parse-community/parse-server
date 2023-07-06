@@ -78,7 +78,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   throttle[sessionToken] = true;
   setTimeout(() => {
     delete throttle[sessionToken];
-  }, 5000);
+  }, 500);
   try {
     const lastUpdated = new Date(session?.updatedAt);
     const yesterday = new Date();
