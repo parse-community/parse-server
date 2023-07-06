@@ -10,7 +10,6 @@ import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageA
 import rateLimit from 'express-rate-limit';
 import { RateLimitOptions } from './Options/Definitions';
 import { pathToRegexp } from 'path-to-regexp';
-import ipRangeCheck from 'ip-range-check';
 import RedisStore from 'rate-limit-redis';
 import { createClient } from 'redis';
 import { BlockList, isIPv4 } from 'net';
