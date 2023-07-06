@@ -19,7 +19,7 @@ import {
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController, getDatabaseController } from '../Controllers';
-import LRU from 'lru-cache';
+import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
@@ -93,6 +93,21 @@ class ParseLiveQueryServer {
     }
     this._createSubscribers();
   }
+
+  async shutdown() {
+    if (this.subscriber.isOpen) {
+      await Promise.all([
+        ...[...this.clients.values()].map(client => client.parseWebSocket.ws.close()),
+        this.parseWebSocketServer.close(),
+        ...Array.from(this.subscriber.subscriptions.keys()).map(key =>
+          this.subscriber.unsubscribe(key)
+        ),
+        this.subscriber.close?.(),
+      ]);
+    }
+    this.subscriber.isOpen = false;
+  }
+
   _createSubscribers() {
     const messageRecieved = (channel, messageStr) => {
       logger.verbose('Subscribe message %j', messageStr);

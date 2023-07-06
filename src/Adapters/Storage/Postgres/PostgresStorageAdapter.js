@@ -231,7 +231,7 @@ const transformAggregateField = fieldName => {
   if (fieldName === '$_updated_at') {
     return 'updatedAt';
   }
-  return fieldName.substr(1);
+  return fieldName.substring(1);
 };
 
 const validateKeys = object => {
@@ -617,11 +617,13 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       const distance = fieldValue.$maxDistance;
       const distanceInKM = distance * 6371 * 1000;
       patterns.push(
-        `ST_DistanceSphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2
+        `ST_DistanceSphere($${index}:name::geometry, POINT($${index + 1}, $${
+          index + 2
         })::geometry) <= $${index + 3}`
       );
       sorts.push(
-        `ST_DistanceSphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2
+        `ST_DistanceSphere($${index}:name::geometry, POINT($${index + 1}, $${
+          index + 2
         })::geometry) ASC`
       );
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
@@ -669,7 +671,8 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       }
       const distanceInKM = distance * 6371 * 1000;
       patterns.push(
-        `ST_DistanceSphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2
+        `ST_DistanceSphere($${index}:name::geometry, POINT($${index + 1}, $${
+          index + 2
         })::geometry) <= $${index + 3}`
       );
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
@@ -862,7 +865,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const { client, pgp } = createClient(uri, options);
     this._client = client;
-    this._onchange = () => { };
+    this._onchange = () => {};
     this._pgp = pgp;
     this._uuid = uuidv4();
     this.canSortOnJoinTables = false;
@@ -1203,7 +1206,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const now = new Date().getTime();
     const helpers = this._pgp.helpers;
     debug('deleteAllClasses');
-
+    if (this._client?.$pool.ended) {
+      return;
+    }
     await this._client
       .task('delete-all-classes', async t => {
         try {
@@ -1620,14 +1625,16 @@ export class PostgresStorageAdapter implements StorageAdapter {
         index += 2;
       } else if (fieldValue.__op === 'Remove') {
         updatePatterns.push(
-          `$${index}:name = array_remove(COALESCE($${index}:name, '[]'::jsonb), $${index + 1
+          `$${index}:name = array_remove(COALESCE($${index}:name, '[]'::jsonb), $${
+            index + 1
           }::jsonb)`
         );
         values.push(fieldName, JSON.stringify(fieldValue.objects));
         index += 2;
       } else if (fieldValue.__op === 'AddUnique') {
         updatePatterns.push(
-          `$${index}:name = array_add_unique(COALESCE($${index}:name, '[]'::jsonb), $${index + 1
+          `$${index}:name = array_add_unique(COALESCE($${index}:name, '[]'::jsonb), $${
+            index + 1
           }::jsonb)`
         );
         values.push(fieldName, JSON.stringify(fieldValue.objects));
@@ -1738,7 +1745,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
           updateObject = `COALESCE($${index}:name, '{}'::jsonb)`;
         }
         updatePatterns.push(
-          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length
+          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${
+            index + 1 + keysToDelete.length
           }::jsonb )`
         );
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
@@ -1925,14 +1933,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
         };
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
-        let coords = object[fieldName];
-        coords = coords.substr(2, coords.length - 4).split('),(');
-        coords = coords.map(point => {
+        let coords = new String(object[fieldName]);
+        coords = coords.substring(2, coords.length - 2).split('),(');
+        const updatedCoords = coords.map(point => {
           return [parseFloat(point.split(',')[1]), parseFloat(point.split(',')[0])];
         });
         object[fieldName] = {
           __type: 'Polygon',
-          coordinates: coords,
+          coordinates: updatedCoords,
         };
       }
       if (object[fieldName] && schema.fields[fieldName].type === 'File') {
@@ -2177,7 +2185,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
                     groupByFields.push(`"${source}"`);
                   }
                   columns.push(
-                    `EXTRACT(${mongoAggregateToPostgres[operation]
+                    `EXTRACT(${
+                      mongoAggregateToPostgres[operation]
                     } FROM $${index}:name AT TIME ZONE 'UTC')::integer AS $${index + 1}:name`
                   );
                   values.push(source, alias);
@@ -2637,7 +2646,7 @@ function literalizeRegexPart(s: string) {
   const result1: any = s.match(matcher1);
   if (result1 && result1.length > 1 && result1.index > -1) {
     // process regex that has a beginning and an end specified for the literal text
-    const prefix = s.substr(0, result1.index);
+    const prefix = s.substring(0, result1.index);
     const remaining = result1[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
@@ -2647,7 +2656,7 @@ function literalizeRegexPart(s: string) {
   const matcher2 = /\\Q((?!\\E).*)$/;
   const result2: any = s.match(matcher2);
   if (result2 && result2.length > 1 && result2.index > -1) {
-    const prefix = s.substr(0, result2.index);
+    const prefix = s.substring(0, result2.index);
     const remaining = result2[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);

@@ -161,6 +161,9 @@ function mapperFor(elt, t) {
     if (type == 'NumberOrBoolean') {
       return wrap(t.identifier('numberOrBooleanParser'));
     }
+    if (type === 'StringOrStringArray') {
+      return wrap(t.identifier('arrayParser'));
+    }
     return wrap(t.identifier('objectParser'));
   }
 }
@@ -252,7 +255,16 @@ function inject(t, list) {
         props.push(t.objectProperty(t.stringLiteral('action'), action));
       }
       if (elt.defaultValue) {
-        const parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
+        let parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
+        if (!parsedValue) {
+          for (const type of elt.typeAnnotation.types) {
+            elt.type = type.type;
+            parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
+            if (parsedValue) {
+              break;
+            }
+          }
+        }
         if (parsedValue) {
           props.push(t.objectProperty(t.stringLiteral('default'), parsedValue));
         } else {
@@ -277,6 +289,9 @@ function inject(t, list) {
       if (type === 'Adapter') {
         const adapterType = elt.typeAnnotation.typeParameters.params[0].id.name;
         type = `Adapter<${adapterType}>`;
+      }
+      if (type === 'StringOrStringArray') {
+        type = 'String|String[]';
       }
       comments += ` * @property {${type}} ${elt.name} ${elt.help}\n`;
       const obj = t.objectExpression(props);

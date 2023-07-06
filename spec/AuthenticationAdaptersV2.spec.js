@@ -1,5 +1,7 @@
 const request = require('../lib/request');
 const Auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+
 const requestWithExpectedError = async params => {
   try {
     return await request(params);
@@ -7,6 +9,7 @@ const requestWithExpectedError = async params => {
     throw new Error(e.data.error);
   }
 };
+
 describe('Auth Adapter features', () => {
   const baseAdapter = {
     validateAppId: () => Promise.resolve(),
@@ -57,19 +60,6 @@ describe('Auth Adapter features', () => {
     validateSetUp: () => Promise.resolve(),
     validateUpdate: () => Promise.resolve(),
     validateLogin: () => Promise.resolve(),
-  };
-
-  const modernAdapter3 = {
-    validateAppId: () => Promise.resolve(),
-    validateSetUp: () => Promise.resolve(),
-    validateUpdate: () => Promise.resolve(),
-    validateLogin: () => Promise.resolve(),
-    validateOptions: () => Promise.resolve(),
-    afterFind() {
-      return {
-        foo: 'bar',
-      };
-    },
   };
 
   const wrongAdapter = {
@@ -157,7 +147,7 @@ describe('Auth Adapter features', () => {
     ).toBeRejectedWithError('this auth is already used');
   });
 
-  it('should pass authData, options, request to validateAuthData', async () => {
+  it('should pass authData, options, request, config to validateAuthData', async () => {
     spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
     await reconfigureServer({ auth: { baseAdapter } });
     const user = new Parse.User();
@@ -177,7 +167,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[2].original).toBeUndefined();
     expect(firstCall[2].user).toBeUndefined();
     expect(firstCall[2].isChallenge).toBeUndefined();
-    expect(firstCall.length).toEqual(3);
+    expect(firstCall[2].config instanceof Config).toBeTruthy();
 
     await request({
       headers: headers,
@@ -200,7 +190,7 @@ describe('Auth Adapter features', () => {
     expect(secondCall[2].object.id).toEqual(user.id);
     expect(secondCall[2].isChallenge).toBeUndefined();
     expect(secondCall[2].user).toBeUndefined();
-    expect(secondCall.length).toEqual(3);
+    expect(secondCall[2].config instanceof Config).toBeTruthy();
   });
 
   it('should trigger correctly validateSetUp', async () => {
@@ -227,8 +217,7 @@ describe('Auth Adapter features', () => {
     expect(call[2].object instanceof Parse.User).toBeTruthy();
     expect(call[2].user).toBeUndefined();
     expect(call[2].original).toBeUndefined();
-    expect(call[2].triggerName).toBe('validateSetUp');
-    expect(call.length).toEqual(3);
+    expect(call[2].config instanceof Config).toBeTruthy();
     expect(user.getSessionToken()).toBeDefined();
 
     await user.save(
@@ -250,8 +239,7 @@ describe('Auth Adapter features', () => {
     expect(call2[2].original.id).toEqual(call2[2].object.id);
     expect(call2[2].user.id).toEqual(call2[2].object.id);
     expect(call2[2].object.id).toEqual(user.id);
-    expect(call2[2].triggerName).toBe('validateSetUp');
-    expect(call2.length).toEqual(3);
+    expect(call2[2].config instanceof Config).toBeTruthy();
 
     const user2 = new Parse.User();
     user2.id = user.id;
@@ -290,7 +278,7 @@ describe('Auth Adapter features', () => {
     expect(call[2].original.id).toEqual(user2.id);
     expect(call[2].object.id).toEqual(user2.id);
     expect(call[2].object.id).toEqual(user.id);
-    expect(call.length).toEqual(3);
+    expect(call[2].config instanceof Config).toBeTruthy();
     expect(user2.getSessionToken()).toBeDefined();
   });
 
@@ -341,32 +329,8 @@ describe('Auth Adapter features', () => {
     expect(call[2].object.id).toEqual(user.id);
     expect(call[2].original.id).toEqual(user.id);
     expect(call[2].user.id).toEqual(user.id);
-    expect(call.length).toEqual(3);
+    expect(call[2].config instanceof Config).toBeTruthy();
     expect(user.getSessionToken()).toBeDefined();
-  });
-
-  it('should strip out authData if required', async () => {
-    const spy = spyOn(modernAdapter3, 'validateOptions').and.callThrough();
-    const afterSpy = spyOn(modernAdapter3, 'afterFind').and.callThrough();
-    await reconfigureServer({ auth: { modernAdapter3 } });
-    const user = new Parse.User();
-    await user.save({ authData: { modernAdapter3: { id: 'modernAdapter3Data' } } });
-    await user.fetch({ sessionToken: user.getSessionToken() });
-    const authData = user.get('authData').modernAdapter3;
-    expect(authData).toEqual({ foo: 'bar' });
-    for (const call of afterSpy.calls.all()) {
-      const args = call.args[0];
-      if (args.user) {
-        user._objCount = args.user._objCount;
-        break;
-      }
-    }
-    expect(afterSpy).toHaveBeenCalledWith(
-      { ip: '127.0.0.1', user, master: false },
-      { id: 'modernAdapter3Data' },
-      undefined
-    );
-    expect(spy).toHaveBeenCalled();
   });
 
   it('should throw if no triggers found', async () => {
@@ -376,21 +340,6 @@ describe('Auth Adapter features', () => {
       user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } })
     ).toBeRejectedWithError(
       'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
-    );
-  });
-
-  it('should throw if policy does not match one of default/solo/additional', async () => {
-    const adapterWithBadPolicy = {
-      validateAppId: () => Promise.resolve(),
-      validateAuthData: () => Promise.resolve(),
-      policy: 'bad',
-    };
-    await reconfigureServer({ auth: { adapterWithBadPolicy } });
-    const user = new Parse.User();
-    await expectAsync(
-      user.save({ authData: { adapterWithBadPolicy: { id: 'adapterWithBadPolicy' } } })
-    ).toBeRejectedWithError(
-      'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
     );
   });
 
@@ -810,7 +759,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[2].object.id).toEqual(user.id);
     expect(firstCall[2].original.id).toEqual(user.id);
     expect(firstCall[2].user.id).toEqual(user.id);
-    expect(firstCall.length).toEqual(3);
+    expect(firstCall[2].config instanceof Config).toBeTruthy();
 
     await user.save({ authData: { baseAdapter2: payload } }, { useMasterKey: true });
 
@@ -824,137 +773,7 @@ describe('Auth Adapter features', () => {
     expect(secondCall[2].original instanceof Parse.User).toBeTruthy();
     expect(secondCall[2].object.id).toEqual(user.id);
     expect(secondCall[2].original.id).toEqual(user.id);
-    expect(secondCall.length).toEqual(3);
-  });
-
-  it('should return custom errors', async () => {
-    const throwInChallengeAdapter = {
-      validateAppId: () => Promise.resolve(),
-      validateAuthData: () => Promise.resolve(),
-      challenge: () => Promise.reject('Invalid challenge data: yolo'),
-      options: {
-        anOption: true,
-      },
-    };
-    const throwInSetup = {
-      validateAppId: () => Promise.resolve(),
-      validateSetUp: () => Promise.reject('You cannot signup with that setup data.'),
-      validateUpdate: () => Promise.resolve(),
-      validateLogin: () => Promise.resolve(),
-    };
-
-    const throwInUpdate = {
-      validateAppId: () => Promise.resolve(),
-      validateSetUp: () => Promise.resolve(),
-      validateUpdate: () => Promise.reject('You cannot update with that update data.'),
-      validateLogin: () => Promise.resolve(),
-    };
-
-    const throwInLogin = {
-      validateAppId: () => Promise.resolve(),
-      validateSetUp: () => Promise.resolve(),
-      validateUpdate: () => Promise.resolve(),
-      validateLogin: () => Promise.reject('You cannot login with that login data.'),
-    };
-    await reconfigureServer({
-      auth: { challengeAdapter: throwInChallengeAdapter },
-    });
-    let logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    await expectAsync(
-      requestWithExpectedError({
-        headers: headers,
-        method: 'POST',
-        url: 'http://localhost:8378/1/challenge',
-        body: JSON.stringify({
-          challengeData: {
-            challengeAdapter: { someData: true },
-          },
-        }),
-      })
-    ).toBeRejectedWithError('Invalid challenge data: yolo');
-    expect(logger.error).toHaveBeenCalledWith(
-      `Failed running auth step challenge for challengeAdapter for user undefined with Error: {"message":"Invalid challenge data: yolo","code":${Parse.Error.SCRIPT_FAILED}}`,
-      {
-        authenticationStep: 'challenge',
-        error: new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid challenge data: yolo'),
-        user: undefined,
-        provider: 'challengeAdapter',
-      }
-    );
-
-    await reconfigureServer({ auth: { modernAdapter: throwInSetup } });
-    logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    let user = new Parse.User();
-    await expectAsync(
-      user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } })
-    ).toBeRejectedWith(
-      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot signup with that setup data.')
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      `Failed running auth step validateSetUp for modernAdapter for user undefined with Error: {"message":"You cannot signup with that setup data.","code":${Parse.Error.SCRIPT_FAILED}}`,
-      {
-        authenticationStep: 'validateSetUp',
-        error: new Parse.Error(
-          Parse.Error.SCRIPT_FAILED,
-          'You cannot signup with that setup data.'
-        ),
-        user: undefined,
-        provider: 'modernAdapter',
-      }
-    );
-
-    await reconfigureServer({ auth: { modernAdapter: throwInUpdate } });
-    logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    user = new Parse.User();
-    await user.save({ authData: { modernAdapter: { id: 'updateAdapter' } } });
-    await expectAsync(
-      user.save(
-        { authData: { modernAdapter: { id: 'updateAdapter2' } } },
-        { sessionToken: user.getSessionToken() }
-      )
-    ).toBeRejectedWith(
-      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot update with that update data.')
-    );
-
-    expect(logger.error).toHaveBeenCalledWith(
-      `Failed running auth step validateUpdate for modernAdapter for user ${user.id} with Error: {"message":"You cannot update with that update data.","code":${Parse.Error.SCRIPT_FAILED}}`,
-      {
-        authenticationStep: 'validateUpdate',
-        error: new Parse.Error(
-          Parse.Error.SCRIPT_FAILED,
-          'You cannot update with that update data.'
-        ),
-        user: user.id,
-        provider: 'modernAdapter',
-      }
-    );
-
-    await reconfigureServer({
-      auth: { modernAdapter: throwInLogin },
-      allowExpiredAuthDataToken: false,
-    });
-    logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    user = new Parse.User();
-    await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
-    const user2 = new Parse.User();
-    await expectAsync(
-      user2.save({ authData: { modernAdapter: { id: 'modernAdapter' } } })
-    ).toBeRejectedWith(
-      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot login with that login data.')
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      `Failed running auth step validateLogin for modernAdapter for user ${user.id} with Error: {"message":"You cannot login with that login data.","code":${Parse.Error.SCRIPT_FAILED}}`,
-      {
-        authenticationStep: 'validateLogin',
-        error: new Parse.Error(Parse.Error.SCRIPT_FAILED, 'You cannot login with that login data.'),
-        user: user.id,
-        provider: 'modernAdapter',
-      }
-    );
+    expect(secondCall[2].config instanceof Config).toBeTruthy();
   });
 
   it('should return challenge with no logged user', async () => {
@@ -1020,7 +839,7 @@ describe('Auth Adapter features', () => {
     expect(challengeCall[3].original).toBeUndefined();
     expect(challengeCall[3].user).toBeUndefined();
     expect(challengeCall[3].isChallenge).toBeTruthy();
-    expect(challengeCall.length).toEqual(4);
+    expect(challengeCall[3].config instanceof Config).toBeTruthy();
   });
 
   it('should return empty challenge data response if challenged provider does not exists', async () => {
@@ -1118,7 +937,7 @@ describe('Auth Adapter features', () => {
     expect(challengeCall[3].original instanceof Parse.User).toBeTruthy();
     expect(challengeCall[3].object.id).toEqual(user.id);
     expect(challengeCall[3].original.id).toEqual(user.id);
-    expect(challengeCall.length).toEqual(4);
+    expect(challengeCall[3].config instanceof Config).toBeTruthy();
   });
 
   it('should return challenge with authData created user', async () => {
@@ -1204,7 +1023,7 @@ describe('Auth Adapter features', () => {
     expect(challengeCall[3].original instanceof Parse.User).toBeTruthy();
     expect(challengeCall[3].object.id).toEqual(user.id);
     expect(challengeCall[3].original.id).toEqual(user.id);
-    expect(challengeCall.length).toEqual(4);
+    expect(challengeCall[3].config instanceof Config).toBeTruthy();
   });
 
   it('should validate provided authData and prevent guess id attack', async () => {
@@ -1261,28 +1080,6 @@ describe('Auth Adapter features', () => {
     expect(validateCall[2].original instanceof Parse.User).toBeTruthy();
     expect(validateCall[2].object.id).toEqual(user.id);
     expect(validateCall[2].original.id).toEqual(user.id);
-    expect(validateCall.length).toEqual(3);
-  });
-
-  it('should work with multiple adapters', async () => {
-    const adapterA = {
-      validateAppId: () => Promise.resolve(),
-      validateAuthData: () => Promise.resolve(),
-    };
-    const adapterB = {
-      validateAppId: () => Promise.resolve(),
-      validateAuthData: () => Promise.resolve(),
-    };
-    await reconfigureServer({ auth: { adapterA, adapterB } });
-    const user = new Parse.User();
-    await user.signUp({
-      username: 'test',
-      password: 'password',
-    });
-    await user.save({ authData: { adapterA: { id: 'testA' } } });
-    expect(user.get('authData')).toEqual({ adapterA: { id: 'testA' } });
-    await user.save({ authData: { adapterA: null, adapterB: { id: 'test' } } });
-    await user.fetch({ useMasterKey: true });
-    expect(user.get('authData')).toEqual({ adapterB: { id: 'test' } });
+    expect(validateCall[2].config instanceof Config).toBeTruthy();
   });
 });

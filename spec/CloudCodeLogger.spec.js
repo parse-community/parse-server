@@ -182,6 +182,42 @@ describe('Cloud Code Logger', () => {
     });
   });
 
+  it('should log cloud function execution using the custom log level', async done => {
+    Parse.Cloud.define('aFunction', () => {
+      return 'it worked!';
+    });
+
+    Parse.Cloud.define('bFunction', () => {
+      throw new Error('Failed');
+    });
+
+    await Parse.Cloud.run('aFunction', { foo: 'bar' }).then(() => {
+      const log = spy.calls.allArgs().find(log => log[1].startsWith('Ran cloud function '))?.[0];
+      expect(log).toEqual('info');
+    });
+
+    await reconfigureServer({
+      silent: true,
+      logLevels: {
+        cloudFunctionSuccess: 'warn',
+        cloudFunctionError: 'info',
+      },
+    });
+
+    spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+
+    try {
+      await Parse.Cloud.run('bFunction', { foo: 'bar' });
+      throw new Error('bFunction should have failed');
+    } catch {
+      const log = spy.calls
+        .allArgs()
+        .find(log => log[1].startsWith('Failed running cloud function bFunction for '))?.[0];
+      expect(log).toEqual('info');
+      done();
+    }
+  });
+
   it('should log cloud function triggers using the custom log level', async () => {
     Parse.Cloud.beforeSave('TestClass', () => {});
     Parse.Cloud.afterSave('TestClass', () => {});

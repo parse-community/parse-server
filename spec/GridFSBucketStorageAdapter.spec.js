@@ -20,6 +20,22 @@ describe_only_db('mongo')('GridFSBucket', () => {
     await db.dropDatabase();
   });
 
+  it('should connect to mongo with the supported database options', async () => {
+    const databaseURI = 'mongodb://localhost:27017/parse';
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI, {
+      retryWrites: true,
+      // these are not supported by the mongo client
+      enableSchemaHooks: true,
+      schemaCacheTtl: 5000,
+      maxTimeMS: 30000,
+    });
+
+    const db = await gfsAdapter._connect();
+    const status = await db.admin().serverStatus();
+    expect(status.connections.current > 0).toEqual(true);
+    expect(db.options?.retryWrites).toEqual(true);
+  });
+
   it('should save an encrypted file that can only be decrypted by a GridFS adapter with the encryptionKey', async () => {
     const unencryptedAdapter = new GridFSBucketAdapter(databaseURI);
     const encryptedAdapter = new GridFSBucketAdapter(
