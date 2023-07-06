@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.3.0-alpha.4.moumouls",
+  "version": "6.3.0-alpha.4.1.moumouls",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "@babel/eslint-parser": "7.21.8",
     "@graphql-tools/merge": "8.4.1",
-    "@simplewebauthn/server": "4.4.0",
+    "@simplewebauthn/server": "7.3.0",
     "@babel/eslint-parser": "7.19.1",
     "@graphql-tools/schema": "9.0.4",
     "@graphql-tools/utils": "8.12.0",

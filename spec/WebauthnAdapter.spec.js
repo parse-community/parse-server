@@ -83,13 +83,18 @@ describe('Webauthn', () => {
   });
   it('should register if user logged', async () => {
     await reconfigureServer({
-      auth: { webauthn: true },
+      auth: {
+        webauthn: {
+          options: {
+            userVerification: 'preferred',
+          },
+        },
+      },
     });
     const user = new Parse.User();
     await user.save({ username: 'username', password: 'password' });
 
     const { signedChallenge, options } = await callChallenge(user.getSessionToken());
-
     expect(typeof signedChallenge).toEqual('string');
     const { challenge, ...otherOptions } = options;
     delete otherOptions.authenticatorSelection.residentKey;
@@ -98,24 +103,27 @@ describe('Webauthn', () => {
       rp: { name: 'Localhost', id: 'localhost' },
       user: { id: user.id, name: 'username', displayName: 'username' },
       pubKeyCredParams: [
-        { alg: -7, type: 'public-key' },
         { alg: -8, type: 'public-key' },
-        { alg: -36, type: 'public-key' },
-        { alg: -37, type: 'public-key' },
-        { alg: -38, type: 'public-key' },
-        { alg: -39, type: 'public-key' },
+        { alg: -7, type: 'public-key' },
         { alg: -257, type: 'public-key' },
-        { alg: -258, type: 'public-key' },
-        { alg: -259, type: 'public-key' },
       ],
       timeout: 60000,
       attestation: 'indirect',
       excludeCredentials: [],
-      authenticatorSelection: { userVerification: 'required', requireResidentKey: false },
+      authenticatorSelection: { userVerification: 'preferred', requireResidentKey: false },
+      extensions: { credProps: true },
     });
 
     await reconfigureServer({
-      auth: { webauthn: { options: { rpId: registrationRpId, origin: registrationOrigin } } },
+      auth: {
+        webauthn: {
+          options: {
+            rpId: registrationRpId,
+            origin: registrationOrigin,
+            userVerification: 'preferred',
+          },
+        },
+      },
     });
 
     await expectAsync(
@@ -231,7 +239,15 @@ describe('Webauthn', () => {
     await user.save({ username: 'username', password: 'password' });
 
     await reconfigureServer({
-      auth: { webauthn: { options: { rpId: registrationRpId, origin: registrationOrigin } } },
+      auth: {
+        webauthn: {
+          options: {
+            rpId: registrationRpId,
+            origin: registrationOrigin,
+            userVerification: 'preferred',
+          },
+        },
+      },
     });
 
     await user.save(
@@ -255,7 +271,15 @@ describe('Webauthn', () => {
   });
   it('should update registered credential', async () => {
     const server = await reconfigureServer({
-      auth: { webauthn: { options: { rpId: registrationRpId, origin: registrationOrigin } } },
+      auth: {
+        webauthn: {
+          options: {
+            rpId: registrationRpId,
+            origin: registrationOrigin,
+            userVerification: 'preferred',
+          },
+        },
+      },
     });
 
     const user = new Parse.User();
@@ -287,7 +311,15 @@ describe('Webauthn', () => {
   });
   it('should login', async () => {
     const server = await reconfigureServer({
-      auth: { webauthn: { options: { rpId: authenticationRpId, origin: authenticationOrigin } } },
+      auth: {
+        webauthn: {
+          options: {
+            rpId: authenticationRpId,
+            origin: authenticationOrigin,
+            userVerification: 'preferred',
+          },
+        },
+      },
     });
     const user = new Parse.User();
     await user.save({ username: 'username', password: 'password' });

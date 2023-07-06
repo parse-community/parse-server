@@ -41,7 +41,8 @@ const getBaseDomain = domain => {
   // Handle localhost
   if (splittedDomain.length === 1) return domain.trim();
   // Classic domains
-  return `${splittedDomain[splittedDomain.length - 2]}.${splittedDomain[splittedDomain.length - 1]
+  return `${splittedDomain[splittedDomain.length - 2]}.${
+    splittedDomain[splittedDomain.length - 1]
   }`.trim();
 };
 
@@ -106,8 +107,10 @@ const verifyRegister = async ({ signedChallenge, registration }, options = {}, c
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
   try {
     const { verified, registrationInfo } = await verifyRegistrationResponse({
-      credential: registration,
+      response: registration,
       expectedChallenge,
+      requireUserVerification:
+        options.userVerification === 'required' || !options.userVerification ? true : false,
       expectedOrigin: options.origin || getOrigin(config),
       expectedRPID: options.rpId || getOrigin(config),
     });
@@ -135,14 +138,16 @@ const loginOptions = config => {
   };
 };
 
-const verifyLogin = ({ authentication, signedChallenge }, options = {}, config, user) => {
+const verifyLogin = async ({ authentication, signedChallenge }, options = {}, config, user) => {
   const dbAuthData = user && user.get('authData') && user.get('authData').webauthn;
   if (!authentication)
     throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'authentication is required.');
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
   try {
-    const { verified, authenticationInfo } = verifyAuthenticationResponse({
-      credential: authentication,
+    const { verified, authenticationInfo } = await verifyAuthenticationResponse({
+      response: authentication,
+      requireUserVerification:
+        options.userVerification === 'required' || !options.userVerification ? true : false,
       expectedChallenge,
       expectedOrigin: options.origin || getOrigin(config),
       expectedRPID: options.rpId || getOrigin(config),
@@ -190,7 +195,9 @@ export const validateLogin = async (authData, adapterConfig = {}, request) => {
     throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found for webauthn login.');
   // Will save updated counter of the credential
   // and avoid cloned/bugged authenticators
-  return { save: verifyLogin(authData, adapterConfig.options, request.config, request.original) };
+  return {
+    save: await verifyLogin(authData, adapterConfig.options, request.config, request.original),
+  };
 };
 
 export const policy = 'solo';
