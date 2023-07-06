@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
+import { LRUCache as LRU } from 'lru-cache';
 import RestWrite from './RestWrite';
 
 // An Auth object tells you who is requesting something and whether
@@ -67,18 +68,18 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
-const throttle = {};
+const throttle = new LRU({
+  max: 10000,
+  ttl: 500,
+});
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
     return;
   }
-  if (throttle[sessionToken]) {
+  if (throttle.get(sessionToken)) {
     return;
   }
-  throttle[sessionToken] = true;
-  setTimeout(() => {
-    delete throttle[sessionToken];
-  }, 500);
+  throttle.set(sessionToken, true);
   try {
     const lastUpdated = new Date(session?.updatedAt);
     const yesterday = new Date();
