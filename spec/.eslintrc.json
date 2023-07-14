@@ -17,9 +17,14 @@
       "notEqual": true,
       "it_only_db": true,
       "it_only_mongodb_version": true,
+      "it_only_postgres_version": true,
+      "it_only_node_version": true,
       "fit_only_mongodb_version": true,
+      "fit_only_node_version": true,
       "it_exclude_mongodb_version": true,
+      "it_exclude_postgres_version": true,
       "fit_exclude_mongodb_version": true,
+      "fit_exclude_node_version": true,
       "it_exclude_dbs": true,
       "describe_only_db": true,
       "describe_only": true,
@@ -29,8 +34,8 @@
       "jequal": true,
       "create": true,
       "arrayContains": true,
-      "expectAsync": true,
-      "databaseAdapter": true
+      "databaseAdapter": true,
+      "databaseURI": true
     },
     "rules": {
       "no-console": [0],

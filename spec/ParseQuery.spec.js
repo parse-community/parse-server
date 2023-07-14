@@ -37,6 +37,54 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it_only_db('mongo')('gracefully handles invalid explain values', async () => {
+    // Note that anything that is not truthy (like 0) does not cause an exception, as they get swallowed up by ClassesRouter::optionsFromBody
+    const values = [1, 'yolo', { a: 1 }, [1, 2, 3]];
+    for (const value of values) {
+      try {
+        await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+          json: true,
+          headers: masterKeyHeaders,
+        });
+        fail('request did not throw');
+      } catch (e) {
+        // Expect that Parse Server did not crash
+        expect(e.code).not.toEqual('ECONNRESET');
+        // Expect that Parse Server validates the explain value and does not crash;
+        // see https://jira.mongodb.org/browse/NODE-3463
+        equal(e.data.code, Parse.Error.INVALID_QUERY);
+        equal(e.data.error, 'Invalid value for explain');
+      }
+      // get queries (of the form '/classes/:className/:objectId' cannot have the explain key, see ClassesRouter.js)
+      // so it is enough that we test find queries
+    }
+  });
+
+  it_only_db('mongo')('supports valid explain values', async () => {
+    const values = [
+      false,
+      true,
+      'queryPlanner',
+      'executionStats',
+      'allPlansExecution',
+      // 'queryPlannerExtended' is excluded as it only applies to MongoDB Data Lake which is currently not available in our CI environment
+    ];
+    for (const value of values) {
+      const response = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/_User?explain=${value}`,
+        json: true,
+        headers: masterKeyHeaders,
+      });
+      expect(response.status).toBe(200);
+      if (value) {
+        expect(response.data.results.ok).toBe(1);
+      }
+    }
+  });
+
   it('searching for null', function (done) {
     const baz = new TestObject({ foo: null });
     const qux = new TestObject({ foo: 'qux' });
@@ -266,39 +314,57 @@ describe('Parse.Query testing', () => {
     equal(results.length, 0);
   });
 
-  it('query with limit', function (done) {
-    const baz = new TestObject({ foo: 'baz' });
-    const qux = new TestObject({ foo: 'qux' });
-    Parse.Object.saveAll([baz, qux]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.limit(1);
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+  it('query without limit respects default limit', async () => {
+    await reconfigureServer({ defaultLimit: 1 });
+    const obj1 = new TestObject({ foo: 'baz' });
+    const obj2 = new TestObject({ foo: 'qux' });
+    await Parse.Object.saveAll([obj1, obj2]);
+    const query = new Parse.Query(TestObject);
+    const result = await query.find();
+    expect(result.length).toBe(1);
+  });
+
+  it('query with limit', async () => {
+    const obj1 = new TestObject({ foo: 'baz' });
+    const obj2 = new TestObject({ foo: 'qux' });
+    await Parse.Object.saveAll([obj1, obj2]);
+    const query = new Parse.Query(TestObject);
+    query.limit(1);
+    const result = await query.find();
+    expect(result.length).toBe(1);
+  });
+
+  it('query with limit overrides default limit', async () => {
+    await reconfigureServer({ defaultLimit: 2 });
+    const obj1 = new TestObject({ foo: 'baz' });
+    const obj2 = new TestObject({ foo: 'qux' });
+    await Parse.Object.saveAll([obj1, obj2]);
+    const query = new Parse.Query(TestObject);
+    query.limit(1);
+    const result = await query.find();
+    expect(result.length).toBe(1);
   });
 
   it('query with limit equal to maxlimit', async () => {
-    const baz = new TestObject({ foo: 'baz' });
-    const qux = new TestObject({ foo: 'qux' });
     await reconfigureServer({ maxLimit: 1 });
-    await Parse.Object.saveAll([baz, qux]);
+    const obj1 = new TestObject({ foo: 'baz' });
+    const obj2 = new TestObject({ foo: 'qux' });
+    await Parse.Object.saveAll([obj1, obj2]);
     const query = new Parse.Query(TestObject);
     query.limit(1);
-    const results = await query.find();
-    equal(results.length, 1);
+    const result = await query.find();
+    expect(result.length).toBe(1);
   });
 
   it('query with limit exceeding maxlimit', async () => {
-    const baz = new TestObject({ foo: 'baz' });
-    const qux = new TestObject({ foo: 'qux' });
     await reconfigureServer({ maxLimit: 1 });
-    await Parse.Object.saveAll([baz, qux]);
+    const obj1 = new TestObject({ foo: 'baz' });
+    const obj2 = new TestObject({ foo: 'qux' });
+    await Parse.Object.saveAll([obj1, obj2]);
     const query = new Parse.Query(TestObject);
     query.limit(2);
-    const results = await query.find();
-    equal(results.length, 1);
+    const result = await query.find();
+    expect(result.length).toBe(1);
   });
 
   it('containedIn object array queries', function (done) {
@@ -1665,6 +1731,16 @@ describe('Parse.Query testing', () => {
         done();
       });
     });
+  });
+
+  it('order by non-existing string', async () => {
+    const strings = ['a', 'b', 'c', 'd'];
+    const makeBoxedNumber = function (num, i) {
+      return new BoxedNumber({ number: num, string: strings[i] });
+    };
+    await Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber));
+    const results = await new Parse.Query(BoxedNumber).ascending('foo').find();
+    expect(results.length).toBe(4);
   });
 
   it('order by descending number then ascending string', function (done) {
@@ -4718,7 +4794,7 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
-  it_only_db('mongo')('should handle relative times correctly', function (done) {
+  it('should handle relative times correctly', async () => {
     const now = Date.now();
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
@@ -4729,94 +4805,75 @@ describe('Parse.Query testing', () => {
       ttl: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago
     });
 
-    Parse.Object.saveAll([obj1, obj2])
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: 'in 1 day' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: '1 day ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.lessThan('ttl', { $relativeTime: '5 days ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(0);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: '3 days ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(2);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: 'now' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: 'now' });
-        q.lessThan('ttl', { $relativeTime: 'in 1 day' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(0);
-      })
-      .then(() => {
-        const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', { $relativeTime: '1 year 3 weeks ago' });
-        return q.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(2);
-      })
-      .then(done, done.fail);
+    await Parse.Object.saveAll([obj1, obj2]);
+    const q1 = new Parse.Query('MyCustomObject');
+    q1.greaterThan('ttl', { $relativeTime: 'in 1 day' });
+    const results1 = await q1.find({ useMasterKey: true });
+    expect(results1.length).toBe(1);
+
+    const q2 = new Parse.Query('MyCustomObject');
+    q2.greaterThan('ttl', { $relativeTime: '1 day ago' });
+    const results2 = await q2.find({ useMasterKey: true });
+    expect(results2.length).toBe(1);
+
+    const q3 = new Parse.Query('MyCustomObject');
+    q3.lessThan('ttl', { $relativeTime: '5 days ago' });
+    const results3 = await q3.find({ useMasterKey: true });
+    expect(results3.length).toBe(0);
+
+    const q4 = new Parse.Query('MyCustomObject');
+    q4.greaterThan('ttl', { $relativeTime: '3 days ago' });
+    const results4 = await q4.find({ useMasterKey: true });
+    expect(results4.length).toBe(2);
+
+    const q5 = new Parse.Query('MyCustomObject');
+    q5.greaterThan('ttl', { $relativeTime: 'now' });
+    const results5 = await q5.find({ useMasterKey: true });
+    expect(results5.length).toBe(1);
+
+    const q6 = new Parse.Query('MyCustomObject');
+    q6.greaterThan('ttl', { $relativeTime: 'now' });
+    q6.lessThan('ttl', { $relativeTime: 'in 1 day' });
+    const results6 = await q6.find({ useMasterKey: true });
+    expect(results6.length).toBe(0);
+
+    const q7 = new Parse.Query('MyCustomObject');
+    q7.greaterThan('ttl', { $relativeTime: '1 year 3 weeks ago' });
+    const results7 = await q7.find({ useMasterKey: true });
+    expect(results7.length).toBe(2);
   });
 
-  it_only_db('mongo')('should error on invalid relative time', function (done) {
+  it('should error on invalid relative time', async () => {
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
       ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
     });
-
+    await obj1.save({ useMasterKey: true });
     const q = new Parse.Query('MyCustomObject');
     q.greaterThan('ttl', { $relativeTime: '-12 bananas ago' });
-    obj1
-      .save({ useMasterKey: true })
-      .then(() => q.find({ useMasterKey: true }))
-      .then(done.fail, () => done());
+    try {
+      await q.find({ useMasterKey: true });
+      fail('Should have thrown error');
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    }
   });
 
-  it_only_db('mongo')('should error when using $relativeTime on non-Date field', function (done) {
+  it('should error when using $relativeTime on non-Date field', async () => {
     const obj1 = new Parse.Object('MyCustomObject', {
       name: 'obj1',
       nonDateField: 'abcd',
       ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
     });
-
+    await obj1.save({ useMasterKey: true });
     const q = new Parse.Query('MyCustomObject');
     q.greaterThan('nonDateField', { $relativeTime: '1 day ago' });
-    obj1
-      .save({ useMasterKey: true })
-      .then(() => q.find({ useMasterKey: true }))
-      .then(done.fail, () => done());
+    try {
+      await q.find({ useMasterKey: true });
+      fail('Should have thrown error');
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.INVALID_JSON);
+    }
   });
 
   it('should match complex structure with dot notation when using matchesKeyInQuery', function (done) {

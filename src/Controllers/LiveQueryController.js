@@ -1,5 +1,6 @@
 import { ParseCloudCodePublisher } from '../LiveQuery/ParseCloudCodePublisher';
 import { LiveQueryOptions } from '../Options';
+import { getClassName } from './../triggers';
 export class LiveQueryController {
   classNames: any;
   liveQueryPublisher: any;
@@ -9,12 +10,19 @@ export class LiveQueryController {
     if (!config || !config.classNames) {
       this.classNames = new Set();
     } else if (config.classNames instanceof Array) {
-      const classNames = config.classNames.map(name => new RegExp('^' + name + '$'));
+      const classNames = config.classNames.map(name => {
+        const _name = getClassName(name);
+        return new RegExp(`^${_name}$`);
+      });
       this.classNames = new Set(classNames);
     } else {
       throw 'liveQuery.classes should be an array of string';
     }
     this.liveQueryPublisher = new ParseCloudCodePublisher(config);
+  }
+
+  connect() {
+    return this.liveQueryPublisher.connect();
   }
 
   onAfterSave(
@@ -50,6 +58,13 @@ export class LiveQueryController {
       }
     }
     return false;
+  }
+
+  clearCachedRoles(user: any) {
+    if (!user) {
+      return;
+    }
+    return this.liveQueryPublisher.onClearCachedRoles(user);
   }
 
   _makePublisherRequest(currentObject: any, originalObject: any, classLevelPermissions: ?any): any {

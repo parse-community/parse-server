@@ -172,7 +172,7 @@ describe('Parse.Relation testing', () => {
       .then(done, done.fail);
   });
 
-  it_exclude_dbs(['postgres'])('queries with relations', async () => {
+  it('queries with relations', async () => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
     for (let i = 0; i < 10; i++) {
@@ -283,7 +283,7 @@ describe('Parse.Relation testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('query on pointer and relation fields with equal', done => {
+  it('query on pointer and relation fields with equal', done => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
     for (let i = 0; i < 10; i++) {
@@ -366,7 +366,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('or queries on pointer and relation fields', done => {
+  it('or queries on pointer and relation fields', done => {
     const ChildObject = Parse.Object.extend('ChildObject');
     const childObjects = [];
     for (let i = 0; i < 10; i++) {
@@ -408,6 +408,49 @@ describe('Parse.Relation testing', () => {
         });
       });
     });
+  });
+
+  it('or queries with base constraint on relation field', async () => {
+    const ChildObject = Parse.Object.extend('ChildObject');
+    const childObjects = [];
+    for (let i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({ x: i }));
+    }
+    await Parse.Object.saveAll(childObjects);
+    const ParentObject = Parse.Object.extend('ParentObject');
+    const parent = new ParentObject();
+    parent.set('x', 4);
+    const relation = parent.relation('toChilds');
+    relation.add(childObjects[0]);
+    relation.add(childObjects[1]);
+    relation.add(childObjects[2]);
+
+    const parent2 = new ParentObject();
+    parent2.set('x', 3);
+    const relation2 = parent2.relation('toChilds');
+    relation2.add(childObjects[0]);
+    relation2.add(childObjects[1]);
+    relation2.add(childObjects[2]);
+
+    const parents = [];
+    parents.push(parent);
+    parents.push(parent2);
+    parents.push(new ParentObject());
+
+    await Parse.Object.saveAll(parents);
+    const query1 = new Parse.Query(ParentObject);
+    query1.equalTo('x', 4);
+    const query2 = new Parse.Query(ParentObject);
+    query2.equalTo('x', 3);
+
+    const query = Parse.Query.or(query1, query2);
+    query.equalTo('toChilds', childObjects[2]);
+
+    const list = await query.find();
+    const objectIds = list.map(item => item.id);
+    expect(objectIds.indexOf(parent.id)).not.toBe(-1);
+    expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
+    equal(list.length, 2, 'There should be 2 results');
   });
 
   it('Get query on relation using un-fetched parent object', done => {

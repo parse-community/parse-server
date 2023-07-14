@@ -19,6 +19,7 @@ const publicServerURL = 'http://localhost:8378/1';
 describe('Regex Vulnerabilities', function () {
   beforeEach(async function () {
     await reconfigureServer({
+      maintenanceKey: 'test2',
       verifyUserEmails: true,
       emailAdapter,
       appName,
@@ -98,11 +99,20 @@ describe('Regex Vulnerabilities', function () {
 
     it('should work with plain token', async function () {
       expect(this.user.get('emailVerified')).toEqual(false);
+      const current = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/_User/${this.user.id}`,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Rest-API-Key': 'test',
+          'X-Parse-Maintenance-Key': 'test2',
+          'Content-Type': 'application/json',
+        },
+      }).then(res => res.data);
       // It should work
       await request({
-        url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token=${this.user.get(
-          '_email_verify_token'
-        )}`,
+        url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token=${current._email_verify_token}`,
         method: 'GET',
       });
       await this.user.fetch({ useMasterKey: true });
@@ -147,7 +157,7 @@ describe('Regex Vulnerabilities', function () {
         await Parse.User.logIn('someemail@somedomain.com', 'newpassword');
         fail('should not work');
       } catch (e) {
-        expect(e.code).toEqual(101);
+        expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
         expect(e.message).toEqual('Invalid username/password.');
       }
     });
@@ -164,8 +174,18 @@ describe('Regex Vulnerabilities', function () {
           email: 'someemail@somedomain.com',
         }),
       });
-      await this.user.fetch({ useMasterKey: true });
-      const token = this.user.get('_perishable_token');
+      const current = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/_User/${this.user.id}`,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Rest-API-Key': 'test',
+          'X-Parse-Maintenance-Key': 'test2',
+          'Content-Type': 'application/json',
+        },
+      }).then(res => res.data);
+      const token = current._perishable_token;
       const passwordResetResponse = await request({
         url: `${serverURL}/apps/test/request_password_reset?username=someemail@somedomain.com&token=${token}`,
         method: 'GET',

@@ -1,6 +1,6 @@
 /**
  GridFSBucketAdapter
- Stores files in Mongo using GridStore
+ Stores files in Mongo using GridFS
  Requires the database adapter to be based on mongoclient
 
  @flow weak
@@ -28,13 +28,21 @@ export class GridFSBucketAdapter extends FilesAdapter {
     this._algorithm = 'aes-256-gcm';
     this._encryptionKey =
       encryptionKey !== undefined
-        ? crypto.createHash('sha256').update(String(encryptionKey)).digest('base64').substr(0, 32)
+        ? crypto
+          .createHash('sha256')
+          .update(String(encryptionKey))
+          .digest('base64')
+          .substring(0, 32)
         : null;
     const defaultMongoOptions = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     };
-    this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    const _mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
+    for (const key of ['enableSchemaHooks', 'schemaCacheTtl', 'maxTimeMS']) {
+      delete _mongoOptions[key];
+    }
+    this._mongoOptions = _mongoOptions;
   }
 
   _connect() {
@@ -134,8 +142,8 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   async rotateEncryptionKey(options = {}) {
-    var fileNames = [];
-    var oldKeyFileAdapter = {};
+    let fileNames = [];
+    let oldKeyFileAdapter = {};
     const bucket = await this._getBucket();
     if (options.oldKey !== undefined) {
       oldKeyFileAdapter = new GridFSBucketAdapter(
@@ -154,51 +162,22 @@ export class GridFSBucketAdapter extends FilesAdapter {
         fileNames.push(file.filename);
       });
     }
-    return new Promise(resolve => {
-      var fileNamesNotRotated = fileNames;
-      var fileNamesRotated = [];
-      var fileNameTotal = fileNames.length;
-      var fileNameIndex = 0;
-      fileNames.forEach(fileName => {
-        oldKeyFileAdapter
-          .getFileData(fileName)
-          .then(plainTextData => {
-            //Overwrite file with data encrypted with new key
-            this.createFile(fileName, plainTextData)
-              .then(() => {
-                fileNamesRotated.push(fileName);
-                fileNamesNotRotated = fileNamesNotRotated.filter(function (value) {
-                  return value !== fileName;
-                });
-                fileNameIndex += 1;
-                if (fileNameIndex == fileNameTotal) {
-                  resolve({
-                    rotated: fileNamesRotated,
-                    notRotated: fileNamesNotRotated,
-                  });
-                }
-              })
-              .catch(() => {
-                fileNameIndex += 1;
-                if (fileNameIndex == fileNameTotal) {
-                  resolve({
-                    rotated: fileNamesRotated,
-                    notRotated: fileNamesNotRotated,
-                  });
-                }
-              });
-          })
-          .catch(() => {
-            fileNameIndex += 1;
-            if (fileNameIndex == fileNameTotal) {
-              resolve({
-                rotated: fileNamesRotated,
-                notRotated: fileNamesNotRotated,
-              });
-            }
-          });
-      });
-    });
+    let fileNamesNotRotated = fileNames;
+    const fileNamesRotated = [];
+    for (const fileName of fileNames) {
+      try {
+        const plainTextData = await oldKeyFileAdapter.getFileData(fileName);
+        // Overwrite file with data encrypted with new key
+        await this.createFile(fileName, plainTextData);
+        fileNamesRotated.push(fileName);
+        fileNamesNotRotated = fileNamesNotRotated.filter(function (value) {
+          return value !== fileName;
+        });
+      } catch (err) {
+        continue;
+      }
+    }
+    return { rotated: fileNamesRotated, notRotated: fileNamesNotRotated };
   }
 
   getFileLocation(config, filename) {
@@ -228,22 +207,35 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const partialstart = parts[0];
     const partialend = parts[1];
 
-    const start = parseInt(partialstart, 10);
-    const end = partialend ? parseInt(partialend, 10) : files[0].length - 1;
+    const fileLength = files[0].length;
+    const fileStart = parseInt(partialstart, 10);
+    const fileEnd = partialend ? parseInt(partialend, 10) : fileLength;
 
-    res.writeHead(206, {
-      'Accept-Ranges': 'bytes',
-      'Content-Length': end - start + 1,
-      'Content-Range': 'bytes ' + start + '-' + end + '/' + files[0].length,
-      'Content-Type': contentType,
-    });
+    let start = Math.min(fileStart || 0, fileEnd, fileLength);
+    let end = Math.max(fileStart || 0, fileEnd) + 1 || fileLength;
+    if (isNaN(fileStart)) {
+      start = fileLength - end + 1;
+      end = fileLength;
+    }
+    end = Math.min(end, fileLength);
+    start = Math.max(start, 0);
+
+    res.status(206);
+    res.header('Accept-Ranges', 'bytes');
+    res.header('Content-Length', end - start);
+    res.header('Content-Range', 'bytes ' + start + '-' + end + '/' + fileLength);
+    res.header('Content-Type', contentType);
     const stream = bucket.openDownloadStreamByName(filename);
     stream.start(start);
+    if (end) {
+      stream.end(end);
+    }
     stream.on('data', chunk => {
       res.write(chunk);
     });
-    stream.on('error', () => {
-      res.sendStatus(404);
+    stream.on('error', e => {
+      res.status(404);
+      res.send(e.message);
     });
     stream.on('end', () => {
       res.end();

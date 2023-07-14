@@ -74,7 +74,7 @@ describe('commander additions', () => {
     done();
   });
 
-  it('should load properly use args over env', done => {
+  it('should load properly use args over env', () => {
     commander.loadDefinitions(testDefinitions);
     commander.parse(['node', './CLI.spec.js', '--arg0', 'arg0Value', '--arg4', ''], {
       PROGRAM_ARG_0: 'arg0ENVValue',
@@ -86,7 +86,6 @@ describe('commander additions', () => {
     expect(commander.arg1).toEqual('arg1ENVValue');
     expect(commander.arg2).toEqual(4);
     expect(commander.arg4).toEqual('');
-    done();
   });
 
   it('should fail in action as port is invalid', done => {
@@ -219,17 +218,14 @@ describe('execution', () => {
     }
   });
 
-  it('shoud start Parse Server', done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      'mongodb://localhost/test',
-      '--port',
-      '1339',
-    ]);
+  it('should start Parse Server', done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
+      { env }
+    );
     childProcess.stdout.on('data', data => {
       data = data.toString();
       if (data.includes('parse-server running on')) {
@@ -241,18 +237,24 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL', done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      'mongodb://localhost/test',
-      '--port',
-      '1340',
-      '--mountGraphQL',
-    ]);
+  it('should start Parse Server with GraphQL', async done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      [
+        '--appId',
+        'test',
+        '--masterKey',
+        'test',
+        '--databaseURI',
+        databaseURI,
+        '--port',
+        '1340',
+        '--mountGraphQL',
+      ],
+      { env }
+    );
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
@@ -267,19 +269,25 @@ describe('execution', () => {
     });
   });
 
-  it('shoud start Parse Server with GraphQL and Playground', done => {
-    childProcess = spawn(binPath, [
-      '--appId',
-      'test',
-      '--masterKey',
-      'test',
-      '--databaseURI',
-      'mongodb://localhost/test',
-      '--port',
-      '1341',
-      '--mountGraphQL',
-      '--mountPlayground',
-    ]);
+  it('should start Parse Server with GraphQL and Playground', async done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      [
+        '--appId',
+        'test',
+        '--masterKey',
+        'test',
+        '--databaseURI',
+        databaseURI,
+        '--port',
+        '1341',
+        '--mountGraphQL',
+        '--mountPlayground',
+      ],
+      { env }
+    );
     let output = '';
     childProcess.stdout.on('data', data => {
       data = data.toString();
@@ -291,6 +299,27 @@ describe('execution', () => {
       }
     });
     childProcess.stderr.on('data', data => {
+      done.fail(data.toString());
+    });
+  });
+
+  it('can start Parse Server with auth via CLI', done => {
+    const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    childProcess = spawn(
+      binPath,
+      ['--databaseURI', databaseURI, './spec/configs/CLIConfigAuth.json'],
+      { env }
+    );
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      console.log(data);
+      if (data.includes('parse-server running on')) {
+        done();
+      }
+    });
+    childProcess.stderr.on('data', data => {
+      data = data.toString();
       done.fail(data.toString());
     });
   });

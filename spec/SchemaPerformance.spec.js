@@ -1,15 +1,13 @@
 const Config = require('../lib/Config');
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
-const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 
-describe_only_db('mongo')('Schema Performance', function () {
+describe('Schema Performance', function () {
   let getAllSpy;
   let config;
 
   beforeEach(async () => {
     config = Config.get('test');
     config.schemaCache.clear();
-    const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
+    const databaseAdapter = config.database.adapter;
     await reconfigureServer({ databaseAdapter });
     getAllSpy = spyOn(databaseAdapter, 'getAllClasses').and.callThrough();
   });
@@ -204,6 +202,60 @@ describe_only_db('mongo')('Schema Performance', function () {
       {},
       config.database
     );
-    expect(getAllSpy.calls.count()).toBe(0);
+    expect(getAllSpy.calls.count()).toBe(2);
+  });
+
+  it('does reload with schemaCacheTtl', async () => {
+    const databaseURI =
+      process.env.PARSE_SERVER_TEST_DB === 'postgres'
+        ? process.env.PARSE_SERVER_TEST_DATABASE_URI
+        : 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    await reconfigureServer({
+      databaseAdapter: undefined,
+      databaseURI,
+      silent: false,
+      databaseOptions: { schemaCacheTtl: 1000 },
+    });
+    const SchemaController = require('../lib/Controllers/SchemaController').SchemaController;
+    const spy = spyOn(SchemaController.prototype, 'reloadData').and.callThrough();
+    Object.defineProperty(spy, 'reloadCalls', {
+      get: () => spy.calls.all().filter(call => call.args[0].clearCache).length,
+    });
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    spy.calls.reset();
+
+    object.set('foo', 'bar');
+    await object.save();
+
+    expect(spy.reloadCalls).toBe(0);
+
+    await new Promise(resolve => setTimeout(resolve, 1100));
+
+    object.set('foo', 'bar');
+    await object.save();
+
+    expect(spy.reloadCalls).toBe(1);
+  });
+
+  it('cannot set invalid databaseOptions', async () => {
+    const expectError = async (key, value, expected) =>
+      expectAsync(
+        reconfigureServer({ databaseAdapter: undefined, databaseOptions: { [key]: value } })
+      ).toBeRejectedWith(`databaseOptions.${key} must be a ${expected}`);
+    for (const databaseOptions of [[], 0, 'string']) {
+      await expectAsync(
+        reconfigureServer({ databaseAdapter: undefined, databaseOptions })
+      ).toBeRejectedWith(`databaseOptions must be an object`);
+    }
+    for (const value of [null, 0, 'string', {}, []]) {
+      await expectError('enableSchemaHooks', value, 'boolean');
+    }
+    for (const value of [null, false, 'string', {}, []]) {
+      await expectError('schemaCacheTtl', value, 'number');
+    }
   });
 });

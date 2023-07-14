@@ -737,7 +737,8 @@ describe('cloud validator', () => {
   });
 
   it('basic beforeSaveFile skipWithMasterKey', async done => {
-    Parse.Cloud.beforeSaveFile(
+    Parse.Cloud.beforeSave(
+      Parse.File,
       () => {
         throw 'beforeSaveFile should have resolved using master key.';
       },
@@ -1431,7 +1432,7 @@ describe('cloud validator', () => {
   });
 
   it('validate beforeSaveFile', async done => {
-    Parse.Cloud.beforeSaveFile(() => {}, validatorSuccess);
+    Parse.Cloud.beforeSave(Parse.File, () => {}, validatorSuccess);
 
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
@@ -1440,7 +1441,7 @@ describe('cloud validator', () => {
   });
 
   it('validate beforeSaveFile fail', async done => {
-    Parse.Cloud.beforeSaveFile(() => {}, validatorFail);
+    Parse.Cloud.beforeSave(Parse.File, () => {}, validatorFail);
     try {
       const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save({ useMasterKey: true });
@@ -1452,7 +1453,7 @@ describe('cloud validator', () => {
   });
 
   it('validate afterSaveFile', async done => {
-    Parse.Cloud.afterSaveFile(() => {}, validatorSuccess);
+    Parse.Cloud.afterSave(Parse.File, () => {}, validatorSuccess);
 
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
@@ -1461,7 +1462,7 @@ describe('cloud validator', () => {
   });
 
   it('validate afterSaveFile fail', async done => {
-    Parse.Cloud.beforeSaveFile(() => {}, validatorFail);
+    Parse.Cloud.beforeSave(Parse.File, () => {}, validatorFail);
     try {
       const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save({ useMasterKey: true });
@@ -1473,7 +1474,7 @@ describe('cloud validator', () => {
   });
 
   it('validate beforeDeleteFile', async done => {
-    Parse.Cloud.beforeDeleteFile(() => {}, validatorSuccess);
+    Parse.Cloud.beforeDelete(Parse.File, () => {}, validatorSuccess);
 
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save();
@@ -1482,7 +1483,7 @@ describe('cloud validator', () => {
   });
 
   it('validate beforeDeleteFile fail', async done => {
-    Parse.Cloud.beforeDeleteFile(() => {}, validatorFail);
+    Parse.Cloud.beforeDelete(Parse.File, () => {}, validatorFail);
     try {
       const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save();
@@ -1495,7 +1496,7 @@ describe('cloud validator', () => {
   });
 
   it('validate afterDeleteFile', async done => {
-    Parse.Cloud.afterDeleteFile(() => {}, validatorSuccess);
+    Parse.Cloud.afterDelete(Parse.File, () => {}, validatorSuccess);
 
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save();
@@ -1504,7 +1505,7 @@ describe('cloud validator', () => {
   });
 
   it('validate afterDeleteFile fail', async done => {
-    Parse.Cloud.afterDeleteFile(() => {}, validatorFail);
+    Parse.Cloud.afterDelete(Parse.File, () => {}, validatorFail);
     try {
       const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save();

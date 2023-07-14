@@ -15,7 +15,6 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
-import { GraphQLUpload } from '@graphql-tools/links';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -223,6 +222,11 @@ const DATE = new GraphQLScalarType({
   },
 });
 
+const GraphQLUpload = new GraphQLScalarType({
+  name: 'Upload',
+  description: 'The Upload scalar type represents a file upload.',
+});
+
 const BYTES = new GraphQLScalarType({
   name: 'Bytes',
   description:
@@ -357,20 +361,16 @@ const FILE_INFO = new GraphQLObjectType({
 
 const FILE_INPUT = new GraphQLInputObjectType({
   name: 'FileInput',
+  description:
+    'If this field is set to null the file will be unlinked (the file will not be deleted on cloud storage).',
   fields: {
     file: {
-      description:
-        'A File Scalar can be an url or a FileInfo object. If this field is set to null the file will be unlinked.',
+      description: 'A File Scalar can be an url or a FileInfo object.',
       type: FILE,
     },
     upload: {
       description: 'Use this field if you want to create a new file.',
       type: GraphQLUpload,
-    },
-    unlink: {
-      description:
-        'Use this field if you want to unlink the file (the file will not be deleted on cloud storage)',
-      type: GraphQLBoolean,
     },
   },
 });
@@ -1194,8 +1194,8 @@ const ELEMENT = new GraphQLObjectType({
 // Default static union type, we update types and resolveType function later
 let ARRAY_RESULT;
 
-const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
-  const classTypes = parseClasses
+const loadArrayResult = (parseGraphQLSchema, parseClassesArray) => {
+  const classTypes = parseClassesArray
     .filter(parseClass =>
       parseGraphQLSchema.parseClassTypes[parseClass.className].classGraphQLOutputType ? true : false
     )
@@ -1210,12 +1210,12 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
     resolveType: value => {
       if (value.__type === 'Object' && value.className && value.objectId) {
         if (parseGraphQLSchema.parseClassTypes[value.className]) {
-          return parseGraphQLSchema.parseClassTypes[value.className].classGraphQLOutputType;
+          return parseGraphQLSchema.parseClassTypes[value.className].classGraphQLOutputType.name;
         } else {
-          return ELEMENT;
+          return ELEMENT.name;
         }
       } else {
-        return ELEMENT;
+        return ELEMENT.name;
       }
     },
   });
@@ -1269,6 +1269,7 @@ const load = parseGraphQLSchema => {
 };
 
 export {
+  GraphQLUpload,
   TypeValidationError,
   parseStringValue,
   parseIntValue,

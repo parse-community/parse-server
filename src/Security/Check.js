@@ -7,7 +7,7 @@ import { isFunction, isString } from 'lodash';
 
 /**
  * A security check.
- * @class Check
+ * @class
  */
 class Check {
   /**
@@ -73,9 +73,9 @@ class Check {
  * The check state.
  */
 const CheckState = Object.freeze({
-  none: "none",
-  fail: "fail",
-  success: "success",
+  none: 'none',
+  fail: 'fail',
+  success: 'success',
 });
 
 export default Check;

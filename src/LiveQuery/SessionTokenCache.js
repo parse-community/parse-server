@@ -1,5 +1,5 @@
 import Parse from 'parse/node';
-import LRU from 'lru-cache';
+import { LRUCache as LRU } from 'lru-cache';
 import logger from '../logger';
 
 function userForSessionToken(sessionToken) {
@@ -19,7 +19,7 @@ class SessionTokenCache {
   constructor(timeout: number = 30 * 24 * 60 * 60 * 1000, maxSize: number = 10000) {
     this.cache = new LRU({
       max: maxSize,
-      maxAge: timeout,
+      ttl: timeout,
     });
   }
 

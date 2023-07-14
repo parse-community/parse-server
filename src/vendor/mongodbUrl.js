@@ -1,8 +1,7 @@
-// A slightly patched version of node's url module, with support for mongodb://
-// uris.
-//
-// See https://github.com/nodejs/node/blob/master/LICENSE for licensing
-// information
+/*
+ * A slightly patched version of node's URL module, with support for `mongodb://` URIs.
+ * See https://github.com/nodejs/node for licensing information.
+ */
 
 'use strict';
 

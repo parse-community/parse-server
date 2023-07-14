@@ -161,7 +161,7 @@ describe('Cloud Code Logger', () => {
         expect(log[0]).toEqual('error');
         const error = log[2].error;
         expect(error instanceof Parse.Error).toBeTruthy();
-        expect(error.code).toBe(141);
+        expect(error.code).toBe(Parse.Error.SCRIPT_FAILED);
         expect(error.message).toBe('uh oh!');
         done();
       });
@@ -182,6 +182,77 @@ describe('Cloud Code Logger', () => {
     });
   });
 
+  it('should log cloud function execution using the custom log level', async done => {
+    Parse.Cloud.define('aFunction', () => {
+      return 'it worked!';
+    });
+
+    Parse.Cloud.define('bFunction', () => {
+      throw new Error('Failed');
+    });
+
+    await Parse.Cloud.run('aFunction', { foo: 'bar' }).then(() => {
+      const log = spy.calls.allArgs().find(log => log[1].startsWith('Ran cloud function '))?.[0];
+      expect(log).toEqual('info');
+    });
+
+    await reconfigureServer({
+      silent: true,
+      logLevels: {
+        cloudFunctionSuccess: 'warn',
+        cloudFunctionError: 'info',
+      },
+    });
+
+    spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+
+    try {
+      await Parse.Cloud.run('bFunction', { foo: 'bar' });
+      throw new Error('bFunction should have failed');
+    } catch {
+      const log = spy.calls
+        .allArgs()
+        .find(log => log[1].startsWith('Failed running cloud function bFunction for '))?.[0];
+      expect(log).toEqual('info');
+      done();
+    }
+  });
+
+  it('should log cloud function triggers using the custom log level', async () => {
+    Parse.Cloud.beforeSave('TestClass', () => {});
+    Parse.Cloud.afterSave('TestClass', () => {});
+
+    const execTest = async (logLevel, triggerBeforeSuccess, triggerAfter) => {
+      await reconfigureServer({
+        silent: true,
+        logLevel,
+        logLevels: {
+          triggerAfter,
+          triggerBeforeSuccess,
+        },
+      });
+
+      spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+      const obj = new Parse.Object('TestClass');
+      await obj.save();
+
+      return {
+        beforeSave: spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('beforeSave triggered for TestClass for user '))?.[0],
+        afterSave: spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('afterSave triggered for TestClass for user '))?.[0],
+      };
+    };
+
+    let calls = await execTest('silly', 'silly', 'debug');
+    expect(calls).toEqual({ beforeSave: 'silly', afterSave: 'debug' });
+
+    calls = await execTest('info', 'warn', 'debug');
+    expect(calls).toEqual({ beforeSave: 'warn', afterSave: undefined });
+  });
+
   it('should log cloud function failure', done => {
     Parse.Cloud.define('aFunction', () => {
       throw 'it failed!';
@@ -199,7 +270,9 @@ describe('Cloud Code Logger', () => {
         expect(log[1]).toMatch(
           /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error:/
         );
-        const errorString = JSON.stringify(new Parse.Error(141, 'it failed!'));
+        const errorString = JSON.stringify(
+          new Parse.Error(Parse.Error.SCRIPT_FAILED, 'it failed!')
+        );
         expect(log[1].indexOf(errorString)).toBeGreaterThan(0);
         done();
       })

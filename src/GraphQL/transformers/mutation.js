@@ -14,7 +14,7 @@ const transformTypes = async (
     classGraphQLUpdateType,
     config: { isCreateEnabled, isUpdateEnabled },
   } = parseGraphQLSchema.parseClassTypes[className];
-  const parseClass = parseGraphQLSchema.parseClasses.find(clazz => clazz.className === className);
+  const parseClass = parseGraphQLSchema.parseClasses[className];
   if (fields) {
     const classGraphQLCreateTypeFields =
       isCreateEnabled && classGraphQLCreateType ? classGraphQLCreateType.getFields() : null;
@@ -30,9 +30,17 @@ const transformTypes = async (
       if (inputTypeField) {
         switch (true) {
           case inputTypeField.type === defaultGraphQLTypes.GEO_POINT_INPUT:
+            if (fields[field] === null) {
+              fields[field] = { __op: 'Delete' };
+              break;
+            }
             fields[field] = transformers.geoPoint(fields[field]);
             break;
           case inputTypeField.type === defaultGraphQLTypes.POLYGON_INPUT:
+            if (fields[field] === null) {
+              fields[field] = { __op: 'Delete' };
+              break;
+            }
             fields[field] = transformers.polygon(fields[field]);
             break;
           case inputTypeField.type === defaultGraphQLTypes.FILE_INPUT:
@@ -48,6 +56,10 @@ const transformTypes = async (
             );
             break;
           case parseClass.fields[field].type === 'Pointer':
+            if (fields[field] === null) {
+              fields[field] = { __op: 'Delete' };
+              break;
+            }
             fields[field] = await transformers.pointer(
               parseClass.fields[field].targetClass,
               field,
@@ -55,6 +67,12 @@ const transformTypes = async (
               parseGraphQLSchema,
               req
             );
+            break;
+          default:
+            if (fields[field] === null) {
+              fields[field] = { __op: 'Delete' };
+              return;
+            }
             break;
         }
       }
@@ -66,10 +84,11 @@ const transformTypes = async (
 };
 
 const transformers = {
-  file: async ({ file, upload }, { config }) => {
-    if (file === null && !upload) {
-      return null;
+  file: async (input, { config }) => {
+    if (input === null) {
+      return { __op: 'Delete' };
     }
+    const { file, upload } = input;
     if (upload) {
       const { fileInfo } = await handleUpload(upload, config);
       return { ...fileInfo, __type: 'File' };

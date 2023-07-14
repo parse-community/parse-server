@@ -70,7 +70,6 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   },
   // The additional default columns for the _Session collection (in addition to DefaultCols)
   _Session: {
-    restricted: { type: 'Boolean' },
     user: { type: 'Pointer', targetClass: '_User' },
     installationId: { type: 'String' },
     sessionToken: { type: 'String' },
@@ -151,9 +150,15 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   },
 });
 
+// fields required for read or write operations on their respective classes.
 const requiredColumns = Object.freeze({
-  _Product: ['productIdentifier', 'icon', 'order', 'title', 'subtitle'],
-  _Role: ['name', 'ACL'],
+  read: {
+    _User: ['username'],
+  },
+  write: {
+    _Product: ['productIdentifier', 'icon', 'order', 'title', 'subtitle'],
+    _Role: ['name', 'ACL'],
+  },
 });
 
 const invalidColumns = ['length'];
@@ -677,6 +682,10 @@ const typeToString = (type: SchemaField | string): string => {
   }
   return `${type.type}`;
 };
+const ttl = {
+  date: Date.now(),
+  duration: undefined,
+};
 
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
@@ -689,10 +698,11 @@ export default class SchemaController {
 
   constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
+    const config = Config.get(Parse.applicationId);
     this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
-    this.protectedFields = Config.get(Parse.applicationId).protectedFields;
+    this.protectedFields = config.protectedFields;
 
-    const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
+    const customIds = config.allowCustomObjectId;
 
     const customIdRegEx = /^.{1,}$/u; // 1+ chars
     const autoIdRegEx = /^[a-zA-Z0-9]{1,}$/;
@@ -702,6 +712,21 @@ export default class SchemaController {
     this._dbAdapter.watch(() => {
       this.reloadData({ clearCache: true });
     });
+  }
+
+  async reloadDataIfNeeded() {
+    if (this._dbAdapter.enableSchemaHooks) {
+      return;
+    }
+    const { date, duration } = ttl || {};
+    if (!duration) {
+      return;
+    }
+    const now = Date.now();
+    if (now - date > duration) {
+      ttl.date = now;
+      await this.reloadData({ clearCache: true });
+    }
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
@@ -724,10 +749,11 @@ export default class SchemaController {
     return this.reloadDataPromise;
   }
 
-  getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
+  async getAllClasses(options: LoadSchemaOptions = { clearCache: false }): Promise<Array<Schema>> {
     if (options.clearCache) {
       return this.setAllClasses();
     }
+    await this.reloadDataIfNeeded();
     const cached = SchemaCache.all();
     if (cached && cached.length) {
       return Promise.resolve(cached);
@@ -832,7 +858,11 @@ export default class SchemaController {
         const existingFields = schema.fields;
         Object.keys(submittedFields).forEach(name => {
           const field = submittedFields[name];
-          if (existingFields[name] && field.__op !== 'Delete') {
+          if (
+            existingFields[name] &&
+            existingFields[name].type !== field.type &&
+            field.__op !== 'Delete'
+          ) {
             throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
           }
           if (!existingFields[name] && field.__op === 'Delete') {
@@ -1058,13 +1088,23 @@ export default class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  enforceFieldExists(className: string, fieldName: string, type: string | SchemaField) {
+  enforceFieldExists(
+    className: string,
+    fieldName: string,
+    type: string | SchemaField,
+    isValidation?: boolean,
+    maintenance?: boolean
+  ) {
     if (fieldName.indexOf('.') > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
       fieldName = fieldName.split('.')[0];
       type = 'Object';
     }
-    if (!fieldNameIsValid(fieldName, className)) {
+    let fieldNameToValidate = `${fieldName}`;
+    if (maintenance && fieldNameToValidate.charAt(0) === '_') {
+      fieldNameToValidate = fieldNameToValidate.substring(1);
+    }
+    if (!fieldNameIsValid(fieldNameToValidate, className)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
 
@@ -1102,7 +1142,14 @@ export default class SchemaController {
           )} but got ${typeToString(type)}`
         );
       }
-      return undefined;
+      // If type options do not change
+      // we can safely return
+      if (isValidation || JSON.stringify(expectedType) === JSON.stringify(type)) {
+        return undefined;
+      }
+      // Field options are may be changed
+      // ensure to have an update to date schema field
+      return this._dbAdapter.updateFieldOptions(className, fieldName, type);
     }
 
     return this._dbAdapter
@@ -1207,7 +1254,7 @@ export default class SchemaController {
   // Validates an object provided in REST format.
   // Returns a promise that resolves to the new schema if this object is
   // valid.
-  async validateObject(className: string, object: any, query: any) {
+  async validateObject(className: string, object: any, query: any, maintenance: boolean) {
     let geocount = 0;
     const schema = await this.enforceClassExists(className);
     const promises = [];
@@ -1237,7 +1284,7 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promises.push(schema.enforceFieldExists(className, fieldName, expected));
+      promises.push(schema.enforceFieldExists(className, fieldName, expected, true, maintenance));
     }
     const results = await Promise.all(promises);
     const enforceFields = results.filter(result => !!result);
@@ -1254,7 +1301,7 @@ export default class SchemaController {
 
   // Validates that all the properties are set for the object
   validateRequiredColumns(className: string, object: any, query: any) {
-    const columns = requiredColumns[className];
+    const columns = requiredColumns.write[className];
     if (!columns || columns.length == 0) {
       return Promise.resolve(this);
     }
@@ -1414,6 +1461,7 @@ export default class SchemaController {
 // Returns a promise for a new Schema.
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
   const schema = new SchemaController(dbAdapter);
+  ttl.duration = dbAdapter.schemaCacheTtl;
   return schema.reloadData(options).then(() => schema);
 };
 
@@ -1585,4 +1633,5 @@ export {
   convertSchemaToAdapterSchema,
   VolatileClassesSchemas,
   SchemaController,
+  requiredColumns,
 };

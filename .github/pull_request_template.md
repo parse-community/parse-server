@@ -1,30 +1,21 @@
-### New Pull Request Checklist
-<!--
-    Please check the following boxes [x] before submitting your issue.
-    Click the "Preview" tab for better readability.
-    Thanks for contributing to Parse Server!
--->
+## Pull Request
 
-- [ ] I am not disclosing a [vulnerability](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
-- [ ] I am creating this PR in reference to an [issue](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
+- Report security issues [confidentially](https://github.com/parse-community/parse-server/security/policy).
+- Any contribution is under this [license](https://github.com/parse-community/parse-server/blob/alpha/LICENSE).
+- Link this pull request to an [issue](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
 
-### Issue Description
-<!-- Add a brief description of the issue this PR solves. -->
+## Issue
+<!-- Add the link to the issue that this PR closes. -->
 
-Related issue: FILL_THIS_OUT
+Closes: FILL_THIS_OUT
 
-### Approach
-<!-- Add a description of the approach in this PR. -->
+## Approach
+<!-- Describe the changes in this PR. -->
 
-### TODOs before merging
-<!--
-    Add TODOs that need to be completed before merging this PR.
-    Delete suggested TODOs that do not apply to this PR.
--->
+## Tasks
+<!-- Delete tasks that don't apply. -->
 
-- [ ] Add test cases
-- [ ] Add entry to changelog
-- [ ] Add changes to documentation (guides, repository pages, in-code descriptions)
+- [ ] Add tests
+- [ ] Add changes to documentation (guides, repository pages, code comments)
 - [ ] Add [security check](https://github.com/parse-community/parse-server/blob/master/CONTRIBUTING.md#security-checks)
 - [ ] Add new Parse Error codes to Parse JS SDK <!-- no hard-coded error codes in Parse Server -->
-- [ ] ...

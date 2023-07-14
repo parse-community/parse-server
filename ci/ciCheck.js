@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const CiVersionCheck = require('./CiVersionCheck');
 const mongoVersionList = require('mongodb-version-list');
@@ -14,9 +14,8 @@ async function check() {
  * Check the MongoDB versions used in test environments.
  */
 async function checkMongoDbVersions() {
-
   const releasedVersions = await new Promise((resolve, reject) => {
-    mongoVersionList(function(error, versions) {
+    mongoVersionList(function (error, versions) {
       if (error) {
         reject(error);
       }
@@ -31,14 +30,12 @@ async function checkMongoDbVersions() {
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
     ciVersionKey: 'MONGODB_VERSION',
     releasedVersions,
-    latestComponent: CiVersionCheck.versionComponents.path,
+    latestComponent: CiVersionCheck.versionComponents.minor,
     ignoreReleasedVersions: [
       '<4.0.0', // Versions reached their MongoDB end-of-life support date
       '~4.1.0', // Development release according to MongoDB support
       '~4.3.0', // Development release according to MongoDB support
       '~4.7.0', // Development release according to MongoDB support
-
-      '4.0.26', // Temporarily disabled because not yet available for download via mongodb-runner
     ],
   }).check();
 }
@@ -47,7 +44,6 @@ async function checkMongoDbVersions() {
  * Check the Nodejs versions used in test environments.
  */
 async function checkNodeVersions() {
-
   const allVersions = await allNodeVersions();
   const releasedVersions = allVersions.versions;
 
@@ -62,7 +58,8 @@ async function checkNodeVersions() {
     ignoreReleasedVersions: [
       '<12.0.0', // These versions have reached their end-of-life support date
       '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
-      '>=16.0.0', // This version has not been officially released yet
+      '>=15.0.0 <16.0.0', // These versions have reached their end-of-life support date
+      '>=19.0.0', // These versions are not officially supported yet
     ],
   }).check();
 }
