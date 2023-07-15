@@ -1436,4 +1436,25 @@ describe('Parse.File testing', () => {
       expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
     });
   });
+
+  it('works with array with more elements', async () => {
+    await reconfigureServer({
+      fileUpload: {
+        enableForPublic: true,
+        fileExtensions: ['jpeg', 'png'],
+      },
+    });
+    await expectAsync(
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/file',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'image/jpeg',
+          base64: 'PGh0bWw+PC9odG1sPgo=',
+        }),
+      })
+    ).toBeResolved();
+  });
 });
