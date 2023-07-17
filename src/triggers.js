@@ -462,7 +462,6 @@ export function maybeRunAfterFindTrigger(
       isGet,
       isInclude
     );
-    console.log({ isGet, isInclude });
     if (query) {
       request.query = query;
     }
