@@ -1368,7 +1368,7 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileExtensions: ['jpg', 'any'],
+          fileExtensions: ['jpg', 'wav'],
         },
       });
       await expectAsync(
@@ -1396,6 +1396,18 @@ describe('Parse.File testing', () => {
             _JavaScriptKey: 'test',
             _ContentType: 'image/jpg',
             base64: 'PGh0bWw+PC9odG1sPgo=',
+          }),
+        })
+      ).toBeResolved();
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/file',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'audio/wav',
+            base64: 'UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA',
           }),
         })
       ).toBeResolved();
