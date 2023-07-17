@@ -205,6 +205,9 @@ export interface ParseServerOptions {
   /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
   :DEFAULT: false */
   encodeParseObjectInCloudFunction: ?boolean;
+  /* If set to `true`, beforeFind triggers will run when include is called. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where beforeFind triggers do not run on `include`.
+  :DEFAULT: false */
+  runBeforeFindOnInclude: ?boolean;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;

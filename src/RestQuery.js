@@ -221,7 +221,7 @@ RestQuery.prototype.execute = function (executeOptions) {
       return this.handleInclude();
     })
     .then(() => {
-      return this.runAfterFindTrigger();
+      return this.runAfterFindTrigger(executeOptions);
     })
     .then(() => {
       return this.handleAuthAdapters();
@@ -776,7 +776,8 @@ RestQuery.prototype.handleInclude = function () {
     this.auth,
     this.response,
     this.include[0],
-    this.restOptions
+    this.restOptions,
+    this.context
   );
   if (pathResponse.then) {
     return pathResponse.then(newResponse => {
@@ -793,7 +794,7 @@ RestQuery.prototype.handleInclude = function () {
 };
 
 //Returns a promise of a processed set of results
-RestQuery.prototype.runAfterFindTrigger = function () {
+RestQuery.prototype.runAfterFindTrigger = function (opts) {
   if (!this.response) {
     return;
   }
@@ -827,7 +828,9 @@ RestQuery.prototype.runAfterFindTrigger = function () {
       this.response.results,
       this.config,
       parseQuery,
-      this.context
+      this.context,
+      !!opts?.include,
+      !!opts?.include
     )
     .then(results => {
       // Ensure we properly set the className back
@@ -862,7 +865,7 @@ RestQuery.prototype.handleAuthAdapters = async function () {
 // Adds included values to the response.
 // Path is a list of field names.
 // Returns a promise for an augmented response.
-function includePath(config, auth, response, path, restOptions = {}) {
+function includePath(config, auth, response, path, restOptions = {}, context) {
   var pointers = findPointers(response.results, path);
   if (pointers.length == 0) {
     return response;
@@ -879,7 +882,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
       pointersHash[className].add(pointer.objectId);
     }
   }
-  const includeRestOptions = {};
+  let includeRestOptions = {};
   if (restOptions.keys) {
     const keys = new Set(restOptions.keys.split(','));
     const keySet = Array.from(keys).reduce((set, key) => {
@@ -927,7 +930,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
     includeRestOptions.readPreference = restOptions.readPreference;
   }
 
-  const queryPromises = Object.keys(pointersHash).map(className => {
+  const queryPromises = Object.keys(pointersHash).map(async className => {
     const objectIds = Array.from(pointersHash[className]);
     let where;
     if (objectIds.length === 1) {
@@ -935,11 +938,25 @@ function includePath(config, auth, response, path, restOptions = {}) {
     } else {
       where = { objectId: { $in: objectIds } };
     }
-    var query = new RestQuery(config, auth, className, where, includeRestOptions);
-    return query.execute({ op: 'get' }).then(results => {
-      results.className = className;
-      return Promise.resolve(results);
-    });
+    if (config.runBeforeFindOnInclude === true) {
+      const result = await triggers.maybeRunQueryTrigger(
+        triggers.Types.beforeFind,
+        className,
+        where,
+        includeRestOptions,
+        config,
+        auth,
+        context,
+        true,
+        true
+      );
+      where = result.restWhere || where;
+      includeRestOptions = result.restOptions || includeRestOptions;
+    }
+    const query = new RestQuery(config, auth, className, where, includeRestOptions);
+    const results = await query.execute({ op: 'get', include: true });
+    results.className = className;
+    return results;
   });
 
   // Get the objects for all these object ids

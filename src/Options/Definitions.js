@@ -485,6 +485,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  runBeforeFindOnInclude: {
+    env: 'PARSE_SERVER_RUN_BEFORE_FIND_ON_INCLUDE',
+    help:
+      'If set to `true`, beforeFind triggers will run when include is called. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where beforeFind triggers do not run on `include`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   scheduledPush: {
     env: 'PARSE_SERVER_SCHEDULED_PUSH',
     help: 'Configuration for push scheduling, defaults to false.',

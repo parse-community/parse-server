@@ -251,7 +251,9 @@ export function getRequestObject(
   parseObject,
   originalParseObject,
   config,
-  context
+  context,
+  isGet,
+  isInclude
 ) {
   const request = {
     triggerName: triggerType,
@@ -288,11 +290,27 @@ export function getRequestObject(
   if (auth.installationId) {
     request['installationId'] = auth.installationId;
   }
+  if (isGet) {
+    request.isGet = true;
+  }
+  if (isInclude) {
+    request.isInclude = true;
+  }
   return request;
 }
 
-export function getRequestQueryObject(triggerType, auth, query, count, config, context, isGet) {
+export function getRequestQueryObject(
+  triggerType,
+  auth,
+  query,
+  count,
+  config,
+  context,
+  isGet,
+  isInclude
+) {
   isGet = !!isGet;
+  isInclude = !!isInclude;
 
   var request = {
     triggerName: triggerType,
@@ -301,6 +319,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, c
     count,
     log: config.loggerController,
     isGet,
+    isInclude,
     headers: config.headers,
     ip: config.ip,
     context: context || {},
@@ -424,14 +443,26 @@ export function maybeRunAfterFindTrigger(
   objects,
   config,
   query,
-  context
+  context,
+  isGet,
+  isInclude
 ) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(className, triggerType, config.applicationId);
     if (!trigger) {
       return resolve();
     }
-    const request = getRequestObject(triggerType, auth, null, null, config, context);
+    const request = getRequestObject(
+      triggerType,
+      auth,
+      null,
+      null,
+      config,
+      context,
+      isGet,
+      isInclude
+    );
+    console.log({ isGet, isInclude });
     if (query) {
       request.query = query;
     }
@@ -494,7 +525,8 @@ export function maybeRunQueryTrigger(
   config,
   auth,
   context,
-  isGet
+  isGet,
+  isInclude
 ) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
   if (!trigger) {
@@ -520,7 +552,8 @@ export function maybeRunQueryTrigger(
     count,
     config,
     context,
-    isGet
+    isGet,
+    isInclude
   );
   return Promise.resolve()
     .then(() => {

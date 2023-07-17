@@ -87,6 +87,7 @@
  * @property {RequestKeywordDenylist[]} requestKeywordDenylist An array of keys and values that are prohibited in database read and write requests to prevent potential security vulnerabilities. It is possible to specify only a key (`{"key":"..."}`), only a value (`{"value":"..."}`) or a key-value pair (`{"key":"...","value":"..."}`). The specification can use the following types: `boolean`, `numeric` or `string`, where `string` will be interpreted as a regex notation. Request data is deep-scanned for matching definitions to detect also any nested occurrences. Defaults are patterns that are likely to be used in malicious requests. Setting this option will override the default patterns.
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
+ * @property {Boolean} runBeforeFindOnInclude If set to `true`, beforeFind triggers will run when include is called. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where beforeFind triggers do not run on `include`.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
  * @property {SchemaOptions} schema Defined schema
  * @property {SecurityOptions} security The security options to identify and report weak security settings.

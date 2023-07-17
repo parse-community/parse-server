@@ -2258,6 +2258,34 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('should run on include', async () => {
+    await reconfigureServer({
+      runBeforeFindOnInclude: true,
+    });
+    const obj = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    await obj2.save();
+    obj.set('obj2', obj2);
+    await obj.save();
+    const spy = {
+      beforeFind(req) {
+        expect(req.isInclude).toBeTrue();
+      },
+      afterFind(req) {
+        expect(req.isInclude).toBeTrue();
+      },
+    };
+    for (const key in spy) {
+      spyOn(spy, key).and.callThrough();
+      Parse.Cloud[key]('TestObject2', spy[key]);
+    }
+    const found = await new Parse.Query('TestObject').include('obj2').first();
+    expect(found).toBeDefined();
+    for (const key in spy) {
+      expect(spy[key]).toHaveBeenCalled();
+    }
+  });
+
   it('should have object found with nested relational data query', async () => {
     const obj1 = Parse.Object.extend('TestObject');
     const obj2 = Parse.Object.extend('TestObject2');
