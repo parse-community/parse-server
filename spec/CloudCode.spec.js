@@ -201,6 +201,61 @@ describe('Cloud Code', () => {
     }
   });
 
+  it('beforeFind can short circuit', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return new Parse.Object('TestObject', { foo: 'bar' });
+    });
+    Parse.Cloud.afterFind('beforeFind', () => {
+      throw 'afterFind should not run';
+    });
+    const obj = new Parse.Object('beforeFind');
+    await obj.save();
+    const newObj = await new Parse.Query('beforeFind').first();
+    expect(newObj.className).toBe('TestObject');
+    expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+  });
+
+  it('beforeFind can short circuit arrays', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return [new Parse.Object('TestObject', { foo: 'bar' })];
+    });
+    Parse.Cloud.afterFind('beforeFind', () => {
+      throw 'afterFind should not run';
+    });
+    const obj = new Parse.Object('beforeFind');
+    await obj.save();
+    const newObj = await new Parse.Query('beforeFind').first();
+    expect(newObj.className).toBe('TestObject');
+    expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+  });
+
+  it('beforeFind can short circuit get', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return [new Parse.Object('TestObject', { foo: 'bar' })];
+    });
+    Parse.Cloud.afterFind('beforeFind', () => {
+      throw 'afterFind should not run';
+    });
+    const obj = new Parse.Object('beforeFind');
+    await obj.save();
+    const newObj = await new Parse.Query('beforeFind').get(obj.id);
+    expect(newObj.className).toBe('TestObject');
+    expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+  });
+
+  it('beforeFind can short circuit empty array', async () => {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      return [];
+    });
+    Parse.Cloud.afterFind('beforeFind', () => {
+      throw 'afterFind should not run';
+    });
+    const obj = new Parse.Object('beforeFind');
+    await obj.save();
+    const newObj = await new Parse.Query('beforeFind').first();
+    expect(newObj).toBeUndefined();
+  });
+
   it('beforeSave rejection with custom error code', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
       throw new Parse.Error(999, 'Nope');

@@ -39,6 +39,11 @@ function find(config, auth, className, restWhere, restOptions, clientSDK, contex
     .then(result => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
+      if (result?.objects) {
+        return {
+          results: result.objects.map(row => row._toFullJSON()),
+        };
+      }
       const query = new RestQuery(
         config,
         auth,
@@ -71,6 +76,11 @@ const get = (config, auth, className, objectId, restOptions, clientSDK, context)
     .then(result => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
+      if (result?.objects) {
+        return {
+          results: result.objects.map(row => row._toFullJSON()),
+        };
+      }
       const query = new RestQuery(
         config,
         auth,

@@ -586,9 +586,19 @@ export function maybeRunQueryTrigger(
           restOptions = restOptions || {};
           restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
         }
+        let objects = undefined;
+        if (result instanceof Parse.Object) {
+          objects = [result];
+        } else if (
+          Array.isArray(result) &&
+          (!result.length || result.some(obj => obj instanceof Parse.Object))
+        ) {
+          objects = result;
+        }
         return {
           restWhere,
           restOptions,
+          objects,
         };
       },
       err => {
