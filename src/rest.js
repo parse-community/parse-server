@@ -26,33 +26,74 @@ function checkLiveQuery(className, config) {
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
 const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
-  const query = await RestQuery({
-    method: RestQuery.Method.find,
-    config,
-    auth,
-    className,
-    restWhere,
-    restOptions,
-    clientSDK,
-    context,
-  });
-  return query.execute();
+  enforceRoleSecurity('find', className, auth);
+  return triggers
+    .maybeRunQueryTrigger(
+      triggers.Types.beforeFind,
+      className,
+      restWhere,
+      restOptions,
+      config,
+      auth,
+      context
+    )
+    .then(async result => {
+      restWhere = result.restWhere || restWhere;
+      restOptions = result.restOptions || restOptions;
+      if (result?.objects) {
+        return {
+          results: result.objects.map(row => row._toFullJSON()),
+        };
+      }
+      const query = await RestQuery({
+        method: RestQuery.Method.find,
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK,
+        context,
+      });
+      return query.execute();
+    });
 };
 
 // get is just like find but only queries an objectId.
 const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
   var restWhere = { objectId };
-  const query = await RestQuery({
-    method: RestQuery.Method.get,
-    config,
-    auth,
-    className,
-    restWhere,
-    restOptions,
-    clientSDK,
-    context,
-  });
-  return query.execute();
+  enforceRoleSecurity('get', className, auth);
+  return triggers
+    .maybeRunQueryTrigger(
+      triggers.Types.beforeFind,
+      className,
+      restWhere,
+      restOptions,
+      config,
+      auth,
+      context,
+      true
+    )
+    .then(async result => {
+      restWhere = result.restWhere || restWhere;
+      restOptions = result.restOptions || restOptions;
+      if (result?.objects) {
+        return {
+          results: result.objects.map(row => row._toFullJSON()),
+        };
+      }
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK,
+        context,
+      });
+      return query.execute();
+    });
 };
 
 // Returns a promise that doesn't resolve to any useful value.
