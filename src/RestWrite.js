@@ -370,7 +370,12 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
       // Add default fields
       this.data.updatedAt = this.updatedAt;
       if (!this.query) {
-        this.data.createdAt = this.updatedAt;
+        // optionally support specifying createdAt during object creation
+        if (this.data.createdAt && this.data.createdAt.__type === 'Date') {
+          this.data.createdAt = this.data.updatedAt = this.data.createdAt.iso;
+        } else {
+          this.data.createdAt = this.updatedAt;
+        }
 
         // Only assign new objectId if we are creating new object
         if (!this.data.objectId) {

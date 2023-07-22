@@ -98,6 +98,20 @@ describe('rest create', () => {
     expect(objectId).toBeDefined();
   });
 
+  it('should allow createdAt to be specified', async () => {
+    const obj = {
+      createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
+    };
+
+    const {
+      status,
+      response: { createdAt },
+    } = await rest.create(config, auth.nobody(config), 'MyClass', obj);
+
+    expect(status).toEqual(201);
+    expect(createdAt).toEqual(obj.createdAt.iso);
+  });
+
   it('is backwards compatible when _id size changes', done => {
     rest
       .create(config, auth.nobody(config), 'Foo', { size: 10 })
