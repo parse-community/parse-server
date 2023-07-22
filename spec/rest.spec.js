@@ -98,7 +98,7 @@ describe('rest create', () => {
     expect(objectId).toBeDefined();
   });
 
-  it('should allow createdAt to be specified', async () => {
+  it('allows createdAt to be set', async () => {
     const obj = {
       createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
     };
