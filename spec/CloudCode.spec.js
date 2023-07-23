@@ -208,11 +208,10 @@ describe('Cloud Code', () => {
     Parse.Cloud.afterFind('beforeFind', () => {
       throw 'afterFind should not run';
     });
-    const obj = new Parse.Object('beforeFind');
-    await obj.save();
     const newObj = await new Parse.Query('beforeFind').first();
     expect(newObj.className).toBe('TestObject');
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+    await newObj.save();
   });
 
   it('beforeFind can return array of objects without DB operation', async () => {
@@ -222,11 +221,10 @@ describe('Cloud Code', () => {
     Parse.Cloud.afterFind('beforeFind', () => {
       throw 'afterFind should not run';
     });
-    const obj = new Parse.Object('beforeFind');
-    await obj.save();
     const newObj = await new Parse.Query('beforeFind').first();
     expect(newObj.className).toBe('TestObject');
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+    await newObj.save();
   });
 
   it('beforeFind can return object for get query without DB operation', async () => {
@@ -236,11 +234,10 @@ describe('Cloud Code', () => {
     Parse.Cloud.afterFind('beforeFind', () => {
       throw 'afterFind should not run';
     });
-    const obj = new Parse.Object('beforeFind');
-    await obj.save();
-    const newObj = await new Parse.Query('beforeFind').get(obj.id);
+    const newObj = await new Parse.Query('beforeFind').get('objId');
     expect(newObj.className).toBe('TestObject');
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
+    await newObj.save();
   });
 
   it('beforeFind can return empty array without DB operation', async () => {
