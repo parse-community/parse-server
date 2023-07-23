@@ -3531,6 +3531,108 @@ describe('afterLogin hook', () => {
 });
 
 describe('saveFile hooks', () => {
+  fit('find hooks should run', async () => {
+    await reconfigureServer({ silent: false });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    const hooks = {
+      beforeFind(req) {
+        expect(req).toBeDefined();
+        expect(req.file).toBeDefined();
+        expect(req.triggerName).toBe('beforeFind');
+        expect(req.master).toBeFalse();
+        expect(req.log).toBeDefined();
+      },
+      afterFind(req) {
+        expect(req).toBeDefined();
+        expect(req.file).toBeDefined();
+        expect(req.triggerName).toBe('afterFind');
+        expect(req.master).toBeFalse();
+        expect(req.log).toBeDefined();
+      },
+    };
+    for (const hook in hooks) {
+      spyOn(hooks, hook).and.callThrough();
+      Parse.Cloud[hook](Parse.File, hooks[hook]);
+    }
+    await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+    });
+    for (const hook in hooks) {
+      expect(hooks[hook]).toHaveBeenCalled();
+    }
+  });
+
+  fit('beforeFind can throw', async () => {
+    await reconfigureServer({ silent: false });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    const hooks = {
+      beforeFind() {
+        throw 'unauthorized';
+      },
+      afterFind() {},
+    };
+    for (const hook in hooks) {
+      spyOn(hooks, hook).and.callThrough();
+      Parse.Cloud[hook](Parse.File, hooks[hook]);
+    }
+    await expectAsync(
+      request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      }).catch(e => {
+        throw new Parse.Error(e.data.code, e.data.error);
+      })
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized'));
+
+    expect(hooks.beforeFind).toHaveBeenCalled();
+    expect(hooks.afterFind).not.toHaveBeenCalled();
+  });
+
+  fit('afterFind can throw', async () => {
+    await reconfigureServer({ silent: false });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    const hooks = {
+      beforeFind() {},
+      afterFind() {
+        throw 'unauthorized';
+      },
+    };
+    for (const hook in hooks) {
+      spyOn(hooks, hook).and.callThrough();
+      Parse.Cloud[hook](Parse.File, hooks[hook]);
+    }
+    await expectAsync(
+      request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      }).catch(e => {
+        throw new Parse.Error(e.data.code, e.data.error);
+      })
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized'));
+    for (const hook in hooks) {
+      expect(hooks[hook]).toHaveBeenCalled();
+    }
+  });
+
   it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
