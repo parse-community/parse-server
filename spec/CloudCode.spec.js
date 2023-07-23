@@ -201,7 +201,7 @@ describe('Cloud Code', () => {
     }
   });
 
-  it('beforeFind can short circuit', async () => {
+  it('beforeFind can return object without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return new Parse.Object('TestObject', { foo: 'bar' });
     });
@@ -215,7 +215,7 @@ describe('Cloud Code', () => {
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
   });
 
-  it('beforeFind can short circuit arrays', async () => {
+  it('beforeFind can return array of objects without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
@@ -229,7 +229,7 @@ describe('Cloud Code', () => {
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
   });
 
-  it('beforeFind can short circuit get', async () => {
+  it('beforeFind can return object for get query without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
@@ -243,7 +243,7 @@ describe('Cloud Code', () => {
     expect(newObj.toJSON()).toEqual({ foo: 'bar' });
   });
 
-  it('beforeFind can short circuit empty array', async () => {
+  it('beforeFind can return empty array without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [];
     });
