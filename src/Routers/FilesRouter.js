@@ -148,7 +148,7 @@ export class FilesRouter {
             return true;
           }
           const regex = new RegExp(ext);
-          if (regex.test(extension)) {
+          if (regex.test(extension?.toLowerCase())) {
             return true;
           }
         });

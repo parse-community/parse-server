@@ -1340,7 +1340,7 @@ describe('Parse.File testing', () => {
       );
     });
 
-    fit('works without Content-Type', async () => {
+    it('works without Content-Type', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
@@ -1362,7 +1362,7 @@ describe('Parse.File testing', () => {
       ).toBeRejectedWith(
         new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
-      const file = new Parse.File('parse-server-logo.png', { base64: 'ParseA==' });
+      const file = new Parse.File('parse-server-logo', { base64: 'ParseA==' });
       await file.save();
     });
 
