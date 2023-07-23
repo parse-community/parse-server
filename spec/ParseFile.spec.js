@@ -1315,7 +1315,7 @@ describe('Parse.File testing', () => {
   });
 
   describe('fileExtensions', () => {
-    fit('works with _ContentType', async () => {
+    it('works with _ContentType', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
@@ -1340,7 +1340,7 @@ describe('Parse.File testing', () => {
       );
     });
 
-    it('works without Content-Type', async () => {
+    fit('works without Content-Type', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
