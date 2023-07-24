@@ -127,6 +127,10 @@ export class UserController extends AdaptableController {
     if (user.email) {
       where.email = user.email;
     }
+    if (user._email_verify_token) {
+      where._email_verify_token = user._email_verify_token;
+      where._email_verify_token_expires_at = { $lt: Parse._encode(new Date()) };
+    }
 
     var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
     return query.execute().then(function (result) {
@@ -157,8 +161,6 @@ export class UserController extends AdaptableController {
     if (!shouldSendEmail) {
       return;
     }
-    const username = encodeURIComponent(user.username);
-
     const link = buildEmailLink(this.config.verifyEmailURL, token, this.config);
     const options = {
       appName: this.config.appName,
@@ -199,8 +201,8 @@ export class UserController extends AdaptableController {
     return this.config.database.update('_User', { username: user.username }, user);
   }
 
-  async resendVerificationEmail(username, req) {
-    const aUser = await this.getUserIfNeeded({ username: username });
+  async resendVerificationEmail(username, req, expiredToken) {
+    const aUser = await this.getUserIfNeeded({ username, _email_verify_token: expiredToken });
     if (!aUser || aUser.emailVerified) {
       throw undefined;
     }

@@ -38,7 +38,7 @@ export class PublicAPIRouter extends PromiseRouter {
         });
       },
       () => {
-        return this.invalidVerificationLink(req);
+        return this.invalidVerificationLink(req, token);
       }
     );
   }
@@ -56,13 +56,15 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.missingPublicServerURL();
     }
 
-    if (!username) {
+    const expiredToken = req.body.expiredToken;
+
+    if (!username && !expiredToken) {
       return this.invalidLink(req);
     }
 
     const userController = config.userController;
 
-    return userController.resendVerificationEmail(username, req).then(
+    return userController.resendVerificationEmail(username, req, expiredToken).then(
       () => {
         return Promise.resolve({
           status: 302,
@@ -183,12 +185,18 @@ export class PublicAPIRouter extends PromiseRouter {
         }
       )
       .then(result => {
-        const params = qs.stringify({
+        const queryString = {
           token: token,
           id: config.applicationId,
           error: result.err,
           app: config.appName,
-        });
+        };
+
+        if (result?.err === 'The password reset link has expired') {
+          delete queryString.token;
+          queryString.expiredToken = token;
+        }
+        const params = qs.stringify(queryString);
 
         if (req.xhr) {
           if (result.success) {
@@ -220,11 +228,12 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
-  invalidVerificationLink(req) {
+  invalidVerificationLink(req, expiredToken) {
     const config = req.config;
     if (req.params.appId) {
       const params = qs.stringify({
         appId: req.params.appId,
+        expiredToken,
       });
       return Promise.resolve({
         status: 302,

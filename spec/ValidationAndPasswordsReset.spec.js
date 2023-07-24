@@ -3,6 +3,7 @@
 const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const request = require('../lib/request');
 const Config = require('../lib/Config');
+const Auth = require('../lib/Auth');
 
 describe('Custom Pages, Email Verification, Password Reset', () => {
   it('should set the custom pages', done => {
@@ -1081,6 +1082,80 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         fail(JSON.stringify(error));
         done();
       });
+  });
+
+  fit('can resend email using an expired reset password token', async () => {
+    const user = new Parse.User();
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+      passwordPolicy: {
+        resetTokenValidityDuration: 5 * 60, // 5 minutes
+      },
+      silent: false,
+    });
+    user.setUsername('test');
+    user.setPassword('password');
+    user.set('email', 'user@example.com');
+    await user.signUp();
+    await Parse.User.requestPasswordReset('user@example.com');
+
+    await Parse.Server.database.update(
+      '_User',
+      { objectId: user.id },
+      {
+        _perishable_token_expires_at: Parse._encode(new Date('2000')),
+      }
+    );
+
+    let obj = await Parse.Server.database.find(
+      '_User',
+      { objectId: user.id },
+      {},
+      Auth.maintenance(Parse.Server)
+    );
+    const token = obj[0]._perishable_token;
+    const res = await request({
+      url: `http://localhost:8378/1/apps/test/request_password_reset`,
+      method: 'POST',
+      body: {
+        token,
+        new_password: 'newpassword',
+      },
+    });
+    expect(res.text).toEqual(
+      `Found. Redirecting to http://localhost:8378/1/apps/choose_password?id=test&error=The%20password%20reset%20link%20has%20expired&app=emailVerifyToken&expiredToken=${token}`
+    );
+
+    await request({
+      url: `http://localhost:8378/1/requestPasswordReset`,
+      method: 'POST',
+      body: {
+        expiredToken: token,
+      },
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    obj = await Parse.Server.database.find(
+      '_User',
+      { objectId: user.id },
+      {},
+      Auth.maintenance(Parse.Server)
+    );
+
+    expect(obj._perishable_token).not.toBe(token);
   });
 
   it('should throw on an invalid reset password', async () => {

@@ -288,6 +288,64 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
+  it('can resend email using an expired token', async () => {
+    const user = new Parse.User();
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    user.setUsername('test');
+    user.setPassword('password');
+    user.set('email', 'user@example.com');
+    await user.signUp();
+
+    await Parse.Server.database.update(
+      '_User',
+      { objectId: user.id },
+      {
+        _email_verify_token_expires_at: Parse._encode(new Date('2000')),
+      }
+    );
+
+    const obj = await Parse.Server.database.find(
+      '_User',
+      { objectId: user.id },
+      {},
+      Auth.maintenance(Parse.Server)
+    );
+    const token = obj[0]._email_verify_token;
+
+    const res = await request({
+      url: `http://localhost:8378/1/apps/test/verify_email?token=${token}`,
+      method: 'GET',
+    });
+    expect(res.text).toEqual(
+      `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${token}`
+    );
+
+    const formUrl = `http://localhost:8378/1/apps/test/resend_verification_email`;
+    const formResponse = await request({
+      url: formUrl,
+      method: 'POST',
+      body: {
+        expiredToken: token,
+      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      followRedirects: false,
+    });
+    expect(formResponse.text).toEqual(
+      `Found. Redirecting to http://localhost:8378/1/apps/link_send_success.html`
+    );
+  });
+
   it('can conditionally send emails', async () => {
     let sendEmailOptions;
     const emailAdapter = {
