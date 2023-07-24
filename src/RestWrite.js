@@ -367,6 +367,20 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
         }
       };
 
+      // add default ACL
+      if (schema.classLevelPermissions.ACL && !this.data.ACL) {
+        const acl = deepcopy(schema.classLevelPermissions.ACL);
+        if (acl.currentUser) {
+          if (this.auth.user?.id) {
+            acl[this.auth.user?.id] = deepcopy(acl.currentUser);
+          }
+          delete acl.currentUser;
+        }
+        this.data.ACL = acl;
+        this.storage.fieldsChangedByTrigger = this.storage.fieldsChangedByTrigger || [];
+        this.storage.fieldsChangedByTrigger.push('ACL');
+      }
+
       // Add default fields
       this.data.updatedAt = this.updatedAt;
       if (!this.query) {
