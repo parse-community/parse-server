@@ -23,80 +23,90 @@ function checkTriggers(className, config, types) {
 function checkLiveQuery(className, config) {
   return config.liveQueryController && config.liveQueryController.hasLiveQuery(className);
 }
+async function runFindTriggers(
+  config,
+  auth,
+  className,
+  restWhere,
+  restOptions,
+  clientSDK,
+  context,
+  isGet
+) {
+  const result = await triggers.maybeRunQueryTrigger(
+    triggers.Types.beforeFind,
+    className,
+    restWhere,
+    restOptions,
+    config,
+    auth,
+    context,
+    isGet
+  );
 
-// Returns a promise for an object with optional keys 'results' and 'count'.
+  restWhere = result.restWhere || restWhere;
+  restOptions = result.restOptions || restOptions;
+
+  if (result?.objects) {
+    const objects = result.objects;
+
+    await triggers.maybeRunAfterFindTrigger(
+      triggers.Types.afterFind,
+      auth,
+      className,
+      objects,
+      config,
+      restWhere,
+      context
+    );
+
+    return {
+      results: objects.map(row => row._toFullJSON()),
+    };
+  }
+
+  const query = await RestQuery({
+    method: isGet ? RestQuery.Method.get : RestQuery.Method.find,
+    config,
+    auth,
+    className,
+    restWhere,
+    restOptions,
+    clientSDK,
+    context,
+  });
+
+  return query.execute();
+}
+
 const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
   enforceRoleSecurity('find', className, auth);
-  return triggers
-    .maybeRunQueryTrigger(
-      triggers.Types.beforeFind,
-      className,
-      restWhere,
-      restOptions,
-      config,
-      auth,
-      context
-    )
-    .then(async result => {
-      restWhere = result.restWhere || restWhere;
-      restOptions = result.restOptions || restOptions;
-      if (result?.objects) {
-        return {
-          results: result.objects.map(row => row._toFullJSON()),
-        };
-      }
-      const query = await RestQuery({
-        method: RestQuery.Method.find,
-        config,
-        auth,
-        className,
-        restWhere,
-        restOptions,
-        clientSDK,
-        context,
-      });
-      return query.execute();
-    });
+  return runFindTriggers(
+    config,
+    auth,
+    className,
+    restWhere,
+    restOptions,
+    clientSDK,
+    context,
+    false
+  );
 };
 
-// get is just like find but only queries an objectId.
 const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
-  var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
-  return triggers
-    .maybeRunQueryTrigger(
-      triggers.Types.beforeFind,
-      className,
-      restWhere,
-      restOptions,
-      config,
-      auth,
-      context,
-      true
-    )
-    .then(async result => {
-      restWhere = result.restWhere || restWhere;
-      restOptions = result.restOptions || restOptions;
-      if (result?.objects) {
-        return {
-          results: result.objects.map(row => row._toFullJSON()),
-        };
-      }
-      const query = await RestQuery({
-        method: RestQuery.Method.get,
-        config,
-        auth,
-        className,
-        restWhere,
-        restOptions,
-        clientSDK,
-        context,
-      });
-      return query.execute();
-    });
+  return runFindTriggers(
+    config,
+    auth,
+    className,
+    { objectId },
+    restOptions,
+    clientSDK,
+    context,
+    true
+  );
 };
 
-// Returns a promise that doesn't resolve to any useful value.
 function del(config, auth, className, objectId, context) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
