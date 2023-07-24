@@ -365,10 +365,17 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
         continue;
       }
 
-      // or [entity]: boolean
       const permit = operation[entity];
 
       if (operationKey === 'ACL') {
+        if (permit === true) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${
+              permit ? 'true' : 'false'
+            }' is not a valid value for class level permissions ${operationKey}:${entity}`
+          );
+        }
         if (Object.prototype.toString.call(permit) !== '[object Object]') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,

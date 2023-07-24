@@ -369,7 +369,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
 
       // add default ACL
       if (
-        schema.classLevelPermissions.ACL &&
+        schema?.classLevelPermissions?.ACL &&
         !this.data.ACL &&
         JSON.stringify(schema.classLevelPermissions.ACL) !==
           JSON.stringify({ '*': { read: true, write: true } })
