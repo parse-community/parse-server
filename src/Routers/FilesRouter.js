@@ -119,7 +119,7 @@ export class FilesRouter {
 
       if (afterFind?.file) {
         contentType = mime.getType(afterFind.file._name);
-        data = Buffer.from(afterFind.file._data, 'utf8');
+        data = Buffer.from(afterFind.file._data, 'base64');
       }
 
       res.status(200);
