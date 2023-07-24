@@ -454,6 +454,9 @@ export function maybeRunAfterFindTrigger(
     );
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
+      if (object instanceof Parse.Object) {
+        return object;
+      }
       object.className = className;
       return Parse.Object.fromJSON(object);
     });

@@ -200,13 +200,14 @@ describe('Cloud Code', () => {
       done();
     }
   });
-
-  it('beforeFind can return object without DB operation', async () => {
+  fit('beforeFind can return object without DB operation', async () => {
+    await reconfigureServer({ silent: false });
     Parse.Cloud.beforeFind('beforeFind', () => {
       return new Parse.Object('TestObject', { foo: 'bar' });
     });
-    Parse.Cloud.afterFind('beforeFind', () => {
-      throw 'afterFind should not run';
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects).toBeDefined();
+      expect(req.objects[0].className).toBe('TestObject');
     });
     const newObj = await new Parse.Query('beforeFind').first();
     expect(newObj.className).toBe('TestObject');
@@ -214,12 +215,13 @@ describe('Cloud Code', () => {
     await newObj.save();
   });
 
-  it('beforeFind can return array of objects without DB operation', async () => {
+  fit('beforeFind can return array of objects without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
-    Parse.Cloud.afterFind('beforeFind', () => {
-      throw 'afterFind should not run';
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects).toBeDefined();
+      expect(req.objects[0].className).toBe('TestObject');
     });
     const newObj = await new Parse.Query('beforeFind').first();
     expect(newObj.className).toBe('TestObject');
@@ -227,12 +229,13 @@ describe('Cloud Code', () => {
     await newObj.save();
   });
 
-  it('beforeFind can return object for get query without DB operation', async () => {
+  fit('beforeFind can return object for get query without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
-    Parse.Cloud.afterFind('beforeFind', () => {
-      throw 'afterFind should not run';
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects).toBeDefined();
+      expect(req.objects[0].className).toBe('TestObject');
     });
     const newObj = await new Parse.Query('beforeFind').get('objId');
     expect(newObj.className).toBe('TestObject');
