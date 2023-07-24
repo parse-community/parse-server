@@ -1,3 +1,45 @@
+# [6.3.0-beta.1](https://github.com/parse-community/parse-server/compare/6.2.0...6.3.0-beta.1) (2023-06-10)
+
+
+### Bug Fixes
+
+* Cloud Code Trigger `afterSave` executes even if not set ([#8520](https://github.com/parse-community/parse-server/issues/8520)) ([afd0515](https://github.com/parse-community/parse-server/commit/afd0515e207bd947840579d3f245980dffa6f804))
+* GridFS file storage doesn't work with certain `enableSchemaHooks` settings ([#8467](https://github.com/parse-community/parse-server/issues/8467)) ([d4cda4b](https://github.com/parse-community/parse-server/commit/d4cda4b26c9bde8c812549b8780bea1cfabdb394))
+* Inaccurate table total row count for PostgreSQL ([#8511](https://github.com/parse-community/parse-server/issues/8511)) ([0823a02](https://github.com/parse-community/parse-server/commit/0823a02fbf80bc88dc403bc47e9f5c6597ea78b4))
+* LiveQuery server is not shut down properly when `handleShutdown` is called ([#8491](https://github.com/parse-community/parse-server/issues/8491)) ([967700b](https://github.com/parse-community/parse-server/commit/967700bdbc94c74f75ba84d2b3f4b9f3fd2dca0b))
+* Rate limit feature is incompatible with Node 14 ([#8578](https://github.com/parse-community/parse-server/issues/8578)) ([f911f2c](https://github.com/parse-community/parse-server/commit/f911f2cd3a8c45cd326272dcd681532764a3761e))
+* Unnecessary log entries by `extendSessionOnUse` ([#8562](https://github.com/parse-community/parse-server/issues/8562)) ([fd6a007](https://github.com/parse-community/parse-server/commit/fd6a0077f2e5cf83d65e52172ae5a950ab0f1eae))
+
+### Features
+
+* `extendSessionOnUse` to automatically renew Parse Sessions ([#8505](https://github.com/parse-community/parse-server/issues/8505)) ([6f885d3](https://github.com/parse-community/parse-server/commit/6f885d36b94902fdfea873fc554dee83589e6029))
+* Add new Parse Server option `preventSignupWithUnverifiedEmail` to prevent returning a user without session token on sign-up with unverified email address ([#8451](https://github.com/parse-community/parse-server/issues/8451)) ([82da308](https://github.com/parse-community/parse-server/commit/82da30842a55980aa90cb7680fbf6db37ee16dab))
+* Add option to change the log level of logs emitted by Cloud Functions ([#8530](https://github.com/parse-community/parse-server/issues/8530)) ([2caea31](https://github.com/parse-community/parse-server/commit/2caea310be412d82b04a85716bc769ccc410316d))
+* Add support for `$eq` query constraint in LiveQuery ([#8614](https://github.com/parse-community/parse-server/issues/8614)) ([656d673](https://github.com/parse-community/parse-server/commit/656d673cf5dea354e4f2b3d4dc2b29a41d311b3e))
+* Add zones for rate limiting by `ip`, `user`, `session`, `global` ([#8508](https://github.com/parse-community/parse-server/issues/8508)) ([03fba97](https://github.com/parse-community/parse-server/commit/03fba97e0549bfcaeee9f2fa4c9905dbcc91840e))
+* Allow `Parse.Object` pointers in Cloud Code arguments ([#8490](https://github.com/parse-community/parse-server/issues/8490)) ([28aeda3](https://github.com/parse-community/parse-server/commit/28aeda3f160efcbbcf85a85484a8d26567fa9761))
+
+### Reverts
+
+* fix: Inaccurate table total row count for PostgreSQL ([6722110](https://github.com/parse-community/parse-server/commit/6722110f203bc5fdcaa68cdf091cf9e7b48d1cff))
+
+# [6.1.0-beta.2](https://github.com/parse-community/parse-server/compare/6.1.0-beta.1...6.1.0-beta.2) (2023-05-01)
+
+
+### Bug Fixes
+
+* LiveQuery can return incorrectly formatted date ([#8456](https://github.com/parse-community/parse-server/issues/8456)) ([4ce135a](https://github.com/parse-community/parse-server/commit/4ce135a4fe930776044bc8fd786a4e17a0144e03))
+* Nested date is incorrectly decoded as empty object `{}` when fetching a Parse Object ([#8446](https://github.com/parse-community/parse-server/issues/8446)) ([22d2446](https://github.com/parse-community/parse-server/commit/22d2446dfea2bc339affc20535d181097e152acf))
+* Parameters missing in `afterFind` trigger of authentication adapters ([#8458](https://github.com/parse-community/parse-server/issues/8458)) ([ce34747](https://github.com/parse-community/parse-server/commit/ce34747e8af54cb0b6b975da38f779a5955d2d59))
+* Rate limiting across multiple servers via Redis not working ([#8469](https://github.com/parse-community/parse-server/issues/8469)) ([d9e347d](https://github.com/parse-community/parse-server/commit/d9e347d7413f30f58ffbb8397fc8b5ae23be6ff0))
+
+### Features
+
+* Add `afterFind` trigger to authentication adapters ([#8444](https://github.com/parse-community/parse-server/issues/8444)) ([c793bb8](https://github.com/parse-community/parse-server/commit/c793bb88e7485743c7ceb65fe419cde75833ff33))
+* Add rate limiting across multiple servers via Redis ([#8394](https://github.com/parse-community/parse-server/issues/8394)) ([34833e4](https://github.com/parse-community/parse-server/commit/34833e42eec08b812b733be78df0535ab0e096b6))
+* Allow multiple origins for header `Access-Control-Allow-Origin` ([#8517](https://github.com/parse-community/parse-server/issues/8517)) ([4f15539](https://github.com/parse-community/parse-server/commit/4f15539ac244aa2d393ac5177f7604b43f69e271))
+* Export `AuthAdapter` to make it available for extension with custom authentication adapters ([#8443](https://github.com/parse-community/parse-server/issues/8443)) ([40c1961](https://github.com/parse-community/parse-server/commit/40c196153b8efa12ae384c1c0092b2ed60a260d6))
+
 # [6.1.0-beta.1](https://github.com/parse-community/parse-server/compare/6.0.0...6.1.0-beta.1) (2023-03-02)
 
 

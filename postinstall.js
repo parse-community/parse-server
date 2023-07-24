@@ -1,6 +1,6 @@
 const pkg = require('./package.json');
 
-const version = parseFloat(process.version.substr(1));
+const version = parseFloat(process.version.substring(1));
 const minimum = parseFloat(pkg.engines.node.match(/\d+/g).join('.'));
 
 module.exports = function () {

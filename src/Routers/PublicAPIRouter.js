@@ -62,7 +62,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const userController = config.userController;
 
-    return userController.resendVerificationEmail(username).then(
+    return userController.resendVerificationEmail(username, req).then(
       () => {
         return Promise.resolve({
           status: 302,

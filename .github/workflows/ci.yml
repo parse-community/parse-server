@@ -1,10 +1,12 @@
 name: ci
 on:
   push:
-    branches: [ release*, alpha, beta ]
+    branches: [ release, alpha, beta, next-major, 'release-[0-9]+.x.x' ]
   pull_request:
     branches:
       - '**'
+    paths-ignore:
+      - '**/**.md'
 env:
   NODE_VERSION: 19.3.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
@@ -74,7 +76,7 @@ jobs:
   check-definitions:
      name: Check Definitions
      timeout-minutes: 5
-     runs-on: ubuntu-18.04
+     runs-on: ubuntu-latest
      steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
