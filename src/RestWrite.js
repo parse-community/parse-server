@@ -368,7 +368,12 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
       };
 
       // add default ACL
-      if (schema.classLevelPermissions.ACL && !this.data.ACL) {
+      if (
+        schema.classLevelPermissions.ACL &&
+        !this.data.ACL &&
+        JSON.stringify(schema.classLevelPermissions.ACL) !==
+          JSON.stringify({ '*': { read: true, write: true } })
+      ) {
         const acl = deepcopy(schema.classLevelPermissions.ACL);
         if (acl.currentUser) {
           if (this.auth.user?.id) {
