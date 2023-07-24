@@ -200,8 +200,7 @@ describe('Cloud Code', () => {
       done();
     }
   });
-  fit('beforeFind can return object without DB operation', async () => {
-    await reconfigureServer({ silent: false });
+  it('beforeFind can return object without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return new Parse.Object('TestObject', { foo: 'bar' });
     });
@@ -215,7 +214,7 @@ describe('Cloud Code', () => {
     await newObj.save();
   });
 
-  fit('beforeFind can return array of objects without DB operation', async () => {
+  it('beforeFind can return array of objects without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
@@ -229,7 +228,7 @@ describe('Cloud Code', () => {
     await newObj.save();
   });
 
-  fit('beforeFind can return object for get query without DB operation', async () => {
+  it('beforeFind can return object for get query without DB operation', async () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [new Parse.Object('TestObject', { foo: 'bar' })];
     });
