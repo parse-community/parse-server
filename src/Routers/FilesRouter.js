@@ -112,7 +112,7 @@ export class FilesRouter {
       file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
       const afterFind = await triggers.maybeRunFileTrigger(
         triggers.Types.afterFind,
-        { file },
+        { file, forceDownload: false },
         config,
         req.auth
       );
@@ -125,6 +125,9 @@ export class FilesRouter {
       res.status(200);
       res.set('Content-Type', contentType);
       res.set('Content-Length', data.length);
+      if (afterFind.forceDownload) {
+        res.set('Content-Disposition', `attachment;filename=${afterFind.file._name}`);
+      }
       res.end(data);
     } catch (e) {
       const err = triggers.resolveError(e, {

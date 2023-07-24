@@ -3531,8 +3531,7 @@ describe('afterLogin hook', () => {
 });
 
 describe('saveFile hooks', () => {
-  fit('find hooks should run', async () => {
-    await reconfigureServer({ silent: false });
+  it('find hooks should run', async () => {
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
     const user = await Parse.User.signUp('username', 'password');
@@ -3550,6 +3549,7 @@ describe('saveFile hooks', () => {
         expect(req.triggerName).toBe('afterFind');
         expect(req.master).toBeFalse();
         expect(req.log).toBeDefined();
+        expect(req.forceDownload).toBeFalse();
       },
     };
     for (const hook in hooks) {
@@ -3569,8 +3569,7 @@ describe('saveFile hooks', () => {
     }
   });
 
-  fit('beforeFind can throw', async () => {
-    await reconfigureServer({ silent: false });
+  it('beforeFind can throw', async () => {
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
     const user = await Parse.User.signUp('username', 'password');
@@ -3601,8 +3600,7 @@ describe('saveFile hooks', () => {
     expect(hooks.afterFind).not.toHaveBeenCalled();
   });
 
-  fit('afterFind can throw', async () => {
-    await reconfigureServer({ silent: false });
+  it('afterFind can throw', async () => {
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
     const user = await Parse.User.signUp('username', 'password');
@@ -3631,6 +3629,24 @@ describe('saveFile hooks', () => {
     for (const hook in hooks) {
       expect(hooks[hook]).toHaveBeenCalled();
     }
+  });
+
+  it('can force download', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    Parse.Cloud.afterFind(Parse.File, req => {
+      req.forceDownload = true;
+    });
+    const response = await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+    });
+    expect(response.headers['content-disposition']).toBe(`attachment;filename=${file._name}`);
   });
 
   it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
