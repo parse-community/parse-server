@@ -454,10 +454,10 @@ export function maybeRunAfterFindTrigger(
     );
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
+      object.className = className;
       if (object instanceof Parse.Object) {
         return object;
       }
-      object.className = className;
       return Parse.Object.fromJSON(object);
     });
     return Promise.resolve()

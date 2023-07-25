@@ -206,7 +206,7 @@ describe('Cloud Code', () => {
     });
     Parse.Cloud.afterFind('beforeFind', req => {
       expect(req.objects).toBeDefined();
-      expect(req.objects[0].className).toBe('TestObject');
+      expect(req.objects[0].get('foo')).toBe('bar');
     });
     const newObj = await new Parse.Query('beforeFind').first();
     expect(newObj.className).toBe('TestObject');
@@ -220,7 +220,7 @@ describe('Cloud Code', () => {
     });
     Parse.Cloud.afterFind('beforeFind', req => {
       expect(req.objects).toBeDefined();
-      expect(req.objects[0].className).toBe('TestObject');
+      expect(req.objects[0].get('foo')).toBe('bar');
     });
     const newObj = await new Parse.Query('beforeFind').first();
     expect(newObj.className).toBe('TestObject');
@@ -234,7 +234,7 @@ describe('Cloud Code', () => {
     });
     Parse.Cloud.afterFind('beforeFind', req => {
       expect(req.objects).toBeDefined();
-      expect(req.objects[0].className).toBe('TestObject');
+      expect(req.objects[0].get('foo')).toBe('bar');
     });
     const newObj = await new Parse.Query('beforeFind').get('objId');
     expect(newObj.className).toBe('TestObject');
@@ -246,8 +246,8 @@ describe('Cloud Code', () => {
     Parse.Cloud.beforeFind('beforeFind', () => {
       return [];
     });
-    Parse.Cloud.afterFind('beforeFind', () => {
-      throw 'afterFind should not run';
+    Parse.Cloud.afterFind('beforeFind', req => {
+      expect(req.objects.length).toBe(0);
     });
     const obj = new Parse.Object('beforeFind');
     await obj.save();
