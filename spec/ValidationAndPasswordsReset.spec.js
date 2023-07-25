@@ -1084,7 +1084,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  fit('can resend email using an expired reset password token', async () => {
+  it('can resend email using an expired reset password token', async () => {
     const user = new Parse.User();
     const emailAdapter = {
       sendVerificationEmail: () => {},
