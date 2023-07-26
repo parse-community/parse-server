@@ -138,6 +138,71 @@ describe('Vulnerabilities', () => {
       );
     });
 
+    it('denies creating global config with polluted data', async () => {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      };
+      const params = {
+        method: 'PUT',
+        url: 'http://localhost:8378/1/config',
+        json: true,
+        body: {
+          params: {
+            welcomeMesssage: 'Welcome to Parse',
+            foo: { _bsontype: 'Code', code: 'shell' },
+          },
+        },
+        headers,
+      };
+      const response = await request(params).catch(e => e);
+      expect(response.status).toBe(400);
+      const text = JSON.parse(response.text);
+      expect(text.code).toBe(Parse.Error.INVALID_KEY_NAME);
+      expect(text.error).toBe(
+        'Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.'
+      );
+    });
+
+    it('denies direct database write wih prohibited keys', async () => {
+      const Config = require('../lib/Config');
+      const config = Config.get(Parse.applicationId);
+      const user = {
+        objectId: '1234567890',
+        username: 'hello',
+        password: 'pass',
+        _session_token: 'abc',
+        foo: { _bsontype: 'Code', code: 'shell' },
+      };
+      await expectAsync(config.database.create('_User', user)).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.'
+        )
+      );
+    });
+
+    it('denies direct database update wih prohibited keys', async () => {
+      const Config = require('../lib/Config');
+      const config = Config.get(Parse.applicationId);
+      const user = {
+        objectId: '1234567890',
+        username: 'hello',
+        password: 'pass',
+        _session_token: 'abc',
+        foo: { _bsontype: 'Code', code: 'shell' },
+      };
+      await expectAsync(
+        config.database.update('_User', { _id: user.objectId }, user)
+      ).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'Prohibited keyword in request data: {"key":"_bsontype","value":"Code"}.'
+        )
+      );
+    });
+
     it('denies creating a hook with polluted data', async () => {
       const express = require('express');
       const bodyParser = require('body-parser');

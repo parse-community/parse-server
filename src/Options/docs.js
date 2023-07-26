@@ -19,7 +19,7 @@
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
- * @property {AuthAdapter[]} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
+ * @property {Object} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
  * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
