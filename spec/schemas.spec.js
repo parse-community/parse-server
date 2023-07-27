@@ -26,6 +26,12 @@ const hasAllPODobject = () => {
 };
 
 const defaultClassLevelPermissions = {
+  ACL: {
+    '*': {
+      read: true,
+      write: true,
+    },
+  },
   find: {
     '*': true,
   },
