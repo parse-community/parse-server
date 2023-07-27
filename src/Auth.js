@@ -5,6 +5,7 @@ import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
+import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -139,7 +140,6 @@ const getAuthForSessionToken = async function ({
       limit: 1,
       include: 'user',
     };
-    const RestQuery = require('./RestQuery');
     const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
     results = (await query.execute()).results;
   } else {
@@ -183,7 +183,6 @@ var getAuthForLegacySessionToken = function ({ config, sessionToken, installatio
   var restOptions = {
     limit: 1,
   };
-  const RestQuery = require('./RestQuery');
   var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
   return query.execute().then(response => {
     var results = response.results;
@@ -221,100 +220,112 @@ Auth.prototype.getRolesForUser = async function () {
   //Stack all Parse.Role
   const results = [];
   if (this.config) {
-    const RestQuery = require('./RestQuery');
-    const prefix = this.config.databaseAdapter._collectionPrefix || '';
-    const result = await new RestQuery(
-      this.config,
-      master(this.config),
-      '_Join:users:_Role',
-      {},
-      {
-        pipeline: [
-          {
-            $match: {
-              relatedId: this.user.id,
+    if (this.config.database.adapter instanceof MongoStorageAdapter) {
+      const prefix = this.config.databaseAdapter._collectionPrefix || '';
+      const result = await new RestQuery(
+        this.config,
+        master(this.config),
+        '_Join:users:_Role',
+        {},
+        {
+          pipeline: [
+            {
+              $match: {
+                relatedId: this.user.id,
+              },
             },
-          },
-          {
-            $graphLookup: {
-              from: `${prefix}_Join:roles:_Role`,
-              startWith: '$owningId',
-              connectFromField: 'owningId',
-              connectToField: 'relatedId',
-              as: 'childRolePath',
+            {
+              $graphLookup: {
+                from: `${prefix}_Join:roles:_Role`,
+                startWith: '$owningId',
+                connectFromField: 'owningId',
+                connectToField: 'relatedId',
+                as: 'childRolePath',
+              },
             },
-          },
-          {
-            $facet: {
-              directRoles: [
-                {
-                  $lookup: {
-                    from: `${prefix}_Role`,
-                    localField: 'owningId',
-                    foreignField: '_id',
-                    as: 'Roles',
-                  },
-                },
-                {
-                  $unwind: {
-                    path: '$Roles',
-                  },
-                },
-                {
-                  $replaceRoot: {
-                    newRoot: {
-                      $ifNull: ['$Roles', { $literal: {} }],
+            {
+              $facet: {
+                directRoles: [
+                  {
+                    $lookup: {
+                      from: `${prefix}_Role`,
+                      localField: 'owningId',
+                      foreignField: '_id',
+                      as: 'Roles',
                     },
                   },
-                },
-                {
-                  $project: {
-                    name: 1,
-                  },
-                },
-              ],
-              childRoles: [
-                {
-                  $lookup: {
-                    from: `${prefix}_Role`,
-                    localField: 'childRolePath.owningId',
-                    foreignField: '_id',
-                    as: 'Roles',
-                  },
-                },
-                {
-                  $unwind: {
-                    path: '$Roles',
-                  },
-                },
-                {
-                  $replaceRoot: {
-                    newRoot: {
-                      $ifNull: ['$Roles', { $literal: {} }],
+                  {
+                    $unwind: {
+                      path: '$Roles',
                     },
                   },
-                },
-                {
-                  $project: {
-                    name: 1,
+                  {
+                    $replaceRoot: {
+                      newRoot: {
+                        $ifNull: ['$Roles', { $literal: {} }],
+                      },
+                    },
                   },
-                },
-              ],
+                  {
+                    $project: {
+                      name: 1,
+                    },
+                  },
+                ],
+                childRoles: [
+                  {
+                    $lookup: {
+                      from: `${prefix}_Role`,
+                      localField: 'childRolePath.owningId',
+                      foreignField: '_id',
+                      as: 'Roles',
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: '$Roles',
+                    },
+                  },
+                  {
+                    $replaceRoot: {
+                      newRoot: {
+                        $ifNull: ['$Roles', { $literal: {} }],
+                      },
+                    },
+                  },
+                  {
+                    $project: {
+                      name: 1,
+                    },
+                  },
+                ],
+              },
             },
-          },
-        ],
+          ],
+        }
+      ).execute();
+      const { directRoles, childRoles } = result.results[0] || {
+        directRoles: [],
+        childRoles: [],
+      };
+      const roles = [...directRoles, ...childRoles];
+      for (const role of roles) {
+        const roleName = `role:${role.name}`;
+        if (!results.includes(roleName)) {
+          results.push(role);
+        }
       }
-    ).execute();
-    const { directRoles, childRoles } = result.results[0] || {
-      directRoles: [],
-      childRoles: [],
-    };
-    const roles = [...directRoles, ...childRoles];
-    for (const role of roles) {
-      const roleName = `role:${role.name}`;
-      if (!results.includes(roleName)) {
-        results.push(role);
-      }
+    } else {
+      const restWhere = {
+        users: {
+          __type: 'Pointer',
+          className: '_User',
+          objectId: this.user.id,
+        },
+      };
+      await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
+        results.push(result)
+      );
     }
   } else {
     await new Parse.Query(Parse.Role)
@@ -343,6 +354,19 @@ Auth.prototype._loadRoles = async function () {
     this.rolePromise = null;
     this.cacheRoles();
     return this.userRoles;
+  }
+
+  if (!(this.config?.database?.adapter instanceof MongoStorageAdapter)) {
+    const rolesMap = results.reduce(
+      (m, r) => {
+        m.names.push(r.name);
+        m.ids.push(r.objectId);
+        return m;
+      },
+      { ids: [], names: [] }
+    );
+    const roleNames = await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
+    this.userRoles = roleNames.map(r => `role:${r}`);
   }
 
   if (typeof results[0] === 'object') {
@@ -410,7 +434,6 @@ Auth.prototype.getRolesByIds = async function (ins) {
       };
     });
     const restWhere = { roles: { $in: roles } };
-    const RestQuery = require('./RestQuery');
     await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
       results.push(result)
     );
