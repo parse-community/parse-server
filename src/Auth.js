@@ -356,19 +356,6 @@ Auth.prototype._loadRoles = async function () {
     return this.userRoles;
   }
 
-  if (!(this.config?.database?.adapter instanceof MongoStorageAdapter)) {
-    const rolesMap = results.reduce(
-      (m, r) => {
-        m.names.push(r.name);
-        m.ids.push(r.objectId);
-        return m;
-      },
-      { ids: [], names: [] }
-    );
-    const roleNames = await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
-    this.userRoles = roleNames.map(r => `role:${r}`);
-  }
-
   if (typeof results[0] === 'object') {
     const rolesMap = results.reduce(
       (m, r) => {
