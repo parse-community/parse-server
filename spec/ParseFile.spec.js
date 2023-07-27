@@ -1362,8 +1362,18 @@ describe('Parse.File testing', () => {
       ).toBeRejectedWith(
         new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
-      const file = new Parse.File('parse-server-logo', { base64: 'ParseA==' });
-      await file.save();
+    });
+
+    it('default should allow common types', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      for (const type of ['plain', 'txt', 'png', 'jpg', 'gif', 'doc']) {
+        const file = new Parse.File(`parse-server-logo.${type}`, { base64: 'ParseA==' });
+        await file.save();
+      }
     });
 
     it('works with array', async () => {
