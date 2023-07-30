@@ -1,3 +1,10 @@
+## [5.5.4](https://github.com/parse-community/parse-server/compare/5.5.3...5.5.4) (2023-07-30)
+
+
+### Bug Fixes
+
+* Security upgrade semver from 7.5.1 to 7.5.2 ([#8704](https://github.com/parse-community/parse-server/issues/8704)) ([c7fa3b9](https://github.com/parse-community/parse-server/commit/c7fa3b92a1d1289d0e281834175ed8807690eb9b))
+
 ## [5.5.3](https://github.com/parse-community/parse-server/compare/5.5.2...5.5.3) (2023-06-29)
 
 
