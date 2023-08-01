@@ -17,7 +17,7 @@ export class RedisCacheAdapter {
     this.ttl = isValidTTL(ttl) ? ttl : DEFAULT_REDIS_TTL;
     this.client = createClient(redisCtx);
     this.queue = new KeyPromiseQueue();
-    this.client.on('error', err => _logger.error('RedisCacheAdapter Redis Client error', { error: err }));
+    this.client.on('error', err => {});
     this.client.on('connect', () => {});
     this.client.on('reconnecting', () => {});
     this.client.on('ready', () => {});
