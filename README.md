@@ -358,12 +358,12 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 ## Access Scopes
 
-| Scope          | Internal data | Custom data | Restricted by CLP, ACL | Key                 |
-|----------------|---------------|-------------|------------------------|---------------------|
-| Internal       | r/w           | r/w         | no                     | `maintenanceKey`    |
-| Master         | -/-           | r/w         | no                     | `masterKey`         |
-| ReadOnlyMaster | -/-           | r/-         | no                     | `readOnlyMasterKey` |
-| Session        | -/-           | r/w         | yes                    | `sessionToken`      |
+| Scope          | Internal data | Object timestamps | Custom data | Restricted by CLP, ACL | Key                 |
+| -------------- | ------------- | ----------------- | ----------- | ---------------------- | ------------------- |
+| Internal       | r/w           | r/w               | r/w         | no                     | `maintenanceKey`    |
+| Master         | -/-           | r/-               | r/w         | no                     | `masterKey`         |
+| ReadOnlyMaster | -/-           | r/-               | r/-         | no                     | `readOnlyMasterKey` |
+| Session        | -/-           | r/-               | r/w         | yes                    | `sessionToken`      |
 
 ## Email Verification and Password Reset
 
