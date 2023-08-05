@@ -98,18 +98,55 @@ describe('rest create', () => {
     expect(objectId).toBeDefined();
   });
 
-  it('allows createdAt to be set', async () => {
-    const obj = {
+  it('allows createdAt and updatedAt to be set with maintenance key', async () => {
+    let obj = {
       createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
     };
 
-    const {
-      status,
-      response: { createdAt },
-    } = await rest.create(config, auth.nobody(config), 'MyClass', obj);
+    const res = await rest.create(config, auth.maintenance(config), 'MyClass', obj);
 
-    expect(status).toEqual(201);
-    expect(createdAt).toEqual(obj.createdAt.iso);
+    expect(res.status).toEqual(201);
+    expect(res.response.createdAt).toEqual(obj.createdAt.iso);
+
+    obj = {
+      createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
+      updatedAt: { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' },
+    };
+
+    const res2 = await rest.create(config, auth.maintenance(config), 'MyClass', obj);
+
+    expect(res2.status).toEqual(201);
+    expect(res2.response.createdAt).toEqual(obj.createdAt.iso);
+
+    const res3 = await rest.get(config, auth.nobody(config), 'MyClass', res2.response.objectId);
+    expect(res3.results[0].updatedAt).toEqual(obj.updatedAt.iso);
+  });
+
+  it('cannot set updatedAt dated before createdAt with maintenance key', async () => {
+    const obj = {
+      createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
+      updatedAt: { __type: 'Date', iso: '2001-01-01T00:00:00.000Z' },
+    };
+
+    try {
+      await rest.create(config, auth.maintenance(config), 'MyClass', obj);
+      fail();
+    } catch (err) {
+      expect(err.code).toEqual(Parse.Error.VALIDATION_ERROR);
+    }
+  });
+
+  it('cannot set updatedAt without createdAt with maintenance key', async () => {
+    const obj = {
+      updatedAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
+    };
+
+    const res = await rest.create(config, auth.maintenance(config), 'MyClass', obj);
+    const obj_id = res.response.objectId;
+
+    const res2 = await rest.get(config, auth.nobody(config), 'MyClass', obj_id);
+
+    expect(res2.results[0].updatedAt).not.toEqual(obj.updatedAt.iso);
   });
 
   it('is backwards compatible when _id size changes', done => {
