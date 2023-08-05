@@ -368,12 +368,34 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
       };
 
       // Add default fields
-      this.data.updatedAt = this.updatedAt;
       if (!this.query) {
-        // optionally support specifying createdAt during object creation
-        if (this.data.createdAt && this.data.createdAt.__type === 'Date') {
-          this.data.createdAt = this.data.updatedAt = this.data.createdAt.iso;
+        // allow customizing createdAt and updatedAt when using maintenance key
+        if (
+          this.auth.isMaintenance &&
+          this.data.createdAt &&
+          this.data.createdAt.__type === 'Date'
+        ) {
+          this.data.createdAt = this.data.createdAt.iso;
+
+          if (this.data.updatedAt && this.data.updatedAt.__type === 'Date') {
+            const createdAt = new Date(this.data.createdAt);
+            const updatedAt = new Date(this.data.updatedAt.iso);
+
+            if (updatedAt < createdAt) {
+              throw new Parse.Error(
+                Parse.Error.VALIDATION_ERROR,
+                'updatedAt cannot occur before createdAt'
+              );
+            }
+
+            this.data.updatedAt = this.data.updatedAt.iso;
+          }
+          // if no updatedAt is provided, set it to createdAt to match default behavior
+          else {
+            this.data.updatedAt = this.data.createdAt;
+          }
         } else {
+          this.data.updatedAt = this.updatedAt;
           this.data.createdAt = this.updatedAt;
         }
 
@@ -387,6 +409,8 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
           });
         }
       } else if (schema) {
+        this.data.updatedAt = this.updatedAt;
+
         Object.keys(this.data).forEach(fieldName => {
           setRequiredFieldIfNeeded(fieldName, false);
         });
