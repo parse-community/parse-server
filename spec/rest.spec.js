@@ -98,57 +98,6 @@ describe('rest create', () => {
     expect(objectId).toBeDefined();
   });
 
-  it('allows createdAt and updatedAt to be set with maintenance key', async () => {
-    let obj = {
-      createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
-    };
-
-    const res = await rest.create(config, auth.maintenance(config), 'MyClass', obj);
-
-    expect(res.status).toEqual(201);
-    expect(res.response.createdAt).toEqual(obj.createdAt.iso);
-
-    obj = {
-      createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
-      updatedAt: { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' },
-    };
-
-    const res2 = await rest.create(config, auth.maintenance(config), 'MyClass', obj);
-
-    expect(res2.status).toEqual(201);
-    expect(res2.response.createdAt).toEqual(obj.createdAt.iso);
-
-    const res3 = await rest.get(config, auth.nobody(config), 'MyClass', res2.response.objectId);
-    expect(res3.results[0].updatedAt).toEqual(obj.updatedAt.iso);
-  });
-
-  it('cannot set updatedAt dated before createdAt with maintenance key', async () => {
-    const obj = {
-      createdAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
-      updatedAt: { __type: 'Date', iso: '2001-01-01T00:00:00.000Z' },
-    };
-
-    try {
-      await rest.create(config, auth.maintenance(config), 'MyClass', obj);
-      fail();
-    } catch (err) {
-      expect(err.code).toEqual(Parse.Error.VALIDATION_ERROR);
-    }
-  });
-
-  it('cannot set updatedAt without createdAt with maintenance key', async () => {
-    const obj = {
-      updatedAt: { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' },
-    };
-
-    const res = await rest.create(config, auth.maintenance(config), 'MyClass', obj);
-    const obj_id = res.response.objectId;
-
-    const res2 = await rest.get(config, auth.nobody(config), 'MyClass', obj_id);
-
-    expect(res2.results[0].updatedAt).not.toEqual(obj.updatedAt.iso);
-  });
-
   it('is backwards compatible when _id size changes', done => {
     rest
       .create(config, auth.nobody(config), 'Foo', { size: 10 })
@@ -185,6 +134,119 @@ describe('rest create', () => {
         expect(response.results[0].objectId.length).toEqual(20);
         done();
       });
+  });
+
+  describe('with maintenance key', () => {
+    let req;
+
+    async function getObject(id) {
+      const res = await request({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/TestObject/${id}`
+      });
+
+      return res.data;
+    }
+
+    beforeEach(() => {
+      req = {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Maintenance-Key': 'testing'
+        },
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/TestObject'
+      };
+    });
+
+    it('allows createdAt', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      req.body = { createdAt };
+
+      const res = await request(req);
+      expect(res.data.createdAt).toEqual(createdAt.iso);
+    });
+
+    it('allows createdAt and updatedAt', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt };
+
+      const res = await request(req);
+
+      const obj = await getObject(res.data.objectId);
+      expect(obj.createdAt).toEqual(createdAt.iso);
+      expect(obj.updatedAt).toEqual(updatedAt.iso);
+    });
+
+    it('allows createdAt, updatedAt, and additional field', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt, testing: 123 };
+
+      const res = await request(req);
+
+      const obj = await getObject(res.data.objectId);
+      expect(obj.createdAt).toEqual(createdAt.iso);
+      expect(obj.updatedAt).toEqual(updatedAt.iso);
+      expect(obj.testing).toEqual(123);
+    });
+
+    it('cannot set updatedAt dated before createdAt', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2018-12-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt };
+
+      try {
+        await request(req);
+        fail();
+      }
+      catch (err) {
+        expect(err.data.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      }
+    });
+
+    it('cannot set updatedAt without createdAt', async () => {
+      const updatedAt = { __type: 'Date', iso: '2018-12-01T00:00:00.000Z' };
+      req.body = { updatedAt };
+
+      const res = await request(req);
+
+      const obj = await getObject(res.data.objectId);
+      expect(obj.updatedAt).not.toEqual(updatedAt.iso);
+    });
+
+    it('handles bad types for createdAt and updatedAt', async () => {
+      const createdAt = 12345;
+      const updatedAt = true;
+      req.body = { createdAt, updatedAt };
+
+      try {
+        await request(req);
+        fail();
+      }
+      catch (err) {
+        expect(err.data.code).toEqual(Parse.Error.INCORRECT_TYPE);
+      }
+    });
+
+    it('cannot set createdAt or updatedAt without maintenance key', async () => {
+      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+      req.body = { createdAt, updatedAt };
+      delete req.headers['X-Parse-Maintenance-Key'];
+
+      const res = await request(req);
+
+      expect(res.data.createdAt).not.toEqual(createdAt.iso);
+      expect(res.data.updatedAt).not.toEqual(updatedAt.iso);
+    });
   });
 
   it('handles array, object, date', done => {
