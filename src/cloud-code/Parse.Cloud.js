@@ -755,7 +755,7 @@ ParseCloud.onLiveQueryEvent = function (handler) {
  */
 ParseCloud.beforeUnsubscribe = function (parseClass, handler, validationHandler) {
   validateValidator(validationHandler);
-  const className = getClassName(parseClass);
+  const className = triggers.getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeUnsubscribe,
     className,

@@ -27,7 +27,6 @@ Details:
 - Branch: [beta][branch_beta]
 - Purpose: feature maturation
 - Suitable environment: development
-- Added Cloud Trigger for LiveQuery event beforeUnsubscribe (sadortun) [#7419](https://github.com/parse-community/parse-server/pull/7419)
 
 ## 🔥 [Alpha Releases][log_alpha]
 
