@@ -1,3 +1,10 @@
+# [6.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.6...6.3.0-alpha.7) (2023-08-18)
+
+
+### Bug Fixes
+
+* Remove config logging when launching Parse Server via CLI ([#8710](https://github.com/parse-community/parse-server/issues/8710)) ([ae68f0c](https://github.com/parse-community/parse-server/commit/ae68f0c31b741eeb83379c905c7ddfaa124436ec))
+
 # [6.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.5...6.3.0-alpha.6) (2023-07-17)
 
 
