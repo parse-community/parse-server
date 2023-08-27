@@ -103,6 +103,14 @@ describe('Cloud Code', () => {
     expect(currentConfig.silent).toBeFalse();
   });
 
+  it('can get curent version', () => {
+    const version = require('../package.json').version;
+    const currentConfig = Config.get('test');
+    expect(Parse.Server.version).toBeDefined();
+    expect(currentConfig.version).toBeDefined();
+    expect(Parse.Server.version).toEqual(version);
+  });
+
   it('show warning on duplicate cloud functions', done => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'warn').and.callFake(() => {});

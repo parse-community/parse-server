@@ -1,6 +1,6 @@
 import corsMiddleware from 'cors';
-import { createServer } from '@graphql-yoga/node';
-import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
+import { createYoga, renderGraphiQL } from 'graphql-yoga';
+import { createFetch } from '@whatwg-node/fetch';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
@@ -40,11 +40,14 @@ class ParseGraphQLServer {
           auth,
         }),
         maskedErrors: false,
-        multipart: {
-          fileSize: this._transformMaxUploadSizeToBytes(
-            this.parseServer.config.maxUploadSize || '20mb'
-          ),
-        },
+        fetchApi: createFetch({
+          useNodeFetch: true,
+          formDataLimits: {
+            fileSize: this._transformMaxUploadSizeToBytes(
+              this.parseServer.config.maxUploadSize || '20mb'
+            ),
+          },
+        }),
       };
     } catch (e) {
       this.log.error(e.stack || (typeof e.toString === 'function' && e.toString()) || e);
@@ -59,7 +62,7 @@ class ParseGraphQLServer {
       return this._server;
     }
     const options = await this._getGraphQLOptions();
-    this._server = createServer(options);
+    this._server = createYoga(options);
     return this._server;
   }
 

@@ -126,8 +126,10 @@ describe('ParseGraphQLServer', () => {
 
     it("should return schema and context with req's info, config and auth", async () => {
       const options = await parseGraphQLServer._getGraphQLOptions();
-      expect(options.multipart).toEqual({
-        fileSize: 20971520,
+      expect(new options.fetchApi.Body().options).toEqual({
+        formDataLimits: {
+          fileSize: 20971520,
+        },
       });
       expect(options.schema).toEqual(parseGraphQLServer.parseGraphQLSchema.graphQLSchema);
       const contextResponse = options.context({ req });

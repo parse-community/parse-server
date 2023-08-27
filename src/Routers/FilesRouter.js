@@ -147,7 +147,7 @@ export class FilesRouter {
           if (ext === '*') {
             return true;
           }
-          const regex = new RegExp(fileExtensions);
+          const regex = new RegExp(ext);
           if (regex.test(extension)) {
             return true;
           }
