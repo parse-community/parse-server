@@ -5,7 +5,7 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import logger from '../../logger';
 
 const handleUpload = async (upload, config) => {
-  const data = Buffer.from(await upload.arrayBuffer());
+  const data = Buffer.from(upload.arrayBuffer ? await upload.arrayBuffer() : upload.blobParts);
   const fileName = upload.name;
   const type = upload.type;
 
