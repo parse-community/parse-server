@@ -9454,7 +9454,6 @@ describe('ParseGraphQLServer', () => {
             expect(res.status).toEqual(200);
             const resText = await res.text();
             const result2 = JSON.parse(resText);
-            console.log('result2', resText);
             expect(result2.data.createSomeClass1.someClass.someField.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
