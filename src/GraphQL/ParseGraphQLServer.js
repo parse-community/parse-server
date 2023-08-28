@@ -32,6 +32,11 @@ class ParseGraphQLServer {
 
   async _getGraphQLOptions() {
     try {
+      const formDataLimits = {
+        fileSize: this._transformMaxUploadSizeToBytes(
+          this.parseServer.config.maxUploadSize || '20mb'
+        ),
+      };
       return {
         schema: await this.parseGraphQLSchema.load(),
         context: ({ req: { info, config, auth } }) => ({
@@ -40,13 +45,19 @@ class ParseGraphQLServer {
           auth,
         }),
         maskedErrors: false,
+        // Needed to ensure formDataLimits since it seems to not working
+        // this is a temporary fix until the issue is resolved
+        // we need to ask graphql-yoga team
+        plugins: [
+          {
+            onRequestParse: ({ request }) => {
+              request.options.formDataLimits = formDataLimits;
+            },
+          },
+        ],
         fetchApi: createFetch({
           useNodeFetch: true,
-          formDataLimits: {
-            fileSize: this._transformMaxUploadSizeToBytes(
-              this.parseServer.config.maxUploadSize || '20mb'
-            ),
-          },
+          formDataLimits,
         }),
       };
     } catch (e) {
@@ -89,6 +100,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, handleParseSession);
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(this.config.graphQLPath, async (req, res) => {
+      // console.log("here", req)
       const server = await this._getServer();
       return server(req, res);
     });

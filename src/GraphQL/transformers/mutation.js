@@ -3,11 +3,12 @@ import { fromGlobalId } from 'graphql-relay';
 import { handleUpload } from '../loaders/filesMutations';
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
 import * as objectsMutations from '../helpers/objectsMutations';
+import deepcopy from 'deepcopy';
 
 const transformTypes = async (
   inputType: 'create' | 'update',
   fields,
-  { className, parseGraphQLSchema, req }
+  { className, parseGraphQLSchema, req, originalFields }
 ) => {
   const {
     classGraphQLCreateType,
@@ -44,7 +45,9 @@ const transformTypes = async (
             fields[field] = transformers.polygon(fields[field]);
             break;
           case inputTypeField.type === defaultGraphQLTypes.FILE_INPUT:
-            fields[field] = await transformers.file(fields[field], req);
+            // fields are a deepcopy, but we can't deepcopy a stream so
+            // we use the original fields from the graphql request
+            fields[field] = await transformers.file(originalFields[field], req);
             break;
           case parseClass.fields[field].type === 'Relation':
             fields[field] = await transformers.relation(
@@ -152,9 +155,10 @@ const transformers = {
       nestedObjectsToAdd = (
         await Promise.all(
           value.createAndAdd.map(async input => {
-            const parseFields = await transformTypes('create', input, {
+            const parseFields = await transformTypes('create', deepcopy(input), {
               className: targetClass,
               parseGraphQLSchema,
+              originalFields: input || {},
               req: { config, auth, info },
             });
             return objectsMutations.createObject(targetClass, parseFields, config, auth, info);
@@ -213,9 +217,10 @@ const transformers = {
 
     let nestedObjectToAdd;
     if (value.createAndLink) {
-      const parseFields = await transformTypes('create', value.createAndLink, {
+      const parseFields = await transformTypes('create', deepcopy(value.createAndLink), {
         className: targetClass,
         parseGraphQLSchema,
+        originalFields: value.createAndLink || {},
         req: { config, auth, info },
       });
       nestedObjectToAdd = await objectsMutations.createObject(
