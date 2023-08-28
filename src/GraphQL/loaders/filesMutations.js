@@ -5,10 +5,10 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import logger from '../../logger';
 
 const handleUpload = async (upload, config) => {
-  const data = Buffer.from(upload.arrayBuffer ? await upload.arrayBuffer() : upload.blobParts);
+  const data = await upload.buffer();
   const fileName = upload.name;
   const type = upload.type;
-
+  console.log('data.length', data.length);
   if (!data || !data.length) {
     throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');
   }

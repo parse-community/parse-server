@@ -6835,7 +6835,7 @@ describe('ParseGraphQLServer', () => {
 
       describe('Files Mutations', () => {
         describe('Create', () => {
-          it_only_node_version('<17')('should return File object', async () => {
+          it('should return File object', async () => {
             const clientMutationId = uuidv4();
 
             parseServer = await global.reconfigureServer({
@@ -9301,7 +9301,7 @@ describe('ParseGraphQLServer', () => {
           expect(result6[0].node.name).toEqual('imACountry3');
         });
 
-        it_only_node_version('<17')('should support files', async () => {
+        it('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
@@ -9452,7 +9452,9 @@ describe('ParseGraphQLServer', () => {
               body: body2,
             });
             expect(res.status).toEqual(200);
-            const result2 = JSON.parse(await res.text());
+            const resText = await res.text();
+            const result2 = JSON.parse(resText);
+            console.log('result2', resText);
             expect(result2.data.createSomeClass1.someClass.someField.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
@@ -9510,7 +9512,6 @@ describe('ParseGraphQLServer', () => {
                 id: result2.data.createSomeClass1.someClass.id,
               },
             });
-
             expect(typeof getResult.data.someClass.someField).toEqual('object');
             expect(getResult.data.someClass.someField.name).toEqual(
               result.data.createFile.fileInfo.name
@@ -9549,9 +9550,14 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it_only_node_version('<17')('should not upload if file is too large', async () => {
+        it('should not upload if file is too large', async () => {
           parseGraphQLServer.parseServer.config.maxUploadSize = '1kb';
-
+          const options = await parseGraphQLServer._getGraphQLOptions();
+          expect(new options.fetchApi.Body().options).toEqual({
+            formDataLimits: {
+              fileSize: 1024,
+            },
+          });
           const body = new FormData();
           body.append(
             'operations',
@@ -9588,7 +9594,6 @@ describe('ParseGraphQLServer', () => {
             headers,
             body,
           });
-
           const result = JSON.parse(await res.text());
           expect(res.status).toEqual(413);
           expect(result.errors[0].message).toEqual('File size limit exceeded: 1024 bytes');
