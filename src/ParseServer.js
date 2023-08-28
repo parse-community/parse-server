@@ -266,8 +266,6 @@ class ParseServer {
       app.use(middleware);
     }
 
-    app.use(options.mountPath, this.app);
-
     if (options.mountGraphQL === true || options.mountPlayground === true) {
       let graphQLCustomTypeDefs = undefined;
       if (typeof options.graphQLSchema === 'string') {
@@ -293,6 +291,8 @@ class ParseServer {
         parseGraphQLServer.applyPlayground(app);
       }
     }
+
+    app.use(options.mountPath, this.app);
 
     const server = app.listen(options.port, options.host, callback);
     this.server = server;
