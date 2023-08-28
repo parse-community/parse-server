@@ -8,7 +8,6 @@ const handleUpload = async (upload, config) => {
   const data = await upload.buffer();
   const fileName = upload.name;
   const type = upload.type;
-  console.log('data.length', data.length);
   if (!data || !data.length) {
     throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');
   }
