@@ -1,3 +1,24 @@
+## [5.5.4](https://github.com/parse-community/parse-server/compare/5.5.3...5.5.4) (2023-07-30)
+
+
+### Bug Fixes
+
+* Security upgrade semver from 7.5.1 to 7.5.2 ([#8704](https://github.com/parse-community/parse-server/issues/8704)) ([c7fa3b9](https://github.com/parse-community/parse-server/commit/c7fa3b92a1d1289d0e281834175ed8807690eb9b))
+
+## [5.5.3](https://github.com/parse-community/parse-server/compare/5.5.2...5.5.3) (2023-06-29)
+
+
+### Bug Fixes
+
+* Server does not start via CLI when `auth` option is set ([#8669](https://github.com/parse-community/parse-server/issues/8669)) ([601da1e](https://github.com/parse-community/parse-server/commit/601da1ee3c8a22c48fa0209054a2e0f0474cf521))
+
+## [5.5.2](https://github.com/parse-community/parse-server/compare/5.5.1...5.5.2) (2023-06-28)
+
+
+### Bug Fixes
+
+* Remote code execution via MongoDB BSON parser through prototype pollution; fixes security vulnerability [GHSA-462x-c3jw-7vr6](https://github.com/parse-community/parse-server/security/advisories/GHSA-462x-c3jw-7vr6) ([#8675](https://github.com/parse-community/parse-server/issues/8675)) ([5fad292](https://github.com/parse-community/parse-server/commit/5fad2928fb8ee17304abcdcf259932f827d8c81f))
+
 ## [5.5.1](https://github.com/parse-community/parse-server/compare/5.5.0...5.5.1) (2023-05-23)
 
 
