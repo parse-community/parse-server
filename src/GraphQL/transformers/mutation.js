@@ -45,8 +45,8 @@ const transformTypes = async (
             fields[field] = transformers.polygon(fields[field]);
             break;
           case inputTypeField.type === defaultGraphQLTypes.FILE_INPUT:
-            // fields are a deepcopy, but we can't deepcopy a stream so
-            // we use the original fields from the graphql request
+            // We need to use the originalFields to handle the file upload
+            // since fields are a deepcopy and do not keep the file object
             fields[field] = await transformers.file(originalFields[field], req);
             break;
           case parseClass.fields[field].type === 'Relation':
@@ -54,6 +54,7 @@ const transformTypes = async (
               parseClass.fields[field].targetClass,
               field,
               fields[field],
+              originalFields[field],
               parseGraphQLSchema,
               req
             );
@@ -67,6 +68,7 @@ const transformTypes = async (
               parseClass.fields[field].targetClass,
               field,
               fields[field],
+              originalFields[field],
               parseGraphQLSchema,
               req
             );
@@ -138,7 +140,14 @@ const transformers = {
     }
     return parseACL;
   },
-  relation: async (targetClass, field, value, parseGraphQLSchema, { config, auth, info }) => {
+  relation: async (
+    targetClass,
+    field,
+    value,
+    originalValue,
+    parseGraphQLSchema,
+    { config, auth, info }
+  ) => {
     if (Object.keys(value).length === 0)
       throw new Parse.Error(
         Parse.Error.INVALID_POINTER,
@@ -154,11 +163,11 @@ const transformers = {
     if (value.createAndAdd) {
       nestedObjectsToAdd = (
         await Promise.all(
-          value.createAndAdd.map(async input => {
-            const parseFields = await transformTypes('create', deepcopy(input), {
+          value.createAndAdd.map(async (input, i) => {
+            const parseFields = await transformTypes('create', input, {
               className: targetClass,
+              originalFields: originalValue.createAndAdd[i],
               parseGraphQLSchema,
-              originalFields: input || {},
               req: { config, auth, info },
             });
             return objectsMutations.createObject(targetClass, parseFields, config, auth, info);
@@ -208,7 +217,14 @@ const transformers = {
     }
     return op;
   },
-  pointer: async (targetClass, field, value, parseGraphQLSchema, { config, auth, info }) => {
+  pointer: async (
+    targetClass,
+    field,
+    value,
+    originalValue,
+    parseGraphQLSchema,
+    { config, auth, info }
+  ) => {
     if (Object.keys(value).length > 1 || Object.keys(value).length === 0)
       throw new Parse.Error(
         Parse.Error.INVALID_POINTER,
@@ -220,7 +236,7 @@ const transformers = {
       const parseFields = await transformTypes('create', deepcopy(value.createAndLink), {
         className: targetClass,
         parseGraphQLSchema,
-        originalFields: value.createAndLink || {},
+        originalFields: originalValue.createAndLink,
         req: { config, auth, info },
       });
       nestedObjectToAdd = await objectsMutations.createObject(
