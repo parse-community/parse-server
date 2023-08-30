@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
-import RestQuery from './RestQuery';
+import { LRUCache as LRU } from 'lru-cache';
 import RestWrite from './RestWrite';
 
 // An Auth object tells you who is requesting something and whether
@@ -68,44 +68,38 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
-const throttle = {};
+const throttle = new LRU({
+  max: 10000,
+  ttl: 500,
+});
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
     return;
   }
-  clearTimeout(throttle[sessionToken]);
-  throttle[sessionToken] = setTimeout(async () => {
-    try {
-      if (!session) {
-        const { results } = await new RestQuery(
-          config,
-          master(config),
-          '_Session',
-          { sessionToken },
-          { limit: 1 }
-        ).execute();
-        session = results[0];
-      }
-      const lastUpdated = new Date(session?.updatedAt);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (lastUpdated > yesterday || !session) {
-        return;
-      }
-      const expiresAt = config.generateSessionExpiresAt();
-      await new RestWrite(
-        config,
-        master(config),
-        '_Session',
-        { objectId: session.objectId },
-        { expiresAt: Parse._encode(expiresAt) }
-      ).execute();
-    } catch (e) {
-      if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
-        logger.error('Could not update session expiry: ', e);
-      }
+  if (throttle.get(sessionToken)) {
+    return;
+  }
+  throttle.set(sessionToken, true);
+  try {
+    const lastUpdated = new Date(session?.updatedAt);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (lastUpdated > yesterday || !session) {
+      return;
     }
-  }, 500);
+    const expiresAt = config.generateSessionExpiresAt();
+    await new RestWrite(
+      config,
+      master(config),
+      '_Session',
+      { objectId: session.objectId },
+      { expiresAt: Parse._encode(expiresAt) }
+    ).execute();
+  } catch (e) {
+    if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
+      logger.error('Could not update session expiry: ', e);
+    }
+  }
 };
 
 // Returns a promise that resolves to an Auth object
@@ -120,7 +114,6 @@ const getAuthForSessionToken = async function ({
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
-      renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
         new Auth({
           config,
