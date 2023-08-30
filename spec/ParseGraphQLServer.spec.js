@@ -122,15 +122,16 @@ describe('ParseGraphQLServer', () => {
       info: new Object(),
       config: new Object(),
       auth: new Object(),
+      get: () => {},
+    };
+    const res = {
+      set: () => {},
     };
 
     it("should return schema and context with req's info, config and auth", async () => {
       const options = await parseGraphQLServer._getGraphQLOptions();
-      expect(options.multipart).toEqual({
-        fileSize: 20971520,
-      });
       expect(options.schema).toEqual(parseGraphQLServer.parseGraphQLSchema.graphQLSchema);
-      const contextResponse = options.context({ req });
+      const contextResponse = await options.context({ req, res });
       expect(contextResponse.info).toEqual(req.info);
       expect(contextResponse.config).toEqual(req.config);
       expect(contextResponse.auth).toEqual(req.auth);
@@ -6833,7 +6834,7 @@ describe('ParseGraphQLServer', () => {
 
       describe('Files Mutations', () => {
         describe('Create', () => {
-          it_only_node_version('<17')('should return File object', async () => {
+          it('should return File object', async () => {
             const clientMutationId = uuidv4();
 
             parseServer = await global.reconfigureServer({
@@ -9299,7 +9300,7 @@ describe('ParseGraphQLServer', () => {
           expect(result6[0].node.name).toEqual('imACountry3');
         });
 
-        it_only_node_version('<17')('should support files', async () => {
+        it('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
@@ -9341,7 +9342,6 @@ describe('ParseGraphQLServer', () => {
             expect(res.status).toEqual(200);
 
             const result = JSON.parse(await res.text());
-
             expect(result.data.createFile.fileInfo.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
