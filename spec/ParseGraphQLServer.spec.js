@@ -49,7 +49,9 @@ describe('ParseGraphQLServer', () => {
   let parseGraphQLServer;
 
   beforeEach(async () => {
-    parseServer = await global.reconfigureServer({});
+    parseServer = await global.reconfigureServer({
+      maxUploadSize: '1kb',
+    });
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
@@ -9547,9 +9549,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it_only_node_version('<17')('should not upload if file is too large', async () => {
-          parseGraphQLServer.parseServer.config.maxUploadSize = '1kb';
-
+        it('should not upload if file is too large', async () => {
           const body = new FormData();
           body.append(
             'operations',
@@ -9574,6 +9574,7 @@ describe('ParseGraphQLServer', () => {
           body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
           body.append(
             '1',
+            // In this test file parse server is setup with 1kb limit
             Buffer.alloc(parseGraphQLServer._transformMaxUploadSizeToBytes('2kb'), 1),
             {
               filename: 'myFileName.txt',
@@ -9588,8 +9589,10 @@ describe('ParseGraphQLServer', () => {
           });
 
           const result = JSON.parse(await res.text());
-          expect(res.status).toEqual(500);
-          expect(result.errors[0].message).toEqual('File size limit exceeded: 1024 bytes');
+          expect(res.status).toEqual(200);
+          expect(result.errors[0].message).toEqual(
+            'File truncated as it exceeds the 1024 byte size limit.'
+          );
         });
 
         it('should support object values', async () => {

@@ -17,9 +17,9 @@ const handleUpload = async (upload, config) => {
   delete headers['connection'];
   delete headers['host'];
   delete headers['content-length'];
+  const stream = createReadStream();
   try {
     const serverUrl = new URL(config.serverURL);
-    const stream = createReadStream();
     const fileInfo = await new Promise((resolve, reject) => {
       const req = request(
         {
@@ -52,6 +52,7 @@ const handleUpload = async (upload, config) => {
       fileInfo,
     };
   } catch (e) {
+    stream.destroy();
     logger.error('Error creating a file: ', e);
     throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `Could not store file: ${filename}.`);
   }
