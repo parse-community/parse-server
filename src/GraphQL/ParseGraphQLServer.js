@@ -1,6 +1,10 @@
 import corsMiddleware from 'cors';
-import { createYoga, renderGraphiQL } from 'graphql-yoga';
-import { createFetch } from '@whatwg-node/fetch';
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
+import { ApolloServer } from '@apollo/server';
+import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
+import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
+import express from 'express';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders, handleParseSession } from '../middlewares';
@@ -32,33 +36,16 @@ class ParseGraphQLServer {
 
   async _getGraphQLOptions() {
     try {
-      const formDataLimits = {
-        fileSize: this._transformMaxUploadSizeToBytes(
-          this.parseServer.config.maxUploadSize || '20mb'
-        ),
-      };
       return {
         schema: await this.parseGraphQLSchema.load(),
-        context: ({ req: { info, config, auth } }) => ({
-          info,
-          config,
-          auth,
-        }),
-        maskedErrors: false,
-        // Needed to ensure formDataLimits since it seems to not working
-        // this is a temporary fix until the issue is resolved
-        // we need to ask graphql-yoga team
-        plugins: [
-          {
-            onRequestParse: ({ request }) => {
-              request.options.formDataLimits = formDataLimits;
-            },
-          },
-        ],
-        fetchApi: createFetch({
-          useNodeFetch: true,
-          formDataLimits,
-        }),
+        context: async ({ req, res }) => {
+          res.set('access-control-allow-origin', req.get('origin') || '*');
+          return {
+            info: req.info,
+            config: req.config,
+            auth: req.auth,
+          };
+        },
       };
     } catch (e) {
       this.log.error(e.stack || (typeof e.toString === 'function' && e.toString()) || e);
@@ -72,8 +59,21 @@ class ParseGraphQLServer {
     if (schemaRef === newSchemaRef && this._server) {
       return this._server;
     }
-    const options = await this._getGraphQLOptions();
-    this._server = createYoga(options);
+    const { schema, context } = await this._getGraphQLOptions();
+    const apollo = new ApolloServer({
+      csrfPrevention: {
+        // See https://www.apollographql.com/docs/router/configuration/csrf/
+        // needed since we use graphql upload
+        requestHeaders: ['X-Parse-Application-Id'],
+      },
+      introspection: true,
+      plugins: [ApolloServerPluginCacheControlDisabled()],
+      schema,
+    });
+    await apollo.start();
+    this._server = expressMiddleware(apollo, {
+      context,
+    });
     return this._server;
   }
 
@@ -107,16 +107,22 @@ class ParseGraphQLServer {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
-
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
     this.applyRequestContextMiddleware(app, this.parseServer.config);
     app.use(this.config.graphQLPath, handleParseErrors);
-
-    app.use(this.config.graphQLPath, async (req, res) => {
+    app.use(
+      this.config.graphQLPath,
+      graphqlUploadExpress({
+        maxFileSize: this._transformMaxUploadSizeToBytes(
+          this.parseServer.config.maxUploadSize || '20mb'
+        ),
+      })
+    );
+    app.use(this.config.graphQLPath, express.json(), async (req, res, next) => {
       const server = await this._getServer();
-      return server(req, res);
+      return server(req, res, next);
     });
   }
 
