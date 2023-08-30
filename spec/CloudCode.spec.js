@@ -3248,7 +3248,7 @@ describe('beforeLogin hook', () => {
       expect(req.headers).toBeDefined();
       expect(req.ip).toBeDefined();
       expect(req.installationId).toBeDefined();
-      expect(req.context).toBeUndefined();
+      expect(req.context).toBeDefined();
     });
 
     await Parse.User.signUp('tupac', 'shakur');
@@ -3365,7 +3365,7 @@ describe('afterLogin hook', () => {
       expect(req.headers).toBeDefined();
       expect(req.ip).toBeDefined();
       expect(req.installationId).toBeDefined();
-      expect(req.context).toBeUndefined();
+      expect(req.context).toBeDefined();
     });
 
     await Parse.User.signUp('testuser', 'p@ssword');
