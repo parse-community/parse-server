@@ -1,3 +1,10 @@
+# [6.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.7...6.3.0-alpha.8) (2023-08-30)
+
+
+### Bug Fixes
+
+* Redis 4 does not reconnect after unhandled error ([#8706](https://github.com/parse-community/parse-server/issues/8706)) ([2b3d4e5](https://github.com/parse-community/parse-server/commit/2b3d4e5d3c85cd142f85af68dec51a8523548d49))
+
 # [6.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.6...6.3.0-alpha.7) (2023-08-18)
 
 
