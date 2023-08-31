@@ -9549,6 +9549,60 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should support files and add extension from mimetype', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                    mutation CreateFile($input: CreateFileInput!) {
+                      createFile(input: $input) {
+                        fileInfo {
+                          name
+                          url
+                        }
+                      }
+                    }
+                  `,
+                variables: {
+                  input: {
+                    upload: null,
+                  },
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
+            body.append('1', 'My File Content', {
+              // No extension, the system should add it from mimetype
+              filename: 'myFileName',
+              contentType: 'text/plain',
+            });
+
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+
+            expect(res.status).toEqual(200);
+
+            const result = JSON.parse(await res.text());
+            expect(result.data.createFile.fileInfo.name).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+            expect(result.data.createFile.fileInfo.url).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
         it('should not upload if file is too large', async () => {
           const body = new FormData();
           body.append(
