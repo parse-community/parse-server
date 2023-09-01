@@ -423,9 +423,19 @@ export class UsersRouter extends ClassesRouter {
   async handleResetRequest(req) {
     this._throwOnBadEmailConfig(req);
 
-    const { email } = req.body;
-    if (!email) {
+    let email = req.body.email;
+    const expiredToken = req.body.expiredToken;
+    if (!email && !expiredToken) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
+    }
+    if (expiredToken) {
+      const results = await req.config.database.find('_User', {
+        _perishable_token: expiredToken,
+        _perishable_token_expires_at: { $lt: Parse._encode(new Date()) },
+      });
+      if (results && results[0] && results[0].email) {
+        email = results[0].email;
+      }
     }
     if (typeof email !== 'string') {
       throw new Parse.Error(

@@ -21,7 +21,7 @@ describe('UserController', () => {
         });
         emailAdapter.sendVerificationEmail = options => {
           expect(options.link).toEqual(
-            'http://www.example.com/apps/test/verify_email?token=testToken&username=testUser'
+            'http://www.example.com/apps/test/verify_email?token=testToken'
           );
           emailAdapter.sendVerificationEmail = () => Promise.resolve();
           done();
@@ -43,7 +43,7 @@ describe('UserController', () => {
         });
         emailAdapter.sendVerificationEmail = options => {
           expect(options.link).toEqual(
-            'http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=testToken&username=testUser'
+            'http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=testToken'
           );
           emailAdapter.sendVerificationEmail = () => Promise.resolve();
           done();
