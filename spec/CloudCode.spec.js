@@ -2342,6 +2342,35 @@ describe('beforeFind hooks', () => {
       })
       .then(() => done());
   });
+
+  it('should run beforeFind on pointers and array of pointers from an object', async () => {
+    const obj1 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    const obj3 = new Parse.Object('TestObject');
+    obj2.set('aField', 'aFieldValue');
+    await obj2.save();
+    obj1.set('pointerField', obj2);
+    obj3.set('pointerFieldArray', [obj2]);
+    await obj1.save();
+    await obj3.save();
+    const spy = jasmine.createSpy('beforeFindSpy');
+    Parse.Cloud.beforeFind('TestObject2', spy);
+    const query = new Parse.Query('TestObject');
+    await query.get(obj1.id);
+    // Pointer not included in query so we don't expect beforeFind to be called
+    expect(spy).not.toHaveBeenCalled();
+    const query2 = new Parse.Query('TestObject');
+    query2.include('pointerField');
+    const res = await query2.get(obj1.id);
+    expect(res.get('pointerField').get('aField')).toBe('aFieldValue');
+    // Pointer included in query so we expect beforeFind to be called
+    expect(spy).toHaveBeenCalledTimes(1);
+    const query3 = new Parse.Query('TestObject');
+    query3.include('pointerFieldArray');
+    const res2 = await query3.get(obj3.id);
+    expect(res2.get('pointerFieldArray')[0].get('aField')).toBe('aFieldValue');
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('afterFind hooks', () => {

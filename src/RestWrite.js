@@ -583,7 +583,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
 };
 
 // The non-third-party parts of User transformation
-RestWrite.prototype.transformUser = function () {
+RestWrite.prototype.transformUser = async function () {
   var promise = Promise.resolve();
 
   if (this.className !== '_User') {
@@ -599,19 +599,25 @@ RestWrite.prototype.transformUser = function () {
   if (this.query && this.objectId()) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
     // session tokens, and remove them from the cache.
-    promise = new RestQuery(this.config, Auth.master(this.config), '_Session', {
-      user: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.objectId(),
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      config: this.config,
+      auth: Auth.master(this.config),
+      className: '_Session',
+      runBeforeFind: false,
+      restWhere: {
+        user: {
+          __type: 'Pointer',
+          className: '_User',
+          objectId: this.objectId(),
+        },
       },
-    })
-      .execute()
-      .then(results => {
-        results.results.forEach(session =>
-          this.config.cacheController.user.del(session.sessionToken)
-        );
-      });
+    });
+    promise = query.execute().then(results => {
+      results.results.forEach(session =>
+        this.config.cacheController.user.del(session.sessionToken)
+      );
+    });
   }
 
   return promise
