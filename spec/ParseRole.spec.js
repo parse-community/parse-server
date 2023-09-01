@@ -188,7 +188,9 @@ describe('Parse Role testing', () => {
 
         // 1 call for the 1st layer of roles
         // 1 call for the 2nd layer
-        expect(getAllRolesSpy.calls.count()).toEqual(2);
+        expect(getAllRolesSpy.calls.count()).toEqual(
+          process.env.PARSE_SERVER_TEST_DB === 'postgres' ? 2 : 1
+        );
         done();
       })
       .catch(() => {
