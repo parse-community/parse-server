@@ -75,6 +75,19 @@ class ParseGraphQLServer {
     );
   }
 
+  /**
+   * @static
+   * Allow developers to customize each request with inversion of control/dependency injection
+   */
+  applyRequestContextMiddleware(api, options) {
+    if (options.requestContextMiddleware) {
+      if (typeof options.requestContextMiddleware !== 'function') {
+        throw new Error('requestContextMiddleware must be a function');
+      }
+      api.use(options.requestContextMiddleware);
+    }
+  }
+
   applyGraphQL(app) {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
@@ -83,6 +96,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, handleParseSession);
+    this.applyRequestContextMiddleware(app, this.parseServer.config);
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(this.config.graphQLPath, async (req, res) => {
       const server = await this._getServer();

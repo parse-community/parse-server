@@ -456,6 +456,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
     help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
+  requestContextMiddleware: {
+    env: 'PARSE_SERVER_REQUEST_CONTEXT_MIDDLEWARE',
+    help:
+      'Options to customize the request context using inversion of control/dependency injection.',
+  },
   requestKeywordDenylist: {
     env: 'PARSE_SERVER_REQUEST_KEYWORD_DENYLIST',
     help:

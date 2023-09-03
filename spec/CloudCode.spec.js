@@ -2012,6 +2012,14 @@ describe('cloud functions', () => {
 
     Parse.Cloud.run('myFunction', {}).then(() => done());
   });
+
+  it('should have request config', async () => {
+    Parse.Cloud.define('myConfigFunction', req => {
+      expect(req.config).toBeDefined();
+      return 'success';
+    });
+    await Parse.Cloud.run('myConfigFunction', {});
+  });
 });
 
 describe('beforeSave hooks', () => {
@@ -2033,6 +2041,16 @@ describe('beforeSave hooks', () => {
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject.save().then(() => done());
+  });
+
+  it('should have request config', async () => {
+    Parse.Cloud.beforeSave('MyObject', req => {
+      expect(req.config).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    await myObject.save();
   });
 
   it('should respect custom object ids (#6733)', async () => {
@@ -2088,6 +2106,16 @@ describe('afterSave hooks', () => {
     const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject.save().then(() => done());
+  });
+
+  it('should have request config', async () => {
+    Parse.Cloud.afterSave('MyObject', req => {
+      expect(req.config).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    await myObject.save();
   });
 
   it('should unset in afterSave', async () => {
@@ -2147,6 +2175,17 @@ describe('beforeDelete hooks', () => {
       .then(myObj => myObj.destroy())
       .then(() => done());
   });
+
+  it('should have request config', async () => {
+    Parse.Cloud.beforeDelete('MyObject', req => {
+      expect(req.config).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    await myObject.save();
+    await myObject.destroy();
+  });
 });
 
 describe('afterDelete hooks', () => {
@@ -2174,6 +2213,17 @@ describe('afterDelete hooks', () => {
       .save()
       .then(myObj => myObj.destroy())
       .then(() => done());
+  });
+
+  it('should have request config', async () => {
+    Parse.Cloud.afterDelete('MyObject', req => {
+      expect(req.ip).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    await myObject.save();
+    await myObject.destroy();
   });
 });
 
@@ -2430,6 +2480,19 @@ describe('beforeFind hooks', () => {
         return Promise.all([query.get(myObj.id), query.first(), query.find()]);
       })
       .then(() => done());
+  });
+
+  it('should have request config', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      expect(req.config).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    await myObject.save();
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', myObject.id);
+    await Promise.all([query.get(myObject.id), query.first(), query.find()]);
   });
 });
 
@@ -2760,6 +2823,19 @@ describe('afterFind hooks', () => {
       })
       .then(() => done())
       .catch(done.fail);
+  });
+
+  it('should have request config', async () => {
+    Parse.Cloud.afterFind('MyObject', req => {
+      expect(req.ip).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    await myObject.save();
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', myObject.id);
+    await Promise.all([query.get(myObject.id), query.first(), query.find()]);
   });
 
   it('should validate triggers correctly', () => {
@@ -3249,6 +3325,7 @@ describe('beforeLogin hook', () => {
       expect(req.ip).toBeDefined();
       expect(req.installationId).toBeDefined();
       expect(req.context).toBeUndefined();
+      expect(req.config).toBeDefined();
     });
 
     await Parse.User.signUp('tupac', 'shakur');
@@ -3366,6 +3443,7 @@ describe('afterLogin hook', () => {
       expect(req.ip).toBeDefined();
       expect(req.installationId).toBeDefined();
       expect(req.context).toBeUndefined();
+      expect(req.config).toBeDefined();
     });
 
     await Parse.User.signUp('testuser', 'p@ssword');
@@ -3558,6 +3636,15 @@ describe('saveFile hooks', () => {
     } catch (error) {
       expect(error.message).toBe('some-error-message');
     }
+  });
+
+  it('beforeSaveFile should have config', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    Parse.Cloud.beforeSave(Parse.File, req => {
+      expect(req.config).toBeDefined();
+    });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
   });
 
   it('beforeSaveFile should change values of uploaded file by editing fileObject directly', async () => {
