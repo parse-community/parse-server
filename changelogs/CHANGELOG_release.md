@@ -1,3 +1,10 @@
+## [6.2.2](https://github.com/parse-community/parse-server/compare/6.2.1...6.2.2) (2023-09-04)
+
+
+### Bug Fixes
+
+* Parse Pointer allows to access internal Parse Server classes and circumvent `beforeFind` query trigger; fixes security vulnerability [GHSA-fcv6-fg5r-jm9q](https://github.com/parse-community/parse-server/security/advisories/GHSA-fcv6-fg5r-jm9q) ([be4c7e2](https://github.com/parse-community/parse-server/commit/be4c7e23c63a2fb690685665cebed0de26be05c5))
+
 ## [6.2.1](https://github.com/parse-community/parse-server/compare/6.2.0...6.2.1) (2023-06-28)
 
 
