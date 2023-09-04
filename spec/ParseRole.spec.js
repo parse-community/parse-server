@@ -142,7 +142,7 @@ describe('Parse Role testing', () => {
       return Promise.all(promises);
     };
 
-    const restExecute = spyOn(RestQuery.prototype, 'execute').and.callThrough();
+    const restExecute = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
 
     let user, auth, getAllRolesSpy;
     createTestUser()
