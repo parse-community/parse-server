@@ -2348,6 +2348,39 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('sets correct beforeFind trigger isGet parameter for Parse.Object.get request', async() => {
+    const hook = {
+      method: (req) => {
+        expect(req.isGet).toEqual(true);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const getObj = await obj.get();
+    expect(getObj).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalled(1);
+  });
+
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.find request', async() => {
+    const hook = {
+      method: (req) => {
+        expect(req.isGet).toEqual(false);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const query = new Parse.Query('MyObject');
+    const findObjs = await query.find();
+    expect(findObjs?.[0]).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalled(1);
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.beforeFind('MyObject', req => {
       expect(req.headers).toBeDefined();
