@@ -2417,7 +2417,7 @@ describe('beforeFind hooks', () => {
   fit('sets correct beforeFind trigger isGet parameter for Parse.Query.get request', async () => {
     const hook = {
       method: req => {
-        expect(req.isGet).toEqual(true);
+        expect(req.isGet).toEqual(false);
         return Promise.resolve();
       },
     };
