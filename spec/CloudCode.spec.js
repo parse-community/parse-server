@@ -2411,7 +2411,7 @@ describe('beforeFind hooks', () => {
     await obj.save();
     const getObj = await obj.get();
     expect(getObj).toBeInstanceOf(Parse.Object);
-    expect(hook.method).toHaveBeenCalled(1);
+    expect(hook.method).toHaveBeenCalledTimes(1);
   });
 
   it('sets correct beforeFind trigger isGet parameter for Parse.Query.find request', async() => {
@@ -2428,7 +2428,7 @@ describe('beforeFind hooks', () => {
     const query = new Parse.Query('MyObject');
     const findObjs = await query.find();
     expect(findObjs?.[0]).toBeInstanceOf(Parse.Object);
-    expect(hook.method).toHaveBeenCalled(1);
+    expect(hook.method).toHaveBeenCalledTimes(1);
   });
 
   it('should have request headers', done => {
