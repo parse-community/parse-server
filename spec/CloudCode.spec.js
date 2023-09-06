@@ -2398,6 +2398,56 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('sets correct beforeFind trigger isGet parameter for Parse.Object.fetch request', async () => {
+    const hook = {
+      method: req => {
+        expect(req.isGet).toEqual(true);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const getObj = await obj.fetch();
+    expect(getObj).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.get request', async () => {
+    const hook = {
+      method: req => {
+        expect(req.isGet).toEqual(false);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const query = new Parse.Query('MyObject');
+    const getObj = await query.get(obj.id);
+    expect(getObj).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.find request', async () => {
+    const hook = {
+      method: req => {
+        expect(req.isGet).toEqual(false);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const query = new Parse.Query('MyObject');
+    const findObjs = await query.find();
+    expect(findObjs?.[0]).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalledTimes(1);
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.beforeFind('MyObject', req => {
       expect(req.headers).toBeDefined();
