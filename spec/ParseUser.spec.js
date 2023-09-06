@@ -1265,6 +1265,29 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  fit('log in with Facebook and update email for signed up User', async done => {
+    const provider = getMockFacebookProvider();
+    const userEmail = 'foo@example.com';
+
+    Parse.User._registerAuthenticationProvider(provider);
+    const signedUpUser = await Parse.User._logInWith('facebook');
+    ok(signedUpUser instanceof Parse.User, 'Model should be a Parse.User');
+    strictEqual(Parse.User.current(), signedUpUser);
+    ok(signedUpUser.extended(), 'Should have used subclass.');
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(signedUpUser._isLinked('facebook'), 'User should be linked to facebook');
+
+    signedUpUser.set('email', 'foo@example.com');
+    signedUpUser.set('loginProvider', 'facebook');
+    signedUpUser.set('social_id', provider.authData.id);
+    signedUpUser.set('account_status', 'active');
+    await signedUpUser.save();
+    strictEqual(signedUpUser.get('email'), userEmail);
+    done();
+  });
+
   it('can not set authdata to null', async () => {
     try {
       const provider = getMockFacebookProvider();

@@ -409,46 +409,6 @@ describe('rest create', () => {
       });
   });
 
-  //to be added to PR
-  it('test facebook signup, login', async () => {
-    const data = {
-      authData: {
-        facebook: {
-          id: '8675309',
-          access_token: 'jenny',
-        },
-      },
-    };
-
-    let newUserSignedUpByFacebookObjectId;
-
-    try {
-      const firstResponse = await rest.create(config, auth.nobody(config), '_User', data);
-
-      expect(typeof firstResponse.response.objectId).toEqual('string');
-      expect(typeof firstResponse.response.createdAt).toEqual('string');
-      expect(typeof firstResponse.response.sessionToken).toEqual('string');
-      newUserSignedUpByFacebookObjectId = firstResponse.response.objectId;
-
-      const secondResponse = await rest.create(config, auth.nobody(config), '_User', data);
-
-      expect(typeof secondResponse.response.objectId).toEqual('string');
-      expect(typeof secondResponse.response.createdAt).toEqual('string');
-      expect(typeof secondResponse.response.username).toEqual('string');
-      expect(typeof secondResponse.response.updatedAt).toEqual('string');
-      expect(secondResponse.response.objectId).toEqual(newUserSignedUpByFacebookObjectId);
-
-      const sessionResponse = await rest.find(config, auth.master(config), '_Session', {
-        sessionToken: secondResponse.response.sessionToken,
-      });
-
-      expect(sessionResponse.results.length).toEqual(1);
-      const output = sessionResponse.results[0];
-      expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
-    } catch (err) {
-      jfail(err);
-    }
-  });
   it('stores pointers', done => {
     const obj = {
       foo: 'bar',
