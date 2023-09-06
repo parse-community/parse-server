@@ -2398,7 +2398,7 @@ describe('beforeFind hooks', () => {
     });
   });
 
-  fit('sets correct beforeFind trigger isGet parameter for Parse.Object.fetch request', async () => {
+  it('sets correct beforeFind trigger isGet parameter for Parse.Object.fetch request', async () => {
     const hook = {
       method: req => {
         expect(req.isGet).toEqual(true);
@@ -2414,7 +2414,7 @@ describe('beforeFind hooks', () => {
     expect(hook.method).toHaveBeenCalledTimes(1);
   });
 
-  fit('sets correct beforeFind trigger isGet parameter for Parse.Query.get request', async () => {
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.get request', async () => {
     const hook = {
       method: req => {
         expect(req.isGet).toEqual(false);
@@ -2431,7 +2431,7 @@ describe('beforeFind hooks', () => {
     expect(hook.method).toHaveBeenCalledTimes(1);
   });
 
-  fit('sets correct beforeFind trigger isGet parameter for Parse.Query.find request', async () => {
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.find request', async () => {
     const hook = {
       method: req => {
         expect(req.isGet).toEqual(false);
