@@ -1266,6 +1266,34 @@ describe('Parse.User testing', () => {
   });
 
   fit('log in with Facebook and update email for signed up User', async done => {
+    const emailAdapter = {
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve(),
+    };
+    await reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: {
+        module: emailAdapter,
+        options: {
+          sender: 'a@a.com',
+          templates: {},
+        },
+        passwordPolicy: {
+          validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/,
+          validationError:
+            'Password must have at least 8 characters, contain at least 1 digit, 1 upper case and 1 lower case character.',
+          doNotAllowUsername: true,
+          maxPasswordAge: 90,
+          maxPasswordHistory: 5,
+          resetTokenValidityDuration: 24 * 60 * 60,
+        },
+      },
+      emailVerifyTokenValidityDuration: 0.5,
+      preventLoginWithUnverifiedEmail: true,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
     const provider = getMockFacebookProvider();
     const userEmail = 'foo@example.com';
 
@@ -1281,10 +1309,10 @@ describe('Parse.User testing', () => {
 
     user.set('email', 'foo@example.com');
     user.set('loginProvider', 'facebook');
-    user.set('social_id', provider.authData.id);
-    user.set('account_status', 'active');
     await user.save();
+
     expect(user.get('email')).toBe(userEmail);
+    done();
   });
 
   it('can not set authdata to null', async () => {
