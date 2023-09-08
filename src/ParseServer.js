@@ -304,6 +304,9 @@ class ParseServer {
         options
       );
     }
+    if (options.trustProxy) {
+      app.set('trust proxy', options.trustProxy);
+    }
     /* istanbul ignore next */
     if (!process.env.TESTING) {
       configureListeners(this);
