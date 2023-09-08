@@ -1291,7 +1291,7 @@ describe('Parse.User testing', () => {
     expect(provider.authData.expiration_date).toBe(provider.synchronizedExpiration);
     expect(user._isLinked('facebook')).toBeTrue();
 
-    await expectAsync(user.save());
+    await expectAsync(user.save()).toBeResolved();
   });
 
   it('can not set authdata to null', async () => {
