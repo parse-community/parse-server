@@ -1265,7 +1265,7 @@ describe('Parse.User testing', () => {
     done();
   });
 
-  fit('log in with Facebook and save signed up User with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async done => {
+  fit('log in with Facebook and save signed up User with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async () => {
     const emailAdapter = {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
@@ -1291,8 +1291,7 @@ describe('Parse.User testing', () => {
     expect(provider.authData.expiration_date).toBe(provider.synchronizedExpiration);
     expect(user._isLinked('facebook')).toBeTrue();
 
-    await user.save();
-    done();
+    await expectAsync(user.save());
   });
 
   it('can not set authdata to null', async () => {
