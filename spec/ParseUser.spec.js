@@ -1272,7 +1272,7 @@ describe('Parse.User testing', () => {
       sendMail: () => Promise.resolve(),
     };
     await reconfigureServer({
-      appName: 'unused',
+      appName: 'ExampleApp',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
       emailAdapter: {
