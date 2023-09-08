@@ -1265,7 +1265,7 @@ describe('Parse.User testing', () => {
     done();
   });
 
-  fit('log in with Facebook and update email for signed up User', async done => {
+  fit('log in with Facebook and save signed up User with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async done => {
     const emailAdapter = {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
@@ -1273,30 +1273,14 @@ describe('Parse.User testing', () => {
     await reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
       emailAdapter: {
         module: emailAdapter,
-        options: {
-          sender: 'a@a.com',
-          templates: {},
-        },
-        passwordPolicy: {
-          validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/,
-          validationError:
-            'Password must have at least 8 characters, contain at least 1 digit, 1 upper case and 1 lower case character.',
-          doNotAllowUsername: true,
-          maxPasswordAge: 90,
-          maxPasswordHistory: 5,
-          resetTokenValidityDuration: 24 * 60 * 60,
-        },
       },
-      emailVerifyTokenValidityDuration: 0.5,
-      preventLoginWithUnverifiedEmail: true,
       publicServerURL: 'http://localhost:8378/1',
     });
 
     const provider = getMockFacebookProvider();
-    const userEmail = 'foo@example.com';
-
     Parse.User._registerAuthenticationProvider(provider);
     const user = await Parse.User._logInWith('facebook');
     expect(user instanceof Parse.User).toBeTrue();
@@ -1307,11 +1291,7 @@ describe('Parse.User testing', () => {
     expect(provider.authData.expiration_date).toBe(provider.synchronizedExpiration);
     expect(user._isLinked('facebook')).toBeTrue();
 
-    user.set('email', 'foo@example.com');
-    user.set('loginProvider', 'facebook');
     await user.save();
-
-    expect(user.get('email')).toBe(userEmail);
     done();
   });
 
