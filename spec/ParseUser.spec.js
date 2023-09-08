@@ -1266,6 +1266,7 @@ describe('Parse.User testing', () => {
   });
 
   fit('log in with Facebook and save signed up User with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async () => {
+    const provider = getMockFacebookProvider();
     const emailAdapter = {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
@@ -1280,7 +1281,6 @@ describe('Parse.User testing', () => {
       publicServerURL: 'http://localhost:8378/1',
     });
 
-    const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     const user = await Parse.User._logInWith('facebook');
     expect(user instanceof Parse.User).toBeTrue();
