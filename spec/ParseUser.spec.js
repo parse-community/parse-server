@@ -1290,7 +1290,6 @@ describe('Parse.User testing', () => {
     expect(provider.authData.access_token).toBe(provider.synchronizedAuthToken);
     expect(provider.authData.expiration_date).toBe(provider.synchronizedExpiration);
     expect(user._isLinked('facebook')).toBeTrue();
-
     await expectAsync(user.save()).toBeResolved();
   });
 
