@@ -1066,7 +1066,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
 // Returns a list of pointers in REST format.
 function findPointers(object, path) {
   if (object instanceof Array) {
-    return object.map(x => findPointers(x, path)).flat();    
+    return object.map(x => findPointers(x, path)).flat();
   }
 
   if (typeof object !== 'object' || !object) {
