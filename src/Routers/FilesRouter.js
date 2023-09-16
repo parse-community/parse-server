@@ -147,7 +147,7 @@ export class FilesRouter {
           if (ext === '*') {
             return true;
           }
-          const regex = new RegExp(fileExtensions);
+          const regex = new RegExp(ext);
           if (regex.test(extension)) {
             return true;
           }
@@ -176,6 +176,7 @@ export class FilesRouter {
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
     try {
+      // Scan request data for denied keywords
       Utils.checkProhibitedKeywords(config, metadata);
       Utils.checkProhibitedKeywords(config, tags);
     } catch (error) {

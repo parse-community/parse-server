@@ -189,7 +189,12 @@ export class UsersRouter extends ClassesRouter {
     const user = await this._authenticateUserFromRequest(req);
     const authData = req.body && req.body.authData;
     // Check if user has provided their required auth providers
-    Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(authData, user.authData, req.config);
+    Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
+      req,
+      authData,
+      user.authData,
+      req.config
+    );
 
     let authDataResponse;
     let validatedAuthData;
