@@ -512,6 +512,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
     this.data.authData = validatedAuthData;
     return;
   }
+  this.storage.authProvider = Object.keys(authData).join(',');
 
   // User found with provided authData
   if (results.length === 1) {
