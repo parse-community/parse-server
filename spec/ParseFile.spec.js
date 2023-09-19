@@ -1364,6 +1364,30 @@ describe('Parse.File testing', () => {
       );
     });
 
+    it('works with a period in the file name', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+      await expectAsync(
+        request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/files/file.png.html',
+          body: '<html></html>\n',
+        }).catch(e => {
+          throw new Error(e.data.error);
+        })
+      ).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
+      );
+    });
+
     it('works with array', async () => {
       await reconfigureServer({
         fileUpload: {
