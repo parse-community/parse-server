@@ -524,8 +524,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
     }
 
-    this.storage.authProvider = Object.keys(authData).join(',');
-
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
       authData,
       userResult.authData
