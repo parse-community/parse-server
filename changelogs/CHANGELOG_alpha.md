@@ -1,3 +1,9 @@
+# [6.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.3.0...6.4.0-alpha.1) (2023-09-20)
+
+### Features
+
+* Add context to Cloud Code Triggers `beforeLogin` and `afterLogin` ([#8724](https://github.com/parse-community/parse-server/issues/8724)) ([a9c34ef](https://github.com/parse-community/parse-server/commit/a9c34ef1e2c78a42fb8b5fa8d569b7677c74919d))
+
 # [6.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.8...6.3.0-alpha.9) (2023-09-13)
 
 
