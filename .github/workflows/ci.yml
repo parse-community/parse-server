@@ -161,6 +161,10 @@ jobs:
             MONGODB_VERSION: 6.0.2
             MONGODB_TOPOLOGY: replicaset
             NODE_VERSION: 19.3.0
+          - name: MongoDB 7, ReplicaSet
+            MONGODB_VERSION: 7.0.0
+            MONGODB_TOPOLOGY: replicaset
+            NODE_VERSION: 19.3.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 4.4.13
