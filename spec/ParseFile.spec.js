@@ -1398,6 +1398,7 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
         },
       });
       const headers = {
