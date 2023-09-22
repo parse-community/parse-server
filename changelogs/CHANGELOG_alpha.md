@@ -1,3 +1,10 @@
+# [6.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.1...6.4.0-alpha.2) (2023-09-22)
+
+
+### Bug Fixes
+
+* Security upgrade graphql from 16.6.0 to 16.8.1 ([#8758](https://github.com/parse-community/parse-server/issues/8758)) ([71dfd8a](https://github.com/parse-community/parse-server/commit/71dfd8a7ece8c0dd1a66d03bb9420cfd39f4f9b1))
+
 # [6.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.3.0...6.4.0-alpha.1) (2023-09-20)
 
 ### Features
