@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: [ release, alpha, beta, next-major, 'release-[0-9]+.x.x' ]
+    branches: [release, alpha, beta, next-major, 'release-[0-9]+.x.x']
   pull_request:
     branches:
       - '**'
@@ -21,17 +21,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript' ]
+        language: ['javascript']
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: ${{ matrix.language }}
-        source-root: src
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          source-root: src
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
   check-ci:
     name: Node Engine Check
     timeout-minutes: 15
@@ -54,30 +54,30 @@ jobs:
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
-     name: Lint
-     timeout-minutes: 15
-     runs-on: ubuntu-latest
-     steps:
-       - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v2
-         with:
-           node-version: ${{ matrix.node-version }}
-       - name: Cache Node.js modules
-         uses: actions/cache@v2
-         with:
-           path: ~/.npm
-           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-           restore-keys: |
-             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-       - name: Install dependencies
-         run: npm ci
-       - run: npm run lint
+    name: Lint
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run lint
   check-definitions:
-     name: Check Definitions
-     timeout-minutes: 5
-     runs-on: ubuntu-latest
-     steps:
+    name: Check Definitions
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
         uses: actions/setup-node@v2
@@ -95,25 +95,25 @@ jobs:
       - name: CI Definitions Check
         run: npm run ci:definitionsCheck
   check-circular:
-     name: Circular Dependencies
-     timeout-minutes: 5
-     runs-on: ubuntu-latest
-     steps:
-       - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-         uses: actions/setup-node@v2
-         with:
-           node-version: ${{ matrix.node-version }}
-       - name: Cache Node.js modules
-         uses: actions/cache@v2
-         with:
-           path: ~/.npm
-           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-           restore-keys: |
-             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-       - name: Install dependencies
-         run: npm ci
-       - run: npm run madge:circular
+    name: Circular Dependencies
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - run: npm run madge:circular
   check-docker:
     name: Docker Build
     timeout-minutes: 15
@@ -147,23 +147,23 @@ jobs:
         include:
           - name: MongoDB 4.2, ReplicaSet
             MONGODB_VERSION: 4.2.19
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replSet
             NODE_VERSION: 19.3.0
           - name: MongoDB 4.4, ReplicaSet
             MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replSet
             NODE_VERSION: 19.3.0
           - name: MongoDB 5, ReplicaSet
             MONGODB_VERSION: 5.3.2
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replSet
             NODE_VERSION: 19.3.0
           - name: MongoDB 6, ReplicaSet
             MONGODB_VERSION: 6.0.2
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replSet
             NODE_VERSION: 19.3.0
           - name: MongoDB 7, ReplicaSet
             MONGODB_VERSION: 7.0.1
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replSet
             NODE_VERSION: 19.3.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
@@ -190,7 +190,7 @@ jobs:
       redis:
         image: redis
         ports:
-            - 6379:6379
+          - 6379:6379
     env:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
