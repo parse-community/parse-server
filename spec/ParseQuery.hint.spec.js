@@ -186,7 +186,6 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       explain: true,
     });
     queryPlanner = result[0].queryPlanner;
-
     expect(queryPlanner.winningPlan.queryPlan.stage).toBe('FETCH');
     expect(queryPlanner.winningPlan.queryPlan.inputStage.keyPattern).toEqual({ _id: 1 });
   });
