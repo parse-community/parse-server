@@ -690,9 +690,7 @@ export class MongoStorageAdapter implements StorageAdapter {
 
     return this._adaptiveCollection(className)
       .then(collection =>
-        collection._mongoCollection
-          .createIndex(indexCreationRequest, indexOptions)
-          .catch(error => this.handleError(error))
+        collection._mongoCollection.createIndex(indexCreationRequest, indexOptions)
       )
       .catch(err => this.handleError(err));
   }
