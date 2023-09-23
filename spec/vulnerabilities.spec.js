@@ -250,7 +250,6 @@ describe('Vulnerabilities', () => {
         url: 'http://localhost:8378/1/classes/RCE',
         body: JSON.stringify({
           obj: {
-            _bsontype: 'Code',
             code: 'delete Object.prototype.evalFunctions',
           },
         }),
