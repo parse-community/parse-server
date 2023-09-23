@@ -87,15 +87,15 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       explain: true,
     });
     let { queryPlanner } = result[0];
-    expect(queryPlanner.winningPlan.queryPlan.stage).toBe('COLLSCAN');
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
 
     result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       hint: '_id_',
       explain: true,
     });
-    queryPlanner = result[0];
-    expect(queryPlanner.winningPlan.queryPlan.stage).toBe('FETCH');
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.indexName).toBe('_id_');
+    queryPlanner = result[0].queryPlanner;
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('FETCH');
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
   it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint string', async () => {
@@ -179,7 +179,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       explain: true,
     });
     let { queryPlanner } = result[0];
-    expect(queryPlanner.winningPlan.queryPlan.stage).toBe('COLLSCAN');
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
 
     result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       hint: { _id: 1 },
@@ -187,8 +187,8 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
     queryPlanner = result[0].queryPlanner;
 
-    expect(queryPlanner.winningPlan.queryPlan.stage).toBe('FETCH');
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.keyPattern).toEqual({ _id: 1 });
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('FETCH');
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
   it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint object', async () => {
@@ -328,7 +328,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
     let response = await request(options);
     let { queryPlanner } = response.data.results[0];
-    expect(queryPlanner.winningPlan.queryPlan.stage).toBe('COLLSCAN');
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
 
     options = Object.assign({}, masterKeyOptions, {
       url: Parse.serverURL + '/aggregate/TestObject',
@@ -340,7 +340,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
     response = await request(options);
     queryPlanner = response.data.results[0].queryPlanner;
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.keyPattern).toEqual({ _id: 1 });
+    expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
   it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint (rest)', async () => {
