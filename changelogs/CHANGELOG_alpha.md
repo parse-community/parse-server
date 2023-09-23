@@ -1,3 +1,10 @@
+# [6.4.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.2...6.4.0-alpha.3) (2023-09-23)
+
+
+### Bug Fixes
+
+* Parse Server option `fileUpload.fileExtensions` fails to determine file extension if filename contains multiple dots ([#8754](https://github.com/parse-community/parse-server/issues/8754)) ([3d6d50e](https://github.com/parse-community/parse-server/commit/3d6d50e0afff18b95fb906914e2cebd3839b517a))
+
 # [6.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.1...6.4.0-alpha.2) (2023-09-22)
 
 
