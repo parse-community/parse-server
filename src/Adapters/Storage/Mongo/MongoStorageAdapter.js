@@ -31,8 +31,6 @@ const storageAdapterAllCollections = mongoAdapter => {
     .connect()
     .then(() => mongoAdapter.database.collections())
     .then(collections => {
-      if (!collections || !collections.length) return [];
-
       return collections.filter(collection => {
         if (collection.namespace.match(/\.system\./)) {
           return false;
