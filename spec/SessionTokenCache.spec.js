@@ -47,7 +47,7 @@ describe('SessionTokenCache', function () {
 
     sessionTokenCache.getUserId('sessionToken').then(userIdFromCache => {
       expect(userIdFromCache).toBe('userId');
-      expect(sessionTokenCache.cache.length).toBe(1);
+      expect(sessionTokenCache.cache.size).toBe(1);
       done();
     });
   });

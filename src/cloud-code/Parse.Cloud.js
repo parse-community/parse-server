@@ -82,9 +82,9 @@ const getRoute = parseClass => {
       '@File': 'files',
     }[parseClass] || 'classes';
   if (parseClass === '@File') {
-    return `/${route}/:id?*`;
+    return `/${route}/:id?(.*)`;
   }
-  return `/${route}/${parseClass}/:id?*`;
+  return `/${route}/${parseClass}/:id?(.*)`;
 };
 /** @namespace
  * @name Parse

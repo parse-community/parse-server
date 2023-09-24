@@ -1,4 +1,3 @@
-const UserController = require('../lib/Controllers/UserController').UserController;
 const emailAdapter = require('./support/MockEmailAdapter');
 
 describe('UserController', () => {
@@ -11,11 +10,14 @@ describe('UserController', () => {
   describe('sendVerificationEmail', () => {
     describe('parseFrameURL not provided', () => {
       it('uses publicServerURL', async done => {
-        await reconfigureServer({
+        const server = await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
             parseFrameURL: undefined,
           },
+          verifyUserEmails: true,
+          emailAdapter,
+          appName: 'test',
         });
         emailAdapter.sendVerificationEmail = options => {
           expect(options.link).toEqual(
@@ -24,20 +26,20 @@ describe('UserController', () => {
           emailAdapter.sendVerificationEmail = () => Promise.resolve();
           done();
         };
-        const userController = new UserController(emailAdapter, 'test', {
-          verifyUserEmails: true,
-        });
-        userController.sendVerificationEmail(user);
+        server.config.userController.sendVerificationEmail(user);
       });
     });
 
     describe('parseFrameURL provided', () => {
       it('uses parseFrameURL and includes the destination in the link parameter', async done => {
-        await reconfigureServer({
+        const server = await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
             parseFrameURL: 'http://someother.example.com/handle-parse-iframe',
           },
+          verifyUserEmails: true,
+          emailAdapter,
+          appName: 'test',
         });
         emailAdapter.sendVerificationEmail = options => {
           expect(options.link).toEqual(
@@ -46,10 +48,7 @@ describe('UserController', () => {
           emailAdapter.sendVerificationEmail = () => Promise.resolve();
           done();
         };
-        const userController = new UserController(emailAdapter, 'test', {
-          verifyUserEmails: true,
-        });
-        userController.sendVerificationEmail(user);
+        server.config.userController.sendVerificationEmail(user);
       });
     });
   });

@@ -212,11 +212,12 @@ export class MongoStorageAdapter implements StorageAdapter {
     throw error;
   }
 
-  handleShutdown() {
+  async handleShutdown() {
     if (!this.client) {
-      return Promise.resolve();
+      return;
     }
-    return this.client.close(false);
+    await this.client.close(false);
+    delete this.connectionPromise;
   }
 
   _adaptiveCollection(name: string) {

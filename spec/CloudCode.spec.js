@@ -95,11 +95,20 @@ describe('Cloud Code', () => {
   it('can get config', () => {
     const config = Parse.Server;
     let currentConfig = Config.get('test');
-    expect(Object.keys(config)).toEqual(Object.keys(currentConfig));
+    const server = require('../lib/cloud-code/Parse.Server');
+    expect(Object.keys(config)).toEqual(Object.keys({ ...currentConfig, ...server }));
     config.silent = false;
     Parse.Server = config;
     currentConfig = Config.get('test');
     expect(currentConfig.silent).toBeFalse();
+  });
+
+  it('can get curent version', () => {
+    const version = require('../package.json').version;
+    const currentConfig = Config.get('test');
+    expect(Parse.Server.version).toBeDefined();
+    expect(currentConfig.version).toBeDefined();
+    expect(Parse.Server.version).toEqual(version);
   });
 
   it('show warning on duplicate cloud functions', done => {
@@ -1352,6 +1361,47 @@ describe('Cloud Code', () => {
       });
   });
 
+  it('should not encode Parse Objects', async () => {
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('deleted', false);
+    await user.signUp();
+    Parse.Cloud.define(
+      'deleteAccount',
+      async req => {
+        expect(req.params.object instanceof Parse.Object).not.toBeTrue();
+        return 'Object deleted';
+      },
+      {
+        requireMaster: true,
+      }
+    );
+    await Parse.Cloud.run('deleteAccount', { object: user.toPointer() }, { useMasterKey: true });
+  });
+
+  it('allow cloud to encode Parse Objects', async () => {
+    await reconfigureServer({ encodeParseObjectInCloudFunction: true });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('deleted', false);
+    await user.signUp();
+    Parse.Cloud.define(
+      'deleteAccount',
+      async req => {
+        expect(req.params.object instanceof Parse.Object).toBeTrue();
+        req.params.object.set('deleted', true);
+        await req.params.object.save(null, { useMasterKey: true });
+        return 'Object deleted';
+      },
+      {
+        requireMaster: true,
+      }
+    );
+    await Parse.Cloud.run('deleteAccount', { object: user.toPointer() }, { useMasterKey: true });
+  });
+
   it('beforeSave should not affect fetched pointers', done => {
     Parse.Cloud.beforeSave('BeforeSaveUnchanged', () => {});
 
@@ -2348,6 +2398,56 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('sets correct beforeFind trigger isGet parameter for Parse.Object.fetch request', async () => {
+    const hook = {
+      method: req => {
+        expect(req.isGet).toEqual(true);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const getObj = await obj.fetch();
+    expect(getObj).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.get request', async () => {
+    const hook = {
+      method: req => {
+        expect(req.isGet).toEqual(false);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const query = new Parse.Query('MyObject');
+    const getObj = await query.get(obj.id);
+    expect(getObj).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.find request', async () => {
+    const hook = {
+      method: req => {
+        expect(req.isGet).toEqual(false);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    await obj.save();
+    const query = new Parse.Query('MyObject');
+    const findObjs = await query.find();
+    expect(findObjs?.[0]).toBeInstanceOf(Parse.Object);
+    expect(hook.method).toHaveBeenCalledTimes(1);
+  });
+
   it('should have request headers', done => {
     Parse.Cloud.beforeFind('MyObject', req => {
       expect(req.headers).toBeDefined();
@@ -2380,6 +2480,35 @@ describe('beforeFind hooks', () => {
         return Promise.all([query.get(myObj.id), query.first(), query.find()]);
       })
       .then(() => done());
+  });
+
+  it('should run beforeFind on pointers and array of pointers from an object', async () => {
+    const obj1 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    const obj3 = new Parse.Object('TestObject');
+    obj2.set('aField', 'aFieldValue');
+    await obj2.save();
+    obj1.set('pointerField', obj2);
+    obj3.set('pointerFieldArray', [obj2]);
+    await obj1.save();
+    await obj3.save();
+    const spy = jasmine.createSpy('beforeFindSpy');
+    Parse.Cloud.beforeFind('TestObject2', spy);
+    const query = new Parse.Query('TestObject');
+    await query.get(obj1.id);
+    // Pointer not included in query so we don't expect beforeFind to be called
+    expect(spy).not.toHaveBeenCalled();
+    const query2 = new Parse.Query('TestObject');
+    query2.include('pointerField');
+    const res = await query2.get(obj1.id);
+    expect(res.get('pointerField').get('aField')).toBe('aFieldValue');
+    // Pointer included in query so we expect beforeFind to be called
+    expect(spy).toHaveBeenCalledTimes(1);
+    const query3 = new Parse.Query('TestObject');
+    query3.include('pointerFieldArray');
+    const res2 = await query3.get(obj3.id);
+    expect(res2.get('pointerFieldArray')[0].get('aField')).toBe('aFieldValue');
+    expect(spy).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -3198,7 +3327,7 @@ describe('beforeLogin hook', () => {
       expect(req.headers).toBeDefined();
       expect(req.ip).toBeDefined();
       expect(req.installationId).toBeDefined();
-      expect(req.context).toBeUndefined();
+      expect(req.context).toBeDefined();
     });
 
     await Parse.User.signUp('tupac', 'shakur');
@@ -3315,7 +3444,7 @@ describe('afterLogin hook', () => {
       expect(req.headers).toBeDefined();
       expect(req.ip).toBeDefined();
       expect(req.installationId).toBeDefined();
-      expect(req.context).toBeUndefined();
+      expect(req.context).toBeDefined();
     });
 
     await Parse.User.signUp('testuser', 'p@ssword');
