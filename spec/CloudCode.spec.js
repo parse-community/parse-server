@@ -2510,6 +2510,25 @@ describe('beforeFind hooks', () => {
     expect(res2.get('pointerFieldArray')[0].get('aField')).toBe('aFieldValue');
     expect(spy).toHaveBeenCalledTimes(2);
   });
+
+  it('should have access to context in include query in beforeFind hook', async () => {
+    const obj1 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    obj2.set('aField', 'aFieldValue');
+    await obj2.save();
+    obj1.set('pointerField', obj2);
+    await obj1.save();
+    Parse.Cloud.beforeFind('TestObject', req => {
+      expect(req.context).toBeDefined();
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.beforeFind('TestObject2', req => {
+      expect(req.context).toBeDefined();
+      expect(req.context.a).toEqual('a');
+    });
+    const query = new Parse.Query('TestObject');
+    return query.include('pointerField').find({ context: { a: 'a' } });
+  });
 });
 
 describe('afterFind hooks', () => {
