@@ -2512,6 +2512,8 @@ describe('beforeFind hooks', () => {
   });
 
   it('should have access to context in include query in beforeFind hook', async () => {
+    let beforeFindTestObjectCalled = false;
+    let beforeFindTestObject2Called = false;
     const obj1 = new Parse.Object('TestObject');
     const obj2 = new Parse.Object('TestObject2');
     obj2.set('aField', 'aFieldValue');
@@ -2521,13 +2523,17 @@ describe('beforeFind hooks', () => {
     Parse.Cloud.beforeFind('TestObject', req => {
       expect(req.context).toBeDefined();
       expect(req.context.a).toEqual('a');
+      beforeFindTestObjectCalled = true;
     });
     Parse.Cloud.beforeFind('TestObject2', req => {
       expect(req.context).toBeDefined();
       expect(req.context.a).toEqual('a');
+      beforeFindTestObject2Called = true;
     });
     const query = new Parse.Query('TestObject');
     await query.include('pointerField').find({ context: { a: 'a' } });
+    expect(beforeFindTestObjectCalled).toBeTrue();
+    expect(beforeFindTestObject2Called).toBeTrue();
   });
 });
 
