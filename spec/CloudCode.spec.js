@@ -2527,7 +2527,7 @@ describe('beforeFind hooks', () => {
       expect(req.context.a).toEqual('a');
     });
     const query = new Parse.Query('TestObject');
-    return query.include('pointerField').find({ context: { a: 'a' } });
+    await query.include('pointerField').find({ context: { a: 'a' } });
   });
 });
 
