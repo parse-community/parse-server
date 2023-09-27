@@ -128,7 +128,14 @@ function ParseServerRESTController(applicationId, router) {
           })
           .then(
             resp => {
-              const { response, status } = resp;
+              let { response } = resp;
+              const { status, headers = {} } = resp;
+              if (headers['X-Parse-Push-Status-Id']) {
+                response = headers['X-Parse-Push-Status-Id'];
+              }
+              if (headers['X-Parse-Job-Status-Id']) {
+                response = headers['X-Parse-Job-Status-Id'];
+              }
               if (options.returnStatus) {
                 resolve({ ...response, _status: status });
               } else {
