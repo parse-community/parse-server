@@ -1,3 +1,30 @@
+# [6.4.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.2...6.4.0-alpha.3) (2023-09-23)
+
+
+### Bug Fixes
+
+* Parse Server option `fileUpload.fileExtensions` fails to determine file extension if filename contains multiple dots ([#8754](https://github.com/parse-community/parse-server/issues/8754)) ([3d6d50e](https://github.com/parse-community/parse-server/commit/3d6d50e0afff18b95fb906914e2cebd3839b517a))
+
+# [6.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.1...6.4.0-alpha.2) (2023-09-22)
+
+
+### Bug Fixes
+
+* Security upgrade graphql from 16.6.0 to 16.8.1 ([#8758](https://github.com/parse-community/parse-server/issues/8758)) ([71dfd8a](https://github.com/parse-community/parse-server/commit/71dfd8a7ece8c0dd1a66d03bb9420cfd39f4f9b1))
+
+# [6.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.3.0...6.4.0-alpha.1) (2023-09-20)
+
+### Features
+
+* Add context to Cloud Code Triggers `beforeLogin` and `afterLogin` ([#8724](https://github.com/parse-community/parse-server/issues/8724)) ([a9c34ef](https://github.com/parse-community/parse-server/commit/a9c34ef1e2c78a42fb8b5fa8d569b7677c74919d))
+
+# [6.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.8...6.3.0-alpha.9) (2023-09-13)
+
+
+### Performance Improvements
+
+* Improve performance of recursive pointer iterations ([#8741](https://github.com/parse-community/parse-server/issues/8741)) ([45a3ed0](https://github.com/parse-community/parse-server/commit/45a3ed0fcf2c0170607505a1550fb15896e705fd))
+
 # [6.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.7...6.3.0-alpha.8) (2023-08-30)
 
 

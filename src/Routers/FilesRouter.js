@@ -155,7 +155,7 @@ export class FilesRouter {
       };
       let extension = contentType;
       if (filename && filename.includes('.')) {
-        extension = filename.split('.')[1];
+        extension = filename.substring(filename.lastIndexOf('.') + 1);
       } else if (contentType && contentType.includes('/')) {
         extension = contentType.split('/')[1];
       }
