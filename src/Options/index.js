@@ -103,7 +103,7 @@ export interface ParseServerOptions {
   databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
-  /* Disable case insensitivity (collation) on queries and indexes, needed if you use MongoDB serverless or AWS DocumentDB */
+  /* Disable case insensitivity (collation) on queries and indexes, needed if you use MongoDB serverless or AWS DocumentDB. */
   disableCollation: ?boolean;
   /* Transform Username and Email to lowercase on create/update/login/signup. On queries client needs to ensure to send Email/Username in lowercase format. */
   transformEmailAndUsernameToLowerCase: ?boolean;
