@@ -2445,9 +2445,9 @@ describe('OTP TOTP auth adatper', () => {
     const response = user.get('authDataResponse');
     expect(response.mfa).toBeDefined();
     expect(response.mfa.recovery).toBeDefined();
-    expect(response.mfa.recovery.length).toEqual(2);
+    expect(response.mfa.recovery.split(',').length).toEqual(2);
     await user.fetch();
-    expect(user.get('authData').mfa).toEqual({ enabled: true });
+    expect(user.get('authData').mfa).toEqual({ status: 'enabled' });
   });
 
   it('can login with valid token', async () => {
@@ -2473,13 +2473,15 @@ describe('OTP TOTP auth adatper', () => {
         username: 'username',
         password: 'password',
         authData: {
-          mfa: totp.generate(),
+          mfa: {
+            token: totp.generate(),
+          },
         },
       }),
     }).then(res => res.data);
     expect(response.objectId).toEqual(user.id);
     expect(response.sessionToken).toBeDefined();
-    expect(response.authData).toEqual({ mfa: { enabled: true } });
+    expect(response.authData).toEqual({ mfa: { status: 'enabled' } });
     expect(Object.keys(response).sort()).toEqual(
       [
         'objectId',
@@ -2528,6 +2530,42 @@ describe('OTP TOTP auth adatper', () => {
     expect(user.get('authData').mfa.secret).toEqual(new_secret.base32);
   });
 
+  it('cannot change OTP with invalid token', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const OTPAuth = require('otpauth');
+    const secret = new OTPAuth.Secret();
+    const totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const token = totp.generate();
+    await user.save(
+      { authData: { mfa: { secret: secret.base32, token } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    const new_secret = new OTPAuth.Secret();
+    const new_totp = new OTPAuth.TOTP({
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: new_secret,
+    });
+    const new_token = new_totp.generate();
+    await expectAsync(
+      user.save(
+        {
+          authData: { mfa: { secret: new_secret.base32, token: new_token, old: '123' } },
+        },
+        { sessionToken: user.getSessionToken() }
+      )
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid MFA token'));
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData').mfa.secret).toEqual(secret.base32);
+  });
+
   it('future logins require TOTP token', async () => {
     const user = await Parse.User.signUp('username', 'password');
     const OTPAuth = require('otpauth');
@@ -2572,7 +2610,9 @@ describe('OTP TOTP auth adatper', () => {
           username: 'username',
           password: 'password',
           authData: {
-            mfa: 'abcd',
+            mfa: {
+              token: 'abcd',
+            },
           },
         }),
       }).catch(e => {
@@ -2619,7 +2659,7 @@ describe('OTP SMS auth adatper', () => {
     const spy = spyOn(mfa, 'sendSMS').and.callThrough();
     await user.save({ authData: { mfa: { mobile: '+11111111111' } } }, { sessionToken });
     await user.fetch({ sessionToken });
-    expect(user.get('authData')).toEqual({ mfa: { enabled: false } });
+    expect(user.get('authData')).toEqual({ mfa: { status: 'disabled' } });
     expect(spy).toHaveBeenCalledWith(code, '+11111111111');
     await user.fetch({ useMasterKey: true });
     const authData = user.get('authData').mfa?.pending;
@@ -2629,7 +2669,7 @@ describe('OTP SMS auth adatper', () => {
 
     await user.save({ authData: { mfa: { mobile, token: code } } }, { sessionToken });
     await user.fetch({ sessionToken });
-    expect(user.get('authData')).toEqual({ mfa: { enabled: true } });
+    expect(user.get('authData')).toEqual({ mfa: { status: 'enabled' } });
   });
 
   it('future logins require SMS code', async () => {
@@ -2658,7 +2698,9 @@ describe('OTP SMS auth adatper', () => {
         username: 'username',
         password: 'password',
         authData: {
-          mfa: true,
+          mfa: {
+            token: 'request',
+          },
         },
       }),
     }).catch(e => e.data);
@@ -2672,13 +2714,15 @@ describe('OTP SMS auth adatper', () => {
         username: 'username',
         password: 'password',
         authData: {
-          mfa: code,
+          mfa: {
+            token: code,
+          },
         },
       }),
     }).then(res => res.data);
     expect(response.objectId).toEqual(user.id);
     expect(response.sessionToken).toBeDefined();
-    expect(response.authData).toEqual({ mfa: { enabled: true } });
+    expect(response.authData).toEqual({ mfa: { status: 'enabled' } });
     expect(Object.keys(response).sort()).toEqual(
       [
         'objectId',

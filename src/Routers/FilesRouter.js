@@ -147,7 +147,7 @@ export class FilesRouter {
           if (ext === '*') {
             return true;
           }
-          const regex = new RegExp(fileExtensions);
+          const regex = new RegExp(ext);
           if (regex.test(extension)) {
             return true;
           }
@@ -155,7 +155,7 @@ export class FilesRouter {
       };
       let extension = contentType;
       if (filename && filename.includes('.')) {
-        extension = filename.split('.')[1];
+        extension = filename.substring(filename.lastIndexOf('.') + 1);
       } else if (contentType && contentType.includes('/')) {
         extension = contentType.split('/')[1];
       }

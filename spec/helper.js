@@ -103,6 +103,7 @@ const defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
+  maintenanceKey: 'testing',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   directAccess: true,
@@ -250,8 +251,8 @@ afterEach(function (done) {
     })
     .then(() => Parse.User.logOut())
     .then(
-      () => {},
-      () => {}
+      () => { },
+      () => { }
     ) // swallow errors
     .then(() => {
       // Connection close events are not immediate on node 10+... wait a bit

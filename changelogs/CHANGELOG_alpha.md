@@ -1,3 +1,72 @@
+# [6.4.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.3...6.4.0-alpha.4) (2023-09-29)
+
+
+### Features
+
+* Allow setting `createdAt` and `updatedAt` during `Parse.Object` creation with maintenance key ([#8696](https://github.com/parse-community/parse-server/issues/8696)) ([77bbfb3](https://github.com/parse-community/parse-server/commit/77bbfb3f186f5651c33ba152f04cff95128eaf2d))
+
+# [6.4.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.2...6.4.0-alpha.3) (2023-09-23)
+
+
+### Bug Fixes
+
+* Parse Server option `fileUpload.fileExtensions` fails to determine file extension if filename contains multiple dots ([#8754](https://github.com/parse-community/parse-server/issues/8754)) ([3d6d50e](https://github.com/parse-community/parse-server/commit/3d6d50e0afff18b95fb906914e2cebd3839b517a))
+
+# [6.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.1...6.4.0-alpha.2) (2023-09-22)
+
+
+### Bug Fixes
+
+* Security upgrade graphql from 16.6.0 to 16.8.1 ([#8758](https://github.com/parse-community/parse-server/issues/8758)) ([71dfd8a](https://github.com/parse-community/parse-server/commit/71dfd8a7ece8c0dd1a66d03bb9420cfd39f4f9b1))
+
+# [6.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.3.0...6.4.0-alpha.1) (2023-09-20)
+
+### Features
+
+* Add context to Cloud Code Triggers `beforeLogin` and `afterLogin` ([#8724](https://github.com/parse-community/parse-server/issues/8724)) ([a9c34ef](https://github.com/parse-community/parse-server/commit/a9c34ef1e2c78a42fb8b5fa8d569b7677c74919d))
+
+# [6.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.8...6.3.0-alpha.9) (2023-09-13)
+
+
+### Performance Improvements
+
+* Improve performance of recursive pointer iterations ([#8741](https://github.com/parse-community/parse-server/issues/8741)) ([45a3ed0](https://github.com/parse-community/parse-server/commit/45a3ed0fcf2c0170607505a1550fb15896e705fd))
+
+# [6.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.7...6.3.0-alpha.8) (2023-08-30)
+
+
+### Bug Fixes
+
+* Redis 4 does not reconnect after unhandled error ([#8706](https://github.com/parse-community/parse-server/issues/8706)) ([2b3d4e5](https://github.com/parse-community/parse-server/commit/2b3d4e5d3c85cd142f85af68dec51a8523548d49))
+
+# [6.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.6...6.3.0-alpha.7) (2023-08-18)
+
+
+### Bug Fixes
+
+* Remove config logging when launching Parse Server via CLI ([#8710](https://github.com/parse-community/parse-server/issues/8710)) ([ae68f0c](https://github.com/parse-community/parse-server/commit/ae68f0c31b741eeb83379c905c7ddfaa124436ec))
+
+# [6.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.5...6.3.0-alpha.6) (2023-07-17)
+
+
+### Bug Fixes
+
+* Parse Server option `fileUpload.fileExtensions` does not work with an array of extensions ([#8688](https://github.com/parse-community/parse-server/issues/8688)) ([6a4a00c](https://github.com/parse-community/parse-server/commit/6a4a00ca7af1163ea74b047b85cd6817366b824b))
+
+# [6.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.4...6.3.0-alpha.5) (2023-07-05)
+
+
+### Features
+
+* Add property `Parse.Server.version` to determine current version of Parse Server in Cloud Code ([#8670](https://github.com/parse-community/parse-server/issues/8670)) ([a9d376b](https://github.com/parse-community/parse-server/commit/a9d376b61f5b07806eafbda91c4e36c322f09298))
+
+# [6.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.3...6.3.0-alpha.4) (2023-07-04)
+
+
+### Bug Fixes
+
+* Server does not start via CLI when `auth` option is set ([#8666](https://github.com/parse-community/parse-server/issues/8666)) ([4e2000b](https://github.com/parse-community/parse-server/commit/4e2000bc563324389584ace3c090a5c1a7796a64))
+
 # [6.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.2...6.3.0-alpha.3) (2023-06-23)
 
 
