@@ -61,6 +61,9 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
     collectionPrefix: 'test_',
+    mongoOptions: {
+      enableSchemaHooks: true,
+    }
   });
 }
 

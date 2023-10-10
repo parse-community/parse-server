@@ -104,7 +104,10 @@ export function getFilesController(options: ParseServerOptions): FilesController
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-    return new GridFSBucketAdapter(databaseURI, databaseOptions, fileKey);
+    const newDatabaseOptions = { ...databaseOptions };
+    // enableSchemaHooks is not a valid mongodb option
+    delete newDatabaseOptions.enableSchemaHooks;  
+    return new GridFSBucketAdapter(databaseURI, newDatabaseOptions, fileKey);
   });
   return new FilesController(filesControllerAdapter, appId, {
     preserveFileName,
