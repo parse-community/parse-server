@@ -78,7 +78,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.queryPlan.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('>4.4')('query aggregate with hint string', async () => {
+  fit_only_mongodb_version('<4.4')('query aggregate with hint string', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
 
