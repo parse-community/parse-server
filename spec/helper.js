@@ -428,6 +428,18 @@ global.it_exclude_dbs = excluded => {
   }
 };
 
+// Fetch test exclusion list
+const testExclusionList = require('./testExclusionList.json');
+
+// Bypass test if Test UUID found in testExclusionList
+global.it_id = id => {
+  if (testExclusionList.includes(id)) {
+    return xit;
+  } else {
+    return it;
+  }
+};
+
 global.it_only_db = db => {
   if (
     process.env.PARSE_SERVER_TEST_DB === db ||
