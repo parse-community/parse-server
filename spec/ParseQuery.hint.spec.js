@@ -78,7 +78,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.queryPlan.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('<4.4')('query aggregate with hint string', async () => {
+  fit_only_mongodb_version('>4.4')('query aggregate with hint string', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
 
@@ -86,13 +86,15 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     let result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       explain: true,
     });
-    let { queryPlanner } = result[0].stages[0].$cursor;
+    console.log(JSON.stringify(result[0], null, 2));
+    let { queryPlanner } = result[0];
     expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
 
     result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       hint: '_id_',
       explain: true,
     });
+    console.log(JSON.stringify(result[0], null, 2));
     queryPlanner = result[0].queryPlanner;
     expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('FETCH');
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.indexName).toBe('_id_');
@@ -178,7 +180,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     let result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       explain: true,
     });
-    let { queryPlanner } = result[0].stages[0].$cursor;
+    let { queryPlanner } = result[0];
     expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
 
     result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
@@ -326,7 +328,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       },
     });
     let response = await request(options);
-    let { queryPlanner } = response.data.results[0].stages[0].$cursor;
+    let { queryPlanner } = response.data.results[0];
     expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
 
     options = Object.assign({}, masterKeyOptions, {

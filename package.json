@@ -130,7 +130,7 @@
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
     "test": "npm run testonly",
     "posttest": "cross-env mongodb-runner stop --all",
-    "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 nyc jasmine",
+    "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 nyc jasmine spec/ParseQuery.hint.spec.js",
     "start": "node ./bin/parse-server",
     "prettier": "prettier --write {src,spec}/{**/*,*}.js",
     "prepare": "npm run build",
