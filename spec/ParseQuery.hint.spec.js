@@ -86,7 +86,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     let result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       explain: true,
     });
-    console.log(JSON.stringify(result[0], null, 2));
+
     let { queryPlanner } = result[0].stages[0].$cursor;
     expect(queryPlanner.winningPlan.stage).toBe('COLLSCAN');
 
@@ -94,7 +94,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       hint: '_id_',
       explain: true,
     });
-    console.log(JSON.stringify(result[0], null, 2));
+
     queryPlanner = result[0].stages[0].$cursor.queryPlanner;
     expect(queryPlanner.winningPlan.stage).toBe('FETCH');
     expect(queryPlanner.winningPlan.inputStage.indexName).toBe('_id_');
@@ -328,7 +328,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       },
     });
     let response = await request(options);
-    let { queryPlanner } = response.data.results[0];
+    let { queryPlanner } = response.data.results[0].stages[0].$cursor;
     expect(queryPlanner.winningPlan.stage).toBe('COLLSCAN');
 
     options = Object.assign({}, masterKeyOptions, {
