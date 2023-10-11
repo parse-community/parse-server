@@ -97,7 +97,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     console.log(JSON.stringify(result[0], null, 2));
     queryPlanner = result[0].stages[0].$cursor.queryPlanner;
     expect(queryPlanner.winningPlan.stage).toBe('FETCH');
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.indexName).toBe('_id_');
+    expect(queryPlanner.winningPlan.inputStage.indexName).toBe('_id_');
   });
 
   it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint string', async () => {
@@ -188,8 +188,8 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       explain: true,
     });
     queryPlanner = result[0].stages[0].$cursor.queryPlanner;
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('FETCH');
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
+    expect(queryPlanner.winningPlan.stage).toBe('FETCH');
+    expect(queryPlanner.winningPlan.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
   it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint object', async () => {
@@ -341,7 +341,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
     response = await request(options);
     queryPlanner = response.data.results[0].stages[0].$cursor.queryPlanner;
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
+    expect(queryPlanner.winningPlan.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
   it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint (rest)', async () => {
