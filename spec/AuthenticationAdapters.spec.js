@@ -2039,7 +2039,7 @@ describe('microsoft graph auth adapter', () => {
   });
 });
 
-fdescribe('facebook limited auth adapter', () => {
+describe('facebook limited auth adapter', () => {
   const facebook = require('../lib/Adapters/Auth/facebook');
   const jwt = require('jsonwebtoken');
   const util = require('util');
