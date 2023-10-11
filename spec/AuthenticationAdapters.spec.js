@@ -1517,7 +1517,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
     const result = await apple.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
@@ -1525,6 +1525,8 @@ describe('apple signin auth adapter', () => {
     );
     expect(result).toEqual(fakeClaim);
     expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+
+    spy.and.callThrough();
   });
 
   it('should not verify invalid id_token', async () => {
@@ -1533,7 +1535,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
     try {
       await apple.validateAuthData(
@@ -1544,6 +1546,8 @@ describe('apple signin auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('jwt malformed');
     }
+
+    spy.and.callThrough();
   });
 
   it('(using client id as array) should not verify invalid id_token', async () => {
@@ -1570,7 +1574,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await apple.validateAuthData(
@@ -1578,6 +1582,8 @@ describe('apple signin auth adapter', () => {
       { clientId: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
+
+    spy.and.callThrough();
   });
 
   it('(using client id as array) should verify id_token', async () => {
@@ -1592,7 +1598,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await apple.validateAuthData(
@@ -1600,6 +1606,8 @@ describe('apple signin auth adapter', () => {
       { clientId: ['secret'] }
     );
     expect(result).toEqual(fakeClaim);
+
+    spy.and.callThrough();
   });
 
   it('(using client id as array with multiple items) should verify id_token', async () => {
@@ -1614,7 +1622,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await apple.validateAuthData(
@@ -1622,6 +1630,8 @@ describe('apple signin auth adapter', () => {
       { clientId: ['secret', 'secret 123'] }
     );
     expect(result).toEqual(fakeClaim);
+
+    spy.and.callThrough();
   });
 
   it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
@@ -1634,7 +1644,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -1648,6 +1658,8 @@ describe('apple signin auth adapter', () => {
         'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
     }
+
+    spy.and.callThrough();
   });
 
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
@@ -1662,7 +1674,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -1679,6 +1691,8 @@ describe('apple signin auth adapter', () => {
         'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
     }
+
+    spy.and.callThrough();
   });
 
   it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
@@ -1691,7 +1705,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -1708,6 +1722,8 @@ describe('apple signin auth adapter', () => {
         'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
     }
+
+    spy.and.callThrough();
   });
 
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
@@ -1763,7 +1779,7 @@ describe('apple signin auth adapter', () => {
     const fakeGetSigningKeyAsyncFunction = () => {
       return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -1775,6 +1791,7 @@ describe('apple signin auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
+    spy.and.callThrough();
   });
 });
 
@@ -2022,7 +2039,7 @@ describe('microsoft graph auth adapter', () => {
   });
 });
 
-describe('facebook limited auth adapter', () => {
+fdescribe('facebook limited auth adapter', () => {
   const facebook = require('../lib/Adapters/Auth/facebook');
   const jwt = require('jsonwebtoken');
   const util = require('util');
@@ -2097,7 +2114,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
     const result = await facebook.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
@@ -2105,6 +2122,8 @@ describe('facebook limited auth adapter', () => {
     );
     expect(result).toEqual(fakeClaim);
     expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+
+    spy.and.callThrough();
   });
 
   it('should not verify invalid id_token', async () => {
@@ -2118,7 +2137,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
     try {
       await facebook.validateAuthData(
@@ -2129,6 +2148,7 @@ describe('facebook limited auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('jwt malformed');
     }
+    spy.and.callThrough();
   });
 
   it('(using client id as array) should not verify invalid id_token', async () => {
@@ -2160,7 +2180,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await facebook.validateAuthData(
@@ -2168,6 +2188,8 @@ describe('facebook limited auth adapter', () => {
       { clientId: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
+
+    spy.and.callThrough();
   });
 
   it('(using client id as array) should verify id_token', async () => {
@@ -2187,7 +2209,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await facebook.validateAuthData(
@@ -2195,6 +2217,8 @@ describe('facebook limited auth adapter', () => {
       { clientId: ['secret'] }
     );
     expect(result).toEqual(fakeClaim);
+
+    spy.and.callThrough();
   });
 
   it('(using client id as array with multiple items) should verify id_token', async () => {
@@ -2214,7 +2238,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await facebook.validateAuthData(
@@ -2222,6 +2246,8 @@ describe('facebook limited auth adapter', () => {
       { clientId: ['secret', 'secret 123'] }
     );
     expect(result).toEqual(fakeClaim);
+
+    spy.and.callThrough();
   });
 
   it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
@@ -2239,7 +2265,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -2253,6 +2279,8 @@ describe('facebook limited auth adapter', () => {
         'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
       );
     }
+
+    spy.and.callThrough();
   });
 
   // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
@@ -2272,7 +2300,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -2289,6 +2317,8 @@ describe('facebook limited auth adapter', () => {
         'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
       );
     }
+
+    spy.and.callThrough();
   });
 
   it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
@@ -2306,7 +2336,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -2323,6 +2353,8 @@ describe('facebook limited auth adapter', () => {
         'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
       );
     }
+
+    spy.and.callThrough();
   });
 
   // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
@@ -2392,7 +2424,7 @@ describe('facebook limited auth adapter', () => {
         rsaPublicKey: 'the_rsa_public_key',
       };
     };
-    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    const spy = spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -2404,6 +2436,8 @@ describe('facebook limited auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
+
+    spy.and.callThrough();
   });
 });
 
