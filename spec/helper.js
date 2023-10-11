@@ -103,6 +103,7 @@ const defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
+  maintenanceKey: 'testing',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   directAccess: true,

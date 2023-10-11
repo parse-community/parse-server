@@ -1,3 +1,10 @@
+# [6.4.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.3...6.4.0-alpha.4) (2023-09-29)
+
+
+### Features
+
+* Allow setting `createdAt` and `updatedAt` during `Parse.Object` creation with maintenance key ([#8696](https://github.com/parse-community/parse-server/issues/8696)) ([77bbfb3](https://github.com/parse-community/parse-server/commit/77bbfb3f186f5651c33ba152f04cff95128eaf2d))
+
 # [6.4.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.2...6.4.0-alpha.3) (2023-09-23)
 
 
