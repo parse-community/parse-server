@@ -88,7 +88,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
     console.log(JSON.stringify(result[0], null, 2));
     let { queryPlanner } = result[0].stages[0].$cursor;
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
+    expect(queryPlanner.winningPlan.stage).toBe('COLLSCAN');
 
     result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       hint: '_id_',
@@ -96,7 +96,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
     console.log(JSON.stringify(result[0], null, 2));
     queryPlanner = result[0].stages[0].$cursor.queryPlanner;
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('FETCH');
+    expect(queryPlanner.winningPlan.stage).toBe('FETCH');
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
@@ -181,7 +181,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
       explain: true,
     });
     let { queryPlanner } = result[0].stages[0].$cursor;
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
+    expect(queryPlanner.winningPlan.stage).toBe('COLLSCAN');
 
     result = await collection.aggregate([{ $group: { _id: '$foo' } }], {
       hint: { _id: 1 },
@@ -329,7 +329,7 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     });
     let response = await request(options);
     let { queryPlanner } = response.data.results[0];
-    expect(queryPlanner.winningPlan.queryPlan.inputStage.stage).toBe('COLLSCAN');
+    expect(queryPlanner.winningPlan.stage).toBe('COLLSCAN');
 
     options = Object.assign({}, masterKeyOptions, {
       url: Parse.serverURL + '/aggregate/TestObject',
