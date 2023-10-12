@@ -428,7 +428,7 @@ global.it_exclude_dbs = excluded => {
   }
 };
 
-var testExclusionList = [];
+let testExclusionList = [];
 try {
   // Fetch test exclusion list
   testExclusionList = require('./testExclusionList.json');
@@ -439,7 +439,7 @@ try {
   }
 }
 
-// Bypass test if Test UUID found in testExclusionList
+// Disable test if its UUID is found in testExclusionList
 global.it_id = id => {
   if (testExclusionList.includes(id)) {
     return xit;
