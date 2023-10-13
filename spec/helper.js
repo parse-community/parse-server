@@ -428,14 +428,14 @@ global.it_exclude_dbs = excluded => {
   }
 };
 
-var testExclusionList = [];
+let testExclusionList = [];
 try {
   // Fetch test exclusion list
   testExclusionList = require('./testExclusionList.json');
-  console.log("testExclusionList.json Found")
+  console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
 } catch(error) {
-  if(error.code === "MODULE_NOT_FOUND") {
-    // Even though it says require, it's not.  Don't fail
+  if(error.code !== 'MODULE_NOT_FOUND') {
+    throw error;
   }
 }
 
