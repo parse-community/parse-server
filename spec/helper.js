@@ -439,7 +439,7 @@ try {
   }
 }
 
-// Bypass test if Test UUID found in testExclusionList
+// Disable test if its UUID is found in testExclusionList
 global.it_id = id => {
   if (testExclusionList.includes(id)) {
     return xit;
