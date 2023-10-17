@@ -440,11 +440,14 @@ try {
 }
 
 // Disable test if its UUID is found in testExclusionList
-global.it_id = id => {
+global.it_id = (id, func) => {
   if (testExclusionList.includes(id)) {
     return xit;
   } else {
-    return it;
+    if(func === undefined)
+      return it;
+    else
+      return func;
   }
 };
 
