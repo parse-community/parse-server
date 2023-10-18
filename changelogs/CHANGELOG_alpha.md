@@ -1,3 +1,10 @@
+# [6.4.0-alpha.6](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.5...6.4.0-alpha.6) (2023-10-18)
+
+
+### Bug Fixes
+
+* Security bump @babel/traverse from 7.20.5 to 7.23.2 ([#8777](https://github.com/parse-community/parse-server/issues/8777)) ([2d6b3d1](https://github.com/parse-community/parse-server/commit/2d6b3d18499179e99be116f25c0850d3f449509c))
+
 # [6.4.0-alpha.5](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.4...6.4.0-alpha.5) (2023-10-14)
 
 
