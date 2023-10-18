@@ -1,3 +1,10 @@
+# [6.4.0-alpha.5](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.4...6.4.0-alpha.5) (2023-10-14)
+
+
+### Bug Fixes
+
+* Context not passed to Cloud Code Trigger `beforeFind` when using `Parse.Query.include` ([#8765](https://github.com/parse-community/parse-server/issues/8765)) ([7d32d89](https://github.com/parse-community/parse-server/commit/7d32d8934f3ae7af7a7d8b9cc6a829c7d73973d3))
+
 # [6.4.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.3...6.4.0-alpha.4) (2023-09-29)
 
 
