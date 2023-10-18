@@ -428,6 +428,29 @@ global.it_exclude_dbs = excluded => {
   }
 };
 
+let testExclusionList = [];
+try {
+  // Fetch test exclusion list
+  testExclusionList = require('./testExclusionList.json');
+  console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
+} catch(error) {
+  if(error.code !== 'MODULE_NOT_FOUND') {
+    throw error;
+  }
+}
+
+// Disable test if its UUID is found in testExclusionList
+global.it_id = (id, func) => {
+  if (testExclusionList.includes(id)) {
+    return xit;
+  } else {
+    if(func === undefined)
+      return it;
+    else
+      return func;
+  }
+};
+
 global.it_only_db = db => {
   if (
     process.env.PARSE_SERVER_TEST_DB === db ||
