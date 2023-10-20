@@ -159,9 +159,9 @@ export class FilesRouter {
       } else if (contentType && contentType.includes('/')) {
         extension = contentType.split('/')[1];
       }
-      extension = extension.split(' ').join('');
+      extension = extension?.split(' ')?.join('');
 
-      if (!isValidExtension(extension)) {
+      if (extension && !isValidExtension(extension)) {
         next(
           new Parse.Error(
             Parse.Error.FILE_SAVE_ERROR,
