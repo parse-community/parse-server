@@ -1365,7 +1365,7 @@ describe('Parse.File testing', () => {
         new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
     });
-    
+
     it('allows file without extension', async () => {
       await reconfigureServer({
         fileUpload: {
