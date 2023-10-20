@@ -1,3 +1,10 @@
+## [5.5.6](https://github.com/parse-community/parse-server/compare/5.5.5...5.5.6) (2023-10-20)
+
+
+### Bug Fixes
+
+* Server crash when uploading file without extension; fixes security vulnerability [GHSA-792q-q67h-w579](https://github.com/parse-community/parse-server/security/advisories/GHSA-792q-q67h-w579) ([#8782](https://github.com/parse-community/parse-server/issues/8782)) ([686a9f2](https://github.com/parse-community/parse-server/commit/686a9f282dc23c31beab3d93e6d21ccd0e1328fe))
+
 ## [5.5.5](https://github.com/parse-community/parse-server/compare/5.5.4...5.5.5) (2023-09-04)
 
 
