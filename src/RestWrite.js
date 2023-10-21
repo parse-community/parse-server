@@ -368,9 +368,36 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
       };
 
       // Add default fields
-      this.data.updatedAt = this.updatedAt;
       if (!this.query) {
-        this.data.createdAt = this.updatedAt;
+        // allow customizing createdAt and updatedAt when using maintenance key
+        if (
+          this.auth.isMaintenance &&
+          this.data.createdAt &&
+          this.data.createdAt.__type === 'Date'
+        ) {
+          this.data.createdAt = this.data.createdAt.iso;
+
+          if (this.data.updatedAt && this.data.updatedAt.__type === 'Date') {
+            const createdAt = new Date(this.data.createdAt);
+            const updatedAt = new Date(this.data.updatedAt.iso);
+
+            if (updatedAt < createdAt) {
+              throw new Parse.Error(
+                Parse.Error.VALIDATION_ERROR,
+                'updatedAt cannot occur before createdAt'
+              );
+            }
+
+            this.data.updatedAt = this.data.updatedAt.iso;
+          }
+          // if no updatedAt is provided, set it to createdAt to match default behavior
+          else {
+            this.data.updatedAt = this.data.createdAt;
+          }
+        } else {
+          this.data.updatedAt = this.updatedAt;
+          this.data.createdAt = this.updatedAt;
+        }
 
         // Only assign new objectId if we are creating new object
         if (!this.data.objectId) {
@@ -382,6 +409,8 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
           });
         }
       } else if (schema) {
+        this.data.updatedAt = this.updatedAt;
+
         Object.keys(this.data).forEach(fieldName => {
           setRequiredFieldIfNeeded(fieldName, false);
         });
@@ -621,7 +650,7 @@ RestWrite.prototype.checkRestrictedFields = async function () {
 };
 
 // The non-third-party parts of User transformation
-RestWrite.prototype.transformUser = function () {
+RestWrite.prototype.transformUser = async function () {
   var promise = Promise.resolve();
   if (this.className !== '_User') {
     return promise;
@@ -631,19 +660,25 @@ RestWrite.prototype.transformUser = function () {
   if (this.query && this.objectId()) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
     // session tokens, and remove them from the cache.
-    promise = new RestQuery(this.config, Auth.master(this.config), '_Session', {
-      user: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.objectId(),
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      config: this.config,
+      auth: Auth.master(this.config),
+      className: '_Session',
+      runBeforeFind: false,
+      restWhere: {
+        user: {
+          __type: 'Pointer',
+          className: '_User',
+          objectId: this.objectId(),
+        },
       },
-    })
-      .execute()
-      .then(results => {
-        results.results.forEach(session =>
-          this.config.cacheController.user.del(session.sessionToken)
-        );
-      });
+    });
+    promise = query.execute().then(results => {
+      results.results.forEach(session =>
+        this.config.cacheController.user.del(session.sessionToken)
+      );
+    });
   }
 
   return promise
