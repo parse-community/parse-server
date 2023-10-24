@@ -2642,6 +2642,7 @@ describe('schemas', () => {
       });
   });
 
+
   it('regression test for #1991', done => {
     const user = new Parse.User();
     user.setUsername('user');
@@ -2740,6 +2741,7 @@ describe('schemas', () => {
     const objectAgain = await obj.save();
     expect(objectAgain.get('key')).toBe(11);
   });
+
 
   it('regression test for #2246', done => {
     const profile = new Parse.Object('UserProfile');
