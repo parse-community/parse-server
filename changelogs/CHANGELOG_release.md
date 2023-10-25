@@ -1,3 +1,10 @@
+# [5.6.0](https://github.com/parse-community/parse-server/compare/5.5.6...5.6.0) (2023-10-25)
+
+
+### Features
+
+* Add `$setOnInsert` operator to `Parse.Server.database.update` ([#8790](https://github.com/parse-community/parse-server/issues/8790)) ([c4a4a2a](https://github.com/parse-community/parse-server/commit/c4a4a2a09fd23f0d6b9d09c279203413c783854b))
+
 ## [5.5.6](https://github.com/parse-community/parse-server/compare/5.5.5...5.5.6) (2023-10-20)
 
 
