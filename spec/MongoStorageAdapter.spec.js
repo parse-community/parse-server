@@ -254,6 +254,44 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(obj.get('foo').test.date[0] instanceof Date).toBeTrue();
   });
 
+  it('upserts with $setOnInsert', async () => {
+    const uuid = require('uuid');
+    const schema = {
+      className: 'MyClass',
+      fields: {
+        x: { type: 'Number' },
+        count: { type: 'Number' },
+      },
+    };
+    const query = {
+      x: 1,
+    };
+    const update = {
+      objectId: {
+        __op: 'SetOnInsert',
+        amount: uuid.v4(),
+      },
+      x: 1,
+      count: {
+        __op: 'Increment',
+        amount: 1,
+      },
+    };
+    const res1 = await Parse.Server.database.update(
+      schema,
+      query,
+      update,
+      { upsert: true },
+    );
+    update.objectId.amount = uuid.v4();
+    const res2 = await Parse.Server.database.update(
+      schema,
+      query,
+      update,
+      { upsert: true },
+    );
+  });
+  
   it('handles updating a single object with array, object date', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
