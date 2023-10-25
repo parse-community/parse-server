@@ -272,6 +272,9 @@ const flattenUpdateOperatorsForCreate = object => {
           }
           object[key] = object[key].amount;
           break;
+        case 'SetOnInsert':
+          object[key] = object[key].amount;
+          break;
         case 'Add':
           if (!(object[key].objects instanceof Array)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
@@ -1813,7 +1816,7 @@ class DatabaseController {
         keyUpdate &&
         typeof keyUpdate === 'object' &&
         keyUpdate.__op &&
-        ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1
+        ['Add', 'AddUnique', 'Remove', 'Increment', 'SetOnInsert'].indexOf(keyUpdate.__op) > -1
       ) {
         // only valid ops that produce an actionable result
         // the op may have happened on a keypath
