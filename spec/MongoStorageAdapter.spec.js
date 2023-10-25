@@ -225,11 +225,11 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       },
       classLevelPermissions: {},
     };
-    
+
     const myClassSchema = new Parse.Schema(schema.className);
     myClassSchema.setCLP(schema.classLevelPermissions);
     await myClassSchema.save();
-    
+
     const query = {
       x: 1,
     };
