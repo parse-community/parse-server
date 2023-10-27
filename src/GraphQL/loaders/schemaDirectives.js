@@ -28,6 +28,10 @@ const load = parseGraphQLSchema => {
                   auth,
                   info,
                   body: args,
+                  parent: {
+                    className: gqlInfo?.parentType,
+                    ..._source,
+                  },
                 })
               ).response.result;
             } catch (e) {
