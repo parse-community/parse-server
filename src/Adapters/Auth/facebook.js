@@ -2,7 +2,6 @@
 const Parse = require('parse/node').Parse;
 const crypto = require('crypto');
 const jwksClient = require('jwks-rsa');
-const util = require('util');
 const jwt = require('jsonwebtoken');
 const httpsRequest = require('./httpsRequest');
 const authUtils = require('./utils');
