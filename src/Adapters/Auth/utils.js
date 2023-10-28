@@ -8,6 +8,16 @@ const getHeaderFromToken = token => {
 
   return decodedToken.header;
 };
+
+/**
+ * Returns the signing key from a JWKS client.
+ * @param {Object} client The JWKS client.
+ * @param {String} key The kid.
+ */
+async function getSigningKey(client, key) {
+  return util.promisify(client.getSigningKey)(key);
+};
 module.exports = {
   getHeaderFromToken,
+  getSigningKey,
 };

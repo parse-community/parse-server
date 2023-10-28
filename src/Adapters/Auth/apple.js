@@ -17,11 +17,9 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
     cacheMaxAge,
   });
 
-  const asyncGetSigningKeyFunction = util.promisify(client.getSigningKey);
-
   let key;
   try {
-    key = await asyncGetSigningKeyFunction(keyId);
+    key = await authUtils.getSigningKey(client, keyId);
   } catch (error) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
