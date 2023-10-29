@@ -44,8 +44,8 @@ const transformTypes = async (
             fields[field] = transformers.polygon(fields[field]);
             break;
           case inputTypeField.type === defaultGraphQLTypes.FILE_INPUT:
-            // We need to use the originalFields to handle the file upload
-            // since fields are a deepcopy and do not keep the file object
+            // Use `originalFields` to handle file upload since fields are a deepcopy and do not
+            // keep the file object
             fields[field] = await transformers.file(originalFields[field], req);
             break;
           case parseClass.fields[field].type === 'Relation':
