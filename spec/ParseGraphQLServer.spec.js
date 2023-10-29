@@ -36,8 +36,6 @@ const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
 
-const testAgent = new http.Agent();
-
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
     fail(e.networkError.result.errors);
@@ -6874,7 +6872,6 @@ describe('ParseGraphQLServer', () => {
               method: 'POST',
               headers,
               body,
-              agent: testAgent,
             });
 
             expect(res.status).toEqual(200);
@@ -9338,7 +9335,6 @@ describe('ParseGraphQLServer', () => {
               method: 'POST',
               headers,
               body,
-              agent: testAgent,
             });
 
             expect(res.status).toEqual(200);
@@ -9451,7 +9447,6 @@ describe('ParseGraphQLServer', () => {
               method: 'POST',
               headers,
               body: body2,
-              agent: testAgent,
             });
             expect(res.status).toEqual(200);
             const result2 = JSON.parse(await res.text());
@@ -9644,7 +9639,6 @@ describe('ParseGraphQLServer', () => {
             method: 'POST',
             headers,
             body,
-            agent: testAgent,
           });
           expect(res.status).toEqual(200);
           const result = await res.json();
@@ -9698,7 +9692,6 @@ describe('ParseGraphQLServer', () => {
             method: 'POST',
             headers,
             body,
-            agent: testAgent,
           });
 
           const result = JSON.parse(await res.text());
