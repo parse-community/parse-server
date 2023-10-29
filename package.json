@@ -126,7 +126,7 @@
     "test:mongodb:5.3.2": "npm run test:mongodb --dbversion=5.3.2",
     "test:mongodb:6.0.2": "npm run test:mongodb --dbversion=6.0.2",
     "posttest:mongodb": "mongodb-runner stop",
-    "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=6.0.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start",
+    "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start",
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
     "test": "npm run testonly",
     "posttest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner stop",
