@@ -259,7 +259,8 @@ export class UsersRouter extends ClassesRouter {
       req.auth,
       Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
       null,
-      req.config
+      req.config,
+      req.info.context
     );
 
     // If we have some new validated authData update directly
@@ -291,7 +292,8 @@ export class UsersRouter extends ClassesRouter {
       { ...req.auth, user: afterLoginUser },
       afterLoginUser,
       null,
-      req.config
+      req.config,
+      req.info.context
     );
 
     if (authDataResponse) {
