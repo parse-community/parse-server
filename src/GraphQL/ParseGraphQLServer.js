@@ -1,7 +1,6 @@
 import corsMiddleware from 'cors';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import { ApolloServer } from '@apollo/server';
-import { renderGraphiQL } from '@graphql-yoga/render-graphiql';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginCacheControlDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
@@ -116,20 +115,33 @@ class ParseGraphQLServer {
     if (!app || !app.get) {
       requiredParameter('You must provide an Express.js app instance!');
     }
+
     app.get(
       this.config.playgroundPath ||
         requiredParameter('You must provide a config.playgroundPath to applyPlayground!'),
       (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.write(
-          renderGraphiQL({
-            endpoint: this.config.graphQLPath,
-            subscriptionEndpoint: this.config.subscriptionsPath,
-            headers: JSON.stringify({
-              'X-Parse-Application-Id': this.parseServer.config.appId,
-              'X-Parse-Master-Key': this.parseServer.config.masterKey,
-            }),
-          })
+          `<div id="sandbox" style="position:absolute;top:0;right:0;bottom:0;left:0"></div>
+          <script src="https://embeddable-sandbox.cdn.apollographql.com/_latest/embeddable-sandbox.umd.production.min.js"></script>
+          <script>
+           new window.EmbeddedSandbox({
+             target: "#sandbox",
+             endpointIsEditable: false,
+             initialEndpoint: "${JSON.stringify(this.config.graphQLPath)}",
+             handleRequest: (endpointUrl, options) => {
+              return fetch(endpointUrl, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'X-Parse-Application-Id': "${JSON.stringify(this.parseServer.config.appId)}",
+                    'X-Parse-Master-Key': "${JSON.stringify(this.parseServer.config.masterKey)}",
+                },
+              })
+            },
+           });
+           // advanced options: https://www.apollographql.com/docs/studio/explorer/sandbox#embedding-sandbox
+          </script>`
         );
         res.end();
       }

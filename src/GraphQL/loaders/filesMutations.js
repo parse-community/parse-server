@@ -1,6 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import { request } from 'http';
-import { extension } from 'mime-types';
+import { getExtension } from 'mime';
 import { mutationWithClientMutationId } from 'graphql-relay';
 import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
@@ -20,7 +20,7 @@ const handleUpload = async (upload, config) => {
   delete headers['content-length'];
   const stream = createReadStream();
   try {
-    const ext = extension(mimetype);
+    const ext = getExtension(mimetype);
     const fullFileName = filename.endsWith(`.${ext}`) ? filename : `${filename}.${ext}`;
     const serverUrl = new URL(config.serverURL);
     const fileInfo = await new Promise((resolve, reject) => {
