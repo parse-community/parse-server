@@ -1379,7 +1379,7 @@ RestWrite.prototype.handleInstallation = function () {
               this.data.objectId &&
               idMatch.objectId == this.data.objectId
             ) {
-              // we passed an objectId, preserve that instalation
+              // we passed an objectId, preserve that Installation
               delQuery['objectId'] = {
                 $ne: idMatch.objectId,
               };
