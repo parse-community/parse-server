@@ -1,5 +1,4 @@
 const http = require('http');
-const { Agent } = require('http');
 const express = require('express');
 const req = require('../lib/request');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
@@ -44,8 +43,6 @@ function handleError(e) {
     fail(e);
   }
 }
-
-const testAgentWithoutKeepAlive = new Agent();
 
 describe('ParseGraphQLServer', () => {
   let parseServer;
@@ -6878,7 +6875,6 @@ describe('ParseGraphQLServer', () => {
               method: 'POST',
               headers,
               body,
-              agent: testAgentWithoutKeepAlive,
             });
 
             expect(res.status).toEqual(200);
@@ -9342,7 +9338,6 @@ describe('ParseGraphQLServer', () => {
               method: 'POST',
               headers,
               body,
-              agent: testAgentWithoutKeepAlive,
             });
 
             expect(res.status).toEqual(200);
@@ -9591,7 +9586,6 @@ describe('ParseGraphQLServer', () => {
               method: 'POST',
               headers,
               body,
-              agent: testAgentWithoutKeepAlive,
             });
 
             expect(res.status).toEqual(200);
@@ -9645,7 +9639,6 @@ describe('ParseGraphQLServer', () => {
             method: 'POST',
             headers,
             body,
-            agent: testAgentWithoutKeepAlive,
           });
 
           const result = JSON.parse(await res.text());
