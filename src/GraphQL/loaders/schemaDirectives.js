@@ -29,7 +29,7 @@ const load = parseGraphQLSchema => {
                   info,
                   body: args,
                   parent: {
-                    className: gqlInfo?.parentType,
+                    className: String(gqlInfo.parentType),
                     ..._source,
                   },
                 })
