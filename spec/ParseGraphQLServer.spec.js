@@ -10603,6 +10603,9 @@ describe('ParseGraphQLServer', () => {
               hello3: String! @mock(with: "Hello world!")
               hello4: User! @mock(with: { username: "somefolk" })
             }
+            extend type User {
+              hasParentData: Boolean! @resolve
+            }
           `,
         });
         parseGraphQLServer.applyGraphQL(expressApp);
@@ -10703,6 +10706,25 @@ describe('ParseGraphQLServer', () => {
             `,
           })
         ).toBeResolved();
+      });
+
+      it('provides parent data when resolving a field', async () => {
+        let parent;
+        Parse.Cloud.define('hasParentData', async req => {
+          parent = req.parent;
+          return true;
+        });
+        await apolloClient.query({
+          query: gql`
+            query {
+              hello4 {
+                hasParentData
+              }
+            }
+          `,
+        });
+        expect(parent.className).toEqual('User');
+        expect(parent.username).toEqual('somefolk');
       });
     });
 
