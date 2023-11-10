@@ -131,6 +131,16 @@ const defaultConfiguration = {
   },
 };
 
+if (silent) {
+  defaultConfiguration.logLevels = {
+    cloudFunctionSuccess: 'silent',
+    cloudFunctionError: 'silent',
+    triggerAfter: 'silent',
+    triggerBeforeError: 'silent',
+    triggerBeforeSuccess: 'silent',
+  };
+}
+
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
 }
@@ -251,8 +261,8 @@ afterEach(function (done) {
     })
     .then(() => Parse.User.logOut())
     .then(
-      () => { },
-      () => { }
+      () => {},
+      () => {}
     ) // swallow errors
     .then(() => {
       // Connection close events are not immediate on node 10+... wait a bit
@@ -433,8 +443,8 @@ try {
   // Fetch test exclusion list
   testExclusionList = require('./testExclusionList.json');
   console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
-} catch(error) {
-  if(error.code !== 'MODULE_NOT_FOUND') {
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') {
     throw error;
   }
 }
@@ -444,10 +454,8 @@ global.it_id = (id, func) => {
   if (testExclusionList.includes(id)) {
     return xit;
   } else {
-    if(func === undefined)
-      return it;
-    else
-      return func;
+    if (func === undefined) return it;
+    else return func;
   }
 };
 

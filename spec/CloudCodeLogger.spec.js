@@ -15,6 +15,13 @@ describe('Cloud Code Logger', () => {
       // useful to flip to false for fine tuning :).
       silent: true,
       logLevel: undefined,
+      logLevels: {
+        cloudFunctionError: 'error',
+        cloudFunctionSuccess: 'info',
+        triggerAfter: 'info',
+        triggerBeforeError: 'error',
+        triggerBeforeSuccess: 'info',
+      },
     })
       .then(() => {
         return Parse.User.signUp('tester', 'abc')
@@ -337,7 +344,6 @@ describe('Cloud Code Logger', () => {
 
   it('should log cloud function execution using the silent log level', async () => {
     await reconfigureServer({
-      silent: true,
       logLevels: {
         cloudFunctionSuccess: 'silent',
         cloudFunctionError: 'silent',
