@@ -1,3 +1,4 @@
+const Config = require('../lib/Config');
 const DatabaseController = require('../lib/Controllers/DatabaseController.js');
 const validateQuery = DatabaseController._validateQuery;
 
@@ -359,6 +360,253 @@ describe('DatabaseController', function () {
         databaseController.reduceAndOperation({ $and: [{ a: 1, b: 2, c: 3 }, { b: 2 }] })
       ).toEqual({ a: 1, b: 2, c: 3 });
       done();
+    });
+  });
+
+  describe('disableCollation', () => {
+    const dummyStorageAdapter = {
+      find: () => Promise.resolve([]),
+      watch: () => Promise.resolve(),
+      getAllClasses: () => Promise.resolve([]),
+    };
+
+    beforeEach(() => {
+      Config.get(Parse.applicationId).schemaCache.clear();
+    });
+
+    it('should force caseInsensitive to false with disableCollation option', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {
+        disableCollation: true,
+      });
+      const spy = spyOn(dummyStorageAdapter, 'find');
+      spy.and.callThrough();
+      await databaseController.find('SomeClass', {}, { caseInsensitive: true });
+      expect(spy.calls.all()[0].args[3].caseInsensitive).toEqual(false);
+    });
+
+    it('should support caseInsensitive without disableCollation option', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
+      const spy = spyOn(dummyStorageAdapter, 'find');
+      spy.and.callThrough();
+      await databaseController.find('_User', {}, { caseInsensitive: true });
+      expect(spy.calls.all()[0].args[3].caseInsensitive).toEqual(true);
+    });
+
+    it_only_db('mongo')('should create insensitive indexes without disableCollation', async () => {
+      await reconfigureServer({
+        databaseURI: 'mongodb://localhost:27017/disableCollationFalse',
+        databaseAdapter: undefined,
+      });
+      const user = new Parse.User();
+      await user.save({
+        username: 'example',
+        password: 'password',
+        email: 'example@example.com',
+      });
+      const schemas = await Parse.Schema.all();
+      const UserSchema = schemas.find(({ className }) => className === '_User');
+      expect(UserSchema.indexes).toEqual({
+        _id_: { _id: 1 },
+        username_1: { username: 1 },
+        case_insensitive_username: { username: 1 },
+        case_insensitive_email: { email: 1 },
+        email_1: { email: 1 },
+      });
+    });
+
+    it_only_db('mongo')('should not create insensitive indexes with disableCollation', async () => {
+      await reconfigureServer({
+        disableCollation: true,
+        databaseURI: 'mongodb://localhost:27017/disableCollationTrue',
+        databaseAdapter: undefined,
+      });
+      const user = new Parse.User();
+      await user.save({
+        username: 'example',
+        password: 'password',
+        email: 'example@example.com',
+      });
+      const schemas = await Parse.Schema.all();
+      const UserSchema = schemas.find(({ className }) => className === '_User');
+      expect(UserSchema.indexes).toEqual({
+        _id_: { _id: 1 },
+        username_1: { username: 1 },
+        email_1: { email: 1 },
+      });
+    });
+  });
+
+  describe('transformEmailToLowerCase', () => {
+    const dummyStorageAdapter = {
+      createObject: () => Promise.resolve({ ops: [{}] }),
+      findOneAndUpdate: () => Promise.resolve({}),
+      watch: () => Promise.resolve(),
+      getAllClasses: () =>
+        Promise.resolve([
+          {
+            className: '_User',
+            fields: { email: 'String' },
+            indexes: {},
+            classLevelPermissions: { protectedFields: {} },
+          },
+        ]),
+    };
+    const dates = {
+      createdAt: { iso: undefined, __type: 'Date' },
+      updatedAt: { iso: undefined, __type: 'Date' },
+    };
+
+    it('should not transform email to lower case without transformEmailToLowerCase option on create', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
+      const spy = spyOn(dummyStorageAdapter, 'createObject');
+      spy.and.callThrough();
+      await databaseController.create('_User', {
+        email: 'EXAMPLE@EXAMPLE.COM',
+      });
+      expect(spy.calls.all()[0].args[2]).toEqual({
+        email: 'EXAMPLE@EXAMPLE.COM',
+        ...dates,
+      });
+    });
+
+    it('should transform email to lower case with transformEmailToLowerCase option on create', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {
+        transformEmailToLowerCase: true,
+      });
+      const spy = spyOn(dummyStorageAdapter, 'createObject');
+      spy.and.callThrough();
+      await databaseController.create('_User', {
+        email: 'EXAMPLE@EXAMPLE.COM',
+      });
+      expect(spy.calls.all()[0].args[2]).toEqual({
+        email: 'example@example.com',
+        ...dates,
+      });
+    });
+
+    it('should not transform email to lower case without transformEmailToLowerCase option on update', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
+      const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
+      spy.and.callThrough();
+      await databaseController.update('_User', { id: 'example' }, { email: 'EXAMPLE@EXAMPLE.COM' });
+      expect(spy.calls.all()[0].args[3]).toEqual({
+        email: 'EXAMPLE@EXAMPLE.COM',
+      });
+    });
+
+    it('should transform email to lower case with transformEmailToLowerCase option on update', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {
+        transformEmailToLowerCase: true,
+      });
+      const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
+      spy.and.callThrough();
+      await databaseController.update('_User', { id: 'example' }, { email: 'EXAMPLE@EXAMPLE.COM' });
+      expect(spy.calls.all()[0].args[3]).toEqual({
+        email: 'example@example.com',
+      });
+    });
+
+    it('should not find a case insensitive user by email with transformEmailToLowerCase', async () => {
+      await reconfigureServer({ transformEmailToLowerCase: true });
+      const user = new Parse.User();
+      await user.save({ email: 'EXAMPLE@EXAMPLE.COM', password: 'password' });
+
+      const query = new Parse.Query(Parse.User);
+      query.equalTo('email', 'EXAMPLE@EXAMPLE.COM');
+      const result = await query.find({ useMasterKey: true });
+      expect(result.length).toEqual(0);
+
+      const query2 = new Parse.Query(Parse.User);
+      query2.equalTo('email', 'example@example.com');
+      const result2 = await query2.find({ useMasterKey: true });
+      expect(result2.length).toEqual(1);
+    });
+  });
+
+  describe('transformUsernameToLowerCase', () => {
+    const dummyStorageAdapter = {
+      createObject: () => Promise.resolve({ ops: [{}] }),
+      findOneAndUpdate: () => Promise.resolve({}),
+      watch: () => Promise.resolve(),
+      getAllClasses: () =>
+        Promise.resolve([
+          {
+            className: '_User',
+            fields: { username: 'String' },
+            indexes: {},
+            classLevelPermissions: { protectedFields: {} },
+          },
+        ]),
+    };
+    const dates = {
+      createdAt: { iso: undefined, __type: 'Date' },
+      updatedAt: { iso: undefined, __type: 'Date' },
+    };
+
+    it('should not transform username to lower case without transformUsernameToLowerCase option on create', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
+      const spy = spyOn(dummyStorageAdapter, 'createObject');
+      spy.and.callThrough();
+      await databaseController.create('_User', {
+        username: 'EXAMPLE',
+      });
+      expect(spy.calls.all()[0].args[2]).toEqual({
+        username: 'EXAMPLE',
+        ...dates,
+      });
+    });
+
+    it('should transform username to lower case with transformUsernameToLowerCase option on create', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {
+        transformUsernameToLowerCase: true,
+      });
+      const spy = spyOn(dummyStorageAdapter, 'createObject');
+      spy.and.callThrough();
+      await databaseController.create('_User', {
+        username: 'EXAMPLE',
+      });
+      expect(spy.calls.all()[0].args[2]).toEqual({
+        username: 'example',
+        ...dates,
+      });
+    });
+
+    it('should not transform username to lower case without transformUsernameToLowerCase option on update', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {});
+      const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
+      spy.and.callThrough();
+      await databaseController.update('_User', { id: 'example' }, { username: 'EXAMPLE' });
+      expect(spy.calls.all()[0].args[3]).toEqual({
+        username: 'EXAMPLE',
+      });
+    });
+
+    it('should transform username to lower case with transformUsernameToLowerCase option on update', async () => {
+      const databaseController = new DatabaseController(dummyStorageAdapter, {
+        transformUsernameToLowerCase: true,
+      });
+      const spy = spyOn(dummyStorageAdapter, 'findOneAndUpdate');
+      spy.and.callThrough();
+      await databaseController.update('_User', { id: 'example' }, { username: 'EXAMPLE' });
+      expect(spy.calls.all()[0].args[3]).toEqual({
+        username: 'example',
+      });
+    });
+
+    it('should not find a case insensitive user by username with transformUsernameToLowerCase', async () => {
+      await reconfigureServer({ transformUsernameToLowerCase: true });
+      const user = new Parse.User();
+      await user.save({ username: 'EXAMPLE', password: 'password' });
+
+      const query = new Parse.Query(Parse.User);
+      query.equalTo('username', 'EXAMPLE');
+      const result = await query.find({ useMasterKey: true });
+      expect(result.length).toEqual(0);
+
+      const query2 = new Parse.Query(Parse.User);
+      query2.equalTo('username', 'example');
+      const result2 = await query2.find({ useMasterKey: true });
+      expect(result2.length).toEqual(1);
     });
   });
 });

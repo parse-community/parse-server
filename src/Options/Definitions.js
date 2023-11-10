@@ -175,6 +175,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  disableCollation: {
+    env: 'PARSE_SERVER_DISABLE_COLLATION',
+    help:
+      'Disable case insensitivity (collation) on queries and indexes, needed if you use MongoDB serverless or AWS DocumentDB.',
+    action: parsers.booleanParser,
+  },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',
     help: 'Key for Unity and .Net SDK',
@@ -531,6 +537,18 @@ module.exports.ParseServerOptions = {
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
+    action: parsers.booleanParser,
+  },
+  transformEmailToLowerCase: {
+    env: 'PARSE_SERVER_TRANSFORM_EMAIL_TO_LOWER_CASE',
+    help:
+      'Transform Email to lowercase on create/update/login/signup. On queries client needs to ensure to send Email in lowercase format.',
+    action: parsers.booleanParser,
+  },
+  transformUsernameToLowerCase: {
+    env: 'PARSE_SERVER_TRANSFORM_USERNAME_TO_LOWER_CASE',
+    help:
+      'Transform Username to lowercase on create/update/login/signup. On queries client needs to ensure to send Username in lowercase format.',
     action: parsers.booleanParser,
   },
   trustProxy: {

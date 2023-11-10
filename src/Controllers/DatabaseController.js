@@ -368,6 +368,22 @@ const relationSchema = {
   fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } },
 };
 
+const transformEmailToLowerCase = (object, className, options) => {
+  if (className === '_User' && options.transformEmailToLowerCase) {
+    if (typeof object['email'] === 'string') {
+      object['email'] = object['email'].toLowerCase();
+    }
+  }
+};
+
+const transformUsernameToLowerCase = (object, className, options) => {
+  if (className === '_User' && options.transformUsernameToLowerCase) {
+    if (typeof object['username'] === 'string') {
+      object['username'] = object['username'].toLowerCase();
+    }
+  }
+};
+
 class DatabaseController {
   adapter: StorageAdapter;
   schemaCache: any;
@@ -573,6 +589,8 @@ class DatabaseController {
                 }
               }
               update = transformObjectACL(update);
+              transformEmailToLowerCase(update, className, this.options);
+              transformUsernameToLowerCase(update, className, this.options);
               transformAuthData(className, update, schema);
               if (validateOnly) {
                 return this.adapter.find(className, schema, query, {}).then(result => {
@@ -822,6 +840,8 @@ class DatabaseController {
     const originalObject = object;
     object = transformObjectACL(object);
 
+    transformEmailToLowerCase(object, className, this.options);
+    transformUsernameToLowerCase(object, className, this.options);
     object.createdAt = { iso: object.createdAt, __type: 'Date' };
     object.updatedAt = { iso: object.updatedAt, __type: 'Date' };
 
