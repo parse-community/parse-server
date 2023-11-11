@@ -106,10 +106,12 @@ export interface ParseServerOptions {
   /* Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.
   :DEFAULT: false */
   enableCollationCaseComparison: ?boolean;
-  /* Transform Email to lowercase on create/update/login/signup. On queries client needs to ensure to send Email in lowercase format. */
-  transformEmailToLowerCase: ?boolean;
-  /* Transform Username to lowercase on create/update/login/signup. On queries client needs to ensure to send Username in lowercase format. */
-  transformUsernameToLowerCase: ?boolean;
+  /* Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.
+  :DEFAULT: false */
+  convertEmailToLowercase: ?boolean;
+   /* Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.
+  :DEFAULT: false */
+  convertUsernameToLowercase: ?boolean;
   /* Full path to your cloud code main.js */
   cloud: ?string;
   /* A collection prefix for the classes
