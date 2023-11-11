@@ -139,6 +139,20 @@ module.exports.ParseServerOptions = {
     help: 'A collection prefix for the classes',
     default: '',
   },
+  convertEmailToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_EMAIL_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  convertUsernameToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_USERNAME_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   customPages: {
     env: 'PARSE_SERVER_CUSTOM_PAGES',
     help: 'custom pages for password validation and reset',
@@ -175,12 +189,6 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
-  disableCollation: {
-    env: 'PARSE_SERVER_DISABLE_COLLATION',
-    help:
-      'Disable case insensitivity (collation) on queries and indexes, needed if you use MongoDB serverless or AWS DocumentDB.',
-    action: parsers.booleanParser,
-  },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',
     help: 'Key for Unity and .Net SDK',
@@ -208,6 +216,13 @@ module.exports.ParseServerOptions = {
     help: 'Enable (or disable) anonymous users, defaults to true',
     action: parsers.booleanParser,
     default: true,
+  },
+  enableCollationCaseComparison: {
+    env: 'PARSE_SERVER_ENABLE_COLLATION_CASE_COMPARISON',
+    help:
+      'Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
   },
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
@@ -537,18 +552,6 @@ module.exports.ParseServerOptions = {
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
-    action: parsers.booleanParser,
-  },
-  transformEmailToLowerCase: {
-    env: 'PARSE_SERVER_TRANSFORM_EMAIL_TO_LOWER_CASE',
-    help:
-      'Transform Email to lowercase on create/update/login/signup. On queries client needs to ensure to send Email in lowercase format.',
-    action: parsers.booleanParser,
-  },
-  transformUsernameToLowerCase: {
-    env: 'PARSE_SERVER_TRANSFORM_USERNAME_TO_LOWER_CASE',
-    help:
-      'Transform Username to lowercase on create/update/login/signup. On queries client needs to ensure to send Username in lowercase format.',
     action: parsers.booleanParser,
   },
   trustProxy: {
