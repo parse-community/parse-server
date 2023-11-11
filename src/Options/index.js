@@ -103,8 +103,9 @@ export interface ParseServerOptions {
   databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
-  /* Disable case insensitivity (collation) on queries and indexes, needed if you use MongoDB serverless or AWS DocumentDB. */
-  disableCollation: ?boolean;
+  /* Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.
+  :DEFAULT: false */
+  enableCollationCaseComparison: ?boolean;
   /* Transform Email to lowercase on create/update/login/signup. On queries client needs to ensure to send Email in lowercase format. */
   transformEmailToLowerCase: ?boolean;
   /* Transform Username to lowercase on create/update/login/signup. On queries client needs to ensure to send Username in lowercase format. */
