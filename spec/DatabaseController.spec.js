@@ -515,7 +515,7 @@ describe('DatabaseController', function () {
     it('should not find a case insensitive user by email with convertEmailToLowercase', async () => {
       await reconfigureServer({ convertEmailToLowercase: true });
       const user = new Parse.User();
-      await user.save({ email: 'EXAMPLE@EXAMPLE.COM', password: 'password' });
+      await user.save({ username: 'EXAMPLE', email: 'EXAMPLE@EXAMPLE.COM', password: 'password' });
 
       const query = new Parse.Query(Parse.User);
       query.equalTo('email', 'EXAMPLE@EXAMPLE.COM');
