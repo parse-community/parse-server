@@ -1,3 +1,10 @@
+# [6.4.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.7...6.4.0-alpha.8) (2023-11-13)
+
+
+### Features
+
+* Add compatibility for MongoDB Atlas Serverless and AWS Amazon DocumentDB with collation options `enableCollationCaseComparison`, `transformEmailToLowercase`, `transformUsernameToLowercase` ([#8805](https://github.com/parse-community/parse-server/issues/8805)) ([09fbeeb](https://github.com/parse-community/parse-server/commit/09fbeebba8870e7cf371fb84371a254c7b368620))
+
 # [6.4.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.6...6.4.0-alpha.7) (2023-10-25)
 
 
