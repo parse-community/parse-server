@@ -1396,7 +1396,7 @@ describe('Parse.File testing', () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileExtensions: ['jpg'],
+          fileExtensions: ['jpg', 'wav'],
         },
       });
       await expectAsync(
@@ -1415,6 +1415,30 @@ describe('Parse.File testing', () => {
       ).toBeRejectedWith(
         new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/file',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image/jpg',
+            base64: 'PGh0bWw+PC9odG1sPgo=',
+          }),
+        })
+      ).toBeResolved();
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/file',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'audio/wav',
+            base64: 'UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA',
+          }),
+        })
+      ).toBeResolved();
     });
 
     it('works with array without Content-Type', async () => {
