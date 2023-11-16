@@ -47,7 +47,7 @@ export interface ParseServerOptions {
   appId: string;
   /* Your Parse Master Key */
   masterKey: string;
-  /* (Optional) The maintenance key is used for modifying internal fields of Parse Server.<br><br>⚠️ This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server. */
+  /* (Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>⚠️ This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server. */
   maintenanceKey: string;
   /* URL to your parse server with http:// or https://.
   :ENV: PARSE_SERVER_URL */
@@ -103,6 +103,15 @@ export interface ParseServerOptions {
   databaseOptions: ?DatabaseOptions;
   /* Adapter module for the database; any options that are not explicitly described here are passed directly to the database client. */
   databaseAdapter: ?Adapter<StorageAdapter>;
+  /* Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.
+  :DEFAULT: false */
+  enableCollationCaseComparison: ?boolean;
+  /* Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.
+  :DEFAULT: false */
+  convertEmailToLowercase: ?boolean;
+   /* Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.
+  :DEFAULT: false */
+  convertUsernameToLowercase: ?boolean;
   /* Full path to your cloud code main.js */
   cloud: ?string;
   /* A collection prefix for the classes

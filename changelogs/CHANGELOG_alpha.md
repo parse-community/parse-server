@@ -1,3 +1,58 @@
+# [6.4.0-alpha.8](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.7...6.4.0-alpha.8) (2023-11-13)
+
+
+### Features
+
+* Add compatibility for MongoDB Atlas Serverless and AWS Amazon DocumentDB with collation options `enableCollationCaseComparison`, `transformEmailToLowercase`, `transformUsernameToLowercase` ([#8805](https://github.com/parse-community/parse-server/issues/8805)) ([09fbeeb](https://github.com/parse-community/parse-server/commit/09fbeebba8870e7cf371fb84371a254c7b368620))
+
+# [6.4.0-alpha.7](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.6...6.4.0-alpha.7) (2023-10-25)
+
+
+### Features
+
+* Add `$setOnInsert` operator to `Parse.Server.database.update` ([#8791](https://github.com/parse-community/parse-server/issues/8791)) ([f630a45](https://github.com/parse-community/parse-server/commit/f630a45aa5e87bc73a81fded061400c199b71a29))
+
+# [6.4.0-alpha.6](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.5...6.4.0-alpha.6) (2023-10-18)
+
+
+### Bug Fixes
+
+* Security bump @babel/traverse from 7.20.5 to 7.23.2 ([#8777](https://github.com/parse-community/parse-server/issues/8777)) ([2d6b3d1](https://github.com/parse-community/parse-server/commit/2d6b3d18499179e99be116f25c0850d3f449509c))
+
+# [6.4.0-alpha.5](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.4...6.4.0-alpha.5) (2023-10-14)
+
+
+### Bug Fixes
+
+* Context not passed to Cloud Code Trigger `beforeFind` when using `Parse.Query.include` ([#8765](https://github.com/parse-community/parse-server/issues/8765)) ([7d32d89](https://github.com/parse-community/parse-server/commit/7d32d8934f3ae7af7a7d8b9cc6a829c7d73973d3))
+
+# [6.4.0-alpha.4](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.3...6.4.0-alpha.4) (2023-09-29)
+
+
+### Features
+
+* Allow setting `createdAt` and `updatedAt` during `Parse.Object` creation with maintenance key ([#8696](https://github.com/parse-community/parse-server/issues/8696)) ([77bbfb3](https://github.com/parse-community/parse-server/commit/77bbfb3f186f5651c33ba152f04cff95128eaf2d))
+
+# [6.4.0-alpha.3](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.2...6.4.0-alpha.3) (2023-09-23)
+
+
+### Bug Fixes
+
+* Parse Server option `fileUpload.fileExtensions` fails to determine file extension if filename contains multiple dots ([#8754](https://github.com/parse-community/parse-server/issues/8754)) ([3d6d50e](https://github.com/parse-community/parse-server/commit/3d6d50e0afff18b95fb906914e2cebd3839b517a))
+
+# [6.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.4.0-alpha.1...6.4.0-alpha.2) (2023-09-22)
+
+
+### Bug Fixes
+
+* Security upgrade graphql from 16.6.0 to 16.8.1 ([#8758](https://github.com/parse-community/parse-server/issues/8758)) ([71dfd8a](https://github.com/parse-community/parse-server/commit/71dfd8a7ece8c0dd1a66d03bb9420cfd39f4f9b1))
+
+# [6.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.3.0...6.4.0-alpha.1) (2023-09-20)
+
+### Features
+
+* Add context to Cloud Code Triggers `beforeLogin` and `afterLogin` ([#8724](https://github.com/parse-community/parse-server/issues/8724)) ([a9c34ef](https://github.com/parse-community/parse-server/commit/a9c34ef1e2c78a42fb8b5fa8d569b7677c74919d))
+
 # [6.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/6.3.0-alpha.8...6.3.0-alpha.9) (2023-09-13)
 
 

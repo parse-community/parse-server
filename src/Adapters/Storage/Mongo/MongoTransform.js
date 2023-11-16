@@ -986,6 +986,13 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
         return { __op: '$inc', arg: amount };
       }
 
+    case 'SetOnInsert':
+      if (flatten) {
+        return amount;
+      } else {
+        return { __op: '$setOnInsert', arg: amount };
+      }
+
     case 'Add':
     case 'AddUnique':
       if (!(objects instanceof Array)) {
