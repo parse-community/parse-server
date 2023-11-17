@@ -2784,6 +2784,26 @@ describe('afterFind hooks', () => {
     });
   });
 
+  it('should limit count query if limit is set', async done => {
+    const hook = {
+      method: function (req) {
+        expect(req.count).toBe(true);
+        return Promise.resolve();
+      },
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('Stuff', hook.method);
+
+    for (let i = 0; i < 10; i++) {
+      await new Parse.Object('Stuff').set('i', i).save(null, { useMasterKey: true });
+    }
+    new Parse.Query('Stuff').limit(5).count().then(count => {
+      expect(count).toBe(5);
+      expect(hook.method).toHaveBeenCalled();
+      done();
+    });
+  });
+  
   it('can set a pointer object in afterFind', async () => {
     const obj = new Parse.Object('MyObject');
     await obj.save();
