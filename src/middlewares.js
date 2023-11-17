@@ -31,7 +31,7 @@ const getBlockList = (ipRangeList, store) => {
       store.set('allowAllIpv6', true);
       return;
     }
-    if (fullIp === '0.0.0.0') {
+    if (fullIp === '0.0.0.0/0' || fullIp === '0.0.0.0') {
       store.set('allowAllIpv4', true);
       return;
     }
