@@ -1782,11 +1782,11 @@ describe('Cloud Code', () => {
   });
 
   it('should limit count query if limit is set', async () => {
-    const queries = [];
+    const promises = [];
     for (let i = 0; i < 10; i++) {
-      queries.push(new Parse.Object('Stuff').set('i', i).save());
+     promises.push(new Parse.Object('Stuff').set('i', i).save());
     }
-    await Promise.all(queries);
+    await Promise.all(promises);
     const count = await (new Parse.Query('Stuff').limit(5).count());
     expect(count).toBe(5);
   });
