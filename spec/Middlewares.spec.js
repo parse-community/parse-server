@@ -369,6 +369,7 @@ describe('middlewares', () => {
     expect(middlewares.checkIp(ipv4, ['::'], new Map())).toBe(false);
     expect(middlewares.checkIp(ipv4, ['::/0'], new Map())).toBe(false);
     expect(middlewares.checkIp(ipv4, ['0.0.0.0'], new Map())).toBe(true);
+    expect(middlewares.checkIp(ipv4, ['0.0.0.0/0'], new Map())).toBe(true);
     expect(middlewares.checkIp(ipv4, ['123.123.123.123'], new Map())).toBe(false);
     expect(middlewares.checkIp(ipv4, [ipv4], new Map())).toBe(true);
     expect(middlewares.checkIp(ipv4, ['192.168.0.0/24'], new Map())).toBe(true);
