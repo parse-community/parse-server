@@ -1,3 +1,24 @@
+# [5.6.0](https://github.com/parse-community/parse-server/compare/5.5.6...5.6.0) (2023-10-25)
+
+
+### Features
+
+* Add `$setOnInsert` operator to `Parse.Server.database.update` ([#8790](https://github.com/parse-community/parse-server/issues/8790)) ([c4a4a2a](https://github.com/parse-community/parse-server/commit/c4a4a2a09fd23f0d6b9d09c279203413c783854b))
+
+## [5.5.6](https://github.com/parse-community/parse-server/compare/5.5.5...5.5.6) (2023-10-20)
+
+
+### Bug Fixes
+
+* Server crash when uploading file without extension; fixes security vulnerability [GHSA-792q-q67h-w579](https://github.com/parse-community/parse-server/security/advisories/GHSA-792q-q67h-w579) ([#8782](https://github.com/parse-community/parse-server/issues/8782)) ([686a9f2](https://github.com/parse-community/parse-server/commit/686a9f282dc23c31beab3d93e6d21ccd0e1328fe))
+
+## [5.5.5](https://github.com/parse-community/parse-server/compare/5.5.4...5.5.5) (2023-09-04)
+
+
+### Bug Fixes
+
+* Parse Pointer allows to access internal Parse Server classes and circumvent `beforeFind` query trigger; fixes security vulnerability [GHSA-fcv6-fg5r-jm9q](https://github.com/parse-community/parse-server/security/advisories/GHSA-fcv6-fg5r-jm9q) ([6458ab0](https://github.com/parse-community/parse-server/commit/6458ab072ebaa0e6bbcf6ada696b3d0fb687402f))
+
 ## [5.5.4](https://github.com/parse-community/parse-server/compare/5.5.3...5.5.4) (2023-07-30)
 
 

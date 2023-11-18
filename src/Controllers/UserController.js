@@ -48,7 +48,7 @@ export class UserController extends AdaptableController {
     }
   }
 
-  verifyEmail(username, token) {
+  async verifyEmail(username, token) {
     if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
       // TODO: Better error here.
@@ -70,12 +70,14 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const masterAuth = Auth.master(this.config);
-    var findUserForEmailVerification = new RestQuery(
-      this.config,
-      Auth.master(this.config),
-      '_User',
-      { username: username }
-    );
+    var findUserForEmailVerification = await RestQuery({
+      method: RestQuery.Method.get,
+      config: this.config,
+      runBeforeFind: false,
+      auth: Auth.master(this.config),
+      className: '_User',
+      restWhere: { username },
+    });
     return findUserForEmailVerification.execute().then(result => {
       if (result.results.length && result.results[0].emailVerified) {
         return Promise.resolve(result.results.length[0]);
@@ -112,7 +114,7 @@ export class UserController extends AdaptableController {
       });
   }
 
-  getUserIfNeeded(user) {
+  async getUserIfNeeded(user) {
     if (user.username && user.email) {
       return Promise.resolve(user);
     }
@@ -124,7 +126,14 @@ export class UserController extends AdaptableController {
       where.email = user.email;
     }
 
-    var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
+    var query = await RestQuery({
+      method: RestQuery.Method.get,
+      config: this.config,
+      runBeforeFind: false,
+      auth: Auth.master(this.config),
+      className: '_User',
+      restWhere: where,
+    });
     return query.execute().then(function (result) {
       if (result.results.length != 1) {
         throw undefined;
