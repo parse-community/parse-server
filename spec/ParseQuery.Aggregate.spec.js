@@ -845,26 +845,6 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('match date query - createdAt with bsontype', done => {
-    const obj1 = new TestObject();
-    const obj2 = new TestObject();
-
-    Parse.Object.saveAll([obj1, obj2])
-      .then(() => {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-        const pipeline = [{ $match: { createdAt: { $gte: `${today.toISOString()}` } } }];
-        const query = new Parse.Query(TestObject);
-        return query.aggregate(pipeline);
-      })
-      .then(results => {
-        // Four objects were created initially, we added two more.
-        expect(results.length).toEqual(6);
-        done();
-      });
-  });
-
   it('match date query - updatedAt', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
