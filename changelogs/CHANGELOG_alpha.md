@@ -1,3 +1,10 @@
+# [6.5.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.5.0-alpha.1...6.5.0-alpha.2) (2023-11-19)
+
+
+### Performance Improvements
+
+* Improved IP validation performance for `masterKeyIPs`, `maintenanceKeyIPs` ([#8510](https://github.com/parse-community/parse-server/issues/8510)) ([b87daba](https://github.com/parse-community/parse-server/commit/b87daba0671a1b0b7b8d63bc671d665c91a04522))
+
 # [6.5.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.4.0...6.5.0-alpha.1) (2023-11-18)
 
 

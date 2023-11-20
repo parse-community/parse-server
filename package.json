@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.5.0-alpha.1",
+  "version": "6.5.0-alpha.2",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -39,7 +39,6 @@
     "graphql-relay": "0.10.0",
     "graphql-tag": "2.12.6",
     "intersect": "1.0.1",
-    "ip-range-check": "0.2.0",
     "jsonwebtoken": "9.0.0",
     "jwks-rsa": "2.1.5",
     "ldapjs": "2.3.3",
