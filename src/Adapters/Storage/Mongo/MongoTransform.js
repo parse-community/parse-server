@@ -458,13 +458,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
   }
   value = mapValues(restValue, transformInteriorValue);
 
-  if (
-    typeof value === 'object' &&
-    '_bsontype' in value &&
-    !value[Symbol.for('@@mdb.bson.version')]
-  ) {
-    value[Symbol.for('@@mdb.bson.version')] = 5.0;
-  }
   return { key: restKey, value };
 };
 
