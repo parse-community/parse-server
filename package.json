@@ -1,6 +1,6 @@
 {
   "name": "@hustle/parse-server",
-  "version": "4.3.0-hustle8",
+  "version": "4.3.0-hustle9",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -45,7 +45,7 @@
     "lodash": "4.17.20",
     "lru-cache": "5.1.1",
     "mime": "2.4.6",
-    "mongodb": "3.6.1",
+    "mongodb": "4.8.1",
     "parse": "2.15.0",
     "pg-promise": "10.6.1",
     "pluralize": "8.0.0",
