@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "6.4.0-alpha.6",
+  "version": "6.5.0-alpha.2",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -25,7 +25,7 @@
     "@graphql-tools/utils": "8.12.0",
     "@graphql-yoga/node": "2.6.0",
     "@parse/fs-files-adapter": "1.2.2",
-    "@parse/push-adapter": "4.2.0",
+    "@parse/push-adapter": "5.0.2",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.2",
     "commander": "10.0.1",
@@ -39,7 +39,6 @@
     "graphql-relay": "0.10.0",
     "graphql-tag": "2.12.6",
     "intersect": "1.0.1",
-    "ip-range-check": "0.2.0",
     "jsonwebtoken": "9.0.0",
     "jwks-rsa": "2.1.5",
     "ldapjs": "2.3.3",
