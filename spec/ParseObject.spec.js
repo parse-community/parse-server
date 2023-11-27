@@ -2065,7 +2065,6 @@ describe('Parse.Object testing', () => {
     });
 
     let parent = await new Parse.Object('Parent').save(null, {useMasterKey:true});
-    
     const child = () => new Parse.Object('Child').set("parent",parent).save();
 
     // add synchronously
