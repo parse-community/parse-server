@@ -2741,7 +2741,6 @@ describe('schemas', () => {
     expect(objectAgain.get('key')).toBe(11);
   });
 
-
   it('regression test for #2246', done => {
     const profile = new Parse.Object('UserProfile');
     const user = new Parse.User();
