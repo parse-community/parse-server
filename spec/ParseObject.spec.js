@@ -2056,7 +2056,7 @@ describe('Parse.Object testing', () => {
     await object.save();
   });
 
-  it('regression test for #8772 (increment should be atomic)', async () => {
+  it('increments atomically', async () => {
     Parse.Object.disableSingleInstance();
 
     Parse.Cloud.beforeSave('Parent', (req) => {});
