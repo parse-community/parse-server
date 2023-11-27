@@ -2642,7 +2642,6 @@ describe('schemas', () => {
       });
   });
 
-
   it('regression test for #1991', done => {
     const user = new Parse.User();
     user.setUsername('user');
