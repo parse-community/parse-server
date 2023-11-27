@@ -2076,7 +2076,6 @@ describe('Parse.Object testing', () => {
     // add asynchronously
     await Promise.all(Array.from({length: 40}, () => child()))
     parent = await parent.fetch();
-
     expect(parent.get('num_child')).toBe(42);
   });
 });
