@@ -2055,6 +2055,7 @@ describe('Parse.Object testing', () => {
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
   });
+
   it('regression test for #8772 (increment should be atomic)', async () => {
     Parse.Object.disableSingleInstance();
 
