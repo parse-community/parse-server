@@ -1,3 +1,15 @@
+# [7.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.5.0-alpha.2...7.0.0-alpha.1) (2023-12-10)
+
+
+### Features
+
+* Add support for MongoDB 7 ([#8761](https://github.com/parse-community/parse-server/issues/8761)) ([3de8494](https://github.com/parse-community/parse-server/commit/3de8494a221991dfd10a74e0a2dc89576265c9b7))
+
+
+### BREAKING CHANGES
+
+* `Parse.Query` no longer supports the BSON type `code`; although this feature was never officially documented, its removal is announced as a breaking change to protect deployments where it might be in use. ([3de8494](3de8494))
+
 # [6.5.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.5.0-alpha.1...6.5.0-alpha.2) (2023-11-19)
 
 
