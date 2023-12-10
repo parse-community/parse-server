@@ -284,25 +284,11 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         amount: 1,
       },
     };
-    await Parse.Server.database.update(
-      'MyClass',
-      query,
-      update,
-      { upsert: true },
-    );
+    await Parse.Server.database.update('MyClass', query, update, { upsert: true });
     update.objectId.amount = uuid2;
-    await Parse.Server.database.update(
-      'MyClass',
-      query,
-      update,
-      { upsert: true },
-    );
+    await Parse.Server.database.update('MyClass', query, update, { upsert: true });
 
-    const res = await Parse.Server.database.find(
-      schema.className,
-      {},
-      {},
-    );
+    const res = await Parse.Server.database.find(schema.className, {}, {});
     expect(res.length).toBe(1);
     expect(res[0].objectId).toBe(uuid1);
     expect(res[0].count).toBe(2);
