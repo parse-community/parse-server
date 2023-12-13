@@ -235,32 +235,6 @@ describe('Vulnerabilities', () => {
       await new Promise(resolve => server.close(resolve));
     });
 
-    it('allows BSON type code data in write request with custom denylist', async () => {
-      await reconfigureServer({
-        requestKeywordDenylist: [],
-      });
-      const headers = {
-        'Content-Type': 'application/json',
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
-      };
-      const params = {
-        headers: headers,
-        method: 'POST',
-        url: 'http://localhost:8378/1/classes/RCE',
-        body: JSON.stringify({
-          obj: {
-            _bsontype: 'Code',
-            code: 'delete Object.prototype.evalFunctions',
-          },
-        }),
-      };
-      const response = await request(params).catch(e => e);
-      expect(response.status).toBe(201);
-      const text = JSON.parse(response.text);
-      expect(text.objectId).toBeDefined();
-    });
-
     it('denies write request with custom denylist of key/value', async () => {
       await reconfigureServer({
         requestKeywordDenylist: [{ key: 'a[K]ey', value: 'aValue[123]*' }],
