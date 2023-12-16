@@ -1286,7 +1286,6 @@ describe('ParseLiveQuery', function () {
       },
     };
     const createSpy = spyOn(spy, 'create');
-    
     const query = new Parse.Query(TestObject);
     query.notEqualTo('foo', null);
     const subscription = await query.subscribe();
