@@ -1280,15 +1280,13 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
 
-    // Creating a spy so we can register it as event listener.
     const spy = {
       create(obj) {
         expect(obj.attributes.foo).toEqual('bar');
       },
     };
     const createSpy = spyOn(spy, 'create');
-
-    // Subscribe to TestObject class. where foo is not equal to null
+    
     const query = new Parse.Query(TestObject);
     query.notEqualTo('foo', null);
     const subscription = await query.subscribe();
