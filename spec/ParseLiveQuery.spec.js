@@ -1270,7 +1270,7 @@ describe('ParseLiveQuery', function () {
     expect(object3.id).toBeDefined();
   });
 
-  it('triggers to query event with constraint not equal to null', async () => {
+  it('triggers query event with constraint not equal to null', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
