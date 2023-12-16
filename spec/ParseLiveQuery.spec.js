@@ -1298,8 +1298,6 @@ describe('ParseLiveQuery', function () {
     const object1 = new TestObject();
     object1.set('foo', 'bar');
     await object1.save();
-
-    // Failing test.Since server crashed, it should not have been called.
     expect(createSpy).toHaveBeenCalledTimes(1);
   });
 });
