@@ -1294,7 +1294,6 @@ describe('ParseLiveQuery', function () {
     const subscription = await query.subscribe();
     subscription.on('create', spy.create);
 
-    // Create a object and save it, the save call passes but server crashes afterwards
     const object1 = new TestObject();
     object1.set('foo', 'bar');
     await object1.save();
