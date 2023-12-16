@@ -1270,7 +1270,7 @@ describe('ParseLiveQuery', function () {
     expect(object3.id).toBeDefined();
   });
 
-  it('matchesKeyConstraints fails when subscribing a query with constraint notEqualTo null', async () => {
+  it('subscribes to query event with constraint not equal to null', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
