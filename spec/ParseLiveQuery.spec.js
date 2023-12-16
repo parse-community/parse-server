@@ -1270,7 +1270,7 @@ describe('ParseLiveQuery', function () {
     expect(object3.id).toBeDefined();
   });
 
-  it('matchesKeyConstraints fails when subscribing a query with constraint notEqualTo null', async done => {
+  it('matchesKeyConstraints fails when subscribing a query with constraint notEqualTo null', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -1280,14 +1280,26 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
 
+    // Creating a spy so we can register it as event listener.
+    const spy = {
+      create(obj) {
+        expect(obj.attributes.foo).toEqual('bar');
+      },
+    };
+    const createSpy = spyOn(spy, 'create');
+
+    // Subscribe to TestObject class. where foo is not equal to null
     const query = new Parse.Query(TestObject);
     query.notEqualTo('foo', null);
-    await query.subscribe();
+    const subscription = await query.subscribe();
+    subscription.on('create', spy.create);
 
-    // Create a object and save it, this passes but server crashes afterwards
+    // Create a object and save it, the save call passes but server crashes afterwards
     const object1 = new TestObject();
     object1.set('foo', 'bar');
     await object1.save();
-    done();
+
+    // Failing test.Since server crashed, it should not have been called.
+    expect(createSpy).toHaveBeenCalledTimes(1);
   });
 });
