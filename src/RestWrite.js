@@ -932,7 +932,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   }
   // If sign-up call
   if (!this.storage.authProvider) {
-    // Create request object for the verification functions
+    // Create request object for verification functions
     const { originalObject, updatedObject } = this.buildParseObjects();
     const request = {
       original: originalObject,
