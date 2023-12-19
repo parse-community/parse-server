@@ -381,7 +381,6 @@ describe('Email Verification Token Expiration: ', () => {
     await user.signUp();
     expect(sendEmailOptions).toBeUndefined();
     expect(user.getSessionToken()).toBeDefined();
-    expect(verifySpy).toHaveBeenCalledTimes(2);
     expect(verifySpy).toHaveBeenCalledTimes(3);
     const user2 = new Parse.User();
     user2.setUsername('email');
