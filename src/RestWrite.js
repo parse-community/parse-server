@@ -930,31 +930,23 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   if (this.auth.user && this.data.authData) {
     return;
   }
-  if (
-    !this.storage.authProvider && // signup call, with
-    this.config.preventLoginWithUnverifiedEmail === true && // no login without verification
-    this.config.verifyUserEmails
-  ) {
-    // verification is on
-    this.storage.rejectSignup = true;
-    return;
-  }
-  if (!this.storage.authProvider && this.config.verifyUserEmails) {
-    let shouldPreventUnverifedLogin = this.config.preventLoginWithUnverifiedEmail;
-    if (typeof this.config.preventLoginWithUnverifiedEmail === 'function') {
-      const { originalObject, updatedObject } = this.buildParseObjects();
-      const request = {
-        original: originalObject,
-        object: updatedObject,
-        master: this.auth.isMaster,
-        ip: this.config.ip,
-        installationId: this.auth.installationId,
-      };
-      shouldPreventUnverifedLogin = await Promise.resolve(
-        this.config.preventLoginWithUnverifiedEmail(request)
-      );
-    }
-    if (shouldPreventUnverifedLogin === true) {
+  // If sign-up call
+  if (!this.storage.authProvider) {
+    // Create request object for the verification functions
+    const { originalObject, updatedObject } = this.buildParseObjects();
+    const request = {
+      original: originalObject,
+      object: updatedObject,
+      master: this.auth.isMaster,
+      ip: this.config.ip,
+      installationId: this.auth.installationId,
+    };
+    // Get verification conditions which can be boolean or functions
+    const verifyUserEmails = this.config.verifyUserEmails === true || (typeof this.config.verifyUserEmails === 'function' && await Promise.resolve(this.config.verifyUserEmails(request)) === true);
+    const preventLoginWithUnverifiedEmail = this.config.preventLoginWithUnverifiedEmail === true || (typeof this.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(this.config.preventLoginWithUnverifiedEmail(request)) === true);
+    // If verification is required
+    if (verifyUserEmails && preventLoginWithUnverifiedEmail) {
+      this.storage.rejectSignup = true;
       return;
     }
   }
