@@ -36,11 +36,10 @@ export class UserController extends AdaptableController {
   }
 
   async setEmailVerifyToken(user, req, storage = {}) {
-    let shouldSendEmail = this.shouldVerifyEmails;
-    if (typeof shouldSendEmail === 'function') {
-      const response = await Promise.resolve(shouldSendEmail(req));
-      shouldSendEmail = response !== false;
-    }
+    const shouldSendEmail =
+      this.shouldVerifyEmails === true ||
+      (typeof this.shouldVerifyEmails === 'function' &&
+        (await Promise.resolve(this.shouldVerifyEmails(req))) === true);
     if (!shouldSendEmail) {
       return false;
     }
