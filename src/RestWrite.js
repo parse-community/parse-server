@@ -804,6 +804,7 @@ RestWrite.prototype._validateEmail = function () {
           object: updatedObject,
           master: this.auth.isMaster,
           ip: this.config.ip,
+          installationId: this.auth.installationId,
         };
         return this.config.userController.setEmailVerifyToken(this.data, request, this.storage);
       }
@@ -947,6 +948,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
         object: updatedObject,
         master: this.auth.isMaster,
         ip: this.config.ip,
+        installationId: this.auth.installationId,
       };
       shouldPreventUnverifedLogin = await Promise.resolve(
         this.config.preventLoginWithUnverifiedEmail(request)
