@@ -1,4 +1,4 @@
-import LRU from 'lru-cache';
+import { LRUCache as LRU } from 'lru-cache';
 import defaults from '../../defaults';
 
 export class LRUCache {

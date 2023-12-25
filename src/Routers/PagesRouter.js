@@ -125,7 +125,7 @@ export class PagesRouter extends PromiseRouter {
 
     const userController = config.userController;
 
-    return userController.resendVerificationEmail(username).then(
+    return userController.resendVerificationEmail(username, req).then(
       () => {
         return this.goToPage(req, pages.emailVerificationSendSuccess);
       },

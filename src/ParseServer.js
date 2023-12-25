@@ -75,6 +75,8 @@ class ParseServer {
     const allControllers = controllers.getControllers(options);
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
+    this.config.masterKeyIpsStore = new Map();
+    this.config.maintenanceKeyIpsStore = new Map();
     logging.setLogger(allControllers.loggerController);
   }
 
@@ -167,6 +169,12 @@ class ParseServer {
     const { adapter: cacheAdapter } = this.config.cacheController;
     if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
       promises.push(cacheAdapter.handleShutdown());
+    }
+    if (this.liveQueryServer?.server?.close) {
+      promises.push(new Promise(resolve => this.liveQueryServer.server.close(resolve)));
+    }
+    if (this.liveQueryServer) {
+      promises.push(this.liveQueryServer.shutdown());
     }
     return (promises.length > 0 ? Promise.all(promises) : Promise.resolve()).then(() => {
       if (this.config.serverCloseComplete) {
@@ -438,9 +446,11 @@ class ParseServer {
 
 function addParseCloud() {
   const ParseCloud = require('./cloud-code/Parse.Cloud');
+  const ParseServer = require('./cloud-code/Parse.Server');
   Object.defineProperty(Parse, 'Server', {
     get() {
-      return Config.get(Parse.applicationId);
+      const conf = Config.get(Parse.applicationId);
+      return { ...conf, ...ParseServer };
     },
     set(newVal) {
       newVal.appId = Parse.applicationId;

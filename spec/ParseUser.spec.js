@@ -107,6 +107,36 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('user login with context', async () => {
+    let hit = 0;
+    const context = { foo: 'bar' };
+    Parse.Cloud.beforeLogin(req => {
+      expect(req.context).toEqual(context);
+      hit++;
+    });
+    Parse.Cloud.afterLogin(req => {
+      expect(req.context).toEqual(context);
+      hit++;
+    });
+    await Parse.User.signUp('asdf', 'zxcv');
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': JSON.stringify(context),
+        'Content-Type': 'application/json',
+      },
+      body: {
+        _method: 'GET',
+        username: 'asdf',
+        password: 'zxcv',
+      },
+    });
+    expect(hit).toBe(2);
+  });
+
   it('user login with non-string username with REST API', async done => {
     await Parse.User.signUp('asdf', 'zxcv');
     request({
@@ -3192,6 +3222,35 @@ describe('Parse.User testing', () => {
         }
       )
       .catch(done.fail);
+  });
+
+  it('should return current session with expired expiration date', async () => {
+    await Parse.User.signUp('buser', 'somepass', null);
+    const response = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    });
+    const body = response.data;
+    const id = body.results[0].objectId;
+    const expiresAt = new Date(new Date().setYear(2015));
+    await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/classes/_Session/' + id,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        expiresAt: { __type: 'Date', iso: expiresAt.toISOString() },
+      },
+    });
+    const session = await Parse.Session.current();
+    expect(session.get('expiresAt')).toEqual(expiresAt);
   });
 
   it('should not create extraneous session tokens', done => {

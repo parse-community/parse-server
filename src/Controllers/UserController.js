@@ -32,23 +32,36 @@ export class UserController extends AdaptableController {
   }
 
   get shouldVerifyEmails() {
-    return this.options.verifyUserEmails;
+    return (this.config || this.options).verifyUserEmails;
   }
 
-  setEmailVerifyToken(user) {
-    if (this.shouldVerifyEmails) {
-      user._email_verify_token = randomString(25);
-      user.emailVerified = false;
-
-      if (this.config.emailVerifyTokenValidityDuration) {
-        user._email_verify_token_expires_at = Parse._encode(
-          this.config.generateEmailVerifyTokenExpiresAt()
-        );
-      }
+  async setEmailVerifyToken(user, req, storage = {}) {
+    let shouldSendEmail = this.shouldVerifyEmails;
+    if (typeof shouldSendEmail === 'function') {
+      const response = await Promise.resolve(shouldSendEmail(req));
+      shouldSendEmail = response !== false;
     }
+    if (!shouldSendEmail) {
+      return false;
+    }
+    storage.sendVerificationEmail = true;
+    user._email_verify_token = randomString(25);
+    if (
+      !storage.fieldsChangedByTrigger ||
+      !storage.fieldsChangedByTrigger.includes('emailVerified')
+    ) {
+      user.emailVerified = false;
+    }
+
+    if (this.config.emailVerifyTokenValidityDuration) {
+      user._email_verify_token_expires_at = Parse._encode(
+        this.config.generateEmailVerifyTokenExpiresAt()
+      );
+    }
+    return true;
   }
 
-  verifyEmail(username, token) {
+  async verifyEmail(username, token) {
     if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
       // TODO: Better error here.
@@ -70,8 +83,14 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const maintenanceAuth = Auth.maintenance(this.config);
-    var findUserForEmailVerification = new RestQuery(this.config, maintenanceAuth, '_User', {
-      username,
+    var findUserForEmailVerification = await RestQuery({
+      method: RestQuery.Method.get,
+      config: this.config,
+      auth: maintenanceAuth,
+      className: '_User',
+      restWhere: {
+        username,
+      },
     });
     return findUserForEmailVerification.execute().then(result => {
       if (result.results.length && result.results[0].emailVerified) {
@@ -110,7 +129,7 @@ export class UserController extends AdaptableController {
       });
   }
 
-  getUserIfNeeded(user) {
+  async getUserIfNeeded(user) {
     if (user.username && user.email) {
       return Promise.resolve(user);
     }
@@ -122,7 +141,14 @@ export class UserController extends AdaptableController {
       where.email = user.email;
     }
 
-    var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
+    var query = await RestQuery({
+      method: RestQuery.Method.get,
+      config: this.config,
+      runBeforeFind: false,
+      auth: Auth.master(this.config),
+      className: '_User',
+      restWhere: where,
+    });
     return query.execute().then(function (result) {
       if (result.results.length != 1) {
         throw undefined;
@@ -131,27 +157,39 @@ export class UserController extends AdaptableController {
     });
   }
 
-  sendVerificationEmail(user) {
+  async sendVerificationEmail(user, req) {
     if (!this.shouldVerifyEmails) {
       return;
     }
     const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
-    this.getUserIfNeeded(user).then(user => {
-      const username = encodeURIComponent(user.username);
+    const fetchedUser = await this.getUserIfNeeded(user);
+    let shouldSendEmail = this.config.sendUserEmailVerification;
+    if (typeof shouldSendEmail === 'function') {
+      const response = await Promise.resolve(
+        this.config.sendUserEmailVerification({
+          user: Parse.Object.fromJSON({ className: '_User', ...fetchedUser }),
+          master: req.auth?.isMaster,
+        })
+      );
+      shouldSendEmail = !!response;
+    }
+    if (!shouldSendEmail) {
+      return;
+    }
+    const username = encodeURIComponent(user.username);
 
-      const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
-      const options = {
-        appName: this.config.appName,
-        link: link,
-        user: inflate('_User', user),
-      };
-      if (this.adapter.sendVerificationEmail) {
-        this.adapter.sendVerificationEmail(options);
-      } else {
-        this.adapter.sendMail(this.defaultVerificationEmail(options));
-      }
-    });
+    const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
+    const options = {
+      appName: this.config.appName,
+      link: link,
+      user: inflate('_User', fetchedUser),
+    };
+    if (this.adapter.sendVerificationEmail) {
+      this.adapter.sendVerificationEmail(options);
+    } else {
+      this.adapter.sendMail(this.defaultVerificationEmail(options));
+    }
   }
 
   /**
@@ -160,7 +198,7 @@ export class UserController extends AdaptableController {
    * @param user
    * @returns {*}
    */
-  regenerateEmailVerifyToken(user) {
+  async regenerateEmailVerifyToken(user, master) {
     const { _email_verify_token } = user;
     let { _email_verify_token_expires_at } = user;
     if (_email_verify_token_expires_at && _email_verify_token_expires_at.__type === 'Date') {
@@ -174,19 +212,22 @@ export class UserController extends AdaptableController {
     ) {
       return Promise.resolve();
     }
-    this.setEmailVerifyToken(user);
+    const shouldSend = await this.setEmailVerifyToken(user, { user, master });
+    if (!shouldSend) {
+      return;
+    }
     return this.config.database.update('_User', { username: user.username }, user);
   }
 
-  resendVerificationEmail(username) {
-    return this.getUserIfNeeded({ username: username }).then(aUser => {
-      if (!aUser || aUser.emailVerified) {
-        throw undefined;
-      }
-      return this.regenerateEmailVerifyToken(aUser).then(() => {
-        this.sendVerificationEmail(aUser);
-      });
-    });
+  async resendVerificationEmail(username, req) {
+    const aUser = await this.getUserIfNeeded({ username: username });
+    if (!aUser || aUser.emailVerified) {
+      throw undefined;
+    }
+    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster);
+    if (generate) {
+      this.sendVerificationEmail(aUser, req);
+    }
   }
 
   setPasswordResetToken(email) {

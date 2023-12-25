@@ -81,7 +81,9 @@ module.exports.ParseServerOptions = {
   },
   allowOrigin: {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
-    help: 'Sets the origin to Access-Control-Allow-Origin',
+    help:
+      'Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.',
+    action: parsers.arrayParser,
   },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
@@ -101,7 +103,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
-    action: parsers.arrayParser,
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -137,6 +138,20 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_COLLECTION_PREFIX',
     help: 'A collection prefix for the classes',
     default: '',
+  },
+  convertEmailToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_EMAIL_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  convertUsernameToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_USERNAME_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
   },
   customPages: {
     env: 'PARSE_SERVER_CUSTOM_PAGES',
@@ -202,9 +217,23 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  enableCollationCaseComparison: {
+    env: 'PARSE_SERVER_ENABLE_COLLATION_CASE_COMPARISON',
+    help:
+      'Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
     help: 'Enables the default express error handler for all errors',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  encodeParseObjectInCloudFunction: {
+    env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
+    help:
+      'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -224,6 +253,12 @@ module.exports.ParseServerOptions = {
       'Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.',
     action: parsers.booleanParser,
     default: true,
+  },
+  extendSessionOnUse: {
+    env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
+    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    action: parsers.booleanParser,
+    default: false,
   },
   fileKey: {
     env: 'PARSE_SERVER_FILE_KEY',
@@ -303,13 +338,13 @@ module.exports.ParseServerOptions = {
   maintenanceKey: {
     env: 'PARSE_SERVER_MAINTENANCE_KEY',
     help:
-      '(Optional) The maintenance key is used for modifying internal fields of Parse Server.<br><br>\u26A0\uFE0F This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server.',
+      '(Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>\u26A0\uFE0F This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server.',
     required: true,
   },
   maintenanceKeyIps: {
     env: 'PARSE_SERVER_MAINTENANCE_KEY_IPS',
     help:
-      "(Optional) Restricts the use of maintenance key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `maintenanceKey` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the maintenance key can be used from any IP address.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the maintenance key.",
+      "(Optional) Restricts the use of maintenance key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the maintenance key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the maintenance key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `\"0.0.0.0/0,::0\"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the maintenance key.",
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
@@ -321,7 +356,7 @@ module.exports.ParseServerOptions = {
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
     help:
-      "(Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the master key.",
+      "(Optional) Restricts the use of master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `\"0.0.0.0/0,::0\"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the master key.",
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
@@ -401,6 +436,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL',
     help:
       'Set to `true` to prevent a user from logging in if the email has not yet been verified and email verification is required.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  preventSignupWithUnverifiedEmail: {
+    env: 'PARSE_SERVER_PREVENT_SIGNUP_WITH_UNVERIFIED_EMAIL',
+    help:
+      "If set to `true` it prevents a user from signing up if the email has not yet been verified and email verification is required. In that case the server responds to the sign-up with HTTP status 400 and a Parse Error 205 `EMAIL_NOT_FOUND`. If set to `false` the server responds with HTTP status 200, and client SDKs return an unauthenticated Parse User without session token. In that case subsequent requests fail until the user's email address is verified.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.",
     action: parsers.booleanParser,
     default: false,
   },
@@ -512,6 +554,12 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     default: {},
   },
+  sendUserEmailVerification: {
+    env: 'PARSE_SERVER_SEND_USER_EMAIL_VERIFICATION',
+    help:
+      'Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.<br><br>Default is `true`.<br>',
+    default: true,
+  },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
     help: 'Callback when server has closed',
@@ -558,8 +606,7 @@ module.exports.ParseServerOptions = {
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
     help:
-      'Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.',
-    action: parsers.booleanParser,
+      'Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.',
     default: false,
   },
   webhookKey: {
@@ -616,6 +663,11 @@ module.exports.RateLimitOptions = {
     help:
       'The window of time in milliseconds within which the number of requests set in `requestCount` can be made before the rate limit is applied.',
     action: parsers.numberParser('requestTimeWindow'),
+  },
+  zone: {
+    env: 'PARSE_SERVER_RATE_LIMIT_ZONE',
+    help:
+      "The type of rate limit to apply. The following types are supported:<br><br>- `global`: rate limit based on the number of requests made by all users <br>- `ip`: rate limit based on the IP address of the request <br>- `user`: rate limit based on the user ID of the request <br>- `session`: rate limit based on the session token of the request <br><br><br>:default: 'ip'",
   },
 };
 module.exports.SecurityOptions = {
@@ -998,6 +1050,13 @@ module.exports.FileUploadOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  fileExtensions: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
+    help:
+      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.",
+    action: parsers.arrayParser,
+    default: ['^[^hH][^tT][^mM][^lL]?$'],
+  },
 };
 module.exports.DatabaseOptions = {
   enableSchemaHooks: {
@@ -1022,6 +1081,16 @@ module.exports.AuthAdapter = {
   },
 };
 module.exports.LogLevels = {
+  cloudFunctionError: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_ERROR',
+    help: 'Log level used by the Cloud Code Functions on error. Default is `error`.',
+    default: 'error',
+  },
+  cloudFunctionSuccess: {
+    env: 'PARSE_SERVER_LOG_LEVELS_CLOUD_FUNCTION_SUCCESS',
+    help: 'Log level used by the Cloud Code Functions on success. Default is `info`.',
+    default: 'info',
+  },
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:

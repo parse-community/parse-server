@@ -1,27 +1,14 @@
 const fs = require('fs').promises;
 const { exec } = require('child_process');
 const core = require('@actions/core');
-const { nextTick } = require('process');
-const { AbortController } = require("node-abort-controller");
+const util = require('util');
 (async () => {
   const [currentDefinitions, currentDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
     fs.readFile('./src/Options/docs.js', 'utf8'),
   ]);
-  exec('npm run definitions');
-  const ac = new AbortController();
-  const { signal } = ac;
-  const watcher = fs.watch('./src/Options/docs.js', {signal});
-  let i = 0;
-  // eslint-disable-next-line
-  for await (const _ of watcher) {
-    i++;
-    if (i === 3) {
-      ac.abort();
-      break;
-    }
-  }
-  await new Promise(resolve => nextTick(resolve));
+  const execute = util.promisify(exec);
+  await execute('npm run definitions');
   const [newDefinitions, newDocs] = await Promise.all([
     fs.readFile('./src/Options/Definitions.js', 'utf8'),
     fs.readFile('./src/Options/docs.js', 'utf8'),

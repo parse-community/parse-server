@@ -7,6 +7,7 @@ import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
+import { version } from '../package.json';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
@@ -18,13 +19,14 @@ import {
   SchemaOptions,
   SecurityOptions,
 } from './Options/Definitions';
+import ParseServer from './cloud-code/Parse.Server';
 
 function removeTrailingSlash(str) {
   if (!str) {
     return str;
   }
   if (str.endsWith('/')) {
-    str = str.substr(0, str.length - 1);
+    str = str.substring(0, str.length - 1);
   }
   return str;
 }
@@ -49,6 +51,7 @@ export class Config {
     config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(
       config
     );
+    config.version = version;
     return config;
   }
 
@@ -86,6 +89,7 @@ export class Config {
     logLevels,
     rateLimit,
     databaseOptions,
+    extendSessionOnUse,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -101,6 +105,10 @@ export class Config {
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
+    }
+
+    if (typeof extendSessionOnUse !== 'boolean') {
+      throw 'extendSessionOnUse must be a boolean value';
     }
 
     if (publicServerURL) {
@@ -460,6 +468,11 @@ export class Config {
     } else if (typeof fileUpload.enableForAuthenticatedUser !== 'boolean') {
       throw 'fileUpload.enableForAuthenticatedUser must be a boolean value.';
     }
+    if (fileUpload.fileExtensions === undefined) {
+      fileUpload.fileExtensions = FileUploadOptions.fileExtensions.default;
+    } else if (!Array.isArray(fileUpload.fileExtensions)) {
+      throw 'fileUpload.fileExtensions must be an array.';
+    }
   }
 
   static validateIps(field, masterKeyIps) {
@@ -598,6 +611,11 @@ export class Config {
       }
       if (option.errorResponseMessage && typeof option.errorResponseMessage !== 'string') {
         throw `rateLimit.errorResponseMessage must be a string`;
+      }
+      const options = Object.keys(ParseServer.RateLimitZone);
+      if (option.zone && !options.includes(option.zone)) {
+        const formatter = new Intl.ListFormat('en', { style: 'short', type: 'disjunction' });
+        throw `rateLimit.zone must be one of ${formatter.format(options)}`;
       }
     }
   }

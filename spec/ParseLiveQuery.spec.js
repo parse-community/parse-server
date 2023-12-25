@@ -2,6 +2,8 @@
 const Auth = require('../lib/Auth');
 const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
+const ParseServer = require('../lib/index').ParseServer;
+const triggers = require('../lib/triggers');
 const validatorFail = () => {
   throw 'you are not authorized';
 };
@@ -1211,5 +1213,60 @@ describe('ParseLiveQuery', function () {
     const secondPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
     object.set({ location: secondPoint });
     await object.save();
+  });
+
+  it('does shutdown liveQuery server', async () => {
+    await reconfigureServer({ appId: 'test_app_id' });
+    const config = {
+      appId: 'hello_test',
+      masterKey: 'world',
+      port: 1345,
+      mountPath: '/1',
+      serverURL: 'http://localhost:1345/1',
+      liveQuery: {
+        classNames: ['Yolo'],
+      },
+      startLiveQueryServer: true,
+    };
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      config.databaseAdapter = new databaseAdapter.constructor({
+        uri: databaseURI,
+        collectionPrefix: 'test_',
+      });
+      config.filesAdapter = defaultConfiguration.filesAdapter;
+    }
+    const server = await ParseServer.startApp(config);
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.serverURL = 'ws://localhost:1345/1';
+    const query = await new Parse.Query('Yolo').subscribe();
+    await Promise.all([
+      server.handleShutdown(),
+      new Promise(resolve => query.on('close', resolve)),
+    ]);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(server.liveQueryServer.server.address()).toBeNull();
+    expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
+    await new Promise(resolve => server.server.close(resolve));
+  });
+
+  it('prevent afterSave trigger if not exists', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    spyOn(triggers, 'maybeRunTrigger').and.callThrough();
+    const object1 = new TestObject();
+    const object2 = new TestObject();
+    const object3 = new TestObject();
+    await Parse.Object.saveAll([object1, object2, object3]);
+
+    expect(triggers.maybeRunTrigger).toHaveBeenCalledTimes(0);
+    expect(object1.id).toBeDefined();
+    expect(object2.id).toBeDefined();
+    expect(object3.id).toBeDefined();
   });
 });

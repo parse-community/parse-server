@@ -3,6 +3,8 @@ import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
+import RestQuery from './RestQuery';
+import RestWrite from './RestWrite';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -66,6 +68,49 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
+const throttle = {};
+const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
+  if (!config?.extendSessionOnUse) {
+    return;
+  }
+  clearTimeout(throttle[sessionToken]);
+  throttle[sessionToken] = setTimeout(async () => {
+    try {
+      if (!session) {
+        const query = await RestQuery({
+          method: RestQuery.Method.get,
+          config,
+          auth: master(config),
+          runBeforeFind: false,
+          className: '_Session',
+          restWhere: { sessionToken },
+          restOptions: { limit: 1 },
+        });
+        const { results } = await query.execute();
+        session = results[0];
+      }
+      const lastUpdated = new Date(session?.updatedAt);
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (lastUpdated > yesterday || !session) {
+        return;
+      }
+      const expiresAt = config.generateSessionExpiresAt();
+      await new RestWrite(
+        config,
+        master(config),
+        '_Session',
+        { objectId: session.objectId },
+        { expiresAt: Parse._encode(expiresAt) }
+      ).execute();
+    } catch (e) {
+      if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
+        logger.error('Could not update session expiry: ', e);
+      }
+    }
+  }, 500);
+};
+
 // Returns a promise that resolves to an Auth object
 const getAuthForSessionToken = async function ({
   config,
@@ -78,6 +123,7 @@ const getAuthForSessionToken = async function ({
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
+      renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
         new Auth({
           config,
@@ -97,7 +143,15 @@ const getAuthForSessionToken = async function ({
       include: 'user',
     };
     const RestQuery = require('./RestQuery');
-    const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
+    const query = await RestQuery({
+      method: RestQuery.Method.get,
+      config,
+      runBeforeFind: false,
+      auth: master(config),
+      className: '_Session',
+      restWhere: { sessionToken },
+      restOptions,
+    });
     results = (await query.execute()).results;
   } else {
     results = (
@@ -112,18 +166,20 @@ const getAuthForSessionToken = async function ({
   if (results.length !== 1 || !results[0]['user']) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
+  const session = results[0];
   const now = new Date(),
-    expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
+    expiresAt = session.expiresAt ? new Date(session.expiresAt.iso) : undefined;
   if (expiresAt < now) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
-  const obj = results[0]['user'];
+  const obj = session.user;
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
   if (cacheController) {
     cacheController.user.put(sessionToken, obj);
   }
+  renewSessionIfNeeded({ config, session, sessionToken });
   const userObject = Parse.Object.fromJSON(obj);
   return new Auth({
     config,
@@ -134,12 +190,20 @@ const getAuthForSessionToken = async function ({
   });
 };
 
-var getAuthForLegacySessionToken = function ({ config, sessionToken, installationId }) {
+var getAuthForLegacySessionToken = async function ({ config, sessionToken, installationId }) {
   var restOptions = {
     limit: 1,
   };
   const RestQuery = require('./RestQuery');
-  var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
+  var query = await RestQuery({
+    method: RestQuery.Method.get,
+    config,
+    runBeforeFind: false,
+    auth: master(config),
+    className: '_User',
+    restWhere: { _session_token: sessionToken },
+    restOptions,
+  });
   return query.execute().then(response => {
     var results = response.results;
     if (results.length !== 1) {
@@ -184,9 +248,15 @@ Auth.prototype.getRolesForUser = async function () {
       },
     };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      runBeforeFind: false,
+      config: this.config,
+      auth: master(this.config),
+      className: '_Role',
+      restWhere,
+    });
+    await query.each(result => results.push(result));
   } else {
     await new Parse.Query(Parse.Role)
       .equalTo('users', this.user)
@@ -278,9 +348,15 @@ Auth.prototype.getRolesByIds = async function (ins) {
     });
     const restWhere = { roles: { $in: roles } };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      config: this.config,
+      runBeforeFind: false,
+      auth: master(this.config),
+      className: '_Role',
+      restWhere,
+    });
+    await query.each(result => results.push(result));
   }
   return results;
 };
@@ -362,6 +438,7 @@ const hasMutatedAuthData = (authData, userAuthData) => {
 };
 
 const checkIfUserHasProvidedConfiguredProvidersForLogin = (
+  req = {},
   authData = {},
   userAuthData = {},
   config
@@ -385,7 +462,16 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 
   const additionProvidersNotFound = [];
   const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
-    if (provider && provider.adapter && provider.adapter.policy === 'additional') {
+    let policy = provider.adapter.policy;
+    if (typeof policy === 'function') {
+      const requestObject = {
+        ip: req.config.ip,
+        user: req.auth.user,
+        master: req.auth.isMaster,
+      };
+      policy = policy.call(provider.adapter, requestObject, userAuthData[provider.name]);
+    }
+    if (policy === 'additional') {
       if (authData[provider.name]) {
         return true;
       } else {
@@ -422,14 +508,8 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
     await user.fetch({ useMasterKey: true });
   }
 
-  const { originalObject, updatedObject } = req.buildParseObjects();
-  const requestObject = getRequestObject(
-    undefined,
-    req.auth,
-    updatedObject,
-    originalObject || user,
-    req.config
-  );
+  const { updatedObject } = req.buildParseObjects();
+  const requestObject = getRequestObject(undefined, req.auth, updatedObject, user, req.config);
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails
   const acc = { authData: {}, authDataResponse: {} };
