@@ -107,6 +107,36 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('user login with context', async () => {
+    let hit = 0;
+    const context = { foo: 'bar' };
+    Parse.Cloud.beforeLogin(req => {
+      expect(req.context).toEqual(context);
+      hit++;
+    });
+    Parse.Cloud.afterLogin(req => {
+      expect(req.context).toEqual(context);
+      hit++;
+    });
+    await Parse.User.signUp('asdf', 'zxcv');
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': JSON.stringify(context),
+        'Content-Type': 'application/json',
+      },
+      body: {
+        _method: 'GET',
+        username: 'asdf',
+        password: 'zxcv',
+      },
+    });
+    expect(hit).toBe(2);
+  });
+
   it('user login with non-string username with REST API', async done => {
     await Parse.User.signUp('asdf', 'zxcv');
     request({
