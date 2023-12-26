@@ -943,7 +943,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
     };
     // Get verification conditions which can be booleans or functions; the purpose of this async/await
     // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
-    // conditional statement below, as a developer may be executing database operations inside of them
+    // conditional statement below, as a developer may decide to execute expensive operations in them
     const verifyUserEmails = async () => this.config.verifyUserEmails === true || (typeof this.config.verifyUserEmails === 'function' && await Promise.resolve(this.config.verifyUserEmails(request)) === true);
     const preventLoginWithUnverifiedEmail = async () => this.config.preventLoginWithUnverifiedEmail === true || (typeof this.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(this.config.preventLoginWithUnverifiedEmail(request)) === true);
     // If verification is required
