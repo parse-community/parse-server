@@ -143,6 +143,7 @@ export class UsersRouter extends ClassesRouter {
             ip: req.config.ip,
             installationId: req.auth.installationId,
           };
+          // Get verification conditions which can be booleans or functions
           const verifyUserEmails = req.config.verifyUserEmails === true || (typeof req.config.verifyUserEmails === 'function' && await Promise.resolve(req.config.verifyUserEmails(request)) === true);
           const preventLoginWithUnverifiedEmail = req.config.preventLoginWithUnverifiedEmail === true || (typeof req.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request)) === true);
           if (verifyUserEmails && preventLoginWithUnverifiedEmail && !user.emailVerified) {

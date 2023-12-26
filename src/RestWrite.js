@@ -941,7 +941,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
       ip: this.config.ip,
       installationId: this.auth.installationId,
     };
-    // Get verification conditions which can be boolean or functions
+    // Get verification conditions which can be booleans or functions
     const verifyUserEmails = this.config.verifyUserEmails === true || (typeof this.config.verifyUserEmails === 'function' && await Promise.resolve(this.config.verifyUserEmails(request)) === true);
     const preventLoginWithUnverifiedEmail = this.config.preventLoginWithUnverifiedEmail === true || (typeof this.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(this.config.preventLoginWithUnverifiedEmail(request)) === true);
     // If verification is required
