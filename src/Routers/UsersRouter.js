@@ -143,10 +143,12 @@ export class UsersRouter extends ClassesRouter {
             ip: req.config.ip,
             installationId: req.auth.installationId,
           };
-          // Get verification conditions which can be booleans or functions
-          const verifyUserEmails = req.config.verifyUserEmails === true || (typeof req.config.verifyUserEmails === 'function' && await Promise.resolve(req.config.verifyUserEmails(request)) === true);
-          const preventLoginWithUnverifiedEmail = req.config.preventLoginWithUnverifiedEmail === true || (typeof req.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request)) === true);
-          if (verifyUserEmails && preventLoginWithUnverifiedEmail && !user.emailVerified) {
+          // Get verification conditions which can be booleans or functions; the purpose of this async/await
+          // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
+          // conditional statement below, as a developer may be executing database operations inside of them
+          const verifyUserEmails = async () => req.config.verifyUserEmails === true || (typeof req.config.verifyUserEmails === 'function' && await Promise.resolve(req.config.verifyUserEmails(request)) === true);
+          const preventLoginWithUnverifiedEmail = async () => req.config.preventLoginWithUnverifiedEmail === true || (typeof req.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request)) === true);
+          if (await verifyUserEmails() && await preventLoginWithUnverifiedEmail() && !user.emailVerified) {
             throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
           }
 
