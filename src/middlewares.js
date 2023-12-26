@@ -342,7 +342,7 @@ const handleRateLimit = async (req, res, next) => {
 export const handleParseSession = async (req, res, next) => {
   try {
     const info = req.info;
-    if (req.auth) {
+    if (req.auth || req.url === '/sessions/me') {
       next();
       return;
     }
