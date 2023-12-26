@@ -1,3 +1,19 @@
+# [7.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.2...7.0.0-alpha.3) (2023-12-26)
+
+
+### Bug Fixes
+
+* Conditional email verification not working in some cases if `verifyUserEmails`, `preventLoginWithUnverifiedEmail` set to functions ([#8838](https://github.com/parse-community/parse-server/issues/8838)) ([8e7a6b1](https://github.com/parse-community/parse-server/commit/8e7a6b1480c0117e6c73e7adc5a6619115a04e85))
+
+### Features
+
+* Allow `Parse.Session.current` on expired session token instead of throwing error ([#8722](https://github.com/parse-community/parse-server/issues/8722)) ([f9dde4a](https://github.com/parse-community/parse-server/commit/f9dde4a9f8a90c63f71172c9bc515b0f6c6d2e4a))
+
+
+### BREAKING CHANGES
+
+* `Parse.Session.current()` no longer throws an error if the session token is expired, but instead returns the session token with its expiration date to allow checking its validity ([f9dde4a](f9dde4a))
+
 # [7.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.1...7.0.0-alpha.2) (2023-12-17)
 
 
