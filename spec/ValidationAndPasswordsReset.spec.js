@@ -277,6 +277,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     const verifyUserEmails = {
       method: async (params) => {
         expect(params.object).toBeInstanceOf(Parse.User);
+        expect(params.ip).toBeDefined();
+        expect(params.master).toBeDefined();
+        expect(params.installationId).toBeDefined();
         return true;
       },
     };
