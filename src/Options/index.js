@@ -150,7 +150,7 @@ export interface ParseServerOptions {
   enableAnonymousUsers: ?boolean;
   /* Enable (or disable) client class creation, defaults to true
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION
-  :DEFAULT: true */
+  :DEFAULT: false */
   allowClientClassCreation: ?boolean;
   /* Enable (or disable) custom objectId
   :ENV: PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID
