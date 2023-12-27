@@ -142,6 +142,7 @@ export class UsersRouter extends ClassesRouter {
             master: req.auth.isMaster,
             ip: req.config.ip,
             installationId: req.auth.installationId,
+            object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
           };
           // Get verification conditions which can be booleans or functions; the purpose of this async/await
           // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
