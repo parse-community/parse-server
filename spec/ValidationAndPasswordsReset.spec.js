@@ -267,6 +267,38 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     expect(loginRes.message).toEqual('User email is not verified.');
   });
 
+  it('provides function arguments in verifyUserEmails on login', async () => {
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    const verifyUserEmails = {
+      method: async (params) => {
+        expect(params.object).toBeInstanceOf(Parse.User);
+        return true;
+      },
+    };
+    const verifyUserEmailsSpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: verifyUserEmails.method,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const res = await Parse.User.logIn('user', 'pass').catch(e => e);
+    expect(res.code).toBe(205);
+    expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(2);
+  });
+
   it('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', async () => {
     let sendEmailOptions;
     const emailAdapter = {
