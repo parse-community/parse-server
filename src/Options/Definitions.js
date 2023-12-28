@@ -59,7 +59,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
     help: 'Enable (or disable) client class creation, defaults to false',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   allowCustomObjectId: {
     env: 'PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID',
