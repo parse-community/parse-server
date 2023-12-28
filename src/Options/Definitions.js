@@ -57,7 +57,7 @@ module.exports.ParseServerOptions = {
   },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
-    help: 'Enable (or disable) client class creation, defaults to true',
+    help: 'Enable (or disable) client class creation, defaults to false',
     action: parsers.booleanParser,
     default: true,
   },

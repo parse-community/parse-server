@@ -148,7 +148,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
   enableAnonymousUsers: ?boolean;
-  /* Enable (or disable) client class creation, defaults to true
+  /* Enable (or disable) client class creation, defaults to false
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION
   :DEFAULT: false */
   allowClientClassCreation: ?boolean;
