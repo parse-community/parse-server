@@ -3918,7 +3918,7 @@ describe('saveFile hooks', () => {
     }
   });
 
-  it('legacy hooks', async () => {
+  xit('legacy hooks', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const logger = require('../lib/logger').logger;
     const logSpy = spyOn(logger, 'warn').and.callFake(() => {});

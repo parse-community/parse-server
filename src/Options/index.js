@@ -607,15 +607,15 @@ export interface AuthAdapter {
 }
 
 export interface LogLevels {
-  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
   :DEFAULT: info
   */
   triggerAfter: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeFind`, `beforeLogin` on success. Default is `info`.
   :DEFAULT: info
   */
   triggerBeforeSuccess: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeFind`, `beforeLogin` on error. Default is `error `.
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
