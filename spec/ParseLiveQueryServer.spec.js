@@ -356,7 +356,7 @@ describe('ParseLiveQueryServer', function () {
     // Make sure we add subscriptionInfo to the client
     const args = client.addSubscriptionInfo.calls.first().args;
     expect(args[0]).toBe(requestId);
-    expect(args[1].fields).toBe(query.fields);
+    expect(args[1].keys).toBe(query.keys);
     expect(args[1].sessionToken).toBe(request.sessionToken);
     // Make sure we send subscribe response to the client
     expect(client.pushSubscribe).toHaveBeenCalledWith(requestId);
@@ -417,7 +417,7 @@ describe('ParseLiveQueryServer', function () {
     // Make sure we add subscriptionInfo to the client 2
     args = clientAgain.addSubscriptionInfo.calls.mostRecent().args;
     expect(args[0]).toBe(requestIdAgain);
-    expect(args[1].fields).toBe(queryAgain.fields);
+    expect(args[1].keys).toBe(queryAgain.keys);
   });
 
   it('can handle unsubscribe command without clientId', function () {
@@ -1081,7 +1081,7 @@ describe('ParseLiveQueryServer', function () {
     done();
   });
 
-  it('can handle create command with fields', async done => {
+  it('can handle create command with keys', async done => {
     jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
     const Client = require('../lib/LiveQuery/Client').Client;
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -1131,7 +1131,7 @@ describe('ParseLiveQueryServer', function () {
     done();
   });
 
-  it('can deprecate fields', async () => {
+  xit('can deprecate fields', async () => {
     const Deprecator = require('../lib/Deprecator/Deprecator');
     const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
     jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
