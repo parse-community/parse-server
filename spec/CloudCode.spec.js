@@ -3917,55 +3917,6 @@ describe('saveFile hooks', () => {
       done();
     }
   });
-
-  xit('legacy hooks', async () => {
-    await reconfigureServer({ filesAdapter: mockAdapter });
-    const logger = require('../lib/logger').logger;
-    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
-    const triggers = {
-      beforeSaveFile(req) {
-        req.file.setTags({ tagA: 'some-tag' });
-        req.file.setMetadata({ foo: 'bar' });
-        expect(req.triggerName).toEqual('beforeSave');
-        expect(req.master).toBe(true);
-      },
-      afterSaveFile(req) {
-        expect(req.master).toBe(true);
-        expect(req.file._tags).toEqual({ tagA: 'some-tag' });
-        expect(req.file._metadata).toEqual({ foo: 'bar' });
-      },
-      beforeDeleteFile(req) {
-        expect(req.file).toBeInstanceOf(Parse.File);
-        expect(req.file._name).toEqual('popeye.txt');
-        expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
-        expect(req.fileSize).toBe(null);
-      },
-      afterDeleteFile(req) {
-        expect(req.file).toBeInstanceOf(Parse.File);
-        expect(req.file._name).toEqual('popeye.txt');
-        expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
-      },
-    };
-
-    for (const key in triggers) {
-      spyOn(triggers, key).and.callThrough();
-      Parse.Cloud[key](triggers[key]);
-    }
-
-    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
-    await file.save({ useMasterKey: true });
-    await new Parse.File('popeye.txt', [1, 2, 3], 'text/plain').destroy({ useMasterKey: true });
-    await new Promise(resolve => setTimeout(resolve, 100));
-    for (const key in triggers) {
-      expect(triggers[key]).toHaveBeenCalled();
-      expect(logSpy).toHaveBeenCalledWith(
-        `DeprecationWarning: Parse.Cloud.${key} is deprecated and will be removed in a future version. Use Parse.Cloud.${key.replace(
-          'File',
-          ''
-        )}(Parse.File, (request) => {})`
-      );
-    }
-  });
 });
 
 describe('sendEmail', () => {
