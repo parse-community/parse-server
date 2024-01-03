@@ -1,3 +1,45 @@
+# [7.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.3...7.0.0-alpha.4) (2023-12-27)
+
+
+### Features
+
+* Add `Parse.User` as function parameter to Parse Server options `verifyUserEmails`, `preventLoginWithUnverifiedEmail` on login ([#8850](https://github.com/parse-community/parse-server/issues/8850)) ([972f630](https://github.com/parse-community/parse-server/commit/972f6300163b3cd7d95eeb95986e8322c95f821c))
+
+# [7.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.2...7.0.0-alpha.3) (2023-12-26)
+
+
+### Bug Fixes
+
+* Conditional email verification not working in some cases if `verifyUserEmails`, `preventLoginWithUnverifiedEmail` set to functions ([#8838](https://github.com/parse-community/parse-server/issues/8838)) ([8e7a6b1](https://github.com/parse-community/parse-server/commit/8e7a6b1480c0117e6c73e7adc5a6619115a04e85))
+
+### Features
+
+* Allow `Parse.Session.current` on expired session token instead of throwing error ([#8722](https://github.com/parse-community/parse-server/issues/8722)) ([f9dde4a](https://github.com/parse-community/parse-server/commit/f9dde4a9f8a90c63f71172c9bc515b0f6c6d2e4a))
+
+
+### BREAKING CHANGES
+
+* `Parse.Session.current()` no longer throws an error if the session token is expired, but instead returns the session token with its expiration date to allow checking its validity ([f9dde4a](f9dde4a))
+
+# [7.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.1...7.0.0-alpha.2) (2023-12-17)
+
+
+### Features
+
+* Add `installationId` to arguments for `verifyUserEmails`, `preventLoginWithUnverifiedEmail` ([#8836](https://github.com/parse-community/parse-server/issues/8836)) ([a22dbe1](https://github.com/parse-community/parse-server/commit/a22dbe16d5ac0090608f6caaf0ebd134925b7fd4))
+
+# [7.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.5.0-alpha.2...7.0.0-alpha.1) (2023-12-10)
+
+
+### Features
+
+* Add support for MongoDB 7 ([#8761](https://github.com/parse-community/parse-server/issues/8761)) ([3de8494](https://github.com/parse-community/parse-server/commit/3de8494a221991dfd10a74e0a2dc89576265c9b7))
+
+
+### BREAKING CHANGES
+
+* `Parse.Query` no longer supports the BSON type `code`; although this feature was never officially documented, its removal is announced as a breaking change to protect deployments where it might be in use. ([3de8494](3de8494))
+
 # [6.5.0-alpha.2](https://github.com/parse-community/parse-server/compare/6.5.0-alpha.1...6.5.0-alpha.2) (2023-11-19)
 
 

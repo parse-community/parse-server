@@ -143,10 +143,10 @@ describe('rest create', () => {
       const res = await request({
         headers: {
           'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest'
+          'X-Parse-REST-API-Key': 'rest',
         },
         method: 'GET',
-        url: `http://localhost:8378/1/classes/TestObject/${id}`
+        url: `http://localhost:8378/1/classes/TestObject/${id}`,
       });
 
       return res.data;
@@ -158,10 +158,10 @@ describe('rest create', () => {
           'Content-Type': 'application/json',
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Maintenance-Key': 'testing'
+          'X-Parse-Maintenance-Key': 'testing',
         },
         method: 'POST',
-        url: 'http://localhost:8378/1/classes/TestObject'
+        url: 'http://localhost:8378/1/classes/TestObject',
       };
     });
 
@@ -206,8 +206,7 @@ describe('rest create', () => {
       try {
         await request(req);
         fail();
-      }
-      catch (err) {
+      } catch (err) {
         expect(err.data.code).toEqual(Parse.Error.VALIDATION_ERROR);
       }
     });
@@ -230,8 +229,7 @@ describe('rest create', () => {
       try {
         await request(req);
         fail();
-      }
-      catch (err) {
+      } catch (err) {
         expect(err.data.code).toEqual(Parse.Error.INCORRECT_TYPE);
       }
     });

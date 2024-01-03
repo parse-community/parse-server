@@ -299,7 +299,7 @@ describe('Email Verification Token Expiration: ', () => {
     };
     const verifyUserEmails = {
       method(req) {
-        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip']);
+        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip', 'installationId']);
         return false;
       },
     };
@@ -358,7 +358,7 @@ describe('Email Verification Token Expiration: ', () => {
     };
     const verifyUserEmails = {
       method(req) {
-        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip']);
+        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip', 'installationId']);
         if (req.object.get('username') === 'no_email') {
           return false;
         }
@@ -389,7 +389,7 @@ describe('Email Verification Token Expiration: ', () => {
     await user2.signUp();
     expect(user2.getSessionToken()).toBeUndefined();
     expect(sendEmailOptions).toBeDefined();
-    expect(verifySpy).toHaveBeenCalledTimes(4);
+    expect(verifySpy).toHaveBeenCalledTimes(5);
   });
 
   it('can conditionally send user email verification', async () => {
