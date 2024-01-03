@@ -2012,6 +2012,18 @@ describe('cloud functions', () => {
 
     Parse.Cloud.run('myFunction', {}).then(() => done());
   });
+
+  it('can pass Parse pointers inside arrays', async () => {
+    Parse.Cloud.define('test', function () {
+      return 42;
+    });
+
+    expect(
+      await Parse.Cloud.run('test', {
+        a: [{ __type: 'Pointer', className: 'foo', objectId: 'foo' }],
+      })
+    ).toEqual(42);
+  });
 });
 
 describe('beforeSave hooks', () => {
