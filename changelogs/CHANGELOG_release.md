@@ -1,3 +1,80 @@
+# [5.6.0](https://github.com/parse-community/parse-server/compare/5.5.6...5.6.0) (2023-10-25)
+
+
+### Features
+
+* Add `$setOnInsert` operator to `Parse.Server.database.update` ([#8790](https://github.com/parse-community/parse-server/issues/8790)) ([c4a4a2a](https://github.com/parse-community/parse-server/commit/c4a4a2a09fd23f0d6b9d09c279203413c783854b))
+
+## [5.5.6](https://github.com/parse-community/parse-server/compare/5.5.5...5.5.6) (2023-10-20)
+
+
+### Bug Fixes
+
+* Server crash when uploading file without extension; fixes security vulnerability [GHSA-792q-q67h-w579](https://github.com/parse-community/parse-server/security/advisories/GHSA-792q-q67h-w579) ([#8782](https://github.com/parse-community/parse-server/issues/8782)) ([686a9f2](https://github.com/parse-community/parse-server/commit/686a9f282dc23c31beab3d93e6d21ccd0e1328fe))
+
+## [5.5.5](https://github.com/parse-community/parse-server/compare/5.5.4...5.5.5) (2023-09-04)
+
+
+### Bug Fixes
+
+* Parse Pointer allows to access internal Parse Server classes and circumvent `beforeFind` query trigger; fixes security vulnerability [GHSA-fcv6-fg5r-jm9q](https://github.com/parse-community/parse-server/security/advisories/GHSA-fcv6-fg5r-jm9q) ([6458ab0](https://github.com/parse-community/parse-server/commit/6458ab072ebaa0e6bbcf6ada696b3d0fb687402f))
+
+## [5.5.4](https://github.com/parse-community/parse-server/compare/5.5.3...5.5.4) (2023-07-30)
+
+
+### Bug Fixes
+
+* Security upgrade semver from 7.5.1 to 7.5.2 ([#8704](https://github.com/parse-community/parse-server/issues/8704)) ([c7fa3b9](https://github.com/parse-community/parse-server/commit/c7fa3b92a1d1289d0e281834175ed8807690eb9b))
+
+## [5.5.3](https://github.com/parse-community/parse-server/compare/5.5.2...5.5.3) (2023-06-29)
+
+
+### Bug Fixes
+
+* Server does not start via CLI when `auth` option is set ([#8669](https://github.com/parse-community/parse-server/issues/8669)) ([601da1e](https://github.com/parse-community/parse-server/commit/601da1ee3c8a22c48fa0209054a2e0f0474cf521))
+
+## [5.5.2](https://github.com/parse-community/parse-server/compare/5.5.1...5.5.2) (2023-06-28)
+
+
+### Bug Fixes
+
+* Remote code execution via MongoDB BSON parser through prototype pollution; fixes security vulnerability [GHSA-462x-c3jw-7vr6](https://github.com/parse-community/parse-server/security/advisories/GHSA-462x-c3jw-7vr6) ([#8675](https://github.com/parse-community/parse-server/issues/8675)) ([5fad292](https://github.com/parse-community/parse-server/commit/5fad2928fb8ee17304abcdcf259932f827d8c81f))
+
+## [5.5.1](https://github.com/parse-community/parse-server/compare/5.5.0...5.5.1) (2023-05-23)
+
+
+### Bug Fixes
+
+* Security upgrade @parse/push-adapter from 4.1.2 to 4.1.3 ([#8571](https://github.com/parse-community/parse-server/issues/8571)) ([8e83cac](https://github.com/parse-community/parse-server/commit/8e83cac02d6258e9b84b69d4e76da7d771a5eac7))
+
+# [5.5.0](https://github.com/parse-community/parse-server/compare/5.4.3...5.5.0) (2023-05-20)
+
+
+### Features
+
+* Add new Parse Server option `fileUpload.fileExtensions` to restrict file upload by file extension; this fixes a security vulnerability in which a phishing attack could be performed using an uploaded HTML file; by default the new option only allows file extensions matching the regex pattern `^[^hH][^tT][^mM][^lL]?$`, which excludes HTML files; this fix is released as a patch version given the severity of this vulnerability, however, if your app currently depends on uploading files with HTML file extensions then this may be a breaking change and you could allow HTML file upload by setting the option to `['.*']` ([#8537](https://github.com/parse-community/parse-server/issues/8537)) ([196e05f](https://github.com/parse-community/parse-server/commit/196e05f047a65f0fa96910905bb5bf24b6d30338))
+
+## [5.4.3](https://github.com/parse-community/parse-server/compare/5.4.2...5.4.3) (2023-03-22)
+
+
+### Bug Fixes
+
+* Unable to create new role if `beforeSave` hook exists ([#8474](https://github.com/parse-community/parse-server/issues/8474)) ([4f0f0ec](https://github.com/parse-community/parse-server/commit/4f0f0ec4bb7334adf64fcbfb80589727dc46906d))
+
+## [5.4.2](https://github.com/parse-community/parse-server/compare/5.4.1...5.4.2) (2023-02-16)
+
+
+### Bug Fixes
+
+* Security upgrade jsonwebtoken to 9.0.0 ([#8431](https://github.com/parse-community/parse-server/issues/8431)) ([2c19c2e](https://github.com/parse-community/parse-server/commit/2c19c2e4d4cfdeefe31e0ec11d2dc0e8ee508a91))
+
+## [5.4.1](https://github.com/parse-community/parse-server/compare/5.4.0...5.4.1) (2023-01-31)
+
+
+### Bug Fixes
+
+* The client IP address may be determined incorrectly in some cases; it is now required to set the Parse Server option `trustProxy` accordingly if Parse Server runs behind a proxy server, see the express framework's [trust proxy](https://expressjs.com/en/guide/behind-proxies.html) setting; this fixes a security vulnerability in which the Parse Server option `masterKeyIps` may be circumvented, see [GHSA-vm5r-c87r-pf6x](https://github.com/parse-community/parse-server/security/advisories/GHSA-vm5r-c87r-pf6x) ([#8369](https://github.com/parse-community/parse-server/issues/8369)) ([e016d81](https://github.com/parse-community/parse-server/commit/e016d813e083ce6828f9abce245d15b681a224d8))
+
 # [5.4.0](https://github.com/parse-community/parse-server/compare/5.3.3...5.4.0) (2022-11-19)
 
 

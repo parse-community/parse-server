@@ -294,4 +294,18 @@ describe('execution', () => {
       done.fail(data.toString());
     });
   });
+
+  it('can start Parse Server with auth via CLI', done => {
+    childProcess = spawn(binPath, ['./spec/configs/CLIConfigAuth.json'], { env: process.env });
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      if (data.includes('parse-server running on')) {
+        done();
+      }
+    });
+    childProcess.stderr.on('data', data => {
+      data = data.toString();
+      done.fail(data.toString());
+    });
+  });
 });

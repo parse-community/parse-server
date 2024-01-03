@@ -65,8 +65,6 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
     }
   }
 
-  this.checkProhibitedKeywords(data);
-
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -87,7 +85,10 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
   // Once set the schemaData should be immutable
   this.validSchemaController = null;
-  this.pendingOps = {};
+  this.pendingOps = {
+    operations: null,
+    identifier: null,
+  };
 }
 
 // A convenient method to perform all the steps of processing the
@@ -219,10 +220,13 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
   }
 
   const { originalObject, updatedObject } = this.buildParseObjects();
-
+  const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
-  this.pendingOps = { ...pending };
+  const [pending] = stateController.getPendingOps(identifier);
+  this.pendingOps = {
+    operations: { ...pending },
+    identifier,
+  };
 
   return Promise.resolve()
     .then(() => {
@@ -282,7 +286,11 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
           delete this.data.objectId;
         }
       }
-      this.checkProhibitedKeywords(this.data);
+      try {
+        Utils.checkProhibitedKeywords(this.config, this.data);
+      } catch (error) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, error);
+      }
     });
 };
 
@@ -575,7 +583,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
 };
 
 // The non-third-party parts of User transformation
-RestWrite.prototype.transformUser = function () {
+RestWrite.prototype.transformUser = async function () {
   var promise = Promise.resolve();
 
   if (this.className !== '_User') {
@@ -591,19 +599,25 @@ RestWrite.prototype.transformUser = function () {
   if (this.query && this.objectId()) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
     // session tokens, and remove them from the cache.
-    promise = new RestQuery(this.config, Auth.master(this.config), '_Session', {
-      user: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.objectId(),
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      config: this.config,
+      auth: Auth.master(this.config),
+      className: '_Session',
+      runBeforeFind: false,
+      restWhere: {
+        user: {
+          __type: 'Pointer',
+          className: '_User',
+          objectId: this.objectId(),
+        },
       },
-    })
-      .execute()
-      .then(results => {
-        results.results.forEach(session =>
-          this.config.cacheController.user.del(session.sessionToken)
-        );
-      });
+    });
+    promise = query.execute().then(results => {
+      results.results.forEach(session =>
+        this.config.cacheController.user.del(session.sessionToken)
+      );
+    });
   }
 
   return promise
@@ -1569,7 +1583,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
-        this.pendingOps = {};
+        this.pendingOps.operations = {};
         this.response.response = result;
       } else {
         this.response.response = this._updateResponseWithData(
@@ -1673,10 +1687,9 @@ RestWrite.prototype.cleanUserAuthData = function () {
 };
 
 RestWrite.prototype._updateResponseWithData = function (response, data) {
-  const { updatedObject } = this.buildParseObjects();
   const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(updatedObject._getStateIdentifier());
-  for (const key in this.pendingOps) {
+  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+  for (const key in this.pendingOps.operations) {
     if (!pending[key]) {
       data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
       this.storage.fieldsChangedByTrigger.push(key);
@@ -1723,21 +1736,6 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     }
   });
   return response;
-};
-
-RestWrite.prototype.checkProhibitedKeywords = function (data) {
-  if (this.config.requestKeywordDenylist) {
-    // Scan request data for denied keywords
-    for (const keyword of this.config.requestKeywordDenylist) {
-      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
-      if (match) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
-        );
-      }
-    }
-  }
 };
 
 export default RestWrite;

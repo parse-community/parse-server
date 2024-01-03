@@ -5269,7 +5269,6 @@ describe('ParseGraphQLServer', () => {
 
           it('should only count', async () => {
             await prepareData();
-
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const where = {
