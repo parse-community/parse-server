@@ -490,7 +490,7 @@ export class UsersRouter extends ClassesRouter {
     }
 
     const userController = req.config.userController;
-    const send = await userController.regenerateEmailVerifyToken(user, req.auth.isMaster);
+    const send = await userController.regenerateEmailVerifyToken(user, req.auth.isMaster, req.auth.installationId, req.ip);
     if (send) {
       userController.sendVerificationEmail(user, req);
     }
