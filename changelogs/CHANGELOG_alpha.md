@@ -1,3 +1,15 @@
+# [7.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.4...7.0.0-alpha.5) (2024-01-06)
+
+
+### Features
+
+* Add `installationId`, `ip`, `resendRequest` to arguments passed to `verifyUserEmails` on verification email request ([#8873](https://github.com/parse-community/parse-server/issues/8873)) ([8adcbee](https://github.com/parse-community/parse-server/commit/8adcbee11283d3e95179ca2047e2615f52c18806))
+
+
+### BREAKING CHANGES
+
+* The `Parse.User` passed as argument if `verifyUserEmails` is set to a function is renamed from `user` to `object` for consistency with invocations of `verifyUserEmails` on signup or login; the user object is not a plain JavaScript object anymore but an instance of `Parse.User` ([8adcbee](8adcbee))
+
 # [7.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.3...7.0.0-alpha.4) (2023-12-27)
 
 
