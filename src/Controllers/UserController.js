@@ -211,7 +211,13 @@ export class UserController extends AdaptableController {
     ) {
       return Promise.resolve();
     }
-    const shouldSend = await this.setEmailVerifyToken(user, { user, master, installationId, ip, resendRequest: true });
+    const shouldSend = await this.setEmailVerifyToken(user, {
+      object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+      master,
+      installationId,
+      ip,
+      resendRequest: true
+    });
     if (!shouldSend) {
       return;
     }
