@@ -197,7 +197,7 @@ export class UserController extends AdaptableController {
    * @param user
    * @returns {*}
    */
-  async regenerateEmailVerifyToken(user, master) {
+  async regenerateEmailVerifyToken(user, master, installationId, ip) {
     const { _email_verify_token } = user;
     let { _email_verify_token_expires_at } = user;
     if (_email_verify_token_expires_at && _email_verify_token_expires_at.__type === 'Date') {
@@ -211,7 +211,13 @@ export class UserController extends AdaptableController {
     ) {
       return Promise.resolve();
     }
-    const shouldSend = await this.setEmailVerifyToken(user, { user, master });
+    const shouldSend = await this.setEmailVerifyToken(user, {
+      object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+      master,
+      installationId,
+      ip,
+      resendRequest: true
+    });
     if (!shouldSend) {
       return;
     }
@@ -223,7 +229,7 @@ export class UserController extends AdaptableController {
     if (!aUser || aUser.emailVerified) {
       throw undefined;
     }
-    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster);
+    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster, req.auth?.installationId, req.ip);
     if (generate) {
       this.sendVerificationEmail(aUser, req);
     }
