@@ -3,6 +3,7 @@
 const Auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
 describe('Email Verification Token Expiration: ', () => {
   it('show the invalid verification link page, if the user clicks on the verify email link after the email verify token expires', done => {
@@ -792,6 +793,41 @@ describe('Email Verification Token Expiration: ', () => {
         jfail(error);
         done();
       });
+  });
+
+  it('provides function arguments in verifyUserEmails on verificationEmailRequest', async () => {
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    const verifyUserEmails = {
+      method: async (params) => {
+        expect(params.object).toBeInstanceOf(Parse.User);
+        expect(params.ip).toBeDefined();
+        expect(params.master).toBeDefined();
+        expect(params.installationId).toBeDefined();
+        expect(params.resendRequest).toBeTrue();
+        return true;
+      },
+    };
+    const verifyUserEmailsSpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: verifyUserEmails.method,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    await expectAsync(Parse.User.requestEmailVerification('test@example.com')).toBeResolved();
+    expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should throw with invalid emailVerifyTokenReuseIfValid', async done => {
