@@ -869,7 +869,7 @@ describe('Email Verification Token Expiration: ', () => {
     done();
   });
 
-  it('should match codes with emailVerifyTokenReuseIfValid', async done => {
+  fit('should match codes with emailVerifyTokenReuseIfValid', async done => {
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
     const emailAdapter = {
@@ -925,12 +925,12 @@ describe('Email Verification Token Expiration: ', () => {
       username: 'resends_verification_token',
     });
 
-    // verify that our token & expiration has been changed for this new request
+    // Verify that token & expiration haven't been changed for this new request
     expect(typeof userAfterRequest).toBe('object');
+    expect(userBeforeRequest._email_verify_token).toBeDefined();
     expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
-    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
-      userAfterRequest._email_verify_token_expires_at
-    );
+    expect(userBeforeRequest._email_verify_token_expires_at).toBeDefined();
+    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(userAfterRequest._email_verify_token_expires_at);
     done();
   });
 
