@@ -897,7 +897,7 @@ describe('Email Verification Token Expiration: ', () => {
     const config = Config.get('test');
     const [userBeforeRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
     // store this user before we make our email request
     expect(sendVerificationEmailCallCount).toBe(1);
     await new Promise(resolve => {
@@ -923,14 +923,14 @@ describe('Email Verification Token Expiration: ', () => {
 
     const [userAfterRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
 
-    // verify that our token & expiration has been changed for this new request
+    // Verify that token & expiration haven't been changed for this new request
     expect(typeof userAfterRequest).toBe('object');
+    expect(userBeforeRequest._email_verify_token).toBeDefined();
     expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
-    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
-      userAfterRequest._email_verify_token_expires_at
-    );
+    expect(userBeforeRequest._email_verify_token_expires_at).toBeDefined();
+    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(userAfterRequest._email_verify_token_expires_at);
     done();
   });
 
