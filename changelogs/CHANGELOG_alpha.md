@@ -1,3 +1,10 @@
+# [7.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.5...7.0.0-alpha.6) (2024-01-14)
+
+
+### Bug Fixes
+
+* Parse Server option `emailVerifyTokenReuseIfValid: true` generates new token on every email verification request ([#8885](https://github.com/parse-community/parse-server/issues/8885)) ([0023ce4](https://github.com/parse-community/parse-server/commit/0023ce448a5e9423337d0e1a25648bde1156bc95))
+
 # [7.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.4...7.0.0-alpha.5) (2024-01-06)
 
 
