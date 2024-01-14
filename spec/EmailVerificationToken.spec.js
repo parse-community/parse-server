@@ -3,6 +3,7 @@
 const Auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
 describe('Email Verification Token Expiration: ', () => {
   it('show the invalid verification link page, if the user clicks on the verify email link after the email verify token expires', done => {
@@ -794,6 +795,41 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
+  it('provides function arguments in verifyUserEmails on verificationEmailRequest', async () => {
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    const verifyUserEmails = {
+      method: async (params) => {
+        expect(params.object).toBeInstanceOf(Parse.User);
+        expect(params.ip).toBeDefined();
+        expect(params.master).toBeDefined();
+        expect(params.installationId).toBeDefined();
+        expect(params.resendRequest).toBeTrue();
+        return true;
+      },
+    };
+    const verifyUserEmailsSpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: verifyUserEmails.method,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    await expectAsync(Parse.User.requestEmailVerification('test@example.com')).toBeResolved();
+    expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('should throw with invalid emailVerifyTokenReuseIfValid', async done => {
     const sendEmailOptions = [];
     const emailAdapter = {
@@ -861,7 +897,7 @@ describe('Email Verification Token Expiration: ', () => {
     const config = Config.get('test');
     const [userBeforeRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
     // store this user before we make our email request
     expect(sendVerificationEmailCallCount).toBe(1);
     await new Promise(resolve => {
@@ -887,14 +923,14 @@ describe('Email Verification Token Expiration: ', () => {
 
     const [userAfterRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
 
-    // verify that our token & expiration has been changed for this new request
+    // Verify that token & expiration haven't been changed for this new request
     expect(typeof userAfterRequest).toBe('object');
+    expect(userBeforeRequest._email_verify_token).toBeDefined();
     expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
-    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
-      userAfterRequest._email_verify_token_expires_at
-    );
+    expect(userBeforeRequest._email_verify_token_expires_at).toBeDefined();
+    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(userAfterRequest._email_verify_token_expires_at);
     done();
   });
 
