@@ -6,7 +6,6 @@ import AccountLockout from '../AccountLockout';
 import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
-import { maintenance } from '../Auth';
 import passwordCrypto from '../password';
 import {
   maybeRunTrigger,
