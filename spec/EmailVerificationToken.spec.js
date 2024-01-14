@@ -869,7 +869,7 @@ describe('Email Verification Token Expiration: ', () => {
     done();
   });
 
-  fit('should match codes with emailVerifyTokenReuseIfValid', async done => {
+  it('should match codes with emailVerifyTokenReuseIfValid', async done => {
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
     const emailAdapter = {
@@ -897,7 +897,7 @@ describe('Email Verification Token Expiration: ', () => {
     const config = Config.get('test');
     const [userBeforeRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
     // store this user before we make our email request
     expect(sendVerificationEmailCallCount).toBe(1);
     await new Promise(resolve => {
@@ -923,7 +923,7 @@ describe('Email Verification Token Expiration: ', () => {
 
     const [userAfterRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
 
     // Verify that token & expiration haven't been changed for this new request
     expect(typeof userAfterRequest).toBe('object');

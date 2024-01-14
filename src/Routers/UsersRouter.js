@@ -6,6 +6,7 @@ import AccountLockout from '../AccountLockout';
 import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
+import { maintenance } from '../Auth';
 import passwordCrypto from '../password';
 import {
   maybeRunTrigger,
@@ -476,7 +477,7 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
-    const results = await req.config.database.find('_User', { email: email });
+    const results = await req.config.database.find('_User', { email: email }, {}, Auth.maintenance(req.config));
     if (!results.length || results.length < 1) {
       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
     }
