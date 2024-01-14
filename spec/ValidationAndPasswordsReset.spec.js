@@ -137,6 +137,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     spyOn(emailAdapter, 'sendVerificationEmail').and.callFake(options => {
       expect(options.link).not.toBeNull();
       expect(options.link).not.toMatch(/token=undefined/);
+      expect(options.link).not.toMatch(/username=undefined/);
       Promise.resolve();
     });
     const user = new Parse.User();

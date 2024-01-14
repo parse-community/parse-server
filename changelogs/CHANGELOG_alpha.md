@@ -1,3 +1,10 @@
+# [7.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.6...7.0.0-alpha.7) (2024-01-14)
+
+
+### Bug Fixes
+
+* Username is `undefined` in email verification link on email change ([#8887](https://github.com/parse-community/parse-server/issues/8887)) ([e315c13](https://github.com/parse-community/parse-server/commit/e315c137bf41bedfa8f0df537f2c3f6ab45b7e60))
+
 # [7.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.5...7.0.0-alpha.6) (2024-01-14)
 
 
