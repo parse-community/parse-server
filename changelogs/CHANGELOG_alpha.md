@@ -1,3 +1,10 @@
+# [7.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.8...7.0.0-alpha.9) (2024-01-15)
+
+
+### Bug Fixes
+
+* Server crashes when receiving an array of `Parse.Pointer` in the request body ([#8784](https://github.com/parse-community/parse-server/issues/8784)) ([66e3603](https://github.com/parse-community/parse-server/commit/66e36039d8af654cfa0284666c0ddd94975dcb52))
+
 # [7.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.7...7.0.0-alpha.8) (2024-01-15)
 
 
