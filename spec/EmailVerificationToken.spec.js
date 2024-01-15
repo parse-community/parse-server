@@ -426,7 +426,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(emailSpy).toHaveBeenCalledTimes(0);
   });
 
-  fit('provides full user object in email verification function on email and username change', async () => {
+  it('provides full user object in email verification function on email and username change', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
