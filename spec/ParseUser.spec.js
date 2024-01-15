@@ -3067,6 +3067,7 @@ describe('Parse.User testing', () => {
           },
         });
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         expect(emailCalled).toBe(true);
         expect(emailOptions).not.toBeUndefined();

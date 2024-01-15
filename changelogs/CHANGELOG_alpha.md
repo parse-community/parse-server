@@ -1,3 +1,10 @@
+# [7.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.7...7.0.0-alpha.8) (2024-01-15)
+
+
+### Bug Fixes
+
+* Incomplete user object in `verifyEmail` function if both username and email are changed ([#8889](https://github.com/parse-community/parse-server/issues/8889)) ([1eb95ae](https://github.com/parse-community/parse-server/commit/1eb95aeb41a96250e582d79a703f6adcb403c08b))
+
 # [7.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.6...7.0.0-alpha.7) (2024-01-14)
 
 
