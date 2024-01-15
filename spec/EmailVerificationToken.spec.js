@@ -426,6 +426,42 @@ describe('Email Verification Token Expiration: ', () => {
     expect(emailSpy).toHaveBeenCalledTimes(0);
   });
 
+  fit('provides full user object in email verification function on email and username change', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    const sendVerificationEmail = {
+      method(req) {
+        expect(req.user).toBeDefined();
+        expect(req.user.id).toBeDefined();
+        expect(req.user.get('createdAt')).toBeDefined();
+        expect(req.user.get('updatedAt')).toBeDefined();
+        expect(req.master).toBeDefined();
+        return false;
+      },
+    };
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5,
+      publicServerURL: 'http://localhost:8378/1',
+      sendUserEmailVerification: sendVerificationEmail.method,
+    });
+    const user = new Parse.User();
+    user.setPassword('password');
+    user.setUsername('new@example.com');
+    user.setEmail('user@example.com');
+    await user.save(null, { useMasterKey: true });
+
+    // Update email and username
+    user.setUsername('new@example.com');
+    user.setEmail('new@example.com');
+    await user.save(null, { useMasterKey: true });
+  });
+
   it('beforeSave options do not change existing behaviour', async () => {
     let sendEmailOptions;
     const emailAdapter = {
