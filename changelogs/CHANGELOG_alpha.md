@@ -1,3 +1,59 @@
+# [7.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.6...7.0.0-alpha.7) (2024-01-14)
+
+
+### Bug Fixes
+
+* Username is `undefined` in email verification link on email change ([#8887](https://github.com/parse-community/parse-server/issues/8887)) ([e315c13](https://github.com/parse-community/parse-server/commit/e315c137bf41bedfa8f0df537f2c3f6ab45b7e60))
+
+# [7.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.5...7.0.0-alpha.6) (2024-01-14)
+
+
+### Bug Fixes
+
+* Parse Server option `emailVerifyTokenReuseIfValid: true` generates new token on every email verification request ([#8885](https://github.com/parse-community/parse-server/issues/8885)) ([0023ce4](https://github.com/parse-community/parse-server/commit/0023ce448a5e9423337d0e1a25648bde1156bc95))
+
+# [7.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.4...7.0.0-alpha.5) (2024-01-06)
+
+
+### Features
+
+* Add `installationId`, `ip`, `resendRequest` to arguments passed to `verifyUserEmails` on verification email request ([#8873](https://github.com/parse-community/parse-server/issues/8873)) ([8adcbee](https://github.com/parse-community/parse-server/commit/8adcbee11283d3e95179ca2047e2615f52c18806))
+
+
+### BREAKING CHANGES
+
+* The `Parse.User` passed as argument if `verifyUserEmails` is set to a function is renamed from `user` to `object` for consistency with invocations of `verifyUserEmails` on signup or login; the user object is not a plain JavaScript object anymore but an instance of `Parse.User` ([8adcbee](8adcbee))
+
+# [7.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.3...7.0.0-alpha.4) (2023-12-27)
+
+
+### Features
+
+* Add `Parse.User` as function parameter to Parse Server options `verifyUserEmails`, `preventLoginWithUnverifiedEmail` on login ([#8850](https://github.com/parse-community/parse-server/issues/8850)) ([972f630](https://github.com/parse-community/parse-server/commit/972f6300163b3cd7d95eeb95986e8322c95f821c))
+
+# [7.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.2...7.0.0-alpha.3) (2023-12-26)
+
+
+### Bug Fixes
+
+* Conditional email verification not working in some cases if `verifyUserEmails`, `preventLoginWithUnverifiedEmail` set to functions ([#8838](https://github.com/parse-community/parse-server/issues/8838)) ([8e7a6b1](https://github.com/parse-community/parse-server/commit/8e7a6b1480c0117e6c73e7adc5a6619115a04e85))
+
+### Features
+
+* Allow `Parse.Session.current` on expired session token instead of throwing error ([#8722](https://github.com/parse-community/parse-server/issues/8722)) ([f9dde4a](https://github.com/parse-community/parse-server/commit/f9dde4a9f8a90c63f71172c9bc515b0f6c6d2e4a))
+
+
+### BREAKING CHANGES
+
+* `Parse.Session.current()` no longer throws an error if the session token is expired, but instead returns the session token with its expiration date to allow checking its validity ([f9dde4a](f9dde4a))
+
+# [7.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.1...7.0.0-alpha.2) (2023-12-17)
+
+
+### Features
+
+* Add `installationId` to arguments for `verifyUserEmails`, `preventLoginWithUnverifiedEmail` ([#8836](https://github.com/parse-community/parse-server/issues/8836)) ([a22dbe1](https://github.com/parse-community/parse-server/commit/a22dbe16d5ac0090608f6caaf0ebd134925b7fd4))
+
 # [7.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/6.5.0-alpha.2...7.0.0-alpha.1) (2023-12-10)
 
 
