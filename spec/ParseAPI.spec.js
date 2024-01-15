@@ -1267,7 +1267,7 @@ describe('miscellaneous', function () {
     });
   });
 
-  it('test cloud function query parameters with array of pointers', async done => {
+  it('test cloud function query parameters with array of pointers', async () => {
     Parse.Cloud.define('echoParams', req => {
       return req.params;
     });
@@ -1284,7 +1284,6 @@ describe('miscellaneous', function () {
     });
     const res = response.data.result;
     expect(res.arr.length).toEqual(1);
-    done();
   });
 
   it('can handle null params in cloud functions (regression test for #1742)', done => {
