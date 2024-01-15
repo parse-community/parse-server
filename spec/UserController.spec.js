@@ -1,4 +1,5 @@
 const emailAdapter = require('./support/MockEmailAdapter');
+const Config = require('../lib/Config');
 
 describe('UserController', () => {
   const user = {
@@ -6,6 +7,11 @@ describe('UserController', () => {
     username: 'testUser',
     email: 'test@example.com',
   };
+
+  beforeEach(async () => {
+    const collection = await Config.get('test').databaseAdapter._adaptiveCollection('_User');
+    await collection.insertOne(user);
+  });
 
   describe('sendVerificationEmail', () => {
     describe('parseFrameURL not provided', () => {
