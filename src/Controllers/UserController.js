@@ -145,12 +145,11 @@ export class UserController extends AdaptableController {
       className: '_User',
       restWhere: where,
     });
-    return query.execute().then(function (result) {
-      if (result.results.length != 1) {
-        throw undefined;
-      }
-      return result.results[0];
-    });
+    const result = await query.execute();
+    if (result.results.length != 1) {
+      throw undefined;
+    }
+    return result.results[0];
   }
 
   async sendVerificationEmail(user, req) {
