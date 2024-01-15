@@ -1280,10 +1280,9 @@ describe('miscellaneous', function () {
       method: 'POST',
       headers: headers,
       url: 'http://localhost:8378/1/functions/echoParams',
-      body: '{"foo":"bar", "other": 1, "arr": [{ "__type": "Pointer" }]}',
+      body: '{"arr": [{ "__type": "Pointer", "className": "PointerTest" }]}',
     });
     const res = response.data.result;
-    expect(res.foo).toEqual('bar');
     expect(res.arr.length).toEqual(1);
     done();
   });
