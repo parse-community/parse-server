@@ -129,9 +129,6 @@ export class UserController extends AdaptableController {
   }
 
   async getUserIfNeeded(user) {
-    if (user.username && user.email) {
-      return Promise.resolve(user);
-    }
     var where = {};
     if (user.username) {
       where.username = user.username;
