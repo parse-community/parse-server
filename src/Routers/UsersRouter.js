@@ -126,7 +126,7 @@ export class UsersRouter extends ClassesRouter {
           const accountLockoutPolicy = new AccountLockout(user, req.config);
           return accountLockoutPolicy.handleLoginAttempt(isValidPassword);
         })
-        .then(() => {
+        .then(async () => {
           if (!isValidPassword) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
@@ -137,9 +137,28 @@ export class UsersRouter extends ClassesRouter {
           if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
+          // Create request object for verification functions
+          const request = {
+            master: req.auth.isMaster,
+            ip: req.config.ip,
+            installationId: req.auth.installationId,
+            object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+          };
+          // Get verification conditions which can be booleans or functions; the purpose of this async/await
+          // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
+          // conditional statement below, as a developer may decide to execute expensive operations in them
+          const verifyUserEmails = async () =>
+            req.config.verifyUserEmails === true ||
+            (typeof req.config.verifyUserEmails === 'function' &&
+              (await Promise.resolve(req.config.verifyUserEmails(request))) === true);
+          const preventLoginWithUnverifiedEmail = async () =>
+            req.config.preventLoginWithUnverifiedEmail === true ||
+            (typeof req.config.preventLoginWithUnverifiedEmail === 'function' &&
+              (await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request))) ===
+                true);
           if (
-            req.config.verifyUserEmails &&
-            req.config.preventLoginWithUnverifiedEmail &&
+            (await verifyUserEmails()) &&
+            (await preventLoginWithUnverifiedEmail()) &&
             !user.emailVerified
           ) {
             throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
@@ -468,7 +487,12 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
-    const results = await req.config.database.find('_User', { email: email });
+    const results = await req.config.database.find(
+      '_User',
+      { email: email },
+      {},
+      Auth.maintenance(req.config)
+    );
     if (!results.length || results.length < 1) {
       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
     }
@@ -482,7 +506,12 @@ export class UsersRouter extends ClassesRouter {
     }
 
     const userController = req.config.userController;
-    const send = await userController.regenerateEmailVerifyToken(user, req.auth.isMaster);
+    const send = await userController.regenerateEmailVerifyToken(
+      user,
+      req.auth.isMaster,
+      req.auth.installationId,
+      req.ip
+    );
     if (send) {
       userController.sendVerificationEmail(user, req);
     }

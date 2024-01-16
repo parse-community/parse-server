@@ -139,12 +139,13 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. We consider the end-of-life date of a MongoDB "rapid release" to be the same as its major version release.
 
 | Version     | Latest Version | End-of-Life   | Compatible |
-|-------------|----------------|---------------|------------|
-| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes      |
-| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes      |
-| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes      |
-| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes      |
-| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes      |
+| ----------- | -------------- | ------------- | ---------- |
+| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes     |
+| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes     |
+| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes     |
+| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes     |
+| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes     |
+| MongoDB 7   | 7.0.1          | TDB           | ✅ Yes     |
 
 #### PostgreSQL
 

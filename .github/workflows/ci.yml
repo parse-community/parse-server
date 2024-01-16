@@ -147,19 +147,23 @@ jobs:
         include:
           - name: MongoDB 4.2, ReplicaSet
             MONGODB_VERSION: 4.2.19
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: MongoDB 4.4, ReplicaSet
             MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: MongoDB 5, ReplicaSet
             MONGODB_VERSION: 5.3.2
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: MongoDB 6, ReplicaSet
             MONGODB_VERSION: 6.0.2
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
+            NODE_VERSION: 19.3.0
+          - name: MongoDB 7, ReplicaSet
+            MONGODB_VERSION: 7.0.1
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
