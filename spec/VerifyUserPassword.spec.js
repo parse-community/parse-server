@@ -585,4 +585,41 @@ describe('Verify User Password', () => {
         done();
       });
   });
+
+  it('succeed in verifying password of user with unverified email with master key and option `ignoreEmailVerification`', async () => {
+    await reconfigureServer({
+      publicServerURL: 'http://localhost:8378/',
+      appName: 'emailVerify',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.setEmail('test@example.com');
+    await user.signUp();
+
+    const { data: res } = await request({
+      url: Parse.serverURL + '/verifyPassword',
+      headers: {
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      qs: {
+        username: 'user',
+        password: 'pass',
+        ignoreEmailVerification: true,
+      },
+    });
+    expect(res.objectId).toBe(user.id);
+    expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+    expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(false);
+  });
 });
