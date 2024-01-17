@@ -209,7 +209,7 @@ export class UserController extends AdaptableController {
       _email_verify_token &&
       new Date() < new Date(_email_verify_token_expires_at)
     ) {
-      return Promise.resolve();
+      return Promise.resolve(true);
     }
     const shouldSend = await this.setEmailVerifyToken(user, {
       object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
