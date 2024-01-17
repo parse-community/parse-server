@@ -26,14 +26,12 @@ const successfulIOS = function (body, installations) {
   return Promise.all(promises);
 };
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 const pushCompleted = async pushId => {
   const query = new Parse.Query('_PushStatus');
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
-    await sleep(100);
+    await jasmine.timeout();
     result = await query.first({ useMasterKey: true });
   }
 };
@@ -562,7 +560,7 @@ describe('PushController', () => {
     });
     const pushStatusId = await sendPush(payload, {}, config, auth);
     // it is enqueued so it can take time
-    await sleep(1000);
+    await jasmine.timeout(1000);
     Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
     const result = await Parse.Push.getPushStatus(pushStatusId);
     expect(result).toBeDefined();
@@ -801,7 +799,7 @@ describe('PushController', () => {
     });
     await Parse.Object.saveAll(installations);
     await pushController.sendPush(payload, {}, config, auth);
-    await sleep(1000);
+    await jasmine.timeout(1000);
     const query = new Parse.Query('_PushStatus');
     const results = await query.find({ useMasterKey: true });
     expect(results.length).toBe(1);
@@ -856,7 +854,7 @@ describe('PushController', () => {
     const config = Config.get(Parse.applicationId);
     await Parse.Object.saveAll(installations);
     await pushController.sendPush(payload, {}, config, auth);
-    await sleep(1000);
+    await jasmine.timeout(1000);
     const query = new Parse.Query('_PushStatus');
     const results = await query.find({ useMasterKey: true });
     expect(results.length).toBe(1);
