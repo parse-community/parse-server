@@ -663,6 +663,9 @@ export class UsersRouter extends ClassesRouter {
     this.route('GET', '/verifyPassword', req => {
       return this.handleVerifyPassword(req);
     });
+    this.route('POST', '/verifyPassword', req => {
+      return this.handleVerifyPassword(req);
+    });
     this.route('POST', '/challenge', req => {
       return this.handleChallenge(req);
     });
