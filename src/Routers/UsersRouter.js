@@ -145,8 +145,8 @@ export class UsersRouter extends ClassesRouter {
             object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
           };
 
-          // If request uses master or maintenance key and email verification should be ignored
-          if (!(req.auth.isMaster || req.auth.isMaintenance) && !ignoreEmailVerification) {
+          // If request doesn't use master or maintenance key with ignoring email verification
+          if (!((req.auth.isMaster || req.auth.isMaintenance) && ignoreEmailVerification)) {
 
             // Get verification conditions which can be booleans or functions; the purpose of this async/await
             // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
