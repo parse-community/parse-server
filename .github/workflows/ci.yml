@@ -226,6 +226,9 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: PostgreSQL 12, PostGIS 3.1
+            POSTGRES_IMAGE: postgis/postgis:12-3.1
+            NODE_VERSION: 19.3.0
           - name: PostgreSQL 12, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:12-3.2
             NODE_VERSION: 19.3.0
