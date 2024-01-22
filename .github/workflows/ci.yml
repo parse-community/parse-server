@@ -116,7 +116,7 @@ jobs:
       - run: npm run madge:circular
   check-docker:
     name: Docker Build
-    timeout-minutes: 15
+    timeout-minutes: 20
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout repository
@@ -130,7 +130,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64, linux/arm64/v8
   check-lock-file-version:
     name: NPM Lock File Version
     timeout-minutes: 5
