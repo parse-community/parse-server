@@ -242,7 +242,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 
 If your pull request introduces a change that may affect the storage or retrieval of objects, you may want to make sure it plays nice with Postgres.
 
-* You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) or use [`Docker`](#run-a-parse-postgres-with-docker)
+* You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) or use [`Docker`](#postgres-with-docker)
 * Run the tests against the postgres database with:
   ```
   PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly
