@@ -12,15 +12,15 @@ jobs:
       - name: Determine trigger branch name
         id: branch
         run: echo "::set-output name=trigger_branch::${GITHUB_REF#refs/*/}"
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18.1.0
+          node-version: 18.19.0
           registry-url: https://registry.npmjs.org/
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -51,7 +51,7 @@ jobs:
         id: branch
         run: echo "::set-output name=branch_name::${GITHUB_REF#refs/*/}"
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: ${{ needs.release.outputs.current_tag }}
       - name: Set up QEMU
@@ -89,13 +89,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.1.0
+          node-version: 18.19.0
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
