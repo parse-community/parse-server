@@ -51,7 +51,7 @@ jobs:
         id: branch
         run: echo "::set-output name=branch_name::${GITHUB_REF#refs/*/}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           ref: ${{ needs.release.outputs.current_tag }}
       - name: Set up QEMU
