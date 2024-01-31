@@ -1,3 +1,15 @@
+# [7.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.10...7.0.0-alpha.11) (2024-01-22)
+
+
+### Features
+
+* Add support for Postgres 16 ([#8898](https://github.com/parse-community/parse-server/issues/8898)) ([99489b2](https://github.com/parse-community/parse-server/commit/99489b22e4f0982e6cb39992974b51aa8d3a31e4))
+
+
+### BREAKING CHANGES
+
+* Removes support for Postgres 11 and 12 ([99489b2](99489b2))
+
 # [7.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.9...7.0.0-alpha.10) (2024-01-17)
 
 
