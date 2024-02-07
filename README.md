@@ -11,7 +11,7 @@
 
 [![Node Version](https://img.shields.io/badge/nodejs-14,_16,_18-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-4.0,_4.2,_4.4,_5,_6-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-11,_12,_13,_14,_15-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
 [![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
@@ -139,12 +139,13 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. We consider the end-of-life date of a MongoDB "rapid release" to be the same as its major version release.
 
 | Version     | Latest Version | End-of-Life   | Compatible |
-|-------------|----------------|---------------|------------|
-| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes      |
-| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes      |
-| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes      |
-| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes      |
-| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes      |
+| ----------- | -------------- | ------------- | ---------- |
+| MongoDB 4.0 | 4.0.28         | April 2022    | ✅ Yes     |
+| MongoDB 4.2 | 4.2.19         | April 2023    | ✅ Yes     |
+| MongoDB 4.4 | 4.4.13         | February 2024 | ✅ Yes     |
+| MongoDB 5   | 5.3.2          | October 2024  | ✅ Yes     |
+| MongoDB 6   | 6.0.2          | July 2025     | ✅ Yes     |
+| MongoDB 7   | 7.0.1          | TDB           | ✅ Yes     |
 
 #### PostgreSQL
 
@@ -152,11 +153,10 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 
 | Version     | PostGIS Version    | End-of-Life   | Parse Server Support | Compatible |
 |-------------|--------------------|---------------|----------------------|------------|
-| Postgres 11 | 3.0, 3.1, 3.2, 3.3 | November 2023 | <= 5.x (2022)        | ✅ Yes      |
-| Postgres 12 | 3.3                | November 2024 | <= 5.x (2022)        | ✅ Yes      |
-| Postgres 13 | 3.3                | November 2025 | <= 6.x (2023)        | ✅ Yes      |
-| Postgres 14 | 3.3                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
-| Postgres 15 | 3.3                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
+| Postgres 13 | 3.1, 3.2, 3.3, 3.4 | November 2025 | <= 6.x (2023)        | ✅ Yes      |
+| Postgres 14 | 3.4                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
+| Postgres 15 | 3.4                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
+| Postgres 16 | 3.4                | November 2028 | <= 9.x (2026)        | ✅ Yes      |
 
 ### Locally
 

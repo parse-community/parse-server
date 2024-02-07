@@ -147,19 +147,23 @@ jobs:
         include:
           - name: MongoDB 4.2, ReplicaSet
             MONGODB_VERSION: 4.2.19
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: MongoDB 4.4, ReplicaSet
             MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: MongoDB 5, ReplicaSet
             MONGODB_VERSION: 5.3.2
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: MongoDB 6, ReplicaSet
             MONGODB_VERSION: 6.0.2
-            MONGODB_TOPOLOGY: replicaset
+            MONGODB_TOPOLOGY: replset
+            NODE_VERSION: 19.3.0
+          - name: MongoDB 7, ReplicaSet
+            MONGODB_VERSION: 7.0.1
+            MONGODB_TOPOLOGY: replset
             NODE_VERSION: 19.3.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
@@ -222,29 +226,26 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: PostgreSQL 11, PostGIS 3.0
-            POSTGRES_IMAGE: postgis/postgis:11-3.0
+          - name: PostgreSQL 13, PostGIS 3.1
+            POSTGRES_IMAGE: postgis/postgis:13-3.1
             NODE_VERSION: 19.3.0
-          - name: PostgreSQL 11, PostGIS 3.1
-            POSTGRES_IMAGE: postgis/postgis:11-3.1
-            NODE_VERSION: 19.3.0
-          - name: PostgreSQL 11, PostGIS 3.2
-            POSTGRES_IMAGE: postgis/postgis:11-3.2
-            NODE_VERSION: 19.3.0
-          - name: PostgreSQL 11, PostGIS 3.3
-            POSTGRES_IMAGE: postgis/postgis:11-3.3
-            NODE_VERSION: 19.3.0
-          - name: PostgreSQL 12, PostGIS 3.3
-            POSTGRES_IMAGE: postgis/postgis:12-3.3
+          - name: PostgreSQL 13, PostGIS 3.2
+            POSTGRES_IMAGE: postgis/postgis:13-3.2
             NODE_VERSION: 19.3.0
           - name: PostgreSQL 13, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:13-3.3
             NODE_VERSION: 19.3.0
-          - name: PostgreSQL 14, PostGIS 3.3
-            POSTGRES_IMAGE: postgis/postgis:14-3.3
+          - name: PostgreSQL 13, PostGIS 3.4
+            POSTGRES_IMAGE: postgis/postgis:13-3.4
             NODE_VERSION: 19.3.0
-          - name: PostgreSQL 15, PostGIS 3.3
-            POSTGRES_IMAGE: postgis/postgis:15-3.3
+          - name: PostgreSQL 14, PostGIS 3.4
+            POSTGRES_IMAGE: postgis/postgis:14-3.4
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 15, PostGIS 3.4
+            POSTGRES_IMAGE: postgis/postgis:15-3.4
+            NODE_VERSION: 19.3.0
+          - name: PostgreSQL 16, PostGIS 3.4
+            POSTGRES_IMAGE: postgis/postgis:15-3.4
             NODE_VERSION: 19.3.0
       fail-fast: false
     name: ${{ matrix.name }}

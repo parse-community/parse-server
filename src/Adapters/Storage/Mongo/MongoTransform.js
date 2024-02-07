@@ -457,6 +457,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
     );
   }
   value = mapValues(restValue, transformInteriorValue);
+
   return { key: restKey, value };
 };
 
