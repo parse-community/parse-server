@@ -1,3 +1,22 @@
+# [7.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.10...7.0.0-alpha.11) (2024-01-22)
+
+
+### Features
+
+* Add support for Postgres 16 ([#8898](https://github.com/parse-community/parse-server/issues/8898)) ([99489b2](https://github.com/parse-community/parse-server/commit/99489b22e4f0982e6cb39992974b51aa8d3a31e4))
+
+
+### BREAKING CHANGES
+
+* Removes support for Postgres 11 and 12 ([99489b2](99489b2))
+
+# [7.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.9...7.0.0-alpha.10) (2024-01-17)
+
+
+### Features
+
+* Add password validation via POST request for user with unverified email using master key and option `ignoreEmailVerification` ([#8895](https://github.com/parse-community/parse-server/issues/8895)) ([633a9d2](https://github.com/parse-community/parse-server/commit/633a9d25e4253e2125bc93c02ee8a37e0f5f7b83))
+
 # [7.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.8...7.0.0-alpha.9) (2024-01-15)
 
 
