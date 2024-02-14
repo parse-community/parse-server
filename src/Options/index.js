@@ -611,11 +611,11 @@ export interface LogLevels {
   :DEFAULT: info
   */
   triggerAfter: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
   :DEFAULT: info
   */
   triggerBeforeSuccess: ?string;
-  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeFind`, `beforeLogin` on error. Default is `error `.
+  /* Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
   :DEFAULT: error
   */
   triggerBeforeError: ?string;
