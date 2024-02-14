@@ -1,3 +1,15 @@
+# [7.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.14...7.0.0-alpha.15) (2024-02-14)
+
+
+### Features
+
+* Deprecation DEPPS7: Remove deprecated Cloud Code file trigger syntax ([#8855](https://github.com/parse-community/parse-server/issues/8855)) ([4e6a375](https://github.com/parse-community/parse-server/commit/4e6a375b5184ae0f7aa256a921eca4021c609435))
+
+
+### BREAKING CHANGES
+
+* Cloud Code file trigger syntax has been aligned with object trigger syntax, for example `Parse.Cloud.beforeDeleteFile'` has been changed to `Parse.Cloud.beforeDelete(Parse.File, (request) => {})'` ([4e6a375](4e6a375))
+
 # [7.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.13...7.0.0-alpha.14) (2024-02-14)
 
 
