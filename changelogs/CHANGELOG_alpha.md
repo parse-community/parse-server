@@ -1,3 +1,22 @@
+# [7.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.12...7.0.0-alpha.13) (2024-02-14)
+
+
+### Bug Fixes
+
+* Docker image not published to Docker Hub on new release ([#8905](https://github.com/parse-community/parse-server/issues/8905)) ([a2ac8d1](https://github.com/parse-community/parse-server/commit/a2ac8d133c71cd7b61e5ef59c4be915cfea85db6))
+
+# [7.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.11...7.0.0-alpha.12) (2024-02-14)
+
+
+### Features
+
+* Add support for Node 20, drop support for Node 14, 16 ([#8907](https://github.com/parse-community/parse-server/issues/8907)) ([ced4872](https://github.com/parse-community/parse-server/commit/ced487246ea0ef72a8aa014991f003209b34841e))
+
+
+### BREAKING CHANGES
+
+* Removes support for Node 14 and 16 ([ced4872](ced4872))
+
 # [7.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.10...7.0.0-alpha.11) (2024-01-22)
 
 
