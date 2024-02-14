@@ -749,6 +749,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -777,6 +778,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -830,6 +832,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -846,6 +849,8 @@ describe('Pages Router', () => {
         const locale = linkResponse.headers['x-parse-page-param-locale'];
         const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        await jasmine.timeout();
+
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
@@ -1190,6 +1195,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkResponse = await request({
@@ -1197,7 +1203,6 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(linkResponse.status).toBe(200);
-
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(new RegExp(`\/${pages.emailVerificationSuccess.defaultFile}`));
       });

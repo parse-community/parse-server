@@ -129,9 +129,6 @@ export class UserController extends AdaptableController {
   }
 
   async getUserIfNeeded(user) {
-    if (user.username && user.email) {
-      return Promise.resolve(user);
-    }
     var where = {};
     if (user.username) {
       where.username = user.username;
@@ -148,12 +145,11 @@ export class UserController extends AdaptableController {
       className: '_User',
       restWhere: where,
     });
-    return query.execute().then(function (result) {
-      if (result.results.length != 1) {
-        throw undefined;
-      }
-      return result.results[0];
-    });
+    const result = await query.execute();
+    if (result.results.length != 1) {
+      throw undefined;
+    }
+    return result.results[0];
   }
 
   async sendVerificationEmail(user, req) {
