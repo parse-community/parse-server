@@ -23,7 +23,7 @@ jobs:
         id: branch
         run: echo "::set-output name=branch_name::${GITHUB_REF#refs/*/}"
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.ref }}
       - name: Set up QEMU
