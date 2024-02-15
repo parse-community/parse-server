@@ -12,7 +12,7 @@ import { logger } from '../logger';
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
-      return parseObject(item);
+      return parseObject(item, config);
     });
   } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);

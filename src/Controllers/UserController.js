@@ -129,9 +129,6 @@ export class UserController extends AdaptableController {
   }
 
   async getUserIfNeeded(user) {
-    if (user.username && user.email) {
-      return Promise.resolve(user);
-    }
     var where = {};
     if (user.username) {
       where.username = user.username;
@@ -148,12 +145,11 @@ export class UserController extends AdaptableController {
       className: '_User',
       restWhere: where,
     });
-    return query.execute().then(function (result) {
-      if (result.results.length != 1) {
-        throw undefined;
-      }
-      return result.results[0];
-    });
+    const result = await query.execute();
+    if (result.results.length != 1) {
+      throw undefined;
+    }
+    return result.results[0];
   }
 
   async sendVerificationEmail(user, req) {
@@ -161,7 +157,8 @@ export class UserController extends AdaptableController {
       return;
     }
     const token = encodeURIComponent(user._email_verify_token);
-    // We may need to fetch the user in case of update email
+    // We may need to fetch the user in case of update email; only use the `fetchedUser`
+    // from this point onwards; do not use the `user` as it may not contain all fields.
     const fetchedUser = await this.getUserIfNeeded(user);
     let shouldSendEmail = this.config.sendUserEmailVerification;
     if (typeof shouldSendEmail === 'function') {
@@ -176,7 +173,7 @@ export class UserController extends AdaptableController {
     if (!shouldSendEmail) {
       return;
     }
-    const username = encodeURIComponent(user.username);
+    const username = encodeURIComponent(fetchedUser.username);
 
     const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
     const options = {
@@ -209,7 +206,7 @@ export class UserController extends AdaptableController {
       _email_verify_token &&
       new Date() < new Date(_email_verify_token_expires_at)
     ) {
-      return Promise.resolve();
+      return Promise.resolve(true);
     }
     const shouldSend = await this.setEmailVerifyToken(user, {
       object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
