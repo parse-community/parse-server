@@ -1,7 +1,6 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
-import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
@@ -523,12 +522,6 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       }
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
       const authProvider = (req.config.auth || {})[provider] || {};
-      if (authProvider.enabled == null) {
-        Deprecator.logRuntimeDeprecation({
-          usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
-          solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
-        });
-      }
       if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(
           Parse.Error.UNSUPPORTED_SERVICE,
