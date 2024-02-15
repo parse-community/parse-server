@@ -51,6 +51,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.setEmail('testIfEnabled@parse.com');
       await user.signUp();
+      await jasmine.timeout();
       expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
       user.fetch().then(() => {
         expect(user.get('emailVerified')).toEqual(false);
@@ -137,6 +138,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     spyOn(emailAdapter, 'sendVerificationEmail').and.callFake(options => {
       expect(options.link).not.toBeNull();
       expect(options.link).not.toMatch(/token=undefined/);
+      expect(options.link).not.toMatch(/username=undefined/);
       Promise.resolve();
     });
     const user = new Parse.User();
@@ -183,6 +185,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.set('email', 'testSendSimpleAdapter@parse.com');
       await user.signUp();
+      await jasmine.timeout();
       expect(calls).toBe(1);
       user
         .fetch()
@@ -323,6 +326,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     user.setUsername('user');
     user.set('email', 'user@example.com');
     await user.signUp();
+    await jasmine.timeout();
     expect(sendEmailOptions).not.toBeUndefined();
     const response = await request({
       url: sendEmailOptions.link,
@@ -634,6 +638,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.set('email', 'user@parse.com');
       await user.signUp();
+      await jasmine.timeout();
       expect(emailSent).toBe(true);
       done();
     });
@@ -661,6 +666,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         expect(sendEmailOptions).not.toBeUndefined();
         request({

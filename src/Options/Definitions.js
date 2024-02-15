@@ -70,9 +70,9 @@ module.exports.ParseServerOptions = {
   allowExpiredAuthDataToken: {
     env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
     help:
-      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.',
+      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   allowHeaders: {
     env: 'PARSE_SERVER_ALLOW_HEADERS',
@@ -1046,7 +1046,7 @@ module.exports.AuthAdapter = {
   enabled: {
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
 };
 module.exports.LogLevels = {
@@ -1063,19 +1063,19 @@ module.exports.LogLevels = {
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
-      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.',
     default: 'info',
   },
   triggerBeforeError: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.',
     default: 'error',
   },
   triggerBeforeSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
     default: 'info',
   },
 };
