@@ -599,7 +599,7 @@ export interface DatabaseOptions {
 }
 
 export interface AuthAdapter {
-  /* Is `false` by default.
+  /* Is `true` if the auth adapter is enabled, `false` otherwise.
   :DEFAULT: false
   :ENV:
   */
