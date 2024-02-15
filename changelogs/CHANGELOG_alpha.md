@@ -1,3 +1,15 @@
+# [7.0.0-alpha.17](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.16...7.0.0-alpha.17) (2024-02-15)
+
+
+### Features
+
+* Deprecation DEPPS8:  Parse Server option `allowExpiredAuthDataToken` defaults to `false` ([#8860](https://github.com/parse-community/parse-server/issues/8860)) ([e29845f](https://github.com/parse-community/parse-server/commit/e29845f8dacac09ce3093d75c0d92330c24389e8))
+
+
+### BREAKING CHANGES
+
+* Parse Server option `allowExpiredAuthDataToken` defaults to `false`; a 3rd party authentication token will be validated every time the user tries to log in and the login will fail if the token has expired; the effect of this change may differ for different authentication adapters, depending on the token lifetime and the token refresh logic of the adapter ([e29845f](e29845f))
+
 # [7.0.0-alpha.16](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.15...7.0.0-alpha.16) (2024-02-14)
 
 
