@@ -1432,6 +1432,34 @@ describe('Parse.File testing', () => {
       }
     });
 
+    it('allows file without extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      const values = ['filenamewithoutextension'];
+
+      for (const value of values) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/${value}`,
+            body: '<html></html>\n',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeResolved();
+      }
+    });
+
     it('works with array', async () => {
       await reconfigureServer({
         fileUpload: {

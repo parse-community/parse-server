@@ -160,18 +160,10 @@ export default class MongoCollection {
   }
 
   _ensureSparseUniqueIndexInBackground(indexRequest) {
-    return new Promise((resolve, reject) => {
-      this._mongoCollection.createIndex(
-        indexRequest,
-        { unique: true, background: true, sparse: true },
-        error => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve();
-          }
-        }
-      );
+    return this._mongoCollection.createIndex(indexRequest, {
+      unique: true,
+      background: true,
+      sparse: true,
     });
   }
 

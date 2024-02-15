@@ -172,7 +172,6 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
-
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
@@ -687,13 +686,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     };
 
     return this._adaptiveCollection(className)
-      .then(
-        collection =>
-          new Promise((resolve, reject) =>
-            collection._mongoCollection.createIndex(indexCreationRequest, indexOptions, error =>
-              error ? reject(error) : resolve()
-            )
-          )
+      .then(collection =>
+        collection._mongoCollection.createIndex(indexCreationRequest, indexOptions)
       )
       .catch(err => this.handleError(err));
   }
