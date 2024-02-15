@@ -356,7 +356,7 @@ describe('ParseLiveQueryServer', function () {
     // Make sure we add subscriptionInfo to the client
     const args = client.addSubscriptionInfo.calls.first().args;
     expect(args[0]).toBe(requestId);
-    expect(args[1].fields).toBe(query.fields);
+    expect(args[1].keys).toBe(query.keys);
     expect(args[1].sessionToken).toBe(request.sessionToken);
     // Make sure we send subscribe response to the client
     expect(client.pushSubscribe).toHaveBeenCalledWith(requestId);
@@ -417,7 +417,7 @@ describe('ParseLiveQueryServer', function () {
     // Make sure we add subscriptionInfo to the client 2
     args = clientAgain.addSubscriptionInfo.calls.mostRecent().args;
     expect(args[0]).toBe(requestIdAgain);
-    expect(args[1].fields).toBe(queryAgain.fields);
+    expect(args[1].keys).toBe(queryAgain.keys);
   });
 
   it('can handle unsubscribe command without clientId', function () {
@@ -1081,7 +1081,7 @@ describe('ParseLiveQueryServer', function () {
     done();
   });
 
-  it('can handle create command with fields', async done => {
+  it('can handle create command with keys', async done => {
     jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
     const Client = require('../lib/LiveQuery/Client').Client;
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -1129,61 +1129,6 @@ describe('ParseLiveQueryServer', function () {
     expect(toSend.object).toBeDefined();
     expect(toSend.original).toBeUndefined();
     done();
-  });
-
-  it('can deprecate fields', async () => {
-    const Deprecator = require('../lib/Deprecator/Deprecator');
-    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
-    jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
-    const Client = require('../lib/LiveQuery/Client').Client;
-    const parseLiveQueryServer = new ParseLiveQueryServer({});
-    // Make mock request message
-    const message = generateMockMessage();
-
-    const clientId = 1;
-    const parseWebSocket = {
-      clientId,
-      send: jasmine.createSpy('send'),
-    };
-    const client = new Client(clientId, parseWebSocket);
-    spyOn(client, 'pushCreate').and.callThrough();
-    parseLiveQueryServer.clients.set(clientId, client);
-
-    // Add mock subscription
-    const requestId = 2;
-    const query = {
-      className: testClassName,
-      where: {
-        key: 'value',
-      },
-      fields: ['test'],
-    };
-    await addMockSubscription(parseLiveQueryServer, clientId, requestId, parseWebSocket, query);
-    // Mock _matchesSubscription to return matching
-    parseLiveQueryServer._matchesSubscription = function (parseObject) {
-      if (!parseObject) {
-        return false;
-      }
-      return true;
-    };
-    parseLiveQueryServer._matchesACL = function () {
-      return Promise.resolve(true);
-    };
-
-    parseLiveQueryServer._onAfterSave(message);
-
-    // Make sure we send create command to client
-    await timeout();
-
-    expect(client.pushCreate).toHaveBeenCalled();
-    const args = parseWebSocket.send.calls.mostRecent().args;
-    const toSend = JSON.parse(args[0]);
-    expect(toSend.object).toBeDefined();
-    expect(toSend.original).toBeUndefined();
-    expect(spy).toHaveBeenCalledWith({
-      usage: 'Subscribing using fields parameter',
-      solution: `Subscribe using "keys" instead.`,
-    });
   });
 
   it('can handle create command with watch', async () => {
