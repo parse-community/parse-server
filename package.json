@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "7.0.0-alpha.5",
+  "version": "7.0.0-alpha.18",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -43,15 +43,15 @@
     "jwks-rsa": "2.1.5",
     "ldapjs": "2.3.3",
     "lodash": "4.17.21",
-    "lru-cache": "9.1.1",
+    "lru-cache": "10.1.0",
     "mime": "3.0.0",
     "mongodb": "5.9.0",
     "mustache": "4.2.0",
-    "otpauth": "9.1.2",
+    "otpauth": "9.2.1",
     "parse": "4.1.0",
     "path-to-regexp": "6.2.1",
     "pg-monitor": "2.0.0",
-    "pg-promise": "11.5.0",
+    "pg-promise": "11.5.4",
     "pluralize": "8.0.0",
     "rate-limit-redis": "3.0.2",
     "redis": "4.6.6",
@@ -80,7 +80,6 @@
     "@semantic-release/release-notes-generator": "9.0.3",
     "all-node-versions": "11.3.0",
     "apollo-upload-client": "17.0.0",
-    "bcrypt-nodejs": "0.0.3",
     "clean-jsdoc-theme": "4.2.7",
     "cross-env": "7.0.2",
     "deep-diff": "1.0.2",
@@ -137,7 +136,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">=14.21.0 <17 || >=18 <19"
+    "node": ">=18.0.0 <21"
   },
   "bin": {
     "parse-server": "bin/parse-server"
