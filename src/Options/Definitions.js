@@ -1044,7 +1044,7 @@ module.exports.DatabaseOptions = {
 };
 module.exports.AuthAdapter = {
   enabled: {
-    help: 'Is `false` by default.',
+    help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
     default: false,
   },

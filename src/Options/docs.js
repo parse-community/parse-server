@@ -240,7 +240,7 @@
 
 /**
  * @interface AuthAdapter
- * @property {Boolean} enabled Is `false` by default.
+ * @property {Boolean} enabled Is `true` if the auth adapter is enabled, `false` otherwise.
  */
 
 /**
