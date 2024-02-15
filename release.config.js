@@ -40,8 +40,8 @@ async function config() {
       { name: 'alpha', prerelease: true },
       { name: 'beta', prerelease: true },
       'next-major',
-      // Long-Term-Support branches; defined as GLOB pattern
-      'release-+([0-9]).x.x',
+      // Long-Term-Support branch of previous major version
+      'release-6.x.x',
     ],
     dryRun: false,
     debug: true,

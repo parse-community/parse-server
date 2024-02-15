@@ -570,6 +570,16 @@ global.describe_only_db = db => {
   }
 };
 
+global.fdescribe_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return fdescribe;
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return fdescribe;
+  } else {
+    return xdescribe;
+  }
+};
+
 global.describe_only = validator => {
   if (validator()) {
     return describe;
@@ -595,4 +605,4 @@ jasmine.restoreLibrary = function (library, name) {
   require(library)[name] = libraryCache[library][name];
 };
 
-jasmine.timeout = t => new Promise(resolve => setTimeout(resolve, t));
+jasmine.timeout = (t = 100) => new Promise(resolve => setTimeout(resolve, t));
