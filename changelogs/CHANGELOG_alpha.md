@@ -1,3 +1,15 @@
+# [7.0.0-alpha.18](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.17...7.0.0-alpha.18) (2024-02-15)
+
+
+### Features
+
+* Deprecation DEPPS6: Authentication adapters disabled by default ([#8858](https://github.com/parse-community/parse-server/issues/8858)) ([0cf58eb](https://github.com/parse-community/parse-server/commit/0cf58eb8d60c8e5f485764e154f3214c49eee430))
+
+
+### BREAKING CHANGES
+
+* Authentication adapters are disabled by default; to use an authentication adapter it needs to be explicitly enabled in the Parse Server authentication adapter option `auth.<provider>.enabled: true` ([0cf58eb](0cf58eb))
+
 # [7.0.0-alpha.17](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.16...7.0.0-alpha.17) (2024-02-15)
 
 
