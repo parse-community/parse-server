@@ -1046,7 +1046,7 @@ module.exports.AuthAdapter = {
   enabled: {
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
 };
 module.exports.LogLevels = {
