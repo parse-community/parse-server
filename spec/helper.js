@@ -44,7 +44,6 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
-const RESTController = require('parse/lib/node/RESTController');
 const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
@@ -166,7 +165,6 @@ const reconfigureServer = async (changedConfiguration = {}) => {
   cache.clear();
   const parseServer = await ParseServer.startApp(newConfiguration);
   server = parseServer.server;
-  Parse.CoreManager.setRESTController(RESTController);
   parseServer.expressApp.use('/1', err => {
     console.error(err);
     fail('should not call next');
