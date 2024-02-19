@@ -166,6 +166,7 @@ export class ClassesRouter extends PromiseRouter {
       'subqueryReadPreference',
       'hint',
       'explain',
+      'comment',
     ];
 
     for (const key of Object.keys(body)) {
@@ -214,6 +215,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.explain) {
       options.explain = body.explain;
+    }
+    if (body.comment && typeof body.comment === 'string') {
+      options.comment = body.comment;
     }
     return options;
   }
