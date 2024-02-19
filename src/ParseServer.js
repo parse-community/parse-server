@@ -244,7 +244,15 @@ class ParseServer {
           process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
-          throw err;
+          if (err.message) {
+            process.stderr.write('An uncaught exception occurred: ' + err.message);
+          }
+          if (err.stack) {
+            process.stderr.write('Stack Trace:\n' + err.stack);
+          } else {
+            process.stderr.write(err);
+          }
+          process.exit(1);
         }
       });
       // verify the server url after a 'mount' event is received
