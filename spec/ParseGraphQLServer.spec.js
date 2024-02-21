@@ -9548,12 +9548,119 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should support file upload for on fly creation through pointer and relation', async () => {
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+          });
+          const schema = new Parse.Schema('SomeClass');
+          schema.addFile('someFileField');
+          schema.addPointer('somePointerField', 'SomeClass');
+          schema.addRelation('someRelationField', 'SomeClass');
+          await schema.save();
+
+          const body = new FormData();
+          body.append(
+            'operations',
+            JSON.stringify({
+              query: `
+                mutation UploadFiles(
+                  $fields: CreateSomeClassFieldsInput
+                ) {
+                  createSomeClass(
+                    input: { fields: $fields }
+                  ) {
+                    someClass {
+                      id
+                      someFileField {
+                        name
+                        url
+                      }
+                      somePointerField {
+                        id
+                        someFileField {
+                          name
+                          url
+                        }
+                      }
+                      someRelationField {
+                        edges {
+                          node {
+                            id
+                            someFileField {
+                              name
+                              url
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                `,
+              variables: {
+                fields: {
+                  someFileField: { upload: null },
+                  somePointerField: {
+                    createAndLink: {
+                      someFileField: { upload: null },
+                    },
+                  },
+                  someRelationField: {
+                    createAndAdd: [
+                      {
+                        someFileField: { upload: null },
+                      },
+                    ],
+                  },
+                },
+              },
+            })
+          );
+          body.append(
+            'map',
+            JSON.stringify({
+              1: ['variables.fields.someFileField.upload'],
+              2: ['variables.fields.somePointerField.createAndLink.someFileField.upload'],
+              3: ['variables.fields.someRelationField.createAndAdd.0.someFileField.upload'],
+            })
+          );
+          body.append('1', 'My File Content someFileField', {
+            filename: 'someFileField.txt',
+            contentType: 'text/plain',
+          });
+          body.append('2', 'My File Content somePointerField', {
+            filename: 'somePointerField.txt',
+            contentType: 'text/plain',
+          });
+          body.append('3', 'My File Content someRelationField', {
+            filename: 'someRelationField.txt',
+            contentType: 'text/plain',
+          });
+
+          const res = await fetch('http://localhost:13377/graphql', {
+            method: 'POST',
+            headers,
+            body,
+          });
+          expect(res.status).toEqual(200);
+          const result = await res.json();
+          console.log(result);
+          expect(result.data.createSomeClass.someClass.someFileField.name).toEqual(
+            jasmine.stringMatching(/_someFileField.txt$/)
+          );
+          expect(result.data.createSomeClass.someClass.somePointerField.someFileField.name).toEqual(
+            jasmine.stringMatching(/_somePointerField.txt$/)
+          );
+          expect(
+            result.data.createSomeClass.someClass.someRelationField.edges[0].node.someFileField.name
+          ).toEqual(jasmine.stringMatching(/_someRelationField.txt$/));
+        });
+
         it('should support files and add extension from mimetype', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
-
             const body = new FormData();
             body.append(
               'operations',
