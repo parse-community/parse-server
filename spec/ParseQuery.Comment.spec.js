@@ -40,6 +40,9 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
 
   it('send comment with query through REST', async () => {
     const comment = 'Hello Parse';
+    const object = new TestObject();
+    object.set('name', 'object');
+    await object.save();
     const options = Object.assign({}, masterKeyOptions, {
       url: Parse.serverURL + '/classes/TestObject',
       qs: {
@@ -47,11 +50,9 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
         comment: comment,
       },
     });
-    const response = await request(options);
-    let result = response.data.results;
-    expect(result.command.comment).toBe(comment);
-    result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
-    expect(result.command.comment).toBe(comment);
+    await request(options);
+    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
+    expect(result.command.explain.comment).toBe(comment);
   });
 
   it('send comment with query', async () => {
@@ -88,12 +89,11 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
     object.set('name', 'object');
     await object.save();
     const collection = await config.database.adapter._adaptiveCollection('TestObject');
-    let result = await collection.aggregate([{ $group: { _id: '$name' } }], {
+    await collection.aggregate([{ $group: { _id: '$name' } }], {
       explain: true,
       comment: comment,
     });
-    expect(result[0].command.comment).toBe(comment);
-    result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
-    expect(result.command.comment).toBe(comment);
+    const result = await database.collection('system.profile').findOne({}, { sort: { ts: -1 } });
+    expect(result.command.explain.comment).toBe(comment);
   });
 });
