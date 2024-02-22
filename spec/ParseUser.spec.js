@@ -38,6 +38,23 @@ describe('allowExpiredAuthDataToken option', () => {
 });
 
 describe('Parse.User testing', () => {
+  it('retrieves original object when user logs in with third party auth', async () => {
+    let original;
+    let user;
+    Parse.Cloud.afterSave(Parse.User, async request => {
+      original = request.original;
+      user = request.object;
+    });
+
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User.logInWith('facebook');
+    await Parse.User.logOut();
+    await Parse.User.logInWith('facebook');
+    expect(original).toBeDefined();
+    expect(user.get('authData')).not.toBeUndefined();
+  });
+
   it('user sign up class method', async done => {
     const user = await Parse.User.signUp('asdf', 'zxcv');
     ok(user.getSessionToken());
