@@ -77,12 +77,11 @@ export function jobStatusHandler(config) {
   const objectId = newObjectId(config.objectIdSize);
   const database = config.database;
   const handler = statusHandler(JOB_STATUS_COLLECTION, database);
-  const setRunning = function (jobName, params) {
+  const setRunning = function (jobName) {
     const now = new Date();
     jobStatus = {
       objectId,
       jobName,
-      params,
       status: 'running',
       source: 'api',
       createdAt: now,
