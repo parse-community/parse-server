@@ -125,6 +125,30 @@ function validateExplainValue(explain) {
   }
 }
 
+function mongoErrorToParse(error) {
+  if (error.code === 11000) {
+    // Duplicate value
+    const err = new Parse.Error(
+      Parse.Error.DUPLICATE_VALUE,
+      'A duplicate value for a field with unique values was provided'
+    );
+    err.underlyingError = error;
+    if (error.message) {
+      const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
+      if (matches && Array.isArray(matches)) {
+        err.userInfo = { duplicated_field: matches[1] };
+      }
+    }
+    return err;
+  } else if (error.code === 16755 || error.code === 16756) {
+    // Can't extract geo keys
+    const err = new Parse.Error(Parse.Error.INVALID_VALUE, error.message);
+    err.underlyingError = error;
+    return err;
+  }
+  return error;
+}
+
 export class MongoStorageAdapter implements StorageAdapter {
   // Private
   _uri: string;
@@ -485,22 +509,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection => collection.insertOne(mongoObject, transactionalSession))
       .then(() => ({ ops: [mongoObject] }))
       .catch(error => {
-        if (error.code === 11000) {
-          // Duplicate value
-          const err = new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
-          err.underlyingError = error;
-          if (error.message) {
-            const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
-            if (matches && Array.isArray(matches)) {
-              err.userInfo = { duplicated_field: matches[1] };
-            }
-          }
-          throw err;
-        }
-        throw error;
+        throw mongoErrorToParse(error);
       })
       .catch(err => this.handleError(err));
   }
@@ -571,13 +580,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       )
       .then(result => mongoObjectToParseObject(className, result.value, schema))
       .catch(error => {
-        if (error.code === 11000) {
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
-        }
-        throw error;
+        throw mongoErrorToParse(error);
       })
       .catch(err => this.handleError(err));
   }
