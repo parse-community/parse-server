@@ -383,6 +383,28 @@ describe('miscellaneous', function () {
       );
   });
 
+  it('query with count', async () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-Master-Key': Parse.masterKey,
+    };
+    await Parse.Object.saveAll([new TestObject({ x: true }), new TestObject({ x: false })]);
+    const res = await request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject',
+      body: {
+        where: { x: false },
+        count: 1,
+        limit: 0,
+        _method: 'GET',
+      },
+      json: true,
+    });
+    expect(res.data.count).toEqual(1);
+  });
+
   it('basic saveAll', function (done) {
     const alpha = new TestObject({ letter: 'alpha' });
     const beta = new TestObject({ letter: 'beta' });
