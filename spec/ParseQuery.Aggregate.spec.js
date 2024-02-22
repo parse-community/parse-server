@@ -573,6 +573,34 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
+  fit('can aggregate with fakepointer', async () => {
+    const pointer = new PointerObject();
+    const obj = new TestObject({ fakepointer: pointer, name: 'hello' });
+    await obj.save();
+    const pipeline = [
+      {group: { _id: '$_p_fakepointer'}},
+    ];
+    const query = new Parse.Query(TestObject);
+    const results = await query.aggregate(pipeline);
+    console.log(results[0]);
+  });
+
+  fit('can aggregate with raw', async () => {
+    const pointer = new PointerObject();
+    const obj = new TestObject({ fakepointer: pointer, name: 'hello' });
+    await obj.save();
+    const pipeline = [
+      { match: { objectId: obj.id } },
+      { project: { name: 1 } },
+      {
+        addFields : { fakepointer : {'_id': 1} }
+      }
+    ];
+    const query = new Parse.Query(TestObject);
+    const results = await query.aggregate(pipeline);
+    console.log(results[0]); // { name: 'hello', fakepointer: { _id: 1 }, objectId: '9P7ktS91Xg' }
+  });
+
   it('limit query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
