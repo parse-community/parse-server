@@ -746,6 +746,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     schema: SchemaType,
     query: QueryType,
     readPreference: ?string,
+    _estimate: ?boolean,
     hint: ?mixed,
     comment: ?string
   ) {
