@@ -339,12 +339,11 @@ describe('AudiencesRouter', () => {
         )
         .then(result => {
           expect(result).toBeTruthy();
-
           database
             .collection('test__Audience')
             .find({ _id: audience.objectId })
-            .toArray()
-            .then(rows => {
+            .toArray((error, rows) => {
+              expect(error).toEqual(undefined);
               expect(rows[0]['times_used']).toEqual(1);
               expect(rows[0]['_last_used']).toEqual(now);
               Parse._request(
@@ -363,9 +362,6 @@ describe('AudiencesRouter', () => {
                 .catch(error => {
                   done.fail(error);
                 });
-            })
-            .catch(error => {
-              done.fail(error);
             });
         });
     });

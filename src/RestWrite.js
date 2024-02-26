@@ -64,6 +64,8 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
     }
   }
 
+  this.checkProhibitedKeywords(data);
+
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -110,9 +112,6 @@ RestWrite.prototype.execute = function () {
     })
     .then(() => {
       return this.validateAuthData();
-    })
-    .then(() => {
-      return this.checkRestrictedFields();
     })
     .then(() => {
       return this.runBeforeSaveTrigger();
@@ -302,11 +301,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
           delete this.data.objectId;
         }
       }
-      try {
-        Utils.checkProhibitedKeywords(this.config, this.data);
-      } catch (error) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, error);
-      }
+      this.checkProhibitedKeywords(this.data);
     });
 };
 
@@ -368,36 +363,9 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
       };
 
       // Add default fields
+      this.data.updatedAt = this.updatedAt;
       if (!this.query) {
-        // allow customizing createdAt and updatedAt when using maintenance key
-        if (
-          this.auth.isMaintenance &&
-          this.data.createdAt &&
-          this.data.createdAt.__type === 'Date'
-        ) {
-          this.data.createdAt = this.data.createdAt.iso;
-
-          if (this.data.updatedAt && this.data.updatedAt.__type === 'Date') {
-            const createdAt = new Date(this.data.createdAt);
-            const updatedAt = new Date(this.data.updatedAt.iso);
-
-            if (updatedAt < createdAt) {
-              throw new Parse.Error(
-                Parse.Error.VALIDATION_ERROR,
-                'updatedAt cannot occur before createdAt'
-              );
-            }
-
-            this.data.updatedAt = this.data.updatedAt.iso;
-          }
-          // if no updatedAt is provided, set it to createdAt to match default behavior
-          else {
-            this.data.updatedAt = this.data.createdAt;
-          }
-        } else {
-          this.data.updatedAt = this.updatedAt;
-          this.data.createdAt = this.updatedAt;
-        }
+        this.data.createdAt = this.updatedAt;
 
         // Only assign new objectId if we are creating new object
         if (!this.data.objectId) {
@@ -409,8 +377,6 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
           });
         }
       } else if (schema) {
-        this.data.updatedAt = this.updatedAt;
-
         Object.keys(this.data).forEach(fieldName => {
           setRequiredFieldIfNeeded(fieldName, false);
         });
@@ -587,7 +553,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // we need to be sure that the user has provided
         // required authData
         Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
-          { config: this.config, auth: this.auth },
           authData,
           userResult.authData,
           this.config
@@ -638,47 +603,35 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   }
 };
 
-RestWrite.prototype.checkRestrictedFields = async function () {
+// The non-third-party parts of User transformation
+RestWrite.prototype.transformUser = function () {
+  var promise = Promise.resolve();
   if (this.className !== '_User') {
-    return;
+    return promise;
   }
 
   if (!this.auth.isMaintenance && !this.auth.isMaster && 'emailVerified' in this.data) {
     const error = `Clients aren't allowed to manually update email verification.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
-};
-
-// The non-third-party parts of User transformation
-RestWrite.prototype.transformUser = async function () {
-  var promise = Promise.resolve();
-  if (this.className !== '_User') {
-    return promise;
-  }
 
   // Do not cleanup session if objectId is not set
   if (this.query && this.objectId()) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
     // session tokens, and remove them from the cache.
-    const query = await RestQuery({
-      method: RestQuery.Method.find,
-      config: this.config,
-      auth: Auth.master(this.config),
-      className: '_Session',
-      runBeforeFind: false,
-      restWhere: {
-        user: {
-          __type: 'Pointer',
-          className: '_User',
-          objectId: this.objectId(),
-        },
+    promise = new RestQuery(this.config, Auth.master(this.config), '_Session', {
+      user: {
+        __type: 'Pointer',
+        className: '_User',
+        objectId: this.objectId(),
       },
-    });
-    promise = query.execute().then(results => {
-      results.results.forEach(session =>
-        this.config.cacheController.user.del(session.sessionToken)
-      );
-    });
+    })
+      .execute()
+      .then(results => {
+        results.results.forEach(session =>
+          this.config.cacheController.user.del(session.sessionToken)
+        );
+      });
   }
 
   return promise
@@ -798,15 +751,8 @@ RestWrite.prototype._validateEmail = function () {
           Object.keys(this.data.authData)[0] === 'anonymous')
       ) {
         // We updated the email, send a new validation
-        const { originalObject, updatedObject } = this.buildParseObjects();
-        const request = {
-          original: originalObject,
-          object: updatedObject,
-          master: this.auth.isMaster,
-          ip: this.config.ip,
-          installationId: this.auth.installationId,
-        };
-        return this.config.userController.setEmailVerifyToken(this.data, request, this.storage);
+        this.storage['sendVerificationEmail'] = true;
+        this.config.userController.setEmailVerifyToken(this.data);
       }
     });
 };
@@ -918,7 +864,7 @@ RestWrite.prototype._validatePasswordHistory = function () {
   return Promise.resolve();
 };
 
-RestWrite.prototype.createSessionTokenIfNeeded = async function () {
+RestWrite.prototype.createSessionTokenIfNeeded = function () {
   if (this.className !== '_User') {
     return;
   }
@@ -930,33 +876,14 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   if (this.auth.user && this.data.authData) {
     return;
   }
-  // If sign-up call
-  if (!this.storage.authProvider) {
-    // Create request object for verification functions
-    const { originalObject, updatedObject } = this.buildParseObjects();
-    const request = {
-      original: originalObject,
-      object: updatedObject,
-      master: this.auth.isMaster,
-      ip: this.config.ip,
-      installationId: this.auth.installationId,
-    };
-    // Get verification conditions which can be booleans or functions; the purpose of this async/await
-    // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
-    // conditional statement below, as a developer may decide to execute expensive operations in them
-    const verifyUserEmails = async () =>
-      this.config.verifyUserEmails === true ||
-      (typeof this.config.verifyUserEmails === 'function' &&
-        (await Promise.resolve(this.config.verifyUserEmails(request))) === true);
-    const preventLoginWithUnverifiedEmail = async () =>
-      this.config.preventLoginWithUnverifiedEmail === true ||
-      (typeof this.config.preventLoginWithUnverifiedEmail === 'function' &&
-        (await Promise.resolve(this.config.preventLoginWithUnverifiedEmail(request))) === true);
-    // If verification is required
-    if ((await verifyUserEmails()) && (await preventLoginWithUnverifiedEmail())) {
-      this.storage.rejectSignup = true;
-      return;
-    }
+  if (
+    !this.storage.authProvider && // signup call, with
+    this.config.preventLoginWithUnverifiedEmail && // no login without verification
+    this.config.verifyUserEmails
+  ) {
+    // verification is on
+    this.storage.rejectSignup = true;
+    return;
   }
   return this.createSessionToken();
 };
@@ -1083,7 +1010,7 @@ RestWrite.prototype.handleFollowup = function () {
   if (this.storage && this.storage['sendVerificationEmail']) {
     delete this.storage['sendVerificationEmail'];
     // Fire and forget!
-    this.config.userController.sendVerificationEmail(this.data, { auth: this.auth });
+    this.config.userController.sendVerificationEmail(this.data);
     return this.handleFollowup.bind(this);
   }
 };
@@ -1835,6 +1762,21 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
     }
   });
   return response;
+};
+
+RestWrite.prototype.checkProhibitedKeywords = function (data) {
+  if (this.config.requestKeywordDenylist) {
+    // Scan request data for denied keywords
+    for (const keyword of this.config.requestKeywordDenylist) {
+      const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+      if (match) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+        );
+      }
+    }
+  }
 };
 
 export default RestWrite;

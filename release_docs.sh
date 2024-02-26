@@ -27,8 +27,3 @@ npm run docs
 
 mkdir -p "docs/api/${DEST}"
 cp -R out/* "docs/api/${DEST}"
-
-# Copy other resources
-RESOURCE_DIR=".github"
-mkdir -p "docs/${RESOURCE_DIR}"
-cp "./.github/parse-server-logo.png" "docs/${RESOURCE_DIR}/"

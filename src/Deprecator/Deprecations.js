@@ -17,5 +17,5 @@
  */
 module.exports = [
   { optionKey: 'allowClientClassCreation', changeNewDefault: 'false' },
-  { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
+  { optionKey: 'allowExpiredAuthDataToken', changeNewDefault: 'false' },
 ];

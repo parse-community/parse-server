@@ -2,6 +2,7 @@
 const Parse = require('parse/node').Parse;
 const crypto = require('crypto');
 const jwksClient = require('jwks-rsa');
+const util = require('util');
 const jwt = require('jsonwebtoken');
 const httpsRequest = require('./httpsRequest');
 const authUtils = require('./utils');
@@ -59,9 +60,11 @@ const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
     cacheMaxAge,
   });
 
+  const asyncGetSigningKeyFunction = util.promisify(client.getSigningKey);
+
   let key;
   try {
-    key = await authUtils.getSigningKey(client, keyId);
+    key = await asyncGetSigningKeyFunction(keyId);
   } catch (error) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,

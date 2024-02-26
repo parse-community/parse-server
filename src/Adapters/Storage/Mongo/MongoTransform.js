@@ -457,7 +457,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
     );
   }
   value = mapValues(restValue, transformInteriorValue);
-
   return { key: restKey, value };
 };
 
@@ -985,13 +984,6 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
         return amount;
       } else {
         return { __op: '$inc', arg: amount };
-      }
-
-    case 'SetOnInsert':
-      if (flatten) {
-        return amount;
-      } else {
-        return { __op: '$setOnInsert', arg: amount };
       }
 
     case 'Add':

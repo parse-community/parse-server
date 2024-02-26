@@ -82,7 +82,6 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const parseFields = await transformTypes('create', fields, {
             className,
             parseGraphQLSchema,
-            originalFields: args.fields,
             req: { config, auth, info },
           });
 
@@ -191,7 +190,6 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const parseFields = await transformTypes('update', fields, {
             className,
             parseGraphQLSchema,
-            originalFields: args.fields,
             req: { config, auth, info },
           });
 

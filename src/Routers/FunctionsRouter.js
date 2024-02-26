@@ -9,30 +9,30 @@ import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
 
-function parseObject(obj, config) {
+function parseObject(obj) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
-      return parseObject(item, config);
+      return parseObject(item);
     });
   } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);
   } else if (obj && obj.__type == 'File') {
     return Parse.File.fromJSON(obj);
-  } else if (obj && obj.__type == 'Pointer' && config.encodeParseObjectInCloudFunction) {
+  } else if (obj && obj.__type == 'Pointer') {
     return Parse.Object.fromJSON({
       __type: 'Pointer',
       className: obj.className,
       objectId: obj.objectId,
     });
   } else if (obj && typeof obj === 'object') {
-    return parseParams(obj, config);
+    return parseParams(obj);
   } else {
     return obj;
   }
 }
 
-function parseParams(params, config) {
-  return _.mapValues(params, item => parseObject(item, config));
+function parseParams(params) {
+  return _.mapValues(params, parseObject);
 }
 
 export class FunctionsRouter extends PromiseRouter {
@@ -66,7 +66,7 @@ export class FunctionsRouter extends PromiseRouter {
       throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid job.');
     }
     let params = Object.assign({}, req.body, req.query);
-    params = parseParams(params, req.config);
+    params = parseParams(params);
     const request = {
       params: params,
       log: req.config.loggerController,
@@ -126,7 +126,7 @@ export class FunctionsRouter extends PromiseRouter {
       throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
     let params = Object.assign({}, req.body, req.query);
-    params = parseParams(params, req.config);
+    params = parseParams(params);
     const request = {
       params: params,
       master: req.auth && req.auth.isMaster,

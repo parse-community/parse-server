@@ -255,16 +255,7 @@ function inject(t, list) {
         props.push(t.objectProperty(t.stringLiteral('action'), action));
       }
       if (elt.defaultValue) {
-        let parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
-        if (!parsedValue) {
-          for (const type of elt.typeAnnotation.types) {
-            elt.type = type.type;
-            parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
-            if (parsedValue) {
-              break;
-            }
-          }
-        }
+        const parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
         if (parsedValue) {
           props.push(t.objectProperty(t.stringLiteral('default'), parsedValue));
         } else {

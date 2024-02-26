@@ -147,7 +147,7 @@ export class FilesRouter {
           if (ext === '*') {
             return true;
           }
-          const regex = new RegExp(ext);
+          const regex = new RegExp(fileExtensions);
           if (regex.test(extension)) {
             return true;
           }
@@ -155,13 +155,13 @@ export class FilesRouter {
       };
       let extension = contentType;
       if (filename && filename.includes('.')) {
-        extension = filename.substring(filename.lastIndexOf('.') + 1);
+        extension = filename.split('.')[1];
       } else if (contentType && contentType.includes('/')) {
         extension = contentType.split('/')[1];
       }
-      extension = extension?.split(' ')?.join('');
+      extension = extension.split(' ').join('');
 
-      if (extension && !isValidExtension(extension)) {
+      if (!isValidExtension(extension)) {
         next(
           new Parse.Error(
             Parse.Error.FILE_SAVE_ERROR,
@@ -175,13 +175,22 @@ export class FilesRouter {
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
-    try {
+    if (req.config && req.config.requestKeywordDenylist) {
       // Scan request data for denied keywords
-      Utils.checkProhibitedKeywords(config, metadata);
-      Utils.checkProhibitedKeywords(config, tags);
-    } catch (error) {
-      next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
-      return;
+      for (const keyword of req.config.requestKeywordDenylist) {
+        const match =
+          Utils.objectContainsKeyValue(metadata, keyword.key, keyword.value) ||
+          Utils.objectContainsKeyValue(tags, keyword.key, keyword.value);
+        if (match) {
+          next(
+            new Parse.Error(
+              Parse.Error.INVALID_KEY_NAME,
+              `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
+            )
+          );
+          return;
+        }
+      }
     }
     file.setTags(tags);
     file.setMetadata(metadata);

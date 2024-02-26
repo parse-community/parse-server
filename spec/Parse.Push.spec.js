@@ -2,12 +2,14 @@
 
 const request = require('../lib/request');
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const pushCompleted = async pushId => {
   const query = new Parse.Query('_PushStatus');
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
-    await jasmine.timeout();
+    await sleep(100);
     result = await query.first({ useMasterKey: true });
   }
 };

@@ -12,7 +12,6 @@ var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
-const { enforceRoleSecurity } = require('./SharedRest');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -25,34 +24,65 @@ function checkLiveQuery(className, config) {
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
-  const query = await RestQuery({
-    method: RestQuery.Method.find,
-    config,
-    auth,
-    className,
-    restWhere,
-    restOptions,
-    clientSDK,
-    context,
-  });
-  return query.execute();
-};
+function find(config, auth, className, restWhere, restOptions, clientSDK, context) {
+  enforceRoleSecurity('find', className, auth);
+  return triggers
+    .maybeRunQueryTrigger(
+      triggers.Types.beforeFind,
+      className,
+      restWhere,
+      restOptions,
+      config,
+      auth,
+      context
+    )
+    .then(result => {
+      restWhere = result.restWhere || restWhere;
+      restOptions = result.restOptions || restOptions;
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK,
+        true,
+        context
+      );
+      return query.execute();
+    });
+}
 
 // get is just like find but only queries an objectId.
-const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
+const get = (config, auth, className, objectId, restOptions, clientSDK, context) => {
   var restWhere = { objectId };
-  const query = await RestQuery({
-    method: RestQuery.Method.get,
-    config,
-    auth,
-    className,
-    restWhere,
-    restOptions,
-    clientSDK,
-    context,
-  });
-  return query.execute();
+  enforceRoleSecurity('get', className, auth);
+  return triggers
+    .maybeRunQueryTrigger(
+      triggers.Types.beforeFind,
+      className,
+      restWhere,
+      restOptions,
+      config,
+      auth,
+      context,
+      true
+    )
+    .then(result => {
+      restWhere = result.restWhere || restWhere;
+      restOptions = result.restOptions || restOptions;
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK,
+        true,
+        context
+      );
+      return query.execute();
+    });
 };
 
 // Returns a promise that doesn't resolve to any useful value.
@@ -71,40 +101,35 @@ function del(config, auth, className, objectId, context) {
   let schemaController;
 
   return Promise.resolve()
-    .then(async () => {
+    .then(() => {
       const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery || className == '_Session') {
-        const query = await RestQuery({
-          method: RestQuery.Method.get,
-          config,
-          auth,
-          className,
-          restWhere: { objectId },
-        });
-        return query.execute({ op: 'delete' }).then(response => {
-          if (response && response.results && response.results.length) {
-            const firstResult = response.results[0];
-            firstResult.className = className;
-            if (className === '_Session' && !auth.isMaster && !auth.isMaintenance) {
-              if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+        return new RestQuery(config, auth, className, { objectId })
+          .execute({ op: 'delete' })
+          .then(response => {
+            if (response && response.results && response.results.length) {
+              const firstResult = response.results[0];
+              firstResult.className = className;
+              if (className === '_Session' && !auth.isMaster && !auth.isMaintenance) {
+                if (!auth.user || firstResult.user.objectId !== auth.user.id) {
+                  throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+                }
               }
+              var cacheAdapter = config.cacheController;
+              cacheAdapter.user.del(firstResult.sessionToken);
+              inflatedObject = Parse.Object.fromJSON(firstResult);
+              return triggers.maybeRunTrigger(
+                triggers.Types.beforeDelete,
+                auth,
+                inflatedObject,
+                null,
+                config,
+                context
+              );
             }
-            var cacheAdapter = config.cacheController;
-            cacheAdapter.user.del(firstResult.sessionToken);
-            inflatedObject = Parse.Object.fromJSON(firstResult);
-            return triggers.maybeRunTrigger(
-              triggers.Types.beforeDelete,
-              auth,
-              inflatedObject,
-              null,
-              config,
-              context
-            );
-          }
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for delete.');
-        });
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for delete.');
+          });
       }
       return Promise.resolve({});
     })
@@ -168,22 +193,21 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()
-    .then(async () => {
+    .then(() => {
       const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
         // Do not use find, as it runs the before finds
-        const query = await RestQuery({
-          method: RestQuery.Method.get,
+        return new RestQuery(
           config,
           auth,
           className,
           restWhere,
-          runAfterFind: false,
-          runBeforeFind: false,
-          context,
-        });
-        return query.execute({
+          undefined,
+          undefined,
+          false,
+          context
+        ).execute({
           op: 'update',
         });
       }
@@ -222,6 +246,40 @@ function handleSessionMissingError(error, className, auth) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
+}
+
+const classesWithMasterOnlyAccess = [
+  '_JobStatus',
+  '_PushStatus',
+  '_Hooks',
+  '_GlobalConfig',
+  '_JobSchedule',
+  '_Idempotency',
+];
+// Disallowing access to the _Role collection except by master key
+function enforceRoleSecurity(method, className, auth) {
+  if (className === '_Installation' && !auth.isMaster && !auth.isMaintenance) {
+    if (method === 'delete' || method === 'find') {
+      const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`;
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    }
+  }
+
+  //all volatileClasses are masterKey only
+  if (
+    classesWithMasterOnlyAccess.indexOf(className) >= 0 &&
+    !auth.isMaster &&
+    !auth.isMaintenance
+  ) {
+    const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`;
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+  }
+
+  // readOnly masterKey is not allowed
+  if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
+    const error = `read-only masterKey isn't allowed to perform the ${method} operation.`;
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+  }
 }
 
 module.exports = {

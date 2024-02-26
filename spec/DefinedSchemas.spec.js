@@ -554,7 +554,7 @@ describe('DefinedSchemas', () => {
     });
   });
 
-  it('should not delete classes automatically', async () => {
+  it('should not delete automatically classes', async () => {
     await reconfigureServer({
       schema: { definitions: [{ className: '_User' }, { className: 'Test' }] },
     });

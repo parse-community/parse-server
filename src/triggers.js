@@ -270,8 +270,6 @@ export function getRequestObject(
     triggerType === Types.afterSave ||
     triggerType === Types.beforeDelete ||
     triggerType === Types.afterDelete ||
-    triggerType === Types.beforeLogin ||
-    triggerType === Types.afterLogin ||
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.

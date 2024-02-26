@@ -399,16 +399,15 @@ describe('RestQuery.each', () => {
     }
     const config = Config.get('test');
     await Parse.Object.saveAll(objects);
-    const query = await RestQuery({
-      method: RestQuery.Method.find,
+    const query = new RestQuery(
       config,
-      auth: auth.master(config),
-      className: 'Object',
-      restWhere: { value: { $gt: 2 } },
-      restOptions: { limit: 2 },
-    });
+      auth.master(config),
+      'Object',
+      { value: { $gt: 2 } },
+      { limit: 2 }
+    );
     const spy = spyOn(query, 'execute').and.callThrough();
-    const classSpy = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
+    const classSpy = spyOn(RestQuery.prototype, 'execute').and.callThrough();
     const results = [];
     await query.each(result => {
       expect(result.value).toBeGreaterThan(2);
@@ -439,37 +438,34 @@ describe('RestQuery.each', () => {
      * Two queries needed since objectId are sorted and we can't know which one
      * going to be the first and then skip by the $gt added by each
      */
-    const queryOne = await RestQuery({
-      method: RestQuery.Method.get,
+    const queryOne = new RestQuery(
       config,
-      auth: auth.master(config),
-      className: 'Letter',
-      restWhere: {
+      auth.master(config),
+      'Letter',
+      {
         numbers: {
           __type: 'Pointer',
           className: 'Number',
           objectId: object1.id,
         },
       },
-      restOptions: { limit: 1 },
-    });
-
-    const queryTwo = await RestQuery({
-      method: RestQuery.Method.get,
+      { limit: 1 }
+    );
+    const queryTwo = new RestQuery(
       config,
-      auth: auth.master(config),
-      className: 'Letter',
-      restWhere: {
+      auth.master(config),
+      'Letter',
+      {
         numbers: {
           __type: 'Pointer',
           className: 'Number',
           objectId: object2.id,
         },
       },
-      restOptions: { limit: 1 },
-    });
+      { limit: 1 }
+    );
 
-    const classSpy = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
+    const classSpy = spyOn(RestQuery.prototype, 'execute').and.callThrough();
     const resultsOne = [];
     const resultsTwo = [];
     await queryOne.each(result => {

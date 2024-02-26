@@ -21,9 +21,7 @@ export class AuthAdapter {
      * Usage policy
      * @type {AuthPolicy}
      */
-    if (!this.policy) {
-      this.policy = 'default';
-    }
+    this.policy = 'default';
   }
   /**
    * @param appIds The specified app IDs in the configuration
