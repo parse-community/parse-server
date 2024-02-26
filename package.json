@@ -41,7 +41,7 @@
     "intersect": "1.0.1",
     "jsonwebtoken": "9.0.0",
     "jwks-rsa": "3.1.0",
-    "ldapjs": "2.3.3",
+    "ldapjs": "3.0.7",
     "lodash": "4.17.21",
     "lru-cache": "10.1.0",
     "mime": "3.0.0",
@@ -61,7 +61,7 @@
     "uuid": "9.0.0",
     "winston": "3.11.0",
     "winston-daily-rotate-file": "4.7.1",
-    "ws": "8.15.1"
+    "ws": "8.16.0"
   },
   "devDependencies": {
     "@actions/core": "1.9.1",
