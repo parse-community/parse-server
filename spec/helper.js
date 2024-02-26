@@ -103,6 +103,7 @@ const defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
+  maintenanceKey: 'testing',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   directAccess: true,
@@ -427,6 +428,27 @@ global.it_exclude_dbs = excluded => {
   }
 };
 
+let testExclusionList = [];
+try {
+  // Fetch test exclusion list
+  testExclusionList = require('./testExclusionList.json');
+  console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') {
+    throw error;
+  }
+}
+
+// Disable test if its UUID is found in testExclusionList
+global.it_id = (id, func) => {
+  if (testExclusionList.includes(id)) {
+    return xit;
+  } else {
+    if (func === undefined) return it;
+    else return func;
+  }
+};
+
 global.it_only_db = db => {
   if (
     process.env.PARSE_SERVER_TEST_DB === db ||
@@ -546,6 +568,16 @@ global.describe_only_db = db => {
   }
 };
 
+global.fdescribe_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return fdescribe;
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return fdescribe;
+  } else {
+    return xdescribe;
+  }
+};
+
 global.describe_only = validator => {
   if (validator()) {
     return describe;
@@ -571,4 +603,4 @@ jasmine.restoreLibrary = function (library, name) {
   require(library)[name] = libraryCache[library][name];
 };
 
-jasmine.timeout = t => new Promise(resolve => setTimeout(resolve, t));
+jasmine.timeout = (t = 100) => new Promise(resolve => setTimeout(resolve, t));

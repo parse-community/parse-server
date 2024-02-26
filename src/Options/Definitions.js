@@ -70,9 +70,9 @@ module.exports.ParseServerOptions = {
   allowExpiredAuthDataToken: {
     env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
     help:
-      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.',
+      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   allowHeaders: {
     env: 'PARSE_SERVER_ALLOW_HEADERS',
@@ -103,7 +103,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
-    action: parsers.arrayParser,
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -139,6 +138,20 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_COLLECTION_PREFIX',
     help: 'A collection prefix for the classes',
     default: '',
+  },
+  convertEmailToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_EMAIL_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  convertUsernameToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_USERNAME_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
   },
   customPages: {
     env: 'PARSE_SERVER_CUSTOM_PAGES',
@@ -204,9 +217,23 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  enableCollationCaseComparison: {
+    env: 'PARSE_SERVER_ENABLE_COLLATION_CASE_COMPARISON',
+    help:
+      'Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
     help: 'Enables the default express error handler for all errors',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  encodeParseObjectInCloudFunction: {
+    env: 'PARSE_SERVER_ENCODE_PARSE_OBJECT_IN_CLOUD_FUNCTION',
+    help:
+      'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -311,13 +338,13 @@ module.exports.ParseServerOptions = {
   maintenanceKey: {
     env: 'PARSE_SERVER_MAINTENANCE_KEY',
     help:
-      '(Optional) The maintenance key is used for modifying internal fields of Parse Server.<br><br>\u26A0\uFE0F This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server.',
+      '(Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>\u26A0\uFE0F This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server.',
     required: true,
   },
   maintenanceKeyIps: {
     env: 'PARSE_SERVER_MAINTENANCE_KEY_IPS',
     help:
-      "(Optional) Restricts the use of maintenance key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `maintenanceKey` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the maintenance key can be used from any IP address.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the maintenance key.",
+      "(Optional) Restricts the use of maintenance key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the maintenance key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the maintenance key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `\"0.0.0.0/0,::0\"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the maintenance key.",
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
@@ -329,7 +356,7 @@ module.exports.ParseServerOptions = {
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
     help:
-      "(Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the master key.",
+      "(Optional) Restricts the use of master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `\"0.0.0.0/0,::0\"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the master key.",
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
@@ -496,6 +523,12 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     default: {},
   },
+  sendUserEmailVerification: {
+    env: 'PARSE_SERVER_SEND_USER_EMAIL_VERIFICATION',
+    help:
+      'Set to `false` to prevent sending of verification email. Supports a function with a return value of `true` or `false` for conditional email sending.<br><br>Default is `true`.<br>',
+    default: true,
+  },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
     help: 'Callback when server has closed',
@@ -542,8 +575,7 @@ module.exports.ParseServerOptions = {
   verifyUserEmails: {
     env: 'PARSE_SERVER_VERIFY_USER_EMAILS',
     help:
-      'Set to `true` to require users to verify their email address to complete the sign-up process.<br><br>Default is `false`.',
-    action: parsers.booleanParser,
+      'Set to `true` to require users to verify their email address to complete the sign-up process. Supports a function with a return value of `true` or `false` for conditional verification.<br><br>Default is `false`.',
     default: false,
   },
   webhookKey: {
@@ -1014,7 +1046,7 @@ module.exports.AuthAdapter = {
   enabled: {
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
 };
 module.exports.LogLevels = {
@@ -1031,19 +1063,19 @@ module.exports.LogLevels = {
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
-      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.',
     default: 'info',
   },
   triggerBeforeError: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.',
     default: 'error',
   },
   triggerBeforeSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
     default: 'info',
   },
 };

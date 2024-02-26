@@ -254,6 +254,47 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(obj.get('foo').test.date[0] instanceof Date).toBeTrue();
   });
 
+  it('upserts with $setOnInsert', async () => {
+    const uuid = require('uuid');
+    const uuid1 = uuid.v4();
+    const uuid2 = uuid.v4();
+    const schema = {
+      className: 'MyClass',
+      fields: {
+        x: { type: 'Number' },
+        count: { type: 'Number' },
+      },
+      classLevelPermissions: {},
+    };
+
+    const myClassSchema = new Parse.Schema(schema.className);
+    myClassSchema.setCLP(schema.classLevelPermissions);
+    await myClassSchema.save();
+
+    const query = {
+      x: 1,
+    };
+    const update = {
+      objectId: {
+        __op: 'SetOnInsert',
+        amount: uuid1,
+      },
+      count: {
+        __op: 'Increment',
+        amount: 1,
+      },
+    };
+    await Parse.Server.database.update('MyClass', query, update, { upsert: true });
+    update.objectId.amount = uuid2;
+    await Parse.Server.database.update('MyClass', query, update, { upsert: true });
+
+    const res = await Parse.Server.database.find(schema.className, {}, {});
+    expect(res.length).toBe(1);
+    expect(res[0].objectId).toBe(uuid1);
+    expect(res[0].count).toBe(2);
+    expect(res[0].x).toBe(1);
+  });
+
   it('handles updating a single object with array, object date', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
