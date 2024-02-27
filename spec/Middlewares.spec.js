@@ -154,13 +154,19 @@ describe('middlewares', () => {
     });
     fakeReq.ip = '127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
+
+    let error;
+
     try {
       await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    } catch (error) {
-      expect(error.message).toEqual(
-        `Access denied: IP address '127.0.0.1' is not authorized to use the master key.`
-      );
+    } catch (err) {
+      error = err;
     }
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual(
+      `Access denied: IP address '127.0.0.1' is not authorized to use the master key.`
+    );
   });
 
   it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
@@ -172,13 +178,19 @@ describe('middlewares', () => {
     });
     fakeReq.ip = '10.0.0.2';
     fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
+
+    let error;
+
     try {
       await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    } catch (error) {
-      expect(error.message).toEqual(
-        `Access denied: IP address '10.0.0.2' is not authorized to use the master key.`
-      );
+    } catch (err) {
+      error = err;
     }
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual(
+      `Access denied: IP address '10.0.0.2' is not authorized to use the master key.`
+    );
   });
 
   it('should succeed if the ip does belong to masterKeyIps list', async () => {
