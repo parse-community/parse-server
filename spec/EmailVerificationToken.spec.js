@@ -3,6 +3,7 @@
 const Auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
 describe('Email Verification Token Expiration: ', () => {
   it('show the invalid verification link page, if the user clicks on the verify email link after the email verify token expires', done => {
@@ -126,6 +127,7 @@ describe('Email Verification Token Expiration: ', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         request({
           url: sendEmailOptions.link,
@@ -167,6 +169,7 @@ describe('Email Verification Token Expiration: ', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         request({
           url: sendEmailOptions.link,
@@ -214,6 +217,7 @@ describe('Email Verification Token Expiration: ', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         request({
           url: sendEmailOptions.link,
@@ -299,7 +303,7 @@ describe('Email Verification Token Expiration: ', () => {
     };
     const verifyUserEmails = {
       method(req) {
-        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip']);
+        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip', 'installationId']);
         return false;
       },
     };
@@ -358,7 +362,7 @@ describe('Email Verification Token Expiration: ', () => {
     };
     const verifyUserEmails = {
       method(req) {
-        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip']);
+        expect(Object.keys(req)).toEqual(['original', 'object', 'master', 'ip', 'installationId']);
         if (req.object.get('username') === 'no_email') {
           return false;
         }
@@ -387,9 +391,10 @@ describe('Email Verification Token Expiration: ', () => {
     user2.setPassword('expiringToken');
     user2.set('email', 'user2@example.com');
     await user2.signUp();
+    await jasmine.timeout();
     expect(user2.getSessionToken()).toBeUndefined();
     expect(sendEmailOptions).toBeDefined();
-    expect(verifySpy).toHaveBeenCalledTimes(4);
+    expect(verifySpy).toHaveBeenCalledTimes(5);
   });
 
   it('can conditionally send user email verification', async () => {
@@ -421,8 +426,45 @@ describe('Email Verification Token Expiration: ', () => {
     newUser.set('email', 'user@example.com');
     await newUser.signUp();
     await Parse.User.requestEmailVerification('user@example.com');
+    await jasmine.timeout();
     expect(sendSpy).toHaveBeenCalledTimes(2);
     expect(emailSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it('provides full user object in email verification function on email and username change', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    const sendVerificationEmail = {
+      method(req) {
+        expect(req.user).toBeDefined();
+        expect(req.user.id).toBeDefined();
+        expect(req.user.get('createdAt')).toBeDefined();
+        expect(req.user.get('updatedAt')).toBeDefined();
+        expect(req.master).toBeDefined();
+        return false;
+      },
+    };
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5,
+      publicServerURL: 'http://localhost:8378/1',
+      sendUserEmailVerification: sendVerificationEmail.method,
+    });
+    const user = new Parse.User();
+    user.setPassword('password');
+    user.setUsername('new@example.com');
+    user.setEmail('user@example.com');
+    await user.save(null, { useMasterKey: true });
+
+    // Update email and username
+    user.setUsername('new@example.com');
+    user.setEmail('new@example.com');
+    await user.save(null, { useMasterKey: true });
   });
 
   it('beforeSave options do not change existing behaviour', async () => {
@@ -447,6 +489,7 @@ describe('Email Verification Token Expiration: ', () => {
     newUser.setPassword('expiringToken');
     newUser.set('email', 'user@parse.com');
     await newUser.signUp();
+    await jasmine.timeout();
     const response = await request({
       url: sendEmailOptions.link,
       followRedirects: false,
@@ -489,6 +532,7 @@ describe('Email Verification Token Expiration: ', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         request({
           url: sendEmailOptions.link,
@@ -548,6 +592,7 @@ describe('Email Verification Token Expiration: ', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         return request({
           url: sendEmailOptions.link,
@@ -765,6 +810,9 @@ describe('Email Verification Token Expiration: ', () => {
       })
       .then(response => {
         expect(response.status).toBe(200);
+      })
+      .then(() => jasmine.timeout())
+      .then(() => {
         expect(sendVerificationEmailCallCount).toBe(2);
         expect(sendEmailOptions).toBeDefined();
 
@@ -792,6 +840,41 @@ describe('Email Verification Token Expiration: ', () => {
         jfail(error);
         done();
       });
+  });
+
+  it('provides function arguments in verifyUserEmails on verificationEmailRequest', async () => {
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    const verifyUserEmails = {
+      method: async (params) => {
+        expect(params.object).toBeInstanceOf(Parse.User);
+        expect(params.ip).toBeDefined();
+        expect(params.master).toBeDefined();
+        expect(params.installationId).toBeDefined();
+        expect(params.resendRequest).toBeTrue();
+        return true;
+      },
+    };
+    const verifyUserEmailsSpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: verifyUserEmails.method,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    await expectAsync(Parse.User.requestEmailVerification('test@example.com')).toBeResolved();
+    expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should throw with invalid emailVerifyTokenReuseIfValid', async done => {
@@ -861,7 +944,7 @@ describe('Email Verification Token Expiration: ', () => {
     const config = Config.get('test');
     const [userBeforeRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
     // store this user before we make our email request
     expect(sendVerificationEmailCallCount).toBe(1);
     await new Promise(resolve => {
@@ -881,20 +964,21 @@ describe('Email Verification Token Expiration: ', () => {
         'Content-Type': 'application/json',
       },
     });
+    await jasmine.timeout();
     expect(response.status).toBe(200);
     expect(sendVerificationEmailCallCount).toBe(2);
     expect(sendEmailOptions).toBeDefined();
 
     const [userAfterRequest] = await config.database.find('_User', {
       username: 'resends_verification_token',
-    });
+    }, {}, Auth.maintenance(config));
 
-    // verify that our token & expiration has been changed for this new request
+    // Verify that token & expiration haven't been changed for this new request
     expect(typeof userAfterRequest).toBe('object');
+    expect(userBeforeRequest._email_verify_token).toBeDefined();
     expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
-    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
-      userAfterRequest._email_verify_token_expires_at
-    );
+    expect(userBeforeRequest._email_verify_token_expires_at).toBeDefined();
+    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(userAfterRequest._email_verify_token_expires_at);
     done();
   });
 
@@ -923,6 +1007,7 @@ describe('Email Verification Token Expiration: ', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         return request({
           url: sendEmailOptions.link,
@@ -1161,6 +1246,7 @@ describe('Email Verification Token Expiration: ', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         request({
           url: sendEmailOptions.link,
