@@ -164,9 +164,7 @@ describe('middlewares', () => {
     }
 
     expect(error).toBeDefined();
-    expect(error.message).toEqual(
-      `Access denied: IP address '127.0.0.1' is not authorized to use the master key.`
-    );
+    expect(error.message).toEqual(`unauthorized`);
   });
 
   it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
@@ -188,9 +186,7 @@ describe('middlewares', () => {
     }
 
     expect(error).toBeDefined();
-    expect(error.message).toEqual(
-      `Access denied: IP address '10.0.0.2' is not authorized to use the master key.`
-    );
+    expect(error.message).toEqual(`unauthorized`);
   });
 
   it('should succeed if the ip does belong to masterKeyIps list', async () => {
