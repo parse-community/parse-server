@@ -1267,6 +1267,25 @@ describe('miscellaneous', function () {
     });
   });
 
+  it('test cloud function query parameters with array of pointers', async () => {
+    Parse.Cloud.define('echoParams', req => {
+      return req.params;
+    });
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
+    };
+    const response = await request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/functions/echoParams',
+      body: '{"arr": [{ "__type": "Pointer", "className": "PointerTest" }]}',
+    });
+    const res = response.data.result;
+    expect(res.arr.length).toEqual(1);
+  });
+
   it('can handle null params in cloud functions (regression test for #1742)', done => {
     Parse.Cloud.define('func', request => {
       expect(request.params.nullParam).toEqual(null);
