@@ -147,7 +147,9 @@ describe('middlewares', () => {
     });
   });
 
-  it('should not succeed if the ip does not belong to masterKeyIps list', async () => {
+  it('should not succeed and log if the ip does not belong to masterKeyIps list', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['10.0.0.1'],
@@ -165,9 +167,12 @@ describe('middlewares', () => {
 
     expect(error).toBeDefined();
     expect(error.message).toEqual(`unauthorized`);
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'masterKeyIps'.`
+    );
   });
 
-  it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
+  it('should not succeed and log if the ip does not belong to maintenanceKeyIps list', async () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callFake(() => {});
     AppCachePut(fakeReq.body._ApplicationId, {
@@ -187,6 +192,9 @@ describe('middlewares', () => {
 
     expect(error).toBeDefined();
     expect(error.message).toEqual(`unauthorized`);
+    expect(logger.error).toHaveBeenCalledWith(
+      `Request using maintenance key rejected as the request IP address '10.0.0.2' is not set in Parse Server option 'maintenanceKeyIps'.`
+    );
   });
 
   it('should succeed if the ip does belong to masterKeyIps list', async () => {
