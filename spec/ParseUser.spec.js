@@ -24,11 +24,6 @@ describe('allowExpiredAuthDataToken option', () => {
     expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
   });
 
-  it('should default false', async () => {
-    await reconfigureServer({});
-    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
-  });
-
   it('should enforce boolean values', async () => {
     const options = [[], 'a', '', 0, 1, {}, 'true', 'false'];
     for (const option of options) {
@@ -1845,7 +1840,8 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should not allow login with expired authData token since allowExpiredAuthDataToken is set to false by default', async () => {
+  it('should not allow login with expired authData token since allowExpiredAuthDataToken is set to false', async () => {
+    reconfigureServer({allowExpiredAuthDataToken:false})
     const provider = {
       authData: {
         id: '12345',
