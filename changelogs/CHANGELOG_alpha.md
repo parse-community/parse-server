@@ -1,3 +1,10 @@
+# [7.0.0-alpha.20](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.19...7.0.0-alpha.20) (2024-03-01)
+
+
+### Bug Fixes
+
+* Improve PostgreSQL injection detection; fixes security vulnerability [GHSA-6927-3vr9-fxf2](https://github.com/parse-community/parse-server/security/advisories/GHSA-6927-3vr9-fxf2) which affects Parse Server deployments using a Postgres database ([#8961](https://github.com/parse-community/parse-server/issues/8961)) ([cbefe77](https://github.com/parse-community/parse-server/commit/cbefe770a7260b54748a058b8a7389937dc35833))
+
 # [7.0.0-alpha.19](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.18...7.0.0-alpha.19) (2024-02-15)
 
 
