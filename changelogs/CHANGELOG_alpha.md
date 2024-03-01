@@ -1,3 +1,34 @@
+# [7.0.0-alpha.21](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.20...7.0.0-alpha.21) (2024-03-01)
+
+
+### Bug Fixes
+
+* Deny request if master key is not set in Parse Server option `masterKeyIps` regardless of ACL and CLP ([#8957](https://github.com/parse-community/parse-server/issues/8957)) ([a7b5b38](https://github.com/parse-community/parse-server/commit/a7b5b38418cbed9be3f4a7665f25b97f592663e1))
+
+
+### BREAKING CHANGES
+
+* A request using the master key will now be rejected as unauthorized if the IP from which the request originates is not set in the Parse Server option `masterKeyIps`, even if the request does not require the master key permission, for example for a public object in a public class class. ([a7b5b38](a7b5b38))
+
+# [7.0.0-alpha.20](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.19...7.0.0-alpha.20) (2024-03-01)
+
+
+### Bug Fixes
+
+* Improve PostgreSQL injection detection; fixes security vulnerability [GHSA-6927-3vr9-fxf2](https://github.com/parse-community/parse-server/security/advisories/GHSA-6927-3vr9-fxf2) which affects Parse Server deployments using a Postgres database ([#8961](https://github.com/parse-community/parse-server/issues/8961)) ([cbefe77](https://github.com/parse-community/parse-server/commit/cbefe770a7260b54748a058b8a7389937dc35833))
+
+# [7.0.0-alpha.19](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.18...7.0.0-alpha.19) (2024-02-15)
+
+
+### Features
+
+* Node process exits with error code 1 on uncaught exception to allow custom uncaught exception handling ([#8894](https://github.com/parse-community/parse-server/issues/8894)) ([70c280c](https://github.com/parse-community/parse-server/commit/70c280ca578ff28b5acf92f37fbe06d42a5b34ca))
+
+
+### BREAKING CHANGES
+
+* Node process now exits with code 1 on uncaught exceptions, enabling custom handlers that were blocked by Parse Server's default behavior of re-throwing errors. This change may lead to automatic process restarts by the environment, unlike before. ([70c280c](70c280c))
+
 # [7.0.0-alpha.18](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.17...7.0.0-alpha.18) (2024-02-15)
 
 
