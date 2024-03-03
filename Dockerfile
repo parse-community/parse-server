@@ -14,11 +14,12 @@ COPY . .
 
 # Install without scripts
 RUN npm ci --omit=dev --ignore-scripts \
-    # Copy production node_modules aside for later
- && cp -R node_modules prod_node_modules \
-    # Install all dependencies
- && npm ci \
-    # Run build steps
+ # Copy production node_modules aside for later
+ && cp -R node_modules prod_node_modules
+    
+# Install all dependencies
+RUN npm ci \
+ # Run build steps
  && npm run build
 
 ############################################################
