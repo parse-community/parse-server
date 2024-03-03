@@ -576,6 +576,10 @@ export function maybeRunQueryTrigger(
           restOptions = restOptions || {};
           restOptions.hint = jsonQuery.hint;
         }
+        if (jsonQuery.comment) {
+          restOptions = restOptions || {};
+          restOptions.comment = jsonQuery.comment;
+        }
         if (requestObject.readPreference) {
           restOptions = restOptions || {};
           restOptions.readPreference = requestObject.readPreference;

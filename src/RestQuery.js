@@ -212,6 +212,7 @@ function _UnsafeRestQuery(
       case 'skip':
       case 'limit':
       case 'readPreference':
+      case 'comment':
         this.findOptions[option] = restOptions[option];
         break;
       case 'order':
