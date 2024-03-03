@@ -391,6 +391,7 @@ class DatabaseController {
   _transactionalSession: ?any;
   options: ParseServerOptions;
   idempotencyOptions: any;
+  _relationTablesCache: any;
 
   constructor(adapter: StorageAdapter, options: ParseServerOptions) {
     this.adapter = adapter;
@@ -401,6 +402,10 @@ class DatabaseController {
     this.schemaPromise = null;
     this._transactionalSession = null;
     this.options = options;
+    this._relationTablesCache = {
+      promises: {},
+      classes: [],
+    };
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -717,18 +722,61 @@ class DatabaseController {
 
   // Adds a relation.
   // Returns a promise that resolves successfully iff the add was successful.
-  addRelation(key: string, fromClassName: string, fromId: string, toId: string) {
+  async addRelation(key: string, fromClassName: string, fromId: string, toId: string) {
+    const className = `_Join:${key}:${fromClassName}`;
     const doc = {
       relatedId: toId,
       owningId: fromId,
     };
+    await this.createJoinTable(className);
     return this.adapter.upsertOneObject(
-      `_Join:${key}:${fromClassName}`,
+      className,
       relationSchema,
       doc,
       doc,
       this._transactionalSession
     );
+  }
+
+  createJoinTable(className: string) {
+    const startupPromise = async () => {
+      if (this._relationTablesCache.classes.includes(className)) {
+        return;
+      }
+      const exists = await this.collectionExists(className);
+      const names = [];
+      if (exists) {
+        const indexes = (await this.adapter.getIndexes(className)) || [];
+        names.push(
+          ...indexes.map(({ name, indexname }) => {
+            if (name) {
+              return name.split('_')[0];
+            }
+            const splitName = indexname.split('_');
+            return splitName.at(-1);
+          })
+        );
+      }
+      const keys = ['relatedId', 'owningId'];
+      await Promise.all(
+        keys.map(async subKey => {
+          if (names.includes(subKey)) {
+            return;
+          }
+          try {
+            await this.adapter.ensureIndex(className, relationSchema, [subKey]);
+          } catch (error) {
+            if (error.code !== '23505') {
+              logger.warn('Unable to create relatedId index: ', error);
+            }
+          }
+        })
+      );
+      this._relationTablesCache.classes.push(className);
+    };
+    const promise = this._relationTablesCache.promises[className] || startupPromise();
+    this._relationTablesCache.promises[className] = promise;
+    return promise;
   }
 
   // Removes a relation.
@@ -1734,9 +1782,16 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
+    const requiredSessionFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._Session,
+      },
+    };
     await this.loadSchema().then(schema => schema.enforceClassExists('_User'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
     await this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'));
+    await this.loadSchema().then(schema => schema.enforceClassExists('_Session'));
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']).catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
@@ -1777,6 +1832,23 @@ class DatabaseController {
       });
 
     const isMongoAdapter = this.adapter instanceof MongoStorageAdapter;
+
+    await this.adapter
+      .ensureIndex('_Session', requiredSessionFields, [
+        isMongoAdapter ? '_session_token' : 'sessionToken',
+      ])
+      .catch(error => {
+        logger.warn('Unable to create session token index: ', error);
+        throw error;
+      });
+
+    await this.adapter
+      .ensureIndex('_Session', requiredSessionFields, [isMongoAdapter ? '_p_user' : 'user'])
+      .catch(error => {
+        logger.warn('Unable to create session token index: ', error);
+        throw error;
+      });
+
     const isPostgresAdapter = this.adapter instanceof PostgresStorageAdapter;
     if (isMongoAdapter || isPostgresAdapter) {
       let options = {};
