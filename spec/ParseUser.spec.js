@@ -1846,7 +1846,6 @@ describe('Parse.User testing', () => {
   });
 
   it('should not allow login with expired authData token since allowExpiredAuthDataToken is set to false by default', async () => {
-    reconfigureServer({ allowExpiredAuthDataToken: false });
     const provider = {
       authData: {
         id: '12345',
