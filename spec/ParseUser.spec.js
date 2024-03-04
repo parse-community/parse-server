@@ -24,6 +24,11 @@ describe('allowExpiredAuthDataToken option', () => {
     expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
   });
 
+  it('should default false', async () => {
+    await reconfigureServer({});
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
+  });
+
   it('should enforce boolean values', async () => {
     const options = [[], 'a', '', 0, 1, {}, 'true', 'false'];
     for (const option of options) {
@@ -1840,8 +1845,8 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should not allow login with expired authData token since allowExpiredAuthDataToken is set to false', async () => {
-    reconfigureServer({allowExpiredAuthDataToken:false})
+  it('should not allow login with expired authData token since allowExpiredAuthDataToken is set to false by default', async () => {
+    reconfigureServer({ allowExpiredAuthDataToken: false });
     const provider = {
       authData: {
         id: '12345',
@@ -4396,5 +4401,33 @@ describe('login as other user', () => {
     expect(sessionsAfterRequest.length).toBe(0);
 
     done();
+  });
+});
+
+describe('allowClientClassCreation option', () => {
+  it('should enforce boolean values', async () => {
+    const options = [[], 'a', '', 0, 1, {}, 'true', 'false'];
+    for (const option of options) {
+      await expectAsync(reconfigureServer({ allowClientClassCreation: option })).toBeRejected();
+    }
+  });
+
+  it('should accept true value', async () => {
+    await reconfigureServer({ allowClientClassCreation: true });
+    expect(Config.get(Parse.applicationId).allowClientClassCreation).toBe(true);
+  });
+
+  it('should accept false value', async () => {
+    await reconfigureServer({ allowClientClassCreation: false });
+    expect(Config.get(Parse.applicationId).allowClientClassCreation).toBe(false);
+  });
+
+  it('should default false', async () => {
+    // remove predefined allowClientClassCreation:true on global defaultConfiguration
+    delete defaultConfiguration.allowClientClassCreation;
+    await reconfigureServer(defaultConfiguration);
+    expect(Config.get(Parse.applicationId).allowClientClassCreation).toBe(false);
+    // Need to set it back to true to avoid other test fails
+    defaultConfiguration.allowClientClassCreation = true;
   });
 });
