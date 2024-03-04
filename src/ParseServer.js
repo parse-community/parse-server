@@ -45,6 +45,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
+import { ParseServerOptions as ParseServerOptionDef } from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -59,6 +60,9 @@ class ParseServer {
   constructor(options: ParseServerOptions) {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
+
+    Config.validateConfigKeyNames(Object.keys(ParseServerOptionDef), Object.keys(options));
+
     // Set option defaults
     injectDefaults(options);
     const {

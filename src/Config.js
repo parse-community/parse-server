@@ -18,6 +18,8 @@ import {
   ParseServerOptions,
   SchemaOptions,
   SecurityOptions,
+  PasswordPolicyOptions,
+  RateLimitOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
 
@@ -63,34 +65,45 @@ export class Config {
     return serverConfiguration;
   }
 
-  static validateOptions({
-    publicServerURL,
-    revokeSessionOnPasswordReset,
-    expireInactiveSessions,
-    sessionLength,
-    defaultLimit,
-    maxLimit,
-    accountLockout,
-    passwordPolicy,
-    masterKeyIps,
-    masterKey,
-    maintenanceKey,
-    maintenanceKeyIps,
-    readOnlyMasterKey,
-    allowHeaders,
-    idempotencyOptions,
-    fileUpload,
-    pages,
-    security,
-    enforcePrivateUsers,
-    schema,
-    requestKeywordDenylist,
-    allowExpiredAuthDataToken,
-    logLevels,
-    rateLimit,
-    databaseOptions,
-    extendSessionOnUse,
-  }) {
+  static validateConfigKeyNames(actual, given) {
+    for (const key of given) {
+      if (!actual.includes(key)) {
+        console.warn(`Warning: The following key is not recognized: ${key}`);
+      }
+    }
+  }
+
+  static validateOptions(options) {
+    const {
+      publicServerURL,
+      revokeSessionOnPasswordReset,
+      expireInactiveSessions,
+      sessionLength,
+      defaultLimit,
+      maxLimit,
+      accountLockout,
+      passwordPolicy,
+      masterKeyIps,
+      masterKey,
+      maintenanceKey,
+      maintenanceKeyIps,
+      readOnlyMasterKey,
+      allowHeaders,
+      idempotencyOptions,
+      fileUpload,
+      pages,
+      security,
+      enforcePrivateUsers,
+      schema,
+      requestKeywordDenylist,
+      allowExpiredAuthDataToken,
+      logLevels,
+      rateLimit,
+      databaseOptions,
+      extendSessionOnUse,
+    } = options;
+
+    Config.validateConfigKeyNames(Object.keys(ParseServerOptions), Object.keys(options));
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
     }
@@ -178,6 +191,7 @@ export class Config {
     if (Object.prototype.toString.call(security) !== '[object Object]') {
       throw 'Parse Server option security must be an object.';
     }
+    Config.validateConfigKeyNames(Object.keys(SecurityOptions), Object.keys(security));
     if (security.enableCheck === undefined) {
       security.enableCheck = SecurityOptions.enableCheck.default;
     } else if (!isBoolean(security.enableCheck)) {
@@ -192,6 +206,8 @@ export class Config {
 
   static validateSchemaOptions(schema: SchemaOptions) {
     if (!schema) return;
+
+    Config.validateConfigKeyNames(Object.keys(SchemaOptions), Object.keys(schema));
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
@@ -236,6 +252,8 @@ export class Config {
     if (Object.prototype.toString.call(pages) !== '[object Object]') {
       throw 'Parse Server option pages must be an object.';
     }
+
+    Config.validateConfigKeyNames(Object.keys(PagesOptions), Object.keys(pages));
     if (pages.enableRouter === undefined) {
       pages.enableRouter = PagesOptions.enableRouter.default;
     } else if (!isBoolean(pages.enableRouter)) {
@@ -295,6 +313,7 @@ export class Config {
     if (!idempotencyOptions) {
       return;
     }
+    Config.validateConfigKeyNames(Object.keys(IdempotencyOptions), Object.keys(idempotencyOptions));
     if (idempotencyOptions.ttl === undefined) {
       idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
     } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
@@ -311,6 +330,10 @@ export class Config {
 
   static validateAccountLockoutPolicy(accountLockout) {
     if (accountLockout) {
+      Config.validateConfigKeyNames(
+        Object.keys(AccountLockoutOptions),
+        Object.keys(accountLockout)
+      );
       if (
         typeof accountLockout.duration !== 'number' ||
         accountLockout.duration <= 0 ||
@@ -337,6 +360,10 @@ export class Config {
 
   static validatePasswordPolicy(passwordPolicy) {
     if (passwordPolicy) {
+      Config.validateConfigKeyNames(
+        Object.keys(PasswordPolicyOptions),
+        Object.keys(passwordPolicy)
+      );
       if (
         passwordPolicy.maxPasswordAge !== undefined &&
         (typeof passwordPolicy.maxPasswordAge !== 'number' || passwordPolicy.maxPasswordAge < 0)
@@ -453,6 +480,8 @@ export class Config {
       }
       throw e;
     }
+
+    Config.validateConfigKeyNames(Object.keys(FileUploadOptions), Object.keys(fileUpload));
     if (fileUpload.enableForAnonymousUser === undefined) {
       fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
     } else if (typeof fileUpload.enableForAnonymousUser !== 'boolean') {
@@ -543,6 +572,7 @@ export class Config {
   }
 
   static validateLogLevels(logLevels) {
+    Config.validateConfigKeyNames(Object.keys(LogLevels), Object.keys(logLevels));
     for (const key of Object.keys(LogLevels)) {
       if (logLevels[key]) {
         if (validLogLevels.indexOf(logLevels[key]) === -1) {
@@ -558,6 +588,8 @@ export class Config {
     if (databaseOptions == undefined) {
       return;
     }
+
+    Config.validateConfigKeyNames(Object.keys(DatabaseOptions), Object.keys(databaseOptions));
     if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
       throw `databaseOptions must be an object`;
     }
@@ -583,6 +615,7 @@ export class Config {
     ) {
       throw `rateLimit must be an array or object`;
     }
+    Config.validateConfigKeyNames(Object.keys(RateLimitOptions), Object.keys(rateLimit));
     const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const option of options) {
       if (Object.prototype.toString.call(option) !== '[object Object]') {
