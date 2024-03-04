@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "7.0.0-alpha.21",
+  "version": "7.0.0-alpha.22",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -19,11 +19,11 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
+    "@apollo/server": "4.9.3",
     "@babel/eslint-parser": "7.21.8",
     "@graphql-tools/merge": "8.4.1",
     "@graphql-tools/schema": "9.0.4",
     "@graphql-tools/utils": "8.12.0",
-    "@graphql-yoga/node": "2.6.0",
     "@parse/fs-files-adapter": "2.0.1",
     "@parse/push-adapter": "5.0.2",
     "bcryptjs": "2.4.3",
@@ -38,6 +38,7 @@
     "graphql-list-fields": "2.0.2",
     "graphql-relay": "0.10.0",
     "graphql-tag": "2.12.6",
+    "graphql-upload": "15.0.2",
     "intersect": "1.0.1",
     "jsonwebtoken": "9.0.0",
     "jwks-rsa": "3.1.0",
