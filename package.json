@@ -86,7 +86,7 @@
     "deep-diff": "1.0.2",
     "eslint": "8.26.0",
     "eslint-plugin-flowtype": "8.0.3",
-    "flow-bin": "0.119.1",
+    "flow-bin": "0.229.2",
     "form-data": "3.0.0",
     "graphql-tag": "2.12.6",
     "husky": "4.3.8",
