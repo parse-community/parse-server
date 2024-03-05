@@ -1,3 +1,17 @@
+# [7.0.0-alpha.24](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.23...7.0.0-alpha.24) (2024-03-05)
+
+
+### Bug Fixes
+
+* Docker version releases by removing arm/v6 and arm/v7 support ([#8976](https://github.com/parse-community/parse-server/issues/8976)) ([1f62dd0](https://github.com/parse-community/parse-server/commit/1f62dd0f4e107b22a387692558a042ee26ce8703))
+
+# [7.0.0-alpha.23](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.22...7.0.0-alpha.23) (2024-03-03)
+
+
+### Features
+
+* Add support for MongoDB query comment ([#8928](https://github.com/parse-community/parse-server/issues/8928)) ([2170962](https://github.com/parse-community/parse-server/commit/2170962a50fa353ed85eda3f11dce7ee3647b087))
+
 # [7.0.0-alpha.22](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.21...7.0.0-alpha.22) (2024-03-02)
 
 

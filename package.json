@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "7.0.0-alpha.22",
+  "version": "7.0.0-alpha.24",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -28,7 +28,7 @@
     "@parse/push-adapter": "5.0.2",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.2",
-    "commander": "10.0.1",
+    "commander": "12.0.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.18.2",
@@ -61,7 +61,7 @@
     "tv4": "1.3.0",
     "uuid": "9.0.1",
     "winston": "3.11.0",
-    "winston-daily-rotate-file": "4.7.1",
+    "winston-daily-rotate-file": "5.0.0",
     "ws": "8.16.0"
   },
   "devDependencies": {
@@ -95,7 +95,7 @@
     "jsdoc": "3.6.3",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
-    "madge": "5.0.1",
+    "madge": "6.1.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
     "mongodb-runner": "5.4.4",
