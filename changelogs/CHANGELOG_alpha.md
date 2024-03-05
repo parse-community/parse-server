@@ -1,3 +1,15 @@
+# [7.0.0-alpha.25](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.24...7.0.0-alpha.25) (2024-03-05)
+
+
+### Features
+
+* Deprecation DEPPS5: Config option `allowClientClassCreation` defaults to `false` ([#8849](https://github.com/parse-community/parse-server/issues/8849)) ([29624e0](https://github.com/parse-community/parse-server/commit/29624e0fae17161cd412ae58d35a195cfa286cad))
+
+
+### BREAKING CHANGES
+
+* The Parse Server option `allowClientClassCreation` defaults to `false`. ([29624e0](29624e0))
+
 # [7.0.0-alpha.24](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.23...7.0.0-alpha.24) (2024-03-05)
 
 
