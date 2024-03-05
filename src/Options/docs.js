@@ -12,7 +12,7 @@
 /**
  * @interface ParseServerOptions
  * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.
- * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
+ * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to false
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {Boolean} allowExpiredAuthDataToken Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
