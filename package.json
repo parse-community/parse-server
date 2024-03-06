@@ -68,7 +68,7 @@
     "@actions/core": "1.9.1",
     "@apollo/client": "3.6.1",
     "@babel/cli": "7.10.0",
-    "@babel/core": "7.20.2",
+    "@babel/core": "7.24.0",
     "@babel/plugin-proposal-object-rest-spread": "7.10.0",
     "@babel/plugin-transform-flow-strip-types": "7.9.0",
     "@babel/preset-env": "7.10.0",
