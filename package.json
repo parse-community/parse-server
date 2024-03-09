@@ -70,7 +70,7 @@
     "@babel/cli": "7.10.0",
     "@babel/core": "7.24.0",
     "@babel/plugin-proposal-object-rest-spread": "7.10.0",
-    "@babel/plugin-transform-flow-strip-types": "7.9.0",
+    "@babel/plugin-transform-flow-strip-types": "7.23.3",
     "@babel/preset-env": "7.24.0",
     "@saithodev/semantic-release-backmerge": "2.1.2",
     "@semantic-release/changelog": "5.0.1",
