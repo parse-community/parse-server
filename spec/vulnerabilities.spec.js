@@ -235,32 +235,6 @@ describe('Vulnerabilities', () => {
       await new Promise(resolve => server.close(resolve));
     });
 
-    it('allows BSON type code data in write request with custom denylist', async () => {
-      await reconfigureServer({
-        requestKeywordDenylist: [],
-      });
-      const headers = {
-        'Content-Type': 'application/json',
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
-      };
-      const params = {
-        headers: headers,
-        method: 'POST',
-        url: 'http://localhost:8378/1/classes/RCE',
-        body: JSON.stringify({
-          obj: {
-            _bsontype: 'Code',
-            code: 'delete Object.prototype.evalFunctions',
-          },
-        }),
-      };
-      const response = await request(params).catch(e => e);
-      expect(response.status).toBe(201);
-      const text = JSON.parse(response.text);
-      expect(text.objectId).toBeDefined();
-    });
-
     it('denies write request with custom denylist of key/value', async () => {
       await reconfigureServer({
         requestKeywordDenylist: [{ key: 'a[K]ey', value: 'aValue[123]*' }],
@@ -457,5 +431,30 @@ describe('Vulnerabilities', () => {
       obj.increment('a.b.c');
       await expectAsync(obj.save()).toBeResolved();
     });
+  });
+});
+
+describe('Postgres regex sanitizater', () => {
+  it('sanitizes the regex correctly to prevent Injection', async () => {
+    const user = new Parse.User();
+    user.set('username', 'username');
+    user.set('password', 'password');
+    user.set('email', 'email@example.com');
+    await user.signUp();
+
+    const response = await request({
+      method: 'GET',
+      url:
+        "http://localhost:8378/1/classes/_User?where[username][$regex]=A'B'%3BSELECT+PG_SLEEP(3)%3B--",
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.data.results).toEqual(jasmine.any(Array));
+    expect(response.data.results.length).toBe(0);
   });
 });

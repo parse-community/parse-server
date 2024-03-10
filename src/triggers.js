@@ -270,6 +270,8 @@ export function getRequestObject(
     triggerType === Types.afterSave ||
     triggerType === Types.beforeDelete ||
     triggerType === Types.afterDelete ||
+    triggerType === Types.beforeLogin ||
+    triggerType === Types.afterLogin ||
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
@@ -573,6 +575,10 @@ export function maybeRunQueryTrigger(
         if (jsonQuery.hint) {
           restOptions = restOptions || {};
           restOptions.hint = jsonQuery.hint;
+        }
+        if (jsonQuery.comment) {
+          restOptions = restOptions || {};
+          restOptions.comment = jsonQuery.comment;
         }
         if (requestObject.readPreference) {
           restOptions = restOptions || {};

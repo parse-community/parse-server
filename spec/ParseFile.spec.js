@@ -1376,6 +1376,102 @@ describe('Parse.File testing', () => {
       }
     });
 
+    it('works with a period in the file name', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      const values = ['file.png.html', 'file.txt.png.html', 'file.png.txt.html'];
+
+      for (const value of values) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/${value}`,
+            body: '<html></html>\n',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
+        );
+      }
+    });
+
+    it('works to stop invalid filenames', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      const values = [
+        '!invalid.png',
+        '.png',
+        '.html',
+        ' .html',
+        '.png.html',
+        '~invalid.png',
+        '-invalid.png',
+      ];
+
+      for (const value of values) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/${value}`,
+            body: '<html></html>\n',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.INVALID_FILE_NAME, `Filename contains invalid characters.`)
+        );
+      }
+    });
+
+    it('allows file without extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      const values = ['filenamewithoutextension'];
+
+      for (const value of values) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/${value}`,
+            body: '<html></html>\n',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeResolved();
+      }
+    });
+
     it('works with array', async () => {
       await reconfigureServer({
         fileUpload: {
