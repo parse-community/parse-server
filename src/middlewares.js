@@ -246,6 +246,10 @@ export function handleParseHeaders(req, res, next) {
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
     );
     isMaster = false;
+    const error = new Error();
+    error.status = 403;
+    error.message = `unauthorized`;
+    throw error;
   }
 
   if (isMaster) {

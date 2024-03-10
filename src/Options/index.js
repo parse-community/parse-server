@@ -148,9 +148,9 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
   enableAnonymousUsers: ?boolean;
-  /* Enable (or disable) client class creation, defaults to true
+  /* Enable (or disable) client class creation, defaults to false
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION
-  :DEFAULT: true */
+  :DEFAULT: false */
   allowClientClassCreation: ?boolean;
   /* Enable (or disable) custom objectId
   :ENV: PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID
@@ -576,8 +576,8 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.
-  :DEFAULT: ["^[^hH][^tT][^mM][^lL]?$"] */
+  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
+  :DEFAULT: ["^(?!(h|H)(t|T)(m|M)(l|L)?$)"] */
   fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
