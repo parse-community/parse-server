@@ -1364,6 +1364,18 @@ describe('Parse.File testing', () => {
       );
     });
 
+    it('default should allow common types', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      for (const type of ['plain', 'txt', 'png', 'jpg', 'gif', 'doc']) {
+        const file = new Parse.File(`parse-server-logo.${type}`, { base64: 'ParseA==' });
+        await file.save();
+      }
+    });
+
     it('works with a period in the file name', async () => {
       await reconfigureServer({
         fileUpload: {
