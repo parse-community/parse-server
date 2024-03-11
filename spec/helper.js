@@ -129,6 +129,7 @@ const defaultConfiguration = {
     },
     shortLivedAuth: mockShortLivedAuth(),
   },
+  allowClientClassCreation: true,
 };
 
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
