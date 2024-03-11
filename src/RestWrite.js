@@ -524,8 +524,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   const results = this.filteredObjectsByACL(r);
 
   if (results.length > 1) {
-    // To avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
-    // Let's run some validation before throwing
+    // Run validation before throwing to avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
     await Auth.handleAuthDataValidation(authData, this, results[0]);
     throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
   }
@@ -546,6 +545,10 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   if (results.length === 1) {
     const userId = this.getUserId();
     const userResult = results[0];
+
+    // Run validation to avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
+    await Auth.handleAuthDataValidation(authData, this, userResult);
+
     // Prevent duplicate authData id
     if (userId && userId !== userResult.objectId) {
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
