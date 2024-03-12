@@ -101,7 +101,7 @@
     "mongodb-runner": "5.4.4",
     "mongodb-version-list": "1.0.0",
     "node-abort-controller": "3.0.1",
-    "node-fetch": "3.2.10",
+    "node-fetch": "3.3.2",
     "nyc": "15.1.0",
     "prettier": "2.0.5",
     "semantic-release": "17.4.6",
