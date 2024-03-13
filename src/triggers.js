@@ -94,7 +94,7 @@ function getStore(category, name, applicationId) {
   for (const component of path) {
     store = store[component];
     if (!store) {
-      return undefined;
+      return {};
     }
   }
   return store;
