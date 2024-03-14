@@ -45,7 +45,10 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
-import { ParseServerOptions as ParseServerOptionDef } from './Options/Definitions';
+import {
+  ParseServerOptions as ParseServerOptionDef,
+  LiveQueryServerOptions as LiveQueryServerOptionsDef,
+} from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -61,7 +64,11 @@ class ParseServer {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
 
-    Config.validateConfigKeyNames(Object.keys(ParseServerOptionDef), Object.keys(options));
+    Config.validateConfigKeyNames(
+      Object.keys(ParseServerOptionDef),
+      Object.keys(options),
+      'ParseServerOptions'
+    );
 
     // Set option defaults
     injectDefaults(options);
@@ -74,9 +81,13 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
+    if (Config.failedConfigKeyVerification) {
+      delete Config.failedConfigKeyVerification;
+      throw new Error('Some Unknown Keys Found in Configuration. See warning messages above.');
+    }
+
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
@@ -404,6 +415,21 @@ class ParseServer {
     config: LiveQueryServerOptions,
     options: ParseServerOptions
   ) {
+    if (config) {
+      if (Object.prototype.toString.call(config) === '[object Object]') {
+        Config.validateConfigKeyNames(
+          Object.keys(LiveQueryServerOptionsDef),
+          Object.keys(config),
+          'LiveQueryServerOptions'
+        );
+
+        if (Config.failedConfigKeyVerification) {
+          delete Config.failedConfigKeyVerification;
+          throw new Error('Some Unknown Keys Found in Configuration. See warning messages above.');
+        }
+      }
+    }
+
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
