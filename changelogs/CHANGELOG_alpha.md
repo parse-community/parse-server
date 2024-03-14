@@ -1,3 +1,10 @@
+# [7.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.25...7.0.0-alpha.26) (2024-03-10)
+
+
+### Bug Fixes
+
+* Parse Server option `fileExtensions` default value rejects file extensions that are less than 3 or more than 4 characters long ([#8699](https://github.com/parse-community/parse-server/issues/8699)) ([2760381](https://github.com/parse-community/parse-server/commit/276038118377c2b22381bcd8d30337203822121b))
+
 # [7.0.0-alpha.25](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.24...7.0.0-alpha.25) (2024-03-05)
 
 
