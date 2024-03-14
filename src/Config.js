@@ -149,6 +149,7 @@ export class Config {
       rateLimit,
       databaseOptions,
       extendSessionOnUse,
+      allowClientClassCreation,
     } = options;
 
     if (masterKey === readOnlyMasterKey) {
@@ -193,6 +194,7 @@ export class Config {
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
+    this.validateAllowClientClassCreation(allowClientClassCreation);
   }
 
   static validateCustomPages(customPages) {
@@ -245,6 +247,12 @@ export class Config {
   static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
+    }
+  }
+
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 
