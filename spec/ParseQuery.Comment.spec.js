@@ -1,7 +1,6 @@
 'use strict';
 
 const Config = require('../lib/Config');
-const TestUtils = require('../lib/TestUtils');
 const { MongoClient } = require('mongodb');
 const databaseURI = 'mongodb://localhost:27017/';
 const request = require('../lib/request');
@@ -20,22 +19,33 @@ const masterKeyOptions = {
   json: true,
 };
 
+const profileLevel = 2;
 describe_only_db('mongo')('Parse.Query with comment testing', () => {
-  beforeEach(async () => {
+  beforeAll(async () => {
     config = Config.get('test');
     client = await MongoClient.connect(databaseURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
     database = client.db('parseServerMongoAdapterTestDatabase');
-    const level = 2;
-    const profiling = await database.command({ profile: level });
-    console.log(`profiling ${JSON.stringify(profiling)}`);
+    let profiler = await database.command({ profile: 0 });
+    expect(profiler.was).toEqual(0);
+    console.log(`Disabling profiler : ${profiler.was}`);
+    profiler = await database.command({ profile: profileLevel });
+    profiler = await database.command({ profile: -1 });
+    console.log(`Enabling profiler : ${profiler.was}`);
+    profiler = await database.command({ profile: -1 });
+    expect(profiler.was).toEqual(profileLevel);
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
+    const profiler = await database.command({ profile: -1 });
+    expect(profiler.was).toEqual(profileLevel);
+  });
+
+  afterAll(async () => {
+    await database.command({ profile: 0 });
     await client.close();
-    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('send comment with query through REST', async () => {
