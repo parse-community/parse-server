@@ -190,7 +190,7 @@ describe('Hooks', () => {
 
   it('should fail trying to create two times the same function', done => {
     Parse.Hooks.createFunction('my_new_function', 'http://url.com')
-      .then(() => new Promise(resolve => setTimeout(resolve, 100)))
+      .then(() => jasmine.timeout())
       .then(
         () => {
           return Parse.Hooks.createFunction('my_new_function', 'http://url.com');

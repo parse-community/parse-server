@@ -15,51 +15,18 @@ const cryptoUtils = require('../lib/cryptoUtils');
 
 describe('allowExpiredAuthDataToken option', () => {
   it('should accept true value', async () => {
-    const logger = require('../lib/logger').logger;
-    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
     await reconfigureServer({ allowExpiredAuthDataToken: true });
     expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(true);
-    expect(
-      logSpy.calls
-        .all()
-        .filter(
-          log =>
-            log.args[0] ===
-            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
-        ).length
-    ).toEqual(0);
   });
 
   it('should accept false value', async () => {
-    const logger = require('../lib/logger').logger;
-    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
     await reconfigureServer({ allowExpiredAuthDataToken: false });
     expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
-    expect(
-      logSpy.calls
-        .all()
-        .filter(
-          log =>
-            log.args[0] ===
-            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
-        ).length
-    ).toEqual(0);
   });
 
-  it('should default true', async () => {
-    const logger = require('../lib/logger').logger;
-    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+  it('should default false', async () => {
     await reconfigureServer({});
-    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(true);
-    expect(
-      logSpy.calls
-        .all()
-        .filter(
-          log =>
-            log.args[0] ===
-            `DeprecationWarning: The Parse Server option 'allowExpiredAuthDataToken' default will change to 'false' in a future version.`
-        ).length
-    ).toEqual(1);
+    expect(Config.get(Parse.applicationId).allowExpiredAuthDataToken).toBe(false);
   });
 
   it('should enforce boolean values', async () => {
@@ -105,6 +72,36 @@ describe('Parse.User testing', () => {
       expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       done();
     }
+  });
+
+  it('user login with context', async () => {
+    let hit = 0;
+    const context = { foo: 'bar' };
+    Parse.Cloud.beforeLogin(req => {
+      expect(req.context).toEqual(context);
+      hit++;
+    });
+    Parse.Cloud.afterLogin(req => {
+      expect(req.context).toEqual(context);
+      hit++;
+    });
+    await Parse.User.signUp('asdf', 'zxcv');
+    await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': JSON.stringify(context),
+        'Content-Type': 'application/json',
+      },
+      body: {
+        _method: 'GET',
+        username: 'asdf',
+        password: 'zxcv',
+      },
+    });
+    expect(hit).toBe(2);
   });
 
   it('user login with non-string username with REST API', async done => {
@@ -1848,7 +1845,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should allow login with expired authData token by default', async () => {
+  it('should not allow login with expired authData token since allowExpiredAuthDataToken is set to false by default', async () => {
     const provider = {
       authData: {
         id: '12345',
@@ -1874,37 +1871,7 @@ describe('Parse.User testing', () => {
     // In this case, we want success as it was valid once.
     // If the client needs an updated token, do lock the user out
     defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
-    await Parse.User._logInWith('shortLivedAuth', {});
-  });
-
-  it('should not allow login with expired authData token when allowExpiredAuthDataToken is set to false', async () => {
-    await reconfigureServer({ allowExpiredAuthDataToken: false });
-    const provider = {
-      authData: {
-        id: '12345',
-        access_token: 'token',
-      },
-      restoreAuthentication() {
-        return true;
-      },
-      deauthenticate() {
-        provider.authData = {};
-      },
-      authenticate(options) {
-        options.success(this, provider.authData);
-      },
-      getAuthType() {
-        return 'shortLivedAuth';
-      },
-    };
-    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
-    Parse.User._registerAuthenticationProvider(provider);
-    await Parse.User._logInWith('shortLivedAuth', {});
-    // Simulate a remotely expired token (like a short lived one)
-    // In this case, we want success as it was valid once.
-    // If the client needs an updated token, do lock the user out
-    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
-    expectAsync(Parse.User._logInWith('shortLivedAuth', {})).toBeRejected();
+    await expectAsync(Parse.User._logInWith('shortLivedAuth', {})).toBeRejected();
   });
 
   it('should allow PUT request with stale auth Data', done => {
@@ -3037,6 +3004,7 @@ describe('Parse.User testing', () => {
           },
         });
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         expect(emailCalled).toBe(true);
         expect(emailOptions).not.toBeUndefined();
@@ -3192,6 +3160,35 @@ describe('Parse.User testing', () => {
         }
       )
       .catch(done.fail);
+  });
+
+  it('should return current session with expired expiration date', async () => {
+    await Parse.User.signUp('buser', 'somepass', null);
+    const response = await request({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/_Session',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    });
+    const body = response.data;
+    const id = body.results[0].objectId;
+    const expiresAt = new Date(new Date().setYear(2015));
+    await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/classes/_Session/' + id,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        expiresAt: { __type: 'Date', iso: expiresAt.toISOString() },
+      },
+    });
+    const session = await Parse.Session.current();
+    expect(session.get('expiresAt')).toEqual(expiresAt);
   });
 
   it('should not create extraneous session tokens', done => {
@@ -4403,5 +4400,33 @@ describe('login as other user', () => {
     expect(sessionsAfterRequest.length).toBe(0);
 
     done();
+  });
+});
+
+describe('allowClientClassCreation option', () => {
+  it('should enforce boolean values', async () => {
+    const options = [[], 'a', '', 0, 1, {}, 'true', 'false'];
+    for (const option of options) {
+      await expectAsync(reconfigureServer({ allowClientClassCreation: option })).toBeRejected();
+    }
+  });
+
+  it('should accept true value', async () => {
+    await reconfigureServer({ allowClientClassCreation: true });
+    expect(Config.get(Parse.applicationId).allowClientClassCreation).toBe(true);
+  });
+
+  it('should accept false value', async () => {
+    await reconfigureServer({ allowClientClassCreation: false });
+    expect(Config.get(Parse.applicationId).allowClientClassCreation).toBe(false);
+  });
+
+  it('should default false', async () => {
+    // remove predefined allowClientClassCreation:true on global defaultConfiguration
+    delete defaultConfiguration.allowClientClassCreation;
+    await reconfigureServer(defaultConfiguration);
+    expect(Config.get(Parse.applicationId).allowClientClassCreation).toBe(false);
+    // Need to set it back to true to avoid other test fails
+    defaultConfiguration.allowClientClassCreation = true;
   });
 });

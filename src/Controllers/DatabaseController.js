@@ -279,6 +279,9 @@ const flattenUpdateOperatorsForCreate = object => {
           }
           object[key] = object[key].amount;
           break;
+        case 'SetOnInsert':
+          object[key] = object[key].amount;
+          break;
         case 'Add':
           if (!(object[key].objects instanceof Array)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
@@ -363,6 +366,22 @@ const getRootFieldName = (fieldName: string): string => {
 
 const relationSchema = {
   fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } },
+};
+
+const convertEmailToLowercase = (object, className, options) => {
+  if (className === '_User' && options.convertEmailToLowercase) {
+    if (typeof object['email'] === 'string') {
+      object['email'] = object['email'].toLowerCase();
+    }
+  }
+};
+
+const convertUsernameToLowercase = (object, className, options) => {
+  if (className === '_User' && options.convertUsernameToLowercase) {
+    if (typeof object['username'] === 'string') {
+      object['username'] = object['username'].toLowerCase();
+    }
+  }
 };
 
 class DatabaseController {
@@ -475,6 +494,11 @@ class DatabaseController {
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
+    try {
+      Utils.checkProhibitedKeywords(this.options, update);
+    } catch (error) {
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+    }
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
@@ -565,6 +589,8 @@ class DatabaseController {
                 }
               }
               update = transformObjectACL(update);
+              convertEmailToLowercase(update, className, this.options);
+              convertUsernameToLowercase(update, className, this.options);
               transformAuthData(className, update, schema);
               if (validateOnly) {
                 return this.adapter.find(className, schema, query, {}).then(result => {
@@ -805,10 +831,17 @@ class DatabaseController {
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
+    try {
+      Utils.checkProhibitedKeywords(this.options, object);
+    } catch (error) {
+      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+    }
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
     object = transformObjectACL(object);
 
+    convertEmailToLowercase(object, className, this.options);
+    convertUsernameToLowercase(object, className, this.options);
     object.createdAt = { iso: object.createdAt, __type: 'Date' };
     object.updatedAt = { iso: object.updatedAt, __type: 'Date' };
 
@@ -1155,6 +1188,7 @@ class DatabaseController {
       hint,
       caseInsensitive = false,
       explain,
+      comment,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1202,8 +1236,9 @@ class DatabaseController {
             keys,
             readPreference,
             hint,
-            caseInsensitive,
+            caseInsensitive: this.options.enableCollationCaseComparison ? false : caseInsensitive,
             explain,
+            comment,
           };
           Object.keys(sort).forEach(fieldName => {
             if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
@@ -1273,7 +1308,8 @@ class DatabaseController {
                     query,
                     readPreference,
                     undefined,
-                    hint
+                    hint,
+                    comment
                   );
                 }
               } else if (distinct) {
@@ -1292,7 +1328,8 @@ class DatabaseController {
                     pipeline,
                     readPreference,
                     hint,
-                    explain
+                    explain,
+                    comment
                   );
                 }
               } else if (explain) {
@@ -1706,30 +1743,26 @@ class DatabaseController {
       throw error;
     });
 
-    await this.adapter
-      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
-      .catch(error => {
-        logger.warn('Unable to create case insensitive username index: ', error);
-        throw error;
-      });
-    await this.adapter
-      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
-      .catch(error => {
-        logger.warn('Unable to create case insensitive username index: ', error);
-        throw error;
-      });
+    if (!this.options.enableCollationCaseComparison) {
+      await this.adapter
+        .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
+        .catch(error => {
+          logger.warn('Unable to create case insensitive username index: ', error);
+          throw error;
+        });
+
+      await this.adapter
+        .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
+        .catch(error => {
+          logger.warn('Unable to create case insensitive email index: ', error);
+          throw error;
+        });
+    }
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
       throw error;
     });
-
-    await this.adapter
-      .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
-      .catch(error => {
-        logger.warn('Unable to create case insensitive email index: ', error);
-        throw error;
-      });
 
     await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
@@ -1813,7 +1846,7 @@ class DatabaseController {
         keyUpdate &&
         typeof keyUpdate === 'object' &&
         keyUpdate.__op &&
-        ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1
+        ['Add', 'AddUnique', 'Remove', 'Increment', 'SetOnInsert'].indexOf(keyUpdate.__op) > -1
       ) {
         // only valid ops that produce an actionable result
         // the op may have happened on a keypath

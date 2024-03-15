@@ -7,6 +7,7 @@ import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
+import { version } from '../package.json';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
@@ -50,6 +51,7 @@ export class Config {
     config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(
       config
     );
+    config.version = version;
     return config;
   }
 
@@ -88,6 +90,7 @@ export class Config {
     rateLimit,
     databaseOptions,
     extendSessionOnUse,
+    allowClientClassCreation,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -130,6 +133,7 @@ export class Config {
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
+    this.validateAllowClientClassCreation(allowClientClassCreation);
   }
 
   static validateControllers({
@@ -169,6 +173,12 @@ export class Config {
   static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
+    }
+  }
+
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 

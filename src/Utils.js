@@ -358,6 +358,18 @@ class Utils {
     }
     return false;
   }
+
+  static checkProhibitedKeywords(config, data) {
+    if (config?.requestKeywordDenylist) {
+      // Scan request data for denied keywords
+      for (const keyword of config.requestKeywordDenylist) {
+        const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+        if (match) {
+          throw `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`;
+        }
+      }
+    }
+  }
 }
 
 module.exports = Utils;
