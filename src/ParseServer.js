@@ -428,7 +428,7 @@ class ParseServer {
 
         if (Config.failedConfigKeyVerification) {
           delete Config.failedConfigKeyVerification;
-          throw new Error('Some Unknown Keys Found in Configuration. See warning messages above.');
+          throw new Error('Unknown key(s) found in Parse Server configuration, see other warning messages for details.');
         }
       }
     }
