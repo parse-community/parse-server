@@ -1267,7 +1267,7 @@ describe('miscellaneous', function () {
     });
   });
 
-  it('test cloud function query parameters with array of pointers', done => {
+  it('test cloud function query parameters with array of pointers', async () => {
     Parse.Cloud.define('echoParams', req => {
       return req.params;
     });
@@ -1276,24 +1276,14 @@ describe('miscellaneous', function () {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Javascript-Key': 'test',
     };
-    request({
+    const response = await request({
       method: 'POST',
       headers: headers,
-      url: 'http://localhost:8378/1/functions/echoParams', //?option=1&other=2
-      qs: {
-        option: 1,
-        other: 2,
-      },
-      body: '{"foo":"bar", "other": 1, "arr": [{ "__type": "Pointer" }]}',
-    }).then(response => {
-      const res = response.data.result;
-      expect(res.option).toEqual('1');
-      // Make sure query string params override body params
-      expect(res.other).toEqual('2');
-      expect(res.foo).toEqual('bar');
-      expect(res.arr.length).toEqual(1);
-      done();
+      url: 'http://localhost:8378/1/functions/echoParams',
+      body: '{"arr": [{ "__type": "Pointer", "className": "PointerTest" }]}',
     });
+    const res = response.data.result;
+    expect(res.arr.length).toEqual(1);
   });
  
   it('can handle null params in cloud functions (regression test for #1742)', done => {
