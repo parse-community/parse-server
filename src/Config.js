@@ -280,10 +280,11 @@ export class Config {
   static validateSchemaOptions(schema: SchemaOptions) {
     if (!schema) return;
 
-    Config.validateConfigKeyNames(Object.keys(SchemaOptions), Object.keys(schema), 'SchemaOptions');
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
+    Config.validateConfigKeyNames(Object.keys(SchemaOptions), Object.keys(schema), 'SchemaOptions');
+
     if (schema.definitions === undefined) {
       schema.definitions = SchemaOptions.definitions.default;
     } else if (!Array.isArray(schema.definitions)) {
