@@ -1285,7 +1285,6 @@ describe('miscellaneous', function () {
     const res = response.data.result;
     expect(res.arr.length).toEqual(1);
   });
- 
   it('can handle null params in cloud functions (regression test for #1742)', done => {
     Parse.Cloud.define('func', request => {
       expect(request.params.nullParam).toEqual(null);
