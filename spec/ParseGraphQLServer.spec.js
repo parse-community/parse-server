@@ -9,7 +9,7 @@ const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('@apollo/client/utilities');
-const { createUploadLink } = require('apollo-upload-client');
+const createUploadLink = (...args) => import('apollo-upload-client/createUploadLink.mjs').then(({ default: fn }) => fn(...args));
 const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('@apollo/client/link/ws');
 const { mergeSchemas } = require('@graphql-tools/schema');
@@ -88,8 +88,8 @@ describe('ParseGraphQLServer', () => {
 
     it('should initialize parseGraphQLSchema with a log controller', async () => {
       const loggerAdapter = {
-        log: () => {},
-        error: () => {},
+        log: () => { },
+        error: () => { },
       };
       const parseServer = await global.reconfigureServer({
         loggerAdapter,
@@ -124,10 +124,10 @@ describe('ParseGraphQLServer', () => {
       info: new Object(),
       config: new Object(),
       auth: new Object(),
-      get: () => {},
+      get: () => { },
     };
     const res = {
-      set: () => {},
+      set: () => { },
     };
 
     it("should return schema and context with req's info, config and auth", async () => {
@@ -452,7 +452,7 @@ describe('ParseGraphQLServer', () => {
         ws
       );
       const wsLink = new WebSocketLink(subscriptionClient);
-      const httpLink = createUploadLink({
+      const httpLink = await createUploadLink({
         uri: 'http://localhost:13377/graphql',
         fetch,
         headers,
@@ -473,8 +473,8 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
-      spyOn(console, 'warn').and.callFake(() => {});
-      spyOn(console, 'error').and.callFake(() => {});
+      spyOn(console, 'warn').and.callFake(() => { });
+      spyOn(console, 'error').and.callFake(() => { });
     });
 
     afterEach(async () => {
@@ -853,7 +853,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function input', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionInputFields = (
             await apolloClient.query({
@@ -875,7 +875,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function payload', async () => {
-          Parse.Cloud.define('hello', () => {});
+          Parse.Cloud.define('hello', () => { });
 
           const callFunctionPayloadFields = (
             await apolloClient.query({
@@ -6541,7 +6541,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete[
-                object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
+              object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
               ]
             ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(object4.fetch({ useMasterKey: true })).toBeRejectedWith(
@@ -7432,9 +7432,9 @@ describe('ParseGraphQLServer', () => {
         it('should send reset password', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7472,11 +7472,11 @@ describe('ParseGraphQLServer', () => {
           const clientMutationId = uuidv4();
           let resetPasswordToken;
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: ({ link }) => {
               resetPasswordToken = link.split('token=')[1].split('&')[0];
             },
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7541,9 +7541,9 @@ describe('ParseGraphQLServer', () => {
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => {},
+            sendVerificationEmail: () => { },
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => {},
+            sendMail: () => { },
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -10944,7 +10944,7 @@ describe('ParseGraphQLServer', () => {
         });
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-        const httpLink = createUploadLink({
+        const httpLink = await createUploadLink({
           uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
@@ -11074,25 +11074,25 @@ describe('ParseGraphQLServer', () => {
           },
         });
         const SomeClassType = new GraphQLObjectType({
-            name: 'SomeClass',
-            fields: {
-              nameUpperCase: {
-                type: new GraphQLNonNull(GraphQLString),
-                resolve: p => p.name.toUpperCase(),
-              },
-              type: { type: TypeEnum },
-              language: {
-                type: new GraphQLEnumType({
-                  name: 'LanguageEnum',
-                  values: {
-                    fr: { value: 'fr' },
-                    en: { value: 'en' },
-                  },
-                }),
-                resolve: () => 'fr',
-              },
+          name: 'SomeClass',
+          fields: {
+            nameUpperCase: {
+              type: new GraphQLNonNull(GraphQLString),
+              resolve: p => p.name.toUpperCase(),
             },
-          }),
+            type: { type: TypeEnum },
+            language: {
+              type: new GraphQLEnumType({
+                name: 'LanguageEnum',
+                values: {
+                  fr: { value: 'fr' },
+                  en: { value: 'en' },
+                },
+              }),
+              resolve: () => 'fr',
+            },
+          },
+        }),
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
             graphQLPath: '/graphql',
             graphQLCustomTypeDefs: new GraphQLSchema({
@@ -11168,7 +11168,7 @@ describe('ParseGraphQLServer', () => {
 
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-        const httpLink = createUploadLink({
+        const httpLink = await createUploadLink({
           uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
@@ -11363,7 +11363,7 @@ describe('ParseGraphQLServer', () => {
 
           parseGraphQLServer.applyGraphQL(expressApp);
           await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-          const httpLink = createUploadLink({
+          const httpLink = await createUploadLink({
             uri: 'http://localhost:13377/graphql',
             fetch,
             headers,
