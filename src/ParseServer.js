@@ -94,10 +94,10 @@ class ParseServer {
       const {
         databaseController,
         hooksController,
+        cacheController,
         cloud,
         security,
         schema,
-        cacheAdapter,
         liveQueryController,
       } = this.config;
       try {
@@ -112,8 +112,11 @@ class ParseServer {
       if (schema) {
         startupPromises.push(new DefinedSchemas(schema, this.config).execute());
       }
-      if (cacheAdapter?.connect && typeof cacheAdapter.connect === 'function') {
-        startupPromises.push(cacheAdapter.connect());
+      if (
+        cacheController.adapter?.connect &&
+        typeof cacheController.adapter.connect === 'function'
+      ) {
+        startupPromises.push(cacheController.adapter.connect());
       }
       startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);
@@ -244,7 +247,15 @@ class ParseServer {
           process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
-          throw err;
+          if (err.message) {
+            process.stderr.write('An uncaught exception occurred: ' + err.message);
+          }
+          if (err.stack) {
+            process.stderr.write('Stack Trace:\n' + err.stack);
+          } else {
+            process.stderr.write(err);
+          }
+          process.exit(1);
         }
       });
       // verify the server url after a 'mount' event is received

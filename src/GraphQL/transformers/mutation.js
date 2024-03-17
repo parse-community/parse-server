@@ -6,7 +6,7 @@ import * as objectsMutations from '../helpers/objectsMutations';
 const transformTypes = async (
   inputType: 'create' | 'update',
   fields,
-  { className, parseGraphQLSchema, req }
+  { className, parseGraphQLSchema, req, originalFields }
 ) => {
   const {
     classGraphQLCreateType,
@@ -46,13 +46,14 @@ const transformTypes = async (
           case 'File':
             // We need to use the originalFields to handle the file upload
             // since fields are a deepcopy and do not keep the file object
-            fields[field] = await transformers.file(fields[field], req);
+            fields[field] = await transformers.file(originalFields[field], req);
             break;
           case 'Relation':
             fields[field] = await transformers.relation(
               parseClass.fields[field].targetClass,
               field,
               fields[field],
+              originalFields[field],
               parseGraphQLSchema,
               req
             );
@@ -66,6 +67,7 @@ const transformTypes = async (
               parseClass.fields[field].targetClass,
               field,
               fields[field],
+              originalFields[field],
               parseGraphQLSchema,
               req
             );
@@ -137,7 +139,14 @@ const transformers = {
     }
     return parseACL;
   },
-  relation: async (targetClass, field, value, parseGraphQLSchema, { config, auth, info }) => {
+  relation: async (
+    targetClass,
+    field,
+    value,
+    originalValue,
+    parseGraphQLSchema,
+    { config, auth, info }
+  ) => {
     if (Object.keys(value).length === 0)
       throw new Parse.Error(
         Parse.Error.INVALID_POINTER,
@@ -153,9 +162,10 @@ const transformers = {
     if (value.createAndAdd) {
       nestedObjectsToAdd = (
         await Promise.all(
-          value.createAndAdd.map(async input => {
+          value.createAndAdd.map(async (input, i) => {
             const parseFields = await transformTypes('create', input, {
               className: targetClass,
+              originalFields: originalValue.createAndAdd[i],
               parseGraphQLSchema,
               req: { config, auth, info },
             });
@@ -206,7 +216,14 @@ const transformers = {
     }
     return op;
   },
-  pointer: async (targetClass, field, value, parseGraphQLSchema, { config, auth, info }) => {
+  pointer: async (
+    targetClass,
+    field,
+    value,
+    originalValue,
+    parseGraphQLSchema,
+    { config, auth, info }
+  ) => {
     if (Object.keys(value).length > 1 || Object.keys(value).length === 0)
       throw new Parse.Error(
         Parse.Error.INVALID_POINTER,
@@ -218,6 +235,7 @@ const transformers = {
       const parseFields = await transformTypes('create', value.createAndLink, {
         className: targetClass,
         parseGraphQLSchema,
+        originalFields: originalValue.createAndLink,
         req: { config, auth, info },
       });
       nestedObjectToAdd = await objectsMutations.createObject(

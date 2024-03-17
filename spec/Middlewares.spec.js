@@ -33,6 +33,9 @@ describe('middlewares', () => {
   });
 
   it('should use _ContentType if provided', done => {
+    AppCachePut(fakeReq.body._ApplicationId, {
+      masterKeyIps: ['127.0.0.1'],
+    });
     expect(fakeReq.headers['content-type']).toEqual(undefined);
     const contentType = 'image/jpeg';
     fakeReq.body._ContentType = contentType;
@@ -153,25 +156,23 @@ describe('middlewares', () => {
     });
     fakeReq.ip = '127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
+
+    let error;
+
+    try {
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    } catch (err) {
+      error = err;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual(`unauthorized`);
     expect(logger.error).toHaveBeenCalledWith(
       `Request using master key rejected as the request IP address '127.0.0.1' is not set in Parse Server option 'masterKeyIps'.`
     );
   });
 
-  it('should not succeed if the ip does not belong to masterKeyIps list', async () => {
-    AppCachePut(fakeReq.body._ApplicationId, {
-      masterKey: 'masterKey',
-      masterKeyIps: ['10.0.0.1'],
-    });
-    fakeReq.ip = '127.0.0.1';
-    fakeReq.headers['x-parse-master-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaster).toBe(false);
-  });
-
-  it('should not succeed if the ip does not belong to maintenanceKeyIps list', async () => {
+  it('should not succeed and log if the ip does not belong to maintenanceKeyIps list', async () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callFake(() => {});
     AppCachePut(fakeReq.body._ApplicationId, {
@@ -180,8 +181,17 @@ describe('middlewares', () => {
     });
     fakeReq.ip = '10.0.0.2';
     fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
-    await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    expect(fakeReq.auth.isMaintenance).toBe(false);
+
+    let error;
+
+    try {
+      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
+    } catch (err) {
+      error = err;
+    }
+
+    expect(error).toBeDefined();
+    expect(error.message).toEqual(`unauthorized`);
     expect(logger.error).toHaveBeenCalledWith(
       `Request using maintenance key rejected as the request IP address '10.0.0.2' is not set in Parse Server option 'maintenanceKeyIps'.`
     );

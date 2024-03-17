@@ -8,7 +8,7 @@ on:
     paths-ignore:
       - '**/**.md'
 env:
-  NODE_VERSION: 19.3.0
+  NODE_VERSION: 20.11.1
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-code-analysis:
@@ -24,7 +24,7 @@ jobs:
         language: ['javascript']
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
@@ -37,13 +37,13 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
@@ -58,13 +58,13 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
@@ -78,13 +78,13 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
@@ -99,13 +99,13 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
@@ -120,23 +120,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up QEMU
         id: qemu
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
       - name: Build docker image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64, linux/arm64/v8
   check-lock-file-version:
     name: NPM Lock File Version
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Check NPM lock file version
         uses: mansona/npm-lockfile-version@v1
         with:
@@ -148,40 +148,32 @@ jobs:
           - name: MongoDB 4.2, ReplicaSet
             MONGODB_VERSION: 4.2.19
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: MongoDB 4.4, ReplicaSet
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: MongoDB 5, ReplicaSet
             MONGODB_VERSION: 5.3.2
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: MongoDB 6, ReplicaSet
             MONGODB_VERSION: 6.0.2
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: MongoDB 7, ReplicaSet
             MONGODB_VERSION: 7.0.1
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 19.3.0
-          - name: Node 14
-            MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 14.21.1
-          - name: Node 16
-            MONGODB_VERSION: 4.4.13
-            MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 16.18.1
+            NODE_VERSION: 20.11.1
           - name: Node 18
             MONGODB_VERSION: 4.4.13
             MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 18.12.1
+            NODE_VERSION: 18.19.1
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -200,16 +192,13 @@ jobs:
     steps:
       - name: Fix usage of insecure GitHub protocol
         run: sudo git config --system url."https://github".insteadOf "git://github"
-      - name: Fix git protocol for Node 14
-        if: ${{ startsWith(matrix.NODE_VERSION, '14.') }}
-        run: sudo git config --system url."https://github".insteadOf "ssh://git@github"
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.NODE_VERSION }}
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
@@ -228,25 +217,25 @@ jobs:
         include:
           - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: PostgreSQL 13, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:13-3.2
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: PostgreSQL 13, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:13-3.3
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: PostgreSQL 13, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:13-3.4
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: PostgreSQL 14, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:14-3.4
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: PostgreSQL 15, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:15-3.4
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
           - name: PostgreSQL 16, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:15-3.4
-            NODE_VERSION: 19.3.0
+            NODE_VERSION: 20.11.1
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -272,13 +261,13 @@ jobs:
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.NODE_VERSION }}
       - name: Cache Node.js modules
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}

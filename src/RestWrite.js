@@ -548,6 +548,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
     const userResult = results[0];
     // Prevent duplicate authData id
     if (userId && userId !== userResult.objectId) {
+      await Auth.handleAuthDataValidation(authData, this, results[0]);
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
     }
 
