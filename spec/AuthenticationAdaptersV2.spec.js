@@ -487,6 +487,33 @@ describe('Auth Adapter features', () => {
     expect(baseAdapter2.validateAuthData).toHaveBeenCalledTimes(2);
   });
 
+  it('should not perform authData validation twice when data mutated', async () => {
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({
+      auth: { baseAdapter },
+      allowExpiredAuthDataToken: false,
+    });
+
+    const user = new Parse.User();
+
+    await user.save({
+      authData: {
+        baseAdapter: { id: 'baseAdapter', token: "sometoken1" },
+      },
+    });
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+
+    const user2 = new Parse.User();
+    await user2.save({
+      authData: {
+        baseAdapter: { id: 'baseAdapter', token: "sometoken2" },
+      },
+    });
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(2);
+  });
+
   it('should require additional provider if configured', async () => {
     await reconfigureServer({
       auth: { baseAdapter, additionalAdapter },
@@ -860,7 +887,7 @@ describe('Auth Adapter features', () => {
       auth: { challengeAdapter: throwInChallengeAdapter },
     });
     let logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
+    spyOn(logger, 'error').and.callFake(() => { });
     await expectAsync(
       requestWithExpectedError({
         headers: headers,
@@ -885,7 +912,7 @@ describe('Auth Adapter features', () => {
 
     await reconfigureServer({ auth: { modernAdapter: throwInSetup } });
     logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
+    spyOn(logger, 'error').and.callFake(() => { });
     let user = new Parse.User();
     await expectAsync(
       user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } })
@@ -907,7 +934,7 @@ describe('Auth Adapter features', () => {
 
     await reconfigureServer({ auth: { modernAdapter: throwInUpdate } });
     logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
+    spyOn(logger, 'error').and.callFake(() => { });
     user = new Parse.User();
     await user.save({ authData: { modernAdapter: { id: 'updateAdapter' } } });
     await expectAsync(
@@ -937,7 +964,7 @@ describe('Auth Adapter features', () => {
       allowExpiredAuthDataToken: false,
     });
     logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
+    spyOn(logger, 'error').and.callFake(() => { });
     user = new Parse.User();
     await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
     const user2 = new Parse.User();

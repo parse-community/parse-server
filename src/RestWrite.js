@@ -523,10 +523,15 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   const r = await Auth.findUsersWithAuthData(this.config, authData);
   const results = this.filteredObjectsByACL(r);
 
-  if (results.length > 1) {
+  const userId = this.getUserId();
+  const userResult = results[0];
+
+  const foundUserIsNotCurrentUser = userId && userResult && userId !== userResult.objectId;
+
+  if (results.length > 1 || foundUserIsNotCurrentUser) {
     // To avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
     // Let's run some validation before throwing
-    await Auth.handleAuthDataValidation(authData, this, results[0]);
+    await Auth.handleAuthDataValidation(authData, this, userResult);
     throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
   }
 
@@ -544,13 +549,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   // User found with provided authData
   if (results.length === 1) {
-    const userId = this.getUserId();
-    const userResult = results[0];
-    // Prevent duplicate authData id
-    if (userId && userId !== userResult.objectId) {
-      await Auth.handleAuthDataValidation(authData, this, results[0]);
-      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
-    }
 
     this.storage.authProvider = Object.keys(authData).join(',');
 
@@ -1311,7 +1309,7 @@ RestWrite.prototype.handleInstallation = function () {
           throw new Parse.Error(
             132,
             'Must specify installationId when deviceToken ' +
-              'matches multiple Installation objects'
+            'matches multiple Installation objects'
           );
         } else {
           // Multiple device token matches and we specified an installation ID,
