@@ -70,6 +70,17 @@ class ParseServer {
       'ParseServerOptions'
     );
 
+    if (
+      options.liveQueryServerOptions &&
+      Object.prototype.toString.call(options.liveQueryServerOptions) === '[object Object]'
+    ) {
+      Config.validateConfigKeyNames(
+        Object.keys(LiveQueryServerOptionsDef),
+        Object.keys(options.liveQueryServerOptions),
+        'LiveQueryServerOptions'
+      );
+    }
+
     // Set option defaults
     injectDefaults(options);
     const {
@@ -420,23 +431,6 @@ class ParseServer {
     config: LiveQueryServerOptions,
     options: ParseServerOptions
   ) {
-    if (config) {
-      if (Object.prototype.toString.call(config) === '[object Object]') {
-        Config.validateConfigKeyNames(
-          Object.keys(LiveQueryServerOptionsDef),
-          Object.keys(config),
-          'LiveQueryServerOptions'
-        );
-
-        if (Config.failedConfigKeyVerification) {
-          delete Config.failedConfigKeyVerification;
-          throw new Error(
-            'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
-          );
-        }
-      }
-    }
-
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);

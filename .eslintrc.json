@@ -24,7 +24,8 @@
         "prefer-const": "error",
         "space-infix-ops": "error",
         "no-useless-escape": "off",
-        "require-atomic-updates": "off"
+        "require-atomic-updates": "off",
+        "object-curly-spacing": ["error", "always"]
     },
     "globals": {
         "Parse": true
