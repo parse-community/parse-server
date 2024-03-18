@@ -86,10 +86,12 @@ const Category = {
 };
 
 function getStore(category, name, applicationId) {
-  const validNameRegex = /^[a-zA-Z0-9._-]+$/;
-  if (!validNameRegex.test(name)) {
-    // Prevent a malicious user from injecting properties into the store
-    return {};
+  const namePattern = /^[a-zA-Z0-9._-]+$/;
+  if (!namePattern.test(name)) {
+    const error = new Error();
+    error.status = 403;
+    error.message = `Invalid function name`;
+    throw error;
   }
 
   const path = name.split('.');
