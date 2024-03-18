@@ -100,6 +100,7 @@ export class Config {
       'generateEmailVerifyTokenExpiresAt',
       'version',
       'RateLimitZone',
+      'setIdempotencyFunction',
 
       // From Test files
       'retryWrites',

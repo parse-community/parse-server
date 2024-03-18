@@ -45,10 +45,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
-import {
-  ParseServerOptions as ParseServerOptionDef,
-  LiveQueryServerOptions as LiveQueryServerOptionsDef,
-} from './Options/Definitions';
+import { ParseServerOptions as ParseServerOptionDef } from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -420,23 +417,6 @@ class ParseServer {
     config: LiveQueryServerOptions,
     options: ParseServerOptions
   ) {
-    if (config) {
-      if (Object.prototype.toString.call(config) === '[object Object]') {
-        Config.validateConfigKeyNames(
-          Object.keys(LiveQueryServerOptionsDef),
-          Object.keys(config),
-          'LiveQueryServerOptions'
-        );
-
-        if (Config.failedConfigKeyVerification) {
-          delete Config.failedConfigKeyVerification;
-          throw new Error(
-            'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
-          );
-        }
-      }
-    }
-
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
