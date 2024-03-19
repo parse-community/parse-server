@@ -1,3 +1,10 @@
+# [7.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.28...7.0.0-alpha.29) (2024-03-19)
+
+
+### Bug Fixes
+
+* Server crashes on invalid Cloud Function or Cloud Job name; fixes security vulnerability [GHSA-6hh7-46r2-vf29](https://github.com/parse-community/parse-server/security/advisories/GHSA-6hh7-46r2-vf29) ([#9024](https://github.com/parse-community/parse-server/issues/9024)) ([9f6e342](https://github.com/parse-community/parse-server/commit/9f6e3429d3b326cf4e2994733c618d08032fac6e))
+
 # [7.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.27...7.0.0-alpha.28) (2024-03-17)
 
 

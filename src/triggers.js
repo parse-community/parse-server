@@ -86,6 +86,12 @@ const Category = {
 };
 
 function getStore(category, name, applicationId) {
+  const invalidNameRegex = /['"`]/;
+  if (invalidNameRegex.test(name)) {
+    // Prevent a malicious user from injecting properties into the store
+    return {};
+  }
+
   const path = name.split('.');
   path.splice(-1); // remove last component
   applicationId = applicationId || Parse.applicationId;
@@ -94,7 +100,7 @@ function getStore(category, name, applicationId) {
   for (const component of path) {
     store = store[component];
     if (!store) {
-      return undefined;
+      return {};
     }
   }
   return store;
