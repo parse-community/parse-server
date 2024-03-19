@@ -86,8 +86,8 @@ const Category = {
 };
 
 function getStore(category, name, applicationId) {
-  const validNameRegex = /[^'"`]/;
-  if (!validNameRegex.test(name)) {
+  const invalidNameRegex = /['"`]/;
+  if (invalidNameRegex.test(name)) {
     // Prevent a malicious user from injecting properties into the store
     return {};
   }
