@@ -887,7 +887,7 @@ describe('Auth Adapter features', () => {
       auth: { challengeAdapter: throwInChallengeAdapter },
     });
     let logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => { });
+    spyOn(logger, 'error').and.callFake(() => {});
     await expectAsync(
       requestWithExpectedError({
         headers: headers,
@@ -912,7 +912,7 @@ describe('Auth Adapter features', () => {
 
     await reconfigureServer({ auth: { modernAdapter: throwInSetup } });
     logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => { });
+    spyOn(logger, 'error').and.callFake(() => {});
     let user = new Parse.User();
     await expectAsync(
       user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } })
@@ -934,7 +934,7 @@ describe('Auth Adapter features', () => {
 
     await reconfigureServer({ auth: { modernAdapter: throwInUpdate } });
     logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => { });
+    spyOn(logger, 'error').and.callFake(() => {});
     user = new Parse.User();
     await user.save({ authData: { modernAdapter: { id: 'updateAdapter' } } });
     await expectAsync(
