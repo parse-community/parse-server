@@ -1,3 +1,10 @@
+## [6.5.5](https://github.com/parse-community/parse-server/compare/6.5.4...6.5.5) (2024-03-19)
+
+
+### Bug Fixes
+
+* Server crashes on invalid Cloud Function or Cloud Job name; fixes security vulnerability [GHSA-6hh7-46r2-vf29](https://github.com/parse-community/parse-server/security/advisories/GHSA-6hh7-46r2-vf29) ([#9023](https://github.com/parse-community/parse-server/issues/9023)) ([5ae6d6a](https://github.com/parse-community/parse-server/commit/5ae6d6a36d75c4511029f0ba5673ae4b2999179b))
+
 ## [6.5.4](https://github.com/parse-community/parse-server/compare/6.5.3...6.5.4) (2024-03-16)
 
 
