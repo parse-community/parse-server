@@ -3386,7 +3386,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on GET users/me (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3429,7 +3429,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on GET users/id (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3477,7 +3477,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on login (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3521,7 +3521,7 @@ describe('Parse.User testing', () => {
 
   it('should not allow updates to hidden fields', async () => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3546,7 +3546,7 @@ describe('Parse.User testing', () => {
 
   it('should allow updates to fields with maintenanceKey', async () => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3576,8 +3576,8 @@ describe('Parse.User testing', () => {
         expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
         expect(
           e.message === 'Invalid username/password.' ||
-          e.message ===
-          'Your account is locked due to multiple failed login attempts. Please try again after 1 minute(s)'
+            e.message ===
+              'Your account is locked due to multiple failed login attempts. Please try again after 1 minute(s)'
         ).toBeTrue();
       }
     }

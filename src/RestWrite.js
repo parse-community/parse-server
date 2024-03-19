@@ -525,7 +525,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   const userId = this.getUserId();
   const userResult = results[0];
-
   const foundUserIsNotCurrentUser = userId && userResult && userId !== userResult.objectId;
 
   if (results.length > 1 || foundUserIsNotCurrentUser) {
@@ -1309,7 +1308,7 @@ RestWrite.prototype.handleInstallation = function () {
           throw new Parse.Error(
             132,
             'Must specify installationId when deviceToken ' +
-            'matches multiple Installation objects'
+              'matches multiple Installation objects'
           );
         } else {
           // Multiple device token matches and we specified an installation ID,
