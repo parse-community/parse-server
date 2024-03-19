@@ -1,3 +1,24 @@
+## [6.5.5](https://github.com/parse-community/parse-server/compare/6.5.4...6.5.5) (2024-03-19)
+
+
+### Bug Fixes
+
+* Server crashes on invalid Cloud Function or Cloud Job name; fixes security vulnerability [GHSA-6hh7-46r2-vf29](https://github.com/parse-community/parse-server/security/advisories/GHSA-6hh7-46r2-vf29) ([#9023](https://github.com/parse-community/parse-server/issues/9023)) ([5ae6d6a](https://github.com/parse-community/parse-server/commit/5ae6d6a36d75c4511029f0ba5673ae4b2999179b))
+
+## [6.5.4](https://github.com/parse-community/parse-server/compare/6.5.3...6.5.4) (2024-03-16)
+
+
+### Bug Fixes
+
+* Server crashes when receiving an array of `Parse.Pointer` in the request body ([#9012](https://github.com/parse-community/parse-server/issues/9012)) ([8ff444d](https://github.com/parse-community/parse-server/commit/8ff444d42ef51bfe6808c4c3a5fe666bfe302ebe))
+
+## [6.5.3](https://github.com/parse-community/parse-server/compare/6.5.2...6.5.3) (2024-03-16)
+
+
+### Bug Fixes
+
+* Security upgrade follow-redirects from 1.15.5 to 1.15.6 ([#9019](https://github.com/parse-community/parse-server/issues/9019)) ([422958e](https://github.com/parse-community/parse-server/commit/422958e246da6f13011776c8dde028a00fb821cb))
+
 ## [6.5.2](https://github.com/parse-community/parse-server/compare/6.5.1...6.5.2) (2024-03-02)
 
 
