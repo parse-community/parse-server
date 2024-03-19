@@ -3350,7 +3350,7 @@ describe('Parse.User testing', () => {
 
   it('should not allow updates to emailVerified', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
