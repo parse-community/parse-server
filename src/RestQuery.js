@@ -212,6 +212,7 @@ function _UnsafeRestQuery(
       case 'skip':
       case 'limit':
       case 'readPreference':
+      case 'comment':
         this.findOptions[option] = restOptions[option];
         break;
       case 'order':
@@ -478,6 +479,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
     className: inQueryValue.className,
     restWhere: inQueryValue.where,
     restOptions: additionalOptions,
+    context: this.context,
   });
   return subquery.execute().then(response => {
     transformInQuery(inQueryObject, subquery.className, response.results);
@@ -537,6 +539,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
     className: notInQueryValue.className,
     restWhere: notInQueryValue.where,
     restOptions: additionalOptions,
+    context: this.context,
   });
 
   return subquery.execute().then(response => {
@@ -609,6 +612,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     className: selectValue.query.className,
     restWhere: selectValue.query.where,
     restOptions: additionalOptions,
+    context: this.context,
   });
 
   return subquery.execute().then(response => {
@@ -671,6 +675,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     className: dontSelectValue.query.className,
     restWhere: dontSelectValue.query.where,
     restOptions: additionalOptions,
+    context: this.context,
   });
 
   return subquery.execute().then(response => {
@@ -860,6 +865,7 @@ _UnsafeRestQuery.prototype.handleInclude = function () {
     this.auth,
     this.response,
     this.include[0],
+    this.context,
     this.restOptions
   );
   if (pathResponse.then) {
@@ -946,7 +952,7 @@ _UnsafeRestQuery.prototype.handleAuthAdapters = async function () {
 // Adds included values to the response.
 // Path is a list of field names.
 // Returns a promise for an augmented response.
-function includePath(config, auth, response, path, restOptions = {}) {
+function includePath(config, auth, response, path, context, restOptions = {}) {
   var pointers = findPointers(response.results, path);
   if (pointers.length == 0) {
     return response;
@@ -1026,6 +1032,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
       className,
       restWhere: where,
       restOptions: includeRestOptions,
+      context: context,
     });
     return query.execute({ op: 'get' }).then(results => {
       results.className = className;

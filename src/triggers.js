@@ -86,6 +86,12 @@ const Category = {
 };
 
 function getStore(category, name, applicationId) {
+  const invalidNameRegex = /['"`]/;
+  if (invalidNameRegex.test(name)) {
+    // Prevent a malicious user from injecting properties into the store
+    return {};
+  }
+
   const path = name.split('.');
   path.splice(-1); // remove last component
   applicationId = applicationId || Parse.applicationId;
@@ -94,7 +100,7 @@ function getStore(category, name, applicationId) {
   for (const component of path) {
     store = store[component];
     if (!store) {
-      return undefined;
+      return {};
     }
   }
   return store;
@@ -270,6 +276,8 @@ export function getRequestObject(
     triggerType === Types.afterSave ||
     triggerType === Types.beforeDelete ||
     triggerType === Types.afterDelete ||
+    triggerType === Types.beforeLogin ||
+    triggerType === Types.afterLogin ||
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
@@ -573,6 +581,10 @@ export function maybeRunQueryTrigger(
         if (jsonQuery.hint) {
           restOptions = restOptions || {};
           restOptions.hint = jsonQuery.hint;
+        }
+        if (jsonQuery.comment) {
+          restOptions = restOptions || {};
+          restOptions.comment = jsonQuery.comment;
         }
         if (requestObject.readPreference) {
           restOptions = restOptions || {};
