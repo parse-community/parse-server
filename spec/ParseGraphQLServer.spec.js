@@ -6541,7 +6541,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete[
-              object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
+                object4.className.charAt(0).toLowerCase() + object4.className.slice(1)
               ]
             ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(object4.fetch({ useMasterKey: true })).toBeRejectedWith(
@@ -11074,25 +11074,25 @@ describe('ParseGraphQLServer', () => {
           },
         });
         const SomeClassType = new GraphQLObjectType({
-          name: 'SomeClass',
-          fields: {
-            nameUpperCase: {
-              type: new GraphQLNonNull(GraphQLString),
-              resolve: p => p.name.toUpperCase(),
+            name: 'SomeClass',
+            fields: {
+              nameUpperCase: {
+                type: new GraphQLNonNull(GraphQLString),
+                resolve: p => p.name.toUpperCase(),
+              },
+              type: { type: TypeEnum },
+              language: {
+                type: new GraphQLEnumType({
+                  name: 'LanguageEnum',
+                  values: {
+                    fr: { value: 'fr' },
+                    en: { value: 'en' },
+                  },
+                }),
+                resolve: () => 'fr',
+              },
             },
-            type: { type: TypeEnum },
-            language: {
-              type: new GraphQLEnumType({
-                name: 'LanguageEnum',
-                values: {
-                  fr: { value: 'fr' },
-                  en: { value: 'en' },
-                },
-              }),
-              resolve: () => 'fr',
-            },
-          },
-        }),
+          }),
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
             graphQLPath: '/graphql',
             graphQLCustomTypeDefs: new GraphQLSchema({
