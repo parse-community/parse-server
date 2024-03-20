@@ -98,7 +98,7 @@
     "madge": "6.1.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
-    "mongodb-runner": "5.4.4",
+    "mongodb-runner": "5.5.4",
     "mongodb-version-list": "1.0.0",
     "node-abort-controller": "3.0.1",
     "node-fetch": "3.2.10",
