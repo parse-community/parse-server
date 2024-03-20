@@ -88,8 +88,8 @@ describe('ParseGraphQLServer', () => {
 
     it('should initialize parseGraphQLSchema with a log controller', async () => {
       const loggerAdapter = {
-        log: () => { },
-        error: () => { },
+        log: () => {},
+        error: () => {},
       };
       const parseServer = await global.reconfigureServer({
         loggerAdapter,
@@ -124,10 +124,10 @@ describe('ParseGraphQLServer', () => {
       info: new Object(),
       config: new Object(),
       auth: new Object(),
-      get: () => { },
+      get: () => {},
     };
     const res = {
-      set: () => { },
+      set: () => {},
     };
 
     it("should return schema and context with req's info, config and auth", async () => {
@@ -473,8 +473,8 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
-      spyOn(console, 'warn').and.callFake(() => { });
-      spyOn(console, 'error').and.callFake(() => { });
+      spyOn(console, 'warn').and.callFake(() => {});
+      spyOn(console, 'error').and.callFake(() => {});
     });
 
     afterEach(async () => {
@@ -853,7 +853,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function input', async () => {
-          Parse.Cloud.define('hello', () => { });
+          Parse.Cloud.define('hello', () => {});
 
           const callFunctionInputFields = (
             await apolloClient.query({
@@ -875,7 +875,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in call function payload', async () => {
-          Parse.Cloud.define('hello', () => { });
+          Parse.Cloud.define('hello', () => {});
 
           const callFunctionPayloadFields = (
             await apolloClient.query({
@@ -7432,9 +7432,9 @@ describe('ParseGraphQLServer', () => {
         it('should send reset password', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => { },
+            sendVerificationEmail: () => {},
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => { },
+            sendMail: () => {},
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7472,11 +7472,11 @@ describe('ParseGraphQLServer', () => {
           const clientMutationId = uuidv4();
           let resetPasswordToken;
           const emailAdapter = {
-            sendVerificationEmail: () => { },
+            sendVerificationEmail: () => {},
             sendPasswordResetEmail: ({ link }) => {
               resetPasswordToken = link.split('token=')[1].split('&')[0];
             },
-            sendMail: () => { },
+            sendMail: () => {},
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',
@@ -7541,9 +7541,9 @@ describe('ParseGraphQLServer', () => {
         it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
-            sendVerificationEmail: () => { },
+            sendVerificationEmail: () => {},
             sendPasswordResetEmail: () => Promise.resolve(),
-            sendMail: () => { },
+            sendMail: () => {},
           };
           parseServer = await global.reconfigureServer({
             appName: 'test',

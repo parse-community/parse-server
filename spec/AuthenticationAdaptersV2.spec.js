@@ -964,7 +964,7 @@ describe('Auth Adapter features', () => {
       allowExpiredAuthDataToken: false,
     });
     logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => { });
+    spyOn(logger, 'error').and.callFake(() => {});
     user = new Parse.User();
     await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
     const user2 = new Parse.User();
