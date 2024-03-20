@@ -9553,14 +9553,11 @@ describe('ParseGraphQLServer', () => {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
-
             const schemaController = await parseServer.config.databaseController.loadSchema();
             await schemaController.addClassIfNotExists('SomeClassWithRequiredFile', {
               someField: { type: 'File', required: true },
             });
-
             await resetGraphQLCache();
-
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const body = new FormData();
