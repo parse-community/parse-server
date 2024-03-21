@@ -434,8 +434,8 @@ try {
   // Fetch test exclusion list
   testExclusionList = require('./testExclusionList.json');
   console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
-} catch(error) {
-  if(error.code !== 'MODULE_NOT_FOUND') {
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') {
     throw error;
   }
 }
@@ -445,10 +445,8 @@ global.it_id = (id, func) => {
   if (testExclusionList.includes(id)) {
     return xit;
   } else {
-    if(func === undefined)
-      return it;
-    else
-      return func;
+    if (func === undefined) return it;
+    else return func;
   }
 };
 

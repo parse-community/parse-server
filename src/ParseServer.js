@@ -45,6 +45,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
+import { ParseServerOptions as ParseServerOptionDef } from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -59,6 +60,13 @@ class ParseServer {
   constructor(options: ParseServerOptions) {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
+
+    Config.validateConfigKeyNames(
+      Object.keys(ParseServerOptionDef),
+      Object.keys(options),
+      'ParseServerOptions'
+    );
+
     // Set option defaults
     injectDefaults(options);
     const {
@@ -70,9 +78,15 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
+    if (Config.failedConfigKeyVerification) {
+      delete Config.failedConfigKeyVerification;
+      throw new Error(
+        'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
+      );
+    }
+
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();

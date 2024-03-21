@@ -10,6 +10,7 @@ import { logLevels as validLogLevels } from './Controllers/LoggerController';
 import { version } from '../package.json';
 import {
   AccountLockoutOptions,
+  PagesRoute,
   DatabaseOptions,
   FileUploadOptions,
   IdempotencyOptions,
@@ -18,6 +19,10 @@ import {
   ParseServerOptions,
   SchemaOptions,
   SecurityOptions,
+  PasswordPolicyOptions,
+  RateLimitOptions,
+  CustomPagesOptions,
+  PagesCustomUrlsOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
 
@@ -63,35 +68,91 @@ export class Config {
     return serverConfiguration;
   }
 
-  static validateOptions({
-    publicServerURL,
-    revokeSessionOnPasswordReset,
-    expireInactiveSessions,
-    sessionLength,
-    defaultLimit,
-    maxLimit,
-    accountLockout,
-    passwordPolicy,
-    masterKeyIps,
-    masterKey,
-    maintenanceKey,
-    maintenanceKeyIps,
-    readOnlyMasterKey,
-    allowHeaders,
-    idempotencyOptions,
-    fileUpload,
-    pages,
-    security,
-    enforcePrivateUsers,
-    schema,
-    requestKeywordDenylist,
-    allowExpiredAuthDataToken,
-    logLevels,
-    rateLimit,
-    databaseOptions,
-    extendSessionOnUse,
-    allowClientClassCreation,
-  }) {
+  static validateConfigKeyNames(actual, given, parent) {
+    const internalConfigVars = [
+      'level',
+      'state',
+      'loggerController',
+      'filesController',
+      'userController',
+      'pushController',
+      'hasPushScheduledSupport',
+      'hasPushSupport',
+      'pushWorker',
+      'pushControllerQueue',
+      'analyticsController',
+      'cacheController',
+      'parseGraphQLController',
+      'liveQueryController',
+      'databaseController',
+      'hooksController',
+      'authDataManager',
+      'schemaCache',
+      'masterKeyIpsStore',
+      'maintenanceKeyIpsStore',
+      'failedConfigKeyVerification',
+      'patternValidator',
+
+      'applicationId',
+      'database',
+      '_mount',
+      'generateSessionExpiresAt',
+      'generateEmailVerifyTokenExpiresAt',
+      'version',
+      'RateLimitZone',
+      'setIdempotencyFunction',
+
+      // From Test files
+      'retryWrites',
+      'customIdSize',
+      'path',
+      'exampleKey',
+      'websocketTimeout',
+      'ops',
+    ];
+
+    for (const key of given) {
+      if (internalConfigVars.includes(key)) continue;
+
+      if (!actual.includes(key)) {
+        Config.failedConfigKeyVerification = true;
+        console.warn(`Warning: The following key from ${parent} is not recognized: ${key}`);
+      }
+    }
+  }
+
+  static validateOptions(options) {
+    const {
+      customPages,
+      publicServerURL,
+      revokeSessionOnPasswordReset,
+      expireInactiveSessions,
+      sessionLength,
+      defaultLimit,
+      maxLimit,
+      accountLockout,
+      passwordPolicy,
+      masterKeyIps,
+      masterKey,
+      maintenanceKey,
+      maintenanceKeyIps,
+      readOnlyMasterKey,
+      allowHeaders,
+      idempotencyOptions,
+      fileUpload,
+      pages,
+      security,
+      enforcePrivateUsers,
+      schema,
+      requestKeywordDenylist,
+      allowExpiredAuthDataToken,
+      logLevels,
+      rateLimit,
+      databaseOptions,
+      extendSessionOnUse,
+      allowClientClassCreation,
+    } = options;
+
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
     }
@@ -133,7 +194,21 @@ export class Config {
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
+    this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
+  }
+
+  static validateCustomPages(customPages) {
+    if (!customPages) return;
+
+    if (Object.prototype.toString.call(customPages) !== '[object Object]') {
+      throw Error('Parse Server option customPages must be an object.');
+    }
+    Config.validateConfigKeyNames(
+      Object.keys(CustomPagesOptions),
+      Object.keys(customPages),
+      'CustomPagesOptions'
+    );
   }
 
   static validateControllers({
@@ -186,6 +261,11 @@ export class Config {
     if (Object.prototype.toString.call(security) !== '[object Object]') {
       throw 'Parse Server option security must be an object.';
     }
+    Config.validateConfigKeyNames(
+      Object.keys(SecurityOptions),
+      Object.keys(security),
+      'SecurityOptions'
+    );
     if (security.enableCheck === undefined) {
       security.enableCheck = SecurityOptions.enableCheck.default;
     } else if (!isBoolean(security.enableCheck)) {
@@ -200,9 +280,12 @@ export class Config {
 
   static validateSchemaOptions(schema: SchemaOptions) {
     if (!schema) return;
+
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
+    Config.validateConfigKeyNames(Object.keys(SchemaOptions), Object.keys(schema), 'SchemaOptions');
+
     if (schema.definitions === undefined) {
       schema.definitions = SchemaOptions.definitions.default;
     } else if (!Array.isArray(schema.definitions)) {
@@ -244,6 +327,8 @@ export class Config {
     if (Object.prototype.toString.call(pages) !== '[object Object]') {
       throw 'Parse Server option pages must be an object.';
     }
+
+    Config.validateConfigKeyNames(Object.keys(PagesOptions), Object.keys(pages), 'PagesOptions');
     if (pages.enableRouter === undefined) {
       pages.enableRouter = PagesOptions.enableRouter.default;
     } else if (!isBoolean(pages.enableRouter)) {
@@ -291,11 +376,22 @@ export class Config {
       pages.customUrls = PagesOptions.customUrls.default;
     } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
       throw 'Parse Server option pages.customUrls must be an object.';
+    } else {
+      Config.validateConfigKeyNames(
+        Object.keys(PagesCustomUrlsOptions),
+        Object.keys(pages.customUrls),
+        'PagesCustomUrlsOptions'
+      );
     }
+
     if (pages.customRoutes === undefined) {
       pages.customRoutes = PagesOptions.customRoutes.default;
     } else if (!(pages.customRoutes instanceof Array)) {
       throw 'Parse Server option pages.customRoutes must be an array.';
+    } else {
+      pages.customRoutes.forEach(item => {
+        Config.validateConfigKeyNames(Object.keys(PagesRoute), Object.keys(item), 'PagesRoute');
+      });
     }
   }
 
@@ -303,6 +399,11 @@ export class Config {
     if (!idempotencyOptions) {
       return;
     }
+    Config.validateConfigKeyNames(
+      Object.keys(IdempotencyOptions),
+      Object.keys(idempotencyOptions),
+      'IdempotencyOptions'
+    );
     if (idempotencyOptions.ttl === undefined) {
       idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
     } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
@@ -319,6 +420,11 @@ export class Config {
 
   static validateAccountLockoutPolicy(accountLockout) {
     if (accountLockout) {
+      Config.validateConfigKeyNames(
+        Object.keys(AccountLockoutOptions),
+        Object.keys(accountLockout),
+        'AccountLockoutOptions'
+      );
       if (
         typeof accountLockout.duration !== 'number' ||
         accountLockout.duration <= 0 ||
@@ -345,6 +451,11 @@ export class Config {
 
   static validatePasswordPolicy(passwordPolicy) {
     if (passwordPolicy) {
+      Config.validateConfigKeyNames(
+        Object.keys(PasswordPolicyOptions),
+        Object.keys(passwordPolicy),
+        'PasswordPolicyOptions'
+      );
       if (
         passwordPolicy.maxPasswordAge !== undefined &&
         (typeof passwordPolicy.maxPasswordAge !== 'number' || passwordPolicy.maxPasswordAge < 0)
@@ -461,6 +572,12 @@ export class Config {
       }
       throw e;
     }
+
+    Config.validateConfigKeyNames(
+      Object.keys(FileUploadOptions),
+      Object.keys(fileUpload),
+      'FileUploadOptions'
+    );
     if (fileUpload.enableForAnonymousUser === undefined) {
       fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
     } else if (typeof fileUpload.enableForAnonymousUser !== 'boolean') {
@@ -551,6 +668,7 @@ export class Config {
   }
 
   static validateLogLevels(logLevels) {
+    Config.validateConfigKeyNames(Object.keys(LogLevels), Object.keys(logLevels), 'LogLevels');
     for (const key of Object.keys(LogLevels)) {
       if (logLevels[key]) {
         if (validLogLevels.indexOf(logLevels[key]) === -1) {
@@ -566,9 +684,16 @@ export class Config {
     if (databaseOptions == undefined) {
       return;
     }
+
     if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
       throw `databaseOptions must be an object`;
     }
+    Config.validateConfigKeyNames(
+      Object.keys(DatabaseOptions),
+      Object.keys(databaseOptions),
+      'DatabaseOptions'
+    );
+
     if (databaseOptions.enableSchemaHooks === undefined) {
       databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
     } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
@@ -591,11 +716,19 @@ export class Config {
     ) {
       throw `rateLimit must be an array or object`;
     }
+
     const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const option of options) {
       if (Object.prototype.toString.call(option) !== '[object Object]') {
         throw `rateLimit must be an array of objects`;
       }
+
+      Config.validateConfigKeyNames(
+        Object.keys(RateLimitOptions),
+        Object.keys(option),
+        'RateLimitOptions'
+      );
+
       if (option.requestPath == null) {
         throw `rateLimit.requestPath must be defined`;
       }
