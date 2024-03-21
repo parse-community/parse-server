@@ -1188,6 +1188,7 @@ class DatabaseController {
       hint,
       caseInsensitive = false,
       explain,
+      comment,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1237,6 +1238,7 @@ class DatabaseController {
             hint,
             caseInsensitive: this.options.enableCollationCaseComparison ? false : caseInsensitive,
             explain,
+            comment,
           };
           Object.keys(sort).forEach(fieldName => {
             if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
@@ -1306,7 +1308,8 @@ class DatabaseController {
                     query,
                     readPreference,
                     undefined,
-                    hint
+                    hint,
+                    comment
                   );
                 }
               } else if (distinct) {
@@ -1325,7 +1328,8 @@ class DatabaseController {
                     pipeline,
                     readPreference,
                     hint,
-                    explain
+                    explain,
+                    comment
                   );
                 }
               } else if (explain) {
