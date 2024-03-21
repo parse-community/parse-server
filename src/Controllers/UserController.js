@@ -36,11 +36,10 @@ export class UserController extends AdaptableController {
   }
 
   async setEmailVerifyToken(user, req, storage = {}) {
-    let shouldSendEmail = this.shouldVerifyEmails;
-    if (typeof shouldSendEmail === 'function') {
-      const response = await Promise.resolve(shouldSendEmail(req));
-      shouldSendEmail = response !== false;
-    }
+    const shouldSendEmail =
+      this.shouldVerifyEmails === true ||
+      (typeof this.shouldVerifyEmails === 'function' &&
+        (await Promise.resolve(this.shouldVerifyEmails(req))) === true);
     if (!shouldSendEmail) {
       return false;
     }
@@ -130,9 +129,6 @@ export class UserController extends AdaptableController {
   }
 
   async getUserIfNeeded(user) {
-    if (user.username && user.email) {
-      return Promise.resolve(user);
-    }
     var where = {};
     if (user.username) {
       where.username = user.username;
@@ -149,12 +145,11 @@ export class UserController extends AdaptableController {
       className: '_User',
       restWhere: where,
     });
-    return query.execute().then(function (result) {
-      if (result.results.length != 1) {
-        throw undefined;
-      }
-      return result.results[0];
-    });
+    const result = await query.execute();
+    if (result.results.length != 1) {
+      throw undefined;
+    }
+    return result.results[0];
   }
 
   async sendVerificationEmail(user, req) {
@@ -162,7 +157,8 @@ export class UserController extends AdaptableController {
       return;
     }
     const token = encodeURIComponent(user._email_verify_token);
-    // We may need to fetch the user in case of update email
+    // We may need to fetch the user in case of update email; only use the `fetchedUser`
+    // from this point onwards; do not use the `user` as it may not contain all fields.
     const fetchedUser = await this.getUserIfNeeded(user);
     let shouldSendEmail = this.config.sendUserEmailVerification;
     if (typeof shouldSendEmail === 'function') {
@@ -177,7 +173,7 @@ export class UserController extends AdaptableController {
     if (!shouldSendEmail) {
       return;
     }
-    const username = encodeURIComponent(user.username);
+    const username = encodeURIComponent(fetchedUser.username);
 
     const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
     const options = {
@@ -198,7 +194,7 @@ export class UserController extends AdaptableController {
    * @param user
    * @returns {*}
    */
-  async regenerateEmailVerifyToken(user, master) {
+  async regenerateEmailVerifyToken(user, master, installationId, ip) {
     const { _email_verify_token } = user;
     let { _email_verify_token_expires_at } = user;
     if (_email_verify_token_expires_at && _email_verify_token_expires_at.__type === 'Date') {
@@ -210,9 +206,15 @@ export class UserController extends AdaptableController {
       _email_verify_token &&
       new Date() < new Date(_email_verify_token_expires_at)
     ) {
-      return Promise.resolve();
+      return Promise.resolve(true);
     }
-    const shouldSend = await this.setEmailVerifyToken(user, { user, master });
+    const shouldSend = await this.setEmailVerifyToken(user, {
+      object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+      master,
+      installationId,
+      ip,
+      resendRequest: true
+    });
     if (!shouldSend) {
       return;
     }
@@ -224,7 +226,7 @@ export class UserController extends AdaptableController {
     if (!aUser || aUser.emailVerified) {
       throw undefined;
     }
-    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster);
+    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster, req.auth?.installationId, req.ip);
     if (generate) {
       this.sendVerificationEmail(aUser, req);
     }
