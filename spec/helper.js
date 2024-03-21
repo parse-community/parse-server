@@ -455,8 +455,7 @@ global.it_id = (id, func) => {
   if (testExclusionList.includes(id)) {
     return xit;
   } else {
-    if (func === undefined) return it;
-    else return func;
+    return func || it;
   }
 };
 
