@@ -45,10 +45,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
-import {
-  ParseServerOptions as ParseServerOptionDef,
-  LiveQueryServerOptions as LiveQueryServerOptionsDef,
-} from './Options/Definitions';
+import { ParseServerOptions as ParseServerOptionDef } from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
