@@ -1,3 +1,24 @@
+# [7.0.0-alpha.30](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.29...7.0.0-alpha.30) (2024-03-20)
+
+
+### Bug Fixes
+
+* `Required` option not handled correctly for special fields (File, GeoPoint, Polygon) on GraphQL API mutations ([#8915](https://github.com/parse-community/parse-server/issues/8915)) ([907ad42](https://github.com/parse-community/parse-server/commit/907ad4267c228d26cfcefe7848b30ce85ba7ff8f))
+
+# [7.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.28...7.0.0-alpha.29) (2024-03-19)
+
+
+### Bug Fixes
+
+* Server crashes on invalid Cloud Function or Cloud Job name; fixes security vulnerability [GHSA-6hh7-46r2-vf29](https://github.com/parse-community/parse-server/security/advisories/GHSA-6hh7-46r2-vf29) ([#9024](https://github.com/parse-community/parse-server/issues/9024)) ([9f6e342](https://github.com/parse-community/parse-server/commit/9f6e3429d3b326cf4e2994733c618d08032fac6e))
+
+# [7.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.27...7.0.0-alpha.28) (2024-03-17)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5 ([#9022](https://github.com/parse-community/parse-server/issues/9022)) ([ad4aa83](https://github.com/parse-community/parse-server/commit/ad4aa83983205a0e27639f6ee6a4a5963b67e4b8))
+
 # [7.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.26...7.0.0-alpha.27) (2024-03-15)
 
 

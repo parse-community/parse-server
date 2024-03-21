@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "7.0.0-alpha.27",
+  "version": "7.0.0-alpha.30",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollo/server": "4.10.1",
     "@babel/eslint-parser": "7.21.8",
-    "@graphql-tools/merge": "8.4.1",
+    "@graphql-tools/merge": "9.0.3",
     "@graphql-tools/schema": "10.0.3",
     "@graphql-tools/utils": "8.12.0",
     "@parse/fs-files-adapter": "2.0.1",
@@ -49,7 +49,7 @@
     "mongodb": "5.9.0",
     "mustache": "4.2.0",
     "otpauth": "9.2.2",
-    "parse": "4.1.0",
+    "parse": "5.0.0",
     "path-to-regexp": "6.2.1",
     "pg-monitor": "2.0.0",
     "pg-promise": "11.5.4",
@@ -98,7 +98,7 @@
     "madge": "6.1.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
-    "mongodb-runner": "5.4.4",
+    "mongodb-runner": "5.5.4",
     "mongodb-version-list": "1.0.0",
     "node-abort-controller": "3.0.1",
     "node-fetch": "3.2.10",
