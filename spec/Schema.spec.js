@@ -309,6 +309,12 @@ describe('SchemaController', () => {
             foo: { type: 'String' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -329,6 +335,12 @@ describe('SchemaController', () => {
 
   it('can update classes without needing an object', done => {
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': true },
       get: { '*': true },
       count: { '*': true },
@@ -489,6 +501,12 @@ describe('SchemaController', () => {
             foo: { type: 'String' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -694,6 +712,12 @@ describe('SchemaController', () => {
 
   it('refuses to add CLP with incorrect find', done => {
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': false },
       get: { '*': true },
       create: { '*': true },
@@ -717,6 +741,12 @@ describe('SchemaController', () => {
 
   it('refuses to add CLP when incorrectly sending a string to protectedFields object value instead of an array', done => {
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': true },
       get: { '*': true },
       create: { '*': true },
@@ -785,6 +815,12 @@ describe('SchemaController', () => {
             aPolygon: { type: 'Polygon' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -832,6 +868,12 @@ describe('SchemaController', () => {
             parseVersion: { type: 'String' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -866,6 +908,12 @@ describe('SchemaController', () => {
             roles: { type: 'Relation', targetClass: '_Role' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -900,6 +948,12 @@ describe('SchemaController', () => {
             ACL: { type: 'ACL' },
           },
           classLevelPermissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             find: { '*': true },
             get: { '*': true },
             count: { '*': true },
@@ -1070,6 +1124,12 @@ describe('SchemaController', () => {
               relationField: { type: 'Relation', targetClass: '_User' },
             },
             classLevelPermissions: {
+              ACL: {
+                '*': {
+                  read: true,
+                  write: true,
+                },
+              },
               find: { '*': true },
               get: { '*': true },
               count: { '*': true },

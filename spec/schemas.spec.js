@@ -26,6 +26,12 @@ const hasAllPODobject = () => {
 };
 
 const defaultClassLevelPermissions = {
+  ACL: {
+    '*': {
+      read: true,
+      write: true,
+    },
+  },
   find: {
     '*': true,
   },
@@ -2690,6 +2696,12 @@ describe('schemas', () => {
     setPermissionsOnClass(
       '_Role',
       {
+        ACL: {
+          '*': {
+            read: true,
+            write: true,
+          },
+        },
         get: { '*': true },
         find: { '*': true },
         count: { '*': true },
@@ -2710,6 +2722,12 @@ describe('schemas', () => {
       })
       .then(res => {
         expect(res.data.classLevelPermissions).toEqual({
+          ACL: {
+            '*': {
+              read: true,
+              write: true,
+            },
+          },
           get: { '*': true },
           find: { '*': true },
           count: { '*': true },
