@@ -39,8 +39,9 @@ async function checkMongoDbVersions() {
  * Check the Nodejs versions used in test environments.
  */
 async function checkNodeVersions() {
-  const allVersions = await import('all-node-versions');
-  const releasedVersions = allVersions.versions;
+  const allVersions = (await import('all-node-versions')).default;
+  const { versions } = await allVersions();
+  const nodeVersions = versions.map(version => version.node);
 
   await new CiVersionCheck({
     packageName: 'Node.js',
@@ -48,13 +49,12 @@ async function checkNodeVersions() {
     yamlFilePath: './.github/workflows/ci.yml',
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
     ciVersionKey: 'NODE_VERSION',
-    releasedVersions,
+    releasedVersions: nodeVersions,
     latestComponent: CiVersionCheck.versionComponents.minor,
     ignoreReleasedVersions: [
-      '<12.0.0', // These versions have reached their end-of-life support date
-      '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
-      '>=15.0.0 <16.0.0', // These versions have reached their end-of-life support date
-      '>=19.0.0', // These versions are not officially supported yet
+      '<18.0.0', // These versions have reached their end-of-life support date
+      '>=19.0.0 <20.0.0', // These versions have reached their end-of-life support date
+      '>=21.0.0', // These versions are not officially supported yet
     ],
   }).check();
 }
