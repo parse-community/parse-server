@@ -19,7 +19,7 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/eslint-parser": "7.23.3",
+    "@babel/eslint-parser": "7.23.10",
     "@graphql-tools/merge": "8.4.1",
     "@graphql-tools/schema": "9.0.4",
     "@graphql-tools/utils": "8.12.0",
