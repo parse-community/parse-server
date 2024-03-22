@@ -31,12 +31,7 @@ async function checkMongoDbVersions() {
     ciVersionKey: 'MONGODB_VERSION',
     releasedVersions: [latestStableVersion],
     latestComponent: CiVersionCheck.versionComponents.major,
-    ignoreReleasedVersions: [
-      '<4.0.0', // Versions reached their MongoDB end-of-life support date
-      '~4.1.0', // Development release according to MongoDB support
-      '~4.3.0', // Development release according to MongoDB support
-      '~4.7.0', // Development release according to MongoDB support
-    ],
+    ignoreReleasedVersions: [],
   }).check();
 }
 
