@@ -23,7 +23,6 @@ import { LRUCache as LRU } from 'lru-cache';
 import UserRouter from '../Routers/UsersRouter';
 import DatabaseController from '../Controllers/DatabaseController';
 import { isDeepStrictEqual } from 'util';
-import Deprecator from '../Deprecator/Deprecator';
 import deepcopy from 'deepcopy';
 
 class ParseLiveQueryServer {
@@ -919,13 +918,6 @@ class ParseLiveQueryServer {
         subscriptionInfo.keys = Array.isArray(request.query.keys)
           ? request.query.keys
           : request.query.keys.split(',');
-      }
-      if (request.query.fields) {
-        subscriptionInfo.keys = request.query.fields;
-        Deprecator.logRuntimeDeprecation({
-          usage: `Subscribing using fields parameter`,
-          solution: `Subscribe using "keys" instead.`,
-        });
       }
       if (request.query.watch) {
         subscriptionInfo.watch = request.query.watch;

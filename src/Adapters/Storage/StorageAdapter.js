@@ -19,6 +19,7 @@ export type QueryOptions = {
   caseInsensitive?: boolean,
   action?: string,
   addsField?: boolean,
+  comment?: string,
 };
 
 export type UpdateQueryOptions = {
@@ -97,7 +98,8 @@ export interface StorageAdapter {
     query: QueryType,
     readPreference?: string,
     estimate?: boolean,
-    hint?: mixed
+    hint?: mixed,
+    comment?: string
   ): Promise<number>;
   distinct(
     className: string,
@@ -111,7 +113,8 @@ export interface StorageAdapter {
     pipeline: any,
     readPreference: ?string,
     hint: ?mixed,
-    explain?: boolean
+    explain?: boolean,
+    comment?: string
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
   watch(callback: () => void): void;
