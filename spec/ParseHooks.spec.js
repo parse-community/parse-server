@@ -694,3 +694,36 @@ describe('triggers', () => {
     expect(req.context).toBeUndefined();
   });
 });
+
+describe('sanitizing names', () => {
+  const invalidNames = [
+    `test'%3bdeclare%20@q%20varchar(99)%3bset%20@q%3d'%5c%5cxxxxxxxxxxxxxxx.yyyyy'%2b'fy.com%5cxus'%3b%20exec%20master.dbo.xp_dirtree%20@q%3b--%20`,
+    `test.function.name`,
+  ];
+
+  it('should not crash server and return error on invalid Cloud Function name', async () => {
+    for (const invalidName of invalidNames) {
+      let error;
+      try {
+        await Parse.Cloud.run(invalidName);
+      } catch (err) {
+        error = err;
+      }
+      expect(error).toBeDefined();
+      expect(error.message).toMatch(/Invalid function/);
+    }
+  });
+
+  it('should not crash server and return error on invalid Cloud Job name', async () => {
+    for (const invalidName of invalidNames) {
+      let error;
+      try {
+        await Parse.Cloud.startJob(invalidName);
+      } catch (err) {
+        error = err;
+      }
+      expect(error).toBeDefined();
+      expect(error.message).toMatch(/Invalid job/);
+    }
+  });
+});

@@ -433,3 +433,28 @@ describe('Vulnerabilities', () => {
     });
   });
 });
+
+describe('Postgres regex sanitizater', () => {
+  it('sanitizes the regex correctly to prevent Injection', async () => {
+    const user = new Parse.User();
+    user.set('username', 'username');
+    user.set('password', 'password');
+    user.set('email', 'email@example.com');
+    await user.signUp();
+
+    const response = await request({
+      method: 'GET',
+      url:
+        "http://localhost:8378/1/classes/_User?where[username][$regex]=A'B'%3BSELECT+PG_SLEEP(3)%3B--",
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.data.results).toEqual(jasmine.any(Array));
+    expect(response.data.results.length).toBe(0);
+  });
+});
