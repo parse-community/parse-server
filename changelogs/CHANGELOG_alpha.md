@@ -1,3 +1,38 @@
+# [7.0.0-alpha.31](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.30...7.0.0-alpha.31) (2024-03-21)
+
+
+### Features
+
+* Add `silent` log level for Cloud Code ([#8803](https://github.com/parse-community/parse-server/issues/8803)) ([5f81efb](https://github.com/parse-community/parse-server/commit/5f81efb42964c4c2fa8bcafee9446a0122e3ce21))
+
+# [7.0.0-alpha.30](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.29...7.0.0-alpha.30) (2024-03-20)
+
+
+### Bug Fixes
+
+* `Required` option not handled correctly for special fields (File, GeoPoint, Polygon) on GraphQL API mutations ([#8915](https://github.com/parse-community/parse-server/issues/8915)) ([907ad42](https://github.com/parse-community/parse-server/commit/907ad4267c228d26cfcefe7848b30ce85ba7ff8f))
+
+# [7.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.28...7.0.0-alpha.29) (2024-03-19)
+
+
+### Bug Fixes
+
+* Server crashes on invalid Cloud Function or Cloud Job name; fixes security vulnerability [GHSA-6hh7-46r2-vf29](https://github.com/parse-community/parse-server/security/advisories/GHSA-6hh7-46r2-vf29) ([#9024](https://github.com/parse-community/parse-server/issues/9024)) ([9f6e342](https://github.com/parse-community/parse-server/commit/9f6e3429d3b326cf4e2994733c618d08032fac6e))
+
+# [7.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.27...7.0.0-alpha.28) (2024-03-17)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5 ([#9022](https://github.com/parse-community/parse-server/issues/9022)) ([ad4aa83](https://github.com/parse-community/parse-server/commit/ad4aa83983205a0e27639f6ee6a4a5963b67e4b8))
+
+# [7.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.26...7.0.0-alpha.27) (2024-03-15)
+
+
+### Bug Fixes
+
+* CacheAdapter does not connect when using a CacheAdapter with a JSON config ([#8633](https://github.com/parse-community/parse-server/issues/8633)) ([720d24e](https://github.com/parse-community/parse-server/commit/720d24e18540da35d50957f17be878316ec30318))
+
 # [7.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.25...7.0.0-alpha.26) (2024-03-10)
 
 
