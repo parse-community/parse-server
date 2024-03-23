@@ -348,7 +348,7 @@ describe('Security Check', () => {
           'X-Parse-Master-Key': 'test',
         },
       });
-      expect(response.data.features.settings.security).toBeTrue();
+      expect(response.data.features.settings.securityCheck).toBeTrue();
       await reconfigureServer({
         security: {
           enableCheck: false,
@@ -363,7 +363,7 @@ describe('Security Check', () => {
           'X-Parse-Master-Key': 'test',
         },
       });
-      expect(response.data.features.settings.security).toBeFalse();
+      expect(response.data.features.settings.securityCheck).toBeFalse();
     });
   });
 });
