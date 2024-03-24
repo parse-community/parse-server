@@ -51,6 +51,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.setEmail('testIfEnabled@parse.com');
       await user.signUp();
+      await jasmine.timeout();
       expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
       user.fetch().then(() => {
         expect(user.get('emailVerified')).toEqual(false);
@@ -137,6 +138,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     spyOn(emailAdapter, 'sendVerificationEmail').and.callFake(options => {
       expect(options.link).not.toBeNull();
       expect(options.link).not.toMatch(/token=undefined/);
+      expect(options.link).not.toMatch(/username=undefined/);
       Promise.resolve();
     });
     const user = new Parse.User();
@@ -183,6 +185,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.set('email', 'testSendSimpleAdapter@parse.com');
       await user.signUp();
+      await jasmine.timeout();
       expect(calls).toBe(1);
       user
         .fetch()
@@ -242,6 +245,66 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
+  it('prevents user from signup and login if email is not verified and preventLoginWithUnverifiedEmail is set to function returning true', async () => {
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: async () => true,
+      preventLoginWithUnverifiedEmail: async () => true,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const user = new Parse.User();
+    user.setPassword('asdf');
+    user.setUsername('zxcv');
+    user.set('email', 'testInvalidConfig@parse.com');
+    const signupRes = await user.signUp(null).catch(e => e);
+    expect(signupRes.message).toEqual('User email is not verified.');
+
+    const loginRes = await Parse.User.logIn('zxcv', 'asdf').catch(e => e);
+    expect(loginRes.message).toEqual('User email is not verified.');
+  });
+
+  it('provides function arguments in verifyUserEmails on login', async () => {
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.set('email', 'test@example.com');
+    await user.signUp();
+
+    const verifyUserEmails = {
+      method: async (params) => {
+        expect(params.object).toBeInstanceOf(Parse.User);
+        expect(params.ip).toBeDefined();
+        expect(params.master).toBeDefined();
+        expect(params.installationId).toBeDefined();
+        return true;
+      },
+    };
+    const verifyUserEmailsSpy = spyOn(verifyUserEmails, 'method').and.callThrough();
+    await reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: verifyUserEmails.method,
+      preventLoginWithUnverifiedEmail: verifyUserEmails.method,
+      preventSignupWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const res = await Parse.User.logIn('user', 'pass').catch(e => e);
+    expect(res.code).toBe(205);
+    expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(2);
+  });
+
   it('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', async () => {
     let sendEmailOptions;
     const emailAdapter = {
@@ -263,6 +326,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     user.setUsername('user');
     user.set('email', 'user@example.com');
     await user.signUp();
+    await jasmine.timeout();
     expect(sendEmailOptions).not.toBeUndefined();
     const response = await request({
       url: sendEmailOptions.link,
@@ -574,6 +638,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       user.setUsername('zxcv');
       user.set('email', 'user@parse.com');
       await user.signUp();
+      await jasmine.timeout();
       expect(emailSent).toBe(true);
       done();
     });
@@ -601,6 +666,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
+      .then(() => jasmine.timeout())
       .then(() => {
         expect(sendEmailOptions).not.toBeUndefined();
         request({
