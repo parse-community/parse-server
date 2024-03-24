@@ -1,3 +1,17 @@
+# [7.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.2...7.1.0-alpha.3) (2024-03-24)
+
+
+### Bug Fixes
+
+* Rate limiting can fail when using Parse Server option `rateLimit.redisUrl` with clusters ([#8632](https://github.com/parse-community/parse-server/issues/8632)) ([c277739](https://github.com/parse-community/parse-server/commit/c27773962399f8e27691e3b8087e7e1d59516efd))
+
+# [7.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.1...7.1.0-alpha.2) (2024-03-24)
+
+
+### Features
+
+* Add server security check status `security.enableCheck` to Features Router ([#8679](https://github.com/parse-community/parse-server/issues/8679)) ([b07ec15](https://github.com/parse-community/parse-server/commit/b07ec153825882e97cc48dc84072c7f549f3238b))
+
 # [7.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.0.0...7.1.0-alpha.1) (2024-03-23)
 
 
