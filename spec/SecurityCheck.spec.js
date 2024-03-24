@@ -337,5 +337,33 @@ describe('Security Check', () => {
         expect(logSpy.calls.all()[0].args[0]).toContain(title);
       }
     });
+
+    it('does update featuresRouter', async () => {
+      let response = await request({
+        url: 'http://localhost:8378/1/serverInfo',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+      expect(response.data.features.settings.securityCheck).toBeTrue();
+      await reconfigureServer({
+        security: {
+          enableCheck: false,
+        },
+      });
+      response = await request({
+        url: 'http://localhost:8378/1/serverInfo',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
+        },
+      });
+      expect(response.data.features.settings.securityCheck).toBeFalse();
+    });
   });
 });
