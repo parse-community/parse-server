@@ -1,3 +1,10 @@
+# [7.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.1...7.1.0-alpha.2) (2024-03-24)
+
+
+### Features
+
+* Add server security check status `security.enableCheck` to Features Router ([#8679](https://github.com/parse-community/parse-server/issues/8679)) ([b07ec15](https://github.com/parse-community/parse-server/commit/b07ec153825882e97cc48dc84072c7f549f3238b))
+
 # [7.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.0.0...7.1.0-alpha.1) (2024-03-23)
 
 
