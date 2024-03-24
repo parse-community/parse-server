@@ -79,7 +79,7 @@ class ParseServer {
     //     }
     //   }
     // }
-    // const internalInterfaceKeys = ['env', 'help', 'action', 'default']
+    // const internalInterfaceKeys = ['env', 'help', 'action', 'default', 'required'];
     // recursivelyRemoveKeys(interfaces, internalInterfaceKeys);
 
     // // Compose valid options
