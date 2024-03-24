@@ -102,7 +102,7 @@ export class Config {
       'RateLimitZone',
       'setIdempotencyFunction',
 
-      // From Test files
+      // From test files
       'retryWrites',
       'customIdSize',
       'path',
@@ -112,7 +112,9 @@ export class Config {
     ];
 
     for (const key of given) {
-      if (internalConfigVars.includes(key)) continue;
+      if (internalConfigVars.includes(key)) {
+        continue;
+      }
 
       if (!actual.includes(key)) {
         Config.failedConfigKeyVerification = true;
