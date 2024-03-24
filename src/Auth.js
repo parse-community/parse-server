@@ -1,7 +1,6 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
-import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
@@ -77,13 +76,16 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   throttle[sessionToken] = setTimeout(async () => {
     try {
       if (!session) {
-        const { results } = await new RestQuery(
+        const query = await RestQuery({
+          method: RestQuery.Method.get,
           config,
-          master(config),
-          '_Session',
-          { sessionToken },
-          { limit: 1 }
-        ).execute();
+          auth: master(config),
+          runBeforeFind: false,
+          className: '_Session',
+          restWhere: { sessionToken },
+          restOptions: { limit: 1 },
+        });
+        const { results } = await query.execute();
         session = results[0];
       }
       const lastUpdated = new Date(session?.updatedAt);
@@ -140,7 +142,15 @@ const getAuthForSessionToken = async function ({
       include: 'user',
     };
     const RestQuery = require('./RestQuery');
-    const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
+    const query = await RestQuery({
+      method: RestQuery.Method.get,
+      config,
+      runBeforeFind: false,
+      auth: master(config),
+      className: '_Session',
+      restWhere: { sessionToken },
+      restOptions,
+    });
     results = (await query.execute()).results;
   } else {
     results = (
@@ -179,12 +189,20 @@ const getAuthForSessionToken = async function ({
   });
 };
 
-var getAuthForLegacySessionToken = function ({ config, sessionToken, installationId }) {
+var getAuthForLegacySessionToken = async function ({ config, sessionToken, installationId }) {
   var restOptions = {
     limit: 1,
   };
   const RestQuery = require('./RestQuery');
-  var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
+  var query = await RestQuery({
+    method: RestQuery.Method.get,
+    config,
+    runBeforeFind: false,
+    auth: master(config),
+    className: '_User',
+    restWhere: { _session_token: sessionToken },
+    restOptions,
+  });
   return query.execute().then(response => {
     var results = response.results;
     if (results.length !== 1) {
@@ -229,9 +247,15 @@ Auth.prototype.getRolesForUser = async function () {
       },
     };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      runBeforeFind: false,
+      config: this.config,
+      auth: master(this.config),
+      className: '_Role',
+      restWhere,
+    });
+    await query.each(result => results.push(result));
   } else {
     await new Parse.Query(Parse.Role)
       .equalTo('users', this.user)
@@ -323,9 +347,15 @@ Auth.prototype.getRolesByIds = async function (ins) {
     });
     const restWhere = { roles: { $in: roles } };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      config: this.config,
+      runBeforeFind: false,
+      auth: master(this.config),
+      className: '_Role',
+      restWhere,
+    });
+    await query.each(result => results.push(result));
   }
   return results;
 };

@@ -78,7 +78,7 @@ function searchForGroup(client, options, id, resolve, reject) {
       return reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
     }
     res.on('searchEntry', entry => {
-      if (entry.object.cn === options.groupCn) {
+      if (entry.pojo.attributes.find(obj => obj.type === 'cn').values.includes(options.groupCn)) {
         found = true;
         client.unbind();
         client.destroy();

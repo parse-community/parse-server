@@ -58,9 +58,16 @@ export class PushController {
 
       // Force filtering on only valid device tokens
       const updateWhere = applyDeviceTokenExists(where);
-      badgeUpdate = () => {
+      badgeUpdate = async () => {
         // Build a real RestQuery so we can use it in RestWrite
-        const restQuery = new RestQuery(config, master(config), '_Installation', updateWhere);
+        const restQuery = await RestQuery({
+          method: RestQuery.Method.find,
+          config,
+          runBeforeFind: false,
+          auth: master(config),
+          className: '_Installation',
+          restWhere: updateWhere,
+        });
         return restQuery.buildRestWhere().then(() => {
           const write = new RestWrite(
             config,
