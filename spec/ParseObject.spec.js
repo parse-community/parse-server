@@ -2058,8 +2058,7 @@ describe('Parse.Object testing', () => {
 
   it('increments atomically', async () => {
     Parse.Object.disableSingleInstance();
-
-    Parse.Cloud.beforeSave('Parent', req => {});
+    Parse.Cloud.beforeSave('Parent', () => {});
     Parse.Cloud.beforeSave('Child', async req => {
       await req.object.get('parent').increment('num_child').save(null, { useMasterKey: true });
     });
