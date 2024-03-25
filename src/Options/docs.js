@@ -12,9 +12,9 @@
 /**
  * @interface ParseServerOptions
  * @property {AccountLockoutOptions} accountLockout The account lockout policy for failed login attempts.
- * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
+ * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to false
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
- * @property {Boolean} allowExpiredAuthDataToken Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.
+ * @property {Boolean} allowExpiredAuthDataToken Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
  * @property {String|String[]} allowOrigin Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
@@ -229,7 +229,7 @@
  * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
- * @property {String[]} fileExtensions Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.
+ * @property {String[]} fileExtensions Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
  */
 
 /**
@@ -247,7 +247,7 @@
  * @interface LogLevels
  * @property {String} cloudFunctionError Log level used by the Cloud Code Functions on error. Default is `error`.
  * @property {String} cloudFunctionSuccess Log level used by the Cloud Code Functions on success. Default is `info`.
- * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.
- * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.
- * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.
+ * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
+ * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
+ * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
  */

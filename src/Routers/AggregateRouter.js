@@ -19,6 +19,10 @@ export class AggregateRouter extends ClassesRouter {
       options.explain = body.explain;
       delete body.explain;
     }
+    if (body.comment) {
+      options.comment = body.comment;
+      delete body.comment;
+    }
     if (body.readPreference) {
       options.readPreference = body.readPreference;
       delete body.readPreference;
