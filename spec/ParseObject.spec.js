@@ -2055,4 +2055,26 @@ describe('Parse.Object testing', () => {
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
   });
+
+  it('increments atomically', async () => {
+    Parse.Object.disableSingleInstance();
+    Parse.Cloud.beforeSave('Parent', () => {});
+    Parse.Cloud.beforeSave('Child', async req => {
+      await req.object.get('parent').increment('num_child').save(null, { useMasterKey: true });
+    });
+
+    let parent = await new Parse.Object('Parent').save(null, { useMasterKey: true });
+    const child = () => new Parse.Object('Child').set('parent', parent).save();
+
+    // add synchronously
+    await child();
+    await child();
+    parent = await parent.fetch();
+    expect(parent.get('num_child')).toBe(2);
+
+    // add asynchronously
+    await Promise.all(Array.from({ length: 40 }, () => child()));
+    parent = await parent.fetch();
+    expect(parent.get('num_child')).toBe(42);
+  });
 });
