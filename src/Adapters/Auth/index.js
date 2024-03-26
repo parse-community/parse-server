@@ -1,7 +1,6 @@
 import loadAdapter from '../AdapterLoader';
 import Parse from 'parse/node';
 import AuthAdapter from './AuthAdapter';
-
 const apple = require('./apple');
 const gcenter = require('./gcenter');
 const gpgames = require('./gpgames');
@@ -142,7 +141,6 @@ function authDataValidator(provider, adapter, appIds, options) {
 }
 
 function loadAuthAdapter(provider, authOptions) {
-  // providers are auth providers implemented by default
   let defaultAdapter = providers[provider];
   // authOptions can contain complete custom auth adapters or
   // a default auth adapter like Facebook
@@ -160,8 +158,6 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  const adapter =
-    defaultAdapter instanceof AuthAdapter ? defaultAdapter : Object.assign({}, defaultAdapter);
   const keys = [
     'validateAuthData',
     'validateAppId',
@@ -173,20 +169,13 @@ function loadAuthAdapter(provider, authOptions) {
     'policy',
     'afterFind',
   ];
-  const defaultAuthAdapter = new AuthAdapter();
-  keys.forEach(key => {
-    const existing = adapter?.[key];
-    if (
-      existing &&
-      typeof existing === 'function' &&
-      existing.toString() === defaultAuthAdapter[key].toString()
-    ) {
-      adapter[key] = null;
-    }
-  });
-  const appIds = providerOptions ? providerOptions.appIds : undefined;
 
-  // Try the configuration methods
+  let adapter = Object.assign({}, defaultAdapter);
+  if (defaultAdapter instanceof AuthAdapter) {
+    adapter = new defaultAdapter.constructor();
+    defaultAdapter._clearDefaultKeys(keys);
+  }
+
   if (providerOptions) {
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
@@ -197,11 +186,27 @@ function loadAuthAdapter(provider, authOptions) {
       });
     }
   }
-  if (adapter.validateOptions) {
-    adapter.validateOptions(providerOptions);
+
+  if (providerOptions?.enabled !== false) {
+    if (adapter.validateOptions) {
+      adapter.validateOptions(providerOptions);
+    }
   }
 
+  const appIds = providerOptions ? providerOptions.appIds : undefined;
   return { adapter, appIds, providerOptions };
+}
+
+function validateAuthConfig(auth) {
+  const authCache = new Map();
+  if (!auth.anonymous) {
+    auth.anonymous = { enabled: true };
+  }
+  Object.keys(auth).forEach(key => {
+    const authObject = loadAuthAdapter(key, auth);
+    authCache.set(key, authObject);
+  });
+  return authCache;
 }
 
 module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
@@ -209,13 +214,16 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
   const setEnableAnonymousUsers = function (enable) {
     _enableAnonymousUsers = enable;
   };
+  const authCache = validateAuthConfig(authOptions);
   // To handle the test cases on configuration
   const getValidatorForProvider = function (provider) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return { validator: undefined };
     }
-    const authAdapter = loadAuthAdapter(provider, authOptions);
-    if (!authAdapter) return;
+    const authAdapter = authCache.get(provider);
+    if (!authAdapter) {
+      return { validator: undefined };
+    }
     const { adapter, appIds, providerOptions } = authAdapter;
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
@@ -257,6 +265,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     getValidatorForProvider,
     setEnableAnonymousUsers,
     runAfterFind,
+    authCache,
   });
 };
 

@@ -586,7 +586,7 @@ export class UsersRouter extends ClassesRouter {
     for (const provider of Object.keys(challengeData).sort()) {
       try {
         const authAdapter = req.config.authDataManager.getValidatorForProvider(provider);
-        if (!authAdapter) {
+        if (!authAdapter?.validator) {
           continue;
         }
         const {

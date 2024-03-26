@@ -399,6 +399,33 @@ describe('AuthenticationProviders', function () {
     );
   });
 
+  it('should cache adapter', async () => {
+    const adapter = {
+      validateAppId() {
+        return Promise.resolve();
+      },
+      validateAuthData() {
+        return Promise.resolve();
+      },
+      validateOptions() {},
+    };
+
+    const authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
+    const optionsSpy = spyOn(adapter, 'validateOptions').and.callThrough();
+
+    await reconfigureServer({ auth: { customAuthentication: adapter } });
+
+    expect(optionsSpy).toHaveBeenCalled();
+    await Parse.User.logInWith('customAuthentication', {
+      authData: { id: 'user1', token: 'fakeToken1' },
+    });
+    await Parse.User.logInWith('customAuthentication', {
+      authData: { id: 'user2', token: 'fakeToken2' },
+    });
+    expect(authDataSpy).toHaveBeenCalled();
+    expect(optionsSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('properly loads custom adapter module object', done => {
     const authenticationHandler = authenticationLoader({
       customAuthentication: path.resolve('./spec/support/CustomAuth.js'),
