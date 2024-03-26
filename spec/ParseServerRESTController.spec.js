@@ -631,4 +631,35 @@ describe('ParseServerRESTController', () => {
     expect(sessions[0].get('installationId')).toBe(installationId);
     expect(sessions[0].get('sessionToken')).toBe(loggedUser.sessionToken);
   });
+
+  it('returns a statusId when running jobs', async () => {
+    Parse.Cloud.job('CloudJob', () => {
+      return 'Cloud job completed';
+    });
+    const jobStatusId = await RESTController.request(
+      'POST',
+      '/jobs/CloudJob',
+      {},
+      { useMasterKey: true }
+    );
+    expect(jobStatusId).toBeDefined();
+
+    const result = await Parse.Cloud.getJobStatus(jobStatusId);
+    expect(result.get('message')).toBe('Cloud job completed');
+  });
+
+  it('returns a statusId when running push notifications', async () => {
+    const payload = {
+      data: { alert: 'We return status!' },
+      where: { deviceType: 'ios' },
+    };
+    const pushStatusId = await RESTController.request('POST', '/push', payload, {
+      useMasterKey: true,
+    });
+    expect(pushStatusId).toBeDefined();
+
+    const result = await Parse.Push.getPushStatus(pushStatusId);
+    expect(result.get('query')).toEqual(JSON.stringify(payload.where));
+    expect(result.get('payload')).toEqual(JSON.stringify(payload.data));
+  });
 });
