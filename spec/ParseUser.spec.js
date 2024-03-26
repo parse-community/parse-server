@@ -1262,6 +1262,34 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  fit('log in with Facebook and save signed up User with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async () => {
+    const provider = getMockFacebookProvider();
+    const emailAdapter = {
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve(),
+    };
+    await reconfigureServer({
+      appName: 'ExampleApp',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: {
+        module: emailAdapter,
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = await Parse.User._logInWith('facebook');
+    expect(user instanceof Parse.User).toBeTrue();
+    expect(Parse.User.current()).toEqual(user);
+    expect(user.extended()).toBeTrue();
+    expect(provider.authData.id).toBe(provider.synchronizedUserId);
+    expect(provider.authData.access_token).toBe(provider.synchronizedAuthToken);
+    expect(provider.authData.expiration_date).toBe(provider.synchronizedExpiration);
+    expect(user._isLinked('facebook')).toBeTrue();
+    await expectAsync(user.save()).toBeResolved();
+  });
+
   it('can not set authdata to null', async () => {
     try {
       const provider = getMockFacebookProvider();
