@@ -35,6 +35,7 @@ const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { ReadPreference, Collection } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
+const puppeteer = require("puppeteer");
 
 function handleError(e) {
   if (e && e.networkError && e.networkError.result && e.networkError.result.errors) {
@@ -580,6 +581,26 @@ describe('ParseGraphQLServer', () => {
         });
         expect(res.status).toEqual(200);
       });
+    });
+
+    describe("Playground Render", () => {
+      it("should properly render the playground without JavaScript errors", async () => {
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+
+        await page.goto("http://localhost:13377/playground", {
+          waitUntil: "networkidle0",
+        });
+
+        const hasChildNodes = await page.evaluate(() => {
+          const sandbox = document.querySelector("#sandbox");
+          return sandbox && sandbox.hasChildNodes();
+        });
+
+        expect(hasChildNodes).toBeTruthy();
+
+        await browser.close();
+      }, 30000);
     });
 
     describe('Schema', () => {
