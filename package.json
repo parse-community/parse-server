@@ -65,7 +65,7 @@
     "ws": "8.16.0"
   },
   "devDependencies": {
-    "@actions/core": "1.9.1",
+    "@actions/core": "1.10.1",
     "@apollo/client": "3.9.5",
     "@babel/cli": "7.23.9",
     "@babel/core": "7.24.0",
