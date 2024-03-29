@@ -6,7 +6,7 @@ const { exec } = require('child_process');
 async function check() {
   // Run checks
   await checkMongoDbVersions();
-  // await checkNodeVersions();
+  await checkNodeVersions();
 }
 
 /**
