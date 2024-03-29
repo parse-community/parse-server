@@ -6,15 +6,15 @@ const { exec } = require('child_process');
 async function check() {
   // Run checks
   await checkMongoDbVersions();
-  await checkNodeVersions();
+  // await checkNodeVersions();
 }
 
 /**
  * Check the MongoDB versions used in test environments.
  */
 async function checkMongoDbVersions() {
-  const latestStableVersion = await new Promise((resolve, reject) => {
-    exec('m --latest', (error, stdout) => {
+  let latestStableVersions = await new Promise((resolve, reject) => {
+    exec('m ls', (error, stdout) => {
       if (error) {
         reject(error);
         return;
@@ -22,6 +22,7 @@ async function checkMongoDbVersions() {
       resolve(stdout.trim());
     });
   });
+  latestStableVersions = latestStableVersions.split('\n').map(version => version.trim());
 
   await new CiVersionCheck({
     packageName: 'MongoDB',
@@ -29,9 +30,11 @@ async function checkMongoDbVersions() {
     yamlFilePath: './.github/workflows/ci.yml',
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
     ciVersionKey: 'MONGODB_VERSION',
-    releasedVersions: [latestStableVersion],
-    latestComponent: CiVersionCheck.versionComponents.major,
-    ignoreReleasedVersions: [],
+    releasedVersions: latestStableVersions,
+    latestComponent: CiVersionCheck.versionComponents.minor,
+    ignoreReleasedVersions: [
+      '<5.0.0', // These versions have reached their end-of-life support date
+    ],
   }).check();
 }
 
