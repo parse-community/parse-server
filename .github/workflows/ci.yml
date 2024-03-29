@@ -162,16 +162,16 @@ jobs:
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 20.12.0
           - name: MongoDB 7, ReplicaSet
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 7.0.7
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 20.12.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 7.0.7
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 20.12.0
           - name: Node 18
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 7.0.7
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 18.20.0
       fail-fast: false
