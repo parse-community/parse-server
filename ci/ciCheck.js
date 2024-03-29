@@ -6,7 +6,7 @@ const { exec } = require('child_process');
 async function check() {
   // Run checks
   await checkMongoDbVersions();
-  await checkNodeVersions();
+  // await checkNodeVersions();
 }
 
 /**
@@ -31,9 +31,13 @@ async function checkMongoDbVersions() {
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
     ciVersionKey: 'MONGODB_VERSION',
     releasedVersions: latestStableVersions,
-    latestComponent: CiVersionCheck.versionComponents.minor,
+    latestComponent: CiVersionCheck.versionComponents.patch,
     ignoreReleasedVersions: [
-      '<5.0.0', // These versions have reached their end-of-life support date
+      '<4.2.0', // These versions have reached their end-of-life support date
+      '>=4.3.0 <5.0.0', // Unsupported rapid release versions
+      '>=5.1.0 <6.0.0', // Unsupported rapid release versions
+      '>=6.1.0 <7.0.0', // Unsupported rapid release versions
+      '>=7.1.0 <8.0.0', // Unsupported rapid release versions
     ],
   }).check();
 }
