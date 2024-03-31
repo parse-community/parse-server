@@ -531,19 +531,17 @@ export const addRateLimit = (route, config, cloud) => {
   const redisStore = {
     connectionPromise: Promise.resolve(),
     store: null,
-    connected: false,
   };
   if (route.redisUrl) {
     const client = createClient({
       url: route.redisUrl,
     });
     redisStore.connectionPromise = async () => {
-      if (redisStore.connected) {
+      if (client.isOpen) {
         return;
       }
       try {
         await client.connect();
-        redisStore.connected = true;
       } catch (e) {
         const log = config?.loggerController || defaultLogger;
         log.error(`Could not connect to redisURL in rate limit: ${e}`);
