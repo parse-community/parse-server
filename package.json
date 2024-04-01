@@ -81,7 +81,7 @@
     "@semantic-release/release-notes-generator": "9.0.3",
     "all-node-versions": "12.1.0",
     "apollo-upload-client": "17.0.0",
-    "clean-jsdoc-theme": "4.2.7",
+    "clean-jsdoc-theme": "4.2.18",
     "cross-env": "7.0.2",
     "deep-diff": "1.0.2",
     "eslint": "8.26.0",
