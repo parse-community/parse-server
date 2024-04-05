@@ -132,6 +132,16 @@ const defaultConfiguration = {
   allowClientClassCreation: true,
 };
 
+if (silent) {
+  defaultConfiguration.logLevels = {
+    cloudFunctionSuccess: 'silent',
+    cloudFunctionError: 'silent',
+    triggerAfter: 'silent',
+    triggerBeforeError: 'silent',
+    triggerBeforeSuccess: 'silent',
+  };
+}
+
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
 }
@@ -445,8 +455,7 @@ global.it_id = (id, func) => {
   if (testExclusionList.includes(id)) {
     return xit;
   } else {
-    if (func === undefined) return it;
-    else return func;
+    return func || it;
   }
 };
 
