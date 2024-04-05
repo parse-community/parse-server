@@ -68,8 +68,17 @@ export class Config {
     return serverConfiguration;
   }
 
-  static validateConfigKeyNames(actual, given, parent) {
-    const internalConfigVars = [
+  /**
+   * Validates the keys that are set in the Parse Server options.
+   *
+   * @param {Array<String>} allowedKeys The keys that are allowed in the Parse Server.
+   * @param {Array<String>} setKeys The keys that are set in the Parse Server options.
+   * @param {String} rootKeyName The name of the root key that is being validated.
+   */
+  static validateConfigKeyNames(allowedKeys, setKeys, rootKeyName) {
+
+    // Internal keys that are not part of the official Parse Server options and should be ignored
+    const internalKeys = [
       'level',
       'state',
       'loggerController',
@@ -92,7 +101,6 @@ export class Config {
       'maintenanceKeyIpsStore',
       'failedConfigKeyVerification',
       'patternValidator',
-
       'applicationId',
       'database',
       '_mount',
@@ -111,14 +119,14 @@ export class Config {
       'ops',
     ];
 
-    for (const key of given) {
-      if (internalConfigVars.includes(key)) {
+    for (const key of setKeys) {
+      if (internalKeys.includes(key)) {
         continue;
       }
 
-      if (!actual.includes(key)) {
+      if (!allowedKeys.includes(key)) {
         Config.failedConfigKeyVerification = true;
-        console.warn(`Warning: The following key from ${parent} is not recognized: ${key}`);
+        console.warn(`Warning: The following key from ${rootKeyName} is not recognized: ${key}`);
       }
     }
   }
