@@ -64,21 +64,13 @@ class ParseServer {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
 
-    Config.validateConfigKeyNames(
-      Object.keys(ParseServerOptionDef),
-      Object.keys(options),
-      'ParseServerOptions'
-    );
+    Config.validateConfigKeyNames(Object.keys(ParseServerOptionDef), Object.keys(options));
 
     if (
       options.liveQueryServerOptions &&
       Object.prototype.toString.call(options.liveQueryServerOptions) === '[object Object]'
     ) {
-      Config.validateConfigKeyNames(
-        Object.keys(LiveQueryServerOptionsDef),
-        Object.keys(options.liveQueryServerOptions),
-        'LiveQueryServerOptions'
-      );
+      Config.validateConfigKeyNames(Object.keys(LiveQueryServerOptionsDef), Object.keys(options.liveQueryServerOptions), 'liveQueryServerOptions');
     }
 
     // Set option defaults

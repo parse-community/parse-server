@@ -150,11 +150,7 @@ export function getAnalyticsController(options: ParseServerOptions): AnalyticsCo
 export function getLiveQueryController(options: ParseServerOptions): LiveQueryController {
   if (options.liveQuery) {
     if (Object.prototype.toString.call(options.liveQuery) === '[object Object]') {
-      Config.validateConfigKeyNames(
-        Object.keys(LiveQueryOptions),
-        Object.keys(options.liveQuery),
-        'LiveQueryOptions'
-      );
+      Config.validateConfigKeyNames(Object.keys(LiveQueryOptions), Object.keys(options.liveQuery), 'liveQuery');
     }
   }
   return new LiveQueryController(options.liveQuery);

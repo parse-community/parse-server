@@ -10,7 +10,7 @@ describe('Config Keys', () => {
     spyOn(Config, 'put').and.callFake(() => {
       return {};
     });
-    // Spy on the console.warn method to capture warnings
+    // Spy on the console.error method to capture warnings
     spyOn(console, 'warn');
   });
 
@@ -34,10 +34,10 @@ describe('Config Keys', () => {
     }).toThrowError(
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from ParseServerOptions is not recognized: masterKeyIPs'
     );
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from ParseServerOptions is not recognized: unknownKeyName'
     );
   });
@@ -54,7 +54,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from SchemaOptions is not recognized: Strict'
     );
   });
@@ -69,8 +69,8 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    // Check if console.warn was called with the expected message
-    expect(console.warn).toHaveBeenCalledWith(
+    // Check if console.error was called with the expected message
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from ParseServerOptions is not recognized: unknownKeyName'
     );
   });
@@ -90,7 +90,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from RateLimitOptions is not recognized: IncludeInternalRequests'
     );
   });
@@ -107,7 +107,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from SecurityOptions is not recognized: EnableCheck'
     );
   });
@@ -124,7 +124,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from PagesOptions is not recognized: EnableRouter'
     );
   });
@@ -145,7 +145,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from PagesRoute is not recognized: Handler'
     );
   });
@@ -164,7 +164,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from PagesCustomUrlsOptions is not recognized: PasswordReset'
     );
   });
@@ -181,7 +181,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from CustomPagesOptions is not recognized: InvalidLink'
     );
   });
@@ -198,7 +198,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from LiveQueryOptions is not recognized: ClassNames'
     );
   });
@@ -215,7 +215,7 @@ describe('Config Keys', () => {
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
 
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from IdempotencyOptions is not recognized: Ttl'
     );
   });
@@ -233,7 +233,7 @@ describe('Config Keys', () => {
     }).toThrowError(
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from AccountLockoutOptions is not recognized: UnlockOnPasswordReset'
     );
   });
@@ -249,7 +249,7 @@ describe('Config Keys', () => {
     }).toThrowError(
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from PasswordPolicyOptions is not recognized: MaxPasswordAge'
     );
   });
@@ -265,7 +265,7 @@ describe('Config Keys', () => {
     }).toThrowError(
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from FileUploadOptions is not recognized: EnableForAnonymousUser'
     );
   });
@@ -284,7 +284,7 @@ describe('Config Keys', () => {
     }).toThrowError(
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from DatabaseOptions is not recognized: SchemaCacheTtl'
     );
   });
@@ -300,7 +300,7 @@ describe('Config Keys', () => {
     }).toThrowError(
       'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
     );
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Warning: The following key from LogLevels is not recognized: CloudFunctionError'
     );
   });
@@ -309,7 +309,7 @@ describe('Config Keys', () => {
 describe('Config Keys Checked on Server Start', () => {
   it('should throw incorrect key warning for LiveQueryServerOptions Config key', async () => {
     spyOn(Deprecator, 'scanParseServerOptions').and.callFake(doNothing);
-    // Spy on the console.warn method to capture warnings
+    // Spy on the console.error method to capture warnings
     spyOn(console, 'warn');
 
     try {
@@ -322,7 +322,7 @@ describe('Config Keys Checked on Server Start', () => {
 
       fail('Expected an error to be thrown');
     } catch (err) {
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Warning: The following key from LiveQueryServerOptions is not recognized: MasterKey'
       );
 
