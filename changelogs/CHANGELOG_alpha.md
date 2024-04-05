@@ -1,3 +1,35 @@
+# [7.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.3...7.1.0-alpha.4) (2024-03-31)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 6.0.0 ([#9066](https://github.com/parse-community/parse-server/issues/9066)) ([18bdbf8](https://github.com/parse-community/parse-server/commit/18bdbf89c53a57648891ef582614ba7c2941e587))
+
+# [7.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.2...7.1.0-alpha.3) (2024-03-24)
+
+
+### Bug Fixes
+
+* Rate limiting can fail when using Parse Server option `rateLimit.redisUrl` with clusters ([#8632](https://github.com/parse-community/parse-server/issues/8632)) ([c277739](https://github.com/parse-community/parse-server/commit/c27773962399f8e27691e3b8087e7e1d59516efd))
+
+# [7.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.1...7.1.0-alpha.2) (2024-03-24)
+
+
+### Features
+
+* Add server security check status `security.enableCheck` to Features Router ([#8679](https://github.com/parse-community/parse-server/issues/8679)) ([b07ec15](https://github.com/parse-community/parse-server/commit/b07ec153825882e97cc48dc84072c7f549f3238b))
+
+# [7.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.0.0...7.1.0-alpha.1) (2024-03-23)
+
+
+### Bug Fixes
+
+* `Required` option not handled correctly for special fields (File, GeoPoint, Polygon) on GraphQL API mutations ([#8915](https://github.com/parse-community/parse-server/issues/8915)) ([907ad42](https://github.com/parse-community/parse-server/commit/907ad4267c228d26cfcefe7848b30ce85ba7ff8f))
+
+### Features
+
+* Add `silent` log level for Cloud Code ([#8803](https://github.com/parse-community/parse-server/issues/8803)) ([5f81efb](https://github.com/parse-community/parse-server/commit/5f81efb42964c4c2fa8bcafee9446a0122e3ce21))
+
 # [7.0.0-alpha.31](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.30...7.0.0-alpha.31) (2024-03-21)
 
 
