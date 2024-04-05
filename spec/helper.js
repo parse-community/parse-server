@@ -133,7 +133,18 @@ const defaultConfiguration = {
     },
     shortLivedAuth: mockShortLivedAuth(),
   },
+  allowClientClassCreation: true,
 };
+
+if (silent) {
+  defaultConfiguration.logLevels = {
+    cloudFunctionSuccess: 'silent',
+    cloudFunctionError: 'silent',
+    triggerAfter: 'silent',
+    triggerBeforeError: 'silent',
+    triggerBeforeSuccess: 'silent',
+  };
+}
 
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();

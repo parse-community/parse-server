@@ -589,20 +589,6 @@ describe('AuthenticationProviders', function () {
       new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
     );
   });
-
-  it('can deprecate', async () => {
-    await reconfigureServer();
-    const Deprecator = require('../lib/Deprecator/Deprecator');
-    const spy = spyOn(Deprecator, 'logRuntimeDeprecation').and.callFake(() => {});
-    const provider = getMockMyOauthProvider();
-    Parse.User._registerAuthenticationProvider(provider);
-    await Parse.User._logInWith('myoauth');
-    expect(spy).toHaveBeenCalledWith({
-      usage: 'Using the authentication adapter "myoauth" without explicitly enabling it',
-      solution:
-        'Enable the authentication adapter by setting the Parse Server option "auth.myoauth.enabled: true".',
-    });
-  });
 });
 
 describe('instagram auth adapter', () => {
