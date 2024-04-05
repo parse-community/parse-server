@@ -49,7 +49,6 @@ import {
   ParseServerOptions as ParseServerOptionDef,
   LiveQueryServerOptions as LiveQueryServerOptionsDef,
 } from './Options/Definitions';
-import OptionsDefinitions from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -64,64 +63,6 @@ class ParseServer {
   constructor(options: ParseServerOptions) {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
-
-    // START
-    // // Clone interfaces
-    // let interfaces = JSON.parse(JSON.stringify(OptionsDefinitions));
-
-    // // Remove internal interface keys
-    // function recursivelyRemoveKeys(obj, keys) {
-    //   for (const key in obj) {
-    //     if (keys.includes(key)) {
-    //       delete obj[key];
-    //     } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-    //       recursivelyRemoveKeys(obj[key], keys);
-    //     }
-    //   }
-    // }
-    // const internalInterfaceKeys = ['env', 'help', 'action', 'default', 'required'];
-    // recursivelyRemoveKeys(interfaces, internalInterfaceKeys);
-
-    // // Compose valid options
-    // const validOptions = interfaces.ParseServerOptions;
-
-    // // Set sub options
-    // for (const interfaceName of Object.keys(interfaces)) {
-    //   if (interfaceName === 'ParseServerOptions') {
-    //     continue;
-    //   }
-
-    //   // Get root key name from interface name
-    //   let keyName = interfaceName.charAt(0).toLowerCase() + interfaceName.slice(1);
-    //   keyName = keyName.slice(0, -"Options".length);
-
-    //   // Set sub keys
-    //   validOptions[keyName] = interfaces[interfaceName];
-    // }
-
-    // // Find non matching keys
-    // function findNonMatchingKeys(a, b) {
-    //   function compareObjects(objA, objB) {
-    //     return Object.keys(objB).reduce((accumulator, key) => {
-    //       const valA = objA[key];
-    //       const valB = objB[key];
-
-    //       if (objA.hasOwnProperty(key) && typeof valA === 'object' && typeof valB === 'object') {
-    //         const subObjectComparison = compareObjects(valA, valB);
-    //         if (Object.keys(subObjectComparison).length > 0) {
-    //           accumulator[key] = subObjectComparison;
-    //         }
-    //       } else if (!objA.hasOwnProperty(key)) {
-    //         accumulator[key] = valB;
-    //       }
-    //       return accumulator;
-    //     }, {});
-    //   }
-
-    //   return compareObjects(a, b);
-    // }
-    // const diff = findNonMatchingKeys(validOptions, options);
-    // END
 
     Config.validateConfigKeyNames(
       Object.keys(ParseServerOptionDef),
