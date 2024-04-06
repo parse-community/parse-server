@@ -210,11 +210,9 @@ export class Config {
 
   static validateSchemaOptions(schema: SchemaOptions) {
     if (!schema) return;
-
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
-
     if (schema.definitions === undefined) {
       schema.definitions = SchemaOptions.definitions.default;
     } else if (!Array.isArray(schema.definitions)) {
@@ -256,7 +254,6 @@ export class Config {
     if (Object.prototype.toString.call(pages) !== '[object Object]') {
       throw 'Parse Server option pages must be an object.';
     }
-
     if (pages.enableRouter === undefined) {
       pages.enableRouter = PagesOptions.enableRouter.default;
     } else if (!isBoolean(pages.enableRouter)) {
@@ -305,7 +302,6 @@ export class Config {
     } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
       throw 'Parse Server option pages.customUrls must be an object.';
     }
-
     if (pages.customRoutes === undefined) {
       pages.customRoutes = PagesOptions.customRoutes.default;
     } else if (!(pages.customRoutes instanceof Array)) {
@@ -475,7 +471,6 @@ export class Config {
       }
       throw e;
     }
-
     if (fileUpload.enableForAnonymousUser === undefined) {
       fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
     } else if (typeof fileUpload.enableForAnonymousUser !== 'boolean') {
@@ -581,7 +576,6 @@ export class Config {
     if (databaseOptions == undefined) {
       return;
     }
-
     if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
       throw `databaseOptions must be an object`;
     }
@@ -608,13 +602,11 @@ export class Config {
     ) {
       throw `rateLimit must be an array or object`;
     }
-
     const options = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const option of options) {
       if (Object.prototype.toString.call(option) !== '[object Object]') {
         throw `rateLimit must be an array of objects`;
       }
-
       if (option.requestPath == null) {
         throw `rateLimit.requestPath must be defined`;
       }
