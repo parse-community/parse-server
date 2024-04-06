@@ -407,10 +407,7 @@ Introducing new [Parse Server configuration][config] parameters requires the fol
     For example, take a look at the existing Parse Server `security` parameter. It is a parameter group, because it has multiple sub-parameter such as `checkGroups`. Its interface is defined in [index.js][config-index] as `export interface SecurityOptions`. Therefore, the value to add to `nestedOptionTypes` would be `SecurityOptions`, the value to add to `nestedOptionEnvPrefix` would be `PARSE_SERVER_SECURITY_`.
 
 3. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
-4. Add parameter validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js):
-   - Validate parameter name by using `validateConfigKeyNames`.
-   - Validate parameter value by checking the value type and the value itself (e.g. min, max bounds for numeric types, regex parsing for string types, or object parsing for object types).
-   For reference see existing parameter validations.
+4. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
 5. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
 6. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
