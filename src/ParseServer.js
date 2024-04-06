@@ -45,10 +45,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
-import {
-  ParseServerOptions as ParseServerOptionDef,
-  LiveQueryServerOptions as LiveQueryServerOptionsDef,
-} from './Options/Definitions';
+import OptionsDefinitions from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -64,13 +61,55 @@ class ParseServer {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
 
-    Config.validateConfigKeyNames(Object.keys(ParseServerOptionDef), Object.keys(options));
+    const interfaces = JSON.parse(JSON.stringify(OptionsDefinitions));
 
-    if (
-      options.liveQueryServerOptions &&
-      Object.prototype.toString.call(options.liveQueryServerOptions) === '[object Object]'
-    ) {
-      Config.validateConfigKeyNames(Object.keys(LiveQueryServerOptionsDef), Object.keys(options.liveQueryServerOptions), 'liveQueryServerOptions');
+    function getValidObject(root) {
+      const result = {};
+      for (const key in root) {
+        if (Object.prototype.hasOwnProperty.call(root[key], 'type')) {
+          if (root[key].type.endsWith('[]')) {
+            result[key] = [getValidObject(interfaces[root[key].type.slice(0, -2)])];
+          } else {
+            result[key] = getValidObject(interfaces[root[key].type]);
+          }
+        } else {
+          result[key] = '';
+        }
+      }
+      return result;
+    }
+
+    const optionsBlueprint = getValidObject(interfaces['ParseServerOptions']);
+
+    function validateKeyNames(original, ref, name = '') {
+      let result = [];
+      const prefix = name + (name !== '' ? '.' : '');
+      for (const key in original) {
+        if (!Object.prototype.hasOwnProperty.call(ref, key)) {
+          result.push(prefix + key);
+        } else {
+          if (ref[key] === '') continue;
+          let res = [];
+          if (Array.isArray(original[key]) && Array.isArray(ref[key])) {
+            const type = ref[key][0];
+            original[key].forEach((item, idx) => {
+              if (typeof item === 'object' && item !== null) {
+                res = res.concat(validateKeyNames(item, type, prefix + key + `[${idx}]`));
+              }
+            });
+          } else if (typeof original[key] === 'object' && typeof ref[key] === 'object') {
+            res = validateKeyNames(original[key], ref[key], prefix + key);
+          }
+          result = result.concat(res);
+        }
+      }
+      return result;
+    }
+
+    const diff = validateKeyNames(options, optionsBlueprint);
+    if (diff.length > 0) {
+      const logger = logging.logger;
+      logger.error(`Invalid Option Keys Found: ${diff.join(', ')}`);
     }
 
     // Set option defaults
@@ -86,12 +125,6 @@ class ParseServer {
     Parse.serverURL = serverURL;
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
-    if (Config.failedConfigKeyVerification) {
-      delete Config.failedConfigKeyVerification;
-      throw new Error(
-        'Unknown key(s) found in Parse Server configuration, see other warning messages for details.'
-      );
-    }
 
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));

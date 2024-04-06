@@ -1,6 +1,5 @@
 import authDataManager from '../Adapters/Auth';
 import { ParseServerOptions } from '../Options';
-import { LiveQueryOptions } from '../Options/Definitions';
 import { loadAdapter } from '../Adapters/AdapterLoader';
 import defaults from '../defaults';
 // Controllers
@@ -26,7 +25,6 @@ import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorage
 import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
-import Config from '../Config';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -148,11 +146,6 @@ export function getAnalyticsController(options: ParseServerOptions): AnalyticsCo
 }
 
 export function getLiveQueryController(options: ParseServerOptions): LiveQueryController {
-  if (options.liveQuery) {
-    if (Object.prototype.toString.call(options.liveQuery) === '[object Object]') {
-      Config.validateConfigKeyNames(Object.keys(LiveQueryOptions), Object.keys(options.liveQuery), 'liveQuery');
-    }
-  }
   return new LiveQueryController(options.liveQuery);
 }
 

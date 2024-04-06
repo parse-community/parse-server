@@ -10,7 +10,6 @@ import { logLevels as validLogLevels } from './Controllers/LoggerController';
 import { version } from '../package.json';
 import {
   AccountLockoutOptions,
-  PagesRoute,
   DatabaseOptions,
   FileUploadOptions,
   IdempotencyOptions,
@@ -19,10 +18,6 @@ import {
   ParseServerOptions,
   SchemaOptions,
   SecurityOptions,
-  PasswordPolicyOptions,
-  RateLimitOptions,
-  CustomPagesOptions,
-  PagesCustomUrlsOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
 
@@ -68,101 +63,36 @@ export class Config {
     return serverConfiguration;
   }
 
-  /**
-   * Validates the keys that are set in the Parse Server options.
-   *
-   * @param {Array<String>} allowedKeys The keys that are allowed in the Parse Server.
-   * @param {Array<String>} setKeys The keys that are set in the Parse Server options.
-   * @param {String} [keyPath] The path of the key that is being validated.
-   */
-  static validateConfigKeyNames(allowedKeys, setKeys, keyPath) {
-
-    // Internal keys that are not part of the official Parse Server options and should be ignored
-    const internalKeys = [
-      'level',
-      'state',
-      'loggerController',
-      'filesController',
-      'userController',
-      'pushController',
-      'hasPushScheduledSupport',
-      'hasPushSupport',
-      'pushWorker',
-      'pushControllerQueue',
-      'analyticsController',
-      'cacheController',
-      'parseGraphQLController',
-      'liveQueryController',
-      'databaseController',
-      'hooksController',
-      'authDataManager',
-      'schemaCache',
-      'masterKeyIpsStore',
-      'maintenanceKeyIpsStore',
-      'failedConfigKeyVerification',
-      'patternValidator',
-      'applicationId',
-      'database',
-      '_mount',
-      'generateSessionExpiresAt',
-      'generateEmailVerifyTokenExpiresAt',
-      'version',
-      'RateLimitZone',
-      'setIdempotencyFunction',
-
-      // From test files
-      'retryWrites',
-      'customIdSize',
-      'path',
-      'exampleKey',
-      'websocketTimeout',
-      'ops',
-    ];
-
-    for (const key of setKeys) {
-      if (internalKeys.includes(key)) {
-        continue;
-      }
-
-      if (!allowedKeys.includes(key)) {
-        Config.failedConfigKeyVerification = true;
-        console.error(`Error: Unknown Parse Server option '${keyPath ? keyPath + '.' : ''}${key}'.`);
-      }
-    }
-  }
-
-  static validateOptions(options) {
-    const {
-      customPages,
-      publicServerURL,
-      revokeSessionOnPasswordReset,
-      expireInactiveSessions,
-      sessionLength,
-      defaultLimit,
-      maxLimit,
-      accountLockout,
-      passwordPolicy,
-      masterKeyIps,
-      masterKey,
-      maintenanceKey,
-      maintenanceKeyIps,
-      readOnlyMasterKey,
-      allowHeaders,
-      idempotencyOptions,
-      fileUpload,
-      pages,
-      security,
-      enforcePrivateUsers,
-      schema,
-      requestKeywordDenylist,
-      allowExpiredAuthDataToken,
-      logLevels,
-      rateLimit,
-      databaseOptions,
-      extendSessionOnUse,
-      allowClientClassCreation,
-    } = options;
-
+  static validateOptions({
+    customPages,
+    publicServerURL,
+    revokeSessionOnPasswordReset,
+    expireInactiveSessions,
+    sessionLength,
+    defaultLimit,
+    maxLimit,
+    accountLockout,
+    passwordPolicy,
+    masterKeyIps,
+    masterKey,
+    maintenanceKey,
+    maintenanceKeyIps,
+    readOnlyMasterKey,
+    allowHeaders,
+    idempotencyOptions,
+    fileUpload,
+    pages,
+    security,
+    enforcePrivateUsers,
+    schema,
+    requestKeywordDenylist,
+    allowExpiredAuthDataToken,
+    logLevels,
+    rateLimit,
+    databaseOptions,
+    extendSessionOnUse,
+    allowClientClassCreation,
+  }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
     }
@@ -214,8 +144,6 @@ export class Config {
     if (Object.prototype.toString.call(customPages) !== '[object Object]') {
       throw Error('Parse Server option customPages must be an object.');
     }
-
-    Config.validateConfigKeyNames(Object.keys(CustomPagesOptions), Object.keys(customPages), 'customPages');
   }
 
   static validateControllers({
@@ -268,9 +196,6 @@ export class Config {
     if (Object.prototype.toString.call(security) !== '[object Object]') {
       throw 'Parse Server option security must be an object.';
     }
-
-    Config.validateConfigKeyNames(Object.keys(SecurityOptions), Object.keys(security), 'security');
-
     if (security.enableCheck === undefined) {
       security.enableCheck = SecurityOptions.enableCheck.default;
     } else if (!isBoolean(security.enableCheck)) {
@@ -289,8 +214,6 @@ export class Config {
     if (Object.prototype.toString.call(schema) !== '[object Object]') {
       throw 'Parse Server option schema must be an object.';
     }
-
-    Config.validateConfigKeyNames(Object.keys(SchemaOptions), Object.keys(schema), 'schema');
 
     if (schema.definitions === undefined) {
       schema.definitions = SchemaOptions.definitions.default;
@@ -333,8 +256,6 @@ export class Config {
     if (Object.prototype.toString.call(pages) !== '[object Object]') {
       throw 'Parse Server option pages must be an object.';
     }
-
-    Config.validateConfigKeyNames(Object.keys(PagesOptions), Object.keys(pages), 'pages');
 
     if (pages.enableRouter === undefined) {
       pages.enableRouter = PagesOptions.enableRouter.default;
@@ -383,18 +304,12 @@ export class Config {
       pages.customUrls = PagesOptions.customUrls.default;
     } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
       throw 'Parse Server option pages.customUrls must be an object.';
-    } else {
-      Config.validateConfigKeyNames(Object.keys(PagesCustomUrlsOptions), Object.keys(pages.customUrls), 'pages.customUrls');
     }
 
     if (pages.customRoutes === undefined) {
       pages.customRoutes = PagesOptions.customRoutes.default;
     } else if (!(pages.customRoutes instanceof Array)) {
       throw 'Parse Server option pages.customRoutes must be an array.';
-    } else {
-      pages.customRoutes.forEach(item => {
-        Config.validateConfigKeyNames(Object.keys(PagesRoute), Object.keys(item), 'pages.customRoutes');
-      });
     }
   }
 
@@ -402,9 +317,6 @@ export class Config {
     if (!idempotencyOptions) {
       return;
     }
-
-    Config.validateConfigKeyNames(Object.keys(IdempotencyOptions), Object.keys(idempotencyOptions), 'idempotencyOptions');
-
     if (idempotencyOptions.ttl === undefined) {
       idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
     } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
@@ -420,103 +332,95 @@ export class Config {
   }
 
   static validateAccountLockoutPolicy(accountLockout) {
-    if (!accountLockout) {
-      return;
-    }
+    if (accountLockout) {
+      if (
+        typeof accountLockout.duration !== 'number' ||
+        accountLockout.duration <= 0 ||
+        accountLockout.duration > 99999
+      ) {
+        throw 'Account lockout duration should be greater than 0 and less than 100000';
+      }
 
-    Config.validateConfigKeyNames(Object.keys(AccountLockoutOptions), Object.keys(accountLockout), 'accountLockout');
+      if (
+        !Number.isInteger(accountLockout.threshold) ||
+        accountLockout.threshold < 1 ||
+        accountLockout.threshold > 999
+      ) {
+        throw 'Account lockout threshold should be an integer greater than 0 and less than 1000';
+      }
 
-    if (
-      typeof accountLockout.duration !== 'number' ||
-      accountLockout.duration <= 0 ||
-      accountLockout.duration > 99999
-    ) {
-      throw 'Account lockout duration should be greater than 0 and less than 100000';
-    }
-
-    if (
-      !Number.isInteger(accountLockout.threshold) ||
-      accountLockout.threshold < 1 ||
-      accountLockout.threshold > 999
-    ) {
-      throw 'Account lockout threshold should be an integer greater than 0 and less than 1000';
-    }
-
-    if (accountLockout.unlockOnPasswordReset === undefined) {
-      accountLockout.unlockOnPasswordReset = AccountLockoutOptions.unlockOnPasswordReset.default;
-    } else if (!isBoolean(accountLockout.unlockOnPasswordReset)) {
-      throw 'Parse Server option accountLockout.unlockOnPasswordReset must be a boolean.';
+      if (accountLockout.unlockOnPasswordReset === undefined) {
+        accountLockout.unlockOnPasswordReset = AccountLockoutOptions.unlockOnPasswordReset.default;
+      } else if (!isBoolean(accountLockout.unlockOnPasswordReset)) {
+        throw 'Parse Server option accountLockout.unlockOnPasswordReset must be a boolean.';
+      }
     }
   }
 
   static validatePasswordPolicy(passwordPolicy) {
-    if (!passwordPolicy) {
-      return;
-    }
-
-    Config.validateConfigKeyNames(Object.keys(PasswordPolicyOptions), Object.keys(passwordPolicy), 'passwordPolicy');
-
-    if (
-      passwordPolicy.maxPasswordAge !== undefined &&
-      (typeof passwordPolicy.maxPasswordAge !== 'number' || passwordPolicy.maxPasswordAge < 0)
-    ) {
-      throw 'passwordPolicy.maxPasswordAge must be a positive number';
-    }
-
-    if (
-      passwordPolicy.resetTokenValidityDuration !== undefined &&
-      (typeof passwordPolicy.resetTokenValidityDuration !== 'number' ||
-        passwordPolicy.resetTokenValidityDuration <= 0)
-    ) {
-      throw 'passwordPolicy.resetTokenValidityDuration must be a positive number';
-    }
-
-    if (passwordPolicy.validatorPattern) {
-      if (typeof passwordPolicy.validatorPattern === 'string') {
-        passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
-      } else if (!(passwordPolicy.validatorPattern instanceof RegExp)) {
-        throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
+    if (passwordPolicy) {
+      if (
+        passwordPolicy.maxPasswordAge !== undefined &&
+        (typeof passwordPolicy.maxPasswordAge !== 'number' || passwordPolicy.maxPasswordAge < 0)
+      ) {
+        throw 'passwordPolicy.maxPasswordAge must be a positive number';
       }
-    }
 
-    if (
-      passwordPolicy.validatorCallback &&
-      typeof passwordPolicy.validatorCallback !== 'function'
-    ) {
-      throw 'passwordPolicy.validatorCallback must be a function.';
-    }
+      if (
+        passwordPolicy.resetTokenValidityDuration !== undefined &&
+        (typeof passwordPolicy.resetTokenValidityDuration !== 'number' ||
+          passwordPolicy.resetTokenValidityDuration <= 0)
+      ) {
+        throw 'passwordPolicy.resetTokenValidityDuration must be a positive number';
+      }
 
-    if (
-      passwordPolicy.doNotAllowUsername &&
-      typeof passwordPolicy.doNotAllowUsername !== 'boolean'
-    ) {
-      throw 'passwordPolicy.doNotAllowUsername must be a boolean value.';
-    }
+      if (passwordPolicy.validatorPattern) {
+        if (typeof passwordPolicy.validatorPattern === 'string') {
+          passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
+        } else if (!(passwordPolicy.validatorPattern instanceof RegExp)) {
+          throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
+        }
+      }
 
-    if (
-      passwordPolicy.maxPasswordHistory &&
-      (!Number.isInteger(passwordPolicy.maxPasswordHistory) ||
-        passwordPolicy.maxPasswordHistory <= 0 ||
-        passwordPolicy.maxPasswordHistory > 20)
-    ) {
-      throw 'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20';
-    }
+      if (
+        passwordPolicy.validatorCallback &&
+        typeof passwordPolicy.validatorCallback !== 'function'
+      ) {
+        throw 'passwordPolicy.validatorCallback must be a function.';
+      }
 
-    if (
-      passwordPolicy.resetTokenReuseIfValid &&
-      typeof passwordPolicy.resetTokenReuseIfValid !== 'boolean'
-    ) {
-      throw 'resetTokenReuseIfValid must be a boolean value';
-    }
-    if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
-      throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
-    }
+      if (
+        passwordPolicy.doNotAllowUsername &&
+        typeof passwordPolicy.doNotAllowUsername !== 'boolean'
+      ) {
+        throw 'passwordPolicy.doNotAllowUsername must be a boolean value.';
+      }
 
-    if (
-      passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
-      typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
-    ) {
-      throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
+      if (
+        passwordPolicy.maxPasswordHistory &&
+        (!Number.isInteger(passwordPolicy.maxPasswordHistory) ||
+          passwordPolicy.maxPasswordHistory <= 0 ||
+          passwordPolicy.maxPasswordHistory > 20)
+      ) {
+        throw 'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20';
+      }
+
+      if (
+        passwordPolicy.resetTokenReuseIfValid &&
+        typeof passwordPolicy.resetTokenReuseIfValid !== 'boolean'
+      ) {
+        throw 'resetTokenReuseIfValid must be a boolean value';
+      }
+      if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
+        throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
+      }
+
+      if (
+        passwordPolicy.resetPasswordSuccessOnInvalidEmail &&
+        typeof passwordPolicy.resetPasswordSuccessOnInvalidEmail !== 'boolean'
+      ) {
+        throw 'resetPasswordSuccessOnInvalidEmail must be a boolean value';
+      }
     }
   }
 
@@ -571,8 +475,6 @@ export class Config {
       }
       throw e;
     }
-
-    Config.validateConfigKeyNames(Object.keys(FileUploadOptions), Object.keys(fileUpload), 'fileUpload');
 
     if (fileUpload.enableForAnonymousUser === undefined) {
       fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;
@@ -664,8 +566,6 @@ export class Config {
   }
 
   static validateLogLevels(logLevels) {
-    Config.validateConfigKeyNames(Object.keys(LogLevels), Object.keys(logLevels), 'logLevels');
-
     for (const key of Object.keys(LogLevels)) {
       if (logLevels[key]) {
         if (validLogLevels.indexOf(logLevels[key]) === -1) {
@@ -685,8 +585,6 @@ export class Config {
     if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
       throw `databaseOptions must be an object`;
     }
-
-    Config.validateConfigKeyNames(Object.keys(DatabaseOptions), Object.keys(databaseOptions), 'databaseOptions');
 
     if (databaseOptions.enableSchemaHooks === undefined) {
       databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
@@ -716,8 +614,6 @@ export class Config {
       if (Object.prototype.toString.call(option) !== '[object Object]') {
         throw `rateLimit must be an array of objects`;
       }
-
-      Config.validateConfigKeyNames(Object.keys(RateLimitOptions), Object.keys(option), 'rateLimit');
 
       if (option.requestPath == null) {
         throw `rateLimit.requestPath must be defined`;
