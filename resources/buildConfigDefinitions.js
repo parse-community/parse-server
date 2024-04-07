@@ -254,6 +254,23 @@ function inject(t, list) {
       if (action) {
         props.push(t.objectProperty(t.stringLiteral('action'), action));
       }
+
+      if (t.isGenericTypeAnnotation(elt)) {
+        if (elt.typeAnnotation.id.name in nestedOptionEnvPrefix) {
+          props.push(
+            t.objectProperty(t.stringLiteral('type'), t.stringLiteral(elt.typeAnnotation.id.name))
+          );
+        }
+      } else if (t.isArrayTypeAnnotation(elt)) {
+        const elementType = elt.typeAnnotation.elementType;
+        if (t.isGenericTypeAnnotation(elementType)) {
+          if (elementType.id.name in nestedOptionEnvPrefix) {
+            props.push(
+              t.objectProperty(t.stringLiteral('type'), t.stringLiteral(elementType.id.name + '[]'))
+            );
+          }
+        }
+      }
       if (elt.defaultValue) {
         let parsedValue = parseDefaultValue(elt, elt.defaultValue, t);
         if (!parsedValue) {
