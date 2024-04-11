@@ -14,8 +14,18 @@ class CheckGroupDatabase extends CheckGroup {
   }
   setChecks() {
     const config = Config.get(Parse.applicationId);
+    let databaseUrl;
     const databaseAdapter = config.database.adapter;
-    const databaseUrl = databaseAdapter._uri;
+    if (databaseAdapter) {
+      // If database adapter is defined, use its URI
+      databaseUrl = databaseAdapter._uri;
+    } else if (config.databaseURI) {
+      // If database adapter is not defined, fallback to config.databaseURI
+      databaseUrl = config.databaseURI;
+    } else {
+      // Handle the case where neither database adapter nor databaseURI is defined
+      throw 1;
+    }
     return [
       new Check({
         title: 'Secure database password',
