@@ -1,3 +1,10 @@
+# [7.1.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.4...7.1.0-alpha.5) (2024-04-07)
+
+
+### Features
+
+* Prevent Parse Server start in case of unknown option in server configuration ([#8987](https://github.com/parse-community/parse-server/issues/8987)) ([8758e6a](https://github.com/parse-community/parse-server/commit/8758e6abb9dbb68757bddcbd332ad25100c24a0e))
+
 # [7.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.3...7.1.0-alpha.4) (2024-03-31)
 
 
