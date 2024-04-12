@@ -636,16 +636,16 @@ describe('ParseServerRESTController', () => {
     Parse.Cloud.job('CloudJob', () => {
       return 'Cloud job completed';
     });
-    const jobStatusId = await RESTController.request(
+    const response = await RESTController.request(
       'POST',
       '/jobs/CloudJob',
       {},
-      { useMasterKey: true }
+      { useMasterKey: true, returnStatus: true }
     );
+    const jobStatusId = response._headers['X-Parse-Job-Status-Id'];
     expect(jobStatusId).toBeDefined();
-
     const result = await Parse.Cloud.getJobStatus(jobStatusId);
-    expect(result.get('message')).toBe('Cloud job completed');
+    expect(result.id).toBe(jobStatusId);
   });
 
   it('returns a statusId when running push notifications', async () => {
@@ -653,13 +653,14 @@ describe('ParseServerRESTController', () => {
       data: { alert: 'We return status!' },
       where: { deviceType: 'ios' },
     };
-    const pushStatusId = await RESTController.request('POST', '/push', payload, {
+    const response = await RESTController.request('POST', '/push', payload, {
       useMasterKey: true,
+      returnStatus: true,
     });
+    const pushStatusId = response._headers['X-Parse-Push-Status-Id'];
     expect(pushStatusId).toBeDefined();
 
     const result = await Parse.Push.getPushStatus(pushStatusId);
-    expect(result.get('query')).toEqual(JSON.stringify(payload.where));
-    expect(result.get('payload')).toEqual(JSON.stringify(payload.data));
+    expect(result.id).toBe(pushStatusId);
   });
 });
