@@ -664,7 +664,7 @@ describe('ParseServerRESTController', () => {
     expect(result.id).toBe(pushStatusId);
   });
 
-  fit('returns a statusId when running batch push notifications', async () => {
+  it('returns a statusId when running batch push notifications', async () => {
     const payload = {
       data: { alert: 'We return status!' },
       where: { deviceType: 'ios' },
