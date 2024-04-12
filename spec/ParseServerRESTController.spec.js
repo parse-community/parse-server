@@ -636,13 +636,13 @@ describe('ParseServerRESTController', () => {
     Parse.Cloud.job('CloudJob', () => {
       return 'Cloud job completed';
     });
-    const response = await RESTController.request(
+    const res = await RESTController.request(
       'POST',
       '/jobs/CloudJob',
       {},
       { useMasterKey: true, returnStatus: true }
     );
-    const jobStatusId = response._headers['X-Parse-Job-Status-Id'];
+    const jobStatusId = res._headers['X-Parse-Job-Status-Id'];
     expect(jobStatusId).toBeDefined();
     const result = await Parse.Cloud.getJobStatus(jobStatusId);
     expect(result.id).toBe(jobStatusId);
@@ -653,11 +653,33 @@ describe('ParseServerRESTController', () => {
       data: { alert: 'We return status!' },
       where: { deviceType: 'ios' },
     };
-    const response = await RESTController.request('POST', '/push', payload, {
+    const res = await RESTController.request('POST', '/push', payload, {
       useMasterKey: true,
       returnStatus: true,
     });
-    const pushStatusId = response._headers['X-Parse-Push-Status-Id'];
+    const pushStatusId = res._headers['X-Parse-Push-Status-Id'];
+    expect(pushStatusId).toBeDefined();
+
+    const result = await Parse.Push.getPushStatus(pushStatusId);
+    expect(result.id).toBe(pushStatusId);
+  });
+
+  fit('returns a statusId when running batch push notifications', async () => {
+    const payload = {
+      data: { alert: 'We return status!' },
+      where: { deviceType: 'ios' },
+    };
+    const res = await RESTController.request('POST', 'batch', {
+      requests: [{
+        method: 'POST',
+        path: '/push',
+        body: payload,
+      }],
+    }, {
+      useMasterKey: true,
+      returnStatus: true,
+    });
+    const pushStatusId = res[0]._headers['X-Parse-Push-Status-Id'];
     expect(pushStatusId).toBeDefined();
 
     const result = await Parse.Push.getPushStatus(pushStatusId);
