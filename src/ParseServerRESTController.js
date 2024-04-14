@@ -58,8 +58,10 @@ function ParseServerRESTController(applicationId, router) {
               response => {
                 if (options.returnStatus) {
                   const status = response._status;
+                  const headers = response._headers;
                   delete response._status;
-                  return { success: response, _status: status };
+                  delete response._headers;
+                  return { success: response, _status: status, _headers: headers };
                 }
                 return { success: response };
               },
@@ -128,9 +130,9 @@ function ParseServerRESTController(applicationId, router) {
           })
           .then(
             resp => {
-              const { response, status } = resp;
+              const { response, status, headers = {} } = resp;
               if (options.returnStatus) {
-                resolve({ ...response, _status: status });
+                resolve({ ...response, _status: status, _headers: headers });
               } else {
                 resolve(response);
               }
