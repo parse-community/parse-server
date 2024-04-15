@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "7.1.0-alpha.5",
+  "version": "7.1.0-alpha.6",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -36,7 +36,7 @@
     "follow-redirects": "1.15.6",
     "graphql": "16.8.1",
     "graphql-list-fields": "2.0.4",
-    "graphql-relay": "0.10.0",
+    "graphql-relay": "0.10.1",
     "graphql-tag": "2.12.6",
     "graphql-upload": "15.0.2",
     "intersect": "1.0.1",
@@ -66,7 +66,7 @@
   },
   "devDependencies": {
     "@actions/core": "1.10.1",
-    "@apollo/client": "3.9.5",
+    "@apollo/client": "3.9.11",
     "@babel/cli": "7.23.9",
     "@babel/core": "7.24.3",
     "@babel/plugin-proposal-object-rest-spread": "7.10.0",
