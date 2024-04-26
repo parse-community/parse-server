@@ -22,10 +22,7 @@ class CheckGroupDatabase extends CheckGroup {
     } else if (config.databaseURI) {
       // If database adapter is not defined, fallback to config.databaseURI
       databaseUrl = config.databaseURI;
-    } else {
-      // Handle the case where neither database adapter nor databaseURI is defined
-      throw 1;
-    }
+    } 
     return [
       new Check({
         title: 'Secure database password',
