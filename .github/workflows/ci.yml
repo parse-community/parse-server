@@ -162,16 +162,16 @@ jobs:
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 20.12.0
           - name: MongoDB 7, ReplicaSet
-            MONGODB_VERSION: 7.0.7
+            MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 20.12.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 7.0.7
+            MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 20.12.0
           - name: Node 18
-            MONGODB_VERSION: 7.0.7
+            MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 18.20.0
       fail-fast: false
@@ -210,7 +210,11 @@ jobs:
       - run: npm run coverage
         env:
           CI: true
-      - run: bash <(curl -s https://codecov.io/bash)
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
   check-postgres:
     strategy:
       matrix:
@@ -281,7 +285,11 @@ jobs:
       - run: npm run coverage
         env:
           CI: true
-      - run: bash <(curl -s https://codecov.io/bash)
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

@@ -1,3 +1,17 @@
+# [7.1.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.5...7.1.0-alpha.6) (2024-04-14)
+
+
+### Bug Fixes
+
+* `Parse.Cloud.startJob` and `Parse.Push.send` not returning status ID when setting Parse Server option `directAccess: true` ([#8766](https://github.com/parse-community/parse-server/issues/8766)) ([5b0efb2](https://github.com/parse-community/parse-server/commit/5b0efb22efe94c47f243cf8b1e6407ed5c5a67d3))
+
+# [7.1.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.4...7.1.0-alpha.5) (2024-04-07)
+
+
+### Features
+
+* Prevent Parse Server start in case of unknown option in server configuration ([#8987](https://github.com/parse-community/parse-server/issues/8987)) ([8758e6a](https://github.com/parse-community/parse-server/commit/8758e6abb9dbb68757bddcbd332ad25100c24a0e))
+
 # [7.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.3...7.1.0-alpha.4) (2024-03-31)
 
 
