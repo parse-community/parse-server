@@ -67,6 +67,23 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
+// A helper to check whether session should be updated based on last update time & session length.
+function shouldUpdateSessionExpiry(config, session) {
+  let resetAfter = 60;
+  if (config.sessionLength > 86400) {
+    resetAfter = 86400; // Every 24 hours
+  } else if (config.sessionLength > 3600) {
+    resetAfter = 3600; // 1 hour
+  } else {
+    resetAfter = 60; // Every minute
+  }
+
+  const lastUpdated = new Date(session?.updatedAt);
+  const skipRange = new Date();
+  skipRange.setTime(skipRange.getTime() - resetAfter * 1000);
+  return lastUpdated <= skipRange;
+}
+
 const throttle = {};
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
@@ -88,10 +105,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
         const { results } = await query.execute();
         session = results[0];
       }
-      const lastUpdated = new Date(session?.updatedAt);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (lastUpdated > yesterday || !session) {
+      if (!shouldUpdateSessionExpiry(config, session) || !session) {
         return;
       }
       const expiresAt = config.generateSessionExpiresAt();
@@ -579,6 +593,7 @@ module.exports = {
   maintenance,
   nobody,
   readOnly,
+  shouldUpdateSessionExpiry,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
   findUsersWithAuthData,

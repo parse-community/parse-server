@@ -260,3 +260,58 @@ describe('Auth', () => {
     });
   });
 });
+
+describe('extendSessionOnUse', () => {
+  const tests = [
+    {
+      title: 'Updated more than 24 hrs ago',
+      sessionLength: 86460,
+      sessionUpdatedAt: 86410,
+      result: true,
+    },
+    {
+      title: 'Updated less than 24 hrs ago',
+      sessionLength: 86460,
+      sessionUpdatedAt: 86390,
+      result: false,
+    },
+    {
+      title: 'Update more than an hour ago',
+      sessionLength: 3660,
+      sessionUpdatedAt: 3610,
+      result: true,
+    },
+    {
+      title: 'Updated less than an hour ago',
+      sessionLength: 3660,
+      sessionUpdatedAt: 3590,
+      result: false,
+    },
+    {
+      title: 'Updated more than a minute ago.',
+      sessionLength: 120,
+      sessionUpdatedAt: 70,
+      result: true,
+    },
+    {
+      title: 'Updated less than a minute ago.',
+      sessionLength: 120,
+      sessionUpdatedAt: 50,
+      result: false,
+    },
+  ];
+
+  tests.forEach(({ title, sessionLength, sessionUpdatedAt, result }) => {
+    it(`shouldUpdateSessionExpiry() when ${title}`, async () => {
+      const { shouldUpdateSessionExpiry } = require('../lib/Auth');
+      let update = new Date();
+      update.setTime(update.getTime() - sessionUpdatedAt * 1000);
+      const res = shouldUpdateSessionExpiry(
+        { sessionLength: sessionLength },
+        { updatedAt: update }
+      );
+
+      expect(res).toBe(result);
+    });
+  });
+});
