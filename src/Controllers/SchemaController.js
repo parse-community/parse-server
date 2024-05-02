@@ -1096,11 +1096,12 @@ export default class SchemaController {
     maintenance?: boolean
   ) {
     if (fieldName.indexOf('.') > 0) {
-      // "<array>.<index>" for Nested Array
-      // "<embedded document>.<field>" for Nested Object
+      // "<array>.<index>" for Nested Arrays
+      // "<embedded document>.<field>" for Nested Objects
+      // JSON Arrays are treated as Nested Objects
       const [x, y] = fieldName.split('.');
       fieldName = x;
-      if (!isNaN(y)) {
+      if (!isNaN(y) && !['sentPerUTCOffset', 'failedPerUTCOffset'].includes(fieldName)) {
         type = 'Array';
       } else {
         type = 'Object';

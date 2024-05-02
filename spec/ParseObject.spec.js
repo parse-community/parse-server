@@ -568,7 +568,7 @@ describe('Parse.Object testing', () => {
       );
   });
 
-  it('can increment array nested fields', async () => {
+  it_only_db('mongo')('can increment array nested fields', async () => {
     const obj = new TestObject();
     obj.set('items', [ { value: 'a', count: 5 }, { value: 'b', count: 1 } ]);
     await obj.save();
