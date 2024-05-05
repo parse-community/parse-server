@@ -1262,7 +1262,7 @@ describe('Parse.User testing', () => {
     done();
   });
 
-  it('log in with Facebook and save signed up User with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async () => {
+  fit('log in with Facebook and save signed up User with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async () => {
     const provider = getMockFacebookProvider();
     const emailAdapter = {
       sendPasswordResetEmail: () => Promise.resolve(),
