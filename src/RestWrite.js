@@ -368,9 +368,36 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
       };
 
       // Add default fields
-      this.data.updatedAt = this.updatedAt;
       if (!this.query) {
-        this.data.createdAt = this.updatedAt;
+        // allow customizing createdAt and updatedAt when using maintenance key
+        if (
+          this.auth.isMaintenance &&
+          this.data.createdAt &&
+          this.data.createdAt.__type === 'Date'
+        ) {
+          this.data.createdAt = this.data.createdAt.iso;
+
+          if (this.data.updatedAt && this.data.updatedAt.__type === 'Date') {
+            const createdAt = new Date(this.data.createdAt);
+            const updatedAt = new Date(this.data.updatedAt.iso);
+
+            if (updatedAt < createdAt) {
+              throw new Parse.Error(
+                Parse.Error.VALIDATION_ERROR,
+                'updatedAt cannot occur before createdAt'
+              );
+            }
+
+            this.data.updatedAt = this.data.updatedAt.iso;
+          }
+          // if no updatedAt is provided, set it to createdAt to match default behavior
+          else {
+            this.data.updatedAt = this.data.createdAt;
+          }
+        } else {
+          this.data.updatedAt = this.updatedAt;
+          this.data.createdAt = this.updatedAt;
+        }
 
         // Only assign new objectId if we are creating new object
         if (!this.data.objectId) {
@@ -382,6 +409,8 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
           });
         }
       } else if (schema) {
+        this.data.updatedAt = this.updatedAt;
+
         Object.keys(this.data).forEach(fieldName => {
           setRequiredFieldIfNeeded(fieldName, false);
         });
@@ -494,10 +523,14 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   const r = await Auth.findUsersWithAuthData(this.config, authData);
   const results = this.filteredObjectsByACL(r);
 
-  if (results.length > 1) {
+  const userId = this.getUserId();
+  const userResult = results[0];
+  const foundUserIsNotCurrentUser = userId && userResult && userId !== userResult.objectId;
+
+  if (results.length > 1 || foundUserIsNotCurrentUser) {
     // To avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
     // Let's run some validation before throwing
-    await Auth.handleAuthDataValidation(authData, this, results[0]);
+    await Auth.handleAuthDataValidation(authData, this, userResult);
     throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
   }
 
@@ -517,12 +550,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   // User found with provided authData
   if (results.length === 1) {
-    const userId = this.getUserId();
-    const userResult = results[0];
-    // Prevent duplicate authData id
-    if (userId && userId !== userResult.objectId) {
-      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
-    }
 
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
       authData,
@@ -775,6 +802,7 @@ RestWrite.prototype._validateEmail = function () {
           object: updatedObject,
           master: this.auth.isMaster,
           ip: this.config.ip,
+          installationId: this.auth.installationId,
         };
         return this.config.userController.setEmailVerifyToken(this.data, request, this.storage);
       }
@@ -900,30 +928,25 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   if (this.auth.user && this.data.authData) {
     return;
   }
-  if (
-    !this.storage.authProvider && // signup call, with
-    this.config.preventLoginWithUnverifiedEmail === true && // no login without verification
-    this.config.verifyUserEmails
-  ) {
-    // verification is on
-    this.storage.rejectSignup = true;
-    return;
-  }
-  if (!this.storage.authProvider && this.config.verifyUserEmails) {
-    let shouldPreventUnverifedLogin = this.config.preventLoginWithUnverifiedEmail;
-    if (typeof this.config.preventLoginWithUnverifiedEmail === 'function') {
-      const { originalObject, updatedObject } = this.buildParseObjects();
-      const request = {
-        original: originalObject,
-        object: updatedObject,
-        master: this.auth.isMaster,
-        ip: this.config.ip,
-      };
-      shouldPreventUnverifedLogin = await Promise.resolve(
-        this.config.preventLoginWithUnverifiedEmail(request)
-      );
-    }
-    if (shouldPreventUnverifedLogin === true) {
+  // If sign-up call
+  if (!this.storage.authProvider) {
+    // Create request object for verification functions
+    const { originalObject, updatedObject } = this.buildParseObjects();
+    const request = {
+      original: originalObject,
+      object: updatedObject,
+      master: this.auth.isMaster,
+      ip: this.config.ip,
+      installationId: this.auth.installationId,
+    };
+    // Get verification conditions which can be booleans or functions; the purpose of this async/await
+    // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
+    // conditional statement below, as a developer may decide to execute expensive operations in them
+    const verifyUserEmails = async () => this.config.verifyUserEmails === true || (typeof this.config.verifyUserEmails === 'function' && await Promise.resolve(this.config.verifyUserEmails(request)) === true);
+    const preventLoginWithUnverifiedEmail = async () => this.config.preventLoginWithUnverifiedEmail === true || (typeof this.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(this.config.preventLoginWithUnverifiedEmail(request)) === true);
+    // If verification is required
+    if (await verifyUserEmails() && await preventLoginWithUnverifiedEmail()) {
+      this.storage.rejectSignup = true;
       return;
     }
   }

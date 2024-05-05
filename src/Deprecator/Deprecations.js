@@ -15,8 +15,4 @@
  *
  * If there are no deprecations, this must return an empty array.
  */
-module.exports = [
-  { optionKey: 'allowClientClassCreation', changeNewDefault: 'false' },
-  { optionKey: 'allowExpiredAuthDataToken', changeNewDefault: 'false' },
-  { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
-];
+module.exports = [{ optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' }];

@@ -15,6 +15,13 @@ describe('Cloud Code Logger', () => {
       // useful to flip to false for fine tuning :).
       silent: true,
       logLevel: undefined,
+      logLevels: {
+        cloudFunctionError: 'error',
+        cloudFunctionSuccess: 'info',
+        triggerAfter: 'info',
+        triggerBeforeError: 'error',
+        triggerBeforeSuccess: 'info',
+      },
     })
       .then(() => {
         return Parse.User.signUp('tester', 'abc')
@@ -333,5 +340,54 @@ describe('Cloud Code Logger', () => {
     const { args } = spy.calls.mostRecent();
     expect(args[0]).toBe('Parse error: ');
     expect(args[1].message).toBe('Object not found.');
+  });
+
+  it('should log cloud function execution using the silent log level', async () => {
+    await reconfigureServer({
+      logLevels: {
+        cloudFunctionSuccess: 'silent',
+        cloudFunctionError: 'silent',
+      },
+    });
+    Parse.Cloud.define('aFunction', () => {
+      return 'it worked!';
+    });
+    Parse.Cloud.define('bFunction', () => {
+      throw new Error('Failed');
+    });
+    spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+
+    await Parse.Cloud.run('aFunction', { foo: 'bar' });
+    expect(spy).toHaveBeenCalledTimes(0);
+
+    await expectAsync(Parse.Cloud.run('bFunction', { foo: 'bar' })).toBeRejected();
+    // Not "Failed running cloud function message..."
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should log cloud function triggers using the silent log level', async () => {
+    await reconfigureServer({
+      logLevels: {
+        triggerAfter: 'silent',
+        triggerBeforeSuccess: 'silent',
+        triggerBeforeError: 'silent',
+      },
+    });
+    Parse.Cloud.beforeSave('TestClassError', () => {
+      throw new Error('Failed');
+    });
+    Parse.Cloud.beforeSave('TestClass', () => {});
+    Parse.Cloud.afterSave('TestClass', () => {});
+
+    spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+
+    const obj = new Parse.Object('TestClass');
+    await obj.save();
+    expect(spy).toHaveBeenCalledTimes(0);
+
+    const objError = new Parse.Object('TestClassError');
+    await expectAsync(objError.save()).toBeRejected();
+    // Not "beforeSave failed for TestClassError for user ..."
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });
