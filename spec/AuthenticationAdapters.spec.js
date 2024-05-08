@@ -2047,7 +2047,7 @@ describe('facebook limited auth adapter', () => {
 
   it('should use algorithm from key header to verify id_token', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2097,7 +2097,7 @@ describe('facebook limited auth adapter', () => {
 
   it('(using client id as string) should verify id_token', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2117,7 +2117,7 @@ describe('facebook limited auth adapter', () => {
 
   it('(using client id as array) should verify id_token', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2137,7 +2137,7 @@ describe('facebook limited auth adapter', () => {
 
   it('(using client id as array with multiple items) should verify id_token', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2174,7 +2174,7 @@ describe('facebook limited auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
       );
     }
   });
@@ -2203,7 +2203,7 @@ describe('facebook limited auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
       );
     }
   });
@@ -2230,7 +2230,7 @@ describe('facebook limited auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
       );
     }
   });
@@ -2288,7 +2288,7 @@ describe('facebook limited auth adapter', () => {
 
   it('should throw error with with invalid user id', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'invalid_client_id',
       sub: 'a_different_user_id',
     };
