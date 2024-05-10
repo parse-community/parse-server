@@ -67,7 +67,9 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
-// A helper to check whether session should be updated based on last update time & session length.
+/**
+ * Checks whether session should be updated based on last update time & session length.
+ */
 function shouldUpdateSessionExpiry(config, session) {
   let resetAfter = 60;
   if (config.sessionLength > 86400) {

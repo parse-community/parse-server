@@ -304,7 +304,7 @@ describe('extendSessionOnUse', () => {
   tests.forEach(({ title, sessionLength, sessionUpdatedAt, result }) => {
     it(`shouldUpdateSessionExpiry() when ${title}`, async () => {
       const { shouldUpdateSessionExpiry } = require('../lib/Auth');
-      let update = new Date();
+      const update = new Date();
       update.setTime(update.getTime() - sessionUpdatedAt * 1000);
       const res = shouldUpdateSessionExpiry(
         { sessionLength: sessionLength },
