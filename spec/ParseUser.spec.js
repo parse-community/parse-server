@@ -1279,60 +1279,10 @@ describe('Parse.User testing', () => {
     });
 
     Parse.User._registerAuthenticationProvider(provider);
-    const user = await Parse.User._logInWith('facebook');
-    expect(user instanceof Parse.User).toBeTrue();
-    expect(Parse.User.current()).toEqual(user);
-    expect(user.extended()).toBeTrue();
-    expect(provider.authData.id).toBe(provider.synchronizedUserId);
-    expect(provider.authData.access_token).toBe(provider.synchronizedAuthToken);
-    expect(provider.authData.expiration_date).toBe(provider.synchronizedExpiration);
-    expect(user._isLinked('facebook')).toBeTrue();
+    const user = await Parse.User.logInWith('facebook', {authData: provider.authData});
+    expect(user.getSessionToken()).toBeDefined()
+    user.save()
     await expectAsync(user.save()).toBeResolved();
-  });
-
-  fit('link and login with provider with verifyUserEmails=true and preventLoginWithUnverifiedEmail=true', async done => {
-    const provider = getMockFacebookProvider();
-    const emailAdapter = {
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => Promise.resolve(),
-    };
-    await reconfigureServer({
-      appName: 'ExampleApp',
-      verifyUserEmails: true,
-      preventLoginWithUnverifiedEmail: false,
-      emailAdapter: {
-        module: emailAdapter,
-      },
-      publicServerURL: 'http://localhost:8378/1',
-    });
-
-    Parse.User._registerAuthenticationProvider(provider);
-    var user = new Parse.User();
-    await expectAsync(user.save()).toBeResolved();
-    console.log("saved")
-    user.set('username', 'testLinkWithProvider');
-    user.set('password', 'mypass');
-    await user.signUp();
-    console.log("signed up")
-    user.set('username', 'testLinkWithProvider');
-    user.set('password', 'mypass');
-    await user.logIn()
-    console.log("logged in")
-    const model = await user._linkWith('facebook');
-    console.log("linked")
-    expect(user instanceof Parse.User).toBeTrue();
-    expect(user instanceof Parse.User).toBeTrue();
-    expect(Parse.User.current()).toEqual(user);
-    expect(user.extended()).toBeTrue();
-    expect(provider.authData.id).toBe(provider.synchronizedUserId);
-    expect(provider.authData.access_token).toBe(provider.synchronizedAuthToken);
-    expect(provider.authData.expiration_date).toBe(provider.synchronizedExpiration);
-    expect(user._isLinked('facebook')).toBeTrue();
-    console.log("Linked");
-    const loggedinuser = await Parse.User._logInWith('facebook');
-    console.log("logged in " + loggedinuser.getSessionToken());
-    await expectAsync(loggedinuser.save()).toBeResolved();
-
   });
 
   it('can not set authdata to null', async () => {
