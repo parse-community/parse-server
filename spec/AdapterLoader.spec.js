@@ -142,6 +142,25 @@ describe('AdapterLoader', () => {
     }).not.toThrow();
   });
 
+  it('should load custom database adapter from config', done => {
+    const adapterPath = require('path').resolve('./spec/support/MockDatabaseAdapter');
+    const options = {
+      databaseURI: 'oracledb://user:password@localhost:1521/freepdb1',
+      collectionPrefix: '',
+    };
+    const databaseAdapterOptions = {
+      adapter: adapterPath,
+      options,
+    };
+    expect(() => {
+      const databaseAdapter = loadAdapter(databaseAdapterOptions);
+      expect(databaseAdapter).not.toBe(undefined);
+      expect(databaseAdapter.options).toEqual(options);
+      expect(databaseAdapter.getDatabaseURI()).toEqual(options.databaseURI);
+    }).not.toThrow();
+    done();
+  });
+
   it('should load file adapter from direct passing', done => {
     spyOn(console, 'warn').and.callFake(() => {});
     const mockFilesAdapter = new MockFilesAdapter('key', 'secret', 'bucket');
