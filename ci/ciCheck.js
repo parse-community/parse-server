@@ -1,8 +1,7 @@
 'use strict';
 
 const CiVersionCheck = require('./CiVersionCheck');
-const mongoVersionList = require('mongodb-version-list');
-const allNodeVersions = require('all-node-versions');
+const { exec } = require('child_process');
 
 async function check() {
   // Run checks
@@ -14,14 +13,16 @@ async function check() {
  * Check the MongoDB versions used in test environments.
  */
 async function checkMongoDbVersions() {
-  const releasedVersions = await new Promise((resolve, reject) => {
-    mongoVersionList(function (error, versions) {
+  let latestStableVersions = await new Promise((resolve, reject) => {
+    exec('m ls', (error, stdout) => {
       if (error) {
         reject(error);
+        return;
       }
-      resolve(versions);
+      resolve(stdout.trim());
     });
   });
+  latestStableVersions = latestStableVersions.split('\n').map(version => version.trim());
 
   await new CiVersionCheck({
     packageName: 'MongoDB',
@@ -29,13 +30,14 @@ async function checkMongoDbVersions() {
     yamlFilePath: './.github/workflows/ci.yml',
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
     ciVersionKey: 'MONGODB_VERSION',
-    releasedVersions,
-    latestComponent: CiVersionCheck.versionComponents.minor,
+    releasedVersions: latestStableVersions,
+    latestComponent: CiVersionCheck.versionComponents.patch,
     ignoreReleasedVersions: [
-      '<4.0.0', // Versions reached their MongoDB end-of-life support date
-      '~4.1.0', // Development release according to MongoDB support
-      '~4.3.0', // Development release according to MongoDB support
-      '~4.7.0', // Development release according to MongoDB support
+      '<4.2.0', // These versions have reached their end-of-life support date
+      '>=4.3.0 <5.0.0', // Unsupported rapid release versions
+      '>=5.1.0 <6.0.0', // Unsupported rapid release versions
+      '>=6.1.0 <7.0.0', // Unsupported rapid release versions
+      '>=7.1.0 <8.0.0', // Unsupported rapid release versions
     ],
   }).check();
 }
@@ -44,8 +46,9 @@ async function checkMongoDbVersions() {
  * Check the Nodejs versions used in test environments.
  */
 async function checkNodeVersions() {
-  const allVersions = await allNodeVersions();
-  const releasedVersions = allVersions.versions;
+  const allVersions = (await import('all-node-versions')).default;
+  const { versions } = await allVersions();
+  const nodeVersions = versions.map(version => version.node);
 
   await new CiVersionCheck({
     packageName: 'Node.js',
@@ -53,13 +56,12 @@ async function checkNodeVersions() {
     yamlFilePath: './.github/workflows/ci.yml',
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
     ciVersionKey: 'NODE_VERSION',
-    releasedVersions,
+    releasedVersions: nodeVersions,
     latestComponent: CiVersionCheck.versionComponents.minor,
     ignoreReleasedVersions: [
-      '<12.0.0', // These versions have reached their end-of-life support date
-      '>=13.0.0 <14.0.0', // These versions have reached their end-of-life support date
-      '>=15.0.0 <16.0.0', // These versions have reached their end-of-life support date
-      '>=19.0.0', // These versions are not officially supported yet
+      '<18.0.0', // These versions have reached their end-of-life support date
+      '>=19.0.0 <20.0.0', // These versions have reached their end-of-life support date
+      '>=21.0.0', // These versions are not officially supported yet
     ],
   }).check();
 }

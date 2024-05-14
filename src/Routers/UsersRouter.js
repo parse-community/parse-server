@@ -75,7 +75,7 @@ export class UsersRouter extends ClassesRouter {
       ) {
         payload = req.query;
       }
-      const { username, email, password } = payload;
+      const { username, email, password, ignoreEmailVerification } = payload;
 
       // TODO: use the right error codes / descriptions.
       if (!username && !email) {
@@ -144,13 +144,18 @@ export class UsersRouter extends ClassesRouter {
             installationId: req.auth.installationId,
             object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
           };
-          // Get verification conditions which can be booleans or functions; the purpose of this async/await
-          // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
-          // conditional statement below, as a developer may decide to execute expensive operations in them
-          const verifyUserEmails = async () => req.config.verifyUserEmails === true || (typeof req.config.verifyUserEmails === 'function' && await Promise.resolve(req.config.verifyUserEmails(request)) === true);
-          const preventLoginWithUnverifiedEmail = async () => req.config.preventLoginWithUnverifiedEmail === true || (typeof req.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request)) === true);
-          if (await verifyUserEmails() && await preventLoginWithUnverifiedEmail() && !user.emailVerified) {
-            throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+
+          // If request doesn't use master or maintenance key with ignoring email verification
+          if (!((req.auth.isMaster || req.auth.isMaintenance) && ignoreEmailVerification)) {
+
+            // Get verification conditions which can be booleans or functions; the purpose of this async/await
+            // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
+            // conditional statement below, as a developer may decide to execute expensive operations in them
+            const verifyUserEmails = async () => req.config.verifyUserEmails === true || (typeof req.config.verifyUserEmails === 'function' && await Promise.resolve(req.config.verifyUserEmails(request)) === true);
+            const preventLoginWithUnverifiedEmail = async () => req.config.preventLoginWithUnverifiedEmail === true || (typeof req.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request)) === true);
+            if (await verifyUserEmails() && await preventLoginWithUnverifiedEmail() && !user.emailVerified) {
+              throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+            }
           }
 
           this._sanitizeAuthData(user);
@@ -656,6 +661,9 @@ export class UsersRouter extends ClassesRouter {
       return this.handleVerificationEmailRequest(req);
     });
     this.route('GET', '/verifyPassword', req => {
+      return this.handleVerifyPassword(req);
+    });
+    this.route('POST', '/verifyPassword', req => {
       return this.handleVerifyPassword(req);
     });
     this.route('POST', '/challenge', req => {

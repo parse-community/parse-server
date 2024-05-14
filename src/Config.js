@@ -64,6 +64,7 @@ export class Config {
   }
 
   static validateOptions({
+    customPages,
     publicServerURL,
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
@@ -90,6 +91,7 @@ export class Config {
     rateLimit,
     databaseOptions,
     extendSessionOnUse,
+    allowClientClassCreation,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -132,6 +134,16 @@ export class Config {
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
+    this.validateCustomPages(customPages);
+    this.validateAllowClientClassCreation(allowClientClassCreation);
+  }
+
+  static validateCustomPages(customPages) {
+    if (!customPages) return;
+
+    if (Object.prototype.toString.call(customPages) !== '[object Object]') {
+      throw Error('Parse Server option customPages must be an object.');
+    }
   }
 
   static validateControllers({
@@ -171,6 +183,12 @@ export class Config {
   static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
+    }
+  }
+
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 
@@ -561,6 +579,7 @@ export class Config {
     if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
       throw `databaseOptions must be an object`;
     }
+
     if (databaseOptions.enableSchemaHooks === undefined) {
       databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
     } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {
