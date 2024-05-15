@@ -35,6 +35,7 @@ process.noDeprecation = true;
 const cache = require('../lib/cache').default;
 const defaults = require('../lib/defaults').default;
 const ParseServer = require('../lib/index').ParseServer;
+const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
@@ -53,7 +54,10 @@ let databaseAdapter;
 let databaseURI;
 // need to bind for mocking mocha
 
-if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
+  databaseAdapter = JSON.parse(process.env.PARSE_SERVER_DATABASE_ADAPTER);
+  databaseAdapter = loadAdapter(databaseAdapter);
+} else if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI;
   databaseAdapter = new PostgresStorageAdapter({
     uri: databaseURI,
