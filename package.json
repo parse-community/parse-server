@@ -45,7 +45,7 @@
     "ldapjs": "3.0.7",
     "lodash": "4.17.21",
     "lru-cache": "10.1.0",
-    "mime": "3.0.0",
+    "mime": "4.0.3",
     "mongodb": "5.9.0",
     "mustache": "4.2.0",
     "otpauth": "9.2.2",
