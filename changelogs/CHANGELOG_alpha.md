@@ -1,3 +1,10 @@
+# [7.1.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.6...7.1.0-alpha.7) (2024-05-16)
+
+
+### Bug Fixes
+
+* Facebook Limited Login not working due to incorrect domain in JWT validation ([#9122](https://github.com/parse-community/parse-server/issues/9122)) ([9d0bd2b](https://github.com/parse-community/parse-server/commit/9d0bd2badd6e5f7429d1af00b118225752e5d86a))
+
 # [7.1.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.5...7.1.0-alpha.6) (2024-04-14)
 
 
