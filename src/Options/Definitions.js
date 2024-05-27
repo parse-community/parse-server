@@ -259,7 +259,8 @@ module.exports.ParseServerOptions = {
   },
   extendSessionOnUse: {
     env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
-    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    help:
+      "Whether Parse Server should automatically extend a valid session by the sessionLength. In order to reduce the number of session updates in the database, a session will only be extended when a request is received after at least half of the current session's lifetime has passed.",
     action: parsers.booleanParser,
     default: false,
   },
