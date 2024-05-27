@@ -71,15 +71,7 @@ function nobody(config) {
  * Checks whether session should be updated based on last update time & session length.
  */
 function shouldUpdateSessionExpiry(config, session) {
-  let resetAfter = 60;
-  if (config.sessionLength > 86400) {
-    resetAfter = 86400; // Every 24 hours
-  } else if (config.sessionLength > 3600) {
-    resetAfter = 3600; // 1 hour
-  } else {
-    resetAfter = 60; // Every minute
-  }
-
+  const resetAfter = config.sessionLength / 2;
   const lastUpdated = new Date(session?.updatedAt);
   const skipRange = new Date();
   skipRange.setTime(skipRange.getTime() - resetAfter * 1000);

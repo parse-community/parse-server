@@ -228,7 +228,7 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
-  /* Whether Parse Server should automatically extend a valid session by the sessionLength
+  /* Whether Parse Server should automatically extend a valid session by the sessionLength. The session will be extended when a request is received after half of the session's lifetime has passed.
   :DEFAULT: false */
   extendSessionOnUse: ?boolean;
   /* Default value for limit option on queries, defaults to `100`.
