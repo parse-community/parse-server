@@ -4,12 +4,13 @@ const moment = require('moment');
 
 describe('Test Custom ObjectId', () => {
   it('object not found ', async () => {
-    Parse.initialize('debug_appid', 'debug_key', 'debug_masterKey');
-    Parse.serverURL = 'http://localhost:1337/parse';
+    await reconfigureServer({
+      allowCustomObjectId: true,
+    })
 
     const body = {
       name: 'SaveAudio',
-      data: '{"__after":"1716788669509,2cf6e3698932972402fa3ca2405b437dc3ac727a","isDeleted":false,"name":"好的呢，宝宝","duration":2,"url":"http://file2.i7play.com/FdD9KwF4xNgBHTiGcJByMNs6P470XNFp/20240405195209.mp3","user":{"__type":"Pointer","className":"_User","objectId":"65de1d08caa7af401d105a56"},"pack":{"__type":"Pointer","className":"SaveAudioPack","objectId":"65e9fcec4567a26864d47d2b"},"objectId":"66541dbdffead844f1339e3c","createdAt":"2024-05-27T05:44:29.504Z","updatedAt":"2024-05-27T05:44:29.504Z"}',
+      data: '{"__after":"1716788669509,2cf6e3698932972402fa3ca2405b437dc3ac727a","isDeleted":false,"name":"好的呢，宝宝","duration":2,"url":"http://file2.xxx.com/FdD9KwF4xNgBHTiGcJByMNs6P470XNFp/20240405195209.mp3","user":{"__type":"Pointer","className":"_User","objectId":"65de1d08caa7af401d105a56"},"pack":{"__type":"Pointer","className":"SaveAudioPack","objectId":"65e9fcec4567a26864d47d2b"},"objectId":"66541dbdffead844f1339e3c","createdAt":"2024-05-27T05:44:29.504Z","updatedAt":"2024-05-27T05:44:29.504Z"}',
     };
     const name = body.name;
     const data = JSON.parse(body.data);
