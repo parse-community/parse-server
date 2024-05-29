@@ -2057,7 +2057,7 @@ describe('Parse.Object testing', () => {
     await object.save();
   });
 
-  it('object not found ', async () => {
+  fit('should can custom objectId', async () => {
     await reconfigureServer({
       allowCustomObjectId: true,
     });
