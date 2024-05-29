@@ -12,6 +12,7 @@
 // single-instance mode and we don't want these tests to run in
 // single-instance mode.
 
+const Parse = require('parse/node');
 describe('Parse.Object testing', () => {
   it('create', function (done) {
     create({ test: 'test' }, function (model) {
@@ -2054,5 +2055,32 @@ describe('Parse.Object testing', () => {
 
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
+  });
+
+  it('object not found ', async () => {
+    await reconfigureServer({
+      allowCustomObjectId: true,
+    });
+
+    const body = {
+      name: 'SaveAudio',
+      data: '{"objectId":"66541dbdffead844f1339e3c","createdAt":"2024-05-27T05:44:29.504Z","updatedAt":"2024-05-27T05:44:29.504Z"}',
+    };
+
+    const name = body.name;
+    const data = JSON.parse(body.data);
+
+    const testObject = new Parse.Object(name);
+    testObject.id = data.objectId;
+
+    const entries = Object.entries(data);
+    for (let i = 0; i < entries.length; i++) {
+      const key = entries[i][0];
+      const value = entries[i][1];
+      testObject.set(key, value);
+    }
+
+    console.log(testObject.toJSON());
+    await testObject.save(null, { useMasterKey: true });
   });
 });
