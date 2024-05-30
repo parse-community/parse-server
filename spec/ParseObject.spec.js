@@ -12,7 +12,6 @@
 // single-instance mode and we don't want these tests to run in
 // single-instance mode.
 
-const Parse = require('parse/node');
 describe('Parse.Object testing', () => {
   it('create', function (done) {
     create({ test: 'test' }, function (model) {
@@ -2061,6 +2060,8 @@ describe('Parse.Object testing', () => {
     await reconfigureServer({
       allowCustomObjectId: true,
     });
+
+    Parse.allowCustomObjectId = true;
 
     const body = {
       name: 'SaveAudio',
