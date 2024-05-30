@@ -3,7 +3,10 @@
 ############################################################
 FROM node:lts-alpine AS build
 
-RUN apk --no-cache add git
+RUN apk --no-cache add git \
+   python3 \
+   build-base
+
 WORKDIR /tmp
 
 # Copy package.json first to benefit from layer caching
