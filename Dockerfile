@@ -3,9 +3,10 @@
 ############################################################
 FROM node:lts-alpine AS build
 
-RUN apk --no-cache add git \
-   python3 \
-   build-base
+RUN apk --no-cache add \
+   build-base \
+   git \
+   python3
 
 WORKDIR /tmp
 
