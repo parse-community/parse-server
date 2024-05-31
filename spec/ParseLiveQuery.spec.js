@@ -1294,6 +1294,8 @@ describe('ParseLiveQuery', function () {
     const object1 = new TestObject();
     object1.set('foo', 'bar');
     await object1.save();
+
+    await new Promise(resolve => setTimeout(resolve, 100));
     expect(createSpy).toHaveBeenCalledTimes(1);
   });
 });
