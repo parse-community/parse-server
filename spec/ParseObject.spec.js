@@ -2056,32 +2056,17 @@ describe('Parse.Object testing', () => {
     await object.save();
   });
 
-  fit('should can custom objectId', async () => {
+  fit('should can custom objectId with parse server api', async () => {
     await reconfigureServer({
       allowCustomObjectId: true,
     });
-
+    //must set allowCustomObjectId to true
     Parse.allowCustomObjectId = true;
 
-    const body = {
-      name: 'SaveAudio',
-      data: '{"objectId":"66541dbdffead844f1339e3c","createdAt":"2024-05-27T05:44:29.504Z","updatedAt":"2024-05-27T05:44:29.504Z"}',
-    };
-
-    const name = body.name;
-    const data = JSON.parse(body.data);
-
-    const testObject = new Parse.Object(name);
-    testObject.id = data.objectId;
-
-    const entries = Object.entries(data);
-    for (let i = 0; i < entries.length; i++) {
-      const key = entries[i][0];
-      const value = entries[i][1];
-      testObject.set(key, value);
-    }
-
-    console.log(testObject.toJSON());
-    await testObject.save(null, { useMasterKey: true });
+    const customId = `${Date.now()}`;
+    const testObject = new Parse.Object("TestObject");
+    testObject.id = customId;
+    const res = await testObject.save(null, { useMasterKey: true });
+    expect(res.id).toEqual(customId);
   });
 });
