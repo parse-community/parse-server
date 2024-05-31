@@ -2060,7 +2060,6 @@ describe('Parse.Object testing', () => {
     await reconfigureServer({
       allowCustomObjectId: true,
     });
-    //must set allowCustomObjectId to true
     Parse.allowCustomObjectId = true;
 
     const customId = `${Date.now()}`;
