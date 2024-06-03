@@ -45,6 +45,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
+import OptionsDefinitions from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -59,6 +60,58 @@ class ParseServer {
   constructor(options: ParseServerOptions) {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
+
+    const interfaces = JSON.parse(JSON.stringify(OptionsDefinitions));
+
+    function getValidObject(root) {
+      const result = {};
+      for (const key in root) {
+        if (Object.prototype.hasOwnProperty.call(root[key], 'type')) {
+          if (root[key].type.endsWith('[]')) {
+            result[key] = [getValidObject(interfaces[root[key].type.slice(0, -2)])];
+          } else {
+            result[key] = getValidObject(interfaces[root[key].type]);
+          }
+        } else {
+          result[key] = '';
+        }
+      }
+      return result;
+    }
+
+    const optionsBlueprint = getValidObject(interfaces['ParseServerOptions']);
+
+    function validateKeyNames(original, ref, name = '') {
+      let result = [];
+      const prefix = name + (name !== '' ? '.' : '');
+      for (const key in original) {
+        if (!Object.prototype.hasOwnProperty.call(ref, key)) {
+          result.push(prefix + key);
+        } else {
+          if (ref[key] === '') continue;
+          let res = [];
+          if (Array.isArray(original[key]) && Array.isArray(ref[key])) {
+            const type = ref[key][0];
+            original[key].forEach((item, idx) => {
+              if (typeof item === 'object' && item !== null) {
+                res = res.concat(validateKeyNames(item, type, prefix + key + `[${idx}]`));
+              }
+            });
+          } else if (typeof original[key] === 'object' && typeof ref[key] === 'object') {
+            res = validateKeyNames(original[key], ref[key], prefix + key);
+          }
+          result = result.concat(res);
+        }
+      }
+      return result;
+    }
+
+    const diff = validateKeyNames(options, optionsBlueprint);
+    if (diff.length > 0) {
+      const logger = logging.logger;
+      logger.error(`Invalid Option Keys Found: ${diff.join(', ')}`);
+    }
+
     // Set option defaults
     injectDefaults(options);
     const {
@@ -70,9 +123,9 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
+
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
@@ -94,10 +147,10 @@ class ParseServer {
       const {
         databaseController,
         hooksController,
+        cacheController,
         cloud,
         security,
         schema,
-        cacheAdapter,
         liveQueryController,
       } = this.config;
       try {
@@ -112,8 +165,11 @@ class ParseServer {
       if (schema) {
         startupPromises.push(new DefinedSchemas(schema, this.config).execute());
       }
-      if (cacheAdapter?.connect && typeof cacheAdapter.connect === 'function') {
-        startupPromises.push(cacheAdapter.connect());
+      if (
+        cacheController.adapter?.connect &&
+        typeof cacheController.adapter.connect === 'function'
+      ) {
+        startupPromises.push(cacheController.adapter.connect());
       }
       startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);

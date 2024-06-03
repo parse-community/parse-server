@@ -15,6 +15,7 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.js';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -220,11 +221,6 @@ const DATE = new GraphQLScalarType({
 
     throw new TypeValidationError(ast.kind, 'Date');
   },
-});
-
-const GraphQLUpload = new GraphQLScalarType({
-  name: 'Upload',
-  description: 'The Upload scalar type represents a file upload.',
 });
 
 const BYTES = new GraphQLScalarType({

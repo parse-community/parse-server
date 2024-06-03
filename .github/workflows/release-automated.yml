@@ -17,7 +17,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 18.19.1
+          node-version: 18.20.0
           registry-url: https://registry.npmjs.org/
       - name: Cache Node.js modules
         uses: actions/cache@v4
@@ -42,7 +42,7 @@ jobs:
     env:
       REGISTRY: docker.io
       IMAGE_NAME: parseplatform/parse-server
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -78,7 +78,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          platforms: linux/amd64, linux/arm/v6, linux/arm/v7, linux/arm64/v8
+          platforms: linux/amd64, linux/arm64/v8
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -93,7 +93,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.19.1
+          node-version: 18.20.0
       - name: Cache Node.js modules
         uses: actions/cache@v4
         with:

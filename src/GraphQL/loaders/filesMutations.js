@@ -1,33 +1,61 @@
 import { GraphQLNonNull } from 'graphql';
+import { request } from 'http';
+import { getExtension } from 'mime';
 import { mutationWithClientMutationId } from 'graphql-relay';
 import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import logger from '../../logger';
 
+// Handle GraphQL file upload and proxy file upload to GraphQL server url specified in config;
+// `createFile` is not directly called by Parse Server to leverage standard file upload mechanism
 const handleUpload = async (upload, config) => {
-  const data = Buffer.from(await upload.arrayBuffer());
-  const fileName = upload.name;
-  const type = upload.type;
-
-  if (!data || !data.length) {
-    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');
-  }
-
-  if (fileName.length > 128) {
-    throw new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.');
-  }
-
-  if (!fileName.match(/^[_a-zA-Z0-9][a-zA-Z0-9@\.\ ~_-]*$/)) {
-    throw new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename contains invalid characters.');
-  }
-
+  const { createReadStream, filename, mimetype } = await upload;
+  const headers = { ...config.headers };
+  delete headers['accept-encoding'];
+  delete headers['accept'];
+  delete headers['connection'];
+  delete headers['host'];
+  delete headers['content-length'];
+  const stream = createReadStream();
   try {
+    const ext = getExtension(mimetype);
+    const fullFileName = filename.endsWith(`.${ext}`) ? filename : `${filename}.${ext}`;
+    const serverUrl = new URL(config.serverURL);
+    const fileInfo = await new Promise((resolve, reject) => {
+      const req = request(
+        {
+          hostname: serverUrl.hostname,
+          port: serverUrl.port,
+          path: `${serverUrl.pathname}/files/${fullFileName}`,
+          method: 'POST',
+          headers,
+        },
+        res => {
+          let data = '';
+          res.on('data', chunk => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              reject(new Parse.Error(Parse.error, data));
+            }
+          });
+        }
+      );
+      stream.pipe(req);
+      stream.on('end', () => {
+        req.end();
+      });
+    });
     return {
-      fileInfo: await config.filesController.createFile(config, fileName, data, type),
+      fileInfo,
     };
   } catch (e) {
+    stream.destroy();
     logger.error('Error creating a file: ', e);
-    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `Could not store file: ${fileName}.`);
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `Could not store file: ${filename}.`);
   }
 };
 

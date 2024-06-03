@@ -1,3 +1,164 @@
+# [7.1.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.8...7.1.0-alpha.9) (2024-05-27)
+
+
+### Bug Fixes
+
+* Parse Server option `extendSessionOnUse` not working for session lengths < 24 hours ([#9113](https://github.com/parse-community/parse-server/issues/9113)) ([0a054e6](https://github.com/parse-community/parse-server/commit/0a054e6b541fd5ab470bf025665f5f7d2acedaa0))
+
+# [7.1.0-alpha.8](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.7...7.1.0-alpha.8) (2024-05-16)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 6.2.0 ([#9127](https://github.com/parse-community/parse-server/issues/9127)) ([ca20496](https://github.com/parse-community/parse-server/commit/ca20496f28e5ec1294a7a23c8559df82b79b2a04))
+
+# [7.1.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.6...7.1.0-alpha.7) (2024-05-16)
+
+
+### Bug Fixes
+
+* Facebook Limited Login not working due to incorrect domain in JWT validation ([#9122](https://github.com/parse-community/parse-server/issues/9122)) ([9d0bd2b](https://github.com/parse-community/parse-server/commit/9d0bd2badd6e5f7429d1af00b118225752e5d86a))
+
+# [7.1.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.5...7.1.0-alpha.6) (2024-04-14)
+
+
+### Bug Fixes
+
+* `Parse.Cloud.startJob` and `Parse.Push.send` not returning status ID when setting Parse Server option `directAccess: true` ([#8766](https://github.com/parse-community/parse-server/issues/8766)) ([5b0efb2](https://github.com/parse-community/parse-server/commit/5b0efb22efe94c47f243cf8b1e6407ed5c5a67d3))
+
+# [7.1.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.4...7.1.0-alpha.5) (2024-04-07)
+
+
+### Features
+
+* Prevent Parse Server start in case of unknown option in server configuration ([#8987](https://github.com/parse-community/parse-server/issues/8987)) ([8758e6a](https://github.com/parse-community/parse-server/commit/8758e6abb9dbb68757bddcbd332ad25100c24a0e))
+
+# [7.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.3...7.1.0-alpha.4) (2024-03-31)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 6.0.0 ([#9066](https://github.com/parse-community/parse-server/issues/9066)) ([18bdbf8](https://github.com/parse-community/parse-server/commit/18bdbf89c53a57648891ef582614ba7c2941e587))
+
+# [7.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.2...7.1.0-alpha.3) (2024-03-24)
+
+
+### Bug Fixes
+
+* Rate limiting can fail when using Parse Server option `rateLimit.redisUrl` with clusters ([#8632](https://github.com/parse-community/parse-server/issues/8632)) ([c277739](https://github.com/parse-community/parse-server/commit/c27773962399f8e27691e3b8087e7e1d59516efd))
+
+# [7.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.1...7.1.0-alpha.2) (2024-03-24)
+
+
+### Features
+
+* Add server security check status `security.enableCheck` to Features Router ([#8679](https://github.com/parse-community/parse-server/issues/8679)) ([b07ec15](https://github.com/parse-community/parse-server/commit/b07ec153825882e97cc48dc84072c7f549f3238b))
+
+# [7.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.0.0...7.1.0-alpha.1) (2024-03-23)
+
+
+### Bug Fixes
+
+* `Required` option not handled correctly for special fields (File, GeoPoint, Polygon) on GraphQL API mutations ([#8915](https://github.com/parse-community/parse-server/issues/8915)) ([907ad42](https://github.com/parse-community/parse-server/commit/907ad4267c228d26cfcefe7848b30ce85ba7ff8f))
+
+### Features
+
+* Add `silent` log level for Cloud Code ([#8803](https://github.com/parse-community/parse-server/issues/8803)) ([5f81efb](https://github.com/parse-community/parse-server/commit/5f81efb42964c4c2fa8bcafee9446a0122e3ce21))
+
+# [7.0.0-alpha.31](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.30...7.0.0-alpha.31) (2024-03-21)
+
+
+### Features
+
+* Add `silent` log level for Cloud Code ([#8803](https://github.com/parse-community/parse-server/issues/8803)) ([5f81efb](https://github.com/parse-community/parse-server/commit/5f81efb42964c4c2fa8bcafee9446a0122e3ce21))
+
+# [7.0.0-alpha.30](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.29...7.0.0-alpha.30) (2024-03-20)
+
+
+### Bug Fixes
+
+* `Required` option not handled correctly for special fields (File, GeoPoint, Polygon) on GraphQL API mutations ([#8915](https://github.com/parse-community/parse-server/issues/8915)) ([907ad42](https://github.com/parse-community/parse-server/commit/907ad4267c228d26cfcefe7848b30ce85ba7ff8f))
+
+# [7.0.0-alpha.29](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.28...7.0.0-alpha.29) (2024-03-19)
+
+
+### Bug Fixes
+
+* Server crashes on invalid Cloud Function or Cloud Job name; fixes security vulnerability [GHSA-6hh7-46r2-vf29](https://github.com/parse-community/parse-server/security/advisories/GHSA-6hh7-46r2-vf29) ([#9024](https://github.com/parse-community/parse-server/issues/9024)) ([9f6e342](https://github.com/parse-community/parse-server/commit/9f6e3429d3b326cf4e2994733c618d08032fac6e))
+
+# [7.0.0-alpha.28](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.27...7.0.0-alpha.28) (2024-03-17)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5 ([#9022](https://github.com/parse-community/parse-server/issues/9022)) ([ad4aa83](https://github.com/parse-community/parse-server/commit/ad4aa83983205a0e27639f6ee6a4a5963b67e4b8))
+
+# [7.0.0-alpha.27](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.26...7.0.0-alpha.27) (2024-03-15)
+
+
+### Bug Fixes
+
+* CacheAdapter does not connect when using a CacheAdapter with a JSON config ([#8633](https://github.com/parse-community/parse-server/issues/8633)) ([720d24e](https://github.com/parse-community/parse-server/commit/720d24e18540da35d50957f17be878316ec30318))
+
+# [7.0.0-alpha.26](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.25...7.0.0-alpha.26) (2024-03-10)
+
+
+### Bug Fixes
+
+* Parse Server option `fileExtensions` default value rejects file extensions that are less than 3 or more than 4 characters long ([#8699](https://github.com/parse-community/parse-server/issues/8699)) ([2760381](https://github.com/parse-community/parse-server/commit/276038118377c2b22381bcd8d30337203822121b))
+
+# [7.0.0-alpha.25](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.24...7.0.0-alpha.25) (2024-03-05)
+
+
+### Features
+
+* Deprecation DEPPS5: Config option `allowClientClassCreation` defaults to `false` ([#8849](https://github.com/parse-community/parse-server/issues/8849)) ([29624e0](https://github.com/parse-community/parse-server/commit/29624e0fae17161cd412ae58d35a195cfa286cad))
+
+
+### BREAKING CHANGES
+
+* The Parse Server option `allowClientClassCreation` defaults to `false`. ([29624e0](29624e0))
+
+# [7.0.0-alpha.24](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.23...7.0.0-alpha.24) (2024-03-05)
+
+
+### Bug Fixes
+
+* Docker version releases by removing arm/v6 and arm/v7 support ([#8976](https://github.com/parse-community/parse-server/issues/8976)) ([1f62dd0](https://github.com/parse-community/parse-server/commit/1f62dd0f4e107b22a387692558a042ee26ce8703))
+
+# [7.0.0-alpha.23](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.22...7.0.0-alpha.23) (2024-03-03)
+
+
+### Features
+
+* Add support for MongoDB query comment ([#8928](https://github.com/parse-community/parse-server/issues/8928)) ([2170962](https://github.com/parse-community/parse-server/commit/2170962a50fa353ed85eda3f11dce7ee3647b087))
+
+# [7.0.0-alpha.22](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.21...7.0.0-alpha.22) (2024-03-02)
+
+
+### Features
+
+* Switch GraphQL server from Yoga v2 to Apollo v4 ([#8959](https://github.com/parse-community/parse-server/issues/8959)) ([105ae7c](https://github.com/parse-community/parse-server/commit/105ae7c8a57d5a650b243174a80c26bf6db16e28))
+
+# [7.0.0-alpha.21](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.20...7.0.0-alpha.21) (2024-03-01)
+
+
+### Bug Fixes
+
+* Deny request if master key is not set in Parse Server option `masterKeyIps` regardless of ACL and CLP ([#8957](https://github.com/parse-community/parse-server/issues/8957)) ([a7b5b38](https://github.com/parse-community/parse-server/commit/a7b5b38418cbed9be3f4a7665f25b97f592663e1))
+
+
+### BREAKING CHANGES
+
+* A request using the master key will now be rejected as unauthorized if the IP from which the request originates is not set in the Parse Server option `masterKeyIps`, even if the request does not require the master key permission, for example for a public object in a public class class. ([a7b5b38](a7b5b38))
+
+# [7.0.0-alpha.20](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.19...7.0.0-alpha.20) (2024-03-01)
+
+
+### Bug Fixes
+
+* Improve PostgreSQL injection detection; fixes security vulnerability [GHSA-6927-3vr9-fxf2](https://github.com/parse-community/parse-server/security/advisories/GHSA-6927-3vr9-fxf2) which affects Parse Server deployments using a Postgres database ([#8961](https://github.com/parse-community/parse-server/issues/8961)) ([cbefe77](https://github.com/parse-community/parse-server/commit/cbefe770a7260b54748a058b8a7389937dc35833))
+
 # [7.0.0-alpha.19](https://github.com/parse-community/parse-server/compare/7.0.0-alpha.18...7.0.0-alpha.19) (2024-02-15)
 
 

@@ -67,6 +67,17 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
+/**
+ * Checks whether session should be updated based on last update time & session length.
+ */
+function shouldUpdateSessionExpiry(config, session) {
+  const resetAfter = config.sessionLength / 2;
+  const lastUpdated = new Date(session?.updatedAt);
+  const skipRange = new Date();
+  skipRange.setTime(skipRange.getTime() - resetAfter * 1000);
+  return lastUpdated <= skipRange;
+}
+
 const throttle = {};
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
@@ -88,10 +99,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
         const { results } = await query.execute();
         session = results[0];
       }
-      const lastUpdated = new Date(session?.updatedAt);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (lastUpdated > yesterday || !session) {
+      if (!shouldUpdateSessionExpiry(config, session) || !session) {
         return;
       }
       const expiresAt = config.generateSessionExpiresAt();
@@ -579,6 +587,7 @@ module.exports = {
   maintenance,
   nobody,
   readOnly,
+  shouldUpdateSessionExpiry,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
   findUsersWithAuthData,

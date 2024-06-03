@@ -49,7 +49,9 @@ describe('ParseGraphQLServer', () => {
   let parseGraphQLServer;
 
   beforeEach(async () => {
-    parseServer = await global.reconfigureServer({});
+    parseServer = await global.reconfigureServer({
+      maxUploadSize: '1kb',
+    });
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
@@ -122,15 +124,16 @@ describe('ParseGraphQLServer', () => {
       info: new Object(),
       config: new Object(),
       auth: new Object(),
+      get: () => {},
+    };
+    const res = {
+      set: () => {},
     };
 
     it("should return schema and context with req's info, config and auth", async () => {
       const options = await parseGraphQLServer._getGraphQLOptions();
-      expect(options.multipart).toEqual({
-        fileSize: 20971520,
-      });
       expect(options.schema).toEqual(parseGraphQLServer.parseGraphQLSchema.graphQLSchema);
-      const contextResponse = options.context({ req });
+      const contextResponse = await options.context({ req, res });
       expect(contextResponse.info).toEqual(req.info);
       expect(contextResponse.config).toEqual(req.config);
       expect(contextResponse.auth).toEqual(req.auth);
@@ -9340,7 +9343,6 @@ describe('ParseGraphQLServer', () => {
             expect(res.status).toEqual(200);
 
             const result = JSON.parse(await res.text());
-
             expect(result.data.createFile.fileInfo.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
@@ -9546,6 +9548,71 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should support files on required file', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+            const schemaController = await parseServer.config.databaseController.loadSchema();
+            await schemaController.addClassIfNotExists('SomeClassWithRequiredFile', {
+              someField: { type: 'File', required: true },
+            });
+            await resetGraphQLCache();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                  mutation CreateSomeObject(
+                    $fields: CreateSomeClassWithRequiredFileFieldsInput
+                  ) {
+                    createSomeClassWithRequiredFile(
+                      input: { fields: $fields }
+                    ) {
+                      someClassWithRequiredFile {
+                        id
+                        someField {
+                          name
+                          url
+                        }
+                      }
+                    }
+                  }
+                  `,
+                variables: {
+                  fields: {
+                    someField: { upload: null },
+                  },
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.fields.someField.upload'] }));
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
+            });
+
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+            expect(res.status).toEqual(200);
+            const resText = await res.text();
+            const result = JSON.parse(resText);
+            expect(
+              result.data.createSomeClassWithRequiredFile.someClassWithRequiredFile.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClassWithRequiredFile.someClassWithRequiredFile.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
         it('should support file upload for on fly creation through pointer and relation', async () => {
           parseServer = await global.reconfigureServer({
             publicServerURL: 'http://localhost:13377/parse',
@@ -9654,9 +9721,61 @@ describe('ParseGraphQLServer', () => {
           ).toEqual(jasmine.stringMatching(/_someRelationField.txt$/));
         });
 
-        it('should not upload if file is too large', async () => {
-          parseGraphQLServer.parseServer.config.maxUploadSize = '1kb';
+        it('should support files and add extension from mimetype', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
 
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                    mutation CreateFile($input: CreateFileInput!) {
+                      createFile(input: $input) {
+                        fileInfo {
+                          name
+                          url
+                        }
+                      }
+                    }
+                  `,
+                variables: {
+                  input: {
+                    upload: null,
+                  },
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
+            body.append('1', 'My File Content', {
+              // No extension, the system should add it from mimetype
+              filename: 'myFileName',
+              contentType: 'text/plain',
+            });
+
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+
+            expect(res.status).toEqual(200);
+
+            const result = JSON.parse(await res.text());
+            expect(result.data.createFile.fileInfo.name).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+            expect(result.data.createFile.fileInfo.url).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should not upload if file is too large', async () => {
           const body = new FormData();
           body.append(
             'operations',
@@ -9681,6 +9800,7 @@ describe('ParseGraphQLServer', () => {
           body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
           body.append(
             '1',
+            // In this test file parse server is setup with 1kb limit
             Buffer.alloc(parseGraphQLServer._transformMaxUploadSizeToBytes('2kb'), 1),
             {
               filename: 'myFileName.txt',
@@ -9695,8 +9815,10 @@ describe('ParseGraphQLServer', () => {
           });
 
           const result = JSON.parse(await res.text());
-          expect(res.status).toEqual(500);
-          expect(result.errors[0].message).toEqual('File size limit exceeded: 1024 bytes');
+          expect(res.status).toEqual(200);
+          expect(result.errors[0].message).toEqual(
+            'File truncated as it exceeds the 1024 byte size limit.'
+          );
         });
 
         it('should support object values', async () => {
