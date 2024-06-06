@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  parse-server-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5431:5432"
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  parse-server-test-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db  # Different database name for the test database
+    ports:
+      - "5432:5432"  # Assuming that your main or other services are not using this port
+    restart: unless-stopped
+    volumes:
+      - pgtestdata:/var/lib/postgresql/data
+  
+volumes:
+  pgdata:
+  pgtestdata:
