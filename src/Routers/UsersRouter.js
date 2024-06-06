@@ -320,7 +320,7 @@ export class UsersRouter extends ClassesRouter {
   /**
    * This allows master-key clients to create user sessions without access to
    * user credentials. This enables systems that can authenticate access another
-   * way (API key, app administrators) to act on a user's behalf.
+   * way (API key, api administrators) to act on a user's behalf.
    *
    * We create a new session rather than looking for an existing session; we
    * want this to work in situations where the user is logged out on all

@@ -35,7 +35,7 @@ const storageAdapterAllCollections = mongoAdapter => {
         if (collection.namespace.match(/\.system\./)) {
           return false;
         }
-        // TODO: If you have one app with a collection prefix that happens to be a prefix of another
+        // TODO: If you have one api with a collection prefix that happens to be a prefix of another
         // apps prefix, this will go very very badly. We should fix that somehow.
         return collection.collectionName.indexOf(mongoAdapter._collectionPrefix) == 0;
       });

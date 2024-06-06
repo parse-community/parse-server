@@ -53,26 +53,26 @@ check_npm() {
 
 
 echo ''
-echo '                                       
-             `.-://////:-..`            
-         `:/oooooooooooooooo+:.`        
-      `:+oooooooooooooooooooooo+/`      
-     :+ooooooooooooooooooooooooooo/.    
-   .+oooooooooooooo/:.....-:+ooooooo-   
-  .+ooooooooooooo/` .:///:-` -+oooooo:  
- `+ooooooooooooo: `/ooooooo+- `ooooooo- 
- :oooooooooooooo  :ooooooooo+` /oooooo+ 
+echo '
+             `.-://////:-..`
+         `:/oooooooooooooooo+:.`
+      `:+oooooooooooooooooooooo+/`
+     :+ooooooooooooooooooooooooooo/.
+   .+oooooooooooooo/:.....-:+ooooooo-
+  .+ooooooooooooo/` .:///:-` -+oooooo:
+ `+ooooooooooooo: `/ooooooo+- `ooooooo-
+ :oooooooooooooo  :ooooooooo+` /oooooo+
  +ooooooooooooo/  +ooooooooo+  /ooooooo.
  oooooooooooooo+  ooooooooo`  .oooooooo.
  +ooooooooooo+/: `ooooooo`  .:ooooooooo.
- :ooooooo+.`````````````  /+oooooooooo+ 
- `+oooooo- `ooo+ /oooooooooooooooooooo- 
-  .+ooooo/  :/:` -ooooooooooooooooooo:  
-   .+ooooo+:-..-/ooooooooooooooooooo-   
-     :+ooooooooooooooooooooooooooo/.    
-      `:+oooooooooooooooooooooo+/`      
-         `:/oooooooooooooooo+:.`        
-             `.-://////:-..`            
+ :ooooooo+.`````````````  /+oooooooooo+
+ `+oooooo- `ooo+ /oooooooooooooooooooo-
+  .+ooooo/  :/:` -ooooooooooooooooooo:
+   .+ooooo+:-..-/ooooooooooooooooooo-
+     :+ooooooooooooooooooooooooooo/.
+      `:+oooooooooooooooooooooo+/`
+         `:/oooooooooooooooo+:.`
+             `.-://////:-..`
 
               parse-server
 
@@ -153,7 +153,7 @@ cat > ./config.json << EOF
 EOF
 echo "${CHECK} Created config.json"
 
-# Make a proper npm app name
+# Make a proper npm api name
 NPM_APP_NAME=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 cat > ./package.json << EOF
 {

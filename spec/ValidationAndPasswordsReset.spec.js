@@ -315,7 +315,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     await reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
       emailAdapter: emailAdapter,
@@ -616,11 +616,11 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it('receives the app name and user in the adapter', done => {
+  it('receives the api name and user in the adapter', done => {
     let emailSent = false;
     const emailAdapter = {
       sendVerificationEmail: options => {
-        expect(options.appName).toEqual('emailing app');
+        expect(options.appName).toEqual('emailing api');
         expect(options.user.get('email')).toEqual('user@parse.com');
         emailSent = true;
       },
@@ -628,7 +628,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
@@ -655,7 +655,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
@@ -700,7 +700,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it('redirects you to invalid link if you try to verify email incorrectly', done => {
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
@@ -724,7 +724,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it('redirects you to invalid verification link page if you try to validate a nonexistant users email', done => {
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
@@ -748,7 +748,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it('redirects you to link send fail page if you try to resend a link for a nonexistant user', done => {
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
@@ -796,7 +796,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
@@ -832,7 +832,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
@@ -854,7 +854,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
   it('redirects you to invalid link if you try to request password for a nonexistant users email', done => {
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
@@ -934,7 +934,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
@@ -993,7 +993,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
@@ -1060,7 +1060,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     await reconfigureServer({
-      appName: 'emailing app',
+      appName: 'emailing api',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',

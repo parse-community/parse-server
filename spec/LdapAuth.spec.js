@@ -15,7 +15,7 @@ describe('Ldap Auth', () => {
       });
   });
 
-  it('Should return a resolved promise when validating the app id', done => {
+  it('Should return a resolved promise when validating the api id', done => {
     ldap.validateAppId().then(done).catch(done.fail);
   });
 

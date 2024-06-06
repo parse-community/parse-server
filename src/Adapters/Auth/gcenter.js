@@ -6,7 +6,7 @@ const authData = {
   timestamp: 1460981421303,
   signature: 'PoDwf39DCN464B49jJCU0d9Y0J',
   salt: 'saltST==',
-  bundleId: 'com.valid.app'
+  bundleId: 'com.valid.api'
   id: 'playerId',
 };
 */
@@ -164,7 +164,7 @@ async function validateAuthData(authData) {
   return verifySignature(publicKey, authData);
 }
 
-// Returns a promise that fulfills if this app id is valid.
+// Returns a promise that fulfills if this api id is valid.
 async function validateAppId(appIds, authData, options = {}) {
   if (!options.rootCertificateUrl) {
     options.rootCertificateUrl =

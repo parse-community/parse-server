@@ -528,7 +528,7 @@ While the current major version is published on branch `release`, a Long-Term-Su
 The following changes are done in the `alpha` branch, before publishing the last `beta` version that will eventually become the major release. This way the changes trickle naturally through all branches and code consistency is ensured among branches.
 
 - Make sure all [deprecations](https://github.com/parse-community/parse-server/blob/alpha/DEPRECATIONS.md) are reflected in code, old code is removed and the deprecations table is updated.
-- Add the future LTS branch `release-#.x.x` to the branch list in [release.config.js](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
+- Add the future LTS branch `release-#.x.x` to the branch list in [release.config.ts](https://github.com/parse-community/parse-server/blob/alpha/release.config.js) so that the branch will later be recognized for release automation.
 
 ### Publishing Release (forward-merge):
 

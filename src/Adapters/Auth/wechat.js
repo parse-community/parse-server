@@ -14,7 +14,7 @@ function validateAuthData(authData) {
   );
 }
 
-// Returns a promise that fulfills if this app id is valid.
+// Returns a promise that fulfills if this api id is valid.
 function validateAppId() {
   return Promise.resolve();
 }

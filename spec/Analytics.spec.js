@@ -36,7 +36,7 @@ describe('AnalyticsController', () => {
       );
   });
 
-  it('should track a app opened event', done => {
+  it('should track a api opened event', done => {
     spyOn(analyticsAdapter, 'appOpened').and.callThrough();
     reconfigureServer({
       analyticsAdapter,

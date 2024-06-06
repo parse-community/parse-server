@@ -12,7 +12,7 @@ function validateAuthData(authData) {
   });
 }
 
-// Returns a promise that fulfills if this app id is valid.
+// Returns a promise that fulfills if this api id is valid.
 async function validateAppId(appIds, authData) {
   const access_token = authData.access_token;
   if (!Array.isArray(appIds)) {

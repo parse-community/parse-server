@@ -661,7 +661,7 @@ describe('Parse.File testing', () => {
   });
 
   describe('getting files', () => {
-    it('does not crash on file request with invalid app ID', async () => {
+    it('does not crash on file request with invalid api ID', async () => {
       const res1 = await request({
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
       }).catch(e => e);
@@ -685,7 +685,7 @@ describe('Parse.File testing', () => {
       expect(res2.data).toEqual({ status: 'ok' });
     });
 
-    it('does not crash on file metadata request with invalid app ID', async () => {
+    it('does not crash on file metadata request with invalid api ID', async () => {
       const res1 = await request({
         url: `http://localhost:8378/1/files/invalid-id/metadata/invalid-file.txt`,
       });

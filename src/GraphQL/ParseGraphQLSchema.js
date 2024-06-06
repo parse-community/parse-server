@@ -379,7 +379,7 @@ class ParseGraphQLSchema {
 
   /**
    * Gets all classes found by the `schemaController`
-   * minus those filtered out by the app's parseGraphQLConfig.
+   * minus those filtered out by the api's parseGraphQLConfig.
    */
   async _getClassesForSchema(parseGraphQLConfig: ParseGraphQLConfig) {
     const { enabledForClasses, disabledForClasses } = parseGraphQLConfig;

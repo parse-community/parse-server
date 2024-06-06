@@ -687,7 +687,7 @@ const ttl = {
   duration: undefined,
 };
 
-// Stores the entire schema of the app in a weird hybrid format somewhere between
+// Stores the entire schema of the api in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 export default class SchemaController {
   _dbAdapter: StorageAdapter;

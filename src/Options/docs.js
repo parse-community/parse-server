@@ -19,7 +19,7 @@
  * @property {String|String[]} allowOrigin Sets origins for Access-Control-Allow-Origin. This can be a string for a single origin or an array of strings for multiple origins.
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
- * @property {String} appName Sets the app name
+ * @property {String} appName Sets the api name
  * @property {Object} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
  * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
@@ -229,7 +229,7 @@
  * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
- * @property {String[]} fileExtensions Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
+ * @property {String[]} fileExtensions Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your api's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
  */
 
 /**

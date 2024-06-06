@@ -1,0 +1,3114 @@
+{
+  "traceId": "0fa211af61fefed3d082317d00f48963",
+  "testFile": "trace-0.test.ts",
+  "request": {
+    "pathKey": "/parse/classes/:className",
+    "route": "/parse/classes/GameScore",
+    "method": "POST"
+  },
+  "response": {
+    "expected": {
+      "status": 201,
+      "body": "{\"objectId\":\"3W67SXxfyI\",\"createdAt\":\"2024-06-06T23:32:36.602Z\"}",
+      "header": {
+        "x-powered-by": "Express",
+        "access-control-allow-methods": "GET,PUT,POST,DELETE,OPTIONS",
+        "access-control-allow-headers": "X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control",
+        "access-control-expose-headers": "X-Parse-Job-Status-Id, X-Parse-Push-Status-Id",
+        "location": "http://localhost:1337/parse/classes/GameScore/3W67SXxfyI",
+        "content-type": "application/json; charset=utf-8"
+      }
+    },
+    "observed": {
+      "status": 400,
+      "body": "{\"code\":137,\"error\":\"A duplicate value for a field with unique values was provided\"}",
+      "header": {
+        "x-powered-by": "Express",
+        "access-control-allow-methods": "GET,PUT,POST,DELETE,OPTIONS",
+        "access-control-allow-headers": "X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control",
+        "access-control-expose-headers": "X-Parse-Job-Status-Id, X-Parse-Push-Status-Id",
+        "content-type": "application/json; charset=utf-8"
+      }
+    }
+  },
+  "expectedCalls": [
+    {
+      "library": "crypto",
+      "input": {
+        "functionName": "randomUUID",
+        "args": []
+      },
+      "output": "8c51a854-d278-4d2a-818b-11e39c65dc68",
+      "id": "fa86976ad883d261",
+      "timestamp": 1717716754490000,
+      "startup": true
+    },
+    {
+      "library": "crypto",
+      "input": {
+        "functionName": "randomBytes",
+        "args": [
+          10
+        ]
+      },
+      "output": {
+        "type": "Buffer",
+        "data": [
+          55,
+          84,
+          120,
+          183,
+          80,
+          209,
+          173,
+          31,
+          174,
+          8
+        ]
+      },
+      "id": "57759174384523d5",
+      "timestamp": 1717716756604000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754520",
+      "id": "bc891e9d05ecb136",
+      "timestamp": 1717716754520000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754555",
+      "id": "a5ddef8f9d182326",
+      "timestamp": 1717716754555000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754564",
+      "id": "8f98cb40d0301e22",
+      "timestamp": 1717716754564000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754578",
+      "id": "2ce5f864d4e95af9",
+      "timestamp": 1717716754578000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754598",
+      "id": "9ab3a9cec83033c6",
+      "timestamp": 1717716754598000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754599",
+      "id": "edd012ca77e6d23b",
+      "timestamp": 1717716754599000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754601",
+      "id": "3d290649750a8b4d",
+      "timestamp": 1717716754601000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754606",
+      "id": "ccecddeebbafbf8e",
+      "timestamp": 1717716754606000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754609",
+      "id": "10ab177fa5a818c4",
+      "timestamp": 1717716754609000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754611",
+      "id": "e912b6f4c31d5826",
+      "timestamp": 1717716754611000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754612",
+      "id": "6b4df066806788e1",
+      "timestamp": 1717716754612000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754615",
+      "id": "a9bc7c0bf337778b",
+      "timestamp": 1717716754615000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754616",
+      "id": "0cd8675927a4db04",
+      "timestamp": 1717716754616000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754616",
+      "id": "2a6587fc403f4eab",
+      "timestamp": 1717716754616000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754616",
+      "id": "0194c43631b7b8c6",
+      "timestamp": 1717716754616000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754617",
+      "id": "0f16e43f5788149a",
+      "timestamp": 1717716754617000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754618",
+      "id": "024f0eb5bde3d61e",
+      "timestamp": 1717716754618000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754623",
+      "id": "b2d8d39a1b4beabc",
+      "timestamp": 1717716754623000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754627",
+      "id": "43b732a3af732ccc",
+      "timestamp": 1717716754627000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754631",
+      "id": "d0ef64ce75ed3248",
+      "timestamp": 1717716754631000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754633",
+      "id": "0e3127c5257fece0",
+      "timestamp": 1717716754633000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754634",
+      "id": "a9617cfa02b70349",
+      "timestamp": 1717716754634000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754640",
+      "id": "91d98a3766c5071d",
+      "timestamp": 1717716754640000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754642",
+      "id": "4766ca427f85f43f",
+      "timestamp": 1717716754642000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754644",
+      "id": "bfd4a30e33f16de7",
+      "timestamp": 1717716754644000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754644",
+      "id": "2d1f03425c71a685",
+      "timestamp": 1717716754644000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754649",
+      "id": "3fafec68b24d19a0",
+      "timestamp": 1717716754649000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754653",
+      "id": "3674004b770128f4",
+      "timestamp": 1717716754653000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754659",
+      "id": "4c01d1f367b1759e",
+      "timestamp": 1717716754659000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754662",
+      "id": "d542a5fdebc202da",
+      "timestamp": 1717716754662000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754665",
+      "id": "a2c0e082b49ea5fb",
+      "timestamp": 1717716754665000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754666",
+      "id": "396b8a5e20c12b5a",
+      "timestamp": 1717716754666000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754666",
+      "id": "7b02b8c568932666",
+      "timestamp": 1717716754666000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754671",
+      "id": "0f49481a3f2056dd",
+      "timestamp": 1717716754671000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754674",
+      "id": "14bf33e9d6fd620b",
+      "timestamp": 1717716754674000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754676",
+      "id": "ee261b4c04b06cc0",
+      "timestamp": 1717716754676000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754677",
+      "id": "3325403f66e4dcb3",
+      "timestamp": 1717716754677000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754677",
+      "id": "859fad4aed089e39",
+      "timestamp": 1717716754677000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754679",
+      "id": "8fbb2bc5dc71d1ca",
+      "timestamp": 1717716754679000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754679",
+      "id": "c29e40bb8f3b18e7",
+      "timestamp": 1717716754679000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754680",
+      "id": "704bb6c1ef159865",
+      "timestamp": 1717716754680000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754682",
+      "id": "09947165a843db68",
+      "timestamp": 1717716754682000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754691",
+      "id": "eed36c27a16151c6",
+      "timestamp": 1717716754691000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754700",
+      "id": "bf5f6742b4d56f76",
+      "timestamp": 1717716754700000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754702",
+      "id": "e8dd21fb8efa1155",
+      "timestamp": 1717716754702000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754703",
+      "id": "99fb1c877d8cbb67",
+      "timestamp": 1717716754703000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754704",
+      "id": "435820fd854736f8",
+      "timestamp": 1717716754704000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754704",
+      "id": "8b71b5c3b384c092",
+      "timestamp": 1717716754704000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754705",
+      "id": "b8a2576dda70bad9",
+      "timestamp": 1717716754705000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754709",
+      "id": "b4f83c2e5dde7513",
+      "timestamp": 1717716754709000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754710",
+      "id": "2fbc7369db1a8e0e",
+      "timestamp": 1717716754710000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716754714",
+      "id": "d9fa5a264d17a6b3",
+      "timestamp": 1717716754714000,
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "output": "2024-06-06T23:32:36.600Z",
+      "id": "53ef3f074dacb63d",
+      "timestamp": 1717716756600000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716756600",
+      "id": "16025410e877c167",
+      "timestamp": 1717716756600000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "output": "2024-06-06T23:32:36.602Z",
+      "id": "68ab532d85db800a",
+      "timestamp": 1717716756602000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "output": "2024-06-06T23:32:36.606Z",
+      "id": "721ce0aff00cf01c",
+      "timestamp": 1717716756606000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716756607",
+      "id": "9619b028922c0fe8",
+      "timestamp": 1717716756607000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716756611",
+      "id": "777c7387a2fd2818",
+      "timestamp": 1717716756611000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "output": "2024-06-06T23:32:36.612Z",
+      "id": "fb94725c18497282",
+      "timestamp": 1717716756612000,
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "output": "1717716756612",
+      "id": "3b01d5b17d328abc",
+      "timestamp": 1717716756612000,
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "aaf4a44fd9f5567e",
+      "timestamp": 1717716754498000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_SCHEMA\" ( \"className\" varChar(120), \"schema\" jsonb, \"isParseClass\" bool, PRIMARY KEY (\"className\") )",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "fcfa191f65103080",
+      "timestamp": 1717716754515000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "f965ce02e0b59d96",
+      "timestamp": 1717716754538000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "f5537bd9e7052fe5",
+      "timestamp": 1717716754541000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "423694a0f3cdc2ad",
+      "timestamp": 1717716754542000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "038c276431fde183",
+      "timestamp": 1717716754542000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "427242e02efadeba",
+      "timestamp": 1717716754543000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "b3862dbe964e1e16",
+      "timestamp": 1717716754544000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "output": {
+        "type": 2,
+        "value": []
+      },
+      "id": "5aa7dcfe15c1a3b2",
+      "timestamp": 1717716754545000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_Hooks\" (\"functionName\" text,\"className\" text,\"triggerName\" text,\"url\" text)",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "048c6897bb0e1954",
+      "timestamp": 1717716754549000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "e42d87b9267040be",
+      "timestamp": 1717716754558000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "64f118761ccb8550",
+      "timestamp": 1717716754568000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Hooks'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "functionName"
+          },
+          {
+            "column_name": "className"
+          },
+          {
+            "column_name": "triggerName"
+          },
+          {
+            "column_name": "url"
+          }
+        ]
+      },
+      "id": "b5dffda07938c71c",
+      "timestamp": 1717716754583000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_JobStatus\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"source\" text,\"status\" text,\"message\" text,\"params\" jsonb,\"finishedAt\" timestamp with time zone,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "8abf1c688d33adb3",
+      "timestamp": 1717716754590000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_JobSchedule\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"description\" text,\"params\" text,\"startAfter\" text,\"daysOfWeek\" jsonb,\"timeOfDay\" text,\"lastRun\" double precision,\"repeatMinutes\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "586f952e72170dce",
+      "timestamp": 1717716754592000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_PushStatus\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"pushTime\" text,\"source\" text,\"query\" text,\"payload\" text,\"title\" text,\"expiry\" double precision,\"expiration_interval\" double precision,\"status\" text,\"numSent\" double precision,\"numFailed\" double precision,\"pushHash\" text,\"errorMessage\" jsonb,\"sentPerType\" jsonb,\"failedPerType\" jsonb,\"sentPerUTCOffset\" jsonb,\"failedPerUTCOffset\" jsonb,\"count\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "9740df46935759cf",
+      "timestamp": 1717716754594000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_Audience\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"name\" text,\"query\" text,\"lastUsed\" timestamp with time zone,\"timesUsed\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "0172d4da76f64128",
+      "timestamp": 1717716754595000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_GraphQLConfig\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"config\" jsonb)",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "a653b8a6363e3da9",
+      "timestamp": 1717716754596000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "aa64ebf1a46e038c",
+      "timestamp": 1717716754599000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "b9dccc47f0611e7c",
+      "timestamp": 1717716754600000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "d740e13ec9f568d7",
+      "timestamp": 1717716754602000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_GlobalConfig\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"params\" jsonb,\"masterKeyOnly\" jsonb)",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "2136a19fcb4745b5",
+      "timestamp": 1717716754603000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_Idempotency\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"reqId\" text,\"expire\" timestamp with time zone,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "e21ed7dfbd946328",
+      "timestamp": 1717716754605000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "5bacf2595dd03595",
+      "timestamp": 1717716754607000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "4fa8ebf513042ff2",
+      "timestamp": 1717716754610000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "1a4b1260e16ec470",
+      "timestamp": 1717716754612000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "4625575a4adb9519",
+      "timestamp": 1717716754613000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "1879fa8559522f64",
+      "timestamp": 1717716754616000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "3b44ee168dd4ad0e",
+      "timestamp": 1717716754616000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "b426df3eb0b7c246",
+      "timestamp": 1717716754616000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "becccfa95aa25f48",
+      "timestamp": 1717716754616000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_PushStatus'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "numFailed"
+          },
+          {
+            "column_name": "createdAt"
+          },
+          {
+            "column_name": "errorMessage"
+          },
+          {
+            "column_name": "sentPerType"
+          },
+          {
+            "column_name": "failedPerType"
+          },
+          {
+            "column_name": "sentPerUTCOffset"
+          },
+          {
+            "column_name": "failedPerUTCOffset"
+          },
+          {
+            "column_name": "count"
+          },
+          {
+            "column_name": "expiry"
+          },
+          {
+            "column_name": "expiration_interval"
+          },
+          {
+            "column_name": "updatedAt"
+          },
+          {
+            "column_name": "numSent"
+          },
+          {
+            "column_name": "_wperm"
+          },
+          {
+            "column_name": "pushTime"
+          },
+          {
+            "column_name": "source"
+          },
+          {
+            "column_name": "query"
+          },
+          {
+            "column_name": "payload"
+          },
+          {
+            "column_name": "title"
+          },
+          {
+            "column_name": "status"
+          },
+          {
+            "column_name": "pushHash"
+          },
+          {
+            "column_name": "_rperm"
+          },
+          {
+            "column_name": "objectId"
+          }
+        ]
+      },
+      "id": "39334d3ff7a4ab8f",
+      "timestamp": 1717716754622000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Audience'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "lastUsed"
+          },
+          {
+            "column_name": "timesUsed"
+          },
+          {
+            "column_name": "createdAt"
+          },
+          {
+            "column_name": "updatedAt"
+          },
+          {
+            "column_name": "objectId"
+          },
+          {
+            "column_name": "_wperm"
+          },
+          {
+            "column_name": "name"
+          },
+          {
+            "column_name": "query"
+          },
+          {
+            "column_name": "_rperm"
+          }
+        ]
+      },
+      "id": "4115228322254b68",
+      "timestamp": 1717716754626000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_JobStatus'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "params"
+          },
+          {
+            "column_name": "finishedAt"
+          },
+          {
+            "column_name": "createdAt"
+          },
+          {
+            "column_name": "updatedAt"
+          },
+          {
+            "column_name": "message"
+          },
+          {
+            "column_name": "_rperm"
+          },
+          {
+            "column_name": "objectId"
+          },
+          {
+            "column_name": "_wperm"
+          },
+          {
+            "column_name": "jobName"
+          },
+          {
+            "column_name": "source"
+          },
+          {
+            "column_name": "status"
+          }
+        ]
+      },
+      "id": "b79dd93e4355b795",
+      "timestamp": 1717716754630000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "3be6173dca6ac908",
+      "timestamp": 1717716754631000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "7d2394acbce63dc9",
+      "timestamp": 1717716754634000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_JobSchedule'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "createdAt"
+          },
+          {
+            "column_name": "lastRun"
+          },
+          {
+            "column_name": "repeatMinutes"
+          },
+          {
+            "column_name": "updatedAt"
+          },
+          {
+            "column_name": "daysOfWeek"
+          },
+          {
+            "column_name": "timeOfDay"
+          },
+          {
+            "column_name": "_rperm"
+          },
+          {
+            "column_name": "objectId"
+          },
+          {
+            "column_name": "_wperm"
+          },
+          {
+            "column_name": "jobName"
+          },
+          {
+            "column_name": "description"
+          },
+          {
+            "column_name": "params"
+          },
+          {
+            "column_name": "startAfter"
+          }
+        ]
+      },
+      "id": "09247ceecf4647a6",
+      "timestamp": 1717716754638000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "3628c3820f55a6bf",
+      "timestamp": 1717716754640000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GlobalConfig'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "params"
+          },
+          {
+            "column_name": "masterKeyOnly"
+          },
+          {
+            "column_name": "objectId"
+          }
+        ]
+      },
+      "id": "56ef39c8c2940853",
+      "timestamp": 1717716754647000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Idempotency'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "expire"
+          },
+          {
+            "column_name": "updatedAt"
+          },
+          {
+            "column_name": "createdAt"
+          },
+          {
+            "column_name": "_wperm"
+          },
+          {
+            "column_name": "reqId"
+          },
+          {
+            "column_name": "objectId"
+          },
+          {
+            "column_name": "_rperm"
+          }
+        ]
+      },
+      "id": "4a11ee9b80b524c3",
+      "timestamp": 1717716754651000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GraphQLConfig'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "config"
+          },
+          {
+            "column_name": "objectId"
+          }
+        ]
+      },
+      "id": "c28711a2af04014f",
+      "timestamp": 1717716754657000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "bc0bbca32c553197",
+      "timestamp": 1717716754669000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION json_object_set_key( \"json\" jsonb, key_to_set TEXT, value_to_set anyelement ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT concat('{', string_agg(to_json(\"key\") || ':' || \"value\", ','), '}')::jsonb FROM (SELECT * FROM jsonb_each(\"json\") WHERE key <> key_to_set UNION ALL SELECT key_to_set, to_json(\"value_to_set\")::jsonb) AS fields $function$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "db11cfd6773ccf26",
+      "timestamp": 1717716754672000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_add( \"array\" jsonb, \"values\" jsonb ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT array_to_json(ARRAY(SELECT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements(\"array\")) || ARRAY(SELECT jsonb_array_elements(\"values\")))))::jsonb; $function$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "54b9bf2d5c31d9bc",
+      "timestamp": 1717716754675000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_add_unique( \"array\" jsonb, \"values\" jsonb ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT array_to_json(ARRAY(SELECT DISTINCT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements(\"array\")) || ARRAY(SELECT DISTINCT jsonb_array_elements(\"values\")))))::jsonb; $function$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "59fb6766b78b85d5",
+      "timestamp": 1717716754676000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_remove( \"array\" jsonb, \"values\" jsonb ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT array_to_json(ARRAY(SELECT * FROM jsonb_array_elements(\"array\") as elt WHERE elt NOT IN (SELECT * FROM (SELECT jsonb_array_elements(\"values\")) AS sub)))::jsonb; $function$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "960cb9872a9f9bb4",
+      "timestamp": 1717716754677000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_contains_all( \"array\" jsonb, \"values\" jsonb ) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT CASE WHEN 0 = jsonb_array_length(\"values\") THEN true = false ELSE (SELECT RES.CNT = jsonb_array_length(\"values\") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements_text(\"array\") as elt WHERE elt IN (SELECT jsonb_array_elements_text(\"values\"))) as RES) END; $function$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "138e06f681af82fe",
+      "timestamp": 1717716754677000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_contains_all_regex( \"array\" jsonb, \"values\" jsonb ) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT CASE WHEN 0 = jsonb_array_length(\"values\") THEN true = false ELSE (SELECT RES.CNT = jsonb_array_length(\"values\") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements_text(\"array\") as elt WHERE elt LIKE ANY (SELECT jsonb_array_elements_text(\"values\"))) as RES) END; $function$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "e3768d61a254053a",
+      "timestamp": 1717716754679000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_contains( \"array\" jsonb, \"values\" jsonb ) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT RES.CNT >= 1 FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements(\"array\") as elt WHERE elt IN (SELECT jsonb_array_elements(\"values\"))) as RES; $function$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "93b07bbcab56eb6f",
+      "timestamp": 1717716754680000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "dc23828619083854",
+      "timestamp": 1717716754680000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT * FROM \"_SCHEMA\"",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "className": "_User",
+            "schema": {
+              "fields": {
+                "email": {
+                  "type": "String"
+                },
+                "_rperm": {
+                  "type": "Array",
+                  "contents": {
+                    "type": "String"
+                  }
+                },
+                "_wperm": {
+                  "type": "Array",
+                  "contents": {
+                    "type": "String"
+                  }
+                },
+                "authData": {
+                  "type": "Object"
+                },
+                "objectId": {
+                  "type": "String"
+                },
+                "username": {
+                  "type": "String"
+                },
+                "createdAt": {
+                  "type": "Date"
+                },
+                "updatedAt": {
+                  "type": "Date"
+                },
+                "emailVerified": {
+                  "type": "Boolean"
+                },
+                "_hashed_password": {
+                  "type": "String"
+                }
+              },
+              "className": "_User"
+            },
+            "isParseClass": true
+          },
+          {
+            "className": "_Role",
+            "schema": {
+              "fields": {
+                "name": {
+                  "type": "String"
+                },
+                "roles": {
+                  "type": "Relation",
+                  "targetClass": "_Role"
+                },
+                "users": {
+                  "type": "Relation",
+                  "targetClass": "_User"
+                },
+                "_rperm": {
+                  "type": "Array",
+                  "contents": {
+                    "type": "String"
+                  }
+                },
+                "_wperm": {
+                  "type": "Array",
+                  "contents": {
+                    "type": "String"
+                  }
+                },
+                "objectId": {
+                  "type": "String"
+                },
+                "createdAt": {
+                  "type": "Date"
+                },
+                "updatedAt": {
+                  "type": "Date"
+                }
+              },
+              "className": "_Role"
+            },
+            "isParseClass": true
+          },
+          {
+            "className": "GameScore",
+            "schema": {
+              "fields": {
+                "score": {
+                  "type": "Number"
+                },
+                "_rperm": {
+                  "type": "Array",
+                  "contents": {
+                    "type": "String"
+                  }
+                },
+                "_wperm": {
+                  "type": "Array",
+                  "contents": {
+                    "type": "String"
+                  }
+                },
+                "objectId": {
+                  "type": "String"
+                },
+                "cheatMode": {
+                  "type": "Boolean"
+                },
+                "createdAt": {
+                  "type": "Date"
+                },
+                "updatedAt": {
+                  "type": "Date"
+                },
+                "playerName": {
+                  "type": "String"
+                }
+              },
+              "className": "GameScore"
+            },
+            "isParseClass": true
+          }
+        ]
+      },
+      "id": "093400d27c238624",
+      "timestamp": 1717716754687000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_User_unique_username\" ON \"_User\"(\"username\")",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "53d8b391938c845e",
+      "timestamp": 1717716754698000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE INDEX IF NOT EXISTS \"case_insensitive_username\" ON \"_User\" (lower(\"username\") varchar_pattern_ops)",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "1b106c8d90ee7b4a",
+      "timestamp": 1717716754701000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE INDEX IF NOT EXISTS \"case_insensitive_email\" ON \"_User\" (lower(\"email\") varchar_pattern_ops)",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "2cbb79aa73b5dc5a",
+      "timestamp": 1717716754702000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_User_unique_email\" ON \"_User\"(\"email\")",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "3b9a531bbd5d183b",
+      "timestamp": 1717716754703000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_Role_unique_name\" ON \"_Role\"(\"name\")",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "76d53aedbf808be8",
+      "timestamp": 1717716754704000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_Idempotency_unique_reqId\" ON \"_Idempotency\"(\"reqId\")",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "602ed85c25b3008f",
+      "timestamp": 1717716754705000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION idempotency_delete_expired_records() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM \"_Idempotency\" WHERE expire < NOW() - INTERVAL '300 seconds'; END; $$;",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "c76420b1c53c9df2",
+      "timestamp": 1717716754706000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE INDEX IF NOT EXISTS \"ttl\" ON \"_Idempotency\" (\"expire\")",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "dd14f1e57d5df23c",
+      "timestamp": 1717716754709000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT * FROM \"_Hooks\"",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "786d41c8a4c0e0fc",
+      "timestamp": 1717716754713000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "INSERT INTO \"GameScore\" (\"score\",\"playerName\",\"cheatMode\",\"updatedAt\",\"createdAt\",\"objectId\") VALUES (1337,'Sean Plott',false,'2024-06-06T23:32:36.602Z','2024-06-06T23:32:36.602Z','3W67SXxfyI')",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "6d491ed2d9b8764d",
+      "timestamp": 1717716756607000,
+      "startup": false
+    }
+  ],
+  "observedCalls": [
+    {
+      "library": "crypto",
+      "input": {
+        "functionName": "randomBytes",
+        "args": [
+          1
+        ]
+      },
+      "startup": false
+    },
+    {
+      "library": "crypto",
+      "input": {
+        "functionName": "randomUUID",
+        "args": []
+      },
+      "id": "fa86976ad883d261",
+      "startup": true
+    },
+    {
+      "library": "crypto",
+      "input": {
+        "functionName": "randomBytes",
+        "args": [
+          10
+        ]
+      },
+      "id": "57759174384523d5",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "bc891e9d05ecb136",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "a5ddef8f9d182326",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "8f98cb40d0301e22",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "2ce5f864d4e95af9",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "9ab3a9cec83033c6",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "edd012ca77e6d23b",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "3d290649750a8b4d",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "ccecddeebbafbf8e",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "10ab177fa5a818c4",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "e912b6f4c31d5826",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "6b4df066806788e1",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "a9bc7c0bf337778b",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "0cd8675927a4db04",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "2a6587fc403f4eab",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "0194c43631b7b8c6",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "0f16e43f5788149a",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "024f0eb5bde3d61e",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "b2d8d39a1b4beabc",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "43b732a3af732ccc",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "d0ef64ce75ed3248",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "0e3127c5257fece0",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "a9617cfa02b70349",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "91d98a3766c5071d",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "4766ca427f85f43f",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "bfd4a30e33f16de7",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "2d1f03425c71a685",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "3fafec68b24d19a0",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "3674004b770128f4",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "4c01d1f367b1759e",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "d542a5fdebc202da",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "a2c0e082b49ea5fb",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "396b8a5e20c12b5a",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "7b02b8c568932666",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "0f49481a3f2056dd",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "14bf33e9d6fd620b",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "ee261b4c04b06cc0",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "3325403f66e4dcb3",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "859fad4aed089e39",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "8fbb2bc5dc71d1ca",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "c29e40bb8f3b18e7",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "704bb6c1ef159865",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "09947165a843db68",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "eed36c27a16151c6",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "bf5f6742b4d56f76",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "e8dd21fb8efa1155",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "99fb1c877d8cbb67",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "435820fd854736f8",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "8b71b5c3b384c092",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "b8a2576dda70bad9",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "b4f83c2e5dde7513",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "2fbc7369db1a8e0e",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "d9fa5a264d17a6b3",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "16025410e877c167",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "id": "53ef3f074dacb63d",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "9619b028922c0fe8",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "777c7387a2fd2818",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "3b01d5b17d328abc",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "id": "68ab532d85db800a",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "id": "721ce0aff00cf01c",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "id": "fb94725c18497282",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "startup": false
+    }
+  ]
+}

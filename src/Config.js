@@ -1,4 +1,4 @@
-// A Config object provides information about how a specific app is
+// A Config object provides information about how a specific api is
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
@@ -440,7 +440,7 @@ export class Config {
       throw 'An emailAdapter is required for e-mail verification and password resets.';
     }
     if (typeof appName !== 'string') {
-      throw 'An app name is required for e-mail verification and password resets.';
+      throw 'An api name is required for e-mail verification and password resets.';
     }
     if (typeof publicServerURL !== 'string') {
       throw 'A public server url is required for e-mail verification and password resets.';

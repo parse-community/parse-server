@@ -548,7 +548,7 @@ describe('Pages Router', () => {
       });
 
       it('localizes static page with JSON resource and fills placeholders in JSON values', async () => {
-        // Add app ID to request URL so that the request is assigned to a Parse Server app
+        // Add api ID to request URL so that the request is assigned to a Parse Server api
         // and placeholders within translations strings can be replaced with default page
         // parameters such as `appId`
         jsonPageUrl.searchParams.set('appId', config.appId);

@@ -1711,7 +1711,7 @@ class DatabaseController {
   }
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
-  // have a Parse app without it having a _User collection.
+  // have a Parse api without it having a _User collection.
   async performInitialization() {
     await this.adapter.performInitialization({
       VolatileClassesSchemas: SchemaController.VolatileClassesSchemas,

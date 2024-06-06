@@ -159,12 +159,12 @@ describe('ParseGraphQLServer', () => {
   });
 
   describe('applyGraphQL', () => {
-    it('should require an Express.js app instance', () => {
+    it('should require an Express.js api instance', () => {
       expect(() => parseGraphQLServer.applyGraphQL()).toThrow(
-        'You must provide an Express.js app instance!'
+        'You must provide an Express.js api instance!'
       );
       expect(() => parseGraphQLServer.applyGraphQL({})).toThrow(
-        'You must provide an Express.js app instance!'
+        'You must provide an Express.js api instance!'
       );
       expect(() => parseGraphQLServer.applyGraphQL(new express())).not.toThrow();
     });
@@ -186,12 +186,12 @@ describe('ParseGraphQLServer', () => {
   });
 
   describe('applyPlayground', () => {
-    it('should require an Express.js app instance', () => {
+    it('should require an Express.js api instance', () => {
       expect(() => parseGraphQLServer.applyPlayground()).toThrow(
-        'You must provide an Express.js app instance!'
+        'You must provide an Express.js api instance!'
       );
       expect(() => parseGraphQLServer.applyPlayground({})).toThrow(
-        'You must provide an Express.js app instance!'
+        'You must provide an Express.js api instance!'
       );
       expect(() => parseGraphQLServer.applyPlayground(new express())).not.toThrow();
     });

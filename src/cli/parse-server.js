@@ -1,3 +1,6 @@
+import { setup } from '@detail-dev/trace';
+setup({ localDevMode: true });
+
 /* eslint-disable no-console */
 import ParseServer from '../index';
 import definitions from './definitions/parse-server';

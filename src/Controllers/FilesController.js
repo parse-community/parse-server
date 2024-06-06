@@ -52,7 +52,7 @@ export class FilesController extends AdaptableController {
 
   /**
    * Find file references in REST-format object and adds the url key
-   * with the current mount point and app id.
+   * with the current mount point and api id.
    * Object may be a single object or list of REST-format objects.
    */
   expandFilesInObject(config, object) {

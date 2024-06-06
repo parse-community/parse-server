@@ -63,11 +63,11 @@ export const checkIp = (ip, ipRangeList, store) => {
   return result;
 };
 
-// Checks that the request is authorized for this app and checks user
+// Checks that the request is authorized for this api and checks user
 // auth too.
 // The bodyparser should run before this middleware.
 // Adds info to the request:
-// req.config - the Config for this app
+// req.config - the Config for this api
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
@@ -117,13 +117,13 @@ export function handleParseHeaders(req, res, next) {
   var fileViaJSON = false;
 
   if (!info.appId || !AppCache.get(info.appId)) {
-    // See if we can find the app id on the body.
+    // See if we can find the api id on the body.
     if (req.body instanceof Buffer) {
-      // The only chance to find the app id is if this is a file
+      // The only chance to find the api id is if this is a file
       // upload that actually is a JSON body. So try to parse it.
       // https://github.com/parse-community/parse-server/issues/6589
       // It is also possible that the client is trying to upload a file but forgot
-      // to provide x-parse-app-id in header and parse a binary file will fail
+      // to provide x-parse-api-id in header and parse a binary file will fail
       try {
         req.body = JSON.parse(req.body);
       } catch (e) {

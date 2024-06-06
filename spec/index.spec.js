@@ -9,7 +9,7 @@ const express = require('express');
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 
 describe('server', () => {
-  it('requires a master key and app id', done => {
+  it('requires a master key and api id', done => {
     reconfigureServer({ appId: undefined })
       .catch(error => {
         expect(error).toEqual('You must provide an appId!');

@@ -58,7 +58,7 @@ export interface ParseServerOptions {
   /* (Optional) Restricts the use of maintenance key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the maintenance key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the maintenance key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `"0.0.0.0/0,::0"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the maintenance key.
   :DEFAULT: ["127.0.0.1","::1"] */
   maintenanceKeyIps: ?(string[]);
-  /* Sets the app name */
+  /* Sets the api name */
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
@@ -576,7 +576,7 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
+  /* Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your api's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.
   :DEFAULT: ["^(?!(h|H)(t|T)(m|M)(l|L)?$)"] */
   fileExtensions: ?(string[]);
   /*  Is true if file upload should be allowed for anonymous users.

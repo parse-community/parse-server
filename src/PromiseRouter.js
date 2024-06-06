@@ -104,7 +104,7 @@ export default class PromiseRouter {
     }
   }
 
-  // Mount the routes on this router onto an express app (or express router)
+  // Mount the routes on this router onto an express api (or express router)
   mountOnto(expressApp) {
     this.routes.forEach(route => {
       const method = route.method.toLowerCase();

@@ -255,7 +255,7 @@ To learn more about using saving and querying objects on Parse Server, check out
 
 ### Connect an SDK
 
-Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your app to Parse Server](https://docs.parseplatform.org/parse-server/guide/#using-parse-sdks-with-parse-server).
+Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your api to Parse Server](https://docs.parseplatform.org/parse-server/guide/#using-parse-sdks-with-parse-server).
 
 ## Running Parse Server elsewhere
 
@@ -283,7 +283,7 @@ You can also create an instance of Parse Server, and mount it on a new or existi
 ```js
 const express = require('express');
 const ParseServer = require('parse-server').ParseServer;
-const app = express();
+const api = express();
 
 const server = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
@@ -298,9 +298,9 @@ const server = new ParseServer({
 await server.start();
 
 // Serve the Parse API on the /parse URL prefix
-app.use('/parse', server.app);
+api.use('/parse', server.api);
 
-app.listen(1337, function() {
+api.listen(1337, function() {
   console.log('parse-server-example running on port 1337.');
 });
 ```
@@ -336,8 +336,8 @@ For the full list of available options, run `parse-server --help` or take a look
 
 ## Basic Options
 
-* `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
-* `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
+* `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse api.
+* `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse api.
 * `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`. Be sure to [URL encode your password](https://app.zencoder.com/docs/guides/getting-started/special-characters-in-usernames-and-passwords) if your password has special characters.
 * `port` - The default port is 1337, specify this parameter to use a different port.
 * `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
@@ -492,7 +492,7 @@ The following paths are already used by Parse Server's built-in features and are
 
 ## Custom Pages
 
-It’s possible to change the default pages of the app and redirect the user to another path or domain.
+It’s possible to change the default pages of the api and redirect the user to another path or domain.
 
 ```js
 const server = ParseServer({
@@ -876,8 +876,8 @@ After starting the server, you can visit http://localhost:1337/playground in you
 You can also mount the GraphQL API in an Express.js application together with the REST API or solo. You first need to create a new project and install the required dependencies:
 
 ```bash
-$ mkdir my-app
-$ cd my-app
+$ mkdir my-api
+$ cd my-api
 $ npm install parse-server express --save
 ```
 
@@ -887,7 +887,7 @@ Then, create an `index.js` file with the following content:
 const express = require('express');
 const { ParseServer, ParseGraphQLServer } = require('parse-server');
 
-const app = express();
+const api = express();
 
 const parseServer = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/test',
@@ -905,26 +905,26 @@ const parseGraphQLServer = new ParseGraphQLServer(
   }
 );
 
-app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
-parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
-parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
+api.use('/parse', parseServer.api); // (Optional) Mounts the REST API
+parseGraphQLServer.applyGraphQL(api); // Mounts the GraphQL API
+parseGraphQLServer.applyPlayground(api); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
 
 await parseServer.start();
-app.listen(1337, function() {
+api.listen(1337, function() {
   console.log('REST API running on http://localhost:1337/parse');
   console.log('GraphQL API running on http://localhost:1337/graphql');
   console.log('GraphQL Playground running on http://localhost:1337/playground');
 });
 ```
 
-And finally start your app:
+And finally start your api:
 
 ```bash
 $ npx mongodb-runner start
 $ node index.js
 ```
 
-After starting the app, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+After starting the api, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
 ***Note:*** Do ***NOT*** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 

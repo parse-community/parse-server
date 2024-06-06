@@ -740,7 +740,7 @@ describe('Installations', () => {
       });
   });
 
-  xit('update ios device token with duplicate token different app', done => {
+  xit('update ios device token with duplicate token different api', done => {
     const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -1039,7 +1039,7 @@ describe('Installations', () => {
     // same device token but no installation ID.  This is possible when
     // developers import device tokens from another push provider; the import
     // process does not generate installation IDs. When they later integrate
-    // the Parse SDK, their app is going to save the installation. This save
+    // the Parse SDK, their api is going to save the installation. This save
     // op will have a client-generated installation ID as well as a device
     // token. At this point, if the device token matches the originally-
     // imported installation, then we should reuse the existing installation

@@ -137,7 +137,7 @@
 
 ### Features
 
-* Add new Parse Server option `fileUpload.fileExtensions` to restrict file upload by file extension; this fixes a security vulnerability in which a phishing attack could be performed using an uploaded HTML file; by default the new option only allows file extensions matching the regex pattern `^[^hH][^tT][^mM][^lL]?$`, which excludes HTML files; if your app currently depends on uploading files with HTML file extensions then this may be a breaking change and you could allow HTML file upload by setting the option to `['.*']` ([#8538](https://github.com/parse-community/parse-server/issues/8538)) ([a318e7b](https://github.com/parse-community/parse-server/commit/a318e7bbafcf7a3425b0a1b3c2dd30f526b4b6f9))
+* Add new Parse Server option `fileUpload.fileExtensions` to restrict file upload by file extension; this fixes a security vulnerability in which a phishing attack could be performed using an uploaded HTML file; by default the new option only allows file extensions matching the regex pattern `^[^hH][^tT][^mM][^lL]?$`, which excludes HTML files; if your api currently depends on uploading files with HTML file extensions then this may be a breaking change and you could allow HTML file upload by setting the option to `['.*']` ([#8538](https://github.com/parse-community/parse-server/issues/8538)) ([a318e7b](https://github.com/parse-community/parse-server/commit/a318e7bbafcf7a3425b0a1b3c2dd30f526b4b6f9))
 
 # [6.1.0](https://github.com/parse-community/parse-server/compare/6.0.0...6.1.0) (2023-05-01)
 
@@ -214,7 +214,7 @@
 * This release restricts the use of `masterKey` to localhost by default; if you are using Parse Dashboard on a different server to connect to Parse Server you need to add the IP address of the server that hosts Parse Dashboard to this option (#8281) ([6c16021](6c16021))
 * This release upgrades to Redis 4; if you are using the Redis cache adapter with Parse Server then this is a breaking change as the Redis client options have changed; see the [Redis migration guide](https://github.com/redis/node-redis/blob/redis%404.0.0/docs/v3-to-v4.md) for more details (#8293) ([7d622f0](7d622f0))
 * This release removes support for MongoDB 4.0; the new minimum supported MongoDB version is 4.2. which also removes support for the deprecated MongoDB MMAPv1 storage engine ([37245f6](37245f6))
-* Throwing an error in Cloud Code Triggers `afterLogin`, `afterLogout` returns a rejected promise; in previous releases it crashed the server if you did not handle the error on the Node.js process level; consider adapting your code if your app currently handles these errors on the Node.js process level with `process.on('unhandledRejection', ...)` ([130d290](130d290))
+* Throwing an error in Cloud Code Triggers `afterLogin`, `afterLogout` returns a rejected promise; in previous releases it crashed the server if you did not handle the error on the Node.js process level; consider adapting your code if your api currently handles these errors on the Node.js process level with `process.on('unhandledRejection', ...)` ([130d290](130d290))
 * Config option `directAccess` defaults to true; set this to `false` in environments where multiple Parse Server instances run behind a load balancer and Parse requests within the current Node.js environment should be routed via the load balancer and distributed as HTTP requests among all instances via the `serverURL`. ([f535ee6](f535ee6))
 * The convenience method for HTTP requests `Parse.Cloud.httpRequest` is removed; use your preferred 3rd party library for making HTTP requests ([2d79c08](2d79c08))
 * This release removes Node 12 and Node 17 support ([2546cc8](2546cc8))
@@ -308,7 +308,7 @@
 
 ### Bug Fixes
 
-* authentication adapter app ID validation may be circumvented; this fixes a vulnerability that affects configurations which allow users to authenticate using the Parse Server authentication adapter for *Facebook* or *Spotify* and where the server-side authentication adapter configuration `appIds` is set as a string (e.g. `abc`) instead of an array of strings (e.g. `["abc"]`) ([GHSA-r657-33vp-gp22](https://github.com/parse-community/parse-server/security/advisories/GHSA-r657-33vp-gp22)) ([#8185](https://github.com/parse-community/parse-server/issues/8185)) ([ecf0814](https://github.com/parse-community/parse-server/commit/ecf0814499bde31ab6082b6e42854aa65ad2e03e))
+* authentication adapter api ID validation may be circumvented; this fixes a vulnerability that affects configurations which allow users to authenticate using the Parse Server authentication adapter for *Facebook* or *Spotify* and where the server-side authentication adapter configuration `appIds` is set as a string (e.g. `abc`) instead of an array of strings (e.g. `["abc"]`) ([GHSA-r657-33vp-gp22](https://github.com/parse-community/parse-server/security/advisories/GHSA-r657-33vp-gp22)) ([#8185](https://github.com/parse-community/parse-server/issues/8185)) ([ecf0814](https://github.com/parse-community/parse-server/commit/ecf0814499bde31ab6082b6e42854aa65ad2e03e))
 
 ## [5.2.6](https://github.com/parse-community/parse-server/compare/5.2.5...5.2.6) (2022-09-20)
 
@@ -329,7 +329,7 @@
 
 ### Bug Fixes
 
-* protected fields exposed via LiveQuery; this removes protected fields from the client response; this may be a breaking change if your app is currently expecting to receive these protected fields ([GHSA-crrq-vr9j-fxxh](https://github.com/parse-community/parse-server/security/advisories/GHSA-crrq-vr9j-fxxh)) (https://github.com/parse-community/parse-server/pull/8074) ([#8073](https://github.com/parse-community/parse-server/issues/8073)) ([309f64c](https://github.com/parse-community/parse-server/commit/309f64ced8700321df056fb3cc97f15007a00df1))
+* protected fields exposed via LiveQuery; this removes protected fields from the client response; this may be a breaking change if your api is currently expecting to receive these protected fields ([GHSA-crrq-vr9j-fxxh](https://github.com/parse-community/parse-server/security/advisories/GHSA-crrq-vr9j-fxxh)) (https://github.com/parse-community/parse-server/pull/8074) ([#8073](https://github.com/parse-community/parse-server/issues/8073)) ([309f64c](https://github.com/parse-community/parse-server/commit/309f64ced8700321df056fb3cc97f15007a00df1))
 
 ## [5.2.3](https://github.com/parse-community/parse-server/compare/5.2.2...5.2.3) (2022-06-17)
 
@@ -559,7 +559,7 @@
 # [4.5.2](https://github.com/parse-community/parse-server/compare/4.5.0...4.5.2)
 
 #### Security Fixes
-- SECURITY FIX: Fixes incorrect session property `authProvider: password` of anonymous users. When signing up an anonymous user, the session field `createdWith` indicates incorrectly that the session has been created using username and password with `authProvider: password`, instead of an anonymous sign-up with `authProvider: anonymous`. This fixes the issue by setting the correct `authProvider: anonymous` for future sign-ups of anonymous users. This fix does not fix incorrect `authProvider: password` for existing sessions of anonymous users. Consider this if your app logic depends on the `authProvider` field. (Corey Baker) [GHSA-23r4-5mxp-c7g5](https://github.com/parse-community/parse-server/security/advisories/GHSA-23r4-5mxp-c7g5)
+- SECURITY FIX: Fixes incorrect session property `authProvider: password` of anonymous users. When signing up an anonymous user, the session field `createdWith` indicates incorrectly that the session has been created using username and password with `authProvider: password`, instead of an anonymous sign-up with `authProvider: anonymous`. This fixes the issue by setting the correct `authProvider: anonymous` for future sign-ups of anonymous users. This fix does not fix incorrect `authProvider: password` for existing sessions of anonymous users. Consider this if your api logic depends on the `authProvider` field. (Corey Baker) [GHSA-23r4-5mxp-c7g5](https://github.com/parse-community/parse-server/security/advisories/GHSA-23r4-5mxp-c7g5)
 
 # 4.5.1
 *This version was published by mistake and has been removed.*
@@ -1937,7 +1937,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * New: Option to expire inactive sessions
 * Perf: Improvements in ACL checking query
 * Fix: Issues when sending pushes to list of devices that contains invalid values
-* Fix: Issues caused by using babel-polyfill outside of Parse Server, but in the same express app
+* Fix: Issues caused by using babel-polyfill outside of Parse Server, but in the same express api
 * Fix: Remove creation of extra session tokens
 * Fix: Return authData when querying with master key
 * Fix: Bugs when deleting webhooks
@@ -2065,7 +2065,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Improvement: Push Status API [\#1004](https://github.com/ParsePlatform/parse-server/pull/1004) (flovilmart)
 * Improvement: Allow client operations on Roles [\#1068](https://github.com/ParsePlatform/parse-server/pull/1068) (flovilmart)
 * Improvement: Add URI encoding to mongo auth parameters [\#986](https://github.com/ParsePlatform/parse-server/pull/986) (bgw)
-* Improvement: Adds support for apps key in config file, but only support single app for now [\#979](https://github.com/ParsePlatform/parse-server/pull/979) (flovilmart)
+* Improvement: Adds support for apps key in config file, but only support single api for now [\#979](https://github.com/ParsePlatform/parse-server/pull/979) (flovilmart)
 * Documentation: Getting Started and Configuring Parse Server [\#988](https://github.com/ParsePlatform/parse-server/pull/988) (hramos)
 * Fix: Various edge cases with REST API [\#1066](https://github.com/ParsePlatform/parse-server/pull/1066) (flovilmart)
 * Fix: Makes sure the location in results has the proper objectId [\#1065](https://github.com/ParsePlatform/parse-server/pull/1065) (flovilmart)
@@ -2164,7 +2164,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 
 ### 2.1.3
 
-* Feature: Add initial support for in-app purchases
+* Feature: Add initial support for in-api purchases
 * Feature: Better error messages when attempting to run the server on a port that is already in use or without a server URL
 * Feature: Allow customization of max file size
 * Performance: Faster saves if not using beforeSave triggers

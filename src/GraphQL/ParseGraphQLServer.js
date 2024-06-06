@@ -91,7 +91,7 @@ class ParseGraphQLServer {
 
   applyGraphQL(app) {
     if (!app || !app.use) {
-      requiredParameter('You must provide an Express.js app instance!');
+      requiredParameter('You must provide an Express.js api instance!');
     }
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, handleParseHeaders);
@@ -113,7 +113,7 @@ class ParseGraphQLServer {
 
   applyPlayground(app) {
     if (!app || !app.get) {
-      requiredParameter('You must provide an Express.js app instance!');
+      requiredParameter('You must provide an Express.js api instance!');
     }
 
     app.get(

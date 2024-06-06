@@ -97,7 +97,7 @@ function validateAuthData(authData, options = {}) {
   return verifyIdToken(authData, options);
 }
 
-// Returns a promise that fulfills if this app id is valid.
+// Returns a promise that fulfills if this api id is valid.
 function validateAppId() {
   return Promise.resolve();
 }

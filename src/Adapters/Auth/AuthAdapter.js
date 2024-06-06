@@ -26,7 +26,7 @@ export class AuthAdapter {
     }
   }
   /**
-   * @param appIds The specified app IDs in the configuration
+   * @param appIds The specified api IDs in the configuration
    * @param {Object} authData The client provided authData
    * @param {Object} options additional adapter options
    * @param {Parse.Cloud.TriggerRequest} request

@@ -1115,7 +1115,7 @@ describe('oauth2 auth adapter', () => {
       await adapter.validateAppId(appIds, authData, providerOptions);
     } catch (e) {
       expect(e.message).toBe(
-        'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'
+        'OAuth2 configuration is missing the client api IDs ("appIds" config parameter).'
       );
     }
   });
@@ -1141,7 +1141,7 @@ describe('oauth2 auth adapter', () => {
       await adapter.validateAppId(appIds, authData, providerOptions);
     } catch (e) {
       expect(e.message).toBe(
-        'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'
+        'OAuth2 configuration is missing the client api IDs ("appIds" config parameter).'
       );
     }
   });

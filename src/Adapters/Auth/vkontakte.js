@@ -60,7 +60,7 @@ function vkOAuth2Request(params) {
   });
 }
 
-// Returns a promise that fulfills iff this app id is valid.
+// Returns a promise that fulfills iff this api id is valid.
 function validateAppId() {
   return Promise.resolve();
 }
