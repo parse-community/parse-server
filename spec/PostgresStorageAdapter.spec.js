@@ -587,8 +587,6 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     // Create a 'Test' parse object with the 'pointerTo' field set to undefined
     const obj = new Parse.Object(testClassName);
     obj.set(pointerToFieldName, undefined);
-
-    // Saving 'Test' object should not throw
     expectAsync(obj.save()).toBeResolved();
 
     // Create a 'Test parse object with the fields set to undefined directly in the constructor
