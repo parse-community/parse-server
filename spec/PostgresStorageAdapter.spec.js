@@ -571,7 +571,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await client.none(qs);
   });
 
-  it('An object with a pointer field set to undefined should save without error', async () => {
+  it('saves object with a pointer field set to undefined', async () => {
     // Make a new class 'PointerTest'
     const pointerTestClassName = 'PointerTest';
     const pointerTestSchema = new Parse.Schema(pointerTestClassName);
