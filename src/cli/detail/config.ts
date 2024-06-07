@@ -4,6 +4,7 @@
 import ParseServer from '../../index';
 // @ts-ignore
 import { app } from '../../app'
+import pg from "pg";
 
 const minOptions = { appId: 'APP_ID', masterKey: 'MASTER_KEY', restAPIKey: 'TEST_REST_API_KEY', databaseURI: ' postgresql://postgres:postgres@localhost:5431/postgres' }
 const options = {
