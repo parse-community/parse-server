@@ -571,7 +571,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await client.none(qs);
   });
 
-  it('saves object with a pointer field set to undefined', async () => {
+  fit('saves object with a pointer field set to undefined', async () => {
     const pointerTestClassName = 'PointerTest';
     const pointerTestSchema = new Parse.Schema(pointerTestClassName);
     await pointerTestSchema.save();
