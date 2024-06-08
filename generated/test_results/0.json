@@ -1,5 +1,5 @@
 {
-  "traceId": "0fa211af61fefed3d082317d00f48963",
+  "traceId": "c04b241fc667089b774d38e2117f4940",
   "testFile": "trace-0.test.ts",
   "request": {
     "pathKey": "/parse/classes/:className",
@@ -9,24 +9,25 @@
   "response": {
     "expected": {
       "status": 201,
-      "body": "{\"objectId\":\"3W67SXxfyI\",\"createdAt\":\"2024-06-06T23:32:36.602Z\"}",
+      "body": "{\"objectId\":\"EBxZDyd4Ln\",\"createdAt\":\"2024-06-07T18:57:26.461Z\"}",
       "header": {
         "x-powered-by": "Express",
         "access-control-allow-methods": "GET,PUT,POST,DELETE,OPTIONS",
         "access-control-allow-headers": "X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control",
         "access-control-expose-headers": "X-Parse-Job-Status-Id, X-Parse-Push-Status-Id",
-        "location": "http://localhost:1337/parse/classes/GameScore/3W67SXxfyI",
+        "location": "http://localhost:1337/parse/classes/GameScore/EBxZDyd4Ln",
         "content-type": "application/json; charset=utf-8"
       }
     },
     "observed": {
-      "status": 400,
-      "body": "{\"code\":137,\"error\":\"A duplicate value for a field with unique values was provided\"}",
+      "status": 201,
+      "body": "{\"objectId\":\"EBxZDyd4Ln\",\"createdAt\":\"2024-06-07T18:57:26.461Z\"}",
       "header": {
         "x-powered-by": "Express",
         "access-control-allow-methods": "GET,PUT,POST,DELETE,OPTIONS",
         "access-control-allow-headers": "X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control",
         "access-control-expose-headers": "X-Parse-Job-Status-Id, X-Parse-Push-Status-Id",
+        "location": "http://localhost:1337/parse/classes/GameScore/EBxZDyd4Ln",
         "content-type": "application/json; charset=utf-8"
       }
     }
@@ -38,9 +39,9 @@
         "functionName": "randomUUID",
         "args": []
       },
-      "output": "8c51a854-d278-4d2a-818b-11e39c65dc68",
-      "id": "fa86976ad883d261",
-      "timestamp": 1717716754490000,
+      "output": "7652a15e-4513-4cbc-8e75-233692845f4f",
+      "id": "d11c7894a2944aa1",
+      "timestamp": 1717786639825000,
       "startup": true
     },
     {
@@ -54,500 +55,500 @@
       "output": {
         "type": "Buffer",
         "data": [
-          55,
-          84,
-          120,
-          183,
-          80,
-          209,
-          173,
-          31,
-          174,
-          8
+          190,
+          187,
+          235,
+          87,
+          127,
+          236,
+          29,
+          242,
+          197,
+          39
         ]
       },
-      "id": "57759174384523d5",
-      "timestamp": 1717716756604000,
+      "id": "cde43c591b6c10e1",
+      "timestamp": 1717786646463000,
       "startup": false
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754520",
-      "id": "bc891e9d05ecb136",
-      "timestamp": 1717716754520000,
+      "output": "1717786639872",
+      "id": "7928150926ac8d24",
+      "timestamp": 1717786639872000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754555",
-      "id": "a5ddef8f9d182326",
-      "timestamp": 1717716754555000,
+      "output": "1717786639911",
+      "id": "a92b5e8284676809",
+      "timestamp": 1717786639911000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754564",
-      "id": "8f98cb40d0301e22",
-      "timestamp": 1717716754564000,
+      "output": "1717786639922",
+      "id": "345962ad6ac3f606",
+      "timestamp": 1717786639922000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754578",
-      "id": "2ce5f864d4e95af9",
-      "timestamp": 1717716754578000,
+      "output": "1717786639932",
+      "id": "ba617ed027162cf9",
+      "timestamp": 1717786639932000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754598",
-      "id": "9ab3a9cec83033c6",
-      "timestamp": 1717716754598000,
+      "output": "1717786639949",
+      "id": "937274bc9954aff4",
+      "timestamp": 1717786639949000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754599",
-      "id": "edd012ca77e6d23b",
-      "timestamp": 1717716754599000,
+      "output": "1717786639950",
+      "id": "740ed26a1d22a902",
+      "timestamp": 1717786639950000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754601",
-      "id": "3d290649750a8b4d",
-      "timestamp": 1717716754601000,
+      "output": "1717786639952",
+      "id": "4a39ca491d8e3818",
+      "timestamp": 1717786639952000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754606",
-      "id": "ccecddeebbafbf8e",
-      "timestamp": 1717716754606000,
+      "output": "1717786639953",
+      "id": "d9ac44791441912d",
+      "timestamp": 1717786639953000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754609",
-      "id": "10ab177fa5a818c4",
-      "timestamp": 1717716754609000,
+      "output": "1717786639954",
+      "id": "befc085120d0081c",
+      "timestamp": 1717786639954000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754611",
-      "id": "e912b6f4c31d5826",
-      "timestamp": 1717716754611000,
+      "output": "1717786639960",
+      "id": "55373792883164d6",
+      "timestamp": 1717786639960000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754612",
-      "id": "6b4df066806788e1",
-      "timestamp": 1717716754612000,
+      "output": "1717786639962",
+      "id": "7c6e02ff2ab378f4",
+      "timestamp": 1717786639961000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754615",
-      "id": "a9bc7c0bf337778b",
-      "timestamp": 1717716754615000,
+      "output": "1717786639964",
+      "id": "2822d31daae7c721",
+      "timestamp": 1717786639964000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754616",
-      "id": "0cd8675927a4db04",
-      "timestamp": 1717716754616000,
+      "output": "1717786639964",
+      "id": "5db4e7721ec69610",
+      "timestamp": 1717786639964000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754616",
-      "id": "2a6587fc403f4eab",
-      "timestamp": 1717716754616000,
+      "output": "1717786639965",
+      "id": "b89568c54ddfd521",
+      "timestamp": 1717786639965000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754616",
-      "id": "0194c43631b7b8c6",
-      "timestamp": 1717716754616000,
+      "output": "1717786639965",
+      "id": "549b4b45f1ea3226",
+      "timestamp": 1717786639965000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754617",
-      "id": "0f16e43f5788149a",
-      "timestamp": 1717716754617000,
+      "output": "1717786639966",
+      "id": "08be2a8a7120bd38",
+      "timestamp": 1717786639966000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754618",
-      "id": "024f0eb5bde3d61e",
-      "timestamp": 1717716754618000,
+      "output": "1717786639967",
+      "id": "525f335ca297b1ac",
+      "timestamp": 1717786639967000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754623",
-      "id": "b2d8d39a1b4beabc",
-      "timestamp": 1717716754623000,
+      "output": "1717786639971",
+      "id": "0b8f5b4d118f09e2",
+      "timestamp": 1717786639971000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754627",
-      "id": "43b732a3af732ccc",
-      "timestamp": 1717716754627000,
+      "output": "1717786639976",
+      "id": "81c2df95080f5d1a",
+      "timestamp": 1717786639976000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754631",
-      "id": "d0ef64ce75ed3248",
-      "timestamp": 1717716754631000,
+      "output": "1717786639981",
+      "id": "743d5ebcac855cc6",
+      "timestamp": 1717786639981000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754633",
-      "id": "0e3127c5257fece0",
-      "timestamp": 1717716754633000,
+      "output": "1717786639987",
+      "id": "aa40169a37797a18",
+      "timestamp": 1717786639987000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754634",
-      "id": "a9617cfa02b70349",
-      "timestamp": 1717716754634000,
+      "output": "1717786639990",
+      "id": "3bf6d7e72730e73e",
+      "timestamp": 1717786639990000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754640",
-      "id": "91d98a3766c5071d",
-      "timestamp": 1717716754640000,
+      "output": "1717786639990",
+      "id": "aa346614260f1dde",
+      "timestamp": 1717786639990000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754642",
-      "id": "4766ca427f85f43f",
-      "timestamp": 1717716754642000,
+      "output": "1717786639991",
+      "id": "ba26fb707bee7418",
+      "timestamp": 1717786639991000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754644",
-      "id": "bfd4a30e33f16de7",
-      "timestamp": 1717716754644000,
+      "output": "1717786639993",
+      "id": "30d5a9e214de4abf",
+      "timestamp": 1717786639993000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754644",
-      "id": "2d1f03425c71a685",
-      "timestamp": 1717716754644000,
+      "output": "1717786639995",
+      "id": "d4a75be101ffd783",
+      "timestamp": 1717786639995000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754649",
-      "id": "3fafec68b24d19a0",
-      "timestamp": 1717716754649000,
+      "output": "1717786639997",
+      "id": "3561e3c0c314b1ef",
+      "timestamp": 1717786639997000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754653",
-      "id": "3674004b770128f4",
-      "timestamp": 1717716754653000,
+      "output": "1717786639997",
+      "id": "acc9acb52d386285",
+      "timestamp": 1717786639997000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754659",
-      "id": "4c01d1f367b1759e",
-      "timestamp": 1717716754659000,
+      "output": "1717786639998",
+      "id": "6a4b3fd777a29c61",
+      "timestamp": 1717786639998000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754662",
-      "id": "d542a5fdebc202da",
-      "timestamp": 1717716754662000,
+      "output": "1717786639999",
+      "id": "4b2d3aad4c5ccce1",
+      "timestamp": 1717786639999000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754665",
-      "id": "a2c0e082b49ea5fb",
-      "timestamp": 1717716754665000,
+      "output": "1717786640005",
+      "id": "544903f78723f0d1",
+      "timestamp": 1717786640005000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754666",
-      "id": "396b8a5e20c12b5a",
-      "timestamp": 1717716754666000,
+      "output": "1717786640013",
+      "id": "a61c3c301fba682d",
+      "timestamp": 1717786640013000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754666",
-      "id": "7b02b8c568932666",
-      "timestamp": 1717716754666000,
+      "output": "1717786640018",
+      "id": "955a8059ce62a889",
+      "timestamp": 1717786640018000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754671",
-      "id": "0f49481a3f2056dd",
-      "timestamp": 1717716754671000,
+      "output": "1717786640021",
+      "id": "560a80e77fa81dd4",
+      "timestamp": 1717786640021000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754674",
-      "id": "14bf33e9d6fd620b",
-      "timestamp": 1717716754674000,
+      "output": "1717786640025",
+      "id": "2ad750d5c1d41640",
+      "timestamp": 1717786640025000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754676",
-      "id": "ee261b4c04b06cc0",
-      "timestamp": 1717716754676000,
+      "output": "1717786640030",
+      "id": "062b05054a16fd9b",
+      "timestamp": 1717786640030000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754677",
-      "id": "3325403f66e4dcb3",
-      "timestamp": 1717716754677000,
+      "output": "1717786640031",
+      "id": "044f0058c376d3b7",
+      "timestamp": 1717786640031000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754677",
-      "id": "859fad4aed089e39",
-      "timestamp": 1717716754677000,
+      "output": "1717786640032",
+      "id": "b10b6718e9df8e5f",
+      "timestamp": 1717786640032000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754679",
-      "id": "8fbb2bc5dc71d1ca",
-      "timestamp": 1717716754679000,
+      "output": "1717786640033",
+      "id": "0b7039c2c882245c",
+      "timestamp": 1717786640033000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754679",
-      "id": "c29e40bb8f3b18e7",
-      "timestamp": 1717716754679000,
+      "output": "1717786640033",
+      "id": "4c23736c9b95b0d2",
+      "timestamp": 1717786640033000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754680",
-      "id": "704bb6c1ef159865",
-      "timestamp": 1717716754680000,
+      "output": "1717786640034",
+      "id": "5027bd75b262920e",
+      "timestamp": 1717786640034000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754682",
-      "id": "09947165a843db68",
-      "timestamp": 1717716754682000,
+      "output": "1717786640034",
+      "id": "d161a64929fe8e9c",
+      "timestamp": 1717786640034000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754691",
-      "id": "eed36c27a16151c6",
-      "timestamp": 1717716754691000,
+      "output": "1717786640045",
+      "id": "9346a8424bf955c7",
+      "timestamp": 1717786640045000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754700",
-      "id": "bf5f6742b4d56f76",
-      "timestamp": 1717716754700000,
+      "output": "1717786640055",
+      "id": "0c62bd7feb2c26c3",
+      "timestamp": 1717786640055000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754702",
-      "id": "e8dd21fb8efa1155",
-      "timestamp": 1717716754702000,
+      "output": "1717786640059",
+      "id": "977d1d8e831ca367",
+      "timestamp": 1717786640059000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754703",
-      "id": "99fb1c877d8cbb67",
-      "timestamp": 1717716754703000,
+      "output": "1717786640063",
+      "id": "22bdc65f44d77962",
+      "timestamp": 1717786640063000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754704",
-      "id": "435820fd854736f8",
-      "timestamp": 1717716754704000,
+      "output": "1717786640064",
+      "id": "769e4cba36e10a05",
+      "timestamp": 1717786640064000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754704",
-      "id": "8b71b5c3b384c092",
-      "timestamp": 1717716754704000,
+      "output": "1717786640065",
+      "id": "96d53b5070567284",
+      "timestamp": 1717786640065000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754705",
-      "id": "b8a2576dda70bad9",
-      "timestamp": 1717716754705000,
+      "output": "1717786640065",
+      "id": "c636c3ad8a2d04ea",
+      "timestamp": 1717786640065000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754709",
-      "id": "b4f83c2e5dde7513",
-      "timestamp": 1717716754709000,
+      "output": "1717786640071",
+      "id": "403ff0fed54027e0",
+      "timestamp": 1717786640071000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754710",
-      "id": "2fbc7369db1a8e0e",
-      "timestamp": 1717716754710000,
+      "output": "1717786640072",
+      "id": "d315d209e393258d",
+      "timestamp": 1717786640072000,
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716754714",
-      "id": "d9fa5a264d17a6b3",
-      "timestamp": 1717716754714000,
+      "output": "1717786640075",
+      "id": "35d1a226bee91791",
+      "timestamp": 1717786640075000,
       "startup": true
     },
     {
       "library": "date",
       "input": "Date.new",
-      "output": "2024-06-06T23:32:36.600Z",
-      "id": "53ef3f074dacb63d",
-      "timestamp": 1717716756600000,
+      "output": "2024-06-07T18:57:26.459Z",
+      "id": "3775f2a2fa863db9",
+      "timestamp": 1717786646459000,
       "startup": false
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716756600",
-      "id": "16025410e877c167",
-      "timestamp": 1717716756600000,
+      "output": "1717786646459",
+      "id": "c360bc1df7eb939c",
+      "timestamp": 1717786646459000,
       "startup": false
     },
     {
       "library": "date",
       "input": "Date.new",
-      "output": "2024-06-06T23:32:36.602Z",
-      "id": "68ab532d85db800a",
-      "timestamp": 1717716756602000,
+      "output": "2024-06-07T18:57:26.461Z",
+      "id": "475a22e7a664782d",
+      "timestamp": 1717786646461000,
       "startup": false
     },
     {
       "library": "date",
       "input": "Date.new",
-      "output": "2024-06-06T23:32:36.606Z",
-      "id": "721ce0aff00cf01c",
-      "timestamp": 1717716756606000,
+      "output": "2024-06-07T18:57:26.465Z",
+      "id": "299cf51e997e3d81",
+      "timestamp": 1717786646465000,
       "startup": false
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716756607",
-      "id": "9619b028922c0fe8",
-      "timestamp": 1717716756607000,
+      "output": "1717786646466",
+      "id": "1d41eb5b4a644f9c",
+      "timestamp": 1717786646466000,
       "startup": false
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716756611",
-      "id": "777c7387a2fd2818",
-      "timestamp": 1717716756611000,
+      "output": "1717786646470",
+      "id": "7cd5564ba6507a3b",
+      "timestamp": 1717786646470000,
       "startup": false
     },
     {
       "library": "date",
       "input": "Date.new",
-      "output": "2024-06-06T23:32:36.612Z",
-      "id": "fb94725c18497282",
-      "timestamp": 1717716756612000,
+      "output": "2024-06-07T18:57:26.471Z",
+      "id": "f0bdf45447a73c22",
+      "timestamp": 1717786646471000,
       "startup": false
     },
     {
       "library": "date",
       "input": "now",
-      "output": "1717716756612",
-      "id": "3b01d5b17d328abc",
-      "timestamp": 1717716756612000,
+      "output": "1717786646473",
+      "id": "ecbb62b722eec713",
+      "timestamp": 1717786646473000,
       "startup": false
     },
     {
@@ -559,8 +560,8 @@
         "type": 2,
         "value": []
       },
-      "id": "aaf4a44fd9f5567e",
-      "timestamp": 1717716754498000,
+      "id": "c7c21e557ac45c00",
+      "timestamp": 1717786639831000,
       "startup": true
     },
     {
@@ -573,8 +574,8 @@
         "type": 1,
         "value": []
       },
-      "id": "fcfa191f65103080",
-      "timestamp": 1717716754515000,
+      "id": "e8a0a8ab3de4f15f",
+      "timestamp": 1717786639863000,
       "startup": true
     },
     {
@@ -586,8 +587,8 @@
         "type": 2,
         "value": []
       },
-      "id": "f965ce02e0b59d96",
-      "timestamp": 1717716754538000,
+      "id": "003a14ba30729af4",
+      "timestamp": 1717786639896000,
       "startup": true
     },
     {
@@ -599,8 +600,8 @@
         "type": 2,
         "value": []
       },
-      "id": "f5537bd9e7052fe5",
-      "timestamp": 1717716754541000,
+      "id": "c349e5e68979b6f4",
+      "timestamp": 1717786639896000,
       "startup": true
     },
     {
@@ -612,8 +613,8 @@
         "type": 2,
         "value": []
       },
-      "id": "423694a0f3cdc2ad",
-      "timestamp": 1717716754542000,
+      "id": "c8f149050ba9b894",
+      "timestamp": 1717786639898000,
       "startup": true
     },
     {
@@ -625,8 +626,8 @@
         "type": 2,
         "value": []
       },
-      "id": "038c276431fde183",
-      "timestamp": 1717716754542000,
+      "id": "e6ceb04b9c89fae3",
+      "timestamp": 1717786639899000,
       "startup": true
     },
     {
@@ -638,8 +639,8 @@
         "type": 2,
         "value": []
       },
-      "id": "427242e02efadeba",
-      "timestamp": 1717716754543000,
+      "id": "ee2a07286478582d",
+      "timestamp": 1717786639900000,
       "startup": true
     },
     {
@@ -651,8 +652,8 @@
         "type": 2,
         "value": []
       },
-      "id": "b3862dbe964e1e16",
-      "timestamp": 1717716754544000,
+      "id": "b9d9b0676c29eb63",
+      "timestamp": 1717786639902000,
       "startup": true
     },
     {
@@ -664,8 +665,8 @@
         "type": 2,
         "value": []
       },
-      "id": "5aa7dcfe15c1a3b2",
-      "timestamp": 1717716754545000,
+      "id": "b05d72cb96acd895",
+      "timestamp": 1717786639902000,
       "startup": true
     },
     {
@@ -678,8 +679,8 @@
         "type": 1,
         "value": []
       },
-      "id": "048c6897bb0e1954",
-      "timestamp": 1717716754549000,
+      "id": "5e254ef1bdc98eea",
+      "timestamp": 1717786639905000,
       "startup": true
     },
     {
@@ -692,8 +693,8 @@
         "type": 1,
         "value": []
       },
-      "id": "e42d87b9267040be",
-      "timestamp": 1717716754558000,
+      "id": "3f631824a6368e3a",
+      "timestamp": 1717786639914000,
       "startup": true
     },
     {
@@ -706,8 +707,8 @@
         "type": 1,
         "value": []
       },
-      "id": "64f118761ccb8550",
-      "timestamp": 1717716754568000,
+      "id": "5d01a807ab9a5d38",
+      "timestamp": 1717786639926000,
       "startup": true
     },
     {
@@ -733,36 +734,8 @@
           }
         ]
       },
-      "id": "b5dffda07938c71c",
-      "timestamp": 1717716754583000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "CREATE TABLE IF NOT EXISTS \"_JobStatus\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"source\" text,\"status\" text,\"message\" text,\"params\" jsonb,\"finishedAt\" timestamp with time zone,\"_rperm\" text[],\"_wperm\" text[])",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "8abf1c688d33adb3",
-      "timestamp": 1717716754590000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "CREATE TABLE IF NOT EXISTS \"_JobSchedule\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"description\" text,\"params\" text,\"startAfter\" text,\"daysOfWeek\" jsonb,\"timeOfDay\" text,\"lastRun\" double precision,\"repeatMinutes\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "586f952e72170dce",
-      "timestamp": 1717716754592000,
+      "id": "f8ac1452cadffa6b",
+      "timestamp": 1717786639935000,
       "startup": true
     },
     {
@@ -775,8 +748,8 @@
         "type": 1,
         "value": []
       },
-      "id": "9740df46935759cf",
-      "timestamp": 1717716754594000,
+      "id": "cf5f5c09186af6b7",
+      "timestamp": 1717786639939000,
       "startup": true
     },
     {
@@ -789,8 +762,8 @@
         "type": 1,
         "value": []
       },
-      "id": "0172d4da76f64128",
-      "timestamp": 1717716754595000,
+      "id": "30dc708c80135979",
+      "timestamp": 1717786639940000,
       "startup": true
     },
     {
@@ -803,50 +776,22 @@
         "type": 1,
         "value": []
       },
-      "id": "a653b8a6363e3da9",
-      "timestamp": 1717716754596000,
+      "id": "e428e0484c75c3e2",
+      "timestamp": 1717786639942000,
       "startup": true
     },
     {
       "library": "pg",
       "input": {
-        "query": "begin",
+        "query": "CREATE TABLE IF NOT EXISTS \"_JobStatus\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"source\" text,\"status\" text,\"message\" text,\"params\" jsonb,\"finishedAt\" timestamp with time zone,\"_rperm\" text[],\"_wperm\" text[])",
         "params": []
       },
       "output": {
         "type": 1,
         "value": []
       },
-      "id": "aa64ebf1a46e038c",
-      "timestamp": 1717716754599000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "begin",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "b9dccc47f0611e7c",
-      "timestamp": 1717716754600000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "begin",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "d740e13ec9f568d7",
-      "timestamp": 1717716754602000,
+      "id": "aa616eca0a57c2c0",
+      "timestamp": 1717786639943000,
       "startup": true
     },
     {
@@ -859,8 +804,92 @@
         "type": 1,
         "value": []
       },
-      "id": "2136a19fcb4745b5",
-      "timestamp": 1717716754603000,
+      "id": "69138c14d80fc024",
+      "timestamp": 1717786639945000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_JobSchedule\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"description\" text,\"params\" text,\"startAfter\" text,\"daysOfWeek\" jsonb,\"timeOfDay\" text,\"lastRun\" double precision,\"repeatMinutes\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "f45982210a2d3df4",
+      "timestamp": 1717786639947000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "e6ec7bd9cc90a766",
+      "timestamp": 1717786639949000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "4351ea545916420e",
+      "timestamp": 1717786639950000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "de755513bc3cfeff",
+      "timestamp": 1717786639952000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "f173cc796fcc5d15",
+      "timestamp": 1717786639953000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "94f7c95be804c6b8",
+      "timestamp": 1717786639955000,
       "startup": true
     },
     {
@@ -873,22 +902,8 @@
         "type": 1,
         "value": []
       },
-      "id": "e21ed7dfbd946328",
-      "timestamp": 1717716754605000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "begin",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "5bacf2595dd03595",
-      "timestamp": 1717716754607000,
+      "id": "75599810e73105c7",
+      "timestamp": 1717786639958000,
       "startup": true
     },
     {
@@ -901,8 +916,8 @@
         "type": 1,
         "value": []
       },
-      "id": "4fa8ebf513042ff2",
-      "timestamp": 1717716754610000,
+      "id": "440feb32adda00c3",
+      "timestamp": 1717786639961000,
       "startup": true
     },
     {
@@ -915,8 +930,8 @@
         "type": 1,
         "value": []
       },
-      "id": "1a4b1260e16ec470",
-      "timestamp": 1717716754612000,
+      "id": "7937585fd2211703",
+      "timestamp": 1717786639962000,
       "startup": true
     },
     {
@@ -929,36 +944,8 @@
         "type": 1,
         "value": []
       },
-      "id": "4625575a4adb9519",
-      "timestamp": 1717716754613000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "begin",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "1879fa8559522f64",
-      "timestamp": 1717716754616000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "begin",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "3b44ee168dd4ad0e",
-      "timestamp": 1717716754616000,
+      "id": "ca37e0917d23083b",
+      "timestamp": 1717786639964000,
       "startup": true
     },
     {
@@ -971,8 +958,22 @@
         "type": 1,
         "value": []
       },
-      "id": "b426df3eb0b7c246",
-      "timestamp": 1717716754616000,
+      "id": "7dd4527da673618a",
+      "timestamp": 1717786639964000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "a140baa8ec32bc01",
+      "timestamp": 1717786639965000,
       "startup": true
     },
     {
@@ -985,8 +986,22 @@
         "type": 1,
         "value": []
       },
-      "id": "becccfa95aa25f48",
-      "timestamp": 1717716754616000,
+      "id": "4aaa4fdfa1acb235",
+      "timestamp": 1717786639966000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": []
+      },
+      "id": "7ae248065288171b",
+      "timestamp": 1717786639966000,
       "startup": true
     },
     {
@@ -1066,8 +1081,8 @@
           }
         ]
       },
-      "id": "39334d3ff7a4ab8f",
-      "timestamp": 1717716754622000,
+      "id": "de6ecfce712159aa",
+      "timestamp": 1717786639970000,
       "startup": true
     },
     {
@@ -1108,8 +1123,29 @@
           }
         ]
       },
-      "id": "4115228322254b68",
-      "timestamp": 1717716754626000,
+      "id": "2535358b877ec890",
+      "timestamp": 1717786639975000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GraphQLConfig'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "config"
+          },
+          {
+            "column_name": "objectId"
+          }
+        ]
+      },
+      "id": "09ef3f96ea439107",
+      "timestamp": 1717786639979000,
       "startup": true
     },
     {
@@ -1156,8 +1192,32 @@
           }
         ]
       },
-      "id": "b79dd93e4355b795",
-      "timestamp": 1717716754630000,
+      "id": "0f9a3b9c3aad9475",
+      "timestamp": 1717786639985000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GlobalConfig'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "params"
+          },
+          {
+            "column_name": "masterKeyOnly"
+          },
+          {
+            "column_name": "objectId"
+          }
+        ]
+      },
+      "id": "11dfaefd00a46932",
+      "timestamp": 1717786639989000,
       "startup": true
     },
     {
@@ -1170,8 +1230,8 @@
         "type": 1,
         "value": []
       },
-      "id": "3be6173dca6ac908",
-      "timestamp": 1717716754631000,
+      "id": "86da9415a8aebe10",
+      "timestamp": 1717786639990000,
       "startup": true
     },
     {
@@ -1184,8 +1244,44 @@
         "type": 1,
         "value": []
       },
-      "id": "7d2394acbce63dc9",
-      "timestamp": 1717716754634000,
+      "id": "fd44a3c3ae3e7ee8",
+      "timestamp": 1717786639990000,
+      "startup": true
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Idempotency'",
+        "params": []
+      },
+      "output": {
+        "type": 1,
+        "value": [
+          {
+            "column_name": "expire"
+          },
+          {
+            "column_name": "updatedAt"
+          },
+          {
+            "column_name": "createdAt"
+          },
+          {
+            "column_name": "_wperm"
+          },
+          {
+            "column_name": "reqId"
+          },
+          {
+            "column_name": "objectId"
+          },
+          {
+            "column_name": "_rperm"
+          }
+        ]
+      },
+      "id": "b02c9dc6e44e6840",
+      "timestamp": 1717786640003000,
       "startup": true
     },
     {
@@ -1238,103 +1334,8 @@
           }
         ]
       },
-      "id": "09247ceecf4647a6",
-      "timestamp": 1717716754638000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "commit",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": []
-      },
-      "id": "3628c3820f55a6bf",
-      "timestamp": 1717716754640000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GlobalConfig'",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": [
-          {
-            "column_name": "params"
-          },
-          {
-            "column_name": "masterKeyOnly"
-          },
-          {
-            "column_name": "objectId"
-          }
-        ]
-      },
-      "id": "56ef39c8c2940853",
-      "timestamp": 1717716754647000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Idempotency'",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": [
-          {
-            "column_name": "expire"
-          },
-          {
-            "column_name": "updatedAt"
-          },
-          {
-            "column_name": "createdAt"
-          },
-          {
-            "column_name": "_wperm"
-          },
-          {
-            "column_name": "reqId"
-          },
-          {
-            "column_name": "objectId"
-          },
-          {
-            "column_name": "_rperm"
-          }
-        ]
-      },
-      "id": "4a11ee9b80b524c3",
-      "timestamp": 1717716754651000,
-      "startup": true
-    },
-    {
-      "library": "pg",
-      "input": {
-        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GraphQLConfig'",
-        "params": []
-      },
-      "output": {
-        "type": 1,
-        "value": [
-          {
-            "column_name": "config"
-          },
-          {
-            "column_name": "objectId"
-          }
-        ]
-      },
-      "id": "c28711a2af04014f",
-      "timestamp": 1717716754657000,
+      "id": "4cc4bc0b01f2c6b2",
+      "timestamp": 1717786640010000,
       "startup": true
     },
     {
@@ -1347,8 +1348,8 @@
         "type": 1,
         "value": []
       },
-      "id": "bc0bbca32c553197",
-      "timestamp": 1717716754669000,
+      "id": "e39e36659aefac2e",
+      "timestamp": 1717786640020000,
       "startup": true
     },
     {
@@ -1361,8 +1362,8 @@
         "type": 1,
         "value": []
       },
-      "id": "db11cfd6773ccf26",
-      "timestamp": 1717716754672000,
+      "id": "b4e5ef3a5a354122",
+      "timestamp": 1717786640021000,
       "startup": true
     },
     {
@@ -1375,8 +1376,8 @@
         "type": 1,
         "value": []
       },
-      "id": "54b9bf2d5c31d9bc",
-      "timestamp": 1717716754675000,
+      "id": "9c68b8ee818253b8",
+      "timestamp": 1717786640026000,
       "startup": true
     },
     {
@@ -1389,8 +1390,8 @@
         "type": 1,
         "value": []
       },
-      "id": "59fb6766b78b85d5",
-      "timestamp": 1717716754676000,
+      "id": "de550124ce7120b4",
+      "timestamp": 1717786640031000,
       "startup": true
     },
     {
@@ -1403,8 +1404,8 @@
         "type": 1,
         "value": []
       },
-      "id": "960cb9872a9f9bb4",
-      "timestamp": 1717716754677000,
+      "id": "8d61ae9480f6059d",
+      "timestamp": 1717786640031000,
       "startup": true
     },
     {
@@ -1417,8 +1418,8 @@
         "type": 1,
         "value": []
       },
-      "id": "138e06f681af82fe",
-      "timestamp": 1717716754677000,
+      "id": "27d6e6fe1fdadfa3",
+      "timestamp": 1717786640032000,
       "startup": true
     },
     {
@@ -1431,8 +1432,8 @@
         "type": 1,
         "value": []
       },
-      "id": "e3768d61a254053a",
-      "timestamp": 1717716754679000,
+      "id": "dd21c83d4af3d2be",
+      "timestamp": 1717786640033000,
       "startup": true
     },
     {
@@ -1445,8 +1446,8 @@
         "type": 1,
         "value": []
       },
-      "id": "93b07bbcab56eb6f",
-      "timestamp": 1717716754680000,
+      "id": "acff3af6339cb009",
+      "timestamp": 1717786640033000,
       "startup": true
     },
     {
@@ -1459,8 +1460,8 @@
         "type": 1,
         "value": []
       },
-      "id": "dc23828619083854",
-      "timestamp": 1717716754680000,
+      "id": "7bc75533d8917222",
+      "timestamp": 1717786640034000,
       "startup": true
     },
     {
@@ -1479,18 +1480,6 @@
                 "email": {
                   "type": "String"
                 },
-                "_rperm": {
-                  "type": "Array",
-                  "contents": {
-                    "type": "String"
-                  }
-                },
-                "_wperm": {
-                  "type": "Array",
-                  "contents": {
-                    "type": "String"
-                  }
-                },
                 "authData": {
                   "type": "Object"
                 },
@@ -1508,9 +1497,6 @@
                 },
                 "emailVerified": {
                   "type": "Boolean"
-                },
-                "_hashed_password": {
-                  "type": "String"
                 }
               },
               "className": "_User"
@@ -1532,18 +1518,6 @@
                   "type": "Relation",
                   "targetClass": "_User"
                 },
-                "_rperm": {
-                  "type": "Array",
-                  "contents": {
-                    "type": "String"
-                  }
-                },
-                "_wperm": {
-                  "type": "Array",
-                  "contents": {
-                    "type": "String"
-                  }
-                },
                 "objectId": {
                   "type": "String"
                 },
@@ -1564,18 +1538,6 @@
               "fields": {
                 "score": {
                   "type": "Number"
-                },
-                "_rperm": {
-                  "type": "Array",
-                  "contents": {
-                    "type": "String"
-                  }
-                },
-                "_wperm": {
-                  "type": "Array",
-                  "contents": {
-                    "type": "String"
-                  }
                 },
                 "objectId": {
                   "type": "String"
@@ -1599,8 +1561,8 @@
           }
         ]
       },
-      "id": "093400d27c238624",
-      "timestamp": 1717716754687000,
+      "id": "6e5d8ea67f1453c7",
+      "timestamp": 1717786640038000,
       "startup": true
     },
     {
@@ -1613,8 +1575,8 @@
         "type": 1,
         "value": []
       },
-      "id": "53d8b391938c845e",
-      "timestamp": 1717716754698000,
+      "id": "59b88b959fa09965",
+      "timestamp": 1717786640051000,
       "startup": true
     },
     {
@@ -1627,8 +1589,8 @@
         "type": 1,
         "value": []
       },
-      "id": "1b106c8d90ee7b4a",
-      "timestamp": 1717716754701000,
+      "id": "2154fe8812b9fdf5",
+      "timestamp": 1717786640057000,
       "startup": true
     },
     {
@@ -1641,8 +1603,8 @@
         "type": 1,
         "value": []
       },
-      "id": "2cbb79aa73b5dc5a",
-      "timestamp": 1717716754702000,
+      "id": "bd82235e3242aefd",
+      "timestamp": 1717786640063000,
       "startup": true
     },
     {
@@ -1655,8 +1617,8 @@
         "type": 1,
         "value": []
       },
-      "id": "3b9a531bbd5d183b",
-      "timestamp": 1717716754703000,
+      "id": "04d8b329963cdfbf",
+      "timestamp": 1717786640064000,
       "startup": true
     },
     {
@@ -1669,8 +1631,8 @@
         "type": 1,
         "value": []
       },
-      "id": "76d53aedbf808be8",
-      "timestamp": 1717716754704000,
+      "id": "b13fc2fdd806ba12",
+      "timestamp": 1717786640064000,
       "startup": true
     },
     {
@@ -1683,8 +1645,8 @@
         "type": 1,
         "value": []
       },
-      "id": "602ed85c25b3008f",
-      "timestamp": 1717716754705000,
+      "id": "218fb1a8364a7365",
+      "timestamp": 1717786640065000,
       "startup": true
     },
     {
@@ -1697,8 +1659,8 @@
         "type": 1,
         "value": []
       },
-      "id": "c76420b1c53c9df2",
-      "timestamp": 1717716754706000,
+      "id": "6af73bc8ec325d69",
+      "timestamp": 1717786640066000,
       "startup": true
     },
     {
@@ -1711,8 +1673,8 @@
         "type": 1,
         "value": []
       },
-      "id": "dd14f1e57d5df23c",
-      "timestamp": 1717716754709000,
+      "id": "448f95ee563008b0",
+      "timestamp": 1717786640071000,
       "startup": true
     },
     {
@@ -1725,22 +1687,22 @@
         "type": 1,
         "value": []
       },
-      "id": "786d41c8a4c0e0fc",
-      "timestamp": 1717716754713000,
+      "id": "6aae649c2e3b4ee0",
+      "timestamp": 1717786640074000,
       "startup": true
     },
     {
       "library": "pg",
       "input": {
-        "query": "INSERT INTO \"GameScore\" (\"score\",\"playerName\",\"cheatMode\",\"updatedAt\",\"createdAt\",\"objectId\") VALUES (1337,'Sean Plott',false,'2024-06-06T23:32:36.602Z','2024-06-06T23:32:36.602Z','3W67SXxfyI')",
+        "query": "INSERT INTO \"GameScore\" (\"score\",\"playerName\",\"cheatMode\",\"updatedAt\",\"createdAt\",\"objectId\") VALUES (1337,'Sean Plott',false,'2024-06-07T18:57:26.461Z','2024-06-07T18:57:26.461Z','EBxZDyd4Ln')",
         "params": []
       },
       "output": {
         "type": 1,
         "value": []
       },
-      "id": "6d491ed2d9b8764d",
-      "timestamp": 1717716756607000,
+      "id": "9e1cf792c7416a26",
+      "timestamp": 1717786646466000,
       "startup": false
     }
   ],
@@ -1761,7 +1723,7 @@
         "functionName": "randomUUID",
         "args": []
       },
-      "id": "fa86976ad883d261",
+      "id": "d11c7894a2944aa1",
       "startup": true
     },
     {
@@ -1772,1342 +1734,735 @@
           10
         ]
       },
-      "id": "57759174384523d5",
+      "id": "cde43c591b6c10e1",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "id": "3775f2a2fa863db9",
       "startup": false
     },
     {
       "library": "date",
       "input": "now",
-      "id": "bc891e9d05ecb136",
+      "id": "7928150926ac8d24",
+      "startup": true
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "id": "475a22e7a664782d",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "Date.new",
+      "id": "299cf51e997e3d81",
+      "startup": false
+    },
+    {
+      "library": "date",
+      "input": "now",
+      "id": "a92b5e8284676809",
       "startup": true
     },
     {
       "library": "date",
       "input": "now",
-      "id": "a5ddef8f9d182326",
+      "id": "345962ad6ac3f606",
       "startup": true
     },
     {
       "library": "date",
+      "input": "Date.new",
+      "id": "f0bdf45447a73c22",
+      "startup": false
+    },
+    {
+      "library": "date",
       "input": "now",
-      "id": "8f98cb40d0301e22",
+      "id": "ba617ed027162cf9",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "2ce5f864d4e95af9",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_SCHEMA\" ( \"className\" varChar(120), \"schema\" jsonb, \"isParseClass\" bool, PRIMARY KEY (\"className\") )",
+        "params": []
+      },
+      "id": "e8a0a8ab3de4f15f",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "9ab3a9cec83033c6",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_Hooks\" (\"functionName\" text,\"className\" text,\"triggerName\" text,\"url\" text)",
+        "params": []
+      },
+      "id": "5e254ef1bdc98eea",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "edd012ca77e6d23b",
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_JobStatus\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"source\" text,\"status\" text,\"message\" text,\"params\" jsonb,\"finishedAt\" timestamp with time zone,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "id": "aa616eca0a57c2c0",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "3d290649750a8b4d",
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_JobSchedule\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"jobName\" text,\"description\" text,\"params\" text,\"startAfter\" text,\"daysOfWeek\" jsonb,\"timeOfDay\" text,\"lastRun\" double precision,\"repeatMinutes\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "id": "f45982210a2d3df4",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "ccecddeebbafbf8e",
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_PushStatus\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"pushTime\" text,\"source\" text,\"query\" text,\"payload\" text,\"title\" text,\"expiry\" double precision,\"expiration_interval\" double precision,\"status\" text,\"numSent\" double precision,\"numFailed\" double precision,\"pushHash\" text,\"errorMessage\" jsonb,\"sentPerType\" jsonb,\"failedPerType\" jsonb,\"sentPerUTCOffset\" jsonb,\"failedPerUTCOffset\" jsonb,\"count\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "id": "cf5f5c09186af6b7",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "10ab177fa5a818c4",
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_GlobalConfig\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"params\" jsonb,\"masterKeyOnly\" jsonb)",
+        "params": []
+      },
+      "id": "69138c14d80fc024",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "e912b6f4c31d5826",
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_GraphQLConfig\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"config\" jsonb)",
+        "params": []
+      },
+      "id": "e428e0484c75c3e2",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "6b4df066806788e1",
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_Audience\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"name\" text,\"query\" text,\"lastUsed\" timestamp with time zone,\"timesUsed\" double precision,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "id": "30dc708c80135979",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "a9bc7c0bf337778b",
+      "library": "pg",
+      "input": {
+        "query": "CREATE TABLE IF NOT EXISTS \"_Idempotency\" (\"objectId\" text,PRIMARY KEY (\"objectId\"),\"createdAt\" timestamp with time zone,\"updatedAt\" timestamp with time zone,\"reqId\" text,\"expire\" timestamp with time zone,\"_rperm\" text[],\"_wperm\" text[])",
+        "params": []
+      },
+      "id": "75599810e73105c7",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "0cd8675927a4db04",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "3f631824a6368e3a",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "2a6587fc403f4eab",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "e6ec7bd9cc90a766",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "0194c43631b7b8c6",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "4351ea545916420e",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "0f16e43f5788149a",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "de755513bc3cfeff",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "024f0eb5bde3d61e",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "f173cc796fcc5d15",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "b2d8d39a1b4beabc",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "94f7c95be804c6b8",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "43b732a3af732ccc",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "4aaa4fdfa1acb235",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "d0ef64ce75ed3248",
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "7ae248065288171b",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "0e3127c5257fece0",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "5d01a807ab9a5d38",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "a9617cfa02b70349",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "440feb32adda00c3",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "91d98a3766c5071d",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "7937585fd2211703",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "4766ca427f85f43f",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "ca37e0917d23083b",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "bfd4a30e33f16de7",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "7dd4527da673618a",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "2d1f03425c71a685",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "a140baa8ec32bc01",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "3fafec68b24d19a0",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "86da9415a8aebe10",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "3674004b770128f4",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "fd44a3c3ae3e7ee8",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "4c01d1f367b1759e",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Hooks'",
+        "params": []
+      },
+      "id": "f8ac1452cadffa6b",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "d542a5fdebc202da",
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_JobStatus'",
+        "params": []
+      },
+      "id": "0f9a3b9c3aad9475",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "a2c0e082b49ea5fb",
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_JobSchedule'",
+        "params": []
+      },
+      "id": "4cc4bc0b01f2c6b2",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "396b8a5e20c12b5a",
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_PushStatus'",
+        "params": []
+      },
+      "id": "de6ecfce712159aa",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "7b02b8c568932666",
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GlobalConfig'",
+        "params": []
+      },
+      "id": "11dfaefd00a46932",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "0f49481a3f2056dd",
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_GraphQLConfig'",
+        "params": []
+      },
+      "id": "09ef3f96ea439107",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "14bf33e9d6fd620b",
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Audience'",
+        "params": []
+      },
+      "id": "2535358b877ec890",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "ee261b4c04b06cc0",
+      "library": "pg",
+      "input": {
+        "query": "SELECT column_name FROM information_schema.columns WHERE table_name = '_Idempotency'",
+        "params": []
+      },
+      "id": "b02c9dc6e44e6840",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "3325403f66e4dcb3",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "begin",
+        "params": []
+      },
+      "id": "e39e36659aefac2e",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "859fad4aed089e39",
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION json_object_set_key( \"json\" jsonb, key_to_set TEXT, value_to_set anyelement ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT concat('{', string_agg(to_json(\"key\") || ':' || \"value\", ','), '}')::jsonb FROM (SELECT * FROM jsonb_each(\"json\") WHERE key <> key_to_set UNION ALL SELECT key_to_set, to_json(\"value_to_set\")::jsonb) AS fields $function$;",
+        "params": []
+      },
+      "id": "b4e5ef3a5a354122",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "8fbb2bc5dc71d1ca",
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_add( \"array\" jsonb, \"values\" jsonb ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT array_to_json(ARRAY(SELECT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements(\"array\")) || ARRAY(SELECT jsonb_array_elements(\"values\")))))::jsonb; $function$;",
+        "params": []
+      },
+      "id": "9c68b8ee818253b8",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "c29e40bb8f3b18e7",
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_add_unique( \"array\" jsonb, \"values\" jsonb ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT array_to_json(ARRAY(SELECT DISTINCT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements(\"array\")) || ARRAY(SELECT DISTINCT jsonb_array_elements(\"values\")))))::jsonb; $function$;",
+        "params": []
+      },
+      "id": "de550124ce7120b4",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "704bb6c1ef159865",
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_remove( \"array\" jsonb, \"values\" jsonb ) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT array_to_json(ARRAY(SELECT * FROM jsonb_array_elements(\"array\") as elt WHERE elt NOT IN (SELECT * FROM (SELECT jsonb_array_elements(\"values\")) AS sub)))::jsonb; $function$;",
+        "params": []
+      },
+      "id": "8d61ae9480f6059d",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "09947165a843db68",
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_contains_all( \"array\" jsonb, \"values\" jsonb ) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT CASE WHEN 0 = jsonb_array_length(\"values\") THEN true = false ELSE (SELECT RES.CNT = jsonb_array_length(\"values\") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements_text(\"array\") as elt WHERE elt IN (SELECT jsonb_array_elements_text(\"values\"))) as RES) END; $function$;",
+        "params": []
+      },
+      "id": "27d6e6fe1fdadfa3",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "eed36c27a16151c6",
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_contains_all_regex( \"array\" jsonb, \"values\" jsonb ) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT CASE WHEN 0 = jsonb_array_length(\"values\") THEN true = false ELSE (SELECT RES.CNT = jsonb_array_length(\"values\") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements_text(\"array\") as elt WHERE elt LIKE ANY (SELECT jsonb_array_elements_text(\"values\"))) as RES) END; $function$;",
+        "params": []
+      },
+      "id": "dd21c83d4af3d2be",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "bf5f6742b4d56f76",
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION array_contains( \"array\" jsonb, \"values\" jsonb ) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $function$ SELECT RES.CNT >= 1 FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements(\"array\") as elt WHERE elt IN (SELECT jsonb_array_elements(\"values\"))) as RES; $function$;",
+        "params": []
+      },
+      "id": "acff3af6339cb009",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "e8dd21fb8efa1155",
+      "library": "pg",
+      "input": {
+        "query": "commit",
+        "params": []
+      },
+      "id": "7bc75533d8917222",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "99fb1c877d8cbb67",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "SELECT * FROM \"_SCHEMA\"",
+        "params": []
+      },
+      "id": "6e5d8ea67f1453c7",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "435820fd854736f8",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_User_unique_username\" ON \"_User\"(\"username\")",
+        "params": []
+      },
+      "id": "59b88b959fa09965",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "8b71b5c3b384c092",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE INDEX IF NOT EXISTS \"case_insensitive_username\" ON \"_User\" (lower(\"username\") varchar_pattern_ops)",
+        "params": []
+      },
+      "id": "2154fe8812b9fdf5",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "b8a2576dda70bad9",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE INDEX IF NOT EXISTS \"case_insensitive_email\" ON \"_User\" (lower(\"email\") varchar_pattern_ops)",
+        "params": []
+      },
+      "id": "bd82235e3242aefd",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "b4f83c2e5dde7513",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_User_unique_email\" ON \"_User\"(\"email\")",
+        "params": []
+      },
+      "id": "04d8b329963cdfbf",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "2fbc7369db1a8e0e",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_Role_unique_name\" ON \"_Role\"(\"name\")",
+        "params": []
+      },
+      "id": "b13fc2fdd806ba12",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "d9fa5a264d17a6b3",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
+      "startup": false
+    },
+    {
+      "library": "pg",
+      "input": {
+        "query": "CREATE UNIQUE INDEX IF NOT EXISTS \"_Idempotency_unique_reqId\" ON \"_Idempotency\"(\"reqId\")",
+        "params": []
+      },
+      "id": "218fb1a8364a7365",
       "startup": true
     },
     {
-      "library": "date",
-      "input": "now",
-      "id": "16025410e877c167",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
       "startup": false
     },
     {
-      "library": "date",
-      "input": "Date.new",
-      "id": "53ef3f074dacb63d",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "id": "9619b028922c0fe8",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "id": "777c7387a2fd2818",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "id": "3b01d5b17d328abc",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "id": "68ab532d85db800a",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "id": "721ce0aff00cf01c",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "id": "fb94725c18497282",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
+      "library": "pg",
+      "input": {
+        "query": "CREATE OR REPLACE FUNCTION idempotency_delete_expired_records() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DELETE FROM \"_Idempotency\" WHERE expire < NOW() - INTERVAL '300 seconds'; END; $$;",
+        "params": []
+      },
+      "id": "6af73bc8ec325d69",
+      "startup": true
     },
     {
-      "library": "date",
-      "input": "Date.new",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
       "startup": false
     },
     {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "Date.new",
-      "startup": false
-    },
-    {
-      "library": "date",
-      "input": "now",
-      "startup": false
+      "library": "pg",
+      "input": {
+        "query": "CREATE INDEX IF NOT EXISTS \"ttl\" ON \"_Idempotency\" (\"expire\")",
+        "params": []
+      },
+      "id": "448f95ee563008b0",
+      "startup": true
     },
     {
-      "library": "date",
-      "input": "Date.new",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
       "startup": false
     },
     {
-      "library": "date",
-      "input": "now",
-      "startup": false
+      "library": "pg",
+      "input": {
+        "query": "SELECT * FROM \"_Hooks\"",
+        "params": []
+      },
+      "id": "6aae649c2e3b4ee0",
+      "startup": true
     },
     {
-      "library": "date",
-      "input": "Date.new",
+      "library": "pg",
+      "input": {
+        "connectionString": "*"
+      },
       "startup": false
     },
     {
-      "library": "date",
-      "input": "now",
+      "library": "pg",
+      "input": {
+        "query": "INSERT INTO \"GameScore\" (\"score\",\"playerName\",\"cheatMode\",\"updatedAt\",\"createdAt\",\"objectId\") VALUES (1337,'Sean Plott',false,'2024-06-07T18:57:26.461Z','2024-06-07T18:57:26.461Z','EBxZDyd4Ln')",
+        "params": []
+      },
+      "id": "9e1cf792c7416a26",
       "startup": false
     }
   ]
