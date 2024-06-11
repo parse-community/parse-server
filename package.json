@@ -104,7 +104,7 @@
     "node-fetch": "3.2.10",
     "nyc": "15.1.0",
     "prettier": "2.0.5",
-    "semantic-release": "17.4.6",
+    "semantic-release": "17.4.7",
     "yaml": "1.10.0"
   },
   "scripts": {
