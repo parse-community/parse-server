@@ -1269,4 +1269,33 @@ describe('ParseLiveQuery', function () {
     expect(object2.id).toBeDefined();
     expect(object3.id).toBeDefined();
   });
+
+  it('triggers query event with constraint not equal to null', async () => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const spy = {
+      create(obj) {
+        expect(obj.attributes.foo).toEqual('bar');
+      },
+    };
+    const createSpy = spyOn(spy, 'create');
+    const query = new Parse.Query(TestObject);
+    query.notEqualTo('foo', null);
+    const subscription = await query.subscribe();
+    subscription.on('create', spy.create);
+
+    const object1 = new TestObject();
+    object1.set('foo', 'bar');
+    await object1.save();
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(createSpy).toHaveBeenCalledTimes(1);
+  });
 });
