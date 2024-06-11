@@ -47,7 +47,7 @@
  * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} enforcePrivateUsers Set to true if new users should be created without public read and write access.
  * @property {Boolean} expireInactiveSessions Sets whether we should expire the inactive sessions, defaults to true. If false, all new sessions are created with no expiration date.
- * @property {Boolean} extendSessionOnUse Whether Parse Server should automatically extend a valid session by the sessionLength
+ * @property {Boolean} extendSessionOnUse Whether Parse Server should automatically extend a valid session by the sessionLength. In order to reduce the number of session updates in the database, a session will only be extended when a request is received after at least half of the current session's lifetime has passed.
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {FileUploadOptions} fileUpload Options for file uploads

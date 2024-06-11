@@ -1,3 +1,10 @@
+# [7.1.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.8...7.1.0-alpha.9) (2024-05-27)
+
+
+### Bug Fixes
+
+* Parse Server option `extendSessionOnUse` not working for session lengths < 24 hours ([#9113](https://github.com/parse-community/parse-server/issues/9113)) ([0a054e6](https://github.com/parse-community/parse-server/commit/0a054e6b541fd5ab470bf025665f5f7d2acedaa0))
+
 # [7.1.0-alpha.8](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.7...7.1.0-alpha.8) (2024-05-16)
 
 
