@@ -1539,23 +1539,23 @@ describe("POST /parse/classes/GameScore", () => {
         type: 2,
         value: [],
       },
-      id: "c294392011fa1b47",
-      timestamp: 1718153033983000,
+      id: "43e3fc2be8e5fe32",
+      timestamp: 1718153034529000,
       startup: false,
     },
     {
       library: "pg",
       input: {
         query:
-          'INSERT INTO "GameScore" ("score","playerName","cheatMode","updatedAt","createdAt","objectId") VALUES (1337,\'Sean Plott\',false,\'2024-06-12T00:43:53.979Z\',\'2024-06-12T00:43:53.979Z\',\'dI277ZBQ8e\')',
+          'INSERT INTO "GameScore" ("score","playerName","cheatMode","updatedAt","createdAt","objectId") VALUES (1337,\'Sean Plott\',false,\'2024-06-12T00:43:54.525Z\',\'2024-06-12T00:43:54.525Z\',\'5bbQWlXTzV\')',
         params: [],
       },
       output: {
         type: 1,
         value: [],
       },
-      id: "eb3c312826d2c3e8",
-      timestamp: 1718153033992000,
+      id: "377ffac2cffe3f68",
+      timestamp: 1718153034533000,
       startup: false,
     },
   ];
@@ -1586,10 +1586,10 @@ describe("POST /parse/classes/GameScore", () => {
       },
       output: {
         type: "Buffer",
-        data: [153, 132, 116, 245, 245, 149, 249, 78, 122, 154],
+        data: [181, 213, 213, 202, 208, 99, 23, 19, 113, 21],
       },
-      id: "2208d86370bf1ae7",
-      timestamp: 1718153033981000,
+      id: "e46fe2b3b21fe3e6",
+      timestamp: 1718153034527000,
       startup: false,
     },
   ];
@@ -2713,72 +2713,72 @@ describe("POST /parse/classes/GameScore", () => {
     {
       library: "date",
       input: "Date.new",
-      output: "2024-06-12T00:43:53.972Z",
-      id: "36565adc55aa3850",
-      timestamp: 1718153033972000,
+      output: "2024-06-12T00:43:54.523Z",
+      id: "ab884110a844537c",
+      timestamp: 1718153034523000,
       startup: false,
     },
     {
       library: "date",
       input: "now",
-      output: "1718153033977",
-      id: "28cc3296e089e93b",
-      timestamp: 1718153033977000,
+      output: "1718153034523",
+      id: "a84d93574eab6c9d",
+      timestamp: 1718153034523000,
       startup: false,
     },
     {
       library: "date",
       input: "Date.new",
-      output: "2024-06-12T00:43:53.979Z",
-      id: "32f693f521200fe6",
-      timestamp: 1718153033979000,
+      output: "2024-06-12T00:43:54.525Z",
+      id: "18b127fca54b19e6",
+      timestamp: 1718153034525000,
       startup: false,
     },
     {
       library: "date",
       input: "Date.new",
-      output: "2024-06-12T00:43:53.990Z",
-      id: "c3b67f92393bc893",
-      timestamp: 1718153033989000,
+      output: "2024-06-12T00:43:54.530Z",
+      id: "25408f1cbce53ae2",
+      timestamp: 1718153034530000,
       startup: false,
     },
     {
       library: "date",
       input: "now",
-      output: "1718153033991",
-      id: "cc46da6db341f88c",
-      timestamp: 1718153033991000,
+      output: "1718153034532",
+      id: "1ada2b064c8c87d5",
+      timestamp: 1718153034532000,
       startup: false,
     },
     {
       library: "date",
       input: "now",
-      output: "1718153033995",
-      id: "a3d6a96460af39cb",
-      timestamp: 1718153033995000,
+      output: "1718153034538",
+      id: "9ea44accff1e535c",
+      timestamp: 1718153034538000,
       startup: false,
     },
     {
       library: "date",
       input: "Date.new",
-      output: "2024-06-12T00:43:53.997Z",
-      id: "ddfc4e3d91c6d459",
-      timestamp: 1718153033997000,
+      output: "2024-06-12T00:43:54.539Z",
+      id: "1cdf02fa2d68359d",
+      timestamp: 1718153034539000,
       startup: false,
     },
     {
       library: "date",
       input: "now",
-      output: "1718153033997",
-      id: "853833923ada7c5c",
-      timestamp: 1718153033997000,
+      output: "1718153034539",
+      id: "734b3a85369d42d1",
+      timestamp: 1718153034539000,
       startup: false,
     },
   ];
   let dateInterceptor: libraries.DateInterceptor;
 
   const EXPECTED_BODY =
-    '{"objectId":"dI277ZBQ8e","createdAt":"2024-06-12T00:43:53.979Z"}';
+    '{"objectId":"5bbQWlXTzV","createdAt":"2024-06-12T00:43:54.525Z"}';
   const EXPECTED_RESPONSE_HEADER = {
     "x-powered-by": "Express",
     "access-control-allow-methods": "GET,PUT,POST,DELETE,OPTIONS",
@@ -2786,7 +2786,7 @@ describe("POST /parse/classes/GameScore", () => {
       "X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control",
     "access-control-expose-headers":
       "X-Parse-Job-Status-Id, X-Parse-Push-Status-Id",
-    location: "http://localhost:1337/parse/classes/GameScore/dI277ZBQ8e",
+    location: "http://localhost:1337/parse/classes/GameScore/5bbQWlXTzV",
     "content-type": "application/json; charset=utf-8",
   };
 
@@ -2796,8 +2796,8 @@ describe("POST /parse/classes/GameScore", () => {
     process.env = originalEnvironment;
 
     // Emit test results.
-    utils.serializeTestResults("generated/test_results/0.json", {
-      traceId: "364fb3fbe89fb86f13a5959a4bddb961",
+    utils.serializeTestResults("generated/test_results/1.json", {
+      traceId: "33c04b652d6bd1809e69eb01bdba861d",
       testFile: __filename.split("/").pop() as string,
       request: {
         pathKey: "/parse/classes/:className",

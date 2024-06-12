@@ -278,11 +278,7 @@ class ParseServer {
         parseGraphQLServer.applyPlayground(app);
       }
     }
-    const server = await new Promise(resolve => {
-      app.listen(options.port, options.host, function () {
-        resolve(this);
-      });
-    });
+    const server = app;
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
@@ -329,7 +325,7 @@ class ParseServer {
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
-      httpServer.listen(config.port);
+      // httpServer.listen(config.port);
     }
     const server = new ParseLiveQueryServer(httpServer, config, options);
     await server.connect();

@@ -22,7 +22,7 @@ generate:
 
 .PHONY: run
 run:
-	npx jest --config jest.detail.js --testPathPattern ${DETAIL_FOLDER}/generated
+	npx jest -i --config jest.detail.js --testPathPattern ${DETAIL_FOLDER}/generated
 
 .PHONY: prune
 prune:
