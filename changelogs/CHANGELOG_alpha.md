@@ -1,3 +1,10 @@
+# [7.1.0-alpha.10](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.9...7.1.0-alpha.10) (2024-06-11)
+
+
+### Bug Fixes
+
+* Live query throws error when constraint `notEqualTo` is set to `null` ([#8835](https://github.com/parse-community/parse-server/issues/8835)) ([11d3e48](https://github.com/parse-community/parse-server/commit/11d3e484df862224c15d20f6171514948981ea90))
+
 # [7.1.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.8...7.1.0-alpha.9) (2024-05-27)
 
 
