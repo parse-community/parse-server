@@ -105,7 +105,6 @@ describe('OAuth', function () {
     });
   });
 
-  it('POST request for a resource that requires OAuth should fail with invalid credentials', done => {
   xit('POST request for a resource that requires OAuth should fail with invalid credentials', done => {
     /*
       This endpoint has been chosen to make a request to an endpoint that requires OAuth which fails due to missing authentication.
