@@ -2633,14 +2633,14 @@ function literalizeRegexPart(s: string) {
   const matcher1 = /\\Q((?!\\E).*)\\E$/;
   const result1: any = s.match(matcher1);
   if (result1 && result1.length > 1 && result1.index > -1) {
-    // Process RegEx that has a beginning and an end specified for the literal text
+    // Process Regex that has a beginning and an end specified for the literal text
     const prefix = s.substring(0, result1.index);
     const remaining = result1[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
   }
 
-  // Process RegEx that has a beginning specified for the literal text
+  // Process Regex that has a beginning specified for the literal text
   const matcher2 = /\\Q((?!\\E).*)$/;
   const result2: any = s.match(matcher2);
   if (result2 && result2.length > 1 && result2.index > -1) {
