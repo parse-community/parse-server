@@ -1,9 +1,13 @@
 ############################################################
 # Build stage
 ############################################################
-FROM node:lts-alpine AS build
+FROM node:20.14.0-alpine3.20 AS build
 
-RUN apk --no-cache add git
+RUN apk --no-cache add \
+   build-base \
+   git \
+   python3
+
 WORKDIR /tmp
 
 # Copy package.json first to benefit from layer caching
@@ -24,7 +28,7 @@ RUN npm ci --omit=dev --ignore-scripts \
 ############################################################
 # Release stage
 ############################################################
-FROM node:lts-alpine AS release
+FROM node:20.14.0-alpine3.20 AS release
 
 VOLUME /parse-server/cloud /parse-server/config
 

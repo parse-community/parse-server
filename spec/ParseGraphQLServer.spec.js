@@ -9548,6 +9548,71 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
+        it('should support files on required file', async () => {
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+            const schemaController = await parseServer.config.databaseController.loadSchema();
+            await schemaController.addClassIfNotExists('SomeClassWithRequiredFile', {
+              someField: { type: 'File', required: true },
+            });
+            await resetGraphQLCache();
+            await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
+
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                  mutation CreateSomeObject(
+                    $fields: CreateSomeClassWithRequiredFileFieldsInput
+                  ) {
+                    createSomeClassWithRequiredFile(
+                      input: { fields: $fields }
+                    ) {
+                      someClassWithRequiredFile {
+                        id
+                        someField {
+                          name
+                          url
+                        }
+                      }
+                    }
+                  }
+                  `,
+                variables: {
+                  fields: {
+                    someField: { upload: null },
+                  },
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.fields.someField.upload'] }));
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
+            });
+
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+            expect(res.status).toEqual(200);
+            const resText = await res.text();
+            const result = JSON.parse(resText);
+            expect(
+              result.data.createSomeClassWithRequiredFile.someClassWithRequiredFile.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClassWithRequiredFile.someClassWithRequiredFile.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
         it('should support file upload for on fly creation through pointer and relation', async () => {
           parseServer = await global.reconfigureServer({
             publicServerURL: 'http://localhost:13377/parse',
