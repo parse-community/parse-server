@@ -124,6 +124,7 @@
     "test:mongodb:4.4.13": "npm run test:mongodb --dbversion=4.4.13",
     "test:mongodb:5.3.2": "npm run test:mongodb --dbversion=5.3.2",
     "test:mongodb:6.0.2": "npm run test:mongodb --dbversion=6.0.2",
+    "test:postgres:testonly": "cross-env PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly",
     "posttest:mongodb": "mongodb-runner stop",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start",
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=5.3.2} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
