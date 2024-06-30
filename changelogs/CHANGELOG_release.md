@@ -1,3 +1,10 @@
+## [6.5.7](https://github.com/parse-community/parse-server/compare/6.5.6...6.5.7) (2024-06-30)
+
+
+### Bug Fixes
+
+* SQL injection when using Parse Server with PostgreSQL; fixes security vulnerability [GHSA-c2hr-cqg6-8j6r](https://github.com/parse-community/parse-server/security/advisories/GHSA-c2hr-cqg6-8j6r) ([#9168](https://github.com/parse-community/parse-server/issues/9168)) ([f332d54](https://github.com/parse-community/parse-server/commit/f332d54577608c5ad927255e06d8c694e2e0ff5b))
+
 ## [6.5.6](https://github.com/parse-community/parse-server/compare/6.5.5...6.5.6) (2024-05-16)
 
 
