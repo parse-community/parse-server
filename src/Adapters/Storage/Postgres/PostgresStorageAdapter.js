@@ -2652,6 +2652,7 @@ function literalizeRegexPart(s: string) {
 
   // Remove problematic chars from remaining text
   return s
+    // Remove all instances of \Q and \E
     .replace(/([^\\])(\\E)/, '$1')
     .replace(/([^\\])(\\Q)/, '$1')
     .replace(/^\\E/, '')
