@@ -2652,10 +2652,10 @@ function literalizeRegexPart(s: string) {
 
   // Remove problematic chars from remaining text
   return s
-    // Remove all instances of \E
-    .replace(/\\E/g, '')
-    // Remove all instances of \Q
-    .replace(/\\Q/g, '')
+    .replace(/([^\\])(\\E)/, '$1')
+    .replace(/([^\\])(\\Q)/, '$1')
+    .replace(/^\\E/, '')
+    .replace(/^\\Q/, '')
     // Ensure even number of single quote sequences by adding an extra single quote if needed;
     // this ensures that every single quote is escaped
     .replace(/'+/g, match => {
