@@ -2650,12 +2650,17 @@ function literalizeRegexPart(s: string) {
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
   }
 
-  // Remove all instances of \Q and \E from the remaining text & escape single quotes and backslashes
+  // Remove problematic chars from remaining text
   return s
+    // Remove all instances of \E
     .replace(/\\E/g, '')
+    // Remove all instances of \Q
     .replace(/\\Q/g, '')
-    .replace(/'/g, "''")
-    .replace(/\\/g, '\\\\');
+    // Ensure even number of single quote sequences by adding an extra single quote if needed;
+    // this ensures that every single quote is escaped
+    .replace(/'+/g, match => {
+      return match.length % 2 === 0 ? match : match + "'";
+    });
 }
 
 var GeoPointCoder = {
