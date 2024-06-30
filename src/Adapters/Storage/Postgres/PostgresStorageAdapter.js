@@ -2614,16 +2614,16 @@ function isAnyValueRegexStartsWith(values) {
   });
 }
 
-function createLiteralRegex(remaining) {
+function createLiteralRegex(remaining: string) {
   return remaining
     .split('')
     .map(c => {
-      const regex = RegExp('[0-9 ]|\\p{L}', 'u'); // Support all unicode letter chars
+      const regex = RegExp('[0-9 ]|\\p{L}', 'u'); // Support all Unicode letter chars
       if (c.match(regex) !== null) {
-        // don't escape alphanumeric characters
+        // Don't escape alphanumeric characters
         return c;
       }
-      // escape everything else (single quotes with single quotes, everything else with a backslash)
+      // Escape everything else (single quotes with single quotes, everything else with a backslash)
       return c === `'` ? `''` : `\\${c}`;
     })
     .join('');
@@ -2633,14 +2633,14 @@ function literalizeRegexPart(s: string) {
   const matcher1 = /\\Q((?!\\E).*)\\E$/;
   const result1: any = s.match(matcher1);
   if (result1 && result1.length > 1 && result1.index > -1) {
-    // process regex that has a beginning and an end specified for the literal text
+    // Process Regex that has a beginning and an end specified for the literal text
     const prefix = s.substring(0, result1.index);
     const remaining = result1[1];
 
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
   }
 
-  // process regex that has a beginning specified for the literal text
+  // Process Regex that has a beginning specified for the literal text
   const matcher2 = /\\Q((?!\\E).*)$/;
   const result2: any = s.match(matcher2);
   if (result2 && result2.length > 1 && result2.index > -1) {
@@ -2650,14 +2650,18 @@ function literalizeRegexPart(s: string) {
     return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
   }
 
-  // remove all instances of \Q and \E from the remaining text & escape single quotes
+  // Remove problematic chars from remaining text
   return s
+    // Remove all instances of \Q and \E
     .replace(/([^\\])(\\E)/, '$1')
     .replace(/([^\\])(\\Q)/, '$1')
     .replace(/^\\E/, '')
     .replace(/^\\Q/, '')
-    .replace(/([^'])'/g, `$1''`)
-    .replace(/^'([^'])/, `''$1`);
+    // Ensure even number of single quote sequences by adding an extra single quote if needed;
+    // this ensures that every single quote is escaped
+    .replace(/'+/g, match => {
+      return match.length % 2 === 0 ? match : match + "'";
+    });
 }
 
 var GeoPointCoder = {

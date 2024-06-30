@@ -35,6 +35,7 @@ process.noDeprecation = true;
 const cache = require('../lib/cache').default;
 const defaults = require('../lib/defaults').default;
 const ParseServer = require('../lib/index').ParseServer;
+const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
@@ -53,7 +54,10 @@ let databaseAdapter;
 let databaseURI;
 // need to bind for mocking mocha
 
-if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
+  databaseAdapter = JSON.parse(process.env.PARSE_SERVER_DATABASE_ADAPTER);
+  databaseAdapter = loadAdapter(databaseAdapter);
+} else if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI;
   databaseAdapter = new PostgresStorageAdapter({
     uri: databaseURI,
@@ -131,6 +135,16 @@ const defaultConfiguration = {
   },
   allowClientClassCreation: true,
 };
+
+if (silent) {
+  defaultConfiguration.logLevels = {
+    cloudFunctionSuccess: 'silent',
+    cloudFunctionError: 'silent',
+    triggerAfter: 'silent',
+    triggerBeforeError: 'silent',
+    triggerBeforeSuccess: 'silent',
+  };
+}
 
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
@@ -434,8 +448,8 @@ try {
   // Fetch test exclusion list
   testExclusionList = require('./testExclusionList.json');
   console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
-} catch(error) {
-  if(error.code !== 'MODULE_NOT_FOUND') {
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') {
     throw error;
   }
 }
@@ -445,10 +459,7 @@ global.it_id = (id, func) => {
   if (testExclusionList.includes(id)) {
     return xit;
   } else {
-    if(func === undefined)
-      return it;
-    else
-      return func;
+    return func || it;
   }
 };
 

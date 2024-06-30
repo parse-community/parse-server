@@ -382,6 +382,9 @@ function userIdForLog(auth) {
 }
 
 function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
+  if (logLevel === 'silent') {
+    return;
+  }
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   logger[logLevel](
     `${triggerType} triggered for ${className} for user ${userIdForLog(
@@ -396,6 +399,9 @@ function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
 }
 
 function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth, logLevel) {
+  if (logLevel === 'silent') {
+    return;
+  }
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
   logger[logLevel](
@@ -411,6 +417,9 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
 }
 
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, logLevel) {
+  if (logLevel === 'silent') {
+    return;
+  }
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   logger[logLevel](
     `${triggerType} failed for ${className} for user ${userIdForLog(
