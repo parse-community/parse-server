@@ -2076,7 +2076,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  fitx('matches regex', function (done) {
+  fit('matches regex', function (done) {
     const thing1 = new TestObject();
     thing1.set('myString', 'football');
     const thing2 = new TestObject();
@@ -2136,7 +2136,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  fitx('Regular expression constructor includes modifiers inline', function (done) {
+  fit('Regular expression constructor includes modifiers inline', function (done) {
     const thing = new TestObject();
     thing.set('myString', '\n\nbuffer\n\nparse.COM');
     Parse.Object.saveAll([thing]).then(function () {
@@ -2153,7 +2153,7 @@ describe('Parse.Query testing', () => {
     "\\E' !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTU" +
     "VWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'";
 
-  fitx('contains', function (done) {
+  fit('contains', function (done) {
     Parse.Object.saveAll([
       new TestObject({ myString: 'zax' + someAscii + 'qub' }),
       new TestObject({ myString: 'start' + someAscii }),
@@ -2188,7 +2188,7 @@ describe('Parse.Query testing', () => {
       }, done.fail);
   });
 
-  fitx('startsWith', function (done) {
+  fit('startsWith', function (done) {
     Parse.Object.saveAll([
       new TestObject({ myString: 'zax' + someAscii + 'qub' }),
       new TestObject({ myString: 'start' + someAscii }),
@@ -2204,7 +2204,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  fitx('endsWith', function (done) {
+  fit('endsWith', function (done) {
     Parse.Object.saveAll([
       new TestObject({ myString: 'zax' + someAscii + 'qub' }),
       new TestObject({ myString: 'start' + someAscii }),

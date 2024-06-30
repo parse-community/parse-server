@@ -435,7 +435,7 @@ describe('Vulnerabilities', () => {
 });
 
 describe('Postgres regex sanitizater', () => {
-  it('sanitizes the regex correctly to prevent Injection', async () => {
+  fit('sanitizes the regex correctly to prevent Injection', async () => {
     const user = new Parse.User();
     user.set('username', 'username');
     user.set('password', 'password');
