@@ -2055,4 +2055,30 @@ describe('Parse.Object testing', () => {
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
   });
+
+  fit('returns correct field values', async () => {
+    const values = [
+      { field: 'string', value: 'string' },
+      { field: 'number', value: 1 },
+      { field: 'boolean', value: true },
+      { field: 'array', value: [1, 2, 3] },
+      { field: 'object', value: { key: 'value' } },
+      { field: 'date', value: new Date() },
+      { field: 'file', value: Parse.File.fromJSON({
+        __type: 'File',
+        name: 'name',
+        url: 'http://localhost:8378/1/files/test/name',
+      }) },
+      { field: 'geoPoint', value: new Parse.GeoPoint(40, -30) },
+      { field: 'bytes', value: { __type: 'Bytes', base64: 'ZnJveW8=' } },
+    ];
+    for (const value of values) {
+      const object = new TestObject();
+      object.set(value.field, value.value);
+      await object.save();
+      const query = new Parse.Query(TestObject);
+      const objectAgain = await query.get(object.id);
+      expect(objectAgain.get(value.field)).toEqual(value.value);
+    }
+  });
 });
