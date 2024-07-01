@@ -1,3 +1,10 @@
+# [7.1.0-alpha.13](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.12...7.1.0-alpha.13) (2024-07-01)
+
+
+### Bug Fixes
+
+* Invalid push notification tokens are not cleaned up from database for FCM API v2 ([#9173](https://github.com/parse-community/parse-server/issues/9173)) ([284da09](https://github.com/parse-community/parse-server/commit/284da09f4546356b37511a589fb5f64a3efffe79))
+
 # [7.1.0-alpha.12](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.11...7.1.0-alpha.12) (2024-06-30)
 
 
