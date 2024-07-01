@@ -248,7 +248,7 @@ export function pushStatusHandler(config, existingObjectId) {
             if (
               error?.code === 'messaging/registration-token-not-registered' ||
               error?.code === 'messaging/invalid-registration-token' ||
-              (error?.code === 'messaging/invalid-argument' && error.message === 'The registration token is not a valid FCM registration token')
+              (error?.code === 'messaging/invalid-argument' && error?.message === 'The registration token is not a valid FCM registration token')
             ) {
               devicesToRemove.push(token);
             }
