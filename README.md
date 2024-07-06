@@ -6,7 +6,7 @@
 [![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=beta)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Abeta)
 [![Build Status](https://github.com/parse-community/parse-server/workflows/ci/badge.svg?branch=release)](https://github.com/parse-community/parse-server/actions?query=workflow%3Aci+branch%3Arelease)
 [![Snyk Badge](https://snyk.io/test/github/parse-community/parse-server/badge.svg)](https://snyk.io/test/github/parse-community/parse-server)
-[![Coverage](https://img.shields.io/codecov/c/github/parse-community/parse-server/alpha.svg)](https://codecov.io/github/parse-community/parse-server?branch=alpha)
+[![Coverage](https://codecov.io/github/parse-community/parse-server/branch/alpha/graph/badge.svg)](https://app.codecov.io/github/parse-community/parse-server/tree/alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
 [![Node Version](https://img.shields.io/badge/nodejs-18,_20-green.svg?logo=node.js&style=flat)](https://nodejs.org)

@@ -1,3 +1,38 @@
+# [7.1.0-alpha.13](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.12...7.1.0-alpha.13) (2024-07-01)
+
+
+### Bug Fixes
+
+* Invalid push notification tokens are not cleaned up from database for FCM API v2 ([#9173](https://github.com/parse-community/parse-server/issues/9173)) ([284da09](https://github.com/parse-community/parse-server/commit/284da09f4546356b37511a589fb5f64a3efffe79))
+
+# [7.1.0-alpha.12](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.11...7.1.0-alpha.12) (2024-06-30)
+
+
+### Bug Fixes
+
+* SQL injection when using Parse Server with PostgreSQL; fixes security vulnerability [GHSA-c2hr-cqg6-8j6r](https://github.com/parse-community/parse-server/security/advisories/GHSA-c2hr-cqg6-8j6r) ([#9167](https://github.com/parse-community/parse-server/issues/9167)) ([2edf1e4](https://github.com/parse-community/parse-server/commit/2edf1e4c0363af01e97a7fbc97694f851b7d1ff3))
+
+# [7.1.0-alpha.11](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.10...7.1.0-alpha.11) (2024-06-29)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5.2.0 ([#9128](https://github.com/parse-community/parse-server/issues/9128)) ([665b8d5](https://github.com/parse-community/parse-server/commit/665b8d52d6cf5275179a5e1fb132c934edb53ecc))
+
+# [7.1.0-alpha.10](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.9...7.1.0-alpha.10) (2024-06-11)
+
+
+### Bug Fixes
+
+* Live query throws error when constraint `notEqualTo` is set to `null` ([#8835](https://github.com/parse-community/parse-server/issues/8835)) ([11d3e48](https://github.com/parse-community/parse-server/commit/11d3e484df862224c15d20f6171514948981ea90))
+
+# [7.1.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.8...7.1.0-alpha.9) (2024-05-27)
+
+
+### Bug Fixes
+
+* Parse Server option `extendSessionOnUse` not working for session lengths < 24 hours ([#9113](https://github.com/parse-community/parse-server/issues/9113)) ([0a054e6](https://github.com/parse-community/parse-server/commit/0a054e6b541fd5ab470bf025665f5f7d2acedaa0))
+
 # [7.1.0-alpha.8](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.7...7.1.0-alpha.8) (2024-05-16)
 
 
