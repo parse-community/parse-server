@@ -2078,7 +2078,7 @@ describe('Parse.Object testing', () => {
         value: Parse.File.fromJSON({
           __type: 'File',
           name: 'name',
-          url: 'http://localhost:1337/parse/files/integration/name',
+          url: 'http://localhost:8378/1/files/test/name',
         }),
       },
       { field: 'geoPoint', value: new Parse.GeoPoint(40, -30) },
