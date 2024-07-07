@@ -151,26 +151,16 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 }
 
 const openConnections = {};
-const destroyAliveConnections = function () {
-  for (const socketId in openConnections) {
-    try {
-      openConnections[socketId].destroy();
-      delete openConnections[socketId];
-    } catch (e) {
-      /* */
-    }
-  }
-};
-// Set up a default API server for testing with default configuration.
-let server;
+let parseServer;
 
 let didChangeConfiguration = false;
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = async (changedConfiguration = {}) => {
-  if (server) {
-    await new Promise(resolve => server.close(resolve));
-    server = undefined;
+  if (parseServer) {
+    await parseServer.handleShutdown();
+    await new Promise(resolve => parseServer.server.close(resolve));
+    parseServer = undefined;
     return reconfigureServer(changedConfiguration);
   }
   didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
@@ -179,14 +169,17 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     port,
   });
   cache.clear();
-  const parseServer = await ParseServer.startApp(newConfiguration);
-  server = parseServer.server;
+  parseServer = await ParseServer.startApp(newConfiguration);
+  if (parseServer.config.state === 'initialized') {
+    console.error('Failed to initialize Parse Server');
+    return reconfigureServer(newConfiguration);
+  }
   Parse.CoreManager.setRESTController(RESTController);
   parseServer.expressApp.use('/1', err => {
     console.error(err);
     fail('should not call next');
   });
-  server.on('connection', connection => {
+  parseServer.server.on('connection', connection => {
     const key = `${connection.remoteAddress}:${connection.remotePort}`;
     openConnections[key] = connection;
     connection.on('close', () => {
@@ -220,10 +213,6 @@ beforeEach(() => {
 
 afterEach(function (done) {
   const afterLogOut = async () => {
-    if (Object.keys(openConnections).length > 0) {
-      console.warn('There were open connections to the server left after the test finished');
-    }
-    destroyAliveConnections();
     await TestUtils.destroyAllDataPermanently(true);
     SchemaCache.clear();
     if (didChangeConfiguration) {
@@ -276,6 +265,13 @@ afterEach(function (done) {
       });
     })
     .then(afterLogOut);
+});
+
+afterAll(() => {
+  // Jasmine process counts as one open connection
+  if (Object.keys(openConnections).length > 1) {
+    console.warn('There were open connections to the server left after the test finished');
+  }
 });
 
 const TestObject = Parse.Object.extend({
