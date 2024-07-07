@@ -572,15 +572,35 @@ describe('Parse.Object testing', () => {
     const obj = new TestObject();
     obj.set('items', [ { value: 'a', count: 5 }, { value: 'b', count: 1 } ]);
     await obj.save();
-
     obj.increment('items.0.count', 15);
     obj.increment('items.1.count', 4);
     await obj.save();
-
+    expect(obj.toJSON().items[0].value).toBe('a');
+    expect(obj.toJSON().items[1].value).toBe('b');
+    expect(obj.toJSON().items[0].count).toBe(20);
+    expect(obj.toJSON().items[1].count).toBe(5);
     const query = new Parse.Query(TestObject);
     const result = await query.get(obj.id);
+    expect(result.get('items')[0].value).toBe('a');
+    expect(result.get('items')[1].value).toBe('b');
     expect(result.get('items')[0].count).toBe(20);
     expect(result.get('items')[1].count).toBe(5);
+    expect(result.get('items')).toEqual(obj.get('items'));
+  });
+
+  it_only_db('mongo')('can increment array nested fields missing index', async () => {
+    const obj = new TestObject();
+    obj.set('items', []);
+    await obj.save();
+    obj.increment('items.1.count', 15);
+    await obj.save();
+    expect(obj.toJSON().items[0]).toBe(null);
+    expect(obj.toJSON().items[1].count).toBe(15);
+    const query = new Parse.Query(TestObject);
+    const result = await query.get(obj.id);
+    expect(result.get('items')[0]).toBe(null);
+    expect(result.get('items')[1].count).toBe(15);
+    expect(result.get('items')).toEqual(obj.get('items'));
   });
 
   it('addUnique with object', function (done) {

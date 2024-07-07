@@ -1851,6 +1851,13 @@ class DatabaseController {
         // only valid ops that produce an actionable result
         // the op may have happened on a keypath
         this._expandResultOnKeyPath(response, key, result);
+        // Revert array to object conversion on dot notation for arrays (e.g. "field.0.key")
+        if (key.includes('.')) {
+          const [field, index] = key.split('.');
+          if (!isNaN(index) && Array.isArray(result[field]) && !Array.isArray(response[field])) {
+            response[field] = result[field];
+          }
+        }
       }
     });
     return Promise.resolve(response);
