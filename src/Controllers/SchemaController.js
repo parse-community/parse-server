@@ -1101,7 +1101,8 @@ export default class SchemaController {
       // JSON Arrays are treated as Nested Objects
       const [x, y] = fieldName.split('.');
       fieldName = x;
-      if (!isNaN(y) && !['sentPerUTCOffset', 'failedPerUTCOffset'].includes(fieldName)) {
+      const isArrayIndex = Array.from(y).every(c => c >= '0' && c <= '9');
+      if (isArrayIndex && !['sentPerUTCOffset', 'failedPerUTCOffset'].includes(fieldName)) {
         type = 'Array';
       } else {
         type = 'Object';
