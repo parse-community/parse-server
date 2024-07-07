@@ -1,3 +1,10 @@
+# [7.1.0-alpha.14](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.13...7.1.0-alpha.14) (2024-07-07)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5.3.0 ([#9180](https://github.com/parse-community/parse-server/issues/9180)) ([dca187f](https://github.com/parse-community/parse-server/commit/dca187f91b93cbb362b22a3fb9ee38451799ff13))
+
 # [7.1.0-alpha.13](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.12...7.1.0-alpha.13) (2024-07-01)
 
 
