@@ -112,6 +112,7 @@ const defaultConfiguration = {
   fileKey: 'test',
   directAccess: true,
   silent,
+  verbose: !silent,
   logLevel,
   liveQuery: {
     classNames: ['TestObject'],

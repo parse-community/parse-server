@@ -313,7 +313,6 @@ describe('execution', () => {
     );
     childProcess.stdout.on('data', data => {
       data = data.toString();
-      console.log(data);
       if (data.includes('parse-server running on')) {
         done();
       }
