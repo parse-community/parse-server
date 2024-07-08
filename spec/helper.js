@@ -285,6 +285,10 @@ afterEach(function (done) {
     .then(afterLogOut);
 });
 
+afterAll(() => {
+  global.displaySlowTests();
+});
+
 const TestObject = Parse.Object.extend({
   className: 'TestObject',
 });
