@@ -46,7 +46,7 @@ jobs:
         run: npm ci
       - name: Remove dev dependencies
         run: |
-          npm prune --production
+          npm prune --include=dev || true
           npm ls --depth=0
       - name: Install selected dev dependencies
         run: |
