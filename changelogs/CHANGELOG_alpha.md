@@ -1,3 +1,10 @@
+# [7.1.0-alpha.16](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.15...7.1.0-alpha.16) (2024-07-08)
+
+
+### Features
+
+* Add support for dot notation on array fields of Parse Object ([#9115](https://github.com/parse-community/parse-server/issues/9115)) ([cf4c880](https://github.com/parse-community/parse-server/commit/cf4c8807b9da87a0a5f9c94e5bdfcf17cda80cf4))
+
 # [7.1.0-alpha.15](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.14...7.1.0-alpha.15) (2024-07-08)
 
 
