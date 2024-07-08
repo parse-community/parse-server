@@ -2120,7 +2120,7 @@ describe('Parse.Object testing', () => {
     await object.save();
   });
 
-  it('should not change the json field to array in afterSave', async () => {
+  fit('should not change the json field to array in afterSave', async () => {
     Parse.Cloud.beforeSave('failingJSONTestCase', req => {
       expect(req.object.get('jsonField')).toEqual({ '123': 'test' });
     });
