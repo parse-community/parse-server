@@ -112,9 +112,18 @@ const defaultConfiguration = {
   fileKey: 'test',
   directAccess: true,
   silent,
+  verbose: !silent,
   logLevel,
   liveQuery: {
-    classNames: ['TestObject'],
+    classNames: [
+      'Chat',
+      'TestObject',
+      'Test.*',
+      'Test',
+      'Yolo',
+      '_Session',
+      '_User',
+    ],
   },
   startLiveQueryServer: true,
   fileUpload: {
