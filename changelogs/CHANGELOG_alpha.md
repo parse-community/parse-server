@@ -1,3 +1,17 @@
+# [7.1.0-alpha.15](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.14...7.1.0-alpha.15) (2024-07-08)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 6.4.0 ([#9182](https://github.com/parse-community/parse-server/issues/9182)) ([ef1634b](https://github.com/parse-community/parse-server/commit/ef1634bf1f360429108d29b08032fc7961ff96a1))
+
+# [7.1.0-alpha.14](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.13...7.1.0-alpha.14) (2024-07-07)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5.3.0 ([#9180](https://github.com/parse-community/parse-server/issues/9180)) ([dca187f](https://github.com/parse-community/parse-server/commit/dca187f91b93cbb362b22a3fb9ee38451799ff13))
+
 # [7.1.0-alpha.13](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.12...7.1.0-alpha.13) (2024-07-01)
 
 
