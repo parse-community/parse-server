@@ -53,6 +53,9 @@ export async function loadModule(modulePath) {
   } catch (err) {
     if (err.code === 'ERR_REQUIRE_ESM') {
       module = await import(modulePath);
+      if (module.default) {
+        module = module.default;
+      }
     } else {
       throw err;
     }
