@@ -12,7 +12,7 @@ const { fileURLToPath } = require('url');
 // import { fileURLToPath } from 'url';
 
 // Get env vars
-const ref = process.env.GITHUB_REF || '(local)';
+const ref = process.env.GITHUB_REF;
 const serverUrl = process.env.GITHUB_SERVER_URL;
 const repository = process.env.GITHUB_REPOSITORY;
 const repositoryUrl = serverUrl + '/' + repository;
@@ -30,7 +30,7 @@ const templates = {
 async function config() {
 
   // Get branch
-  const branch = ref.split('/').pop().split('-')[0];
+  const branch = ref?.split('/')?.pop()?.split('-')[0] || '(current branch could not be determined)';
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
