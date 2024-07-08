@@ -568,6 +568,70 @@ describe('Parse.Object testing', () => {
       );
   });
 
+  it_only_db('mongo')('can increment array nested fields', async () => {
+    const obj = new TestObject();
+    obj.set('items', [ { value: 'a', count: 5 }, { value: 'b', count: 1 } ]);
+    await obj.save();
+    obj.increment('items.0.count', 15);
+    obj.increment('items.1.count', 4);
+    await obj.save();
+    expect(obj.toJSON().items[0].value).toBe('a');
+    expect(obj.toJSON().items[1].value).toBe('b');
+    expect(obj.toJSON().items[0].count).toBe(20);
+    expect(obj.toJSON().items[1].count).toBe(5);
+    const query = new Parse.Query(TestObject);
+    const result = await query.get(obj.id);
+    expect(result.get('items')[0].value).toBe('a');
+    expect(result.get('items')[1].value).toBe('b');
+    expect(result.get('items')[0].count).toBe(20);
+    expect(result.get('items')[1].count).toBe(5);
+    expect(result.get('items')).toEqual(obj.get('items'));
+  });
+
+  it_only_db('mongo')('can increment array nested fields missing index', async () => {
+    const obj = new TestObject();
+    obj.set('items', []);
+    await obj.save();
+    obj.increment('items.1.count', 15);
+    await obj.save();
+    expect(obj.toJSON().items[0]).toBe(null);
+    expect(obj.toJSON().items[1].count).toBe(15);
+    const query = new Parse.Query(TestObject);
+    const result = await query.get(obj.id);
+    expect(result.get('items')[0]).toBe(null);
+    expect(result.get('items')[1].count).toBe(15);
+    expect(result.get('items')).toEqual(obj.get('items'));
+  });
+
+  it('can query array nested fields', async () => {
+    const objects = [];
+    for (let i = 0; i < 10; i++) {
+      const obj = new TestObject();
+      obj.set('items', [i, { value: i }]);
+      objects.push(obj);
+    }
+    await Parse.Object.saveAll(objects);
+    let query = new Parse.Query(TestObject);
+    query.greaterThan('items.1.value', 5);
+    let result = await query.find();
+    expect(result.length).toBe(4);
+
+    query = new Parse.Query(TestObject);
+    query.lessThan('items.0', 3);
+    result = await query.find();
+    expect(result.length).toBe(3);
+
+    query = new Parse.Query(TestObject);
+    query.equalTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(1);
+
+    query = new Parse.Query(TestObject);
+    query.notEqualTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(9);
+  });
+
   it('addUnique with object', function (done) {
     const x1 = new Parse.Object('X');
     x1.set('stuff', [1, { hello: 'world' }, { foo: 'bar' }]);
