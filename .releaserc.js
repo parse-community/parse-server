@@ -3,10 +3,9 @@
  */
 
 const { readFile } = require('fs').promises;
-const { resolve, dirname } = require('path');
-const { fileURLToPath } = require('url');
+const { resolve } = require('path');
 
-// For ES6 modules:
+// For ES6 modules use:
 // import { readFile } from 'fs/promises';
 // import { resolve, dirname } from 'path';
 // import { fileURLToPath } from 'url';
@@ -109,7 +108,11 @@ async function config() {
 
 async function loadTemplates() {
   for (const template of Object.keys(templates)) {
-    const __dirname = dirname(fileURLToPath(import.meta.url));
+    
+    // For ES6 modules use:
+    // const fileUrl = import.meta.url;
+    // const __dirname = dirname(fileURLToPath(fileUrl));
+
     const filePath = resolve(__dirname, resourcePath, templates[template].file);
     const text = await readFile(filePath, 'utf-8');
     templates[template].text = text;
