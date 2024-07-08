@@ -160,6 +160,8 @@ class ParseServer {
           throw e;
         }
       }
+      const pushController = await controllers.getPushController(this.config);
+      this.config = { ...this.config, ...pushController };
       await hooksController.load();
       const startupPromises = [];
       if (schema) {
