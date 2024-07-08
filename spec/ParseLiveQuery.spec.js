@@ -344,7 +344,7 @@ describe('ParseLiveQuery', function () {
     await promise;
   });
 
-  it('can handle live query with fields - enable upon JS SDK support', async () => {
+  it('can handle live query with fields', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['Test'],
