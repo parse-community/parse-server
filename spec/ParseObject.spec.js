@@ -603,6 +603,25 @@ describe('Parse.Object testing', () => {
     expect(result.get('items')).toEqual(obj.get('items'));
   });
 
+  it_only_db('mongo')('can query array nested fields', async () => {
+    const objects = [];
+    for (let i = 0; i < 10; i++) {
+      const obj = new TestObject();
+      obj.set('items', [i, { value: i }]);
+      objects.push(obj);
+    }
+    await Parse.Object.saveAll(objects);
+    let query = new Parse.Query(TestObject);
+    query.greaterThan('items.1.value', 5);
+    let result = await query.find();
+    expect(result.length).toBe(4);
+
+    query = new Parse.Query(TestObject);
+    query.lessThan('items.0', 3);
+    result = await query.find();
+    expect(result.length).toBe(3);
+  });
+
   it('addUnique with object', function (done) {
     const x1 = new Parse.Object('X');
     x1.set('stuff', [1, { hello: 'world' }, { foo: 'bar' }]);
