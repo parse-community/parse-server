@@ -2120,6 +2120,20 @@ describe('Parse.Object testing', () => {
     await object.save();
   });
 
+  it('should not change the json field to array in afterSave', async () => {
+    Parse.Cloud.beforeSave('failingJSONTestCase', req => {
+      expect(req.object.get('jsonField')).toEqual({ '123': 'test' });
+    });
+
+    Parse.Cloud.afterSave('failingJSONTestCase', req => {
+      expect(req.object.get('jsonField')).toEqual({ '123': 'test' });
+    });
+
+    const object = new Parse.Object('failingJSONTestCase');
+    object.set('jsonField', { '123': 'test' });
+    await object.save();
+  });
+
   it('returns correct field values', async () => {
     const values = [
       { field: 'string', value: 'string' },
