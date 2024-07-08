@@ -50,7 +50,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
-        run: npm i --omit=dev --production
+        run: npm ci --omit=dev
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
