@@ -1854,7 +1854,8 @@ class DatabaseController {
         // Revert array to object conversion on dot notation for arrays (e.g. "field.0.key")
         if (key.includes('.')) {
           const [field, index] = key.split('.');
-          if (!isNaN(index) && Array.isArray(result[field]) && !Array.isArray(response[field])) {
+          const isArrayIndex = Array.from(index).every(c => c >= '0' && c <= '9');
+          if (isArrayIndex && Array.isArray(result[field]) && !Array.isArray(response[field])) {
             response[field] = result[field];
           }
         }

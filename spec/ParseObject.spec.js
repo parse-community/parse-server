@@ -603,7 +603,7 @@ describe('Parse.Object testing', () => {
     expect(result.get('items')).toEqual(obj.get('items'));
   });
 
-  it_only_db('mongo')('can query array nested fields', async () => {
+  it('can query array nested fields', async () => {
     const objects = [];
     for (let i = 0; i < 10; i++) {
       const obj = new TestObject();
@@ -620,6 +620,16 @@ describe('Parse.Object testing', () => {
     query.lessThan('items.0', 3);
     result = await query.find();
     expect(result.length).toBe(3);
+
+    query = new Parse.Query(TestObject);
+    query.equalTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(1);
+
+    query = new Parse.Query(TestObject);
+    query.notEqualTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(9);
   });
 
   it('addUnique with object', function (done) {
