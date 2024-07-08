@@ -43,10 +43,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Install prod dependencies
-        # Ignore the error because npm will invoke the `prepare` script which fails due to
-        # dev dependencies not being installed
-        run: npm ci --omit=dev || true
-      - name: Install dev dependencies
+        run: npm ci
+      - name: Remove dev dependencies
+        run: |
+          npm prune --production
+          npm ls --depth=0
+      - name: Install selected dev dependencies
         run: |
           npm i -D @actions/core
           npm ls --depth=0
