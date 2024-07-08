@@ -45,9 +45,13 @@ jobs:
       - name: Install prod dependencies
         # Ignore the error because npm will invoke the `prepare` script which fails due to
         # dev dependencies not being installed
-        run: npm ci --omit=dev || true
+        run: |
+          npm ci --omit=dev || true
+          npm ls --depth=0
       - name: Install dev dependencies
-        run: npm i -D @actions/core
+        run: |
+          npm i -D @actions/core
+          npm ls --depth=0
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
