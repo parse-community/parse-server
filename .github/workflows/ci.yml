@@ -46,12 +46,12 @@ jobs:
         run: npm ci
       - name: Remove dev dependencies
         run: |
-          npm prune --include=dev || true
-          npm ls --depth=0
+          npm prune --omit=dev
+          npm ls --depth=0 || true
       - name: Install selected dev dependencies
         run: |
-          npm i -D @actions/core
-          npm ls --depth=0
+          npm i -DE @actions/core
+          npm ls --depth=0 || true
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
