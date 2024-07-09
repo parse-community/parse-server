@@ -1,3 +1,94 @@
+# [7.1.0-alpha.16](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.15...7.1.0-alpha.16) (2024-07-08)
+
+
+### Features
+
+* Add support for dot notation on array fields of Parse Object ([#9115](https://github.com/parse-community/parse-server/issues/9115)) ([cf4c880](https://github.com/parse-community/parse-server/commit/cf4c8807b9da87a0a5f9c94e5bdfcf17cda80cf4))
+
+# [7.1.0-alpha.15](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.14...7.1.0-alpha.15) (2024-07-08)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 6.4.0 ([#9182](https://github.com/parse-community/parse-server/issues/9182)) ([ef1634b](https://github.com/parse-community/parse-server/commit/ef1634bf1f360429108d29b08032fc7961ff96a1))
+
+# [7.1.0-alpha.14](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.13...7.1.0-alpha.14) (2024-07-07)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5.3.0 ([#9180](https://github.com/parse-community/parse-server/issues/9180)) ([dca187f](https://github.com/parse-community/parse-server/commit/dca187f91b93cbb362b22a3fb9ee38451799ff13))
+
+# [7.1.0-alpha.13](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.12...7.1.0-alpha.13) (2024-07-01)
+
+
+### Bug Fixes
+
+* Invalid push notification tokens are not cleaned up from database for FCM API v2 ([#9173](https://github.com/parse-community/parse-server/issues/9173)) ([284da09](https://github.com/parse-community/parse-server/commit/284da09f4546356b37511a589fb5f64a3efffe79))
+
+# [7.1.0-alpha.12](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.11...7.1.0-alpha.12) (2024-06-30)
+
+
+### Bug Fixes
+
+* SQL injection when using Parse Server with PostgreSQL; fixes security vulnerability [GHSA-c2hr-cqg6-8j6r](https://github.com/parse-community/parse-server/security/advisories/GHSA-c2hr-cqg6-8j6r) ([#9167](https://github.com/parse-community/parse-server/issues/9167)) ([2edf1e4](https://github.com/parse-community/parse-server/commit/2edf1e4c0363af01e97a7fbc97694f851b7d1ff3))
+
+# [7.1.0-alpha.11](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.10...7.1.0-alpha.11) (2024-06-29)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 5.2.0 ([#9128](https://github.com/parse-community/parse-server/issues/9128)) ([665b8d5](https://github.com/parse-community/parse-server/commit/665b8d52d6cf5275179a5e1fb132c934edb53ecc))
+
+# [7.1.0-alpha.10](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.9...7.1.0-alpha.10) (2024-06-11)
+
+
+### Bug Fixes
+
+* Live query throws error when constraint `notEqualTo` is set to `null` ([#8835](https://github.com/parse-community/parse-server/issues/8835)) ([11d3e48](https://github.com/parse-community/parse-server/commit/11d3e484df862224c15d20f6171514948981ea90))
+
+# [7.1.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.8...7.1.0-alpha.9) (2024-05-27)
+
+
+### Bug Fixes
+
+* Parse Server option `extendSessionOnUse` not working for session lengths < 24 hours ([#9113](https://github.com/parse-community/parse-server/issues/9113)) ([0a054e6](https://github.com/parse-community/parse-server/commit/0a054e6b541fd5ab470bf025665f5f7d2acedaa0))
+
+# [7.1.0-alpha.8](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.7...7.1.0-alpha.8) (2024-05-16)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 6.2.0 ([#9127](https://github.com/parse-community/parse-server/issues/9127)) ([ca20496](https://github.com/parse-community/parse-server/commit/ca20496f28e5ec1294a7a23c8559df82b79b2a04))
+
+# [7.1.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.6...7.1.0-alpha.7) (2024-05-16)
+
+
+### Bug Fixes
+
+* Facebook Limited Login not working due to incorrect domain in JWT validation ([#9122](https://github.com/parse-community/parse-server/issues/9122)) ([9d0bd2b](https://github.com/parse-community/parse-server/commit/9d0bd2badd6e5f7429d1af00b118225752e5d86a))
+
+# [7.1.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.5...7.1.0-alpha.6) (2024-04-14)
+
+
+### Bug Fixes
+
+* `Parse.Cloud.startJob` and `Parse.Push.send` not returning status ID when setting Parse Server option `directAccess: true` ([#8766](https://github.com/parse-community/parse-server/issues/8766)) ([5b0efb2](https://github.com/parse-community/parse-server/commit/5b0efb22efe94c47f243cf8b1e6407ed5c5a67d3))
+
+# [7.1.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.4...7.1.0-alpha.5) (2024-04-07)
+
+
+### Features
+
+* Prevent Parse Server start in case of unknown option in server configuration ([#8987](https://github.com/parse-community/parse-server/issues/8987)) ([8758e6a](https://github.com/parse-community/parse-server/commit/8758e6abb9dbb68757bddcbd332ad25100c24a0e))
+
+# [7.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.3...7.1.0-alpha.4) (2024-03-31)
+
+
+### Features
+
+* Upgrade to @parse/push-adapter 6.0.0 ([#9066](https://github.com/parse-community/parse-server/issues/9066)) ([18bdbf8](https://github.com/parse-community/parse-server/commit/18bdbf89c53a57648891ef582614ba7c2941e587))
+
 # [7.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.2...7.1.0-alpha.3) (2024-03-24)
 
 

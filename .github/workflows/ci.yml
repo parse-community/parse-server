@@ -8,7 +8,7 @@ on:
     paths-ignore:
       - '**/**.md'
 env:
-  NODE_VERSION: 20.11.1
+  NODE_VERSION: 20.12.0
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
   check-code-analysis:
@@ -42,15 +42,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Cache Node.js modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-      - name: Install dependencies
+      - name: Install prod dependencies
         run: npm ci
+      - name: Remove dev dependencies
+        run: ./ci/uninstallDevDeps.sh @actions/core
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
@@ -146,34 +141,34 @@ jobs:
       matrix:
         include:
           - name: MongoDB 4.2, ReplicaSet
-            MONGODB_VERSION: 4.2.19
+            MONGODB_VERSION: 4.2.25
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: MongoDB 4.4, ReplicaSet
-            MONGODB_VERSION: 4.4.13
+            MONGODB_VERSION: 4.4.29
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: MongoDB 5, ReplicaSet
-            MONGODB_VERSION: 5.3.2
+            MONGODB_VERSION: 5.0.26
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: MongoDB 6, ReplicaSet
-            MONGODB_VERSION: 6.0.2
+            MONGODB_VERSION: 6.0.14
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: MongoDB 7, ReplicaSet
-            MONGODB_VERSION: 7.0.1
+            MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: replset
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 4.4.13
+            MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: Node 18
-            MONGODB_VERSION: 4.4.13
+            MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: standalone
-            NODE_VERSION: 18.19.1
+            NODE_VERSION: 18.20.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -210,32 +205,37 @@ jobs:
       - run: npm run coverage
         env:
           CI: true
-      - run: bash <(curl -s https://codecov.io/bash)
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v4
+        with:
+          # Set to `true` once codecov token bug is fixed; https://github.com/parse-community/parse-server/issues/9129
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
   check-postgres:
     strategy:
       matrix:
         include:
           - name: PostgreSQL 13, PostGIS 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: PostgreSQL 13, PostGIS 3.2
             POSTGRES_IMAGE: postgis/postgis:13-3.2
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: PostgreSQL 13, PostGIS 3.3
             POSTGRES_IMAGE: postgis/postgis:13-3.3
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: PostgreSQL 13, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:13-3.4
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: PostgreSQL 14, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:14-3.4
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: PostgreSQL 15, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:15-3.4
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
           - name: PostgreSQL 16, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:15-3.4
-            NODE_VERSION: 20.11.1
+            NODE_VERSION: 20.12.0
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 15
@@ -281,7 +281,13 @@ jobs:
       - run: npm run coverage
         env:
           CI: true
-      - run: bash <(curl -s https://codecov.io/bash)
+      - name: Upload code coverage
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

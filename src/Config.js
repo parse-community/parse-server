@@ -64,6 +64,7 @@ export class Config {
   }
 
   static validateOptions({
+    customPages,
     publicServerURL,
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
@@ -133,7 +134,16 @@ export class Config {
     this.validateRateLimit(rateLimit);
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
+    this.validateCustomPages(customPages);
     this.validateAllowClientClassCreation(allowClientClassCreation);
+  }
+
+  static validateCustomPages(customPages) {
+    if (!customPages) return;
+
+    if (Object.prototype.toString.call(customPages) !== '[object Object]') {
+      throw Error('Parse Server option customPages must be an object.');
+    }
   }
 
   static validateControllers({
@@ -569,6 +579,7 @@ export class Config {
     if (Object.prototype.toString.call(databaseOptions) !== '[object Object]') {
       throw `databaseOptions must be an object`;
     }
+
     if (databaseOptions.enableSchemaHooks === undefined) {
       databaseOptions.enableSchemaHooks = DatabaseOptions.enableSchemaHooks.default;
     } else if (typeof databaseOptions.enableSchemaHooks !== 'boolean') {

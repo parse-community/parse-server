@@ -1096,9 +1096,17 @@ export default class SchemaController {
     maintenance?: boolean
   ) {
     if (fieldName.indexOf('.') > 0) {
-      // subdocument key (x.y) => ok if x is of type 'object'
-      fieldName = fieldName.split('.')[0];
-      type = 'Object';
+      // "<array>.<index>" for Nested Arrays
+      // "<embedded document>.<field>" for Nested Objects
+      // JSON Arrays are treated as Nested Objects
+      const [x, y] = fieldName.split('.');
+      fieldName = x;
+      const isArrayIndex = Array.from(y).every(c => c >= '0' && c <= '9');
+      if (isArrayIndex && !['sentPerUTCOffset', 'failedPerUTCOffset'].includes(fieldName)) {
+        type = 'Array';
+      } else {
+        type = 'Object';
+      }
     }
     let fieldNameToValidate = `${fieldName}`;
     if (maintenance && fieldNameToValidate.charAt(0) === '_') {
