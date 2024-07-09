@@ -33,7 +33,7 @@ global.displaySlowTests = function() {
   }
   times.forEach((time) => {
     if (time >= slowTestLimit) {
-      console.warn(`${time.toFixed(3)}s:, Object.keys(timerMap).find(key => timerMap[key] === time));
+      console.warn(`${time.toFixed(3)}s:`, Object.keys(timerMap).find(key => timerMap[key] === time));
     }
   });
   console.log('\n');
