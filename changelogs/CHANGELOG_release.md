@@ -1,3 +1,16 @@
+# [7.2.0](https://github.com/parse-community/parse-server/compare/7.1.0...7.2.0) (2024-07-09)
+
+
+### Bug Fixes
+
+* Invalid push notification tokens are not cleaned up from database for FCM API v2 ([#9173](https://github.com/parse-community/parse-server/issues/9173)) ([284da09](https://github.com/parse-community/parse-server/commit/284da09f4546356b37511a589fb5f64a3efffe79))
+
+### Features
+
+* Add support for dot notation on array fields of Parse Object ([#9115](https://github.com/parse-community/parse-server/issues/9115)) ([cf4c880](https://github.com/parse-community/parse-server/commit/cf4c8807b9da87a0a5f9c94e5bdfcf17cda80cf4))
+* Upgrade to @parse/push-adapter 6.4.0 ([#9182](https://github.com/parse-community/parse-server/issues/9182)) ([ef1634b](https://github.com/parse-community/parse-server/commit/ef1634bf1f360429108d29b08032fc7961ff96a1))
+* Upgrade to Parse JS SDK 5.3.0 ([#9180](https://github.com/parse-community/parse-server/issues/9180)) ([dca187f](https://github.com/parse-community/parse-server/commit/dca187f91b93cbb362b22a3fb9ee38451799ff13))
+
 # [7.1.0](https://github.com/parse-community/parse-server/compare/7.0.0...7.1.0) (2024-06-30)
 
 
