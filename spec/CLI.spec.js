@@ -220,6 +220,7 @@ fdescribe('execution', () => {
 
   it('should start Parse Server', done => {
     const env = { ...process.env };
+    // env.NODE_OPTIONS = '--dns-result-order=ipv4first';
     childProcess = spawn(
       binPath,
       ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
@@ -238,6 +239,7 @@ fdescribe('execution', () => {
 
   it('should start Parse Server with GraphQL', async done => {
     const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
     childProcess = spawn(
       binPath,
       [
@@ -269,6 +271,7 @@ fdescribe('execution', () => {
 
   it('should start Parse Server with GraphQL and Playground', async done => {
     const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
     childProcess = spawn(
       binPath,
       [
@@ -302,6 +305,7 @@ fdescribe('execution', () => {
 
   it('can start Parse Server with auth via CLI', done => {
     const env = { ...process.env };
+    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
     childProcess = spawn(
       binPath,
       ['--databaseURI', databaseURI, './spec/configs/CLIConfigAuth.json'],
