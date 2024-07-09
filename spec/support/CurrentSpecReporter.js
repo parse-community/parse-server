@@ -34,7 +34,7 @@ global.displaySlowTests = function() {
   times.forEach((time) => {
     // Show test taking longer than 2 second
     if (time >= slowTestLimit) {
-      console.warn(Object.keys(timerMap).find(key => timerMap[key] === time), `${time.toFixed(3)}s`);
+      console.warn(`${time.toFixed(3)}s:, Object.keys(timerMap).find(key => timerMap[key] === time));
     }
   });
   console.log('\n');
