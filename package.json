@@ -54,6 +54,7 @@
     "pg-monitor": "2.0.0",
     "pg-promise": "11.7.8",
     "pluralize": "8.0.0",
+    "punycode": "2.3.1",
     "rate-limit-redis": "4.2.0",
     "redis": "4.6.13",
     "semver": "7.6.0",
