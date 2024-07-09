@@ -30,10 +30,10 @@ describe_only_db('mongo')('Parse.Query with comment testing', () => {
     database = client.db('parseServerMongoAdapterTestDatabase');
     let profiler = await database.command({ profile: 0 });
     expect(profiler.was).toEqual(0);
-    console.log(`Disabling profiler : ${profiler.was}`);
+    // console.log(`Disabling profiler : ${profiler.was}`);
     profiler = await database.command({ profile: profileLevel });
     profiler = await database.command({ profile: -1 });
-    console.log(`Enabling profiler : ${profiler.was}`);
+    // console.log(`Enabling profiler : ${profiler.was}`);
     profiler = await database.command({ profile: -1 });
     expect(profiler.was).toEqual(profileLevel);
   });

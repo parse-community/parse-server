@@ -2,8 +2,13 @@
  * Semantic Release Config
  */
 
-const fs = require('fs').promises;
-const path = require('path');
+const { readFile } = require('fs').promises;
+const { resolve } = require('path');
+
+// For ES6 modules use:
+// import { readFile } from 'fs/promises';
+// import { resolve, dirname } from 'path';
+// import { fileURLToPath } from 'url';
 
 // Get env vars
 const ref = process.env.GITHUB_REF;
@@ -24,7 +29,7 @@ const templates = {
 async function config() {
 
   // Get branch
-  const branch = ref.split('/').pop().split('-')[0];
+  const branch = ref?.split('/')?.pop()?.split('-')[0] || '(current branch could not be determined)';
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
@@ -89,7 +94,7 @@ async function config() {
       [
         "@saithodev/semantic-release-backmerge",
         {
-          "branches": [
+          "backmergeBranches": [
             { from: "beta", to: "alpha" },
             { from: "release", to: "beta" },
           ]
@@ -103,13 +108,15 @@ async function config() {
 
 async function loadTemplates() {
   for (const template of Object.keys(templates)) {
-    const text = await readFile(path.resolve(__dirname, resourcePath, templates[template].file));
+    
+    // For ES6 modules use:
+    // const fileUrl = import.meta.url;
+    // const __dirname = dirname(fileURLToPath(fileUrl));
+
+    const filePath = resolve(__dirname, resourcePath, templates[template].file);
+    const text = await readFile(filePath, 'utf-8');
     templates[template].text = text;
   }
-}
-
-async function readFile(filePath) {
-  return await fs.readFile(filePath, 'utf-8');
 }
 
 function getReleaseComment() {
