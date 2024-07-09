@@ -5,8 +5,8 @@ global.currentSpec = null;
 
 const timerMap = {};
 const duplicates = [];
-/** The min. execution time in seconds for a test to be considered slow. */
-const slowTestLimit = 1;
+/** The minimum execution time in seconds for a test to be considered slow. */
+const slowTestLimit = 2;
 
 class CurrentSpecReporter {
   specStarted(spec) {
