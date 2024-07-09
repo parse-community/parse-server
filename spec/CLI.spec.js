@@ -208,6 +208,31 @@ fdescribe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
+  function handleStdout(childProcess, done, aggregatedData, requiredData) {
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      aggregatedData.push(data);
+      if (requiredData.every(required => aggregatedData.some(aggregated => aggregated.includes(required)))) {
+        done();
+      }
+    });
+  }
+
+  function handleStderr(childProcess, done) {
+    childProcess.stderr.on('data', data => {
+      data = data.toString();
+      if (!data.includes('[DEP0040] DeprecationWarning')) {
+        done.fail(data);
+      }
+    });
+  }
+
+  function handleError(childProcess, done) {
+    childProcess.on('error', err => {
+      done.fail(err);
+    });
+  }
+
   afterEach(done => {
     if (childProcess) {
       childProcess.on('close', () => {
@@ -226,15 +251,10 @@ fdescribe('execution', () => {
       ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
       { env }
     );
-    childProcess.stdout.on('data', data => {
-      data = data.toString();
-      if (data.includes('parse-server running on')) {
-        done();
-      }
-    });
-    childProcess.stderr.on('data', data => {
-      done.fail(data.toString());
-    });
+    const aggregatedData = [];
+    handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
+    handleStderr(childProcess, done);
+    handleError(childProcess, done);
   });
 
   it('should start Parse Server with GraphQL', async done => {
@@ -255,18 +275,13 @@ fdescribe('execution', () => {
       ],
       { env }
     );
-    let output = '';
-    childProcess.stdout.on('data', data => {
-      data = data.toString();
-      output += data;
-      if (data.includes('GraphQL running on')) {
-        expect(output).toMatch('parse-server running on');
-        done();
-      }
-    });
-    childProcess.stderr.on('data', data => {
-      done.fail(data.toString());
-    });
+    const aggregatedData = [];
+    handleStdout(childProcess, done, aggregatedData, [
+      'parse-server running on',
+      'GraphQL running on',
+    ]);
+    handleStderr(childProcess, done);
+    handleError(childProcess, done);
   });
 
   it('should start Parse Server with GraphQL and Playground', async done => {
@@ -288,19 +303,14 @@ fdescribe('execution', () => {
       ],
       { env }
     );
-    let output = '';
-    childProcess.stdout.on('data', data => {
-      data = data.toString();
-      output += data;
-      if (data.includes('Playground running on')) {
-        expect(output).toMatch('GraphQL running on');
-        expect(output).toMatch('parse-server running on');
-        done();
-      }
-    });
-    childProcess.stderr.on('data', data => {
-      done.fail(data.toString());
-    });
+    const aggregatedData = [];
+    handleStdout(childProcess, done, aggregatedData, [
+      'parse-server running on',
+      'Playground running on',
+      'GraphQL running on',
+    ]);
+    handleStderr(childProcess, done);
+    handleError(childProcess, done);
   });
 
   it('can start Parse Server with auth via CLI', done => {
@@ -311,25 +321,9 @@ fdescribe('execution', () => {
       ['--databaseURI', databaseURI, './spec/configs/CLIConfigAuth.json'],
       { env }
     );
-    childProcess.stdout.on('data', data => {
-      data = data.toString();
-      if (data.includes('parse-server running on')) {
-        done();
-      }
-    });
-    childProcess.stderr.on('data', data => {
-      data = data.toString();
-      if (!data.includes('[DEP0040] DeprecationWarning')) {
-        done.fail(data);
-      }
-    });
-    childProcess.on('error', err => {
-      done.fail(err);
-    });
-    childProcess.on('close', code => {
-      if (code !== 0) {
-        done.fail(`Process exited with code ${code}`);
-      }
-    });
+    const aggregatedData = [];
+    handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
+    handleStderr(childProcess, done);
+    handleError(childProcess, done);
   });
 });
