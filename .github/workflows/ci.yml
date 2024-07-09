@@ -45,7 +45,7 @@ jobs:
       - name: Install prod dependencies
         run: npm ci
       - name: Remove dev dependencies
-        run: ./ci/nodeEngineCheck_uninstallDevDeps.sh
+        run: ./ci/uninstallDevDeps.sh @actions/core
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
