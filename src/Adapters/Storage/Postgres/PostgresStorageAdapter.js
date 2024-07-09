@@ -175,6 +175,8 @@ const toPostgresSchema = schema => {
   return schema;
 };
 
+const isArrayIndex = (arrayIndex) => Array.from(arrayIndex).every(c => c >= '0' && c <= '9');
+
 const handleDotFields = object => {
   Object.keys(object).forEach(fieldName => {
     if (fieldName.indexOf('.') > -1) {
@@ -207,7 +209,11 @@ const transformDotFieldToComponents = fieldName => {
     if (index === 0) {
       return `"${cmpt}"`;
     }
-    return `'${cmpt}'`;
+    if (isArrayIndex(cmpt)) {
+      return Number(cmpt);
+    } else {
+      return `'${cmpt}'`;
+    }
   });
 };
 

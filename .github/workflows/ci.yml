@@ -42,15 +42,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Cache Node.js modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
-      - name: Install dependencies
+      - name: Install prod dependencies
         run: npm ci
+      - name: Remove dev dependencies
+        run: ./ci/uninstallDevDeps.sh @actions/core
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
