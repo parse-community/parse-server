@@ -45,27 +45,7 @@ jobs:
       - name: Install prod dependencies
         run: npm ci
       - name: Remove dev dependencies
-        run: |
-          exclusionList=(
-            "@actions/core"
-          )
-          exclusionPattern=$(printf "|%s" "${exclusionList[@]}")
-          exclusionPattern=${exclusionPattern:1}
-
-          devDeps=$(jq -r '.devDependencies | keys | .[]' package.json)
-
-          for dep in $devDeps; do
-            if ! [[ "$dep" =~ $exclusionPattern ]]; then
-              echo "Uninstalling $dep"
-              npm uninstall "$dep"
-            else
-              echo "Skipping $dep"
-            fi
-          done
-      # - name: Install selected dev dependencies
-      #   run: |
-      #     npm i -DE @actions/core
-      #     npm ls --depth=0 || true
+        run: ./ci/nodeEngineCheck_uninstallDevDeps.sh
       - name: CI Node Engine Check
         run: npm run ci:checkNodeEngine
   check-lint:
