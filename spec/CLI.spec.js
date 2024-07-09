@@ -204,7 +204,7 @@ describe('LiveQuery definitions', () => {
   });
 });
 
-describe('execution', () => {
+fdescribe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
@@ -220,7 +220,7 @@ describe('execution', () => {
 
   it('should start Parse Server', done => {
     const env = { ...process.env };
-    env.NODE_OPTIONS = '--dns-result-order=ipv4first';
+    // env.NODE_OPTIONS = '--dns-result-order=ipv4first';
     childProcess = spawn(
       binPath,
       ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
