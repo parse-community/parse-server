@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "7.2.0-beta.1",
+  "version": "7.3.0-alpha.1",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -54,6 +54,7 @@
     "pg-monitor": "2.0.0",
     "pg-promise": "11.7.8",
     "pluralize": "8.0.0",
+    "punycode": "2.3.1",
     "rate-limit-redis": "4.2.0",
     "redis": "4.6.13",
     "semver": "7.6.0",
@@ -138,7 +139,7 @@
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
   "engines": {
-    "node": ">=18.0.0 <21"
+    "node": "18 || 19 || 20 || 22"
   },
   "bin": {
     "parse-server": "bin/parse-server"
