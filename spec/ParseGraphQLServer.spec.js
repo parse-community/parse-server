@@ -9709,7 +9709,6 @@ describe('ParseGraphQLServer', () => {
           });
           expect(res.status).toEqual(200);
           const result = await res.json();
-          console.log(result);
           expect(result.data.createSomeClass.someClass.someFileField.name).toEqual(
             jasmine.stringMatching(/_someFileField.txt$/)
           );
