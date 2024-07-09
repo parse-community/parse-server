@@ -5,7 +5,7 @@
 
 'use strict';
 
-const punycode = require('punycode');
+const punycode = require('punycode/');
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
