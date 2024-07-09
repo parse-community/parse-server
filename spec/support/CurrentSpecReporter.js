@@ -4,11 +4,13 @@ const { performance } = require('perf_hooks');
 global.currentSpec = null;
 
 const timerMap = {};
+const duplicates = [];
 
 class CurrentSpecReporter {
   specStarted(spec) {
     if (timerMap[spec.fullName]) {
       console.log('Duplicate spec: ' + spec.fullName);
+      duplicates.push(spec.fullName);
     }
     timerMap[spec.fullName] = performance.now();
     global.currentSpec = spec;
@@ -23,8 +25,10 @@ class CurrentSpecReporter {
   }
 }
 global.displaySlowTests = function() {
-  console.log('Showing slowest tests:');
   const times = Object.values(timerMap).sort((a,b) => b - a);
+  if (times.length > 0) {
+    console.log('Showing slowest tests:');
+  }
   times.forEach((time) => {
     // Show test taking longer than 2 second
     if (time > 2) {
@@ -32,6 +36,9 @@ global.displaySlowTests = function() {
     }
   });
   console.log('\n');
+  duplicates.forEach((spec) => {
+    console.warn('Duplicate spec: ' + spec);
+  });
 };
 
 module.exports = CurrentSpecReporter;
