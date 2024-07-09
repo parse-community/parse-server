@@ -5,7 +5,8 @@
 
 'use strict';
 
-const punycode = require('punycode/');
+// const punycode = require('punycode/');
+import punycode from 'punycode/punycode.js'
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
