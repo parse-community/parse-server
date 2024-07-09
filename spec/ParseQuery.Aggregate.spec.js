@@ -402,7 +402,7 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it_exclude_dbs(['postgres'])(
-    'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
+    'can group by any date field (it does not work if you have dirty data) (Mongo)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {
       const obj1 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const obj2 = new TestObject({ dateField2019: new Date(1990, 5, 1) });
@@ -440,7 +440,7 @@ describe('Parse.Query Aggregate testing', () => {
   );
 
   it_only_db('postgres')(
-    'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
+    'can group by any date field (it does not work if you have dirty data) (Postgres)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {
       const obj1 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const obj2 = new TestObject({ dateField2019: new Date(1990, 5, 1) });
