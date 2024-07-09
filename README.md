@@ -9,7 +9,7 @@
 [![Coverage](https://codecov.io/github/parse-community/parse-server/branch/alpha/graph/badge.svg)](https://app.codecov.io/github/parse-community/parse-server/tree/alpha)
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
-[![Node Version](https://img.shields.io/badge/nodejs-18,_20-green.svg?logo=node.js&style=flat)](https://nodejs.org)
+[![Node Version](https://img.shields.io/badge/nodejs-18,_20,_22-green.svg?logo=node.js&style=flat)](https://nodejs.org)
 [![MongoDB Version](https://img.shields.io/badge/mongodb-4.2,_4.4,_5,_6,_7-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
 [![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
@@ -127,22 +127,23 @@ Before you start make sure you have installed:
 
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Version | End-of-Life | Compatible |
-|------------|----------------|-------------|------------|
-| Node.js 18 | 18.20.0        | April 2025  | ✅ Yes      |
-| Node.js 20 | 20.12.0        | April 2026  | ✅ Yes      |
+| Version    | End-of-Life | Compatible |
+|------------|-------------|------------|
+| Node.js 18 | April 2025  | ✅ Yes      |
+| Node.js 20 | April 2026  | ✅ Yes      |
+| Node.js 22 | April 2027  | ✅ Yes      |
 
 #### MongoDB
 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. MongoDB "rapid releases" are ignored as these are considered pre-releases of the next major version.
 
 | Version     | Latest Version | End-of-Life   | Compatible |
-| ----------- | -------------- | ------------- | ---------- |
-| MongoDB 4.2 | 4.2.25         | April 2023    | ✅ Yes     |
-| MongoDB 4.4 | 4.4.29         | February 2024 | ✅ Yes     |
-| MongoDB 5   | 5.0.26         | October 2024  | ✅ Yes     |
-| MongoDB 6   | 6.0.14         | July 2025     | ✅ Yes     |
-| MongoDB 7   | 7.0.8          | TDB           | ✅ Yes     |
+|-------------|----------------|---------------|------------|
+| MongoDB 4.2 | 4.2.25         | April 2023    | ✅ Yes      |
+| MongoDB 4.4 | 4.4.29         | February 2024 | ✅ Yes      |
+| MongoDB 5   | 5.0.26         | October 2024  | ✅ Yes      |
+| MongoDB 6   | 6.0.14         | July 2025     | ✅ Yes      |
+| MongoDB 7   | 7.0.8          | TDB           | ✅ Yes      |
 
 #### PostgreSQL
 
