@@ -5,8 +5,7 @@
 
 'use strict';
 
-// const punycode = require('punycode/');
-import punycode from 'punycode/punycode.js'
+const _url = require('node:url');
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
@@ -295,7 +294,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
       // It only converts parts of the domain name that
       // have non-ASCII characters, i.e. it doesn't matter if
       // you call it with a domain that already is ASCII-only.
-      this.hostname = punycode.toASCII(this.hostname);
+      this.hostname = _url.domainToASCII(this.hostname);
     }
 
     var p = this.port ? ':' + this.port : '';
