@@ -129,7 +129,7 @@ describe('InstallationsRouter', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
+  it_exclude_dbs(['postgres'])('query installations with count = 1 (Mongo)', done => {
     const config = Config.get('test');
     const androidDeviceRequest = {
       installationId: '12345678-abcd-abcd-abcd-123456789abc',
@@ -166,7 +166,7 @@ describe('InstallationsRouter', () => {
       });
   });
 
-  it_only_db('postgres')('query installations with count = 1', async () => {
+  it_only_db('postgres')('query installations with count = 1 (Postgres)', async () => {
     const config = Config.get('test');
     const androidDeviceRequest = {
       installationId: '12345678-abcd-abcd-abcd-123456789abc',
