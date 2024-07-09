@@ -204,9 +204,10 @@ describe('LiveQuery definitions', () => {
   });
 });
 
-fdescribe('execution', () => {
+describe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
+  let aggregatedData;
 
   function handleStdout(childProcess, done, aggregatedData, requiredData) {
     childProcess.stdout.on('data', data => {
@@ -233,6 +234,10 @@ fdescribe('execution', () => {
     });
   }
 
+  beforeEach(() => {
+    aggregatedData = [];
+  });
+
   afterEach(done => {
     if (childProcess) {
       childProcess.on('close', () => {
@@ -251,7 +256,6 @@ fdescribe('execution', () => {
       ['--appId', 'test', '--masterKey', 'test', '--databaseURI', databaseURI, '--port', '1339'],
       { env }
     );
-    const aggregatedData = [];
     handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
     handleStderr(childProcess, done);
     handleError(childProcess, done);
@@ -275,7 +279,6 @@ fdescribe('execution', () => {
       ],
       { env }
     );
-    const aggregatedData = [];
     handleStdout(childProcess, done, aggregatedData, [
       'parse-server running on',
       'GraphQL running on',
@@ -303,7 +306,6 @@ fdescribe('execution', () => {
       ],
       { env }
     );
-    const aggregatedData = [];
     handleStdout(childProcess, done, aggregatedData, [
       'parse-server running on',
       'Playground running on',
@@ -321,7 +323,6 @@ fdescribe('execution', () => {
       ['--databaseURI', databaseURI, './spec/configs/CLIConfigAuth.json'],
       { env }
     );
-    const aggregatedData = [];
     handleStdout(childProcess, done, aggregatedData, ['parse-server running on']);
     handleStderr(childProcess, done);
     handleError(childProcess, done);
