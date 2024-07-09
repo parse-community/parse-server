@@ -29,7 +29,7 @@ class CurrentSpecReporter {
 global.displaySlowTests = function() {
   const times = Object.values(timerMap).sort((a,b) => b - a);
   if (times.length > 0) {
-    console.log('Showing slowest tests:');
+    console.log('Slow tests with execution time >=${slowTestLimit}s:');
   }
   times.forEach((time) => {
     // Show test taking longer than 2 second
