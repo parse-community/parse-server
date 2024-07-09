@@ -319,7 +319,17 @@ fdescribe('execution', () => {
     });
     childProcess.stderr.on('data', data => {
       data = data.toString();
-      done.fail(data.toString());
+      if (!data.includes('[DEP0040] DeprecationWarning')) {
+        done.fail(data);
+      }
+    });
+    childProcess.on('error', err => {
+      done.fail(err);
+    });
+    childProcess.on('close', code => {
+      if (code !== 0) {
+        done.fail(`Process exited with code ${code}`);
+      }
     });
   });
 });
