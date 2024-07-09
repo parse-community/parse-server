@@ -39,6 +39,7 @@
   - [Reverting](#reverting)
   - [Security Vulnerability](#security-vulnerability)
     - [Local Testing](#local-testing)
+    - [Environment](#environment)
     - [Merging](#merging-1)
 - [Releasing](#releasing)
   - [General Considerations](#general-considerations)
@@ -499,7 +500,7 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
 
 #### Local Testing
 
-Fixes for securify vulnerabilities are developed in private forks with a closed audience, inaccessible to the public. A current GitHub limitation does not allow to run CI tests on pull requests in private forks. Whether a pull requests fully passes all CI tests can only be determined by publishing the fix as a public pull request and running the CI. This means the fix and implicitly information about the vulnerabilty are made accessible to the public. This increases the risk that a vulnerability fix is published, but then cannot be merged immediately due to a CI issue. To mitigate that risk, before publishing a vulnerability fix, the following tests needs to be run locally and pass:
+Fixes for security vulnerabilities are developed in private forks with a closed audience, inaccessible to the public. A current GitHub limitation does not allow to run CI tests on pull requests in private forks. Whether a pull requests fully passes all CI tests can only be determined by publishing the fix as a public pull request and running the CI. This means the fix and implicitly information about the vulnerability are made accessible to the public. This increases the risk that a vulnerability fix is published, but then cannot be merged immediately due to a CI issue. To mitigate that risk, before publishing a vulnerability fix, the following tests needs to be run locally and pass:
 
 - `npm run test` (MongoDB)
 - `npm run test` (Postgres)
@@ -507,11 +508,25 @@ Fixes for securify vulnerabilities are developed in private forks with a closed 
 - `npm run lint` (Lint)
 - `npm run definitions` (Parse Server options definitions)
 
+#### Environment
+
+A reported vulnerability may have already been fixed since it was reported, either due to a targeted fix or as side-effect of other code changed. To verify that a vulnerability exists, tests need to be run in an environment that uses the latest commit of the development branch of Parse Server.
+
+> [!NOTE]
+> Do not use the latest alpha version for testing as it may be behind the latest commit of the development branch.
+
+Vulnerability test must only be conducted in environments for which the tester can ensure that no unauthorized 3rd party has potentially access to. This is to ensure a vulnerability stays confidential and is not exposed prematurely to the public.
+
+You must not test a vulnerability using any 3rd party APIs that provide Parse Server as a hosted service (SaaS) as this may expose the vulnerability to an unauthorized 3rd party and the effects of the vulnerability may cause issues on the provider's side. 
+
+> [!CAUTION]
+> Utilizing a vulnerability in a third-party service, even for testing or development purposes, can result in legal repercussions. You are solely accountable for any damage arising from such actions and agree to indemnify Parse Platform against any liabilities or claims resulting from your actions.
+
 #### Merging
 
-A current GitHub limitation does not allow to customize the commit message when merging pull requests of a private fork that was created to fix a security vulnerabilty. Our release automation framework demands a specific commit message syntax which therefore cannot be met. This prohibits to follow the process that GitHub suggest, which is to merge a pull request from a private fork directly to a public branch. Instead, after [local testing](#local-testing), a public pull request needs to be created with the code fix copied over from the private pull request.
+A current GitHub limitation does not allow to customize the commit message when merging pull requests of a private fork that was created to fix a security vulnerability. Our release automation framework demands a specific commit message syntax which therefore cannot be met. This prohibits to follow the process that GitHub suggest, which is to merge a pull request from a private fork directly to a public branch. Instead, after [local testing](#local-testing), a public pull request needs to be created with the code fix copied over from the private pull request.
 
-This creates a risk that a vulnerability is indirectly disclosed by publishing a pull request with the fix, but the fix cannot be merged due to a CI issue. To mitigate that risk, the pull request title and description should be kept marginal or generic, not hiting to a vulnerabilty or giving any details about the vulnerabilty, until the pull request has been successfully merged.
+This creates a risk that a vulnerability is indirectly disclosed by publishing a pull request with the fix, but the fix cannot be merged due to a CI issue. To mitigate that risk, the pull request title and description should be kept marginal or generic, not hinting to a vulnerability or giving any details about the vulnerability, until the pull request has been successfully merged.
 
 ## Releasing
 
