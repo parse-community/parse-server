@@ -157,7 +157,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it('properly handles delete op', done => {
+  it_id('5ebbd0cf-d1a5-49d9-aac7-5216abc5cb62')('properly handles delete op', done => {
     request({
       method: 'PUT',
       url: 'http://localhost:8378/1/config',

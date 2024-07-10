@@ -642,41 +642,44 @@ describe('DefinedSchemas', () => {
 
     expect(logger.error).toHaveBeenCalledWith(`Failed to run migrations: ${error.toString()}`);
   });
-  it('should perform migration in parallel without failing', async () => {
-    const server = await reconfigureServer();
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callThrough();
-    const migrationOptions = {
-      definitions: [
-        {
-          className: 'Test',
-          fields: { aField: { type: 'String' } },
-          indexes: { aField: { aField: 1 } },
-          classLevelPermissions: {
-            create: { requiresAuthentication: true },
+  it_id('a18bf4f2-25c8-4de3-b986-19cb1ab163b8')(
+    'should perform migration in parallel without failing',
+    async () => {
+      const server = await reconfigureServer();
+      const logger = require('../lib/logger').logger;
+      spyOn(logger, 'error').and.callThrough();
+      const migrationOptions = {
+        definitions: [
+          {
+            className: 'Test',
+            fields: { aField: { type: 'String' } },
+            indexes: { aField: { aField: 1 } },
+            classLevelPermissions: {
+              create: { requiresAuthentication: true },
+            },
           },
-        },
-      ],
-    };
+        ],
+      };
 
-    // Simulate parallel deployment
-    await Promise.all([
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-    ]);
+      // Simulate parallel deployment
+      await Promise.all([
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+      ]);
 
-    const testSchema = (await Parse.Schema.all()).find(
-      ({ className }) => className === migrationOptions.definitions[0].className
-    );
+      const testSchema = (await Parse.Schema.all()).find(
+        ({ className }) => className === migrationOptions.definitions[0].className
+      );
 
-    expect(testSchema.indexes.aField).toEqual({ aField: 1 });
-    expect(testSchema.fields.aField).toEqual({ type: 'String' });
-    expect(testSchema.classLevelPermissions.create).toEqual({ requiresAuthentication: true });
-    expect(logger.error).toHaveBeenCalledTimes(0);
-  });
+      expect(testSchema.indexes.aField).toEqual({ aField: 1 });
+      expect(testSchema.fields.aField).toEqual({ type: 'String' });
+      expect(testSchema.classLevelPermissions.create).toEqual({ requiresAuthentication: true });
+      expect(logger.error).toHaveBeenCalledTimes(0);
+    }
+  );
 
   it('should not affect cacheAdapter', async () => {
     const server = await reconfigureServer();

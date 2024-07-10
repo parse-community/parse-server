@@ -5,7 +5,7 @@ const Auth = require('../lib/Auth');
 describe('UserController', () => {
   describe('sendVerificationEmail', () => {
     describe('parseFrameURL not provided', () => {
-      it('uses publicServerURL', async () => {
+      it_id('61338330-eca7-4c33-8816-7ff05966f43b')('uses publicServerURL', async () => {
         await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
@@ -30,48 +30,65 @@ describe('UserController', () => {
         await user.signUp();
 
         const config = Config.get('test');
-        const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
+        const rawUser = await config.database.find(
+          '_User',
+          { username },
+          {},
+          Auth.maintenance(config)
+        );
         const rawUsername = rawUser[0].username;
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}&username=${username}`);
+        expect(emailOptions.link).toEqual(
+          `http://www.example.com/apps/test/verify_email?token=${rawToken}&username=${username}`
+        );
       });
     });
 
     describe('parseFrameURL provided', () => {
-      it('uses parseFrameURL and includes the destination in the link parameter', async () => {
-        await reconfigureServer({
-          publicServerURL: 'http://www.example.com',
-          customPages: {
-            parseFrameURL: 'http://someother.example.com/handle-parse-iframe',
-          },
-          verifyUserEmails: true,
-          emailAdapter,
-          appName: 'test',
-        });
+      it_id('673c2bb1-049e-4dda-b6be-88c866260036')(
+        'uses parseFrameURL and includes the destination in the link parameter',
+        async () => {
+          await reconfigureServer({
+            publicServerURL: 'http://www.example.com',
+            customPages: {
+              parseFrameURL: 'http://someother.example.com/handle-parse-iframe',
+            },
+            verifyUserEmails: true,
+            emailAdapter,
+            appName: 'test',
+          });
 
-        let emailOptions;
-        emailAdapter.sendVerificationEmail = options => {
-          emailOptions = options;
-          return Promise.resolve();
-        };
+          let emailOptions;
+          emailAdapter.sendVerificationEmail = options => {
+            emailOptions = options;
+            return Promise.resolve();
+          };
 
-        const username = 'verificationUser';
-        const user = new Parse.User();
-        user.setUsername(username);
-        user.setPassword('pass');
-        user.setEmail('verification@example.com');
-        await user.signUp();
+          const username = 'verificationUser';
+          const user = new Parse.User();
+          user.setUsername(username);
+          user.setPassword('pass');
+          user.setEmail('verification@example.com');
+          await user.signUp();
 
-        const config = Config.get('test');
-        const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
-        const rawUsername = rawUser[0].username;
-        const rawToken = rawUser[0]._email_verify_token;
-        expect(rawToken).toBeDefined();
-        expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}&username=${username}`);
-      });
+          const config = Config.get('test');
+          const rawUser = await config.database.find(
+            '_User',
+            { username },
+            {},
+            Auth.maintenance(config)
+          );
+          const rawUsername = rawUser[0].username;
+          const rawToken = rawUser[0]._email_verify_token;
+          expect(rawToken).toBeDefined();
+          expect(rawUsername).toBe(username);
+          expect(emailOptions.link).toEqual(
+            `http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}&username=${username}`
+          );
+        }
+      );
     });
   });
 });

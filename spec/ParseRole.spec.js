@@ -126,76 +126,79 @@ describe('Parse Role testing', () => {
       );
   });
 
-  it('should not recursively load the same role multiple times', done => {
-    const rootRole = 'RootRole';
-    const roleNames = ['FooRole', 'BarRole', 'BazRole'];
-    const allRoles = [rootRole].concat(roleNames);
+  it_id('b03abe32-e8e4-4666-9b81-9c804aa53400')(
+    'should not recursively load the same role multiple times',
+    done => {
+      const rootRole = 'RootRole';
+      const roleNames = ['FooRole', 'BarRole', 'BazRole'];
+      const allRoles = [rootRole].concat(roleNames);
 
-    const roleObjs = {};
-    const createAllRoles = function (user) {
-      const promises = allRoles.map(function (roleName) {
-        return createRole(roleName, null, user).then(function (roleObj) {
-          roleObjs[roleName] = roleObj;
-          return roleObj;
+      const roleObjs = {};
+      const createAllRoles = function (user) {
+        const promises = allRoles.map(function (roleName) {
+          return createRole(roleName, null, user).then(function (roleObj) {
+            roleObjs[roleName] = roleObj;
+            return roleObj;
+          });
         });
-      });
-      return Promise.all(promises);
-    };
+        return Promise.all(promises);
+      };
 
-    const restExecute = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
+      const restExecute = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
 
-    let user, auth, getAllRolesSpy;
-    createTestUser()
-      .then(newUser => {
-        user = newUser;
-        return createAllRoles(user);
-      })
-      .then(roles => {
-        const rootRoleObj = roleObjs[rootRole];
-        roles.forEach(function (role, i) {
-          // Add all roles to the RootRole
-          if (role.id !== rootRoleObj.id) {
-            role.relation('roles').add(rootRoleObj);
-          }
-          // Add all "roleNames" roles to the previous role
-          if (i > 0) {
-            role.relation('roles').add(roles[i - 1]);
-          }
+      let user, auth, getAllRolesSpy;
+      createTestUser()
+        .then(newUser => {
+          user = newUser;
+          return createAllRoles(user);
+        })
+        .then(roles => {
+          const rootRoleObj = roleObjs[rootRole];
+          roles.forEach(function (role, i) {
+            // Add all roles to the RootRole
+            if (role.id !== rootRoleObj.id) {
+              role.relation('roles').add(rootRoleObj);
+            }
+            // Add all "roleNames" roles to the previous role
+            if (i > 0) {
+              role.relation('roles').add(roles[i - 1]);
+            }
+          });
+
+          return Parse.Object.saveAll(roles, { useMasterKey: true });
+        })
+        .then(() => {
+          auth = new Auth({
+            config: Config.get('test'),
+            isMaster: true,
+            user: user,
+          });
+          getAllRolesSpy = spyOn(auth, '_getAllRolesNamesForRoleIds').and.callThrough();
+
+          return auth._loadRoles();
+        })
+        .then(roles => {
+          expect(roles.length).toEqual(4);
+
+          allRoles.forEach(function (name) {
+            expect(roles.indexOf('role:' + name)).not.toBe(-1);
+          });
+
+          // 1 Query for the initial setup
+          // 1 query for the parent roles
+          expect(restExecute.calls.count()).toEqual(2);
+
+          // 1 call for the 1st layer of roles
+          // 1 call for the 2nd layer
+          expect(getAllRolesSpy.calls.count()).toEqual(2);
+          done();
+        })
+        .catch(() => {
+          fail('should succeed');
+          done();
         });
-
-        return Parse.Object.saveAll(roles, { useMasterKey: true });
-      })
-      .then(() => {
-        auth = new Auth({
-          config: Config.get('test'),
-          isMaster: true,
-          user: user,
-        });
-        getAllRolesSpy = spyOn(auth, '_getAllRolesNamesForRoleIds').and.callThrough();
-
-        return auth._loadRoles();
-      })
-      .then(roles => {
-        expect(roles.length).toEqual(4);
-
-        allRoles.forEach(function (name) {
-          expect(roles.indexOf('role:' + name)).not.toBe(-1);
-        });
-
-        // 1 Query for the initial setup
-        // 1 query for the parent roles
-        expect(restExecute.calls.count()).toEqual(2);
-
-        // 1 call for the 1st layer of roles
-        // 1 call for the 2nd layer
-        expect(getAllRolesSpy.calls.count()).toEqual(2);
-        done();
-      })
-      .catch(() => {
-        fail('should succeed');
-        done();
-      });
-  });
+    }
+  );
 
   it('should recursively load roles', done => {
     testLoadRoles(Config.get('test'), done);

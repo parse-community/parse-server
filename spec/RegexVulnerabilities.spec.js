@@ -97,27 +97,30 @@ describe('Regex Vulnerabilities', function () {
       expect(this.user.get('emailVerified')).toEqual(false);
     });
 
-    it('should work with plain token', async function () {
-      expect(this.user.get('emailVerified')).toEqual(false);
-      const current = await request({
-        method: 'GET',
-        url: `http://localhost:8378/1/classes/_User/${this.user.id}`,
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Rest-API-Key': 'test',
-          'X-Parse-Maintenance-Key': 'test2',
-          'Content-Type': 'application/json',
-        },
-      }).then(res => res.data);
-      // It should work
-      await request({
-        url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token=${current._email_verify_token}`,
-        method: 'GET',
-      });
-      await this.user.fetch({ useMasterKey: true });
-      expect(this.user.get('emailVerified')).toEqual(true);
-    });
+    it_id('92bbb86d-bcda-49fa-8d79-aa0501078044')(
+      'should work with plain token',
+      async function () {
+        expect(this.user.get('emailVerified')).toEqual(false);
+        const current = await request({
+          method: 'GET',
+          url: `http://localhost:8378/1/classes/_User/${this.user.id}`,
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Rest-API-Key': 'test',
+            'X-Parse-Maintenance-Key': 'test2',
+            'Content-Type': 'application/json',
+          },
+        }).then(res => res.data);
+        // It should work
+        await request({
+          url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token=${current._email_verify_token}`,
+          method: 'GET',
+        });
+        await this.user.fetch({ useMasterKey: true });
+        expect(this.user.get('emailVerified')).toEqual(true);
+      }
+    );
   });
 
   describe('on password reset', function () {

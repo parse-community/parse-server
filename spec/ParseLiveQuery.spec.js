@@ -916,64 +916,67 @@ describe('ParseLiveQuery', function () {
     }, 1000);
   });
 
-  it('should execute live query update on email validation', async done => {
-    const emailAdapter = {
-      sendVerificationEmail: () => {},
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => {},
-    };
+  it_id('39a9191f-26dd-4e05-a379-297a67928de8')(
+    'should execute live query update on email validation',
+    async done => {
+      const emailAdapter = {
+        sendVerificationEmail: () => {},
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
 
-    await reconfigureServer({
-      maintenanceKey: 'test2',
-      liveQuery: {
-        classNames: [Parse.User],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-      websocketTimeout: 100,
-      appName: 'liveQueryEmailValidation',
-      verifyUserEmails: true,
-      emailAdapter: emailAdapter,
-      emailVerifyTokenValidityDuration: 20, // 0.5 second
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(() => {
-      const user = new Parse.User();
-      user.set('password', 'asdf');
-      user.set('email', 'asdf@example.com');
-      user.set('username', 'zxcv');
-      user
-        .signUp()
-        .then(() => {
-          const config = Config.get('test');
-          return config.database.find(
-            '_User',
-            {
-              username: 'zxcv',
-            },
-            {},
-            Auth.maintenance(config)
-          );
-        })
-        .then(async results => {
-          const foundUser = results[0];
-          const query = new Parse.Query('_User');
-          query.equalTo('objectId', foundUser.objectId);
-          const subscription = await query.subscribe();
+      await reconfigureServer({
+        maintenanceKey: 'test2',
+        liveQuery: {
+          classNames: [Parse.User],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+        websocketTimeout: 100,
+        appName: 'liveQueryEmailValidation',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        emailVerifyTokenValidityDuration: 20, // 0.5 second
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(() => {
+        const user = new Parse.User();
+        user.set('password', 'asdf');
+        user.set('email', 'asdf@example.com');
+        user.set('username', 'zxcv');
+        user
+          .signUp()
+          .then(() => {
+            const config = Config.get('test');
+            return config.database.find(
+              '_User',
+              {
+                username: 'zxcv',
+              },
+              {},
+              Auth.maintenance(config)
+            );
+          })
+          .then(async results => {
+            const foundUser = results[0];
+            const query = new Parse.Query('_User');
+            query.equalTo('objectId', foundUser.objectId);
+            const subscription = await query.subscribe();
 
-          subscription.on('update', async object => {
-            expect(object).toBeDefined();
-            expect(object.get('emailVerified')).toBe(true);
-            done();
+            subscription.on('update', async object => {
+              expect(object).toBeDefined();
+              expect(object.get('emailVerified')).toBe(true);
+              done();
+            });
+
+            const userController = new UserController(emailAdapter, 'test', {
+              verifyUserEmails: true,
+            });
+            userController.verifyEmail(foundUser.username, foundUser._email_verify_token);
           });
-
-          const userController = new UserController(emailAdapter, 'test', {
-            verifyUserEmails: true,
-          });
-          userController.verifyEmail(foundUser.username, foundUser._email_verify_token);
-        });
-    });
-  });
+      });
+    }
+  );
 
   it('should not broadcast event to client with invalid session token - avisory GHSA-2xm2-xj2q-qgpj', async done => {
     await reconfigureServer({
@@ -1146,7 +1149,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('does shutdown liveQuery server', async () => {
+  it_id('2f95d8a9-7675-45ba-a4a6-e45cb7efb1fb')('does shutdown liveQuery server', async () => {
     await reconfigureServer({ appId: 'test_app_id' });
     const config = {
       appId: 'hello_test',

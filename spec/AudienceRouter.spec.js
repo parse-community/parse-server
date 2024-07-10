@@ -317,59 +317,58 @@ describe('AudiencesRouter', () => {
     );
   });
 
-  it_exclude_dbs(['postgres'])('should support legacy parse.com audience fields', done => {
-    const database = Config.get(Parse.applicationId).database.adapter.database;
-    const now = new Date();
-    Parse._request(
-      'POST',
-      'push_audiences',
-      { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
-      { useMasterKey: true }
-    ).then(audience => {
-      database
-        .collection('test__Audience')
-        .updateOne(
-          { _id: audience.objectId },
-          {
-            $set: {
-              times_used: 1,
-              _last_used: now,
-            },
-          }
-        )
-        .then(result => {
-          expect(result).toBeTruthy();
-
-          database
-            .collection('test__Audience')
-            .find({ _id: audience.objectId })
-            .toArray()
-            .then(rows => {
-              expect(rows[0]['times_used']).toEqual(1);
-              expect(rows[0]['_last_used']).toEqual(now);
-              Parse._request(
-                'GET',
-                'push_audiences/' + audience.objectId,
-                {},
-                { useMasterKey: true }
-              )
-                .then(audience => {
-                  expect(audience.name).toEqual('My Audience');
-                  expect(audience.query.deviceType).toEqual('ios');
-                  expect(audience.timesUsed).toEqual(1);
-                  expect(audience.lastUsed).toEqual(now.toISOString());
-                  done();
-                })
-                .catch(error => {
-                  done.fail(error);
-                });
-            })
-            .catch(error => {
-              done.fail(error);
-            });
-        });
-    });
-  });
+  it_id('af1111b5-3251-4b40-8f06-fb0fc624fa91')(
+    'should support legacy parse.com audience fields',
+    done => {
+      const database = Config.get(Parse.applicationId).database.adapter.database;
+      const now = new Date();
+      Parse._request(
+        'POST',
+        'push_audiences',
+        { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
+        { useMasterKey: true }
+      ).then(audience => {
+        database
+          .collection('test__Audience')
+          .updateOne(
+            { _id: audience.objectId },
+            {
+              $set: {
+                times_used: 1,
+                _last_used: now,
+              },
+            }
+          )
+          .then(result => {
+            expect(result).toBeTruthy();
+            database
+              .collection('test__Audience')
+              .find({ _id: audience.objectId })
+              .toArray((error, rows) => {
+                expect(error).toEqual(undefined);
+                expect(rows[0]['times_used']).toEqual(1);
+                expect(rows[0]['_last_used']).toEqual(now);
+                Parse._request(
+                  'GET',
+                  'push_audiences/' + audience.objectId,
+                  {},
+                  { useMasterKey: true }
+                )
+                  .then(audience => {
+                    expect(audience.name).toEqual('My Audience');
+                    expect(audience.query.deviceType).toEqual('ios');
+                    expect(audience.timesUsed).toEqual(1);
+                    expect(audience.lastUsed).toEqual(now.toISOString());
+                    done();
+                  })
+                  .catch(error => {
+                    done.fail(error);
+                  });
+              });
+          });
+      });
+    }
+  );
 
   it('should be able to search on audiences', done => {
     Parse._request(

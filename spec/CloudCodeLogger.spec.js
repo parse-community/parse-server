@@ -37,7 +37,7 @@ describe('Cloud Code Logger', () => {
   // Note that helpers takes care of logout.
   // see helpers.js:afterEach
 
-  it('should expose log to functions', () => {
+  it_id('02d53b97-3ec7-46fb-abb6-176fd6e85590')('should expose log to functions', () => {
     const spy = spyOn(Config.get('test').loggerController, 'log').and.callThrough();
     Parse.Cloud.define('loggerTest', req => {
       req.log.info('logTest', 'info log', { info: 'some log' });
@@ -67,7 +67,7 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it('trigger should obfuscate password', done => {
+  it_id('768412f5-d32f-4134-89a6-08949781a6c0')('trigger should obfuscate password', done => {
     Parse.Cloud.beforeSave(Parse.User, req => {
       return req.object;
     });
@@ -82,7 +82,7 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(e));
   });
 
-  it('should expose log to trigger', done => {
+  it_id('3c394047-272e-4728-9d02-9eaa660d2ed2')('should expose log to trigger', done => {
     Parse.Cloud.beforeSave('MyObject', req => {
       req.log.info('beforeSave MyObject', 'info log', { info: 'some log' });
       req.log.error('beforeSave MyObject', 'error log', {
@@ -120,25 +120,28 @@ describe('Cloud Code Logger', () => {
     expect(truncatedString.length).toBe(1015); // truncate length + the string '... (truncated)'
   });
 
-  it('should truncate input and result of long lines', done => {
-    const longString = fs.readFileSync(loremFile, 'utf8');
-    Parse.Cloud.define('aFunction', req => {
-      return req.params;
-    });
+  it_id('4a009b1f-9203-49ca-8d48-5b45f4eedbdf')(
+    'should truncate input and result of long lines',
+    done => {
+      const longString = fs.readFileSync(loremFile, 'utf8');
+      Parse.Cloud.define('aFunction', req => {
+        return req.params;
+      });
 
-    Parse.Cloud.run('aFunction', { longString })
-      .then(() => {
-        const log = spy.calls.mostRecent().args;
-        expect(log[0]).toEqual('info');
-        expect(log[1]).toMatch(
-          /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {.*?\(truncated\)$/m
-        );
-        done();
-      })
-      .then(null, e => done.fail(e));
-  });
+      Parse.Cloud.run('aFunction', { longString })
+        .then(() => {
+          const log = spy.calls.mostRecent().args;
+          expect(log[0]).toEqual('info');
+          expect(log[1]).toMatch(
+            /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {.*?\(truncated\)$/m
+          );
+          done();
+        })
+        .then(null, e => done.fail(e));
+    }
+  );
 
-  it('should log an afterSave', done => {
+  it_id('9857e15d-bb18-478d-8a67-fdaad3e89565')('should log an afterSave', done => {
     Parse.Cloud.afterSave('MyObject', () => {});
     new Parse.Object('MyObject')
       .save()
@@ -151,7 +154,7 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(e));
   });
 
-  it('should log a denied beforeSave', done => {
+  it_id('ec13a296-f8b1-4fc6-985a-3593462edd9c')('should log a denied beforeSave', done => {
     Parse.Cloud.beforeSave('MyObject', () => {
       throw 'uh oh!';
     });
@@ -174,7 +177,7 @@ describe('Cloud Code Logger', () => {
       });
   });
 
-  it('should log cloud function success', done => {
+  it_id('3e0caa45-60d6-41af-829a-fd389710c132')('should log cloud function success', done => {
     Parse.Cloud.define('aFunction', () => {
       return 'it worked!';
     });
@@ -189,41 +192,44 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it('should log cloud function execution using the custom log level', async done => {
-    Parse.Cloud.define('aFunction', () => {
-      return 'it worked!';
-    });
+  it_id('8088de8a-7cba-4035-8b05-4a903307e674')(
+    'should log cloud function execution using the custom log level',
+    async done => {
+      Parse.Cloud.define('aFunction', () => {
+        return 'it worked!';
+      });
 
-    Parse.Cloud.define('bFunction', () => {
-      throw new Error('Failed');
-    });
+      Parse.Cloud.define('bFunction', () => {
+        throw new Error('Failed');
+      });
 
-    await Parse.Cloud.run('aFunction', { foo: 'bar' }).then(() => {
-      const log = spy.calls.allArgs().find(log => log[1].startsWith('Ran cloud function '))?.[0];
-      expect(log).toEqual('info');
-    });
+      await Parse.Cloud.run('aFunction', { foo: 'bar' }).then(() => {
+        const log = spy.calls.allArgs().find(log => log[1].startsWith('Ran cloud function '))?.[0];
+        expect(log).toEqual('info');
+      });
 
-    await reconfigureServer({
-      silent: true,
-      logLevels: {
-        cloudFunctionSuccess: 'warn',
-        cloudFunctionError: 'info',
-      },
-    });
+      await reconfigureServer({
+        silent: true,
+        logLevels: {
+          cloudFunctionSuccess: 'warn',
+          cloudFunctionError: 'info',
+        },
+      });
 
-    spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+      spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
 
-    try {
-      await Parse.Cloud.run('bFunction', { foo: 'bar' });
-      throw new Error('bFunction should have failed');
-    } catch {
-      const log = spy.calls
-        .allArgs()
-        .find(log => log[1].startsWith('Failed running cloud function bFunction for '))?.[0];
-      expect(log).toEqual('info');
-      done();
+      try {
+        await Parse.Cloud.run('bFunction', { foo: 'bar' });
+        throw new Error('bFunction should have failed');
+      } catch {
+        const log = spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('Failed running cloud function bFunction for '))?.[0];
+        expect(log).toEqual('info');
+        done();
+      }
     }
-  });
+  );
 
   it('should log cloud function triggers using the custom log level', async () => {
     Parse.Cloud.beforeSave('TestClass', () => {});
@@ -260,7 +266,7 @@ describe('Cloud Code Logger', () => {
     expect(calls).toEqual({ beforeSave: 'warn', afterSave: undefined });
   });
 
-  it('should log cloud function failure', done => {
+  it_id('97e0eafa-cde6-4a9a-9e53-7db98bacbc62')('should log cloud function failure', done => {
     Parse.Cloud.define('aFunction', () => {
       throw 'it failed!';
     });
@@ -311,19 +317,22 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(JSON.stringify(e)));
   }).pend('needs more work.....');
 
-  it('cloud function should obfuscate password', done => {
-    Parse.Cloud.define('testFunction', () => {
-      return 'verify code success';
-    });
+  it_id('b86e8168-8370-4730-a4ba-24ca3016ad66')(
+    'cloud function should obfuscate password',
+    done => {
+      Parse.Cloud.define('testFunction', () => {
+        return 'verify code success';
+      });
 
-    Parse.Cloud.run('testFunction', { username: 'hawk', password: '123456' })
-      .then(() => {
-        const entry = spy.calls.mostRecent().args;
-        expect(entry[2].params.password).toMatch(/\*\*\*\*\*\*\*\*/);
-        done();
-      })
-      .then(null, e => done.fail(e));
-  });
+      Parse.Cloud.run('testFunction', { username: 'hawk', password: '123456' })
+        .then(() => {
+          const entry = spy.calls.mostRecent().args;
+          expect(entry[2].params.password).toMatch(/\*\*\*\*\*\*\*\*/);
+          done();
+        })
+        .then(null, e => done.fail(e));
+    }
+  );
 
   it('should only log once for object not found', async () => {
     const config = Config.get('test');

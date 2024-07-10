@@ -163,90 +163,96 @@ describe('miscellaneous', function () {
     expect(numCreated).toBe(1);
   });
 
-  it('ensure that if people already have duplicate users, they can still sign up new users', async done => {
-    try {
-      await Parse.User.logOut();
-    } catch (e) {
-      /* ignore */
+  it_id('be1b9ac7-5e5f-4e91-b044-2bd8fb7622ad')(
+    'ensure that if people already have duplicate users, they can still sign up new users',
+    async done => {
+      try {
+        await Parse.User.logOut();
+      } catch (e) {
+        /* ignore */
+      }
+      const config = Config.get('test');
+      // Remove existing data to clear out unique index
+      TestUtils.destroyAllDataPermanently()
+        .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
+        .then(() => config.database.adapter.createClass('_User', userSchema))
+        .then(() =>
+          config.database.adapter
+            .createObject('_User', userSchema, { objectId: 'x', username: 'u' })
+            .catch(fail)
+        )
+        .then(() =>
+          config.database.adapter
+            .createObject('_User', userSchema, { objectId: 'y', username: 'u' })
+            .catch(fail)
+        )
+        // Create a new server to try to recreate the unique indexes
+        .then(reconfigureServer)
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+          const user = new Parse.User();
+          user.setPassword('asdf');
+          user.setUsername('zxcv');
+          return user.signUp().catch(fail);
+        })
+        .then(() => {
+          const user = new Parse.User();
+          user.setPassword('asdf');
+          user.setUsername('u');
+          return user.signUp();
+        })
+        .then(() => {
+          fail('should not have been able to sign up');
+          done();
+        })
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+          done();
+        });
     }
-    const config = Config.get('test');
-    // Remove existing data to clear out unique index
-    TestUtils.destroyAllDataPermanently()
-      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
-      .then(() => config.database.adapter.createClass('_User', userSchema))
-      .then(() =>
-        config.database.adapter
-          .createObject('_User', userSchema, { objectId: 'x', username: 'u' })
-          .catch(fail)
-      )
-      .then(() =>
-        config.database.adapter
-          .createObject('_User', userSchema, { objectId: 'y', username: 'u' })
-          .catch(fail)
-      )
-      // Create a new server to try to recreate the unique indexes
-      .then(reconfigureServer)
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-        const user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('zxcv');
-        return user.signUp().catch(fail);
-      })
-      .then(() => {
-        const user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('u');
-        return user.signUp();
-      })
-      .then(() => {
-        fail('should not have been able to sign up');
-        done();
-      })
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-        done();
-      });
-  });
+  );
 
-  it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    const config = Config.get('test');
-    // Remove existing data to clear out unique index
-    TestUtils.destroyAllDataPermanently()
-      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
-      .then(() => config.database.adapter.createClass('_User', userSchema))
-      .then(() =>
-        config.database.adapter.createObject('_User', userSchema, {
-          objectId: 'x',
-          email: 'a@b.c',
+  it_id('d00f907e-41b9-40f6-8168-63e832199a8c')(
+    'ensure that if people already have duplicate emails, they can still sign up new users',
+    done => {
+      const config = Config.get('test');
+      // Remove existing data to clear out unique index
+      TestUtils.destroyAllDataPermanently()
+        .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
+        .then(() => config.database.adapter.createClass('_User', userSchema))
+        .then(() =>
+          config.database.adapter.createObject('_User', userSchema, {
+            objectId: 'x',
+            email: 'a@b.c',
+          })
+        )
+        .then(() =>
+          config.database.adapter.createObject('_User', userSchema, {
+            objectId: 'y',
+            email: 'a@b.c',
+          })
+        )
+        .then(reconfigureServer)
+        .catch(() => {
+          const user = new Parse.User();
+          user.setPassword('asdf');
+          user.setUsername('qqq');
+          user.setEmail('unique@unique.unique');
+          return user.signUp().catch(fail);
         })
-      )
-      .then(() =>
-        config.database.adapter.createObject('_User', userSchema, {
-          objectId: 'y',
-          email: 'a@b.c',
+        .then(() => {
+          const user = new Parse.User();
+          user.setPassword('asdf');
+          user.setUsername('www');
+          user.setEmail('a@b.c');
+          return user.signUp();
         })
-      )
-      .then(reconfigureServer)
-      .catch(() => {
-        const user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('qqq');
-        user.setEmail('unique@unique.unique');
-        return user.signUp().catch(fail);
-      })
-      .then(() => {
-        const user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('www');
-        user.setEmail('a@b.c');
-        return user.signUp();
-      })
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-        done();
-      });
-  });
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+          done();
+        });
+    }
+  );
 
   it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', async done => {
     await reconfigureServer();
@@ -289,7 +295,7 @@ describe('miscellaneous', function () {
     }, fail);
   });
 
-  it('increment with a user object', function (done) {
+  it_id('33db6efe-7c02-496c-8595-0ef627a94103')('increment with a user object', function (done) {
     createTestUser()
       .then(user => {
         user.increment('foo');
@@ -317,7 +323,7 @@ describe('miscellaneous', function () {
       );
   });
 
-  it('save various data types', function (done) {
+  it_id('bef99522-bcfd-4f79-ba9e-3c3845550401')('save various data types', function (done) {
     const obj = new TestObject();
     obj.set('date', new Date());
     obj.set('array', [1, 2, 3]);
@@ -951,7 +957,7 @@ describe('miscellaneous', function () {
       );
   });
 
-  it('return the updated fields on PUT', async () => {
+  it_id('e9e718a9-4465-4158-b13e-f146855a8892')('return the updated fields on PUT', async () => {
     const obj = new Parse.Object('GameScore');
     const pointer = new Parse.Object('Child');
     await pointer.save();
@@ -1023,83 +1029,86 @@ describe('miscellaneous', function () {
     expect(body.updatedAt).not.toBeUndefined();
   });
 
-  it('should response should not change with triggers', async () => {
-    const obj = new Parse.Object('GameScore');
-    const pointer = new Parse.Object('Child');
-    Parse.Cloud.beforeSave('GameScore', request => {
-      return request.object;
-    });
-    Parse.Cloud.afterSave('GameScore', request => {
-      return request.object;
-    });
-    await pointer.save();
-    obj.set(
-      'point',
-      new Parse.GeoPoint({
-        latitude: 37.4848,
-        longitude: -122.1483,
-      })
-    );
-    obj.set('array', ['obj1', 'obj2']);
-    obj.set('objects', { a: 'b' });
-    obj.set('string', 'abc');
-    obj.set('bool', true);
-    obj.set('number', 1);
-    obj.set('date', new Date());
-    obj.set('pointer', pointer);
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest',
-      'X-Parse-Installation-Id': 'yolo',
-    };
-    const saveResponse = await request({
-      method: 'POST',
-      headers: headers,
-      url: 'http://localhost:8378/1/classes/GameScore',
-      body: JSON.stringify({
-        a: 'hello',
-        c: 1,
-        d: ['1'],
-        e: ['1'],
-        f: ['1', '2'],
-        ...obj.toJSON(),
-      }),
-    });
-    expect(Object.keys(saveResponse.data).sort()).toEqual(['createdAt', 'objectId']);
-    obj.id = saveResponse.data.objectId;
-    const response = await request({
-      method: 'PUT',
-      headers: headers,
-      url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
-      body: JSON.stringify({
-        a: 'b',
-        c: { __op: 'Increment', amount: 2 },
-        d: { __op: 'Add', objects: ['2'] },
-        e: { __op: 'AddUnique', objects: ['1', '2'] },
-        f: { __op: 'Remove', objects: ['2'] },
-        selfThing: {
-          __type: 'Pointer',
-          className: 'GameScore',
-          objectId: obj.id,
-        },
-      }),
-    });
-    const body = response.data;
-    expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'updatedAt']);
-    expect(body.a).toBeUndefined();
-    expect(body.c).toEqual(3); // 2+1
-    expect(body.d.length).toBe(2);
-    expect(body.d.indexOf('1') > -1).toBe(true);
-    expect(body.d.indexOf('2') > -1).toBe(true);
-    expect(body.e.length).toBe(2);
-    expect(body.e.indexOf('1') > -1).toBe(true);
-    expect(body.e.indexOf('2') > -1).toBe(true);
-    expect(body.f.length).toBe(1);
-    expect(body.f.indexOf('1') > -1).toBe(true);
-    expect(body.selfThing).toBeUndefined();
-    expect(body.updatedAt).not.toBeUndefined();
-  });
+  it_id('ea358b59-03c0-45c9-abc7-1fdd67573029')(
+    'should response should not change with triggers',
+    async () => {
+      const obj = new Parse.Object('GameScore');
+      const pointer = new Parse.Object('Child');
+      Parse.Cloud.beforeSave('GameScore', request => {
+        return request.object;
+      });
+      Parse.Cloud.afterSave('GameScore', request => {
+        return request.object;
+      });
+      await pointer.save();
+      obj.set(
+        'point',
+        new Parse.GeoPoint({
+          latitude: 37.4848,
+          longitude: -122.1483,
+        })
+      );
+      obj.set('array', ['obj1', 'obj2']);
+      obj.set('objects', { a: 'b' });
+      obj.set('string', 'abc');
+      obj.set('bool', true);
+      obj.set('number', 1);
+      obj.set('date', new Date());
+      obj.set('pointer', pointer);
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Installation-Id': 'yolo',
+      };
+      const saveResponse = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/GameScore',
+        body: JSON.stringify({
+          a: 'hello',
+          c: 1,
+          d: ['1'],
+          e: ['1'],
+          f: ['1', '2'],
+          ...obj.toJSON(),
+        }),
+      });
+      expect(Object.keys(saveResponse.data).sort()).toEqual(['createdAt', 'objectId']);
+      obj.id = saveResponse.data.objectId;
+      const response = await request({
+        method: 'PUT',
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
+        body: JSON.stringify({
+          a: 'b',
+          c: { __op: 'Increment', amount: 2 },
+          d: { __op: 'Add', objects: ['2'] },
+          e: { __op: 'AddUnique', objects: ['1', '2'] },
+          f: { __op: 'Remove', objects: ['2'] },
+          selfThing: {
+            __type: 'Pointer',
+            className: 'GameScore',
+            objectId: obj.id,
+          },
+        }),
+      });
+      const body = response.data;
+      expect(Object.keys(body).sort()).toEqual(['c', 'd', 'e', 'f', 'updatedAt']);
+      expect(body.a).toBeUndefined();
+      expect(body.c).toEqual(3); // 2+1
+      expect(body.d.length).toBe(2);
+      expect(body.d.indexOf('1') > -1).toBe(true);
+      expect(body.d.indexOf('2') > -1).toBe(true);
+      expect(body.e.length).toBe(2);
+      expect(body.e.indexOf('1') > -1).toBe(true);
+      expect(body.e.indexOf('2') > -1).toBe(true);
+      expect(body.f.length).toBe(1);
+      expect(body.f.indexOf('1') > -1).toBe(true);
+      expect(body.selfThing).toBeUndefined();
+      expect(body.updatedAt).not.toBeUndefined();
+    }
+  );
 
   it('test cloud function error handling', done => {
     // Register a function which will fail
@@ -1491,47 +1500,50 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('properly returns incremented values (#1554)', done => {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest',
-    };
-    const requestOptions = {
-      headers: headers,
-      url: 'http://localhost:8378/1/classes/AnObject',
-      json: true,
-    };
-    const object = new Parse.Object('AnObject');
+  it_id('b2cd9cf2-13fa-4acd-aaa9-6f81fc1858db')(
+    'properly returns incremented values (#1554)',
+    done => {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+      const requestOptions = {
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/AnObject',
+        json: true,
+      };
+      const object = new Parse.Object('AnObject');
 
-    function runIncrement(amount) {
-      const options = Object.assign({}, requestOptions, {
-        body: {
-          key: {
-            __op: 'Increment',
-            amount: amount,
+      function runIncrement(amount) {
+        const options = Object.assign({}, requestOptions, {
+          body: {
+            key: {
+              __op: 'Increment',
+              amount: amount,
+            },
           },
-        },
-        url: 'http://localhost:8378/1/classes/AnObject/' + object.id,
-        method: 'PUT',
-      });
-      return request(options).then(res => res.data);
-    }
+          url: 'http://localhost:8378/1/classes/AnObject/' + object.id,
+          method: 'PUT',
+        });
+        return request(options).then(res => res.data);
+      }
 
-    object
-      .save()
-      .then(() => {
-        return runIncrement(1);
-      })
-      .then(res => {
-        expect(res.key).toBe(1);
-        return runIncrement(-1);
-      })
-      .then(res => {
-        expect(res.key).toBe(0);
-        done();
-      });
-  });
+      object
+        .save()
+        .then(() => {
+          return runIncrement(1);
+        })
+        .then(res => {
+          expect(res.key).toBe(1);
+          return runIncrement(-1);
+        })
+        .then(res => {
+          expect(res.key).toBe(0);
+          done();
+        });
+    }
+  );
 
   it('ignores _RevocableSession "header" send by JS SDK', done => {
     const object = new Parse.Object('AnObject');
@@ -1680,7 +1692,7 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('purge all objects in class', done => {
+  it_id('8f99ee20-3da7-45ec-b867-ea0eb87524a9')('purge all objects in class', done => {
     const object = new Parse.Object('TestObject');
     object.set('foo', 'bar');
     const object2 = new Parse.Object('TestObject');

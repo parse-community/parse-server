@@ -226,59 +226,62 @@ describe('Pointer Permissions', () => {
         });
     });
 
-    it('should query on pointer permission enabled column', done => {
-      const config = Config.get(Parse.applicationId);
-      const user = new Parse.User();
-      const user2 = new Parse.User();
-      user.set({
-        username: 'user1',
-        password: 'password',
-      });
-      user2.set({
-        username: 'user2',
-        password: 'password',
-      });
-      const obj = new Parse.Object('AnObject');
-      const obj2 = new Parse.Object('AnObject');
-      user
-        .signUp()
-        .then(() => {
-          return user2.signUp();
-        })
-        .then(() => {
-          Parse.User.logOut();
-        })
-        .then(() => {
-          obj.set('owner', user);
-          return Parse.Object.saveAll([obj, obj2]);
-        })
-        .then(() => {
-          return config.database.loadSchema().then(schema => {
-            return schema.updateClass(
-              'AnObject',
-              {},
-              { find: {}, get: {}, readUserFields: ['owner'] }
-            );
-          });
-        })
-        .then(() => {
-          return Parse.User.logIn('user1', 'password');
-        })
-        .then(() => {
-          const q = new Parse.Query('AnObject');
-          q.equalTo('owner', user2);
-          return q.find();
-        })
-        .then(res => {
-          expect(res.length).toBe(0);
-          done();
-        })
-        .catch(err => {
-          jfail(err);
-          fail('should not fail');
-          done();
+    it_id('f38c35e7-d804-4d32-986d-2579e25d2461')(
+      'should query on pointer permission enabled column',
+      done => {
+        const config = Config.get(Parse.applicationId);
+        const user = new Parse.User();
+        const user2 = new Parse.User();
+        user.set({
+          username: 'user1',
+          password: 'password',
         });
-    });
+        user2.set({
+          username: 'user2',
+          password: 'password',
+        });
+        const obj = new Parse.Object('AnObject');
+        const obj2 = new Parse.Object('AnObject');
+        user
+          .signUp()
+          .then(() => {
+            return user2.signUp();
+          })
+          .then(() => {
+            Parse.User.logOut();
+          })
+          .then(() => {
+            obj.set('owner', user);
+            return Parse.Object.saveAll([obj, obj2]);
+          })
+          .then(() => {
+            return config.database.loadSchema().then(schema => {
+              return schema.updateClass(
+                'AnObject',
+                {},
+                { find: {}, get: {}, readUserFields: ['owner'] }
+              );
+            });
+          })
+          .then(() => {
+            return Parse.User.logIn('user1', 'password');
+          })
+          .then(() => {
+            const q = new Parse.Query('AnObject');
+            q.equalTo('owner', user2);
+            return q.find();
+          })
+          .then(res => {
+            expect(res.length).toBe(0);
+            done();
+          })
+          .catch(err => {
+            jfail(err);
+            fail('should not fail');
+            done();
+          });
+      }
+    );
 
     it('should not allow creating objects', done => {
       const config = Config.get(Parse.applicationId);
@@ -1070,7 +1073,7 @@ describe('Pointer Permissions', () => {
       }
     });
 
-    it('should work with write', async done => {
+    it_id('1bbb9ed6-5558-4ce5-a238-b1a2015d273f')('should work with write', async done => {
       const config = Config.get(Parse.applicationId);
       const user = new Parse.User();
       const user2 = new Parse.User();
@@ -1203,50 +1206,53 @@ describe('Pointer Permissions', () => {
       done();
     });
 
-    it('should query on pointer permission enabled column', async done => {
-      const config = Config.get(Parse.applicationId);
-      const user = new Parse.User();
-      const user2 = new Parse.User();
-      const user3 = new Parse.User();
-      user.set({
-        username: 'user1',
-        password: 'password',
-      });
-      user2.set({
-        username: 'user2',
-        password: 'password',
-      });
-      user3.set({
-        username: 'user3',
-        password: 'password',
-      });
-      const obj = new Parse.Object('AnObject');
-      const obj2 = new Parse.Object('AnObject');
+    it_id('8a7d188c-b75c-4eac-90b6-9b0b11f873ae')(
+      'should query on pointer permission enabled column',
+      async done => {
+        const config = Config.get(Parse.applicationId);
+        const user = new Parse.User();
+        const user2 = new Parse.User();
+        const user3 = new Parse.User();
+        user.set({
+          username: 'user1',
+          password: 'password',
+        });
+        user2.set({
+          username: 'user2',
+          password: 'password',
+        });
+        user3.set({
+          username: 'user3',
+          password: 'password',
+        });
+        const obj = new Parse.Object('AnObject');
+        const obj2 = new Parse.Object('AnObject');
 
-      await user.signUp();
-      await user2.signUp();
-      await user3.signUp();
-      await Parse.User.logOut();
+        await user.signUp();
+        await user2.signUp();
+        await user3.signUp();
+        await Parse.User.logOut();
 
-      obj.set('owners', [user, user2]);
-      await Parse.Object.saveAll([obj, obj2]);
+        obj.set('owners', [user, user2]);
+        await Parse.Object.saveAll([obj, obj2]);
 
-      const schema = await config.database.loadSchema();
-      await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
+        const schema = await config.database.loadSchema();
+        await schema.updateClass('AnObject', {}, { find: {}, get: {}, readUserFields: ['owners'] });
 
-      for (const owner of ['user1', 'user2']) {
-        await Parse.User.logIn(owner, 'password');
-        try {
-          const q = new Parse.Query('AnObject');
-          q.equalTo('owners', user3);
-          const result = await q.find();
-          expect(result.length).toBe(0);
-        } catch (err) {
-          done.fail('should not fail');
+        for (const owner of ['user1', 'user2']) {
+          await Parse.User.logIn(owner, 'password');
+          try {
+            const q = new Parse.Query('AnObject');
+            q.equalTo('owners', user3);
+            const result = await q.find();
+            expect(result.length).toBe(0);
+          } catch (err) {
+            done.fail('should not fail');
+          }
         }
+        done();
       }
-      done();
-    });
+    );
 
     it('should not query using arrays on pointer permission enabled column', async done => {
       const config = Config.get(Parse.applicationId);
@@ -2517,18 +2523,21 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
-          await updateCLP({
-            get: {
-              pointerFields: ['moderators'],
-            },
-          });
+        it_id('9ba681d5-59f5-4996-b36d-6647d23e6a44')(
+          'should fail for user not listed',
+          async done => {
+            await updateCLP({
+              get: {
+                pointerFields: ['moderators'],
+              },
+            });
 
-          await logIn(user1);
+            await logIn(user1);
 
-          await expectAsync(actionGet(obj3.id)).toBeRejectedWith(OBJECT_NOT_FOUND);
-          done();
-        });
+            await expectAsync(actionGet(obj3.id)).toBeRejectedWith(OBJECT_NOT_FOUND);
+            done();
+          }
+        );
 
         it('should not allow other actions', async done => {
           await updateCLP({
@@ -2685,31 +2694,37 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should be allowed (multiple users in array)', async done => {
-          await updateCLP({
-            update: {
-              pointerFields: ['moderators'],
-            },
-          });
+        it_id('2b19234a-a471-48b4-bd1a-27bd286d066f')(
+          'should be allowed (multiple users in array)',
+          async done => {
+            await updateCLP({
+              update: {
+                pointerFields: ['moderators'],
+              },
+            });
 
-          await logIn(user2);
+            await logIn(user2);
 
-          await expectAsync(actionUpdate(obj1)).toBeResolved();
-          done();
-        });
+            await expectAsync(actionUpdate(obj1)).toBeResolved();
+            done();
+          }
+        );
 
-        it('should fail for user not listed', async done => {
-          await updateCLP({
-            update: {
-              pointerFields: ['moderators'],
-            },
-          });
+        it_id('bcdb158d-c0b6-45e3-84ab-a3636f7cb470')(
+          'should fail for user not listed',
+          async done => {
+            await updateCLP({
+              update: {
+                pointerFields: ['moderators'],
+              },
+            });
 
-          await logIn(user2);
+            await logIn(user2);
 
-          await expectAsync(actionUpdate(obj3)).toBeRejectedWith(OBJECT_NOT_FOUND);
-          done();
-        });
+            await expectAsync(actionUpdate(obj3)).toBeRejectedWith(OBJECT_NOT_FOUND);
+            done();
+          }
+        );
 
         it('should not allow other actions', async done => {
           await updateCLP({
@@ -2764,18 +2779,21 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
-          await updateCLP({
-            delete: {
-              pointerFields: ['owners'],
-            },
-          });
+        it_id('70aa3853-6e26-4c38-a927-2ddb24ced7d4')(
+          'should fail for user not listed',
+          async done => {
+            await updateCLP({
+              delete: {
+                pointerFields: ['owners'],
+              },
+            });
 
-          await logIn(user1);
+            await logIn(user1);
 
-          await expectAsync(actionDelete(obj3)).toBeRejectedWith(OBJECT_NOT_FOUND);
-          done();
-        });
+            await expectAsync(actionDelete(obj3)).toBeRejectedWith(OBJECT_NOT_FOUND);
+            done();
+          }
+        );
 
         it('should not allow other actions', async done => {
           await updateCLP({
@@ -2874,22 +2892,25 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should be restricted when updating object without addField permission', async done => {
-          await updateCLP({
-            update: {
-              '*': true,
-            },
-            addField: {
-              pointerFields: ['moderators'],
-            },
-          });
+        it_id('51e896e9-73b3-404f-b5ff-bdb99005a9f7')(
+          'should be restricted when updating object without addField permission',
+          async done => {
+            await updateCLP({
+              update: {
+                '*': true,
+              },
+              addField: {
+                pointerFields: ['moderators'],
+              },
+            });
 
-          await logIn(user1);
+            await logIn(user1);
 
-          await expectAsync(actionAddFieldOnUpdate(obj2)).toBeRejectedWith(OBJECT_NOT_FOUND);
+            await expectAsync(actionAddFieldOnUpdate(obj2)).toBeRejectedWith(OBJECT_NOT_FOUND);
 
-          done();
-        });
+            done();
+          }
+        );
       });
     });
 
@@ -2946,44 +2967,50 @@ describe('Pointer Permissions', () => {
         await initialize();
       });
 
-      it('should not limit the scope of grouped read permissions', async done => {
-        await updateCLP({
-          get: {
-            pointerFields: ['owner'],
-          },
-          readUserFields: ['moderators'],
-        });
+      it_id('b43db366-8cce-4a11-9cf2-eeee9603d40b')(
+        'should not limit the scope of grouped read permissions',
+        async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['owner'],
+            },
+            readUserFields: ['moderators'],
+          });
 
-        await logIn(user2);
+          await logIn(user2);
 
-        await expectAsync(actionGet(obj1.id)).toBeResolved();
+          await expectAsync(actionGet(obj1.id)).toBeResolved();
 
-        const found = await actionFind();
-        expect(found.length).toBe(2);
+          const found = await actionFind();
+          expect(found.length).toBe(2);
 
-        const counted = await actionCount();
-        expect(counted).toBe(2);
+          const counted = await actionCount();
+          expect(counted).toBe(2);
 
-        done();
-      });
+          done();
+        }
+      );
 
-      it('should not limit the scope of grouped write permissions', async done => {
-        await updateCLP({
-          update: {
-            pointerFields: ['owner'],
-          },
-          writeUserFields: ['moderators'],
-        });
+      it_id('bbb1686d-0e2a-4365-8b64-b5faa3e7b9cf')(
+        'should not limit the scope of grouped write permissions',
+        async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['owner'],
+            },
+            writeUserFields: ['moderators'],
+          });
 
-        await logIn(user2);
+          await logIn(user2);
 
-        await expectAsync(actionUpdate(obj1)).toBeResolved();
-        await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
-        await expectAsync(actionDelete(obj1)).toBeResolved();
-        // [create] and [addField on create] can't be enabled with pointer by design
+          await expectAsync(actionUpdate(obj1)).toBeResolved();
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
+          await expectAsync(actionDelete(obj1)).toBeResolved();
+          // [create] and [addField on create] can't be enabled with pointer by design
 
-        done();
-      });
+          done();
+        }
+      );
 
       it('should not inherit scope of grouped read permissions from another field', async done => {
         await updateCLP({

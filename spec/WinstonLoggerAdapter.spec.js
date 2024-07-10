@@ -174,50 +174,53 @@ describe_only(() => {
 describe_only(() => {
   return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
 })('verbose logs', () => {
-  it('mask sensitive information in _User class', done => {
-    reconfigureServer({ verbose: true })
-      .then(() => createTestUser())
-      .then(() => {
-        const winstonLoggerAdapter = new WinstonLoggerAdapter();
-        return winstonLoggerAdapter.query({
-          from: new Date(Date.now() - 500),
-          size: 100,
-          level: 'verbose',
-        });
-      })
-      .then(results => {
-        const logString = JSON.stringify(results);
-        expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
-        expect(logString.match(/moon-y/g)).toBe(null);
-
-        const headers = {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        };
-        request({
-          headers: headers,
-          url: 'http://localhost:8378/1/login?username=test&password=moon-y',
-        }).then(() => {
+  it_id('9ca72994-d255-4c11-a5a2-693c99ee2cdb')(
+    'mask sensitive information in _User class',
+    done => {
+      reconfigureServer({ verbose: true })
+        .then(() => createTestUser())
+        .then(() => {
           const winstonLoggerAdapter = new WinstonLoggerAdapter();
-          return winstonLoggerAdapter
-            .query({
-              from: new Date(Date.now() - 500),
-              size: 100,
-              level: 'verbose',
-            })
-            .then(results => {
-              const logString = JSON.stringify(results);
-              expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
-              expect(logString.match(/moon-y/g)).toBe(null);
-              done();
-            });
+          return winstonLoggerAdapter.query({
+            from: new Date(Date.now() - 500),
+            size: 100,
+            level: 'verbose',
+          });
+        })
+        .then(results => {
+          const logString = JSON.stringify(results);
+          expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+          expect(logString.match(/moon-y/g)).toBe(null);
+
+          const headers = {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          };
+          request({
+            headers: headers,
+            url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+          }).then(() => {
+            const winstonLoggerAdapter = new WinstonLoggerAdapter();
+            return winstonLoggerAdapter
+              .query({
+                from: new Date(Date.now() - 500),
+                size: 100,
+                level: 'verbose',
+              })
+              .then(results => {
+                const logString = JSON.stringify(results);
+                expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+                expect(logString.match(/moon-y/g)).toBe(null);
+                done();
+              });
+          });
+        })
+        .catch(err => {
+          fail(JSON.stringify(err));
+          done();
         });
-      })
-      .catch(err => {
-        fail(JSON.stringify(err));
-        done();
-      });
-  });
+    }
+  );
 
   it('verbose logs should interpolate string', async () => {
     await reconfigureServer({ verbose: true });

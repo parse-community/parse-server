@@ -68,25 +68,28 @@ describe('Uniqueness', function () {
       });
   });
 
-  it('fails when attempting to ensure uniqueness of fields that are not currently unique', done => {
-    const o1 = new Parse.Object('UniqueFail');
-    o1.set('key', 'val');
-    const o2 = new Parse.Object('UniqueFail');
-    o2.set('key', 'val');
-    Parse.Object.saveAll([o1, o2])
-      .then(() => {
-        const config = Config.get('test');
-        return config.database.adapter.ensureUniqueness(
-          'UniqueFail',
-          { fields: { key: { __type: 'String' } } },
-          ['key']
-        );
-      })
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-        done();
-      });
-  });
+  it_id('802650a9-a6db-447e-88d0-8aae99100088')(
+    'fails when attempting to ensure uniqueness of fields that are not currently unique',
+    done => {
+      const o1 = new Parse.Object('UniqueFail');
+      o1.set('key', 'val');
+      const o2 = new Parse.Object('UniqueFail');
+      o2.set('key', 'val');
+      Parse.Object.saveAll([o1, o2])
+        .then(() => {
+          const config = Config.get('test');
+          return config.database.adapter.ensureUniqueness(
+            'UniqueFail',
+            { fields: { key: { __type: 'String' } } },
+            ['key']
+          );
+        })
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+          done();
+        });
+    }
+  );
 
   it_exclude_dbs(['postgres'])('can do compound uniqueness', done => {
     const config = Config.get('test');
