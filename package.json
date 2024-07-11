@@ -93,7 +93,7 @@
     "husky": "9.0.11",
     "jasmine": "3.5.0",
     "jasmine-spec-reporter": "7.0.0",
-    "jsdoc": "4.0.2",
+    "jsdoc": "4.0.3",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
     "m": "1.9.0",
