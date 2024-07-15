@@ -70,7 +70,7 @@
     "@apollo/client": "3.9.11",
     "@babel/cli": "7.23.9",
     "@babel/core": "7.24.7",
-    "@babel/plugin-proposal-object-rest-spread": "7.10.0",
+    "@babel/plugin-proposal-object-rest-spread": "7.20.7",
     "@babel/plugin-transform-flow-strip-types": "7.24.7",
     "@babel/preset-env": "7.24.0",
     "@saithodev/semantic-release-backmerge": "4.0.1",
