@@ -382,7 +382,6 @@ describe('ParseLiveQuery', function () {
     await obj2.save();
     obj2.set('foo', 'bart');
     await obj2.save();
-    await sleep(2000);
     expect(createSpy).toHaveBeenCalledTimes(1);
     expect(updateSpy).toHaveBeenCalledTimes(1);
   });

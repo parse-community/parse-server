@@ -120,7 +120,7 @@ describe('PushWorker', () => {
       });
     });
 
-    it('transforms body appropriately', () => {
+    it('transforms body appropriately with title locale', () => {
       const cleanBody = PushUtils.transformPushBodyForLocale(
         {
           data: {

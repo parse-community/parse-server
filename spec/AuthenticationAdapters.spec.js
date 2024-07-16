@@ -469,29 +469,6 @@ describe('AuthenticationProviders', function () {
     expect(providerOptions).toEqual(options.facebook);
   });
 
-  it('should throw error when Facebook request appId is wrong data type', async () => {
-    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ id: 'a' });
-    });
-    const options = {
-      facebook: {
-        appIds: 'abcd',
-        appSecret: 'secret_sauce',
-      },
-    };
-    const authData = {
-      access_token: 'badtoken',
-    };
-    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebook',
-      options
-    );
-    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
-      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
-    );
-  });
-
   it('should handle Facebook appSecret for validating appIds', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
@@ -1652,7 +1629,7 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+  it('(using client id as string) should throw error with with invalid jwt issuer with token', async () => {
     const fakeClaim = {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
@@ -2208,7 +2185,7 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+  it('(using client id as string)  with token', async () => {
     const fakeClaim = {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',

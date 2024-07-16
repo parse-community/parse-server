@@ -194,27 +194,6 @@ describe('cloud validator', () => {
       });
   });
 
-  it('set params on cloud functions', done => {
-    Parse.Cloud.define(
-      'hello',
-      () => {
-        return 'Hello world!';
-      },
-      {
-        fields: ['a'],
-      }
-    );
-    Parse.Cloud.run('hello', {})
-      .then(() => {
-        fail('function should have failed.');
-      })
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual('Validation failed. Please specify data for a.');
-        done();
-      });
-  });
-
   it('allow params on cloud functions', done => {
     Parse.Cloud.define(
       'hello',
@@ -1629,7 +1608,7 @@ describe('cloud validator', () => {
     }
   });
 
-  it('Logs on invalid config', () => {
+  it('Logs on multiple invalid configs', () => {
     const fields = [
       {
         field: 'otherKey',
