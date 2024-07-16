@@ -127,11 +127,11 @@ Before you start make sure you have installed:
 
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | End-of-Life | Compatible |
-|------------|-------------|------------|
-| Node.js 18 | April 2025  | ✅ Yes      |
-| Node.js 20 | April 2026  | ✅ Yes      |
-| Node.js 22 | April 2027  | ✅ Yes      |
+| Version    | Latest Version | End-of-Life | Compatible |
+|------------|----------------|-------------|------------|
+| Node.js 18 | 18.20.4        | April 2025  | ✅ Yes      |
+| Node.js 20 | 20.15.1        | April 2026  | ✅ Yes      |
+| Node.js 22 | 22.4.1         | April 2027  | ✅ Yes      |
 
 #### MongoDB
 
