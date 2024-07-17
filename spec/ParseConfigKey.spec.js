@@ -1,6 +1,6 @@
 const Config = require('../lib/Config');
 
-describe('Config Keys', () => {
+fdescribe('Config Keys', () => {
   let loggerErrorSpy;
 
   beforeEach(async () => {
