@@ -1,6 +1,7 @@
 const Config = require('../lib/Config');
 
 fdescribe('Config Keys', () => {
+  const invalidKeyErrorMessage = 'Invalid key(s) found in Parse Server configuration';
   let loggerErrorSpy;
 
   beforeEach(async () => {
@@ -15,7 +16,7 @@ fdescribe('Config Keys', () => {
       invalidKey: 1,
     })).toBeResolved();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch(`Invalid key(s) found in Parse Server configuration`);
+    expect(error).toMatch(invalidKeyErrorMessage);
   });
 
   it('recognizes invalid keys in pages.customUrls', async () => {
@@ -29,7 +30,7 @@ fdescribe('Config Keys', () => {
       }
     })).toBeResolved();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch(`Invalid key(s) found in Parse Server configuration`);
+    expect(error).toMatch(invalidKeyErrorMessage);
     expect(error).toMatch(`invalidKey`);
     expect(error).toMatch(`EmailVerificationSendFail`);
   });
@@ -43,7 +44,7 @@ fdescribe('Config Keys', () => {
       }
     })).toBeResolved();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch(`Invalid key(s) found in Parse Server configuration`);
+    expect(error).toMatch(invalidKeyErrorMessage);
     expect(error).toMatch(`MasterKey`);
   });
 
@@ -67,7 +68,7 @@ fdescribe('Config Keys', () => {
     await expectAsync(reconfigureServer({
       ...defaultConfiguration,
     })).toBeResolved();
-    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Invalid key(s) found in Parse Server configuration`);
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);
   });
 
   fit('recognizes valid keys in databaseOptions', async () => {
@@ -82,6 +83,6 @@ fdescribe('Config Keys', () => {
         maxPoolSize: 10,
       },
     })).toBeResolved();
-    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Invalid key(s) found in Parse Server configuration`);
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);
   });
 });
