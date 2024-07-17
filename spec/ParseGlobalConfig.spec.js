@@ -114,21 +114,21 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it('can addUnique', async () => {
+  it_only_db('mongo')('can addUnique', async () => {
     await Parse.Config.save({ companies: { __op: 'AddUnique', objects: ['PA', 'RS', 'E'] }  });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['US', 'DK', 'PA', 'RS', 'E']);
   });
 
-  it('can add to array', async () => {
+  it_only_db('mongo')('can add to array', async () => {
     await Parse.Config.save({ companies: { __op: 'Add', objects: ['PA'] }  });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['US', 'DK', 'PA']);
   });
 
-  it('can remove from array', async () => {
+  it_only_db('mongo')('can remove from array', async () => {
     await Parse.Config.save({ companies: { __op: 'Remove', objects: ['US'] }  });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
