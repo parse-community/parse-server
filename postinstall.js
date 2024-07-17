@@ -31,13 +31,12 @@ const openCollective = `
              111111111111111111
                  11111111111
  
- 
-      Thank you for using Parse Platform 🙏
+      Thank you for using Parse Platform!
           https://parseplatform.org
  
 Please consider donating to help us maintain
                 this package.
-👉 https://opencollective.com/parse-server
+👉 https://opencollective.com/parse-server 👈
 `;
 
 const errorMessage = `
