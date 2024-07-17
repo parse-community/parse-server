@@ -1,3 +1,10 @@
+# [7.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.2...7.3.0-alpha.3) (2024-07-17)
+
+
+### Bug Fixes
+
+* Parse Server installation fails due to post install script incorrectly parsing required min. Node version ([#9216](https://github.com/parse-community/parse-server/issues/9216)) ([0fa82a5](https://github.com/parse-community/parse-server/commit/0fa82a54fe38ec14e8054339285d3db71a8624c8))
+
 # [7.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.1...7.3.0-alpha.2) (2024-07-17)
 
 
