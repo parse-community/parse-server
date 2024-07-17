@@ -20,11 +20,12 @@ const message = `
              111111111111111111
                  11111111111
  
-      Thank you for using Parse Platform!
-          https://parseplatform.org
+    Thank you for using Parse Platform!
+         https://parseplatform.org
  
 Please consider donating to help us maintain
-                this package.
+                this package:
+
 👉 https://opencollective.com/parse-server 👈
 
 `;
