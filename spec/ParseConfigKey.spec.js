@@ -1,6 +1,6 @@
 const Config = require('../lib/Config');
 
-fdescribe('Config Keys', () => {
+describe('Config Keys', () => {
   const invalidKeyErrorMessage = 'Invalid key\\(s\\) found in Parse Server configuration';
   let loggerErrorSpy;
 
