@@ -368,11 +368,11 @@ describe('batch', () => {
       it('should generate separate session for each call', async () => {
         await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        await myObject.save();
+        await myObject.save({ key: 'stringField' });
         await myObject.destroy();
 
         const myObject2 = new Parse.Object('MyObject2'); // This is important because transaction only works on pre-existing collections
-        await myObject2.save();
+        await myObject2.save({ key: 'stringField' });
         await myObject2.destroy();
         createSpy.calls.reset();
 
@@ -381,6 +381,7 @@ describe('batch', () => {
           myObjectCalls++;
           if (myObjectCalls === 2) {
             try {
+              // Saving a number to a string field should fail
               await request({
                 method: 'POST',
                 headers: headers,
@@ -547,14 +548,14 @@ describe('batch', () => {
         const results3 = await query3.find();
         expect(results3.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
-        expect(databaseAdapter.createObject.calls.count() >= 13).toEqual(true);
+        expect(createSpy.calls.count() >= 13).toEqual(true);
         let transactionalSession;
         let transactionalSession2;
         let myObjectDBCalls = 0;
         let myObject2DBCalls = 0;
         let myObject3DBCalls = 0;
-        for (let i = 0; i < databaseAdapter.createObject.calls.count(); i++) {
-          const args = databaseAdapter.createObject.calls.argsFor(i);
+        for (let i = 0; i < createSpy.calls.count(); i++) {
+          const args = createSpy.calls.argsFor(i);
           switch (args[0]) {
             case 'MyObject':
               myObjectDBCalls++;
