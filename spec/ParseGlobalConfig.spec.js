@@ -28,7 +28,7 @@ describe('a GlobalConfig', () => {
         },
         query,
         {
-          params: { companies: ['US', 'DK'], internalParam: 'internal' },
+          params: { companies: ['US', 'DK'], counter: 20, internalParam: 'internal' },
           masterKeyOnly: { internalParam: true },
         }
       )
@@ -112,6 +112,66 @@ describe('a GlobalConfig', () => {
       expect(body.result).toEqual(true);
       done();
     });
+  });
+
+  it('can addUnique', async () => {
+    const response = await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: { params: { companies: { __op: 'AddUnique', objects: ['PA', 'RS', 'E'] } } },
+      headers,
+    });
+    expect(response.status).toEqual(200);
+    expect(response.data.result).toEqual(true);
+    const config = await Parse.Config.get();
+    const companies = config.get('companies');
+    expect(companies).toEqual(['US', 'DK', 'PA', 'RS', 'E']);
+  });
+
+  it('can add to array', async () => {
+    const response = await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: { params: { companies: { __op: 'Add', objects: ['PA'] } } },
+      headers,
+    });
+    expect(response.status).toEqual(200);
+    expect(response.data.result).toEqual(true);
+    const config = await Parse.Config.get();
+    const companies = config.get('companies');
+    expect(companies).toEqual(['US', 'DK', 'PA']);
+  });
+
+  it('can remove from array', async () => {
+    const response = await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: { params: { companies: { __op: 'Remove', objects: ['US'] } } },
+      headers,
+    });
+    expect(response.status).toEqual(200);
+    expect(response.data.result).toEqual(true);
+    const config = await Parse.Config.get();
+    const companies = config.get('companies');
+    expect(companies).toEqual(['DK']);
+  });
+
+  it('can increment', async () => {
+    const response = await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: { params: { counter: { __op: 'Increment', amount: 49 } } },
+      headers,
+    });
+    expect(response.status).toEqual(200);
+    expect(response.data.result).toEqual(true);
+    const config = await Parse.Config.get();
+    const counter = config.get('counter');
+    expect(counter).toEqual(69);
   });
 
   it('can add and retrive files', done => {
