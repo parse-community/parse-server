@@ -14,7 +14,7 @@ describe('Config Keys', () => {
       ...defaultConfiguration,
       invalidKey: 1,
     })).toBeResolved();
-    const error = loggerErrorSpy.calls.all().reduce((string, call) => string = call.args[0], '');
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
     expect(error).toMatch(`Invalid Option Keys Found`);
   });
 
@@ -28,7 +28,7 @@ describe('Config Keys', () => {
         }
       }
     })).toBeResolved();
-    const error = loggerErrorSpy.calls.all().reduce((string, call) => string = call.args[0], '');
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
     expect(error).toMatch(`Invalid Option Keys Found`);
     expect(error).toMatch(`invalidKey`);
     expect(error).toMatch(`EmailVerificationSendFail`);
@@ -42,7 +42,7 @@ describe('Config Keys', () => {
         MasterKey: 1,
       }
     })).toBeResolved();
-    const error = loggerErrorSpy.calls.all().reduce((string, call) => string = call.args[0], '');
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
     expect(error).toMatch(`Invalid Option Keys Found`);
     expect(error).toMatch(`MasterKey`);
   });
@@ -56,7 +56,7 @@ describe('Config Keys', () => {
         { RequestTimeWindow: 1 },
       ]
     })).toBeRejected();
-    const error = loggerErrorSpy.calls.all().reduce((string, call) => string = call.args[0], '');
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
     expect(error).toMatch('Invalid Option Keys Found');
     expect(error).toMatch('rateLimit\\[0\\]\\.invalidKey');
     expect(error).toMatch('rateLimit\\[1\\]\\.RequestPath');
@@ -67,7 +67,7 @@ describe('Config Keys', () => {
     await expectAsync(reconfigureServer({
       ...defaultConfiguration,
     })).toBeResolved();
-    expect(loggerErrorSpy.calls.all().reduce((string, call) => string = call.args[0], '')).not.toMatch(`Invalid Option Keys Found`);
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Invalid Option Keys Found`);
   });
 
   it('recognizes valid keys in databaseOptions', async () => {
@@ -82,6 +82,6 @@ describe('Config Keys', () => {
         maxPoolSize: 10,
       },
     })).toBeResolved();
-    expect(loggerErrorSpy.calls.all().reduce((string, call) => string = call.args[0], '')).not.toMatch(`Invalid Option Keys Found`);
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Invalid Option Keys Found`);
   });
 });
