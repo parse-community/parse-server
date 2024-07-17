@@ -46,7 +46,6 @@ import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
-import Utils from './Utils';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
