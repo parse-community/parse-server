@@ -15,7 +15,7 @@ fdescribe('Config Keys', () => {
       invalidKey: 1,
     })).toBeResolved();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch(`Unknown key(s) found in Parse Server configuration`);
+    expect(error).toMatch(`Invalid key(s) found in Parse Server configuration`);
   });
 
   it('recognizes invalid keys in pages.customUrls', async () => {
@@ -29,7 +29,7 @@ fdescribe('Config Keys', () => {
       }
     })).toBeResolved();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch(`Unknown key(s) found in Parse Server configuration`);
+    expect(error).toMatch(`Invalid key(s) found in Parse Server configuration`);
     expect(error).toMatch(`invalidKey`);
     expect(error).toMatch(`EmailVerificationSendFail`);
   });
@@ -43,7 +43,7 @@ fdescribe('Config Keys', () => {
       }
     })).toBeResolved();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch(`Unknown key(s) found in Parse Server configuration`);
+    expect(error).toMatch(`Invalid key(s) found in Parse Server configuration`);
     expect(error).toMatch(`MasterKey`);
   });
 
@@ -57,7 +57,7 @@ fdescribe('Config Keys', () => {
       ]
     })).toBeRejected();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch('Unknown key(s) found in Parse Server configuration');
+    expect(error).toMatch('Invalid key(s) found in Parse Server configuration');
     expect(error).toMatch('rateLimit\\[0\\]\\.invalidKey');
     expect(error).toMatch('rateLimit\\[1\\]\\.RequestPath');
     expect(error).toMatch('rateLimit\\[2\\]\\.RequestTimeWindow');
@@ -67,7 +67,7 @@ fdescribe('Config Keys', () => {
     await expectAsync(reconfigureServer({
       ...defaultConfiguration,
     })).toBeResolved();
-    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Unknown key(s) found in Parse Server configuration`);
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Invalid key(s) found in Parse Server configuration`);
   });
 
   fit('recognizes valid keys in databaseOptions', async () => {
@@ -82,6 +82,6 @@ fdescribe('Config Keys', () => {
         maxPoolSize: 10,
       },
     })).toBeResolved();
-    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Unknown key(s) found in Parse Server configuration`);
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(`Invalid key(s) found in Parse Server configuration`);
   });
 });
