@@ -58,7 +58,7 @@ describe('Regex Vulnerabilities', () => {
           body: JSON.stringify({
             ...keys,
             _SessionToken: {
-              $regex: this.partialSessionToken,
+              $regex: partialSessionToken,
             },
             _method: 'GET',
           }),
