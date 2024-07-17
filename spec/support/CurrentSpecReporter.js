@@ -52,23 +52,21 @@ global.retryFailedTests = function() {
   jasmine.Spec = function(attrs) {
     const spec = new originalSpecConstructor(attrs);
     const originalTestFn = spec.queueableFn.fn;
-
-    // Handles both styles of async testing (Promises and done()) and returns a
-    // Promise. Wraps synchronous tests in a Promise, too.
     const runOriginalTest = () => {
       if (originalTestFn.length == 0) {
+        // handle async testing
         return originalTestFn();
       } else {
+        // handle done() callback
         return new Promise((resolve) => {
           originalTestFn(resolve);
         });
       }
     };
-
     spec.queueableFn.fn = async function() {
+      const runs = flakyTests.includes(spec.result.fullName) ? retries : 1;
       let exceptionCaught;
       let returnValue;
-      const runs = flakyTests.includes(spec.result.fullName) ? retries : 1;
 
       for (let i = 0; i < runs; ++i) {
         spec.result.failedExpectations = [];
