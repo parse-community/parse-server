@@ -46,7 +46,7 @@ global.displaySlowTests = function() {
   console.log('\n');
 };
 
-global.retryFailedTests = function() {
+global.retryFlakyTests = function() {
   const originalSpecConstructor = jasmine.Spec;
 
   jasmine.Spec = function(attrs) {
