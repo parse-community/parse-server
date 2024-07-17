@@ -1,3 +1,10 @@
+# [7.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.1...7.3.0-alpha.2) (2024-07-17)
+
+
+### Bug Fixes
+
+* Parse Server `databaseOptions` nested keys incorrectly identified as invalid ([#9213](https://github.com/parse-community/parse-server/issues/9213)) ([77206d8](https://github.com/parse-community/parse-server/commit/77206d804443cfc1618c24f8961bd677de9920c0))
+
 # [7.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.2.0...7.3.0-alpha.1) (2024-07-09)
 
 
