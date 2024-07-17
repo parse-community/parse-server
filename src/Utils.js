@@ -374,8 +374,9 @@ class Utils {
   /**
    * Moves the nested keys of a specified key in an object to the root of the object.
    *
-   * @param {object} obj The object to modify.
+   * @param {Object} obj The object to modify.
    * @param {String} key The key whose nested keys will be moved to root.
+   * @returns {Object} The modified object, or the original object if no modification happened.
    * @example
    * const obj = {
    *   a: 1,
@@ -396,6 +397,7 @@ class Utils {
       // Delete original nested key
       delete obj[key];
     }
+    return obj;
   }
 }
 
