@@ -306,7 +306,7 @@ app.listen(1337, function() {
 });
 ```
 
-For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
+For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations][server-options].
 
 ## Parse Server Health
 
@@ -333,7 +333,7 @@ The response looks like this:
 
 Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
 
-For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
+For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations][server-options].
 
 ## Basic Options
 
@@ -367,7 +367,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 ## Email Verification and Password Reset
 
-Verifying user email addresses and enabling password reset via email requires an email adapter. There are many email adapters provided and maintained by the community. The following is an example configuration with an example email adapter. See the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) for more details and a full list of available options.
+Verifying user email addresses and enabling password reset via email requires an email adapter. There are many email adapters provided and maintained by the community. The following is an example configuration with an example email adapter. See the [Parse Server Options][server-options] for more details and a full list of available options.
 
 ```js
 const server = ParseServer({
@@ -407,7 +407,7 @@ Email adapters contributed by the community:
 
 ## Password and Account Policy
 
-Set a password and account policy that meets your security requirements. The following is an example configuration. See the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) for more details and a full list of available options.
+Set a password and account policy that meets your security requirements. The following is an example configuration. See the [Parse Server Options][server-options] for more details and a full list of available options.
 
 ```js
 const server = ParseServer({
@@ -1207,3 +1207,4 @@ Support us with a monthly donation and help us continue our activities. [Become 
 [log_release]: https://github.com/parse-community/parse-server/blob/release/changelogs/CHANGELOG_release.md
 [log_beta]: https://github.com/parse-community/parse-server/blob/beta/changelogs/CHANGELOG_beta.md
 [log_alpha]: https://github.com/parse-community/parse-server/blob/alpha/changelogs/CHANGELOG_alpha.md
+[server-options] http://parseplatform.org/parse-server/api/release/ParseServerOptions.html

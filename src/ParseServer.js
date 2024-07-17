@@ -109,7 +109,7 @@ class ParseServer {
     const diff = validateKeyNames(options, optionsBlueprint);
     if (diff.length > 0) {
       const logger = logging.logger;
-      logger.error(`Invalid Option Keys Found: ${diff.join(', ')}`);
+      logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
     }
 
     // Set option defaults

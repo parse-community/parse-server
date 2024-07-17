@@ -4,7 +4,7 @@ const UserController = require('../lib/Controllers/UserController').UserControll
 const Config = require('../lib/Config');
 const ParseServer = require('../lib/index').ParseServer;
 const triggers = require('../lib/triggers');
-const { resolvingPromise, sleep } = require('./support/testUtils');
+const { resolvingPromise, sleep } = require('../lib/TestUtils');
 const validatorFail = () => {
   throw 'you are not authorized';
 };

@@ -1051,6 +1051,29 @@ module.exports.DatabaseOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  maxPoolSize: {
+    env: 'PARSE_SERVER_DATABASE_MAX_POOL_SIZE',
+    help:
+      'The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.',
+    action: parsers.numberParser('maxPoolSize'),
+  },
+  maxStalenessSeconds: {
+    env: 'PARSE_SERVER_DATABASE_MAX_STALENESS_SECONDS',
+    help:
+      'The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.',
+    action: parsers.numberParser('maxStalenessSeconds'),
+  },
+  maxTimeMS: {
+    env: 'PARSE_SERVER_DATABASE_MAX_TIME_MS',
+    help:
+      'The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.',
+    action: parsers.numberParser('maxTimeMS'),
+  },
+  retryWrites: {
+    env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
+    help: 'The MongoDB driver option to set whether to retry failed writes.',
+    action: parsers.booleanParser,
+  },
   schemaCacheTtl: {
     env: 'PARSE_SERVER_DATABASE_SCHEMA_CACHE_TTL',
     help:
