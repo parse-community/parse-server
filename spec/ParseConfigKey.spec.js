@@ -1,7 +1,7 @@
 const Config = require('../lib/Config');
 
 fdescribe('Config Keys', () => {
-  const invalidKeyErrorMessage = 'Invalid key(s) found in Parse Server configuration';
+  const invalidKeyErrorMessage = 'Invalid key\\(s\\) found in Parse Server configuration';
   let loggerErrorSpy;
 
   beforeEach(async () => {
@@ -58,7 +58,7 @@ fdescribe('Config Keys', () => {
       ]
     })).toBeRejected();
     const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
-    expect(error).toMatch('Invalid key(s) found in Parse Server configuration');
+    expect(error).toMatch(invalidKeyErrorMessage);
     expect(error).toMatch('rateLimit\\[0\\]\\.invalidKey');
     expect(error).toMatch('rateLimit\\[1\\]\\.RequestPath');
     expect(error).toMatch('rateLimit\\[2\\]\\.RequestTimeWindow');
@@ -71,7 +71,7 @@ fdescribe('Config Keys', () => {
     expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);
   });
 
-  fit('recognizes valid keys in databaseOptions', async () => {
+  it('recognizes valid keys in databaseOptions', async () => {
     await expectAsync(reconfigureServer({
       databaseURI: 'mongodb://localhost:27017/parse',
       filesAdapter: null,
