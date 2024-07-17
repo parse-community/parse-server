@@ -113,11 +113,6 @@ class ParseServer {
       logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
     }
 
-    // Move unsafe database driver options
-    if (options.databaseOptions !== undefined) {
-      options.databaseOptions = Utils.addNestedKeysToRoot(options.databaseOptions, 'unsafeDriverOptions');
-    }
-
     // Set option defaults
     injectDefaults(options);
     const {
