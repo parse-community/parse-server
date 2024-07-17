@@ -272,86 +272,86 @@ describe('batch', () => {
                   path: '/1/classes/MyObject',
                   body: { key: 10 },
                 },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 'value1' },
-                // },
-                // {
-                //   method: 'POST',
-                //   path: '/1/classes/MyObject',
-                //   body: { key: 10 },
-                // },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
               ],
               transaction: true,
             }),
