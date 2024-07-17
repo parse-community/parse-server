@@ -46,6 +46,7 @@ import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
+import Utils from './Utils';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -110,6 +111,11 @@ class ParseServer {
     if (diff.length > 0) {
       const logger = logging.logger;
       logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
+    }
+
+    // Move unsafe database driver options
+    if (options.databaseOptions !== undefined) {
+      options.databaseOptions = Utils.addNestedKeysToRoot(options.databaseOptions, 'unsafeDriverOptions');
     }
 
     // Set option defaults
