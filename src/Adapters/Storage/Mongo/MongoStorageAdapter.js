@@ -582,7 +582,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  // Hopefully we can get rid of this. It's only used for hooks.
+  // Hopefully we can get rid of this. It's only used for config and hooks.
   upsertOneObject(
     className: string,
     schema: SchemaType,

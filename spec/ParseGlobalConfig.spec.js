@@ -115,60 +115,28 @@ describe('a GlobalConfig', () => {
   });
 
   it('can addUnique', async () => {
-    const response = await request({
-      method: 'PUT',
-      url: 'http://localhost:8378/1/config',
-      json: true,
-      body: { params: { companies: { __op: 'AddUnique', objects: ['PA', 'RS', 'E'] } } },
-      headers,
-    });
-    expect(response.status).toEqual(200);
-    expect(response.data.result).toEqual(true);
+    await Parse.Config.save({ companies: { __op: 'AddUnique', objects: ['PA', 'RS', 'E'] }  });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['US', 'DK', 'PA', 'RS', 'E']);
   });
 
   it('can add to array', async () => {
-    const response = await request({
-      method: 'PUT',
-      url: 'http://localhost:8378/1/config',
-      json: true,
-      body: { params: { companies: { __op: 'Add', objects: ['PA'] } } },
-      headers,
-    });
-    expect(response.status).toEqual(200);
-    expect(response.data.result).toEqual(true);
+    await Parse.Config.save({ companies: { __op: 'Add', objects: ['PA'] }  });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['US', 'DK', 'PA']);
   });
 
   it('can remove from array', async () => {
-    const response = await request({
-      method: 'PUT',
-      url: 'http://localhost:8378/1/config',
-      json: true,
-      body: { params: { companies: { __op: 'Remove', objects: ['US'] } } },
-      headers,
-    });
-    expect(response.status).toEqual(200);
-    expect(response.data.result).toEqual(true);
+    await Parse.Config.save({ companies: { __op: 'Remove', objects: ['US'] }  });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['DK']);
   });
 
   it('can increment', async () => {
-    const response = await request({
-      method: 'PUT',
-      url: 'http://localhost:8378/1/config',
-      json: true,
-      body: { params: { counter: { __op: 'Increment', amount: 49 } } },
-      headers,
-    });
-    expect(response.status).toEqual(200);
-    expect(response.data.result).toEqual(true);
+    await Parse.Config.save({ counter: { __op: 'Increment', amount: 49 }  });
     const config = await Parse.Config.get();
     const counter = config.get('counter');
     expect(counter).toEqual(69);
@@ -225,6 +193,7 @@ describe('a GlobalConfig', () => {
       body: {
         params: {
           companies: { __op: 'Delete' },
+          counter: { __op: 'Delete' },
           internalParam: { __op: 'Delete' },
           foo: 'bar',
         },
@@ -243,6 +212,7 @@ describe('a GlobalConfig', () => {
         try {
           expect(response.status).toEqual(200);
           expect(body.params.companies).toBeUndefined();
+          expect(body.params.counter).toBeUndefined();
           expect(body.params.foo).toBe('bar');
           expect(Object.keys(body.params).length).toBe(1);
         } catch (e) {
