@@ -1,7 +1,6 @@
 // Sets a global variable to the current test spec
 // ex: global.currentSpec.description
 const { performance } = require('perf_hooks');
-const flakyTests = require('./flakyTests.json');
 
 global.currentSpec = null;
 
@@ -9,9 +8,12 @@ const timerMap = {};
 const duplicates = [];
 /** The minimum execution time in seconds for a test to be considered slow. */
 const slowTestLimit = 2;
-/** The number of times to retry a failed test. */
+/** The number of times to retry a flaky test. */
 const retries = 3;
-
+/** Full name of tests that fail randomly and are considered flaky */
+const flakyTests = [
+  "ParseLiveQuery handle invalid websocket payload length",
+];
 class CurrentSpecReporter {
   specStarted(spec) {
     if (timerMap[spec.fullName]) {
