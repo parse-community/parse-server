@@ -2112,7 +2112,7 @@ describe('facebook limited auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67', '(using client id as array with multiple items) should verify id_token (facebook.com)', async () => {
+  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')('(using client id as array with multiple items) should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://www.facebook.com',
       aud: 'secret',
@@ -2132,7 +2132,7 @@ describe('facebook limited auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c'), '(using client id as string) should throw error with with invalid jwt issuer (facebook.com)', async () => {
+  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')('(using client id as string) should throw error with with invalid jwt issuer (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',

@@ -467,10 +467,9 @@ try {
 }
 
 /**
- * Disable test if its UUID is found in testExclusionList.
+ * Assign ID to test and run it. Disable test if its UUID is found in testExclusionList.
  * @param {String} id The UUID of the test.
  * @param {any} func The test function.
- * @returns 
  */
 global.it_id = (id, func) => {
   if (testExclusionList.includes(id)) {
@@ -481,10 +480,9 @@ global.it_id = (id, func) => {
 };
 
 /**
- * Disable test if its UUID is found in testExclusionList.
+ * Assign ID to test and run only this test. Disable test if its UUID is found in testExclusionList.
  * @param {String} id The UUID of the test.
  * @param {any} func The test function.
- * @returns 
  */
 global.fit_id = (id, func) => {
   if (testExclusionList.includes(id)) {

@@ -3464,7 +3464,7 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2'), 'should have expected data in request in afterLogin', async done => {
+  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2')('should have expected data in request in afterLogin', async done => {
     Parse.Cloud.afterLogin(req => {
       expect(req.object).toBeDefined();
       expect(req.user).toBeDefined();
