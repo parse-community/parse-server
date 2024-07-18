@@ -9,7 +9,7 @@ const duplicates = [];
 /** The minimum execution time in seconds for a test to be considered slow. */
 const slowTestLimit = 2;
 /** The number of times to retry a flaky test. */
-const retries = 3;
+const retries = 5;
 /** Full name of tests that fail randomly and are considered flaky */
 const flakyTests = [
   "ParseLiveQuery handle invalid websocket payload length", // timeout
@@ -70,7 +70,8 @@ global.retryFlakyTests = function() {
       }
     };
     spec.queueableFn.fn = async function() {
-      const runs = flakyTests.includes(spec.result.fullName) ? retries : 1;
+      const isFlaky = flakyTests.includes(spec.result.fullName);
+      const runs = isFlaky ? retries : 1;
       let exceptionCaught;
       let returnValue;
 
@@ -87,6 +88,9 @@ global.retryFlakyTests = function() {
             (exceptionCaught || spec.result.failedExpectations.length != 0);
         if (!failed) {
           break;
+        }
+        if (isFlaky) {
+          console.log('flaky test failed, retrying', spec.result.fullName);
         }
       }
       if (exceptionCaught) {
