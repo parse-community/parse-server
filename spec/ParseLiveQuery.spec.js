@@ -878,7 +878,7 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it('handle invalid websocket payload length', async done => {
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')('handle invalid websocket payload length', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
