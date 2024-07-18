@@ -5275,4 +5275,13 @@ describe('Parse.Query testing', () => {
     // Validate
     expect(result.executionStats).not.toBeUndefined();
   });
+
+  it('count objects with master key', async () => {
+    const obj = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject');
+    await Parse.Object.saveAll([obj, obj2]);
+    const query = new Parse.Query('TestObject');
+    const count = await query.count({ useMasterKey: true });
+    expect(count).toBe(2);
+  });
 });

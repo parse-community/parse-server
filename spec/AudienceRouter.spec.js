@@ -130,7 +130,7 @@ describe('AudiencesRouter', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
+  it('query installations with count = 1 on multiple audiences', done => {
     const config = Config.get('test');
     const androidAudienceRequest = {
       name: 'Android Users',

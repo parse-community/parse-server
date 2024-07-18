@@ -129,7 +129,7 @@ describe('InstallationsRouter', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
+  it('query installations with count = 1 on multiple devices', done => {
     const config = Config.get('test');
     const androidDeviceRequest = {
       installationId: '12345678-abcd-abcd-abcd-123456789abc',
@@ -164,43 +164,6 @@ describe('InstallationsRouter', () => {
         fail(JSON.stringify(error));
         done();
       });
-  });
-
-  it_only_db('postgres')('query installations with count = 1', async () => {
-    const config = Config.get('test');
-    const androidDeviceRequest = {
-      installationId: '12345678-abcd-abcd-abcd-123456789abc',
-      deviceType: 'android',
-    };
-    const iosDeviceRequest = {
-      installationId: '12345678-abcd-abcd-abcd-123456789abd',
-      deviceType: 'ios',
-    };
-    const request = {
-      config: config,
-      auth: auth.master(config),
-      body: {},
-      query: {
-        count: 1,
-      },
-      info: {},
-    };
-
-    const router = new InstallationsRouter();
-    await rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest);
-    await rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
-    let res = await router.handleFind(request);
-    let response = res.response;
-    expect(response.results.length).toEqual(2);
-    expect(response.count).toEqual(0); // estimate count is zero
-
-    const pgAdapter = config.database.adapter;
-    await pgAdapter.updateEstimatedCount('_Installation');
-
-    res = await router.handleFind(request);
-    response = res.response;
-    expect(response.results.length).toEqual(2);
-    expect(response.count).toEqual(2);
   });
 
   it_exclude_dbs(['postgres'])('query installations with limit = 0 and count = 1', done => {
