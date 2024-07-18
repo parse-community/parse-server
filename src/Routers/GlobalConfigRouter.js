@@ -46,7 +46,7 @@ export class GlobalConfigRouter extends PromiseRouter {
       return acc;
     }, {});
     return req.config.database
-      .update('_GlobalConfig', { objectId: '1' }, update, { upsert: true })
+      .update('_GlobalConfig', { objectId: '1' }, update, { upsert: true }, true)
       .then(() => ({ response: { result: true } }));
   }
 
