@@ -247,7 +247,7 @@ describe('rest create', () => {
     });
   });
 
-  it('handles array, object, date', done => {
+  it_id('6c30306f-328c-47f2-88a7-2deffaee997f')('handles array, object, date', done => {
     const now = new Date();
     const obj = {
       array: [1, 2, 3],
