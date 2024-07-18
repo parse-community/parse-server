@@ -102,7 +102,7 @@ describe('Regex Vulnerabilities', () => {
       expect(user.get('emailVerified')).toEqual(false);
     });
 
-    it('should work with plain token', async () => {
+    it_id('92bbb86d-bcda-49fa-8d79-aa0501078044')('should work with plain token', async () => {
       expect(user.get('emailVerified')).toEqual(false);
       const current = await request({
         method: 'GET',

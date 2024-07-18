@@ -1,3 +1,10 @@
+# [7.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.4...7.3.0-alpha.5) (2024-07-18)
+
+
+### Bug Fixes
+
+* Parse Server option `maxLogFiles` doesn't recognize day duration literals such as `1d` to mean 1 day ([#9215](https://github.com/parse-community/parse-server/issues/9215)) ([0319cee](https://github.com/parse-community/parse-server/commit/0319cee2dbf65e90bad377af1ed14ea25c595bf5))
+
 # [7.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.3...7.3.0-alpha.4) (2024-07-18)
 
 
