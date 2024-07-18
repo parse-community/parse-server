@@ -378,7 +378,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MAX_LOG_FILES',
     help:
       "Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)",
-    action: parsers.objectParser,
+    action: parsers.numberOrStringParser('maxLogFiles'),
   },
   maxUploadSize: {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',

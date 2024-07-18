@@ -163,7 +163,7 @@ describe('miscellaneous', function () {
     expect(numCreated).toBe(1);
   });
 
-  it('ensure that if people already have duplicate users, they can still sign up new users', async done => {
+  it_id('be1b9ac7-5e5f-4e91-b044-2bd8fb7622ad')('ensure that if people already have duplicate users, they can still sign up new users', async done => {
     try {
       await Parse.User.logOut();
     } catch (e) {
@@ -209,7 +209,7 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
+  it_id('d00f907e-41b9-40f6-8168-63e832199a8c')('ensure that if people already have duplicate emails, they can still sign up new users', done => {
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
@@ -289,7 +289,7 @@ describe('miscellaneous', function () {
     }, fail);
   });
 
-  it('increment with a user object', function (done) {
+  it_id('33db6efe-7c02-496c-8595-0ef627a94103')('increment with a user object', function (done) {
     createTestUser()
       .then(user => {
         user.increment('foo');
@@ -317,7 +317,7 @@ describe('miscellaneous', function () {
       );
   });
 
-  it('save various data types', function (done) {
+  it_id('bef99522-bcfd-4f79-ba9e-3c3845550401')('save various data types', function (done) {
     const obj = new TestObject();
     obj.set('date', new Date());
     obj.set('array', [1, 2, 3]);
@@ -951,7 +951,7 @@ describe('miscellaneous', function () {
       );
   });
 
-  it('return the updated fields on PUT', async () => {
+  it_id('e9e718a9-4465-4158-b13e-f146855a8892')('return the updated fields on PUT', async () => {
     const obj = new Parse.Object('GameScore');
     const pointer = new Parse.Object('Child');
     await pointer.save();
@@ -1023,7 +1023,7 @@ describe('miscellaneous', function () {
     expect(body.updatedAt).not.toBeUndefined();
   });
 
-  it('should response should not change with triggers', async () => {
+  it_id('ea358b59-03c0-45c9-abc7-1fdd67573029')('should response should not change with triggers', async () => {
     const obj = new Parse.Object('GameScore');
     const pointer = new Parse.Object('Child');
     Parse.Cloud.beforeSave('GameScore', request => {
@@ -1491,7 +1491,7 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('properly returns incremented values (#1554)', done => {
+  it_id('b2cd9cf2-13fa-4acd-aaa9-6f81fc1858db')('properly returns incremented values (#1554)', done => {
     const headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
@@ -1680,7 +1680,7 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('purge all objects in class', done => {
+  it_id('8f99ee20-3da7-45ec-b867-ea0eb87524a9')('purge all objects in class', done => {
     const object = new Parse.Object('TestObject');
     object.set('foo', 'bar');
     const object2 = new Parse.Object('TestObject');

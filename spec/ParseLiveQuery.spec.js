@@ -878,7 +878,7 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it('handle invalid websocket payload length', async done => {
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')('handle invalid websocket payload length', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -915,7 +915,7 @@ describe('ParseLiveQuery', function () {
     }, 1000);
   });
 
-  it('should execute live query update on email validation', async done => {
+  it_id('39a9191f-26dd-4e05-a379-297a67928de8')('should execute live query update on email validation', async done => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -1145,7 +1145,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('does shutdown liveQuery server', async () => {
+  it_id('2f95d8a9-7675-45ba-a4a6-e45cb7efb1fb')('does shutdown liveQuery server', async () => {
     await reconfigureServer({ appId: 'test_app_id' });
     const config = {
       appId: 'hello_test',
