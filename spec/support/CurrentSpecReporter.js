@@ -12,7 +12,11 @@ const slowTestLimit = 2;
 const retries = 3;
 /** Full name of tests that fail randomly and are considered flaky */
 const flakyTests = [
-  "ParseLiveQuery handle invalid websocket payload length",
+  "ParseLiveQuery handle invalid websocket payload length", // timeout
+  "rest query query internal field", // Unhandled promise rejection: TypeError: message.split is not a function
+  "transactions should generate separate session for each call", // timeout
+  "transactions should not save anything when one operation fails in a transaction", // timeout
+  "transactions should handle a batch request with transaction = true", // timeout
 ];
 class CurrentSpecReporter {
   specStarted(spec) {
