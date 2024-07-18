@@ -1514,7 +1514,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (transactionalSession) {
       transactionalSession.batch.push(promise);
     }
-    const result = promise;
+    const result = await promise;
     this.updateEstimatedCount(className);
     return result;
   }
