@@ -205,7 +205,7 @@ describe('Schema Performance', function () {
     expect(getAllSpy.calls.count()).toBe(2);
   });
 
-  it('does reload with schemaCacheTtl', async () => {
+  it_id('9dd70965-b683-4cb8-b43a-44c1f4def9f4')('does reload with schemaCacheTtl', async () => {
     const databaseURI =
       process.env.PARSE_SERVER_TEST_DB === 'postgres'
         ? process.env.PARSE_SERVER_TEST_DATABASE_URI
@@ -241,7 +241,7 @@ describe('Schema Performance', function () {
     expect(spy.reloadCalls).toBe(1);
   });
 
-  it('cannot set invalid databaseOptions', async () => {
+  it_id('b0ae21f2-c947-48ed-a0db-e8900d45a4c8')('cannot set invalid databaseOptions', async () => {
     const expectError = async (key, value, expected) =>
       expectAsync(
         reconfigureServer({ databaseAdapter: undefined, databaseOptions: { [key]: value } })
