@@ -5,9 +5,9 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
-const triggers = require('../triggers');
-const http = require('http');
-const Utils = require('../Utils');
+import triggers from '../triggers';
+import http from 'http';
+import Utils from '../Utils';
 
 const downloadFileFromURI = uri => {
   return new Promise((res, rej) => {
