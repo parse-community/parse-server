@@ -19,6 +19,7 @@ const flakyTests = [
   "transactions should not save anything when one operation fails in a transaction", // timeout
   "transactions should handle a batch request with transaction = true", // timeout
   "UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL", // TypeError: Cannot read properties of undefined (reading 'link')
+  "Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp", // Expected undefined to be defined
 ];
 class CurrentSpecReporter {
   specStarted(spec) {
@@ -96,7 +97,7 @@ global.retryFlakyTests = function() {
           break;
         }
         if (isFlaky) {
-          retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1
+          retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1;
         }
       }
       if (exceptionCaught) {
