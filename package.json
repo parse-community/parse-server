@@ -85,7 +85,7 @@
     "clean-jsdoc-theme": "4.3.0",
     "cross-env": "7.0.2",
     "deep-diff": "1.0.2",
-    "eslint": "8.26.0",
+    "eslint": "8.57.0",
     "eslint-plugin-flowtype": "8.0.3",
     "flow-bin": "0.119.1",
     "form-data": "4.0.0",
