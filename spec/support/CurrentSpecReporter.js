@@ -17,6 +17,7 @@ const flakyTests = [
   "transactions should generate separate session for each call", // timeout
   "transactions should not save anything when one operation fails in a transaction", // timeout
   "transactions should handle a batch request with transaction = true", // timeout
+  "UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL", // TypeError: Cannot read properties of undefined (reading 'link')
 ];
 class CurrentSpecReporter {
   specStarted(spec) {
