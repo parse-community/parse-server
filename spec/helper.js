@@ -288,7 +288,7 @@ afterEach(function (done) {
 });
 
 afterAll(() => {
-  global.displaySlowTests();
+  global.displayTestStats();
 });
 
 const TestObject = Parse.Object.extend({

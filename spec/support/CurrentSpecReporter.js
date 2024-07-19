@@ -5,6 +5,7 @@ const { performance } = require('perf_hooks');
 global.currentSpec = null;
 
 const timerMap = {};
+const retryMap = {};
 const duplicates = [];
 /** The minimum execution time in seconds for a test to be considered slow. */
 const slowTestLimit = 2;
@@ -38,7 +39,7 @@ class CurrentSpecReporter {
   }
 }
 
-global.displaySlowTests = function() {
+global.displayTestStats = function() {
   const times = Object.values(timerMap).sort((a,b) => b - a).filter(time => time >= slowTestLimit);
   if (times.length > 0) {
     console.log(`Slow tests with execution time >=${slowTestLimit}s:`);
@@ -49,6 +50,10 @@ global.displaySlowTests = function() {
   console.log('\n');
   duplicates.forEach((spec) => {
     console.warn('Duplicate spec: ' + spec);
+  });
+  console.log('\n');
+  Object.keys(retryMap).forEach((spec) => {
+    console.warn(`Flaky test: ${spec} failed ${retryMap[spec]} times`);
   });
   console.log('\n');
 };
@@ -91,7 +96,7 @@ global.retryFlakyTests = function() {
           break;
         }
         if (isFlaky) {
-          console.log('flaky test failed, retrying', spec.result.fullName);
+          retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1
         }
       }
       if (exceptionCaught) {
