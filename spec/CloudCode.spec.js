@@ -4017,7 +4017,7 @@ describe('Cloud Config hooks', () => {
       fail('error should have thrown');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toBe(null);
+      expect(e.message).toBe('Script failed. Unknown error.');
     }
   });
 
@@ -4071,7 +4071,7 @@ describe('Cloud Config hooks', () => {
       await testConfig();
       fail('error should have thrown');
     } catch (e) {
-      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(e.code).toBe(400);
       expect(e.message).toBe('It should fail');
     }
   });
