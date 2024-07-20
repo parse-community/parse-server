@@ -1468,9 +1468,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (transactionalSession) {
       transactionalSession.batch.push(promise);
     }
-    const result = await promise;
-    this.updateEstimatedCount(className);
-    return result;
+    return promise;
   }
 
   // Remove all objects that match the given Parse Query.
@@ -1514,9 +1512,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (transactionalSession) {
       transactionalSession.batch.push(promise);
     }
-    const result = await promise;
-    this.updateEstimatedCount(className);
-    return result;
+    return promise;
   }
   // Return value not currently well specified.
   async findOneAndUpdate(
@@ -2052,6 +2048,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (where.pattern.length > 0 || !estimate) {
       qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
+      await this.updateEstimatedCount(className);
       qs = 'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
     }
     return this._client
