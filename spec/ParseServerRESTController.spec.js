@@ -7,11 +7,13 @@ const TestUtils = require('../lib/TestUtils');
 let RESTController;
 
 describe('ParseServerRESTController', () => {
+  let createSpy;
   beforeEach(() => {
     RESTController = ParseServerRESTController(
       Parse.applicationId,
       ParseServer.promiseRouter({ appId: Parse.applicationId })
     );
+    createSpy = spyOn(databaseAdapter, 'createObject').and.callThrough();
   });
 
   it('should handle a get request', async () => {
@@ -133,24 +135,11 @@ describe('ParseServerRESTController', () => {
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
-      beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
-        if (process.env.MONGODB_TOPOLOGY === 'replicaset') {
-          await reconfigureServer({
-            databaseAdapter: undefined,
-            databaseURI:
-              'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
-          });
-        } else {
-          await reconfigureServer();
-        }
-      });
-
       it('should handle a batch request with transaction = true', async () => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
-        spyOn(databaseAdapter, 'createObject').and.callThrough();
+        createSpy.calls.reset();
         const response = await RESTController.request('POST', 'batch', {
           requests: [
             {
@@ -173,10 +162,10 @@ describe('ParseServerRESTController', () => {
         expect(response[1].success.createdAt).toBeDefined();
         const query = new Parse.Query('MyObject');
         const results = await query.find();
-        expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
-        for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
-          expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
-            databaseAdapter.createObject.calls.argsFor(i + 1)[3]
+        expect(createSpy.calls.count()).toBe(2);
+        for (let i = 0; i + 1 < createSpy.calls.length; i = i + 2) {
+          expect(createSpy.calls.argsFor(i)[3]).toBe(
+            createSpy.calls.argsFor(i + 1)[3]
           );
         }
         expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
@@ -184,9 +173,11 @@ describe('ParseServerRESTController', () => {
 
       it('should not save anything when one operation fails in a transaction', async () => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        await myObject.save();
+        await myObject.save({ key: 'stringField' });
         await myObject.destroy();
+        createSpy.calls.reset();
         try {
+          // Saving a number to a string field should fail
           await RESTController.request('POST', 'batch', {
             requests: [
               {
@@ -294,20 +285,21 @@ describe('ParseServerRESTController', () => {
       it('should generate separate session for each call', async () => {
         await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
-        await myObject.save();
+        await myObject.save({ key: 'stringField' });
         await myObject.destroy();
 
         const myObject2 = new Parse.Object('MyObject2'); // This is important because transaction only works on pre-existing collections
-        await myObject2.save();
+        await myObject2.save({ key: 'stringField' });
         await myObject2.destroy();
 
-        spyOn(databaseAdapter, 'createObject').and.callThrough();
+        createSpy.calls.reset();
 
         let myObjectCalls = 0;
         Parse.Cloud.beforeSave('MyObject', async () => {
           myObjectCalls++;
           if (myObjectCalls === 2) {
             try {
+              // Saving a number to a string field should fail
               await RESTController.request('POST', 'batch', {
                 requests: [
                   {
@@ -459,14 +451,14 @@ describe('ParseServerRESTController', () => {
         const results3 = await query3.find();
         expect(results3.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
-        expect(databaseAdapter.createObject.calls.count() >= 13).toEqual(true);
+        expect(createSpy.calls.count() >= 13).toEqual(true);
         let transactionalSession;
         let transactionalSession2;
         let myObjectDBCalls = 0;
         let myObject2DBCalls = 0;
         let myObject3DBCalls = 0;
-        for (let i = 0; i < databaseAdapter.createObject.calls.count(); i++) {
-          const args = databaseAdapter.createObject.calls.argsFor(i);
+        for (let i = 0; i < createSpy.calls.count(); i++) {
+          const args = createSpy.calls.argsFor(i);
           switch (args[0]) {
             case 'MyObject':
               myObjectDBCalls++;
