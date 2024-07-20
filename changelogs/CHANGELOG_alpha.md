@@ -1,3 +1,10 @@
+# [7.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.5...7.3.0-alpha.6) (2024-07-20)
+
+
+### Features
+
+* Add Cloud Code triggers `Parse.Cloud.beforeSave` and `Parse.Cloud.afterSave` for Parse Config ([#9232](https://github.com/parse-community/parse-server/issues/9232)) ([90a1e4a](https://github.com/parse-community/parse-server/commit/90a1e4a200423d644efb3f0ba2fba4b99f5cf954))
+
 # [7.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.4...7.3.0-alpha.5) (2024-07-18)
 
 
