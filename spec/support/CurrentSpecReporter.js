@@ -15,9 +15,6 @@ const retries = 5;
 const flakyTests = [
   "ParseLiveQuery handle invalid websocket payload length", // timeout
   "rest query query internal field", // Unhandled promise rejection: TypeError: message.split is not a function
-  "transactions should generate separate session for each call", // timeout
-  "transactions should not save anything when one operation fails in a transaction", // timeout
-  "transactions should handle a batch request with transaction = true", // timeout
   "UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL", // TypeError: Cannot read properties of undefined (reading 'link')
   "UserController sendVerificationEmail parseFrameURL provided uses parseFrameURL and includes the destination in the link parameter", // TypeError: Cannot read properties of undefined (reading 'link')
   "Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp", // Expected undefined to be defined
