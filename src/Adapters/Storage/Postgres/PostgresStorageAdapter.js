@@ -2426,7 +2426,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async updateEstimatedCount(className: string) {
-    return this._client.none('ANALYZE $1:name', [className]).catch(() => {});
+    return this._client.none('ANALYZE $1:name', [className])
+      .catch((e) => console.error(`Error: Failed to ANALYZE ${className}:`, e));
   }
 
   async createTransactionalSession(): Promise<any> {
