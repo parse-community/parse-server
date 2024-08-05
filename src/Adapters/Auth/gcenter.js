@@ -39,9 +39,10 @@ function convertX509CertToPEM(X509Cert) {
 
 async function getAppleCertificate(publicKeyUrl) {
   if (!verifyPublicKeyUrl(publicKeyUrl)) {
+    console.error(`Invalid publicKeyUrl: ${publicKeyUrl}`);
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+      `Unauthorized`
     );
   }
   if (cache[publicKeyUrl]) {
@@ -62,9 +63,10 @@ async function getAppleCertificate(publicKeyUrl) {
     cert_headers['content-length'] == null ||
     cert_headers['content-length'] > 10000
   ) {
+    console.error(`Invalid publicKeyUrl: ${publicKeyUrl}`);
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+      `Unauthorized`
     );
   }
   const { certificate, headers } = await getCertificate(publicKeyUrl);
@@ -126,29 +128,33 @@ function verifySignature(publicKey, authData) {
   verifier.update(authData.salt, 'base64');
 
   if (!verifier.verify(publicKey, authData.signature, 'base64')) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Apple Game Center - invalid signature');
+    console.error('Invalid signature during Apple Game Center verification.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
 }
 
 function verifyPublicKeyIssuer(cert, publicKeyUrl) {
   const publicKeyCert = pki.certificateFromPem(cert);
   if (!ca.cert) {
+  console.error('Invalid root certificate during Apple Game Center verification.');
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Apple Game Center auth adapter parameter `rootCertificateURL` is invalid.'
+      'Unauthorized'
     );
   }
   try {
     if (!ca.cert.verify(publicKeyCert)) {
+      console.error(`Invalid publicKeyUrl issuer: ${publicKeyUrl}`);
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+        `Unauthorized`
       );
     }
   } catch (e) {
+    console.error(`Error verifying publicKeyUrl issuer: ${e.message}`);
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `Apple Game Center - invalid publicKeyUrl: ${publicKeyUrl}`
+      `Unauthorized`
     );
   }
   return cert;
@@ -157,7 +163,8 @@ function verifyPublicKeyIssuer(cert, publicKeyUrl) {
 // Returns a promise that fulfills if this user id is valid.
 async function validateAuthData(authData) {
   if (!authData.id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Apple Game Center - authData id missing');
+    console.error('Missing authData id during Apple Game Center validation.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
   authData.playerId = authData.id;
   const publicKey = await getAppleCertificate(authData.publicKeyUrl);
@@ -179,9 +186,10 @@ async function validateAppId(appIds, authData, options = {}) {
     headers['content-length'] == null ||
     headers['content-length'] > 10000
   ) {
+    console.error('Invalid root certificate URL during Apple Game Center validation.');
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Apple Game Center auth adapter parameter `rootCertificateURL` is invalid.'
+      'Unauthorized'
     );
   }
   ca.cert = pki.certificateFromPem(certificate);

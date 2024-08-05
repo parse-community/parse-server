@@ -11,9 +11,10 @@ function validateAuthData(authData, options) {
     if (data && data.stat == 'ok' && data.result == authData.id) {
       return;
     }
+    console.error('Janrain capture auth is invalid for this user.')
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Janrain capture auth is invalid for this user.'
+      'Unauthorized'
     );
   });
 }

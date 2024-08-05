@@ -8,7 +8,8 @@ function validateAuthData(authData) {
     if (data && data.openid == authData.id) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq auth is invalid for this user.');
+    console.error('qq auth is invalid for this user.')
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   });
 }
 
@@ -28,7 +29,8 @@ function parseResponseData(data) {
   const starPos = data.indexOf('(');
   const endPos = data.indexOf(')');
   if (starPos == -1 || endPos == -1) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq auth is invalid for this user.');
+    console.error('qq auth is invalid for this user.'); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
   data = data.substring(starPos + 1, endPos - 1);
   return JSON.parse(data);
