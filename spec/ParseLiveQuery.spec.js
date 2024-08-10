@@ -731,6 +731,45 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  it('can handle select beforeUnsubscribe trigger', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
+
+    Parse.Cloud.beforeSubscribe(TestObject, req => {
+      expect(req.requestId).toBe(1);
+      expect(req.user).toBeDefined();
+    });
+
+    Parse.Cloud.beforeUnsubscribe(TestObject, req => {
+      expect(req.requestId).toBe(1);
+      expect(req.user).toBeDefined();
+      expect(req.user.get('username')).toBe('username');
+      done();
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+
+    object.set({ foo: 'bar', yolo: 'abc' });
+    await object.save();
+
+    await subscription.unsubscribe();
+  });
+
   it('LiveQuery with ACL', async () => {
     await reconfigureServer({
       liveQuery: {
