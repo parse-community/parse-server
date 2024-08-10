@@ -735,7 +735,7 @@ _UnsafeRestQuery.prototype.replaceEquality = function () {
 
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
-_UnsafeRestQuery.prototype.runFind = function (options = {}) {
+_UnsafeRestQuery.prototype.runFind = async function (options = {}) {
   if (this.findOptions.limit === 0) {
     this.response = { results: [] };
     return Promise.resolve();
@@ -749,24 +749,21 @@ _UnsafeRestQuery.prototype.runFind = function (options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
-  return this.config.database
-    .find(this.className, this.restWhere, findOptions, this.auth)
-    .then(results => {
-      if (this.className === '_User' && !findOptions.explain) {
-        for (var result of results) {
-          this.cleanResultAuthData(result);
-        }
-      }
+  const results = await this.config.database.find(this.className, this.restWhere, findOptions, this.auth);
+  if (this.className === '_User' && !findOptions.explain) {
+    for (var result of results) {
+      this.cleanResultAuthData(result);
+    }
+  }
 
-      this.config.filesController.expandFilesInObject(this.config, results);
+  await this.config.filesController.expandFilesInObject(this.config, results);
 
-      if (this.redirectClassName) {
-        for (var r of results) {
-          r.className = this.redirectClassName;
-        }
-      }
-      this.response = { results: results };
-    });
+  if (this.redirectClassName) {
+    for (var r of results) {
+      r.className = this.redirectClassName;
+    }
+  }
+  this.response = { results: results };
 };
 
 // Returns a promise for whether it was successful.

@@ -59,7 +59,7 @@ export class FilesAdapter {
    * @param {Config} config - server configuration
    * @param {string} filename
    *
-   * @return {string} Absolute URL
+   * @return {string | Promise<string>} Absolute URL
    */
   getFileLocation(config: Config, filename: string): string {}
 

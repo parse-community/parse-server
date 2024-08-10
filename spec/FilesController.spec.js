@@ -21,11 +21,11 @@ const mockAdapter = {
 
 // Small additional tests to improve overall coverage
 describe('FilesController', () => {
-  it('should properly expand objects', done => {
+  it('should properly expand objects', async done => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     const filesController = new FilesController(gridFSAdapter);
-    const result = filesController.expandFilesInObject(config, function () {});
+    const result = await filesController.expandFilesInObject(config, function () { });
 
     expect(result).toBeUndefined();
 
@@ -37,7 +37,7 @@ describe('FilesController', () => {
     const anObject = {
       aFile: fullFile,
     };
-    filesController.expandFilesInObject(config, anObject);
+    await filesController.expandFilesInObject(config, anObject);
     expect(anObject.aFile.url).toEqual('http://an.url');
 
     done();
