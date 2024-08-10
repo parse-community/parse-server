@@ -292,8 +292,7 @@ const parseFileValue = value => {
     };
   } else if (
     typeof value === 'object' &&
-    value.__type === 'File' &&
-    typeof value.name === 'string' &&
+    value.constructor.name === 'Upload' &&
     (value.url === undefined || typeof value.url === 'string')
   ) {
     return value;
