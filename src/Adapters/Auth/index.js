@@ -27,6 +27,7 @@ const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
 const keycloak = require('./keycloak');
 const ldap = require('./ldap');
+const huawei = require('./huawei')
 
 const anonymous = {
   validateAuthData: () => {
@@ -63,6 +64,7 @@ const providers = {
   microsoft,
   keycloak,
   ldap,
+  huawei
 };
 
 // Indexed auth policies
