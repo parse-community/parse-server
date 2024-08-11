@@ -4,21 +4,33 @@ const { performance } = require('perf_hooks');
 
 global.currentSpec = null;
 
+/**
+ * Names of tests that fail randomly and are considered flaky. These tests will be retried
+ * a number of times to reduce the chance of false negatives. The test name must be the same
+ * as the one displayed in the CI log test output.
+ */
+const flakyTests = [
+  // Timeout
+  "ParseLiveQuery handle invalid websocket payload length",
+  // Unhandled promise rejection: TypeError: message.split is not a function
+  "rest query query internal field",
+  // TypeError: Cannot read properties of undefined (reading 'link')
+  "UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL",
+  // TypeError: Cannot read properties of undefined (reading 'link')
+  "UserController sendVerificationEmail parseFrameURL provided uses parseFrameURL and includes the destination in the link parameter",
+  // Expected undefined to be defined
+  "Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp",
+];
+
+/** The minimum execution time in seconds for a test to be considered slow. */
+const slowTestLimit = 2;
+
+/** The number of times to retry a flaky test. */
+const retries = 5;
+
 const timerMap = {};
 const retryMap = {};
 const duplicates = [];
-/** The minimum execution time in seconds for a test to be considered slow. */
-const slowTestLimit = 2;
-/** The number of times to retry a flaky test. */
-const retries = 5;
-/** Full name of tests that fail randomly and are considered flaky */
-const flakyTests = [
-  "ParseLiveQuery handle invalid websocket payload length", // timeout
-  "rest query query internal field", // Unhandled promise rejection: TypeError: message.split is not a function
-  "UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL", // TypeError: Cannot read properties of undefined (reading 'link')
-  "UserController sendVerificationEmail parseFrameURL provided uses parseFrameURL and includes the destination in the link parameter", // TypeError: Cannot read properties of undefined (reading 'link')
-  "Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp", // Expected undefined to be defined
-];
 class CurrentSpecReporter {
   specStarted(spec) {
     if (timerMap[spec.fullName]) {
