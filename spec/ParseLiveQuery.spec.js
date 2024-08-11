@@ -22,12 +22,47 @@ describe('ParseLiveQuery', function () {
     requestedUser.setUsername('username');
     requestedUser.setPassword('password');
     Parse.Cloud.onLiveQueryEvent(req => {
-      const { event, sessionToken } = req;
+      const {
+        event,
+        clientId,
+        clients,
+        installationId,
+        sessionToken,
+        subscriptions,
+        useMasterKey,
+      } = req;
       if (event === 'ws_disconnect') {
         Parse.Cloud._removeAllHooks();
-        expect(sessionToken).toBeDefined();
+        expect(clientId).toBeDefined();
+        expect(clients).toBeDefined();
+        expect(installationId).toBeDefined();
         expect(sessionToken).toBe(requestedUser.getSessionToken());
+        expect(useMasterKey).toBeDefined();
         done();
+      }
+      if (event === 'ws_connect') {
+        expect(clients).toBeDefined();
+        expect(subscriptions).toBeDefined();
+      }
+      if (event === 'connect') {
+        expect(client).toBeDefined();
+        expect(clientId).toBeDefined();
+        expect(event).toBeDefined();
+        expect(clients).toBeDefined();
+        expect(subscriptions).toBeDefined();
+        expect(sessionToken).toBeDefined();
+        expect(useMasterKey).toBeDefined();
+        expect(installationId).toBeDefined();
+      }
+      if (event === 'subscribe') {
+        expect(client).toBeDefined();
+        expect(clientId).toBeDefined();
+        expect(event).toBeDefined();
+        expect(clients).toBeDefined();
+        expect(subscriptions).toBeDefined();
+        expect(sessionToken).toBeDefined();
+        expect(useMasterKey).toBeDefined();
+        expect(installationId).toBeDefined();
       }
     });
     await requestedUser.signUp();
