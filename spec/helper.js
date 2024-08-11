@@ -14,6 +14,7 @@ if (dns.setDefaultResultOrder) {
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
+global.retryFlakyTests();
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -287,7 +288,7 @@ afterEach(function (done) {
 });
 
 afterAll(() => {
-  global.displaySlowTests();
+  global.displayTestStats();
 });
 
 const TestObject = Parse.Object.extend({
