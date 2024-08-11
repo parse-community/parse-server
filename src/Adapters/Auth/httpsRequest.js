@@ -1,5 +1,7 @@
 const https = require('https');
+const util = require('util');
 
+const requestPromise = util.promisify(require('request'));
 function makeCallback(resolve, reject, noJSON) {
   return function (res) {
     let data = '';
@@ -35,5 +37,38 @@ function request(options, postData) {
     req.end();
   });
 }
+async function getAccessToken(options) {
+  try {
+    const response = await requestPromise(options);
+    let accessTokenData = response.body;
+    try {
+      accessTokenData = jsonAndQueryStringParse(accessTokenData);
+    } catch (error) {
+      return error;
+    }
+    return accessTokenData;
+  } catch (error) {
+    return error;
+  }
+}
+function parseQueryString(queryString) {
+  if (!queryString || typeof queryString !== 'string') return queryString;
+  const params = {};
+  const pairs = queryString.split('&');
 
-module.exports = { get, request };
+  pairs.forEach(pair => {
+    const [key, value] = pair.split('=');
+    params[key] = value;
+  });
+
+  return params;
+}
+
+function jsonAndQueryStringParse(str = '') {
+  try {
+    return JSON.parse(str);
+  } catch (error) {
+    return parseQueryString(str);
+  }
+}
+module.exports = { get, request, getAccessToken, jsonAndQueryStringParse };

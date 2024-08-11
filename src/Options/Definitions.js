@@ -103,6 +103,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
+    action: parsers.objectParser,
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -236,6 +237,13 @@ module.exports.ParseServerOptions = {
       'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
     default: false,
+  },
+  enableInsecureAuthAdapters: {
+    env: 'PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS',
+    help:
+      'Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.',
+    action: parsers.booleanParser,
+    default: true,
   },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',

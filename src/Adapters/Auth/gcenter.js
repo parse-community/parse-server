@@ -1,15 +1,79 @@
-/* Apple Game Center Auth
-https://developer.apple.com/documentation/gamekit/gklocalplayer/1515407-generateidentityverificationsign#discussion
+/**
+ * Parse Server Apple Game Center auth adapter.
+ *
+ * @Class AppleGameCenter
+ * @param {Object} options The adapter options object.
+ * @param {String} options.bundleId Your Apple Game Center bundleId.
+ * @param {Boolean} options.enableInsecureAuth Enable insecure authentication.
+ *
+ * The adapter expects the following authData from the client:
+ *
+ * @param {Object} authData The authData object from the client.
+ * @param {String} authData.id The user id obtained from Apple Game Center.
+ * @param {String} authData.publicKeyUrl The public key url obtained from Apple Game Center.
+ * @param {String} authData.timestamp The timestamp obtained from Apple Game Center.
+ * @param {String} authData.signature The signature obtained from Apple Game Center.
+ * @param {String} authData.salt The salt obtained from Apple Game Center.
+ * @param {String} authData.bundleId The bundleId obtained from Apple Game Center.
+ *
+ *
+ * Parse Server then stores the required auth data in the database.
+ *
+ * With enableInsecureAuth flag:
+ * It directly validates all the authData sent from the client.
+ *
+ * Without enableInsecureAuth flag:
+ * It requires bundleId set in the config
+ *
+ * Example auth data for Apple Game Center with insecure flag:
+ *
+ * @param {Object} authData The authData object from the client.
+ * @param {String} authData.id "1234567".
+ * @param {String} authData.publicKeyUrl "https://valid.apple.com/public/timeout.cer".
+ * @param {String} authData.timestamp 1460981421303.
+ * @param {String} authData.salt "saltST==".
+ * @param {String} authData.signature "PoDwf39DCN464B49jJCU0d9Y0J".
+ * @param {String} authData.bundleId "com.valid.app".
+ *
+ * {
+ *  "gcenter": {
+ *   "id": "1234567",
+ *  "publicKeyUrl": "https://valid.apple.com/public/timeout.cer",
+ *  "timestamp": 1460981421303,
+ *  "salt": "saltST==",
+ *  "signature": "PoDwf39DCN464B49jJCU0d9Y0J",
+ *  "bundleId": "com.valid.app"
+ * }
+ * }
+ *
+ * Example auth data for Apple Game Center without insecure flag:
+ *
+ * @param {Object} authData The authData object from the client.
+ * @param {String} authData.id "1234567".
+ * @param {String} authData.publicKeyUrl "https://valid.apple.com/public/timeout.cer".
+ * @param {String} authData.timestamp 1460981421303.
+ * @param {String} authData.salt "saltST==".
+ * @param {String} authData.signature "PoDwf39DCN464B49jJCU0d9Y0J".
+ *
 
-const authData = {
-  publicKeyUrl: 'https://valid.apple.com/public/timeout.cer',
-  timestamp: 1460981421303,
-  signature: 'PoDwf39DCN464B49jJCU0d9Y0J',
-  salt: 'saltST==',
-  bundleId: 'com.valid.app'
-  id: 'playerId',
-};
-*/
+ * {
+ *  "gcenter": {
+ *  "id": "1234567",
+ *  "publicKeyUrl": "https://valid.apple.com/public/timeout.cer",
+ *  "timestamp": 1460981421303,
+ *  "salt": "saltST==",
+ *  "signature": "PoDwf39DCN464B49jJCU0d9Y0J",
+ * }
+ * }
+ *
+ * Parse Sever then stores the required auth data in the database.
+ *
+ * For more information on Apple Game Center authentication, see https://developer.apple.com/documentation/gamekit/gklocalplayer/3516283-fetchitems
+ *
+ */
+
+import logger from '../../logger';
+import Config from '../../Config';
 
 const { Parse } = require('parse/node');
 const crypto = require('crypto');
@@ -164,6 +228,32 @@ async function validateAuthData(authData) {
   return verifySignature(publicKey, authData);
 }
 
+async function beforeValidationAuthData(authData) {
+  const config = Config.get(Parse.applicationId);
+  const gcenterConfig = config.auth.gcenter;
+  // Secure validation
+  if (
+    !gcenterConfig ||
+    (gcenterConfig && !gcenterConfig.enableInsecureAuth) ||
+    (gcenterConfig && !config.enableInsecureAuthAdapters)
+  ) {
+    if (!gcenterConfig.bundleId) {
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Apple Game Center - bundleId is required'
+      );
+    }
+
+    if (authData.bundleId) {
+      logger.warn(
+        'Apple Game Center - bundleId is not required, please remove it from your authData'
+      );
+    }
+
+    authData.bundleId = gcenterConfig.bundleId;
+  }
+}
+
 // Returns a promise that fulfills if this app id is valid.
 async function validateAppId(appIds, authData, options = {}) {
   if (!options.rootCertificateUrl) {
@@ -191,5 +281,6 @@ async function validateAppId(appIds, authData, options = {}) {
 module.exports = {
   validateAppId,
   validateAuthData,
+  beforeValidationAuthData,
   cache,
 };

@@ -1,3 +1,51 @@
+/**
+ * Parse Server authentication adapter for Facebook.
+ *
+ * @Class Facebook
+ * @param {Object} options The adapter options
+ * @param {String} options.appSecret The Facebook application secret
+ * @param {Array} options.appIds The Facebook application ids
+ *
+ * The adapter expects the following authData from the client:
+ *
+ * @param {Object} payload The auth payload.
+ * @param {String} payload.id The Facebook user id
+ * @param {String} payload.access_token The Facebook access token; required if `token` is not set.
+ * @param {String} payload.token The Facebook token (JWT token); required if `access_token` is not set.
+ *
+ * Parse Server then stores the required auth data in the database.
+ *
+ * * Example auth data for Facebook:
+ *
+ * @param {Object} payload The auth payload.
+ * @param {String} payload.id "1234567".
+ * @param {String} payload.access_token "abc123def456ghi789".
+ *
+ *  "facebook": {
+ *    "id": "user's Facebook id number as a string",
+ *    "access_token": "an authorized Facebook access token for the user",
+ *  }
+ *
+ * Starting with Facebook iOS SDK 17, you are required to support Facebook Limited Login. If the user does not allow tracking
+ * through Apple's App Tracking Transparency, then the Facebook SDK returns a JWT token instead of an access token. Therefore,
+ * in your app you would need to check if tracking is allowed or not and pass the relevant tokens. If your app does not
+ * receive an access token but a JWT token, then you need to pass the payload below instead.
+ * Supported on Parse Server >= 6.5.6 < 7 and >=7.0.1.
+ *
+ * @param {Object} payload The auth payload.
+ * @param {String} payload.id "1234567".
+ * @param {String} payload.token "xxxxx.yyyyy.zzzzz".
+ *
+ * "facebook": {
+ *   "id": "user's Facebook id number as a string",
+ *   "token": "a JWT token from Facebook SDK limited login",
+ * }
+ *
+ * For more information on Facebook authentication, see:
+ * - https://developers.facebook.com/docs/facebook-login/limited-login/
+ * - https://developers.facebook.com/docs/facebook-login/facebook-login-for-business/
+ */
+
 // Helper functions for accessing the Facebook Graph API.
 const Parse = require('parse/node').Parse;
 const crypto = require('crypto');

@@ -40,7 +40,9 @@ type RequestKeywordDenylist = {
   key: string | any,
   value: any,
 };
-
+type Auth = {
+  [key: string]: AuthAdapter,
+};
 export interface ParseServerOptions {
   /* Your Parse Application ID
   :ENV: PARSE_SERVER_APPLICATION_ID */
@@ -158,6 +160,11 @@ export interface ParseServerOptions {
   allowCustomObjectId: ?boolean;
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
+  auth: ?Auth;
+  /* Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.
+  :ENV: PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS
+  :DEFAULT: true */
+  enableInsecureAuthAdapters: ?boolean;
   auth: ?{ [string]: AuthAdapter };
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */

@@ -1,3 +1,45 @@
+/**
+ * Parse Server authentication adapter for Apple.
+ *
+ * @Class Apple
+ * @param {Object} options The adapter options.
+ * @param {String} options.clientId Your Apple App ID.
+ *
+ * The Parse Server option looks like this:
+ *
+ * {
+ *   auth: {
+ *     apple: {
+ *       clientId: '12345'
+ *     }
+ *   }
+ * }
+ *
+ * The adapter expects the following authData from the client:
+ *
+ * @param {Object} authData The authData payload from the client.
+ * @param {String} authData.id The user id obtained from Apple.
+ * @param {String} authData.token The token obtained from Apple.
+ *
+ * Parse Server then stores the required auth data in the database.
+ *
+ * Example authData from Apple:
+ *
+ * @param {Object} authData The authData payload from the client.
+ * @param {String} authData.id The user id obtained from Apple.
+ * @param {String} authData.token The token obtained from Apple.
+ *
+ *
+ * {
+ *  "apple": {
+ *   "id": "1234567",
+ *   "token": "xxxxx.yyyyy.zzzzz"
+ * }
+ * }
+ *
+ * For more information on Apple authentication, see https://developer.apple.com/documentation/signinwithapplerestapi
+ */
+
 // Apple SignIn Auth
 // https://developer.apple.com/documentation/signinwithapplerestapi
 

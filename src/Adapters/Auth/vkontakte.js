@@ -2,30 +2,38 @@
 
 // Helper functions for accessing the vkontakte API.
 
+import Config from '../../Config';
+
 const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
-function validateAuthData(authData, params) {
-  return vkOAuth2Request(params).then(function (response) {
-    if (response && response.access_token) {
-      return request(
-        'api.vk.com',
-        'method/users.get?access_token=' + authData.access_token + '&v=' + params.apiVersion
-      ).then(function (response) {
-        if (
-          response &&
-          response.response &&
-          response.response.length &&
-          response.response[0].id == authData.id
-        ) {
-          return;
-        }
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
-      });
-    }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
-  });
+async function validateAuthData(authData, params) {
+  const config = Config.get(Parse.applicationId);
+  const vkConfig = config.auth.vkontakte;
+  if (vkConfig && vkConfig.enableInsecureAuth && config.enableInsecureAuthAdapters) {
+    return vkOAuth2Request(params).then(function (response) {
+      if (response && response.access_token) {
+        return request(
+          'api.vk.com',
+          'method/users.get?access_token=' + authData.access_token + '&v=' + params.apiVersion
+        ).then(function (response) {
+          if (
+            response &&
+            response.response &&
+            response.response.length &&
+            response.response[0].id == authData.id
+          ) {
+            return;
+          }
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
+        });
+      }
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
+    });
+  } else {
+    throw new Parse.Error('Vk only works with enableInsecureAuth: true');
+  }
 }
 
 function vkOAuth2Request(params) {

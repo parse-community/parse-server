@@ -50,7 +50,7 @@ class CheckGroupServerConfig extends CheckGroup {
       new Check({
         title: 'Client class creation disabled',
         warning:
-          'Attackers are allowed to create new classes without restriction and flood the database.',
+          'Attackers may create new classes without restriction and flood the database.',
         solution: "Change Parse Server configuration to 'allowClientClassCreation: false'.",
         check: () => {
           if (config.allowClientClassCreation || config.allowClientClassCreation == null) {
@@ -65,6 +65,17 @@ class CheckGroupServerConfig extends CheckGroup {
         solution: "Change Parse Server configuration to 'enforcePrivateUsers: true'.",
         check: () => {
           if (!config.enforcePrivateUsers) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Insecure auth adapters disabled',
+        warning:
+          "Attackers may explore insecure auth adapters' vulnerabilities and log in on behalf of another user.",
+        solution: "Change Parse Server configuration to 'enableInsecureAuthAdapters: false'.",
+        check: () => {
+          if (config.enableInsecureAuthAdapters !== false) {
             throw 1;
           }
         },
