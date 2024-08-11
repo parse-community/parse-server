@@ -45,6 +45,10 @@ describe('Idempotency', () => {
     });
   });
 
+  afterEach(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+  });
+
   // Tests
   it_id('e25955fd-92eb-4b22-b8b7-38980e5cb223')('should enforce idempotency for cloud code function', async () => {
     let counter = 0;
