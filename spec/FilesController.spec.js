@@ -21,9 +21,38 @@ const mockAdapter = {
 
 // Small additional tests to improve overall coverage
 describe('FilesController', () => {
-  it('should properly expand objects', async done => {
+  it('should properly expand objects with sync getFileLocation', async done => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    gridFSAdapter.getFileLocation = (config, filename) => {
+      return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+    }
+    const filesController = new FilesController(gridFSAdapter);
+    const result = await filesController.expandFilesInObject(config, function () { });
+
+    expect(result).toBeUndefined();
+
+    const fullFile = {
+      type: '__type',
+      url: 'http://an.url',
+    };
+
+    const anObject = {
+      aFile: fullFile,
+    };
+    await filesController.expandFilesInObject(config, anObject);
+    expect(anObject.aFile.url).toEqual('http://an.url');
+
+    done();
+  });
+
+  it('should properly expand objects with async getFileLocation', async done => {
+    const config = Config.get(Parse.applicationId);
+    const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
+    gridFSAdapter.getFileLocation = async (config, filename) => {
+      await Promise.resolve();
+      return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+    }
     const filesController = new FilesController(gridFSAdapter);
     const result = await filesController.expandFilesInObject(config, function () { });
 
