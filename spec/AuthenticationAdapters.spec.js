@@ -17,6 +17,86 @@ const responses = {
   phantauth: { sub: 'userId' },
   microsoft: { id: 'userId', mail: 'userMail' },
 };
+describe('enableInsecureAuthAdapters option', () => {
+  it('should accept true value', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => { });
+    await reconfigureServer({ enableInsecureAuthAdapters: true });
+    const deprecationWarnings = [
+      {
+        text: `DeprecationWarning: The Parse Server option 'enableInsecureAuthAdapters' default will change to 'false' in a future version.`,
+        expectedCount: 0,
+      },
+      {
+        text:
+          'DeprecationWarning: insecure adapter is deprecated and will be removed in a future version.',
+        expectedCount: 2,
+      },
+    ];
+    const relevantLogs = logSpy.calls.all();
+    expect(Config.get(Parse.applicationId).enableInsecureAuthAdapters).toBe(true);
+    deprecationWarnings.forEach(warning => {
+      expect(relevantLogs.filter(log => log.args[0] === warning.text).length).toEqual(
+        warning.expectedCount
+      );
+    });
+  });
+
+  it('should accept false value', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => { });
+    await reconfigureServer({ enableInsecureAuthAdapters: false });
+    expect(Config.get(Parse.applicationId).enableInsecureAuthAdapters).toBe(false);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            `DeprecationWarning: The Parse Server option 'enableInsecureAuthAdapters' default will change to 'false' in a future version.`
+        ).length
+    ).toEqual(0);
+    expect(
+      logSpy.calls
+        .all()
+        .filter(
+          log =>
+            log.args[0] ===
+            'DeprecationWarning: insecure adapter is deprecated and will be removed in a future version.'
+        ).length
+    ).toEqual(0);
+  });
+  it('should default true', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => { });
+    await reconfigureServer({});
+    const deprecationWarnings = [
+      {
+        text: `DeprecationWarning: The Parse Server option 'enableInsecureAuthAdapters' default will change to 'false' in a future version.`,
+        expectedCount: 1,
+      },
+      {
+        text:
+          'DeprecationWarning: insecure adapter is deprecated and will be removed in a future version.',
+        expectedCount: 2,
+      },
+    ];
+    const relevantLogs = logSpy.calls.all();
+    expect(Config.get(Parse.applicationId).enableInsecureAuthAdapters).toBe(true);
+    deprecationWarnings.forEach(warning => {
+      expect(relevantLogs.filter(log => log.args[0] === warning.text).length).toEqual(
+        warning.expectedCount
+      );
+    });
+  });
+
+  it('should enforce boolean values', async () => {
+    const options = [[], 'a', '', 0, 1, {}, 'true', 'false'];
+    for (const option of options) {
+      await expectAsync(reconfigureServer({ enableInsecureAuthAdapters: option })).toBeRejected();
+    }
+  });
+});
 
 describe('AuthenticationProviders', function () {
   [
@@ -51,27 +131,36 @@ describe('AuthenticationProviders', function () {
       jequal(validateAuthDataPromise.constructor, Promise.prototype.constructor);
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
       validateAuthDataPromise.then(
-        () => {},
-        () => {}
+        () => { },
+        () => { }
       );
       validateAppIdPromise.then(
-        () => {},
-        () => {}
+        () => { },
+        () => { }
       );
       done();
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      const noResponse = ['twitter', 'apple', 'gcenter', 'google', 'keycloak'];
+      const noResponse = [
+        'twitter',
+        'apple',
+        'gcenter',
+        'google',
+        'keycloak',
+        'meetup',
+        'vkontakte',
+        'phantauth',
+      ];
       if (noResponse.includes(providerName)) {
         return;
       }
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(options => {
         if (
           options ===
-            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
+          'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
           options ===
-            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
+          'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
         ) {
           return {
             access_token: 'access_token',
@@ -83,16 +172,19 @@ describe('AuthenticationProviders', function () {
         return Promise.resolve(responses[providerName] || { id: 'userId' });
       });
       const provider = require('../lib/Adapters/Auth/' + providerName);
+      const auth = { id: 'userId' };
       let params = {};
       if (providerName === 'vkontakte') {
         params = {
           appIds: 'appId',
           appSecret: 'appSecret',
         };
-        await provider.validateAuthData({ id: 'userId' }, params);
+        await provider.validateAuthData(auth, params);
         params.appVersion = '5.123';
+      } else if (providerName === 'github') {
+        auth.access_token = 'accessToken'; // Insecure adapter
       }
-      await provider.validateAuthData({ id: 'userId' }, params);
+      await provider.validateAuthData(auth, params);
     });
   });
 
@@ -537,8 +629,8 @@ describe('AuthenticationProviders', function () {
   it('properly loads a custom adapter with options', () => {
     const options = {
       custom: {
-        validateAppId: () => {},
-        validateAuthData: () => {},
+        validateAppId: () => { },
+        validateAuthData: () => { },
         appIds: ['a', 'b'],
       },
     };
@@ -568,45 +660,6 @@ describe('AuthenticationProviders', function () {
   });
 });
 
-describe('instagram auth adapter', () => {
-  const instagram = require('../lib/Adapters/Auth/instagram');
-  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
-
-  it('should use default api', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ data: { id: 'userId' } });
-    });
-    await instagram.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
-    expect(httpsRequest.get).toHaveBeenCalledWith(
-      'https://graph.instagram.com/me?fields=id&access_token=the_token'
-    );
-  });
-  it('response object without data child', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ id: 'userId' });
-    });
-    await instagram.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
-    expect(httpsRequest.get).toHaveBeenCalledWith(
-      'https://graph.instagram.com/me?fields=id&access_token=the_token'
-    );
-  });
-  it('should pass in api url', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ data: { id: 'userId' } });
-    });
-    await instagram.validateAuthData(
-      {
-        id: 'userId',
-        access_token: 'the_token',
-        apiURL: 'https://new-api.instagram.com/v1/',
-      },
-      {}
-    );
-    expect(httpsRequest.get).toHaveBeenCalledWith(
-      'https://new-api.instagram.com/v1/me?fields=id&access_token=the_token'
-    );
-  });
-});
 
 describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
@@ -1918,26 +1971,6 @@ describe('Apple Game Center Auth adapter', () => {
   });
 });
 
-describe('phant auth adapter', () => {
-  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
-
-  it('validateAuthData should throw for invalid auth', async () => {
-    const authData = {
-      id: 'fakeid',
-      access_token: 'sometoken',
-    };
-    const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
-
-    spyOn(httpsRequest, 'get').and.callFake(() => Promise.resolve({ sub: 'invalidID' }));
-    try {
-      await adapter.validateAuthData(authData);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('PhantAuth auth is invalid for this user.');
-    }
-  });
-});
-
 describe('microsoft graph auth adapter', () => {
   const microsoft = require('../lib/Adapters/Auth/microsoft');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
@@ -2284,6 +2317,3535 @@ describe('facebook limited auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
+  });
+});
+
+describe('github auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  describe('insecure usage', () => {
+    it('should work with access_token by default', async () => {
+      await reconfigureServer({});
+      const spy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('github', {
+        authData: {
+          access_token: 'accessToken',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      expect(user.get('authData').github.id).toEqual('userId');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should work with access_token when github.enableInsecureAuth is true', async () => {
+      await reconfigureServer({ auth: { github: { enableInsecureAuth: true } } });
+      const spy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('github', { authData: { access_token: 'accessToken', id: 'userId' } });
+      await user.fetch();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      expect(user.get('authData').github.id).toEqual('userId');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('should not work with access_token when github.enableInsecureAuth is false', async () => {
+      await reconfigureServer({ auth: { github: { enableInsecureAuth: false } } });
+      const spy = spyOn(httpsRequest, 'get').and.callFake(() => {
+        throw new Error('Should not be called');
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('github', { authData: { access_token: 'accessToken', id: 'userId' } })
+      ).toBeRejectedWithError(/Github auth is not configured/);
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should not work with access_token and incorrect id when github.enableInsecureAuth is true', async () => {
+      await reconfigureServer({ auth: { github: { enableInsecureAuth: true } } });
+      const spy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('github', { authData: { access_token: 'accessToken', id: 'incorrectId' } })
+      ).toBeRejectedWithError(/Github auth is invalid for this user./);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('secure usage', () => {
+    it('should work with code by default', async () => {
+      await reconfigureServer({
+        auth: {
+          github: {
+            clientId: 'someClientId',
+            clientSecret: 'someClientSecret',
+            enableInsecureAuth: false,
+          },
+        },
+      });
+      const requestSpy = spyOn(httpsRequest, 'request').and.callFake((options, postData) => {
+        expect(options).toEqual({
+          hostname: 'github.com',
+          path: '/login/oauth/access_token',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            accept: 'application/json',
+          },
+        });
+        expect(postData).toEqual(
+          JSON.stringify({
+            client_id: 'someClientId',
+            client_secret: 'someClientSecret',
+            code: 'someCode',
+          })
+        );
+        return Promise.resolve({ access_token: 'accessToken' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('github', { authData: { code: 'someCode' } });
+      await user.fetch();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+
+    it('should work with code when github.enableInsecureAuth is true', async () => {
+      await reconfigureServer({
+        auth: {
+          github: {
+            clientId: 'someClientId',
+            clientSecret: 'someClientSecret',
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      const requestSpy = spyOn(httpsRequest, 'request').and.callFake((options, postData) => {
+        expect(options).toEqual({
+          hostname: 'github.com',
+          path: '/login/oauth/access_token',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            accept: 'application/json',
+          },
+        });
+        expect(postData).toEqual(
+          JSON.stringify({
+            client_id: 'someClientId',
+            client_secret: 'someClientSecret',
+            code: 'someCode',
+          })
+        );
+        return Promise.resolve({ access_token: 'accessToken' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('github', { authData: { code: 'someCode', id: 'userId' } });
+      await user.fetch();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+
+    it('should work with code when github.enableInsecureAuth is false', async () => {
+      await reconfigureServer({
+        auth: {
+          github: {
+            clientId: 'someClientId',
+            clientSecret: 'someClientSecret',
+            enableInsecureAuth: false,
+          },
+        },
+      });
+      const requestSpy = spyOn(httpsRequest, 'request').and.callFake((options, postData) => {
+        expect(options).toEqual({
+          hostname: 'github.com',
+          path: '/login/oauth/access_token',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            accept: 'application/json',
+          },
+        });
+        expect(postData).toEqual(
+          JSON.stringify({
+            client_id: 'someClientId',
+            client_secret: 'someClientSecret',
+            code: 'someCode',
+          })
+        );
+        return Promise.resolve({ access_token: 'accessToken' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('github', { authData: { code: 'someCode' } });
+      await user.fetch();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('linkedin auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access_token by default', async () => {
+      await reconfigureServer({});
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+
+        return Promise.resolve({ id: 'userId' });
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('linkedin', {
+        authData: {
+          access_token: 'accessToken',
+          is_mobile_sdk: false,
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+      expect(user.get('authData').linkedin.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+
+    it('should work with access_token when linkedin.enableInsecureAuth is true', async () => {
+      await reconfigureServer({ auth: { linkedin: { enableInsecureAuth: true } } });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+
+        return Promise.resolve({ id: 'userId' });
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('linkedin', {
+        authData: { access_token: 'accessToken', id: 'userId', is_mobile_sdk: false },
+      });
+      await user.fetch();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+      expect(user.get('authData').linkedin.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+
+    it('should not work with access_token when linkedin.enableInsecureAuth is false', async () => {
+      await reconfigureServer({ auth: { linkedin: { enableInsecureAuth: false } } });
+      const spyGet = spyOn(httpsRequest, 'getAccessToken').and.callFake(() => {
+        throw new Error('Should not be called');
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('linkedin', {
+          authData: { access_token: 'accessToken', id: 'userId', is_mobile_sdk: false },
+        })
+      ).toBeRejectedWithError(/Linkedin auth is not configured/);
+      expect(spyGet).not.toHaveBeenCalled();
+    });
+
+    it('should not work with access_token and incorrect id when linkedin.enableInsecureAuth is true', async () => {
+      await reconfigureServer({ auth: { linkedin: { enableInsecureAuth: true } } });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('linkedin', {
+          authData: { access_token: 'accessToken', id: 'incorrectId', is_mobile_sdk: false },
+        })
+      ).toBeRejectedWithError(/Linkedin auth is invalid for this user./);
+      expect(spyGet).toHaveBeenCalled();
+    });
+  });
+
+  describe('secure usage', () => {
+    it('should work with code and redirect_uri by default', async () => {
+      await reconfigureServer({
+        auth: {
+          linkedin: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const requestSpy = spyOn(httpsRequest, 'getAccessToken').and.callFake(options => {
+        expect(options).toEqual({
+          method: 'POST',
+          url: 'https://www.linkedin.com/oauth/v2/accessToken',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          form: {
+            grant_type: 'authorization_code',
+            code: 'someCode',
+            redirect_uri: 'someRedirectURI',
+            client_id: 'clientId',
+            client_secret: 'clientSecret',
+          },
+        });
+        return Promise.resolve({ access_token: 'accessToken', id: 'userId' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+
+        return Promise.resolve({ id: 'userId' });
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('linkedin', {
+        authData: { code: 'someCode', redirect_uri: 'someRedirectURI' },
+      });
+      await user.fetch();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+    it('should work with code and redirect_uri when linkedin.enableInsecureAuth is true', async () => {
+      await reconfigureServer({
+        auth: {
+          linkedin: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+
+        return Promise.resolve({ id: 'userId' });
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('linkedin', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+          is_mobile_sdk: false,
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+      expect(user.get('authData').linkedin.id).toEqual('userId');
+      expect(getSpy).toHaveBeenCalled();
+    });
+    it('should work with code and redirect_uri when linkedin.enableInsecureAuth is false', async () => {
+      await reconfigureServer({
+        auth: {
+          linkedin: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const requestSpy = spyOn(httpsRequest, 'getAccessToken').and.callFake(options => {
+        expect(options).toEqual({
+          method: 'POST',
+          url: 'https://www.linkedin.com/oauth/v2/accessToken',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          form: {
+            grant_type: 'authorization_code',
+            code: 'someCode',
+            redirect_uri: 'someRedirectURI',
+            client_id: 'clientId',
+            client_secret: 'clientSecret',
+          },
+        });
+
+        return Promise.resolve({ access_token: 'accessToken', id: 'userId' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+
+        return Promise.resolve({ id: 'userId' });
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('linkedin', {
+        authData: {
+          code: 'someCode',
+          redirect_uri: 'someRedirectURI',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+  });
+  describe('auth login github and linkedin adapters', () => {
+    it('Logged in user must remain logged in after logging in with LinkedIn auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          linkedin: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const requestSpy = spyOn(httpsRequest, 'getAccessToken').and.callFake(options => {
+        expect(options).toEqual({
+          method: 'POST',
+          url: 'https://www.linkedin.com/oauth/v2/accessToken',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          form: {
+            grant_type: 'authorization_code',
+            code: 'someCode',
+            redirect_uri: 'someRedirectURI',
+            client_id: 'clientId',
+            client_secret: 'clientSecret',
+          },
+        });
+
+        return Promise.resolve({ access_token: 'accessToken', id: 'userId' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('linkedin', {
+        authData: {
+          code: 'someCode',
+          redirect_uri: 'someRedirectURI',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+
+      await reconfigureServer({
+        auth: {
+          linkedin: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      await user.linkWith('linkedin', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+          is_mobile_sdk: false,
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+      expect(Parse.User.current().id).toEqual(userId);
+      expect(Parse.User.current().getSessionToken()).toEqual(sessionToken);
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with LinkedIn auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          linkedin: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const requestSpy = spyOn(httpsRequest, 'getAccessToken').and.callFake(options => {
+        expect(options).toEqual({
+          method: 'POST',
+          url: 'https://www.linkedin.com/oauth/v2/accessToken',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          form: {
+            grant_type: 'authorization_code',
+            code: 'someCode',
+            redirect_uri: 'someRedirectURI',
+            client_id: 'clientId',
+            client_secret: 'clientSecret',
+          },
+        });
+
+        return Promise.resolve({ access_token: 'accessToken', id: 'userId' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options.host).toEqual('api.linkedin.com');
+        expect(options.path).toMatch(/^\/v2\//);
+        expect(options.headers.Authorization).toMatch(/^Bearer /);
+
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('linkedin', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+          is_mobile_sdk: false,
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          linkedin: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('linkedin', {
+        authData: {
+          code: 'someCode',
+          redirect_uri: 'someRedirectURI',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').linkedin.access_token).toEqual('accessToken');
+      expect(Parse.User.current().id).toEqual(userId);
+      expect(Parse.User.current().getSessionToken()).toEqual(sessionToken);
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with Github auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          github: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const requestSpy = spyOn(httpsRequest, 'request').and.callFake((options, postData) => {
+        expect(options).toEqual({
+          hostname: 'github.com',
+          path: '/login/oauth/access_token',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            accept: 'application/json',
+          },
+        });
+        expect(postData).toEqual(
+          JSON.stringify({
+            client_id: 'clientId',
+            client_secret: 'clientSecret',
+            code: 'someCode',
+          })
+        );
+        return Promise.resolve({ access_token: 'accessToken' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('github', { authData: { code: 'someCode' } });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      await reconfigureServer({
+        auth: {
+          github: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('github', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      expect(Parse.User.current().id).toEqual(userId);
+      expect(Parse.User.current().getSessionToken()).toEqual(sessionToken);
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with Github auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          github: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const requestSpy = spyOn(httpsRequest, 'request').and.callFake((options, postData) => {
+        expect(options).toEqual({
+          hostname: 'github.com',
+          path: '/login/oauth/access_token',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            accept: 'application/json',
+          },
+        });
+        expect(postData).toEqual(
+          JSON.stringify({
+            client_id: 'clientId',
+            client_secret: 'clientSecret',
+            code: 'someCode',
+          })
+        );
+        return Promise.resolve({ access_token: 'accessToken' });
+      });
+      const getSpy = spyOn(httpsRequest, 'get').and.callFake(options => {
+        expect(options).toEqual({
+          host: 'api.github.com',
+          path: '/user',
+          headers: {
+            Authorization: 'bearer accessToken',
+            'User-Agent': 'parse-server',
+          },
+        });
+        return Promise.resolve({ id: 'userId' });
+      });
+      const user = new Parse.User();
+      await user.linkWith('github', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          github: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      await user.linkWith('github', { authData: { code: 'someCode' } });
+      await user.fetch();
+      expect(user.get('authData').github.access_token).toEqual('accessToken');
+      expect(Parse.User.current().id).toEqual(userId);
+      expect(Parse.User.current().getSessionToken()).toEqual(sessionToken);
+      expect(requestSpy).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('instagram auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access_token by default', async () => {
+      await reconfigureServer({});
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('instagram', {
+        authData: { access_token: 'accessToken' },
+      });
+      await user.fetch();
+      expect(user.get('authData').instagram.access_token).toEqual('accessToken');
+      expect(user.get('authData').instagram.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with access_token when instagram.enableInsecureAuth is true', async () => {
+      await reconfigureServer({ auth: { instagram: { enableInsecureAuth: true } } });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('instagram', {
+        authData: { access_token: 'accessToken', id: 'userId' },
+      });
+      await user.fetch();
+      expect(user.get('authData').instagram.access_token).toEqual('accessToken');
+      expect(user.get('authData').instagram.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work with access_token when instagram.enableInsecureAuth is false', async () => {
+      await reconfigureServer({ auth: { instagram: { enableInsecureAuth: false } } });
+      const spyGet = spyOn(httpsRequest, 'getAccessToken').and.callFake(() => {
+        throw new Error('should not be called');
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('instagram', {
+          authData: { access_token: 'accessToken', id: 'userId' },
+        })
+      ).toBeRejectedWithError(/Instagram auth configuration missing clientId and\/or clientSecret/);
+      expect(spyGet).not.toHaveBeenCalled();
+    });
+    it('should not work with access_token and incorrect id when instagram.enableInsecureAuth is true', async () => {
+      await reconfigureServer({ auth: { instagram: { enableInsecureAuth: true } } });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() => {
+        return { id: 'userId' };
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('instagram', {
+          authData: { access_token: 'accessToken', id: 'incorrectId' },
+        })
+      ).toBeRejectedWithError(/Instagram auth is invalid for this user/);
+      expect(spyGet).toHaveBeenCalled();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with code and redirect_uri by default', async () => {
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('instagram', {
+        authData: { code: 'code', redirect_uri: 'redirect_uri' },
+      });
+      await user.fetch();
+      expect(user.get('authData').instagram.access_token).toEqual('accessToken');
+      expect(user.get('authData').instagram.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('should work with code and redirect_uri when instagram.enableInsecureAuth is true', async () => {
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() => {
+        return { access_token: 'accessToken' };
+      });
+      const user = new Parse.User();
+      await user.linkWith('instagram', {
+        authData: { code: 'code', redirect_uri: 'redirect_uri' },
+      });
+      await user.fetch();
+      expect(user.get('authData').instagram.access_token).toEqual('accessToken');
+      expect(user.get('authData').instagram.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('should work with code and redirect_uri when instagram.enableInsecureAuth is false', async () => {
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('instagram', {
+        authData: { code: 'code', redirect_uri: 'redirect_uri' },
+      });
+      await user.fetch();
+      expect(user.get('authData').instagram.access_token).toEqual('accessToken');
+      expect(user.get('authData').instagram.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+  });
+  describe('auth login with instagram', () => {
+    it('Logged in user must remain logged in after logging in with instagram auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('instagram', {
+        authData: { code: 'code', redirect_uri: 'redirect_uri' },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('instagram', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').instagram.access_token).toEqual('accessToken');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with instagram auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('instagram', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          instagram: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('instagram', {
+        authData: { code: 'code', redirect_uri: 'redirect_uri' },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').instagram.access_token).toEqual('accessToken');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Microsoft graph auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access_token by default', async () => {
+      await reconfigureServer({});
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('microsoft', {
+        authData: {
+          id: 'userId',
+          access_token: 'accessToken',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').microsoft.access_token).toEqual('accessToken');
+      expect(user.get('authData').microsoft.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with access_token when microsoft.enableInsecureAuth is true', async () => {
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('microsoft', {
+        authData: {
+          id: 'userId',
+          access_token: 'accessToken',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').microsoft.access_token).toEqual('accessToken');
+      expect(user.get('authData').microsoft.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work with access_token when microsoft.enableInsecureAuth is false', async () => {
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: false,
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'getAccessToken').and.callFake(() => {
+        throw new Error('should not be called');
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('microsoft', {
+          authData: {
+            access_token: 'accessToken',
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejectedWithError(/Microsoft auth configuration missing clientId and\/or clientSecret/);
+      expect(spyGet).not.toHaveBeenCalled();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with code and redirect_uri by default', async () => {
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() => {
+        return { access_token: 'accessToken' };
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('microsoft', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').microsoft.access_token).toEqual('accessToken');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('should work with code and redirect_uri when microsoft.enableInsecureAuth is false', async () => {
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() => {
+        return { access_token: 'accessToken' };
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('microsoft', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').microsoft.access_token).toEqual('accessToken');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('should not work without code when microsoft.enableInsecureAuth is false', async () => {
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('microsoft', {
+          authData: {
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejectedWithError(
+        /Microsoft auth configuration authData.code and\/or authData.redirect_uri./
+      );
+    });
+  });
+  describe('auth login with microsoft', () => {
+    it('Logged in user must remain logged in after logging in with microsoft auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('microsoft', {
+        authData: { code: 'code', redirect_uri: 'redirect_uri' },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('microsoft', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').microsoft.access_token).toEqual('accessToken');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with microsoft auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('microsoft', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          microsoft: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('microsoft', {
+        authData: { code: 'code', redirect_uri: 'redirect_uri' },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').microsoft.access_token).toEqual('accessToken');
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Twitter auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  const oauth = require('../lib/Adapters/Auth/OAuth1Client');
+  describe('insecure usage', () => {
+    it('should work with access_token by default', async () => {
+      await reconfigureServer({});
+      const spySend = spyOn(oauth.prototype, 'send').and.returnValue(
+        Promise.resolve({ id: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').twitter.oauth_token).toEqual('oauth_token');
+      expect(user.get('authData').twitter.oauth_token_secret).toEqual('oauth_token_secret');
+      expect(user.get('authData').twitter.id).toEqual('userId');
+      expect(spySend).toHaveBeenCalled();
+    });
+    it('should work with access_token when twitter.enableInsecureAuth is true', async () => {
+      await reconfigureServer({ auth: { twitter: { enableInsecureAuth: true } } });
+      const spySend = spyOn(oauth.prototype, 'send').and.returnValue(
+        Promise.resolve({ data: { id: 'userId' } })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').twitter.oauth_token).toEqual('oauth_token');
+      expect(user.get('authData').twitter.oauth_token_secret).toEqual('oauth_token_secret');
+      expect(user.get('authData').twitter.id).toEqual('userId');
+      expect(spySend).toHaveBeenCalled();
+    });
+    it('should not work with access_token when twitter.enableInsecureAuth is false', async () => {
+      await reconfigureServer({ auth: { twitter: { enableInsecureAuth: false } } });
+      const spySend = spyOn(oauth.prototype, 'send').and.returnValue(
+        Promise.resolve({ data: { id: 'userId' } })
+      );
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('twitter', {
+          authData: {
+            oauth_token: 'oauth_token',
+            oauth_token_secret: 'oauth_token_secret',
+          },
+        })
+      ).toBeRejectedWithError(
+        /Twitter auth configuration missing consumer_key and\/or consumer_secret/
+      );
+      expect(spySend).not.toHaveBeenCalled();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with oauth_token and oauth_token_secret by default', async () => {
+      await reconfigureServer({
+        auth: {
+          twitter: {
+            consumer_key: 'consumer_key',
+            consumer_secret: 'consumer_secret',
+          },
+        },
+      });
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.returnValue(
+        Promise.resolve({
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          user_id: 'userId',
+        })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('twitter', {
+        authData: { oauth_token: 'oauth_token', oauth_token_secret: 'oauth_token_secret' },
+      });
+      await user.fetch();
+      expect(user.get('authData').twitter.oauth_token).toEqual('oauth_token');
+      expect(user.get('authData').twitter.oauth_token_secret).toEqual('oauth_token_secret');
+      expect(user.get('authData').twitter.id).toEqual('userId');
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('should work with oauth_token and oauth_token_secret when twitter.enableInsecureAuth is true', async () => {
+      await reconfigureServer({
+        auth: {
+          twitter: {
+            enableInsecureAuth: true,
+            consumer_key: 'consumer_key',
+            consumer_secret: 'consumer_secret',
+          },
+        },
+      });
+
+      const spySend = spyOn(oauth.prototype, 'send').and.returnValue(
+        Promise.resolve({ data: { id: 'userId' } })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').twitter.oauth_token).toEqual('oauth_token');
+      expect(user.get('authData').twitter.oauth_token_secret).toEqual('oauth_token_secret');
+      expect(user.get('authData').twitter.id).toEqual('userId');
+      expect(spySend).toHaveBeenCalled();
+    });
+    it('should work with oauth_token and oauth_token_secret when twitter.enableInsecureAuth is false', async () => {
+      await reconfigureServer({
+        auth: {
+          twitter: {
+            enableInsecureAuth: false,
+            consumer_key: 'consumer_key',
+            consumer_secret: 'consumer_secret',
+          },
+        },
+      });
+
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.returnValue(
+        Promise.resolve({
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          user_id: 'userId',
+        })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').twitter.oauth_token).toEqual('oauth_token');
+      expect(user.get('authData').twitter.oauth_token_secret).toEqual('oauth_token_secret');
+      expect(user.get('authData').twitter.id).toEqual('userId');
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+  });
+  describe('auth login with twitter', () => {
+    it('Logged in user must remain logged in after logging in with twitter auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          twitter: {
+            enableInsecureAuth: false,
+            consumer_key: 'consumer_key',
+            consumer_secret: 'consumer_secret',
+          },
+        },
+      });
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.returnValue(
+        Promise.resolve({
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          user_id: 'userId',
+        })
+      );
+      const spySend = spyOn(oauth.prototype, 'send').and.returnValue(
+        Promise.resolve({ data: { id: 'userId' } })
+      );
+      const user = new Parse.User();
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          twitter: {
+            enableInsecureAuth: true,
+            consumer_key: 'consumer_key',
+            consumer_secret: 'consumer_secret',
+          },
+        },
+      });
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').twitter.oauth_token).toEqual('oauth_token');
+      expect(user.get('authData').twitter.oauth_token_secret).toEqual('oauth_token_secret');
+      expect(spySend).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with twitter auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          twitter: {
+            enableInsecureAuth: true,
+            consumer_key: 'consumer_key',
+            consumer_secret: 'consumer_secret',
+          },
+        },
+      });
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.returnValue(
+        Promise.resolve({
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          user_id: 'userId',
+        })
+      );
+      const spySend = spyOn(oauth.prototype, 'send').and.returnValue(
+        Promise.resolve({ data: { id: 'userId' } })
+      );
+      const user = new Parse.User();
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          twitter: {
+            enableInsecureAuth: false,
+            consumer_key: 'consumer_key',
+            consumer_secret: 'consumer_secret',
+          },
+        },
+      });
+      await user.linkWith('twitter', {
+        authData: {
+          oauth_token: 'oauth_token',
+          oauth_token_secret: 'oauth_token_secret',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').twitter.oauth_token).toEqual('oauth_token');
+      expect(user.get('authData').twitter.oauth_token_secret).toEqual('oauth_token_secret');
+      expect(spySend).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Spotify auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('Should work with access token & id by enableInsecureAuth.true', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('spotify', {
+        authData: {
+          access_token: 'access_token',
+          id: 'userId',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').spotify.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('Should not work without access token', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            id: 'userId',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('Should not work without id', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            access_token: 'access_token',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('secure usage', () => {
+    it('Should work with code, redirect_uri & code_verifier', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const spyGetAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'access_token', id: 'userId' })
+      );
+
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('spotify', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+          code_verifier: 'code_verifier',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').spotify.access_token).toEqual('access_token');
+      expect(user.get('authData').spotify.id).toEqual('userId');
+      expect(spyGetAccessToken).toHaveBeenCalled();
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('Should not work without code', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            redirect_uri: 'redirect_uri',
+            code_verifier: 'code_verifier',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('Should not work without redirect_uri', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            code: 'code',
+            code_verifier: 'code_verifier',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('Should not work without code_verifier', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            code: 'code',
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('auth login with spotify', () => {
+    it('Logged in user must remain logged in after logging in with spotify auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.returnValue(
+        Promise.resolve({
+          access_token: 'access_token',
+        })
+      );
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('spotify', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+          code_verifier: 'code_verifier',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      expect(user.get('authData').spotify.access_token).toEqual('access_token');
+      expect(user.get('authData').spotify.id).toEqual('userId');
+      expect(spyAccessToken).toHaveBeenCalled();
+
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+          },
+        },
+      });
+
+      await user.linkWith('spotify', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').spotify.access_token).toEqual('accessToken');
+      expect(user.get('authData').spotify.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with spotify auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ id: 'userId' })
+      );
+      const spyAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('spotify', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          spotify: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+          },
+        },
+      });
+      await user.linkWith('spotify', {
+        authData: {
+          code: 'code',
+          code_verifier: 'code_verifier',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(spyGet).toHaveBeenCalled();
+      expect(spyAccessToken).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Wechat adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access token by default', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', openid: 'openid', errcode: 0 })
+      );
+      const user = new Parse.User();
+      await user.linkWith('wechat', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').wechat.access_token).toEqual('accessToken');
+      expect(user.get('authData').wechat.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with access token and id by insecure.true', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', openid: 'openid', errcode: 0 })
+      );
+      const user = new Parse.User();
+      await user.linkWith('wechat', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').wechat.access_token).toEqual('accessToken');
+      expect(user.get('authData').wechat.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without access token', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('wechat', {
+          authData: {
+            access_token: undefined,
+            id: 'openid',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not work without id', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('wechat', {
+          authData: {
+            access_token: 'accessToken',
+            id: undefined,
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with code by default', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', openid: 'openid', errcode: 0 })
+      );
+      const user = new Parse.User();
+      await user.linkWith('wechat', {
+        authData: {
+          code: 'code',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').wechat.access_token).toEqual('accessToken');
+      expect(user.get('authData').wechat.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with code by insecure.false', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', openid: 'openid', errcode: 0 })
+      );
+      const user = new Parse.User();
+      await user.linkWith('wechat', {
+        authData: {
+          code: 'code',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').wechat.access_token).toEqual('accessToken');
+      expect(user.get('authData').wechat.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should should work with code by insecure.true', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', openid: 'openid', errcode: 0 })
+      );
+      const user = new Parse.User();
+      await user.linkWith('wechat', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').wechat.access_token).toEqual('accessToken');
+      expect(user.get('authData').wechat.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without code', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            code: 'code',
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('auth login with wechat', () => {
+    it('Logged in user must remain logged in after logging in with wechat auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', openid: 'openid', errcode: 0 })
+      );
+      const user = new Parse.User();
+      await user.linkWith('wechat', {
+        authData: {
+          code: 'code',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      await user.linkWith('wechat', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').wechat.access_token).toEqual('accessToken');
+      expect(user.get('authData').wechat.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with wechat auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', openid: 'openid', errcode: 0 })
+      );
+      const user = new Parse.User();
+      await user.linkWith('wechat', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          wechat: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      await user.linkWith('wechat', {
+        authData: {
+          code: 'code',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').wechat.access_token).toEqual('accessToken');
+      expect(user.get('authData').wechat.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('QQ adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access token and id by default', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve('({"access_token": "accessToken", "openid": "openid"})')
+      );
+      const user = new Parse.User();
+      await user.linkWith('qq', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').qq.access_token).toEqual('accessToken');
+      expect(user.get('authData').qq.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with access token and id by insecure.true', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve('({"access_token": "accessToken", "openid": "openid"})')
+      );
+      const user = new Parse.User();
+      await user.linkWith('qq', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').qq.access_token).toEqual('accessToken');
+      expect(user.get('authData').qq.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without access token', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('qq', {
+          authData: {
+            access_token: undefined,
+            id: 'openid',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not work without id', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('qq', {
+          authData: {
+            access_token: 'accessToken',
+            id: undefined,
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with code by default', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve('({"access_token": "accessToken", "openid": "openid"})')
+      );
+      const user = new Parse.User();
+      await user.linkWith('qq', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').qq.access_token).toEqual('accessToken');
+      expect(user.get('authData').qq.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with code by insecure.false', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve('({"access_token": "accessToken", "openid": "openid"})')
+      );
+      const user = new Parse.User();
+      await user.linkWith('qq', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').qq.access_token).toEqual('accessToken');
+      expect(user.get('authData').qq.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should should work with code by insecure.true', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve('({"access_token": "accessToken", "openid": "openid"})')
+      );
+      const user = new Parse.User();
+      await user.linkWith('qq', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').qq.access_token).toEqual('accessToken');
+      expect(user.get('authData').qq.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without code', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            code: 'code',
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('auth login with qq', () => {
+    it('Logged in user must remain logged in after logging in with qq auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve('({"access_token": "accessToken", "openid": "openid"})')
+      );
+      const user = new Parse.User();
+      await user.linkWith('qq', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      await user.linkWith('qq', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').qq.access_token).toEqual('accessToken');
+      expect(user.get('authData').qq.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with qq auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve('({"access_token": "accessToken", "openid": "openid"})')
+      );
+      const user = new Parse.User();
+      await user.linkWith('qq', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'openid',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          qq: {
+            enableInsecureAuth: false,
+            appId: 'appId',
+            appSecret: 'appSecret',
+          },
+        },
+      });
+      await user.linkWith('qq', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').qq.access_token).toEqual('accessToken');
+      expect(user.get('authData').qq.id).toEqual('openid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('oauth2 adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access token and id by default', async () => {
+      await reconfigureServer({
+        auth: {
+          oauth2: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+            tokenIntrospectionEndpointUrl: 'https://www.example.com/oauth2/v2',
+            authorizationHeader: 'Bearer',
+            useridField: 'id',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', id: 'id', active: true })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('oauth2', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'id',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').oauth2.access_token).toEqual('accessToken');
+      expect(user.get('authData').oauth2.id).toEqual('id');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with code if oauth2 enable insecure is undefined', async () => {
+      await reconfigureServer({
+        auth: {
+          oauth2: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+            tokenIntrospectionEndpointUrl: 'https://www.example.com/oauth2/v2',
+            authorizationHeader: 'Bearer',
+            useridField: 'id',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', id: 'id', active: true })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('oauth2', {
+        authData: {
+          code: 'code',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').oauth2.access_token).toEqual('accessToken');
+      expect(user.get('authData').oauth2.id).toEqual('id');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with code if oauth2 enable insecure is true', async () => {
+      await reconfigureServer({
+        auth: {
+          oauth2: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+            tokenIntrospectionEndpointUrl: 'https://www.example.com/oauth2/v2',
+            authorizationHeader: 'Bearer',
+            useridField: 'id',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', id: 'id', active: true })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('oauth2', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'id',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').oauth2.access_token).toEqual('accessToken');
+      expect(user.get('authData').oauth2.id).toEqual('id');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work with id & without access token', async () => {
+      await reconfigureServer({
+        auth: {
+          oauth2: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+            tokenIntrospectionEndpointUrl: 'https://www.example.com/oauth2/v2',
+            authorizationHeader: 'Bearer',
+            useridField: 'id',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', id: 'id', active: true })
+      );
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            code: 'code',
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+
+      expect(spyGet).not.toHaveBeenCalled();
+    });
+    it('should not work with access_token & without id', async () => {
+      await reconfigureServer({
+        auth: {
+          oauth2: {
+            enableInsecureAuth: true,
+            appId: 'appId',
+            appSecret: 'appSecret',
+            tokenIntrospectionEndpointUrl: 'https://www.example.com/oauth2/v2',
+            authorizationHeader: 'Bearer',
+            useridField: 'id',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', id: 'id', active: true })
+      );
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            code: 'code',
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+
+      expect(spyGet).not.toHaveBeenCalled();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with code', async () => {
+      await reconfigureServer({
+        auth: {
+          oauth2: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+            tokenIntrospectionEndpointUrl: 'https://www.example.com/oauth2/v2',
+            authorizationHeader: 'Bearer',
+            useridField: 'id',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', id: 'id', active: true })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('oauth2', {
+        authData: {
+          code: 'code',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').oauth2.access_token).toEqual('accessToken');
+      expect(user.get('authData').oauth2.id).toEqual('id');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without code', async () => {
+      await reconfigureServer({
+        auth: {
+          oauth2: {
+            appId: 'appId',
+            appSecret: 'appSecret',
+            tokenIntrospectionEndpointUrl: 'https://www.example.com/oauth2/v2',
+            authorizationHeader: 'Bearer',
+            useridField: 'id',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', id: 'id', active: true })
+      );
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('spotify', {
+          authData: {
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+
+      expect(spyGet).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('gpgames auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access_token and id', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ playerId: 'playerId', access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('gpgames', {
+        authData: {
+          id: 'playerId',
+          access_token: 'accessToken',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').gpgames.access_token).toEqual('accessToken');
+      expect(user.get('authData').gpgames.id).toEqual('playerId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without access_token', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gpgames', {
+          authData: {
+            id: 'playerId',
+            access_token: undefined,
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not work without id', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gpgames', {
+          authData: {
+            id: undefined,
+            access_token: 'accessToken',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with code', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ playerId: 'playerId', access_token: 'accessToken' })
+      );
+      spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ playerId: 'playerId', access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('gpgames', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').gpgames.access_token).toEqual('accessToken');
+      expect(user.get('authData').gpgames.id).toEqual('playerId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without code', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gpgames', {
+          authData: {
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not work without redirect_uri', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gpgames', {
+          authData: {
+            code: 'code',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('auth login with gpgames', () => {
+    it('Logged in user must remain logged in after logging in with gpgames auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ playerId: 'playerId', access_token: 'accessToken' })
+      );
+      spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ playerId: 'playerId', access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('gpgames', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('gpgames', {
+        authData: {
+          id: 'playerId',
+          access_token: 'accessToken',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').gpgames.access_token).toEqual('accessToken');
+      expect(user.get('authData').gpgames.id).toEqual('playerId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with gpgames auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ playerId: 'playerId', access_token: 'accessToken' })
+      );
+      spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ playerId: 'playerId', access_token: 'accessToken' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('gpgames', {
+        authData: {
+          id: 'playerId',
+          access_token: 'accessToken',
+        },
+      });
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+      await reconfigureServer({
+        auth: {
+          gpgames: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+      await user.linkWith('gpgames', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').gpgames.access_token).toEqual('accessToken');
+      expect(user.get('authData').gpgames.id).toEqual('playerId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Weibo adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access token and id by default', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', uid: 'uid' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('weibo', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'uid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').weibo.access_token).toEqual('accessToken');
+      expect(user.get('authData').weibo.id).toEqual('uid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with access token and id when using insecure authentication', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', uid: 'uid' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('weibo', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'uid',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').weibo.access_token).toEqual('accessToken');
+      expect(user.get('authData').weibo.id).toEqual('uid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without access token', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('weibo', {
+          authData: {
+            access_token: undefined,
+            id: 'uid',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not work without id', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('weibo', {
+          authData: {
+            access_token: 'accessToken',
+            id: undefined,
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('secure usage', () => {
+    it('should work with code by default', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', uid: 'uid' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('weibo', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').weibo.access_token).toEqual('accessToken');
+      expect(user.get('authData').weibo.id).toEqual('uid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with code when using secure authentication', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', uid: 'uid' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('weibo', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').weibo.access_token).toEqual('accessToken');
+      expect(user.get('authData').weibo.id).toEqual('uid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without code', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('weibo', {
+          authData: {
+            redirect_uri: 'redirect_uri',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('auth login with Weibo', () => {
+    it('Logged in user must remain logged in after logging in with Weibo auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', uid: 'uid' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('weibo', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      user.linkWith('weibo', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'uid',
+        },
+      });
+
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').weibo.access_token).toEqual('accessToken');
+      expect(user.get('authData').weibo.id).toEqual('uid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('Logged in user must remain logged in after logging in with Weibo auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'request').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', uid: 'uid' })
+      );
+      const user = new Parse.User();
+      await user.linkWith('weibo', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'uid',
+        },
+      });
+
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          weibo: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      await user.linkWith('weibo', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').weibo.access_token).toEqual('accessToken');
+      expect(user.get('authData').weibo.id).toEqual('uid');
+      expect(spyGet).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('Line adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  describe('insecure usage', () => {
+    it('should work with access token and id by default', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await user.linkWith('line', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').line.access_token).toEqual('accessToken');
+      expect(user.get('authData').line.id).toEqual('userId');
+    });
+    it('should work with access token and id when using insecure authentication', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('line', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').line.access_token).toEqual('accessToken');
+      expect(user.get('authData').line.id).toEqual('userId');
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without access token', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('line', {
+          authData: {
+            access_token: undefined,
+            id: 'userId',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+
+  describe('secure usage', () => {
+    it('should work with code by default', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGetAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('line', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').line.access_token).toEqual('accessToken');
+      expect(user.get('authData').line.id).toEqual('userId');
+      expect(spyGetAccessToken).toHaveBeenCalled();
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should work with code when using secure authentication', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      const spyGetAccessToken = spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+      const spyGet = spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('line', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      expect(user.get('authData').line.access_token).toEqual('accessToken');
+      expect(user.get('authData').line.id).toEqual('userId');
+      expect(spyGetAccessToken).toHaveBeenCalled();
+      expect(spyGet).toHaveBeenCalled();
+    });
+    it('should not work without code', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+      spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('line', {
+          authData: {
+            redirect_uri: 'redirect_uri',
+            code: undefined,
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not work without redirect_uri', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+      spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('line', {
+          authData: {
+            code: 'code',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('auth login with Line', () => {
+    it('Logged in user must remain logged in after logging in with Line auth adapter secure to insecure case', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+      spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('line', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      await user.linkWith('line', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').line.access_token).toEqual('accessToken');
+      expect(user.get('authData').line.id).toEqual('userId');
+    });
+    it('Logged in user must remain logged in after logging in with Line auth adapter insecure to secure case', async () => {
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: false,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      spyOn(httpsRequest, 'getAccessToken').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+      spyOn(httpsRequest, 'get').and.callFake(() =>
+        Promise.resolve({ access_token: 'accessToken', userId: 'userId' })
+      );
+
+      const user = new Parse.User();
+      await user.linkWith('line', {
+        authData: {
+          code: 'code',
+          redirect_uri: 'redirect_uri',
+        },
+      });
+
+      await user.fetch();
+      const userId = user.id;
+      const sessionToken = user.getSessionToken();
+
+      await reconfigureServer({
+        auth: {
+          line: {
+            enableInsecureAuth: true,
+            clientId: 'clientId',
+            clientSecret: 'clientSecret',
+          },
+        },
+      });
+
+      await user.linkWith('line', {
+        authData: {
+          access_token: 'accessToken',
+          id: 'userId',
+        },
+      });
+
+      await user.fetch();
+      expect(user.id).toEqual(userId);
+      expect(user.getSessionToken()).toEqual(sessionToken);
+      expect(user.get('authData').line.access_token).toEqual('accessToken');
+      expect(user.get('authData').line.id).toEqual('userId');
+    });
+  });
+});
+
+describe('Gcenter adapter', () => {
+  const gcenter = require('../lib/Adapters/Auth/gcenter');
+  const fs = require('fs');
+  const testCert = fs.readFileSync(__dirname + '/support/cert/game_center.pem');
+  describe('insecure usage', () => {
+    it('should authenticate', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await user.linkWith('gcenter', {
+        authData: {
+          id: 'G:1965586982',
+          publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+          timestamp: 1565257031287,
+          signature:
+            'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+          salt: 'DzqqrQ==',
+          bundleId: 'cloud.xtralife.gamecenterauth',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').gcenter.id).toEqual('G:1965586982');
+      expect(user.get('authData').gcenter.publicKeyUrl).toEqual(
+        'https://static.gc.apple.com/public-key/gc-prod-4.cer'
+      );
+    });
+    it('should not authenticate with wrong public key', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gcenter', {
+          authData: {
+            id: 'G:1965586982',
+            publicKeyUrl: 'https://static.gc.apple.com/public-key/wrong.cer',
+            timestamp: 1565257031287,
+            signature:
+              'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+            salt: 'DzqqrQ==',
+            bundleId: 'cloud.xtralife.gamecenterauth',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not authenticate with wrong salt', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gcenter', {
+          authData: {
+            id: 'G:1965586982',
+            publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+            timestamp: 1565257031287,
+            signature:
+              'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+            salt: 'wrong',
+            bundleId: 'cloud.xtralife.gamecenterauth',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not authenticate with wrong signature', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gcenter', {
+          authData: {
+            id: 'G:1965586982',
+            publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+            timestamp: 1565257031287,
+            signature: 'wrong',
+            salt: 'DzqqrQ==',
+            bundleId: 'cloud.xtralife.gamecenterauth',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not authenticate with wrong bundleId', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: true,
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gcenter', {
+          authData: {
+            id: 'G:1965586982',
+            publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+            timestamp: 1565257031287,
+            signature:
+              'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+            salt: 'DzqqrQ==',
+            bundleId: 'wrong',
+          },
+        })
+      ).toBeRejected();
+    });
+  });
+  describe('secure usage', () => {
+    it('should authenticate', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: false,
+            bundleId: 'cloud.xtralife.gamecenterauth',
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await user.linkWith('gcenter', {
+        authData: {
+          id: 'G:1965586982',
+          publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+          timestamp: 1565257031287,
+          signature:
+            'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+          salt: 'DzqqrQ==',
+        },
+      });
+      await user.fetch();
+      expect(user.get('authData').gcenter.id).toEqual('G:1965586982');
+      expect(user.get('authData').gcenter.publicKeyUrl).toEqual(
+        'https://static.gc.apple.com/public-key/gc-prod-4.cer'
+      );
+    });
+    it('should not authenticate without bundleId set in config', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: false,
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gcenter', {
+          authData: {
+            id: 'G:1965586982',
+            publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+            timestamp: 1565257031287,
+            signature:
+              'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+            salt: 'DzqqrQ==',
+          },
+        })
+      ).toBeRejected();
+    });
+    it('should not authenticate with wrong bundleId set in config', async () => {
+      await reconfigureServer({
+        auth: {
+          gcenter: {
+            enableInsecureAuth: false,
+            bundleId: 'wrong',
+          },
+        },
+      });
+      gcenter.cache['https://static.gc.apple.com/public-key/gc-prod-4.cer'] = testCert;
+
+      const user = new Parse.User();
+      await expectAsync(
+        user.linkWith('gcenter', {
+          authData: {
+            id: 'G:1965586982',
+            publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+            timestamp: 1565257031287,
+            signature:
+              'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+            salt: 'DzqqrQ==',
+          },
+        })
+      ).toBeRejected();
+    });
   });
 });
 

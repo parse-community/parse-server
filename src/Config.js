@@ -7,7 +7,6 @@ import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
-import { version } from '../package.json';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
@@ -19,7 +18,7 @@ import {
   SchemaOptions,
   SecurityOptions,
 } from './Options/Definitions';
-import ParseServer from './cloud-code/Parse.Server';
+import Deprecator from './Deprecator/Deprecator';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -84,6 +83,7 @@ export class Config {
     pages,
     security,
     enforcePrivateUsers,
+    enableInsecureAuthAdapters,
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
@@ -129,6 +129,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
@@ -183,12 +184,6 @@ export class Config {
   static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
-    }
-  }
-
-  static validateAllowClientClassCreation(allowClientClassCreation) {
-    if (typeof allowClientClassCreation !== 'boolean') {
-      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 
@@ -501,6 +496,15 @@ export class Config {
       if (!net.isIP(ip)) {
         throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
       }
+    }
+  }
+
+  static validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters) {
+    if (typeof enableInsecureAuthAdapters !== 'boolean') {
+      throw 'Parse Server option enableInsecureAuthAdapters must be a boolean.';
+    }
+    if (enableInsecureAuthAdapters) {
+      Deprecator.logRuntimeDeprecation({ usage: 'insecure adapter' });
     }
   }
 

@@ -53,6 +53,9 @@
  * }
  */
 
+import logger from '../../logger';
+import Config from '../../Config';
+
 const Parse = require('parse/node').Parse;
 const querystring = require('querystring');
 const httpsRequest = require('./httpsRequest');
@@ -65,7 +68,7 @@ const MISSING_APPIDS =
 const MISSING_URL = 'OAuth2 token introspection endpoint URL is missing from configuration!';
 
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData(authData, options) {
+async function validateAuthData(authData, options) {
   return requestTokenInfo(options, authData.access_token).then(response => {
     if (
       !response ||
@@ -106,6 +109,65 @@ function validateAppId(appIds, authData, options) {
   });
 }
 
+async function beforeValidationAuthData(
+  authData,
+  { appId, appSecret, tokenIntrospectionEndpointUrl, authorizationHeader } = {}
+) {
+  const config = Config.get(Parse.applicationId);
+  const oauth2Config = config.auth.oauth2;
+  if (oauth2Config && oauth2Config.enableInsecureAuth && config.enableInsecureAuthAdapters) return;
+
+  if (!appId || !appSecret) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'oauth2 auth is not configured.');
+  }
+
+  if (authData.access_token && authData.id) {
+    return;
+  }
+
+  // Secure validation
+  if (authData.access_token || authData.id) {
+    logger.warn(
+      'Warning: Oauth2 auth does not require access_token or id to be sent anymore and it indicates a potential security vulnerability'
+    );
+  }
+
+  if (!authData.code) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'oauth2 auth requires code to be sent.');
+  }
+
+  if (!tokenIntrospectionEndpointUrl) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_URL);
+  }
+  const parsedUrl = new URL(tokenIntrospectionEndpointUrl);
+  const postData = querystring.stringify({
+    appId,
+    appSecret,
+    code: authData.code,
+  });
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Length': Buffer.byteLength(postData),
+  };
+  if (authorizationHeader) {
+    headers['Authorization'] = authorizationHeader;
+  }
+  const postOptions = {
+    hostname: parsedUrl.hostname,
+    path: parsedUrl.pathname,
+    method: 'POST',
+    headers: headers,
+  };
+
+  const accessTokenData = await httpsRequest.request(postOptions, postData);
+  if (accessTokenData && accessTokenData.access_token) {
+    authData.access_token = accessTokenData.access_token;
+    authData.id = accessTokenData[oauth2Config.useridField];
+    return;
+  }
+  throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Oauth2 is invalid for this user.');
+}
+
 // A promise wrapper for requests to the OAuth2 token introspection endpoint.
 function requestTokenInfo(options, access_token) {
   if (!options || !options.tokenIntrospectionEndpointUrl) {
@@ -134,4 +196,5 @@ function requestTokenInfo(options, access_token) {
 module.exports = {
   validateAppId: validateAppId,
   validateAuthData: validateAuthData,
+  beforeValidationAuthData: beforeValidationAuthData,
 };

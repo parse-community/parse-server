@@ -9,7 +9,6 @@ const facebook = require('./facebook');
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
-import mfa from './mfa';
 const google = require('./google');
 const github = require('./github');
 const twitter = require('./twitter');
@@ -45,7 +44,6 @@ const providers = {
   instagram,
   linkedin,
   meetup,
-  mfa,
   google,
   github,
   twitter,
@@ -63,6 +61,7 @@ const providers = {
   microsoft,
   keycloak,
   ldap,
+  oauth2,
 };
 
 // Indexed auth policies
@@ -77,11 +76,7 @@ function authDataValidator(provider, adapter, appIds, options) {
     if (appIds && typeof adapter.validateAppId === 'function') {
       await Promise.resolve(adapter.validateAppId(appIds, authData, options, requestObject));
     }
-    if (
-      adapter.policy &&
-      !authAdapterPolicies[adapter.policy] &&
-      typeof adapter.policy !== 'function'
-    ) {
+    if (adapter.policy && !authAdapterPolicies[adapter.policy]) {
       throw new Parse.Error(
         Parse.Error.OTHER_CAUSE,
         'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
@@ -138,6 +133,20 @@ function authDataValidator(provider, adapter, appIds, options) {
       method: 'validateSetUp',
       validator: () => adapter.validateSetUp(authData, options, requestObject),
     };
+  };
+}
+
+function authDataBeforeValidator(adapter, appIds, options) {
+  return function (authData) {
+    if (typeof adapter.beforeValidationAuthData === 'function') {
+      return adapter.beforeValidationAuthData(authData, options).then(() => {
+        if (appIds) {
+          return adapter.validateAppId(appIds, authData, options);
+        }
+        return Promise.resolve();
+      });
+    }
+    return Promise.resolve();
   };
 }
 
@@ -231,20 +240,17 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
         if (!authAdapter) {
           return;
         }
-        const { adapter, providerOptions } = authAdapter;
-        const afterFind = adapter.afterFind;
+        const {
+          adapter: { afterFind },
+          providerOptions,
+        } = authAdapter;
         if (afterFind && typeof afterFind === 'function') {
           const requestObject = {
             ip: req.config.ip,
             user: req.auth.user,
             master: req.auth.isMaster,
           };
-          const result = afterFind.call(
-            adapter,
-            requestObject,
-            authData[provider],
-            providerOptions
-          );
+          const result = afterFind(requestObject, authData[provider], providerOptions);
           if (result) {
             authData[provider] = result;
           }
@@ -253,7 +259,18 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     );
   };
 
+  const getPreValidatorTriggerForProvider = function (provider) {
+    if (provider === 'anonymous' && !_enableAnonymousUsers) {
+      return;
+    }
+
+    const { adapter, appIds, providerOptions } = loadAuthAdapter(provider, authOptions);
+
+    return authDataBeforeValidator(adapter, appIds, providerOptions);
+  };
+
   return Object.freeze({
+    getPreValidatorTriggerForProvider,
     getValidatorForProvider,
     setEnableAnonymousUsers,
     runAfterFind,

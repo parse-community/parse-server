@@ -5,17 +5,28 @@
  * To learn more, please go to: https://www.phantauth.net
  */
 
+import Config from '../../Config';
+
 const { Parse } = require('parse/node');
 const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData(authData) {
-  return request('auth/userinfo', authData.access_token).then(data => {
-    if (data && data.sub == authData.id) {
-      return;
-    }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'PhantAuth auth is invalid for this user.');
-  });
+async function validateAuthData(authData) {
+  const config = Config.get(Parse.applicationId);
+  const phantauthConfig = config.auth.phantauth;
+  if (phantauthConfig && phantauthConfig.enableInsecureAuth && config.enableInsecureAuthAdapters) {
+    return request('auth/userinfo', authData.access_token).then(data => {
+      if (data && data.sub == authData.id) {
+        return;
+      }
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'PhantAuth auth is invalid for this user.'
+      );
+    });
+  } else {
+    throw new Parse.Error('PhantAuth only works with enableInsecureAuth: true');
+  }
 }
 
 // Returns a promise that fulfills if this app id is valid.

@@ -423,7 +423,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
 // Transforms auth data for a user object.
 // Does nothing if this isn't a user object.
 // Returns a promise for when we're done if it can't finish this tick.
-RestWrite.prototype.validateAuthData = function () {
+RestWrite.prototype.validateAuthData = async function () {
   if (this.className !== '_User') {
     return;
   }
@@ -457,11 +457,13 @@ RestWrite.prototype.validateAuthData = function () {
 
   var providers = Object.keys(authData);
   if (providers.length > 0) {
-    const canHandleAuthData = providers.some(provider => {
+    let canHandleAuthData = true;
+    for (const provider of providers) {
       var providerAuthData = authData[provider];
+      await this.handleAuthDataBeforeValidationTrigger(authData);
       var hasToken = providerAuthData && providerAuthData.id;
-      return hasToken || providerAuthData === null;
-    });
+      canHandleAuthData = canHandleAuthData && (hasToken || providerAuthData == null);
+    }
     if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
       return this.handleAuthData(authData);
     }
@@ -470,6 +472,64 @@ RestWrite.prototype.validateAuthData = function () {
     Parse.Error.UNSUPPORTED_SERVICE,
     'This authentication method is unsupported.'
   );
+};
+
+RestWrite.prototype.handleAuthDataValidation = function (authData) {
+  const validations = Object.keys(authData).map(provider => {
+    if (authData[provider] === null) {
+      return Promise.resolve();
+    }
+    const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
+    if (!validateAuthData) {
+      throw new Parse.Error(
+        Parse.Error.UNSUPPORTED_SERVICE,
+        'This authentication method is unsupported.'
+      );
+    }
+    return validateAuthData(authData[provider]);
+  });
+  return Promise.all(validations);
+};
+
+RestWrite.prototype.handleAuthDataBeforeValidationTrigger = function (authData) {
+  const validations = Object.keys(authData).map(provider => {
+    if (authData[provider] === null) {
+      return Promise.resolve();
+    }
+    const preValidatorTriggerForProvider = this.config.authDataManager.getPreValidatorTriggerForProvider(
+      provider
+    );
+    if (!preValidatorTriggerForProvider) {
+      return null;
+    }
+    return preValidatorTriggerForProvider(authData[provider]);
+  });
+  return Promise.all(validations);
+};
+
+RestWrite.prototype.findUsersWithAuthData = function (authData) {
+  const providers = Object.keys(authData);
+  const query = providers
+    .reduce((memo, provider) => {
+      if (!authData[provider]) {
+        return memo;
+      }
+      const queryKey = `authData.${provider}.id`;
+      const query = {};
+      query[queryKey] = authData[provider].id;
+      memo.push(query);
+      return memo;
+    }, [])
+    .filter(q => {
+      return typeof q !== 'undefined';
+    });
+
+  let findPromise = Promise.resolve([]);
+  if (query.length > 0) {
+    findPromise = this.config.database.find(this.className, { $or: query }, {});
+  }
+
+  return findPromise;
 };
 
 RestWrite.prototype.filteredObjectsByACL = function (objects) {
@@ -1308,7 +1368,7 @@ RestWrite.prototype.handleInstallation = function () {
           throw new Parse.Error(
             132,
             'Must specify installationId when deviceToken ' +
-              'matches multiple Installation objects'
+            'matches multiple Installation objects'
           );
         } else {
           // Multiple device token matches and we specified an installation ID,

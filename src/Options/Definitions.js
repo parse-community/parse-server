@@ -104,6 +104,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_AUTH_PROVIDERS',
     help:
       'Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication',
+    action: parsers.objectParser,
   },
   cacheAdapter: {
     env: 'PARSE_SERVER_CACHE_ADAPTER',
@@ -207,6 +208,13 @@ module.exports.ParseServerOptions = {
       'Set to `true` if a email verification token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.<br>Requires option `verifyUserEmails: true`.',
     action: parsers.booleanParser,
     default: false,
+  },
+  enableInsecureAuthAdapters: {
+    env: 'PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS',
+    help:
+      'Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.',
+    action: parsers.booleanParser,
+    default: true,
   },
   emailVerifyTokenValidityDuration: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION',

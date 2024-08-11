@@ -1,3 +1,38 @@
+/**
+ * Parse Server authentication adapter for Facebook.
+ *
+ * @Class Google
+ * @param {Object} options Google authentication options
+ * @param {String} options.clientId Your Google application id.
+ *
+ * The adapter expects the following authData from the client:
+ *
+ * @param {Object} payload The auth payload.
+ * @param {String} payload.id The Google user id
+ * @param {String} payload.id_token The Google id token
+ * @param {String} payload.access_token The Google access token
+ *
+ * Parse Server then stores the required auth data in the database.
+ *
+ * * Example auth data for Google:
+ *
+ * @param {Object} payload The auth payload.
+ * @param {String} payload.id The Google user id
+ * @param {String} payload.id_token The Google id token
+ * @param {String} payload.access_token The Google access token
+ *
+ *
+ * {
+ * "google": {
+ * "id": "1234567",
+ * "id_token": "xxxxx.yyyyy.zzzzz",
+ * "access_token": "abc123def456ghi789"
+ * }
+ * }
+ *
+ * For more information on Google authentication, see https://developers.google.com/identity/sign-in/web/backend-auth
+ */
+
 'use strict';
 
 // Helper functions for accessing the google API.
