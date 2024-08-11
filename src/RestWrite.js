@@ -401,7 +401,11 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
 
         // Only assign new objectId if we are creating new object
         if (!this.data.objectId) {
-          this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
+          if (!this.config.newObjectIdCallback) {
+            this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
+          } else {
+            this.data.objectId = this.config.newObjectIdCallback();
+          }
         }
         if (schema) {
           Object.keys(schema.fields).forEach(fieldName => {
