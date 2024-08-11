@@ -2317,7 +2317,7 @@ describe('beforeFind hooks', () => {
     );
   });
 
-  it_id('6ef0d226-af30-4dfd-8306-972a1b4becd3', 'should handle empty where', done => {
+  it_id('6ef0d226-af30-4dfd-8306-972a1b4becd3')(it)('should handle empty where', done => {
     Parse.Cloud.beforeFind('MyObject', req => {
       const otherQuery = new Parse.Query('MyObject');
       otherQuery.equalTo('some', true);
@@ -2919,7 +2919,7 @@ describe('afterFind hooks', () => {
     }).toThrow('Only the _Session class is allowed for the afterLogout trigger.');
   });
 
-  it_id('c16159b5-e8ee-42d5-8fe3-e2f7c006881d', 'should skip afterFind hooks for aggregate', done => {
+  it_id('c16159b5-e8ee-42d5-8fe3-e2f7c006881d')(it)('should skip afterFind hooks for aggregate', done => {
     const hook = {
       method: function () {
         return Promise.reject();
@@ -2946,7 +2946,7 @@ describe('afterFind hooks', () => {
       });
   });
 
-  it_id('ca55c90d-36db-422c-9060-a30583ce5224', 'should skip afterFind hooks for distinct', done => {
+  it_id('ca55c90d-36db-422c-9060-a30583ce5224')(it)('should skip afterFind hooks for distinct', done => {
     const hook = {
       method: function () {
         return Promise.reject();
@@ -3033,7 +3033,7 @@ describe('afterFind hooks', () => {
     expect(calledAfter).toBe(false);
   });
 
-  it_id('55ef1741-cf72-4a7c-a029-00cb75f53233', 'should expose context in beforeSave/afterSave via header', async () => {
+  it_id('55ef1741-cf72-4a7c-a029-00cb75f53233')(it)('should expose context in beforeSave/afterSave via header', async () => {
     let calledBefore = false;
     let calledAfter = false;
     Parse.Cloud.beforeSave('TestObject', req => {
@@ -3347,7 +3347,7 @@ describe('beforeLogin hook', () => {
     expect(response).toEqual(error);
   });
 
-  it_id('5656d6d7-65ef-43d1-8ca6-6942ae3614d5', 'should have expected data in request in beforeLogin', async done => {
+  it_id('5656d6d7-65ef-43d1-8ca6-6942ae3614d5')(it)('should have expected data in request in beforeLogin', async done => {
     Parse.Cloud.beforeLogin(req => {
       expect(req.object).toBeDefined();
       expect(req.user).toBeUndefined();
@@ -3464,7 +3464,7 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2')('should have expected data in request in afterLogin', async done => {
+  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2')(it)('should have expected data in request in afterLogin', async done => {
     Parse.Cloud.afterLogin(req => {
       expect(req.object).toBeDefined();
       expect(req.user).toBeDefined();
