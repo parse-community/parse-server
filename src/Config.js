@@ -136,7 +136,6 @@ export class Config {
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
-    this.validateAllowClientClassCreation(allowClientClassCreation);
   }
 
   static validateCustomPages(customPages) {
