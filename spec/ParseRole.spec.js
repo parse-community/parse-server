@@ -126,7 +126,7 @@ describe('Parse Role testing', () => {
       );
   });
 
-  it_id('b03abe32-e8e4-4666-9b81-9c804aa53400')('should not recursively load the same role multiple times', done => {
+  it_id('b03abe32-e8e4-4666-9b81-9c804aa53400')(it)('should not recursively load the same role multiple times', done => {
     const rootRole = 'RootRole';
     const roleNames = ['FooRole', 'BarRole', 'BazRole'];
     const allRoles = [rootRole].concat(roleNames);
