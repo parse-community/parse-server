@@ -49,6 +49,7 @@ describe('Cloud Code', () => {
   });
 
   it('cloud code must be valid type', async () => {
+    spyOn(console, 'error').and.callFake(() => {});
     await expectAsync(reconfigureServer({ cloud: true })).toBeRejectedWith(
       "argument 'cloud' must either be a string or a function"
     );
@@ -2316,7 +2317,7 @@ describe('beforeFind hooks', () => {
     );
   });
 
-  it('should handle empty where', done => {
+  it_id('6ef0d226-af30-4dfd-8306-972a1b4becd3')(it)('should handle empty where', done => {
     Parse.Cloud.beforeFind('MyObject', req => {
       const otherQuery = new Parse.Query('MyObject');
       otherQuery.equalTo('some', true);
@@ -2918,7 +2919,7 @@ describe('afterFind hooks', () => {
     }).toThrow('Only the _Session class is allowed for the afterLogout trigger.');
   });
 
-  it('should skip afterFind hooks for aggregate', done => {
+  it_id('c16159b5-e8ee-42d5-8fe3-e2f7c006881d')(it)('should skip afterFind hooks for aggregate', done => {
     const hook = {
       method: function () {
         return Promise.reject();
@@ -2945,7 +2946,7 @@ describe('afterFind hooks', () => {
       });
   });
 
-  it('should skip afterFind hooks for distinct', done => {
+  it_id('ca55c90d-36db-422c-9060-a30583ce5224')(it)('should skip afterFind hooks for distinct', done => {
     const hook = {
       method: function () {
         return Promise.reject();
@@ -3032,7 +3033,7 @@ describe('afterFind hooks', () => {
     expect(calledAfter).toBe(false);
   });
 
-  it('should expose context in beforeSave/afterSave via header', async () => {
+  it_id('55ef1741-cf72-4a7c-a029-00cb75f53233')(it)('should expose context in beforeSave/afterSave via header', async () => {
     let calledBefore = false;
     let calledAfter = false;
     Parse.Cloud.beforeSave('TestObject', req => {
@@ -3346,7 +3347,7 @@ describe('beforeLogin hook', () => {
     expect(response).toEqual(error);
   });
 
-  it('should have expected data in request', async done => {
+  it_id('5656d6d7-65ef-43d1-8ca6-6942ae3614d5')(it)('should have expected data in request in beforeLogin', async done => {
     Parse.Cloud.beforeLogin(req => {
       expect(req.object).toBeDefined();
       expect(req.user).toBeUndefined();
@@ -3463,7 +3464,7 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it('should have expected data in request', async done => {
+  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2')(it)('should have expected data in request in afterLogin', async done => {
     Parse.Cloud.afterLogin(req => {
       expect(req.object).toBeDefined();
       expect(req.user).toBeDefined();
@@ -3916,6 +3917,162 @@ describe('saveFile hooks', () => {
     } catch (e) {
       expect(e.code).toBe(130);
       done();
+    }
+  });
+});
+
+describe('Cloud Config hooks', () => {
+  function testConfig() {
+    return Parse.Config.save({ internal: 'i', string: 's', number: 12 }, { internal: true });
+  }
+
+  it('beforeSave(Parse.Config) can run hook with new config', async () => {
+    let count = 0;
+    Parse.Cloud.beforeSave(Parse.Config, (req) => {
+      expect(req.object).toBeDefined();
+      expect(req.original).toBeUndefined();
+      expect(req.user).toBeUndefined();
+      expect(req.headers).toBeDefined();
+      expect(req.ip).toBeDefined();
+      expect(req.installationId).toBeDefined();
+      expect(req.context).toBeDefined();
+      const config = req.object;
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
+      count += 1;
+    });
+    await testConfig();
+    const config = await Parse.Config.get({ useMasterKey: true });
+    expect(config.get('internal')).toBe('i');
+    expect(config.get('string')).toBe('s');
+    expect(config.get('number')).toBe(12);
+    expect(count).toBe(1);
+  });
+
+  it('beforeSave(Parse.Config) can run hook with existing config', async () => {
+    let count = 0;
+    Parse.Cloud.beforeSave(Parse.Config, (req) => {
+      if (count === 0) {
+        expect(req.object.get('number')).toBe(12);
+        expect(req.original).toBeUndefined();
+      }
+      if (count === 1) {
+        expect(req.object.get('number')).toBe(13);
+        expect(req.original.get('number')).toBe(12);
+      }
+      count += 1;
+    });
+    await testConfig();
+    await Parse.Config.save({ number: 13 });
+    expect(count).toBe(2);
+  });
+
+  it('beforeSave(Parse.Config) should not change config if nothing is returned', async () => {
+    let count = 0;
+    Parse.Cloud.beforeSave(Parse.Config, () => {
+      count += 1;
+      return;
+    });
+    await testConfig();
+    const config = await Parse.Config.get({ useMasterKey: true });
+    expect(config.get('internal')).toBe('i');
+    expect(config.get('string')).toBe('s');
+    expect(config.get('number')).toBe(12);
+    expect(count).toBe(1);
+  });
+
+  it('beforeSave(Parse.Config) throw custom error', async () => {
+    Parse.Cloud.beforeSave(Parse.Config, () => {
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
+    });
+    try {
+      await testConfig();
+      fail('error should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(e.message).toBe('It should fail');
+    }
+  });
+
+  it('beforeSave(Parse.Config) throw string error', async () => {
+    Parse.Cloud.beforeSave(Parse.Config, () => {
+      throw 'before save failed';
+    });
+    try {
+      await testConfig();
+      fail('error should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(e.message).toBe('before save failed');
+    }
+  });
+
+  it('beforeSave(Parse.Config) throw empty error', async () => {
+    Parse.Cloud.beforeSave(Parse.Config, () => {
+      throw null;
+    });
+    try {
+      await testConfig();
+      fail('error should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
+      expect(e.message).toBe('Script failed. Unknown error.');
+    }
+  });
+
+  it('afterSave(Parse.Config) can run hook with new config', async () => {
+    let count = 0;
+    Parse.Cloud.afterSave(Parse.Config, (req) => {
+      expect(req.object).toBeDefined();
+      expect(req.original).toBeUndefined();
+      expect(req.user).toBeUndefined();
+      expect(req.headers).toBeDefined();
+      expect(req.ip).toBeDefined();
+      expect(req.installationId).toBeDefined();
+      expect(req.context).toBeDefined();
+      const config = req.object;
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
+      count += 1;
+    });
+    await testConfig();
+    const config = await Parse.Config.get({ useMasterKey: true });
+    expect(config.get('internal')).toBe('i');
+    expect(config.get('string')).toBe('s');
+    expect(config.get('number')).toBe(12);
+    expect(count).toBe(1);
+  });
+
+  it('afterSave(Parse.Config) can run hook with existing config', async () => {
+    let count = 0;
+    Parse.Cloud.afterSave(Parse.Config, (req) => {
+      if (count === 0) {
+        expect(req.object.get('number')).toBe(12);
+        expect(req.original).toBeUndefined();
+      }
+      if (count === 1) {
+        expect(req.object.get('number')).toBe(13);
+        expect(req.original.get('number')).toBe(12);
+      }
+      count += 1;
+    });
+    await testConfig();
+    await Parse.Config.save({ number: 13 });
+    expect(count).toBe(2);
+  });
+
+  it('afterSave(Parse.Config) should throw error', async () => {
+    Parse.Cloud.afterSave(Parse.Config, () => {
+      throw new Parse.Error(400, 'It should fail');
+    });
+    try {
+      await testConfig();
+      fail('error should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(400);
+      expect(e.message).toBe('It should fail');
     }
   });
 });

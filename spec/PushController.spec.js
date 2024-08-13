@@ -168,7 +168,7 @@ describe('PushController', () => {
     done();
   });
 
-  it('properly increment badges', async () => {
+  it_id('01e3e1b8-fad2-4249-b664-5a3efaab8cb1')(it)('properly increment badges', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -233,7 +233,7 @@ describe('PushController', () => {
     }
   });
 
-  it('properly increment badges by more than 1', async () => {
+  it_id('14afcedf-e65d-41cd-981e-07f32df84c14')(it)('properly increment badges by more than 1', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -295,7 +295,7 @@ describe('PushController', () => {
     }
   });
 
-  it('properly set badges to 1', async () => {
+  it_id('758dd579-aa91-4010-9033-8d48d3463644')(it)('properly set badges to 1', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -350,7 +350,7 @@ describe('PushController', () => {
     }
   });
 
-  it('properly set badges to 1 with complex query #2903 #3022', async () => {
+  it_id('75c39ae3-06ac-4354-b321-931e81c5a927')(it)('properly set badges to 1 with complex query #2903 #3022', async () => {
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -406,7 +406,7 @@ describe('PushController', () => {
     expect(results.length).toBe(5);
   });
 
-  it('properly creates _PushStatus', async () => {
+  it_id('667f31c0-b458-4f61-ab57-668c04e3cc0b')(it)('properly creates _PushStatus', async () => {
     const pushStatusAfterSave = {
       handler: function () {},
     };
@@ -521,7 +521,7 @@ describe('PushController', () => {
     expect(succeedCount).toBe(1);
   });
 
-  it('properly creates _PushStatus without serverURL', async () => {
+  it_id('30e0591a-56de-4720-8c60-7d72291b532a')(it)('properly creates _PushStatus without serverURL', async () => {
     const pushStatusAfterSave = {
       handler: function () {},
     };
@@ -615,7 +615,7 @@ describe('PushController', () => {
     }
   });
 
-  it('should support full RESTQuery for increment', async () => {
+  it_id('53551fc3-b975-4774-92e6-7e5f3c05e105')(it)('should support full RESTQuery for increment', async () => {
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -1030,7 +1030,7 @@ describe('PushController', () => {
     // No installation is in es so only 1 call for fr, and another for default
   });
 
-  it('should update audiences', async () => {
+  it_id('ef2e5569-50c3-40c2-ab49-175cdbd5f024')(it)('should update audiences', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         return successfulTransmissions(body, installations);

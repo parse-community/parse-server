@@ -1,3 +1,45 @@
+# [7.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.5...7.3.0-alpha.6) (2024-07-20)
+
+
+### Features
+
+* Add Cloud Code triggers `Parse.Cloud.beforeSave` and `Parse.Cloud.afterSave` for Parse Config ([#9232](https://github.com/parse-community/parse-server/issues/9232)) ([90a1e4a](https://github.com/parse-community/parse-server/commit/90a1e4a200423d644efb3f0ba2fba4b99f5cf954))
+
+# [7.3.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.4...7.3.0-alpha.5) (2024-07-18)
+
+
+### Bug Fixes
+
+* Parse Server option `maxLogFiles` doesn't recognize day duration literals such as `1d` to mean 1 day ([#9215](https://github.com/parse-community/parse-server/issues/9215)) ([0319cee](https://github.com/parse-community/parse-server/commit/0319cee2dbf65e90bad377af1ed14ea25c595bf5))
+
+# [7.3.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.3...7.3.0-alpha.4) (2024-07-18)
+
+
+### Features
+
+* Add atomic operations for Cloud Config parameters ([#9219](https://github.com/parse-community/parse-server/issues/9219)) ([35cadf9](https://github.com/parse-community/parse-server/commit/35cadf9b8324879fb7309ba5d7ea46f2c722d614))
+
+# [7.3.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.2...7.3.0-alpha.3) (2024-07-17)
+
+
+### Bug Fixes
+
+* Parse Server installation fails due to post install script incorrectly parsing required min. Node version ([#9216](https://github.com/parse-community/parse-server/issues/9216)) ([0fa82a5](https://github.com/parse-community/parse-server/commit/0fa82a54fe38ec14e8054339285d3db71a8624c8))
+
+# [7.3.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.1...7.3.0-alpha.2) (2024-07-17)
+
+
+### Bug Fixes
+
+* Parse Server `databaseOptions` nested keys incorrectly identified as invalid ([#9213](https://github.com/parse-community/parse-server/issues/9213)) ([77206d8](https://github.com/parse-community/parse-server/commit/77206d804443cfc1618c24f8961bd677de9920c0))
+
+# [7.3.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.2.0...7.3.0-alpha.1) (2024-07-09)
+
+
+### Features
+
+* Add Node 22 support ([#9187](https://github.com/parse-community/parse-server/issues/9187)) ([7778471](https://github.com/parse-community/parse-server/commit/7778471999c7e42236ce404229660d80ecc2acd6))
+
 # [7.1.0-alpha.16](https://github.com/parse-community/parse-server/compare/7.1.0-alpha.15...7.1.0-alpha.16) (2024-07-08)
 
 
