@@ -418,6 +418,10 @@ export class DefinedSchemas {
       case '_Idempotency':
         indexes.push('reqId_1');
         break;
+
+      case '_Session':
+        indexes.push('_session_token_1');
+        break;
     }
 
     return indexes.indexOf(indexName) !== -1;

@@ -141,6 +141,32 @@ describe('Auth', () => {
     expect(userAuth.user.id).toBe(user.id);
   });
 
+  it('should create session index', async () => {
+    await reconfigureServer({
+      appId: 'test2',
+    });
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const indexes = await Parse.Server.databaseAdapter.getIndexes('_Session');
+    const names = indexes.map(({ name, indexname }) => {
+      if (name) {
+        return name;
+      }
+      return indexname;
+    });
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      expect(names.sort()).toEqual(
+        ['_Session_pkey', 'parse_default_sessionToken', 'parse_default_user'].sort()
+      );
+    } else {
+      expect(names.sort()).toEqual(['_id_', '_session_token_1', '_p_user_1'].sort());
+    }
+  });
+
   describe('getRolesForUser', () => {
     const rolesNumber = 100;
 
