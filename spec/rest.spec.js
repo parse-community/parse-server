@@ -787,21 +787,24 @@ describe('rest create', () => {
     );
   });
 
-  it('cannot get object in _GlobalConfig if not masterKey through pointer', async () => {
-    await Parse.Config.save({ privateData: 'secret' }, { privateData: true });
-    const obj2 = new Parse.Object('TestObject');
-    obj2.set('globalConfigPointer', {
-      __type: 'Pointer',
-      className: '_GlobalConfig',
-      objectId: 1,
-    });
-    await obj2.save();
-    const query = new Parse.Query('TestObject');
-    query.include('globalConfigPointer');
-    await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
-      "Clients aren't allowed to perform the get operation on the _GlobalConfig collection."
-    );
-  });
+  it_id('3ce563bf-93aa-4d0b-9af9-c5fb246ac9fc')(it)(
+    'cannot get object in _GlobalConfig if not masterKey through pointer',
+    async () => {
+      await Parse.Config.save({ privateData: 'secret' }, { privateData: true });
+      const obj2 = new Parse.Object('TestObject');
+      obj2.set('globalConfigPointer', {
+        __type: 'Pointer',
+        className: '_GlobalConfig',
+        objectId: 1,
+      });
+      await obj2.save();
+      const query = new Parse.Query('TestObject');
+      query.include('globalConfigPointer');
+      await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
+        "Clients aren't allowed to perform the get operation on the _GlobalConfig collection."
+      );
+    }
+  );
 
   it('locks down session', done => {
     let currentUser;
