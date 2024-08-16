@@ -609,7 +609,7 @@ export class UsersRouter extends ClassesRouter {
         const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
         logger.error(
           `Failed running auth step challenge for ${provider} for user ${userString} with Error: ` +
-          JSON.stringify(e),
+            JSON.stringify(e),
           {
             authenticationStep: 'challenge',
             error: e,

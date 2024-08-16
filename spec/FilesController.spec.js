@@ -11,8 +11,8 @@ const mockAdapter = {
   createFile: () => {
     return Promise.reject(new Error('it failed with xyz'));
   },
-  deleteFile: () => { },
-  getFileData: () => { },
+  deleteFile: () => {},
+  getFileData: () => {},
   getFileLocation: () => 'xyz',
   validateFilename: () => {
     return null;

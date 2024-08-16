@@ -1308,7 +1308,7 @@ RestWrite.prototype.handleInstallation = function () {
           throw new Parse.Error(
             132,
             'Must specify installationId when deviceToken ' +
-            'matches multiple Installation objects'
+              'matches multiple Installation objects'
           );
         } else {
           // Multiple device token matches and we specified an installation ID,
