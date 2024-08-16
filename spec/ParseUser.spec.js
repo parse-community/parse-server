@@ -2271,7 +2271,7 @@ describe('Parse.User testing', () => {
       );
     });
 
-    it('signup should fail with duplicate case insensitive username with field specific setter', async () => {
+    it_id('1cef005b-d5f0-4699-af0c-bb0af27d2437')(it)('signup should fail with duplicate case insensitive username with field specific setter', async () => {
       const user = new Parse.User();
       user.setUsername('test1');
       user.setPassword('test');
@@ -2285,7 +2285,7 @@ describe('Parse.User testing', () => {
       );
     });
 
-    it('signup should fail with duplicate case insensitive email', async () => {
+    it_id('12735529-98d1-42c0-b437-3b47fe78ddde')(it)('signup should fail with duplicate case insensitive email', async () => {
       const user = new Parse.User();
       user.setUsername('test1');
       user.setPassword('test');

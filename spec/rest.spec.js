@@ -787,7 +787,7 @@ describe('rest create', () => {
     );
   });
 
-  it('cannot get object in _GlobalConfig if not masterKey through pointer', async () => {
+  it_id('3ce563bf-93aa-4d0b-9af9-c5fb246ac9fc')(it)('cannot get object in _GlobalConfig if not masterKey through pointer', async () => {
     await Parse.Config.save({ privateData: 'secret' }, { privateData: true });
     const obj2 = new Parse.Object('TestObject');
     obj2.set('globalConfigPointer', {

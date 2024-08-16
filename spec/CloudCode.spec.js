@@ -3926,7 +3926,7 @@ describe('Cloud Config hooks', () => {
     return Parse.Config.save({ internal: 'i', string: 's', number: 12 }, { internal: true });
   }
 
-  it('beforeSave(Parse.Config) can run hook with new config', async () => {
+  it_id('997fe20a-96f7-454a-a5b0-c155b8d02f05')(it)('beforeSave(Parse.Config) can run hook with new config', async () => {
     let count = 0;
     Parse.Cloud.beforeSave(Parse.Config, (req) => {
       expect(req.object).toBeDefined();
@@ -3950,7 +3950,7 @@ describe('Cloud Config hooks', () => {
     expect(count).toBe(1);
   });
 
-  it('beforeSave(Parse.Config) can run hook with existing config', async () => {
+  it_id('06a9b66c-ffb4-43d1-a025-f7d2192500e7')(it)('beforeSave(Parse.Config) can run hook with existing config', async () => {
     let count = 0;
     Parse.Cloud.beforeSave(Parse.Config, (req) => {
       if (count === 0) {
@@ -3968,7 +3968,7 @@ describe('Cloud Config hooks', () => {
     expect(count).toBe(2);
   });
 
-  it('beforeSave(Parse.Config) should not change config if nothing is returned', async () => {
+  it_id('ca76de8e-671b-4c2d-9535-bd28a855fa1a')(it)('beforeSave(Parse.Config) should not change config if nothing is returned', async () => {
     let count = 0;
     Parse.Cloud.beforeSave(Parse.Config, () => {
       count += 1;
@@ -4021,7 +4021,7 @@ describe('Cloud Config hooks', () => {
     }
   });
 
-  it('afterSave(Parse.Config) can run hook with new config', async () => {
+  it_id('3e7a75c0-6c2e-4c7e-b042-6eb5f23acf94')(it)('afterSave(Parse.Config) can run hook with new config', async () => {
     let count = 0;
     Parse.Cloud.afterSave(Parse.Config, (req) => {
       expect(req.object).toBeDefined();
@@ -4045,7 +4045,7 @@ describe('Cloud Config hooks', () => {
     expect(count).toBe(1);
   });
 
-  it('afterSave(Parse.Config) can run hook with existing config', async () => {
+  it_id('5cffb28a-2924-4857-84bb-f5778d80372a')(it)('afterSave(Parse.Config) can run hook with existing config', async () => {
     let count = 0;
     Parse.Cloud.afterSave(Parse.Config, (req) => {
       if (count === 0) {
@@ -4063,7 +4063,7 @@ describe('Cloud Config hooks', () => {
     expect(count).toBe(2);
   });
 
-  it('afterSave(Parse.Config) should throw error', async () => {
+  it_id('49883992-ce91-4797-85f9-7cce1f819407')(it)('afterSave(Parse.Config) should throw error', async () => {
     Parse.Cloud.afterSave(Parse.Config, () => {
       throw new Parse.Error(400, 'It should fail');
     });
