@@ -2517,7 +2517,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('84a42339-c7b5-4735-a431-57b46535b073')(it)('should fail for user not listed', async done => {
           await updateCLP({
             get: {
               pointerFields: ['moderators'],
@@ -2698,7 +2698,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('1abb9f4a-fb24-48c7-8025-3001d6cf8737')(it)('should fail for user not listed', async done => {
           await updateCLP({
             update: {
               pointerFields: ['moderators'],
@@ -2764,7 +2764,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('3175a0e3-e51e-4b84-a2e6-50bbcc582123')(it)('should fail for user not listed', async done => {
           await updateCLP({
             delete: {
               pointerFields: ['owners'],
