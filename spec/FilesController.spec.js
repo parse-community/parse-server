@@ -162,4 +162,99 @@ describe('FilesController', () => {
     expect(gridFSAdapter.validateFilename(fileName)).not.toBe(null);
     done();
   });
+
+  it('should allow Parse.File uploads over and under 512MB', async done => {
+    // add required modules
+    const fs = require('fs');
+    const path = require('path');
+    const axios = require('axios');
+
+
+    const ONE_GB_BYTES = 1024 * 1024 * 1024;
+    const V8_STRING_LIMIT_BYTES = 536_870_912;
+    // Add 50 MB to test the limit
+    const LARGE_FILE_BTYES = V8_STRING_LIMIT_BYTES + 50 * 1024 * 1024;
+    const SMALL_FILE_BTYES = 1024 * 1024;
+
+    reconfigureServer({
+      // Increase the max upload size to 1GB
+      maxUploadSize: ONE_GB_BYTES,
+      // Change to an available port to avoid
+      // "Uncaught exception: Error: listen EADDRINUSE: address already in use 0.0.0.0:8378"
+      port: 8384,
+    });
+
+
+    /**
+     * Quick helper function to upload the file to the server via the REST API
+     * We do this becuase creating a Parse.File object with a file over 512MB
+     * will try to the the Web API FileReader API, which will fail the test
+     *
+     * @param {string} fileName the name of the file
+     * @param {string} filePath the path to the file locally
+     * @returns
+     */
+    const postFile = async (fileName, filePath) => {
+      const url = `${Parse.serverURL}/files/${fileName}`;
+      const headers = {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'multipart/form-data',
+      };
+
+      // Create a FormData object to send the file
+      const formData = new FormData();
+      formData.append('file', fs.createReadStream(filePath));
+
+      // Use axios to send the file
+      return axios.post(url, formData, { headers })
+    };
+
+    // Make a exact 512MB file
+    const exactFileRawData = Buffer.alloc(V8_STRING_LIMIT_BYTES);
+    const exactFileName = 'exactfile.txt';
+    // Write the file to disk locally
+    await fs.promises.writeFile(exactFileName, exactFileRawData);
+    const exactFilePath = path.resolve(exactFileName);
+
+
+    // make a large file
+    const largeFileRawData = Buffer.alloc(LARGE_FILE_BTYES);
+    const largeFileName = 'bigfile.txt';
+    // Write the file to disk locally
+    await fs.promises.writeFile(largeFileName, largeFileRawData);
+    const largeFilePath = path.resolve(largeFileName);
+
+    // Make a 1MB file
+    const smallFileRawData = Buffer.alloc(SMALL_FILE_BTYES);
+    const smallFileName = 'smallfile.txt';
+    // Write the file to disk locally
+    await fs.promises.writeFile(smallFileName, smallFileRawData);
+    const smallFilePath = path.resolve(smallFileName);
+
+    try {
+      // Test a small file
+      const smallFileRes = await postFile(smallFileName, smallFilePath);
+      expect(smallFileRes.data.url).not.toBe(null);
+
+      // Test a file that is exactly 512MB
+      const exactFileRes = await postFile(exactFileName, exactFilePath);
+      expect(exactFileRes.data.url).not.toBe(null);
+
+      // Test a large file
+      const largeFileRes = await postFile(largeFileName, largeFilePath);
+      expect(largeFileRes.data.url).not.toBe(null);
+
+      // Test a normal Parse.File object
+      const smallFile = new Parse.File(smallFileName, [...smallFileRawData]);
+      const normalSmallFile =  await smallFile.save();
+      expect(normalSmallFile.url()).not.toBe(null);
+
+    } catch (error) {
+      fail(error);
+    } finally {
+      done();
+    }
+  });
+
 });
