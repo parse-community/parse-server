@@ -68,24 +68,57 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
     });
-    if (this._encryptionKey !== null) {
+
+    // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
+    if (typeof Blob !== 'undefined' && data instanceof Blob) {
+      const reader = data.stream().getReader();
+      const iv = crypto.randomBytes(16);
+      const cipher = this._encryptionKey !== null ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv) : null;
+
+      const processChunk = async ({ done, value }) => {
+        if (done) {
+          if (cipher) {
+            const finalChunk = Buffer.concat([cipher.final(), iv, cipher.getAuthTag()]);
+            await stream.write(finalChunk);
+          }
+          stream.end();
+          return;
+        }
+
+        if (cipher) {
+          value = cipher.update(value);
+        }
+
+        await stream.write(value);
+        reader.read().then(processChunk);
+      };
       try {
-        const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv(this._algorithm, this._encryptionKey, iv);
-        const encryptedResult = Buffer.concat([
-          cipher.update(data),
-          cipher.final(),
-          iv,
-          cipher.getAuthTag(),
-        ]);
-        await stream.write(encryptedResult);
+        reader.read().then(processChunk);
       } catch (err) {
         return new Promise((resolve, reject) => {
           return reject(err);
         });
       }
     } else {
-      await stream.write(data);
+      if (this._encryptionKey !== null) {
+        try {
+          const iv = crypto.randomBytes(16);
+          const cipher = crypto.createCipheriv(this._algorithm, this._encryptionKey, iv);
+          const encryptedResult = Buffer.concat([
+            cipher.update(data),
+            cipher.final(),
+            iv,
+            cipher.getAuthTag(),
+          ]);
+          await stream.write(encryptedResult);
+        } catch (err) {
+          return new Promise((resolve, reject) => {
+            return reject(err);
+          });
+        }
+      } else {
+        await stream.write(data);
+      }
     }
     stream.end();
     return new Promise((resolve, reject) => {
