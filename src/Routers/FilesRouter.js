@@ -227,7 +227,7 @@ export class FilesRouter {
         // if the ParseFile returned is type uri, download the file before saving it
         await addFileDataIfNeeded(fileObject.file);
         // update fileSize
-        let fileData = fileObject.file._data;
+        let fileData;
         // if the file is a blob, get the size from the blob
         if (typeof Blob !== 'undefined' && fileObject.file._source?.file instanceof Blob) {
           // get the size of the blob
@@ -237,6 +237,7 @@ export class FilesRouter {
         } else {
           const bufferData = Buffer.from(fileObject.file._data, 'base64');
           fileObject.fileSize = Buffer.byteLength(bufferData);
+          fileData = bufferData;
         }
         // prepare file options
         const fileOptions = {
