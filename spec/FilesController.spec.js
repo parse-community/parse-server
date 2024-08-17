@@ -256,6 +256,10 @@ describe('FilesController', () => {
     } catch (error) {
       fail(error);
     } finally {
+      // Clean up the files
+      await fs.promises.unlink(exactFilePath);
+      await fs.promises.unlink(largeFilePath);
+      await fs.promises.unlink(smallFilePath);
       done();
     }
   });
