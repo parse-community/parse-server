@@ -167,8 +167,6 @@ describe('FilesController', () => {
     // add required modules
     const fs = require('fs');
     const path = require('path');
-    const axios = require('axios');
-
 
     const ONE_GB_BYTES = 1024 * 1024 * 1024;
     const V8_STRING_LIMIT_BYTES = 536_870_912;
@@ -206,8 +204,13 @@ describe('FilesController', () => {
       const formData = new FormData();
       formData.append('file', fs.createReadStream(filePath));
 
-      // Use axios to send the file
-      return axios.post(url, formData, { headers })
+      // Use fetch to send the file
+      return fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: formData
+      })
+        .then(response => response.json());
     };
 
     // Make a exact 512MB file
@@ -235,15 +238,15 @@ describe('FilesController', () => {
     try {
       // Test a small file
       const smallFileRes = await postFile(smallFileName, smallFilePath);
-      expect(smallFileRes.data.url).not.toBe(null);
+      expect(smallFileRes.url).not.toBe(null);
 
       // Test a file that is exactly 512MB
       const exactFileRes = await postFile(exactFileName, exactFilePath);
-      expect(exactFileRes.data.url).not.toBe(null);
+      expect(exactFileRes.url).not.toBe(null);
 
       // Test a large file
       const largeFileRes = await postFile(largeFileName, largeFilePath);
-      expect(largeFileRes.data.url).not.toBe(null);
+      expect(largeFileRes.url).not.toBe(null);
 
       // Test a normal Parse.File object
       const smallFile = new Parse.File(smallFileName, [...smallFileRawData]);
