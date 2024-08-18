@@ -162,5 +162,4 @@ describe('FilesController', () => {
     expect(gridFSAdapter.validateFilename(fileName)).not.toBe(null);
     done();
   });
-
 });
