@@ -5,27 +5,6 @@ describe('FilesRouter', () => {
   describe('File Uploads', () => {
     const V8_STRING_LIMIT_BYTES = 536_870_912;
 
-    let server;
-
-    beforeAll(async () => {
-      server = await reconfigureServer({
-        maxUploadSize: '1GB',
-        port: 8384,
-      });
-    });
-
-    afterAll(async () => {
-      // clean up the server for resuse
-      if (server && server.close) {
-        await new Promise((resolve, reject) => {
-          server.close(err => {
-            if (err) return reject(err);
-            resolve();
-          });
-        });
-      }
-    });
-
     /**
      * Quick helper function to upload the file to the server via the REST API
      * We do this because creating a Parse.File object with a file over 512MB
