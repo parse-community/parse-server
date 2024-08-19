@@ -68,40 +68,39 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
     });
+    try {
+      // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
+      if (typeof Blob !== 'undefined' && data instanceof Blob) {
+        const reader = data.stream().getReader();
+        const iv = crypto.randomBytes(16);
+        const cipher = this._encryptionKey !== null
+          ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv)
+          : null;
 
-    // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
-    if (typeof Blob !== 'undefined' && data instanceof Blob) {
-      const reader = data.stream().getReader();
-      const iv = crypto.randomBytes(16);
-      const cipher = this._encryptionKey !== null ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv) : null;
-
-      const processChunk = async ({ done, value }) => {
-        if (done) {
-          if (cipher) {
-            const finalChunk = Buffer.concat([cipher.final(), iv, cipher.getAuthTag()]);
-            await stream.write(finalChunk);
+        const processChunk = async ({ done, value }) => {
+          if (done) {
+            if (cipher) {
+              const finalChunk = Buffer.concat([cipher.final()]);
+              await stream.write(finalChunk);
+              await stream.write(iv);
+              await stream.write(cipher.getAuthTag());
+            }
+            stream.end();
+            return;
           }
-          stream.end();
-          return;
-        }
 
-        if (cipher) {
-          value = cipher.update(value);
-        }
+          if (cipher) {
+            value = cipher.update(value);
+          }
 
-        await stream.write(value);
+          await stream.write(value);
+          reader.read().then(processChunk);
+        };
+
         reader.read().then(processChunk);
-      };
-      try {
-        reader.read().then(processChunk);
-      } catch (err) {
-        return new Promise((resolve, reject) => {
-          return reject(err);
-        });
-      }
-    } else {
-      if (this._encryptionKey !== null) {
-        try {
+
+      } else {
+        if (this._encryptionKey !== null) {
           const iv = crypto.randomBytes(16);
           const cipher = crypto.createCipheriv(this._algorithm, this._encryptionKey, iv);
           const encryptedResult = Buffer.concat([
@@ -111,16 +110,17 @@ export class GridFSBucketAdapter extends FilesAdapter {
             cipher.getAuthTag(),
           ]);
           await stream.write(encryptedResult);
-        } catch (err) {
-          return new Promise((resolve, reject) => {
-            return reject(err);
-          });
+
+        } else {
+          await stream.write(data);
         }
-      } else {
-        await stream.write(data);
+        stream.end();
       }
+    } catch (err) {
+      return new Promise((resolve, reject) => {
+        return reject(err);
+      });
     }
-    stream.end();
     return new Promise((resolve, reject) => {
       stream.on('finish', resolve);
       stream.on('error', reject);
