@@ -9,7 +9,33 @@ async function expectMissingFile(gfsAdapter, name) {
     await gfsAdapter.getFileData(name);
     fail('should have thrown');
   } catch (e) {
-    expect(e.message).toEqual('FileNotFound: file myFileName was not found');
+    expect(e.message).toEqual(`FileNotFound: file ${name} was not found`);
+  }
+}
+
+const TYPES = ['string', 'blob'];
+
+const createData = (type, data) => {
+  switch (type) {
+    case 'string':
+      return data;
+    case 'blob':
+      return new Blob([data]);
+    default:
+      throw new Error(`Invalid type: ${type}`);
+  }
+}
+
+const getDataAsString = async (type, data, encoding = 'utf8') => {
+  switch (type) {
+    case 'string':
+      return data.toString(encoding);
+    case 'blob':
+      return (typeof Blob !== 'undefined' && data instanceof Blob)
+        ? await data.text(encoding) :
+        data.toString(encoding);
+    default:
+      throw new Error(`Invalid type: ${type}`);
   }
 }
 
@@ -43,13 +69,21 @@ describe_only_db('mongo')('GridFSBucket', () => {
       {},
       '89E4AFF1-DFE4-4603-9574-BFA16BB446FD'
     );
-    await expectMissingFile(encryptedAdapter, 'myFileName');
-    const originalString = 'abcdefghi';
-    await encryptedAdapter.createFile('myFileName', originalString);
-    const unencryptedResult = await unencryptedAdapter.getFileData('myFileName');
-    expect(unencryptedResult.toString('utf8')).not.toBe(originalString);
-    const encryptedResult = await encryptedAdapter.getFileData('myFileName');
-    expect(encryptedResult.toString('utf8')).toBe(originalString);
+
+    for (const type of TYPES) {
+      const fileName = `myFileName-${type}`;
+      await expectMissingFile(encryptedAdapter, fileName);
+      const rawData = 'abcdefghi';
+
+      const originalData = createData(type, rawData);
+      await encryptedAdapter.createFile(fileName, originalData);
+
+      const unencryptedResult = await unencryptedAdapter.getFileData(fileName);
+      expect(unencryptedResult.toString('utf8')).not.toBe(rawData);
+
+      const encryptedResult = await encryptedAdapter.getFileData(fileName);
+      expect(encryptedResult.toString('utf8')).toBe(rawData);
+    }
   });
 
   it('should rotate key of all unencrypted GridFS files to encrypted files', async () => {
@@ -59,155 +93,144 @@ describe_only_db('mongo')('GridFSBucket', () => {
       {},
       '89E4AFF1-DFE4-4603-9574-BFA16BB446FD'
     );
-    const fileName1 = 'file1.txt';
-    const data1 = 'hello world';
-    const fileName2 = 'file2.txt';
-    const data2 = 'hello new world';
-    //Store unecrypted files
-    await unencryptedAdapter.createFile(fileName1, data1);
-    const unencryptedResult1 = await unencryptedAdapter.getFileData(fileName1);
-    expect(unencryptedResult1.toString('utf8')).toBe(data1);
-    await unencryptedAdapter.createFile(fileName2, data2);
-    const unencryptedResult2 = await unencryptedAdapter.getFileData(fileName2);
-    expect(unencryptedResult2.toString('utf8')).toBe(data2);
-    //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey();
-    expect(rotated.length).toEqual(2);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName1;
-      }).length
-    ).toEqual(1);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName2;
-      }).length
-    ).toEqual(1);
-    expect(notRotated.length).toEqual(0);
-    let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data1);
-    const encryptedData1 = await unencryptedAdapter.getFileData(fileName1);
-    expect(encryptedData1.toString('utf-8')).not.toEqual(unencryptedResult1);
-    result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data2);
-    const encryptedData2 = await unencryptedAdapter.getFileData(fileName2);
-    expect(encryptedData2.toString('utf-8')).not.toEqual(unencryptedResult2);
+
+    for (const type of TYPES) {
+      const rawData = [`hello world ${type}`, `hello new world ${type}`];
+      const fileNames = ['file1.txt', 'file2.txt'];
+
+      // Store unencrypted files and verify
+      for (let i = 0; i < fileNames.length; i++) {
+        const data = createData(type, rawData[i]);
+        await unencryptedAdapter.createFile(fileNames[i], data);
+        const unencryptedResult = await unencryptedAdapter.getFileData(fileNames[i]);
+        expect(await getDataAsString(type, unencryptedResult)).toBe(rawData[i]);
+      }
+
+      // Rotate encryption key and verify
+      const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey();
+      expect(rotated.length).toEqual(fileNames.length);
+      fileNames.forEach(fileName => {
+        expect(rotated.includes(fileName)).toBe(true);
+      });
+      expect(notRotated.length).toEqual(0);
+
+      // clear files for next iteration
+      for (let i = 0; i < fileNames.length; i++) {
+        await unencryptedAdapter.deleteFile(fileNames[i]);
+        expectMissingFile(unencryptedAdapter, fileNames[i]);
+      }
+    }
   });
 
   it('should rotate key of all old encrypted GridFS files to encrypted files', async () => {
     const oldEncryptionKey = 'oldKeyThatILoved';
     const oldEncryptedAdapter = new GridFSBucketAdapter(databaseURI, {}, oldEncryptionKey);
     const encryptedAdapter = new GridFSBucketAdapter(databaseURI, {}, 'newKeyThatILove');
-    const fileName1 = 'file1.txt';
-    const data1 = 'hello world';
-    const fileName2 = 'file2.txt';
-    const data2 = 'hello new world';
-    //Store unecrypted files
-    await oldEncryptedAdapter.createFile(fileName1, data1);
-    const oldEncryptedResult1 = await oldEncryptedAdapter.getFileData(fileName1);
-    expect(oldEncryptedResult1.toString('utf8')).toBe(data1);
-    await oldEncryptedAdapter.createFile(fileName2, data2);
-    const oldEncryptedResult2 = await oldEncryptedAdapter.getFileData(fileName2);
-    expect(oldEncryptedResult2.toString('utf8')).toBe(data2);
-    //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
-      oldKey: oldEncryptionKey,
-    });
-    expect(rotated.length).toEqual(2);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName1;
-      }).length
-    ).toEqual(1);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName2;
-      }).length
-    ).toEqual(1);
-    expect(notRotated.length).toEqual(0);
-    let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data1);
-    let decryptionError1;
-    let encryptedData1;
-    try {
-      encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
-    } catch (err) {
-      decryptionError1 = err;
+
+    for (const type of TYPES) {
+      const rawData = [`hello world ${type}`, `hello new world ${type}`];
+      const fileNames = ['file1.txt', 'file2.txt'];
+
+      //Store unecrypted files
+      for (let i = 0; i < fileNames.length; i++) {
+        await oldEncryptedAdapter.createFile(fileNames[i], createData(type, rawData[i]));
+        const oldEncryptedResult = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        expect(await getDataAsString(type, oldEncryptedResult)).toBe(rawData[i]);
+      }
+
+      //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
+      const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
+        oldKey: oldEncryptionKey,
+      });
+      expect(rotated.length).toEqual(2);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[0];
+        }).length
+      ).toEqual(1);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[1];
+        }).length
+      ).toEqual(1);
+      expect(notRotated.length).toEqual(0);
+
+      // make sure old encrypted files can't be decrypted
+      for (let i = 0; i < fileNames.length; i++) {
+        const result = await encryptedAdapter.getFileData(fileNames[i]);
+        expect(result instanceof Buffer).toBe(true);
+        expect(await getDataAsString(type, result)).toEqual(rawData[i]);
+
+        let decryptionError;
+        let encryptedData;
+        try {
+          encryptedData = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        } catch (err) {
+          decryptionError = err;
+        }
+        expect(decryptionError).toMatch('Error');
+        expect(encryptedData).toBeUndefined();
+
+        // clear files for next iteration
+        await oldEncryptedAdapter.deleteFile(fileNames[i]);
+        expectMissingFile(oldEncryptedAdapter, fileNames[i]);
+      }
     }
-    expect(decryptionError1).toMatch('Error');
-    expect(encryptedData1).toBeUndefined();
-    result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data2);
-    let decryptionError2;
-    let encryptedData2;
-    try {
-      encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
-    } catch (err) {
-      decryptionError2 = err;
-    }
-    expect(decryptionError2).toMatch('Error');
-    expect(encryptedData2).toBeUndefined();
   });
 
   it('should rotate key of all old encrypted GridFS files to unencrypted files', async () => {
     const oldEncryptionKey = 'oldKeyThatILoved';
     const oldEncryptedAdapter = new GridFSBucketAdapter(databaseURI, {}, oldEncryptionKey);
     const unEncryptedAdapter = new GridFSBucketAdapter(databaseURI);
-    const fileName1 = 'file1.txt';
-    const data1 = 'hello world';
-    const fileName2 = 'file2.txt';
-    const data2 = 'hello new world';
-    //Store unecrypted files
-    await oldEncryptedAdapter.createFile(fileName1, data1);
-    const oldEncryptedResult1 = await oldEncryptedAdapter.getFileData(fileName1);
-    expect(oldEncryptedResult1.toString('utf8')).toBe(data1);
-    await oldEncryptedAdapter.createFile(fileName2, data2);
-    const oldEncryptedResult2 = await oldEncryptedAdapter.getFileData(fileName2);
-    expect(oldEncryptedResult2.toString('utf8')).toBe(data2);
-    //Check if unEncrypted adapter can read data and make sure it's not the same as oldEncrypted adapter
-    const { rotated, notRotated } = await unEncryptedAdapter.rotateEncryptionKey({
-      oldKey: oldEncryptionKey,
-    });
-    expect(rotated.length).toEqual(2);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName1;
-      }).length
-    ).toEqual(1);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName2;
-      }).length
-    ).toEqual(1);
-    expect(notRotated.length).toEqual(0);
-    let result = await unEncryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data1);
-    let decryptionError1;
-    let encryptedData1;
-    try {
-      encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
-    } catch (err) {
-      decryptionError1 = err;
+    for (const type of TYPES) {
+      const rawData = [`hello world ${type}`, `hello new world ${type}`];
+      const fileNames = ['file1.txt', 'file2.txt'];
+
+      //Store unecrypted files
+      for (let i = 0; i < fileNames.length; i++) {
+        await oldEncryptedAdapter.createFile(fileNames[i], createData(type, rawData[i]));
+        const oldEncryptedResult = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        expect(await getDataAsString(type, oldEncryptedResult)).toBe(rawData[i]);
+      }
+
+      //Check if unEncrypted adapter can read data and make sure it's not the same as oldEncrypted adapter
+      const { rotated, notRotated } = await unEncryptedAdapter.rotateEncryptionKey({
+        oldKey: oldEncryptionKey,
+      });
+      expect(rotated.length).toEqual(2);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[0];
+        }).length
+      ).toEqual(1);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[1];
+        }).length
+      ).toEqual(1);
+      expect(notRotated.length).toEqual(0);
+
+      // make sure the files can be decrypted by the new adapter
+      for (let i = 0; i < fileNames.length; i++) {
+        const result = await unEncryptedAdapter.getFileData(fileNames[i]);
+        expect(result instanceof Buffer).toBe(true);
+        expect(await getDataAsString(type, result)).toEqual(rawData[i]);
+        let decryptionError;
+        let encryptedData;
+        try {
+          encryptedData = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        } catch (err) {
+          decryptionError = err;
+        }
+        expect(decryptionError).toMatch('Error');
+        expect(encryptedData).toBeUndefined();
+
+        // clear files for next iteration
+        await oldEncryptedAdapter.deleteFile(fileNames[i]);
+        expectMissingFile(oldEncryptedAdapter, fileNames[i]);
+      }
+
     }
-    expect(decryptionError1).toMatch('Error');
-    expect(encryptedData1).toBeUndefined();
-    result = await unEncryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data2);
-    let decryptionError2;
-    let encryptedData2;
-    try {
-      encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
-    } catch (err) {
-      decryptionError2 = err;
-    }
-    expect(decryptionError2).toMatch('Error');
-    expect(encryptedData2).toBeUndefined();
   });
 
   it('should only encrypt specified fileNames', async () => {
@@ -215,67 +238,70 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const oldEncryptedAdapter = new GridFSBucketAdapter(databaseURI, {}, oldEncryptionKey);
     const encryptedAdapter = new GridFSBucketAdapter(databaseURI, {}, 'newKeyThatILove');
     const unEncryptedAdapter = new GridFSBucketAdapter(databaseURI);
-    const fileName1 = 'file1.txt';
-    const data1 = 'hello world';
-    const fileName2 = 'file2.txt';
-    const data2 = 'hello new world';
-    //Store unecrypted files
-    await oldEncryptedAdapter.createFile(fileName1, data1);
-    const oldEncryptedResult1 = await oldEncryptedAdapter.getFileData(fileName1);
-    expect(oldEncryptedResult1.toString('utf8')).toBe(data1);
-    await oldEncryptedAdapter.createFile(fileName2, data2);
-    const oldEncryptedResult2 = await oldEncryptedAdapter.getFileData(fileName2);
-    expect(oldEncryptedResult2.toString('utf8')).toBe(data2);
-    //Inject unecrypted file to see if causes an issue
-    const fileName3 = 'file3.txt';
-    const data3 = 'hello past world';
-    await unEncryptedAdapter.createFile(fileName3, data3, 'text/utf8');
-    //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
-      oldKey: oldEncryptionKey,
-      fileNames: [fileName1, fileName2],
-    });
-    expect(rotated.length).toEqual(2);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName1;
-      }).length
-    ).toEqual(1);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName2;
-      }).length
-    ).toEqual(1);
-    expect(notRotated.length).toEqual(0);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName3;
-      }).length
-    ).toEqual(0);
-    let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data1);
-    let decryptionError1;
-    let encryptedData1;
-    try {
-      encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
-    } catch (err) {
-      decryptionError1 = err;
+
+    for (const type of TYPES) {
+      const rawData = [`hello world ${type}`, `hello new world ${type}`];
+      const fileNames = ['file1.txt', 'file2.txt'];
+
+      //Store unecrypted files
+      for (let i = 0; i < fileNames.length; i++) {
+        await oldEncryptedAdapter.createFile(fileNames[i], createData(type, rawData[i]));
+        const oldEncryptedResult = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        expect(await getDataAsString(type, oldEncryptedResult)).toBe(rawData[i]);
+      }
+
+
+      //Inject unecrypted file to see if causes an issue
+      const fileName3 = 'file3.txt';
+      const data3 = 'hello past world';
+      await unEncryptedAdapter.createFile(fileName3, data3, 'text/utf8');
+
+      //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
+      const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
+        oldKey: oldEncryptionKey,
+        fileNames,
+      });
+      expect(rotated.length).toEqual(2);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[0];
+        }).length
+      ).toEqual(1);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[1];
+        }).length
+      ).toEqual(1);
+      expect(notRotated.length).toEqual(0);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileName3;
+        }).length
+      ).toEqual(0);
+
+      for (let i = 0; i < fileNames.length; i++) {
+        const result = await encryptedAdapter.getFileData(fileNames[i]);
+        expect(result instanceof Buffer).toBe(true);
+        expect(await getDataAsString(type, result)).toEqual(rawData[i]);
+        let decryptionError;
+        let encryptedData;
+        try {
+          encryptedData = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        } catch (err) {
+          decryptionError = err;
+        }
+        expect(decryptionError).toMatch('Error');
+        expect(encryptedData).toBeUndefined();
+
+        // clear files for next iteration
+        await oldEncryptedAdapter.deleteFile(fileNames[i]);
+        expectMissingFile(oldEncryptedAdapter, fileNames[i]);
+      }
+
+      // clear file3 for next iteration
+      await unEncryptedAdapter.deleteFile(fileName3);
+      expectMissingFile(unEncryptedAdapter, fileName3);
     }
-    expect(decryptionError1).toMatch('Error');
-    expect(encryptedData1).toBeUndefined();
-    result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data2);
-    let decryptionError2;
-    let encryptedData2;
-    try {
-      encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
-    } catch (err) {
-      decryptionError2 = err;
-    }
-    expect(decryptionError2).toMatch('Error');
-    expect(encryptedData2).toBeUndefined();
   });
 
   it("should return fileNames of those it can't encrypt with the new key", async () => {
@@ -283,66 +309,69 @@ describe_only_db('mongo')('GridFSBucket', () => {
     const oldEncryptedAdapter = new GridFSBucketAdapter(databaseURI, {}, oldEncryptionKey);
     const encryptedAdapter = new GridFSBucketAdapter(databaseURI, {}, 'newKeyThatILove');
     const unEncryptedAdapter = new GridFSBucketAdapter(databaseURI);
-    const fileName1 = 'file1.txt';
-    const data1 = 'hello world';
-    const fileName2 = 'file2.txt';
-    const data2 = 'hello new world';
-    //Store unecrypted files
-    await oldEncryptedAdapter.createFile(fileName1, data1);
-    const oldEncryptedResult1 = await oldEncryptedAdapter.getFileData(fileName1);
-    expect(oldEncryptedResult1.toString('utf8')).toBe(data1);
-    await oldEncryptedAdapter.createFile(fileName2, data2);
-    const oldEncryptedResult2 = await oldEncryptedAdapter.getFileData(fileName2);
-    expect(oldEncryptedResult2.toString('utf8')).toBe(data2);
-    //Inject unecrypted file to see if causes an issue
-    const fileName3 = 'file3.txt';
-    const data3 = 'hello past world';
-    await unEncryptedAdapter.createFile(fileName3, data3, 'text/utf8');
-    //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
-      oldKey: oldEncryptionKey,
-    });
-    expect(rotated.length).toEqual(2);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName1;
-      }).length
-    ).toEqual(1);
-    expect(
-      rotated.filter(function (value) {
-        return value === fileName2;
-      }).length
-    ).toEqual(1);
-    expect(notRotated.length).toEqual(1);
-    expect(
-      notRotated.filter(function (value) {
-        return value === fileName3;
-      }).length
-    ).toEqual(1);
-    let result = await encryptedAdapter.getFileData(fileName1);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data1);
-    let decryptionError1;
-    let encryptedData1;
-    try {
-      encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
-    } catch (err) {
-      decryptionError1 = err;
+
+    for (const type of TYPES) {
+      const rawData = [`hello world ${type}`, `hello new world ${type}`];
+      const fileNames = ['file1.txt', 'file2.txt'];
+
+      //Store unecrypted files
+      for (let i = 0; i < fileNames.length; i++) {
+        await oldEncryptedAdapter.createFile(fileNames[i], createData(type, rawData[i]));
+        const oldEncryptedResult = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        expect(await getDataAsString(type, oldEncryptedResult)).toBe(rawData[i]);
+      }
+
+      //Inject unecrypted file to see if causes an issue
+      const fileName3 = 'file3.txt';
+      const data3 = 'hello past world';
+      await unEncryptedAdapter.createFile(fileName3, data3, 'text/utf8');
+
+      //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
+      const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
+        oldKey: oldEncryptionKey,
+      });
+      expect(rotated.length).toEqual(2);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[0];
+        }).length
+      ).toEqual(1);
+      expect(
+        rotated.filter(function (value) {
+          return value === fileNames[1];
+        }).length
+      ).toEqual(1);
+      expect(notRotated.length).toEqual(1);
+      expect(
+        notRotated.filter(function (value) {
+          return value === fileName3;
+        }).length
+      ).toEqual(1);
+
+      // make sure the files can be decrypted by the new adapter
+      for (let i = 0; i < fileNames.length; i++) {
+        const result = await encryptedAdapter.getFileData(fileNames[i]);
+        expect(result instanceof Buffer).toBe(true);
+        expect(await getDataAsString(type, result)).toEqual(rawData[i]);
+        let decryptionError;
+        let encryptedData;
+        try {
+          encryptedData = await oldEncryptedAdapter.getFileData(fileNames[i]);
+        } catch (err) {
+          decryptionError = err;
+        }
+        expect(decryptionError).toMatch('Error');
+        expect(encryptedData).toBeUndefined();
+
+        // clear files for next iteration
+        await oldEncryptedAdapter.deleteFile(fileNames[i]);
+        expectMissingFile(oldEncryptedAdapter, fileNames[i]);
+
+      }
+      // clear file3 for next iteration
+      await unEncryptedAdapter.deleteFile(fileName3);
+      expectMissingFile(unEncryptedAdapter, fileName3);
     }
-    expect(decryptionError1).toMatch('Error');
-    expect(encryptedData1).toBeUndefined();
-    result = await encryptedAdapter.getFileData(fileName2);
-    expect(result instanceof Buffer).toBe(true);
-    expect(result.toString('utf-8')).toEqual(data2);
-    let decryptionError2;
-    let encryptedData2;
-    try {
-      encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
-    } catch (err) {
-      decryptionError2 = err;
-    }
-    expect(decryptionError2).toMatch('Error');
-    expect(encryptedData2).toBeUndefined();
   });
 
   it('should save metadata', async () => {
@@ -359,6 +388,20 @@ describe_only_db('mongo')('GridFSBucket', () => {
 
     // Empty json for file not found
     gfsMetadata = await gfsAdapter.getMetadata('myUnknownFile');
+    expect(gfsMetadata).toEqual({});
+
+    // now do the same for blob
+    const originalBlob = new Blob([originalString]);
+    await gfsAdapter.createFile('myFileNameBlob', originalBlob, null, {
+      metadata,
+    });
+    const gfsResultBlob = await gfsAdapter.getFileData('myFileNameBlob');
+    expect(await getDataAsString('blob', gfsResultBlob)).toBe(originalString);
+    gfsMetadata = await gfsAdapter.getMetadata('myFileNameBlob');
+    expect(gfsMetadata.metadata).toEqual(metadata);
+
+    // Empty json for file not found
+    gfsMetadata = await gfsAdapter.getMetadata('myUnknownFileBlob');
     expect(gfsMetadata).toEqual({});
   });
 
