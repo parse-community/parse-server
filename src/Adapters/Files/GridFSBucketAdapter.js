@@ -11,6 +11,10 @@ import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
 const crypto = require('crypto');
+const { Transform } = require('stream');
+const { Readable } = require('stream');
+const { ReadableStream: WebReadable } = require('stream/web');
+
 
 export class GridFSBucketAdapter extends FilesAdapter {
   _databaseURI: string;
@@ -68,41 +72,53 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
     });
+
+    const iv = crypto.randomBytes(16);
+    const cipher = this._encryptionKey !== null
+      ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv)
+      : null;
+
     try {
       // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
       if (typeof Blob !== 'undefined' && data instanceof Blob) {
-        const reader = data.stream().getReader();
-        const iv = crypto.randomBytes(16);
-        const cipher = this._encryptionKey !== null
-          ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv)
-          : null;
+        let readableStream = data.stream();
 
-        const processChunk = async ({ done, value }) => {
-          if (done) {
-            if (cipher) {
-              const finalChunk = Buffer.concat([cipher.final()]);
-              await stream.write(finalChunk);
-              await stream.write(iv);
-              await stream.write(cipher.getAuthTag());
+        // may come in as a web stream, so we need to convert it to a node strea,
+        if (readableStream instanceof WebReadable) {
+          readableStream = Readable.fromWeb(readableStream);
+        }
+
+        const createCipherTransform = (cipher) => {
+          return new Transform({
+            transform(chunk, encoding, callback) {
+              try {
+                const encryptedChunk = cipher.update(chunk);
+                callback(null, encryptedChunk);
+              } catch (err) {
+                callback(err);
+              }
+            },
+            // at the end we need to push the final cipher text, iv, and auth tag
+            flush(callback) {
+              try {
+                this.push(cipher.final());
+                this.push(iv);
+                this.push(cipher.getAuthTag());
+                callback();
+              } catch (err) {
+                callback(err);
+              }
             }
-            stream.end();
-            return;
-          }
-
-          if (cipher) {
-            value = cipher.update(value);
-          }
-
-          await stream.write(value);
-          reader.read().then(processChunk);
+          });
         };
-
-        reader.read().then(processChunk);
-
+        if (cipher) {
+          const cipherTransform = createCipherTransform(cipher);
+          await readableStream.pipe(cipherTransform).pipe(stream);
+        } else {
+          await readableStream.pipe(stream);
+        }
       } else {
-        if (this._encryptionKey !== null) {
-          const iv = crypto.randomBytes(16);
-          const cipher = crypto.createCipheriv(this._algorithm, this._encryptionKey, iv);
+        if (cipher) {
           const encryptedResult = Buffer.concat([
             cipher.update(data),
             cipher.final(),
