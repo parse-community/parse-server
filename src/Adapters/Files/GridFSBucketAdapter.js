@@ -11,10 +11,7 @@ import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
 const crypto = require('crypto');
-const { Transform } = require('stream');
-const { Readable } = require('stream');
-const { ReadableStream: WebReadable } = require('stream/web');
-
+const { Transform, Readable } = require('stream');
 
 export class GridFSBucketAdapter extends FilesAdapter {
   _databaseURI: string;
@@ -84,7 +81,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
         let readableStream = data.stream();
 
         // may come in as a web stream, so we need to convert it to a node strea,
-        if (readableStream instanceof WebReadable) {
+        if (readableStream instanceof ReadableStream) {
           readableStream = Readable.fromWeb(readableStream);
         }
 
