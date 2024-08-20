@@ -169,17 +169,17 @@ export class Config {
     }
   }
 
-  static validateAllowClientClassCreation(allowClientClassCreation) {
-    if (typeof allowClientClassCreation !== 'boolean') {
-      throw 'Parse Server option allowClientClassCreation must be a boolean.';
-    }
-  }
-
   static validateRequestKeywordDenylist(requestKeywordDenylist) {
     if (requestKeywordDenylist === undefined) {
       requestKeywordDenylist = requestKeywordDenylist.default;
     } else if (!Array.isArray(requestKeywordDenylist)) {
       throw 'Parse Server option requestKeywordDenylist must be an array.';
+    }
+  }
+
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 
