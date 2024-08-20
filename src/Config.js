@@ -7,6 +7,7 @@ import net from 'net';
 import AppCache from './cache';
 import DatabaseController from './Controllers/DatabaseController';
 import { logLevels as validLogLevels } from './Controllers/LoggerController';
+import { version } from '../package.json';
 import {
   AccountLockoutOptions,
   DatabaseOptions,
@@ -18,6 +19,7 @@ import {
   SchemaOptions,
   SecurityOptions,
 } from './Options/Definitions';
+import ParseServer from './cloud-code/Parse.Server';
 import Deprecator from './Deprecator/Deprecator';
 
 function removeTrailingSlash(str) {
@@ -136,6 +138,7 @@ export class Config {
     this.validateLogLevels(logLevels);
     this.validateDatabaseOptions(databaseOptions);
     this.validateCustomPages(customPages);
+    this.validateAllowClientClassCreation(allowClientClassCreation);
   }
 
   static validateCustomPages(customPages) {
@@ -143,6 +146,12 @@ export class Config {
 
     if (Object.prototype.toString.call(customPages) !== '[object Object]') {
       throw Error('Parse Server option customPages must be an object.');
+    }
+  }
+
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 
