@@ -50,7 +50,7 @@ class CheckGroupServerConfig extends CheckGroup {
       new Check({
         title: 'Client class creation disabled',
         warning:
-          'Attackers may create new classes without restriction and flood the database.',
+          'Attackers are allowed to create new classes without restriction and flood the database.',
         solution: "Change Parse Server configuration to 'allowClientClassCreation: false'.",
         check: () => {
           if (config.allowClientClassCreation || config.allowClientClassCreation == null) {
