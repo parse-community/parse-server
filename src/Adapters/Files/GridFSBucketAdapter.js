@@ -72,8 +72,11 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
     return new Promise((resolve, reject) => {
       try {
-        const iv = crypto.randomBytes(16);
-        const cipher = this._encryptionKey !== null
+        const iv = this._encryptionKey !== null
+          ? crypto.randomBytes(16)
+          : null;
+
+        const cipher = this._encryptionKey !== null && iv
           ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv)
           : null;
 
@@ -86,7 +89,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
             readableStream = Readable.fromWeb(readableStream);
           }
 
-          if (cipher) {
+          if (cipher && iv) {
             // we need to stream the data through the cipher
             const cipherTransform = new Transform({
               transform(chunk, encoding, callback) {
@@ -121,7 +124,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
               .on('error', reject)
           }
         } else {
-          if (cipher) {
+          if (cipher && iv) {
             const encryptedResult = Buffer.concat([
               cipher.update(data),
               cipher.final(),
