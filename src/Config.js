@@ -177,12 +177,6 @@ export class Config {
     }
   }
 
-  static validateAllowClientClassCreation(allowClientClassCreation) {
-    if (typeof allowClientClassCreation !== 'boolean') {
-      throw 'Parse Server option allowClientClassCreation must be a boolean.';
-    }
-  }
-
   static validateEnforcePrivateUsers(enforcePrivateUsers) {
     if (typeof enforcePrivateUsers !== 'boolean') {
       throw 'Parse Server option enforcePrivateUsers must be a boolean.';
@@ -192,6 +186,12 @@ export class Config {
   static validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken) {
     if (typeof allowExpiredAuthDataToken !== 'boolean') {
       throw 'Parse Server option allowExpiredAuthDataToken must be a boolean.';
+    }
+  }
+
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 
