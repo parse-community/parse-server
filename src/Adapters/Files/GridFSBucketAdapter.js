@@ -11,7 +11,6 @@ import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
 const crypto = require('crypto');
-const util = require('util');
 const { Transform, Readable } = require('stream');
 
 export class GridFSBucketAdapter extends FilesAdapter {
