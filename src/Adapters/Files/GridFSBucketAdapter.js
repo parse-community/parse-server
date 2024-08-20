@@ -81,7 +81,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
         if (typeof Blob !== 'undefined' && data instanceof Blob) {
           let readableStream = data.stream();
 
-          // may come in as a web stream, so we need to convert it to a node strea,
+          // may come in as a web stream, so we need to convert it to a node stream
           if (readableStream instanceof ReadableStream) {
             readableStream = Readable.fromWeb(readableStream);
           }
