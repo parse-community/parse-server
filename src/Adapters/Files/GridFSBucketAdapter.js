@@ -11,6 +11,7 @@ import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
 const crypto = require('crypto');
+const util = require('util');
 const { Transform, Readable } = require('stream');
 
 export class GridFSBucketAdapter extends FilesAdapter {
@@ -70,73 +71,77 @@ export class GridFSBucketAdapter extends FilesAdapter {
       metadata: options.metadata,
     });
 
-    const iv = crypto.randomBytes(16);
-    const cipher = this._encryptionKey !== null
-      ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv)
-      : null;
-
-    try {
-      // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
-      if (typeof Blob !== 'undefined' && data instanceof Blob) {
-        let readableStream = data.stream();
-
-        // may come in as a web stream, so we need to convert it to a node strea,
-        if (readableStream instanceof ReadableStream) {
-          readableStream = Readable.fromWeb(readableStream);
-        }
-
-        const createCipherTransform = (cipher) => {
-          return new Transform({
-            transform(chunk, encoding, callback) {
-              try {
-                const encryptedChunk = cipher.update(chunk);
-                callback(null, encryptedChunk);
-              } catch (err) {
-                callback(err);
-              }
-            },
-            // at the end we need to push the final cipher text, iv, and auth tag
-            flush(callback) {
-              try {
-                this.push(cipher.final());
-                this.push(iv);
-                this.push(cipher.getAuthTag());
-                callback();
-              } catch (err) {
-                callback(err);
-              }
-            }
-          });
-        };
-        if (cipher) {
-          const cipherTransform = createCipherTransform(cipher);
-          await readableStream.pipe(cipherTransform).pipe(stream);
-        } else {
-          await readableStream.pipe(stream);
-        }
-      } else {
-        if (cipher) {
-          const encryptedResult = Buffer.concat([
-            cipher.update(data),
-            cipher.final(),
-            iv,
-            cipher.getAuthTag(),
-          ]);
-          await stream.write(encryptedResult);
-
-        } else {
-          await stream.write(data);
-        }
-        stream.end();
-      }
-    } catch (err) {
-      return new Promise((resolve, reject) => {
-        return reject(err);
-      });
-    }
     return new Promise((resolve, reject) => {
-      stream.on('finish', resolve);
-      stream.on('error', reject);
+      try {
+        const iv = crypto.randomBytes(16);
+        const cipher = this._encryptionKey !== null
+          ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv)
+          : null;
+
+        // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
+        if (typeof Blob !== 'undefined' && data instanceof Blob) {
+          let readableStream = data.stream();
+
+          // may come in as a web stream, so we need to convert it to a node strea,
+          if (readableStream instanceof ReadableStream) {
+            readableStream = Readable.fromWeb(readableStream);
+          }
+
+          if (cipher) {
+            // we need to stream the data through the cipher
+            const cipherTransform = new Transform({
+              transform(chunk, encoding, callback) {
+                try {
+                  const encryptedChunk = cipher.update(chunk);
+                  callback(null, encryptedChunk);
+                } catch (err) {
+                  callback(err);
+                }
+              },
+              // at the end we need to push the final cipher text, iv, and auth tag
+              flush(callback) {
+                try {
+                  this.push(cipher.final());
+                  this.push(iv);
+                  this.push(cipher.getAuthTag());
+                  callback();
+                } catch (err) {
+                  callback(err);
+                }
+              }
+            });
+            // pipe the stream through the cipher and then to the gridfs stream
+            readableStream
+              .pipe(cipherTransform)
+              .on('error', reject)
+              .pipe(stream)
+              .on('error', reject);
+          } else {
+            // if we don't have a cipher, we can just pipe the stream to the gridfs stream
+            readableStream.pipe(stream)
+              .on('error', reject)
+          }
+        } else {
+          if (cipher) {
+            const encryptedResult = Buffer.concat([
+              cipher.update(data),
+              cipher.final(),
+              iv,
+              cipher.getAuthTag(),
+            ]);
+            stream.write(encryptedResult);
+
+          } else {
+            stream.write(data);
+          }
+          stream.end();
+        }
+
+        stream.on('finish', resolve);
+        stream.on('error', reject);
+      } catch (e) {
+        reject(e);
+      }
     });
   }
 

@@ -484,6 +484,84 @@ describe_only_db('mongo')('GridFSBucket', () => {
     await expectMissingFile(gfsAdapter, 'myFileName');
   });
 
+
+  it('should reject if there is an error in cipher update', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI, {}, 'encryptionKey');
+    const error = new Error('Cipher error');
+    const crypto = require('crypto');
+
+    // Mock the createCipheriv method to return a mocked cipher object
+    spyOn(crypto, 'createCipheriv').and.returnValue({
+      // eslint-disable-next-line no-unused-vars
+      update: (_chunk) => {
+        throw error;
+      },
+      final: () => {
+        return Buffer.from('encryptedData');
+      },
+    });
+
+    for (const type of TYPES) {
+      try {
+        await gfsAdapter.createFile(`testfile-${type}.txt`,  createData(type, 'testdata'));
+        fail('Expected error not thrown');
+      } catch (err) {
+        expect(err).toEqual(jasmine.any(Error));
+        expect(err.message).toBe(error.message);
+      }
+    }
+    // Restore the original method
+    crypto.createCipheriv.and.callThrough();
+  });
+
+
+  it('should reject if there is an error in cipher final', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI, {}, 'encryptionKey');
+    const error = new Error('Cipher error');
+    const crypto = require('crypto');
+
+    // Mock the createCipheriv method to return a mocked cipher object
+    spyOn(crypto, 'createCipheriv').and.returnValue({
+      // eslint-disable-next-line no-unused-vars
+      update: (_chunk) => {
+        return Buffer.from('encryptedData');
+      },
+      final: () => {
+        throw error;
+      },
+    });
+
+    for (const type of TYPES) {
+      try {
+        await gfsAdapter.createFile(`testfile-${type}.txt`,  createData(type, 'testdata'));
+        fail('Expected error not thrown');
+      } catch (err) {
+        expect(err).toEqual(jasmine.any(Error));
+        expect(err.message).toBe(error.message);
+      }
+    }
+    // Restore the original method
+    crypto.createCipheriv.and.callThrough();
+  });
+
+  it ('should handle error in createFile when _getBucket is called', async () => {
+    const error = new Error('Error in createFile');
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    spyOn(gfsAdapter, '_getBucket').and.throwError(error);
+
+    for (const type of TYPES) {
+      try {
+        await gfsAdapter.createFile(`testfile-${type}.txt`, createData(type, 'testdata'));
+        fail('Expected error not thrown');
+      } catch (err) {
+        expect(err).toEqual(jasmine.any(Error));
+        expect(err.message).toBe(error.message);
+      }
+    }
+    // Restore the original method
+    gfsAdapter._getBucket.and.callThrough();
+  });
+
   it('handleShutdown, close connection', async () => {
     const databaseURI = 'mongodb://localhost:27017/parse';
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
