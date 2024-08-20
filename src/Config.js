@@ -149,12 +149,6 @@ export class Config {
     }
   }
 
-  static validateAllowClientClassCreation(allowClientClassCreation) {
-    if (typeof allowClientClassCreation !== 'boolean') {
-      throw 'Parse Server option allowClientClassCreation must be a boolean.';
-    }
-  }
-
   static validateControllers({
     verifyUserEmails,
     userController,
@@ -172,6 +166,12 @@ export class Config {
         emailVerifyTokenValidityDuration,
         emailVerifyTokenReuseIfValid,
       });
+    }
+  }
+
+  static validateAllowClientClassCreation(allowClientClassCreation) {
+    if (typeof allowClientClassCreation !== 'boolean') {
+      throw 'Parse Server option allowClientClassCreation must be a boolean.';
     }
   }
 
