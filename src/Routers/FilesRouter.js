@@ -287,7 +287,7 @@ export class FilesRouter {
       const { filename } = req.params;
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
-      file._url = filesController.adapter.getFileLocation(req.config, filename);
+      file._url = await filesController.adapter.getFileLocation(req.config, filename);
       const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
         triggers.Types.beforeDelete,
