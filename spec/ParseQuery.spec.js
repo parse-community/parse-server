@@ -5275,4 +5275,29 @@ describe('Parse.Query testing', () => {
     // Validate
     expect(result.executionStats).not.toBeUndefined();
   });
+
+  it('Query fails when wrapped within eachBatch and direct access is set to true', async () => {
+    await reconfigureServer({
+      directAccess: true,
+    });
+
+    const user = new Parse.User();
+    user.set('username', 'foo');
+    user.set('password', 'bar');
+    await user.save();
+
+    const score = new Parse.Object('Score');
+    score.set('player', user);
+    score.set('score', 1);
+    await score.save();
+
+    await new Parse.Query('_User')
+      .equalTo('objectId', user.id)
+      .eachBatch(async ([user]) => {
+        const score = await new Parse.Query('Score')
+          .equalTo('player', user)
+          .distinct('score', { useMasterKey: true });
+        expect(score).toEqual([1]);
+      }, { useMasterKey: true });
+  });
 });
