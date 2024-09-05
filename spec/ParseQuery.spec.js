@@ -6,6 +6,9 @@
 
 const Parse = require('parse/node');
 const request = require('../lib/request');
+const ParseServerRESTController = require('../lib/ParseServerRESTController')
+  .ParseServerRESTController;
+const ParseServer = require('../lib/ParseServer').default;
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -5280,6 +5283,10 @@ describe('Parse.Query testing', () => {
     await reconfigureServer({
       directAccess: true,
     });
+
+    Parse.CoreManager.setRESTController(
+      ParseServerRESTController(Parse.applicationId, ParseServer.promiseRouter({ appId: Parse.applicationId }))
+    );
 
     const user = new Parse.User();
     user.set('username', 'foo');
