@@ -46,7 +46,7 @@
     "lodash": "4.17.21",
     "lru-cache": "10.2.2",
     "mime": "3.0.0",
-    "mongodb": "5.9.0",
+    "mongodb": "6.0.0",
     "mustache": "4.2.0",
     "otpauth": "9.3.1",
     "parse": "5.3.0",
