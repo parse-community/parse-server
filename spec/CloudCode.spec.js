@@ -1164,8 +1164,8 @@ describe('Cloud Code', () => {
   });
 
   it('test save triggers get user roles', async () => {
-    let beforeSaveFlag = false,
-      afterSaveFlag = false;
+    let beforeSaveFlag = false;
+    let afterSaveFlag = false;
     Parse.Cloud.beforeSave('SaveTriggerUserRoles', async function (req) {
       expect(await req.getRoles()).toEqual(['TestRole']);
       beforeSaveFlag = true;
