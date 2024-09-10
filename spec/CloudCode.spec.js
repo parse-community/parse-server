@@ -1192,8 +1192,8 @@ describe('Cloud Code', () => {
   });
 
   it('should not have user roles for anonymous calls', async () => {
-    let beforeSaveFlag = false,
-      afterSaveFlag = false;
+    let beforeSaveFlag = false;
+    let afterSaveFlag = false;
     Parse.Cloud.beforeSave('SaveTriggerUserRoles', async function (req) {
       expect(req.getRoles).toBeUndefined();
       beforeSaveFlag = true;
