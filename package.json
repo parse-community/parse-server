@@ -50,7 +50,7 @@
     "mustache": "4.2.0",
     "otpauth": "9.3.1",
     "parse": "5.3.0",
-    "path-to-regexp": "6.2.1",
+    "path-to-regexp": "7.2.0",
     "pg-monitor": "2.1.0",
     "pg-promise": "11.9.1",
     "pluralize": "8.0.0",
