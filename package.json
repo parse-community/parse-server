@@ -27,7 +27,7 @@
     "@parse/fs-files-adapter": "3.0.0",
     "@parse/push-adapter": "6.4.1",
     "bcryptjs": "2.4.3",
-    "body-parser": "1.20.2",
+    "body-parser": "1.20.3",
     "commander": "12.1.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
