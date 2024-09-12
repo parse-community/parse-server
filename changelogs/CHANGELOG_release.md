@@ -1,3 +1,10 @@
+## [6.5.8](https://github.com/parse-community/parse-server/compare/6.5.7...6.5.8) (2024-09-12)
+
+
+### Bug Fixes
+
+* Various vulnerabilities related to cross-site scripting ([#9310](https://github.com/parse-community/parse-server/issues/9310)) ([d5290d4](https://github.com/parse-community/parse-server/commit/d5290d46e5ff9237970ae1ac2d2df4051cbf53e5))
+
 ## [6.5.7](https://github.com/parse-community/parse-server/compare/6.5.6...6.5.7) (2024-06-30)
 
 
