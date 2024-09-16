@@ -431,7 +431,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(emailSpy).toHaveBeenCalledTimes(0);
   });
 
-  it('provides full user object in email verification function on email and username change', async () => {
+  it_id('d98babc1-feb8-4b5e-916c-57dc0a6ed9fb')(it)('provides full user object in email verification function on email and username change', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -679,7 +679,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', done => {
+  it_id('b6c87f35-d887-477d-bc86-a9217a424f53')(it)('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', done => {
     const user = new Parse.User();
     let userBeforeEmailReset;
 
