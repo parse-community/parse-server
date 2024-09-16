@@ -1,3 +1,10 @@
+# [7.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.6...7.3.0-alpha.7) (2024-08-27)
+
+
+### Features
+
+* Add support for asynchronous invocation of `FilesAdapter.getFileLocation` ([#9271](https://github.com/parse-community/parse-server/issues/9271)) ([1a2da40](https://github.com/parse-community/parse-server/commit/1a2da4055abe831b3017172fb75e16d7a8093873))
+
 # [7.3.0-alpha.6](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.5...7.3.0-alpha.6) (2024-07-20)
 
 
