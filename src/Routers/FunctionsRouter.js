@@ -8,6 +8,7 @@ import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../midd
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
+import Utils from '../Utils';
 
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
@@ -134,7 +135,7 @@ export class FunctionsRouter extends PromiseRouter {
       getUserRoles:
         req.auth && req.auth.user
           ? async () => {
-              return (await req.auth.getUserRoles()).map(r => r.substr('role:'.length));
+              return (await req.auth.getUserRoles()).map(Utils.stripACLRolePrefix);
             }
           : undefined,
       installationId: req.info.installationId,

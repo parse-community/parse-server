@@ -399,6 +399,18 @@ class Utils {
     }
     return obj;
   }
+
+  /**
+   * Strips the "role:" prefix from the role name as it appears in the ACL.
+   *
+   * @param {String} entry The role name prefixed with the string "role:".
+   * @returns {String} The role name, without the "role": prefix.
+   * @example
+   * stripACLRolePrefix("role:myrole") // Returns "myrole"
+   */
+  static stripACLRolePrefix(entry) {
+    return entry.substr(5 /* 'role:'.length */);
+  }
 }
 
 module.exports = Utils;
