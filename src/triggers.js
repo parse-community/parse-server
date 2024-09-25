@@ -292,7 +292,7 @@ export function getRequestObject(
   }
   if (auth.user) {
     request['user'] = auth.user;
-    request['getRoles'] = async () => {
+    request['getUserRoles'] = async () => {
       return (await auth.getUserRoles()).map(r => r.substr('role:'.length));
     };
   }

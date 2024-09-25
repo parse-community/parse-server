@@ -131,11 +131,11 @@ export class FunctionsRouter extends PromiseRouter {
       params: params,
       master: req.auth && req.auth.isMaster,
       user: req.auth && req.auth.user,
-      getRoles:
+      getUserRoles:
         req.auth && req.auth.user
           ? async () => {
-            return (await req.auth.getUserRoles()).map(r => r.substr('role:'.length));
-          }
+              return (await req.auth.getUserRoles()).map(r => r.substr('role:'.length));
+            }
           : undefined,
       installationId: req.info.installationId,
       log: req.config.loggerController,

@@ -1167,12 +1167,12 @@ describe('Cloud Code', () => {
     let beforeSaveFlag = false;
     let afterSaveFlag = false;
     Parse.Cloud.beforeSave('SaveTriggerUserRoles', async req => {
-      expect(await req.getRoles()).toEqual(['TestRole']);
+      expect(await req.getUserRoles()).toEqual(['TestRole']);
       beforeSaveFlag = true;
     });
 
     Parse.Cloud.afterSave('SaveTriggerUserRoles', async req => {
-      expect(await req.getRoles()).toEqual(['TestRole']);
+      expect(await req.getUserRoles()).toEqual(['TestRole']);
       afterSaveFlag = true;
     });
 
@@ -1195,12 +1195,12 @@ describe('Cloud Code', () => {
     let beforeSaveFlag = false;
     let afterSaveFlag = false;
     Parse.Cloud.beforeSave('SaveTriggerUserRoles', async req => {
-      expect(req.getRoles).toBeUndefined();
+      expect(req.getUserRoles).toBeUndefined();
       beforeSaveFlag = true;
     });
 
     Parse.Cloud.afterSave('SaveTriggerUserRoles', async req => {
-      expect(req.getRoles).toBeUndefined();
+      expect(req.getUserRoles).toBeUndefined();
       afterSaveFlag = true;
     });
 
@@ -2065,7 +2065,7 @@ describe('cloud functions', () => {
   it('should have user roles', async () => {
     let flag = false;
     Parse.Cloud.define('myFunction', async req => {
-      expect(await req.getRoles()).toEqual(['TestRole']);
+      expect(await req.getUserRoles()).toEqual(['TestRole']);
       flag = true;
     });
 
@@ -2085,7 +2085,7 @@ describe('cloud functions', () => {
   it('should not have user roles for anonymous calls', async () => {
     let flag = false;
     Parse.Cloud.define('myFunction', async req => {
-      expect(req.getRoles).toBeUndefined();
+      expect(req.getUserRoles).toBeUndefined();
       flag = true;
     });
 
