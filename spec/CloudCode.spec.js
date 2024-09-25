@@ -1167,12 +1167,12 @@ describe('Cloud Code', () => {
     let beforeSaveFlag = false;
     let afterSaveFlag = false;
     Parse.Cloud.beforeSave('SaveTriggerUserRoles', async req => {
-      expect(await req.getUserRoles()).toEqual(['TestRole']);
+      expect(new Set(await req.getUserRoles())).toEqual(new Set(['TestRole1', 'TestRole2']));
       beforeSaveFlag = true;
     });
 
     Parse.Cloud.afterSave('SaveTriggerUserRoles', async req => {
-      expect(await req.getUserRoles()).toEqual(['TestRole']);
+      expect(new Set(await req.getUserRoles())).toEqual(new Set(['TestRole1', 'TestRole2']));
       afterSaveFlag = true;
     });
 
@@ -1181,9 +1181,12 @@ describe('Cloud Code', () => {
     user.set('email', 'asdf@example.com');
     user.set('username', 'zxcv');
     await user.signUp();
-    const role = new Parse.Role('TestRole', new Parse.ACL({ '*': { read: true, write: true } }));
-    role.getUsers().add(user);
-    await role.save();
+    const role1 = new Parse.Role('TestRole1', new Parse.ACL({ '*': { read: true, write: true } }));
+    const role2 = new Parse.Role('TestRole2', new Parse.ACL({ '*': { read: true, write: true } }));
+    await role1.save();
+    role2.getRoles().add(role1);
+    role1.getUsers().add(user);
+    await Parse.Object.saveAll([role1, role2]);
 
     const obj = new Parse.Object('SaveTriggerUserRoles');
     await obj.save();
@@ -2065,7 +2068,7 @@ describe('cloud functions', () => {
   it('should have user roles', async () => {
     let flag = false;
     Parse.Cloud.define('myFunction', async req => {
-      expect(await req.getUserRoles()).toEqual(['TestRole']);
+      expect(new Set(await req.getUserRoles())).toEqual(new Set(['TestRole1', 'TestRole2']));
       flag = true;
     });
 
@@ -2074,9 +2077,12 @@ describe('cloud functions', () => {
     user.set('email', 'asdf@example.com');
     user.set('username', 'zxcv');
     await user.signUp();
-    const role = new Parse.Role('TestRole', new Parse.ACL({ '*': { read: true, write: true } }));
-    role.getUsers().add(user);
-    await role.save();
+    const role1 = new Parse.Role('TestRole1', new Parse.ACL({ '*': { read: true, write: true } }));
+    const role2 = new Parse.Role('TestRole2', new Parse.ACL({ '*': { read: true, write: true } }));
+    await role1.save();
+    role2.getRoles().add(role1);
+    role1.getUsers().add(user);
+    await Parse.Object.saveAll([role1, role2]);
 
     await Parse.Cloud.run('myFunction', { sessionToken: user.getSessionToken() });
     expect(flag).toBeTrue();
