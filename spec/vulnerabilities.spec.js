@@ -1,6 +1,17 @@
 const request = require('../lib/request');
 
 describe('Vulnerabilities', () => {
+  describe('(GHSA-8xq9-g7ch-35hg) ACL user id/role name confusion', () => {
+    beforeAll(async () => {
+      await reconfigureServer({ allowCustomObjectId: true });
+      Parse.allowCustomObjectId = true;
+    });
+    it('denies user creation with malicious object id', async () => {
+      await expectAsync(
+        new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
+      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid user id.'));
+    });
+  });
   describe('Object prototype pollution', () => {
     it('denies object prototype to be polluted with keyword "constructor"', async () => {
       const headers = {

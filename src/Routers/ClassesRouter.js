@@ -106,6 +106,13 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleCreate(req) {
+    if (
+      this.className(req) === '_User' &&
+      typeof req.body?.objectId === 'string' &&
+      req.body.objectId.startsWith('role:')
+    ) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid user id.');
+    }
     return rest.create(
       req.config,
       req.auth,
