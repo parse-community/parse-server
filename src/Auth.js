@@ -180,6 +180,9 @@ const getAuthForSessionToken = async function ({
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
+  if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid user id.');
+  }
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;

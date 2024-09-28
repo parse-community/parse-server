@@ -11,6 +11,30 @@ describe('Vulnerabilities', () => {
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
       ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid user id.'));
     });
+    describe('existing sessions for users with poisoned ids', () => {
+      /** @type {Parse.User} */
+      let poisonedUser;
+      /** @type {Parse.User} */
+      let innocentUser;
+      beforeAll(async () => {
+        const parseServer = await global.reconfigureServer();
+        const databaseController = parseServer.config.databaseController;
+        [poisonedUser, innocentUser] = await Promise.all(
+          ['role:abc', 'abc'].map(async id => {
+            // Create the users directly on the db to bypass the user creation check
+            await databaseController.create('_User', { objectId: id });
+            // Use the master key to create a session for them to bypass the session check
+            return Parse.User.loginAs(id);
+          })
+        );
+      });
+      it('are refused', async () => {
+        await expectAsync(
+          new Parse.Query(Parse.User).find({ sessionToken: poisonedUser.getSessionToken() })
+        ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid user id.'));
+        await new Parse.Query(Parse.User).find({ sessionToken: innocentUser.getSessionToken() });
+      });
+    });
   });
   describe('Object prototype pollution', () => {
     it('denies object prototype to be polluted with keyword "constructor"', async () => {
