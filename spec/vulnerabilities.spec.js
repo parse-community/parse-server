@@ -7,7 +7,12 @@ describe('Vulnerabilities', () => {
       Parse.allowCustomObjectId = true;
     });
 
-    it('denies user creation with malicious object ID', async () => {
+    afterAll(async () => {
+      await reconfigureServer({ allowCustomObjectId: false });
+      Parse.allowCustomObjectId = false;
+    });
+
+    it('denies user creation with poisoned object ID', async () => {
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
       ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
@@ -18,6 +23,7 @@ describe('Vulnerabilities', () => {
       let poisonedUser;
       /** @type {Parse.User} */
       let innocentUser;
+
       beforeAll(async () => {
         const parseServer = await global.reconfigureServer();
         const databaseController = parseServer.config.databaseController;
@@ -34,13 +40,12 @@ describe('Vulnerabilities', () => {
       it('refuses session token of user with poisoned object ID', async () => {
         await expectAsync(
           new Parse.Query(Parse.User).find({ sessionToken: poisonedUser.getSessionToken() })
-        ).toBeRejectedWith(
-          new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.')
-        );
+        ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.'));
         await new Parse.Query(Parse.User).find({ sessionToken: innocentUser.getSessionToken() });
       });
     });
   });
+
   describe('Object prototype pollution', () => {
     it('denies object prototype to be polluted with keyword "constructor"', async () => {
       const headers = {
