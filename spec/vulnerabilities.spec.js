@@ -30,7 +30,7 @@ describe('Vulnerabilities', () => {
         [poisonedUser, innocentUser] = await Promise.all(
           ['role:abc', 'abc'].map(async id => {
             // Create the users directly on the db to bypass the user creation check
-            await databaseController.create('_User', { objectId: id, username: id, password: '1' });
+            await databaseController.create('_User', { objectId: id });
             // Use the master key to create a session for them to bypass the session check
             return Parse.User.loginAs(id);
           })
