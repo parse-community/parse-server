@@ -1,16 +1,18 @@
 const request = require('../lib/request');
 
 describe('Vulnerabilities', () => {
-  describe('(GHSA-8xq9-g7ch-35hg) ACL user id/role name confusion', () => {
+  describe('(GHSA-8xq9-g7ch-35hg) Custom object ID allows to acquire role privilege', () => {
     beforeAll(async () => {
       await reconfigureServer({ allowCustomObjectId: true });
       Parse.allowCustomObjectId = true;
     });
+
     it('denies user creation with malicious object id', async () => {
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
       ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid user id.'));
     });
+
     describe('existing sessions for users with poisoned ids', () => {
       /** @type {Parse.User} */
       let poisonedUser;
@@ -28,6 +30,7 @@ describe('Vulnerabilities', () => {
           })
         );
       });
+
       it('are refused', async () => {
         await expectAsync(
           new Parse.Query(Parse.User).find({ sessionToken: poisonedUser.getSessionToken() })
