@@ -7,7 +7,7 @@ describe('Vulnerabilities', () => {
       Parse.allowCustomObjectId = true;
     });
 
-    it('denies user creation with malicious object ID', async () => {
+    it('denies user creation with poisoned object ID', async () => {
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
       ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
@@ -18,7 +18,8 @@ describe('Vulnerabilities', () => {
       let poisonedUser;
       /** @type {Parse.User} */
       let innocentUser;
-      beforeAll(async () => {
+
+      beforeEach(async () => {
         const parseServer = await global.reconfigureServer();
         const databaseController = parseServer.config.databaseController;
         [poisonedUser, innocentUser] = await Promise.all(
