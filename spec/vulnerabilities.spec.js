@@ -1,6 +1,51 @@
 const request = require('../lib/request');
 
 describe('Vulnerabilities', () => {
+  describe('(GHSA-8xq9-g7ch-35hg) Custom object ID allows to acquire role privilege', () => {
+    beforeAll(async () => {
+      await reconfigureServer({ allowCustomObjectId: true });
+      Parse.allowCustomObjectId = true;
+    });
+
+    afterAll(async () => {
+      await reconfigureServer({ allowCustomObjectId: false });
+      Parse.allowCustomObjectId = false;
+    });
+
+    it('denies user creation with poisoned object ID', async () => {
+      await expectAsync(
+        new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
+      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
+    });
+
+    describe('existing sessions for users with poisoned object ID', () => {
+      /** @type {Parse.User} */
+      let poisonedUser;
+      /** @type {Parse.User} */
+      let innocentUser;
+
+      beforeAll(async () => {
+        const parseServer = await global.reconfigureServer();
+        const databaseController = parseServer.config.databaseController;
+        [poisonedUser, innocentUser] = await Promise.all(
+          ['role:abc', 'abc'].map(async id => {
+            // Create the users directly on the db to bypass the user creation check
+            await databaseController.create('_User', { objectId: id });
+            // Use the master key to create a session for them to bypass the session check
+            return Parse.User.loginAs(id);
+          })
+        );
+      });
+
+      it('refuses session token of user with poisoned object ID', async () => {
+        await expectAsync(
+          new Parse.Query(Parse.User).find({ sessionToken: poisonedUser.getSessionToken() })
+        ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.'));
+        await new Parse.Query(Parse.User).find({ sessionToken: innocentUser.getSessionToken() });
+      });
+    });
+  });
+
   describe('Object prototype pollution', () => {
     it('denies object prototype to be polluted with keyword "constructor"', async () => {
       const headers = {
