@@ -1,52 +1,88 @@
 const Config = require('../lib/Config');
-const ParseServer = require('../lib/index').ParseServer;
 
 describe('Config Keys', () => {
-  const tests = [
-    {
-      name: 'Invalid Root Keys',
-      options: { unknow: 'val', masterKeyIPs: '' },
-      error: 'unknow, masterKeyIPs',
-    },
-    { name: 'Invalid Schema Keys', options: { schema: { Strict: 'val' } }, error: 'schema.Strict' },
-    {
-      name: 'Invalid Pages Keys',
-      options: { pages: { customUrls: { EmailVerificationSendFail: 'val' } } },
-      error: 'pages.customUrls.EmailVerificationSendFail',
-    },
-    {
-      name: 'Invalid LiveQueryServerOptions Keys',
-      options: { liveQueryServerOptions: { MasterKey: 'value' } },
-      error: 'liveQueryServerOptions.MasterKey',
-    },
-    {
-      name: 'Invalid RateLimit Keys - Array Item',
-      options: { rateLimit: [{ RequestPath: '' }, { RequestTimeWindow: '' }] },
-      error: 'rateLimit[0].RequestPath, rateLimit[1].RequestTimeWindow',
-    },
-  ];
+  const invalidKeyErrorMessage = 'Invalid key\\(s\\) found in Parse Server configuration';
+  let loggerErrorSpy;
 
-  tests.forEach(test => {
-    it(test.name, async () => {
-      const logger = require('../lib/logger').logger;
-      spyOn(logger, 'error').and.callThrough();
-      spyOn(Config, 'validateOptions').and.callFake(() => {});
-
-      new ParseServer({
-        ...defaultConfiguration,
-        ...test.options,
-      });
-      expect(logger.error).toHaveBeenCalledWith(`Invalid Option Keys Found: ${test.error}`);
-    });
+  beforeEach(async () => {
+    const logger = require('../lib/logger').logger;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    spyOn(Config, 'validateOptions').and.callFake(() => {});
   });
 
-  it('should run fine', async () => {
-    try {
-      await reconfigureServer({
-        ...defaultConfiguration,
-      });
-    } catch (err) {
-      fail('Should run without error');
-    }
+  it('recognizes invalid keys in root', async () => {
+    await expectAsync(reconfigureServer({
+      ...defaultConfiguration,
+      invalidKey: 1,
+    })).toBeResolved();
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
+    expect(error).toMatch(invalidKeyErrorMessage);
+  });
+
+  it('recognizes invalid keys in pages.customUrls', async () => {
+    await expectAsync(reconfigureServer({
+      ...defaultConfiguration,
+      pages: {
+        customUrls: {
+          invalidKey: 1,
+          EmailVerificationSendFail: 1,
+        }
+      }
+    })).toBeResolved();
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
+    expect(error).toMatch(invalidKeyErrorMessage);
+    expect(error).toMatch(`invalidKey`);
+    expect(error).toMatch(`EmailVerificationSendFail`);
+  });
+
+  it('recognizes invalid keys in liveQueryServerOptions', async () => {
+    await expectAsync(reconfigureServer({
+      ...defaultConfiguration,
+      liveQueryServerOptions: {
+        invalidKey: 1,
+        MasterKey: 1,
+      }
+    })).toBeResolved();
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
+    expect(error).toMatch(invalidKeyErrorMessage);
+    expect(error).toMatch(`MasterKey`);
+  });
+
+  it('recognizes invalid keys in rateLimit', async () => {
+    await expectAsync(reconfigureServer({
+      ...defaultConfiguration,
+      rateLimit: [
+        { invalidKey: 1 },
+        { RequestPath: 1 },
+        { RequestTimeWindow: 1 },
+      ]
+    })).toBeRejected();
+    const error = loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '');
+    expect(error).toMatch(invalidKeyErrorMessage);
+    expect(error).toMatch('rateLimit\\[0\\]\\.invalidKey');
+    expect(error).toMatch('rateLimit\\[1\\]\\.RequestPath');
+    expect(error).toMatch('rateLimit\\[2\\]\\.RequestTimeWindow');
+  });
+
+  it('recognizes valid keys in default configuration', async () => {
+    await expectAsync(reconfigureServer({
+      ...defaultConfiguration,
+    })).toBeResolved();
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);
+  });
+
+  it_only_db('mongo')('recognizes valid keys in databaseOptions (MongoDB)', async () => {
+    await expectAsync(reconfigureServer({
+      databaseURI: 'mongodb://localhost:27017/parse',
+      filesAdapter: null,
+      databaseAdapter: null,
+      databaseOptions: {
+        retryWrites: true,
+        maxTimeMS: 1000,
+        maxStalenessSeconds: 10,
+        maxPoolSize: 10,
+      },
+    })).toBeResolved();
+    expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);
   });
 });

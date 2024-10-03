@@ -362,7 +362,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await dropTable(client, tableName);
   });
 
-  it('should use index for caseInsensitive query', async () => {
+  it('should use index for caseInsensitive query with user', async () => {
     await adapter.deleteAllClasses();
     const config = Config.get('test');
     config.schemaCache.clear();

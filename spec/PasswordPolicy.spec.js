@@ -3,7 +3,7 @@
 const request = require('../lib/request');
 
 describe('Password Policy: ', () => {
-  it('should show the invalid link page if the user clicks on the password reset link after the token expires', done => {
+  it_id('b400a867-9f05-496f-af79-933aa588dde5')(it)('should show the invalid link page if the user clicks on the password reset link after the token expires', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
@@ -150,7 +150,7 @@ describe('Password Policy: ', () => {
     done();
   });
 
-  it('should keep reset token with resetTokenReuseIfValid', async done => {
+  it_id('7d98e1f2-ae89-4038-9ea7-5254854ea42e')(it)('should keep reset token with resetTokenReuseIfValid', async done => {
     const sendEmailOptions = [];
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
@@ -1164,7 +1164,7 @@ describe('Password Policy: ', () => {
       });
   });
 
-  it('should succeed if logged in before password expires', done => {
+  it_id('d7d0a93e-efe6-48c0-b622-0f7fb570ccc1')(it)('should succeed if logged in before password expires', done => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -1197,7 +1197,7 @@ describe('Password Policy: ', () => {
     });
   });
 
-  it('should fail if logged in after password expires', done => {
+  it_id('22428408-8763-445d-9833-2b2d92008f62')(it)('should fail if logged in after password expires', done => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -1236,7 +1236,7 @@ describe('Password Policy: ', () => {
     });
   });
 
-  it('should apply password expiry policy to existing user upon first login after policy is enabled', done => {
+  it_id('cc97a109-e35f-4f94-b942-3a6134921cdd')(it)('should apply password expiry policy to existing user upon first login after policy is enabled', done => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -1304,7 +1304,7 @@ describe('Password Policy: ', () => {
     });
   });
 
-  it('should reset password timestamp when password is reset', done => {
+  it_id('d1e6ab9d-c091-4fea-b952-08b7484bfc89')(it)('should reset password timestamp when password is reset', done => {
     const user = new Parse.User();
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),

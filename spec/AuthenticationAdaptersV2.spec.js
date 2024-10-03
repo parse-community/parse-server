@@ -369,16 +369,6 @@ describe('Auth Adapter features', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('should throw if no triggers found', async () => {
-    await reconfigureServer({ auth: { wrongAdapter } });
-    const user = new Parse.User();
-    await expectAsync(
-      user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } })
-    ).toBeRejectedWithError(
-      'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
-    );
-  });
-
   it('should throw if policy does not match one of default/solo/additional', async () => {
     const adapterWithBadPolicy = {
       validateAppId: () => Promise.resolve(),

@@ -161,6 +161,9 @@ function mapperFor(elt, t) {
     if (type == 'NumberOrBoolean') {
       return wrap(t.identifier('numberOrBooleanParser'));
     }
+    if (type == 'NumberOrString') {
+      return t.callExpression(wrap(t.identifier('numberOrStringParser')), [t.stringLiteral(elt.name)]);
+    }
     if (type === 'StringOrStringArray') {
       return wrap(t.identifier('arrayParser'));
     }
@@ -211,6 +214,9 @@ function parseDefaultValue(elt, value, t) {
     const type = elt.typeAnnotation.id.name;
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
+    }
+    if (type == 'NumberOrString') {
+      literalValue = t.numericLiteral(parsers.numberOrStringParser('')(value));
     }
 
     if (nestedOptionTypes.includes(type)) {

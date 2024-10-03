@@ -370,6 +370,35 @@ class Utils {
       }
     }
   }
+
+  /**
+   * Moves the nested keys of a specified key in an object to the root of the object.
+   *
+   * @param {Object} obj The object to modify.
+   * @param {String} key The key whose nested keys will be moved to root.
+   * @returns {Object} The modified object, or the original object if no modification happened.
+   * @example
+   * const obj = {
+   *   a: 1,
+   *   b: {
+   *     c: 2,
+   *     d: 3
+   *   },
+   *   e: 4
+   * };
+   * addNestedKeysToRoot(obj, 'b');
+   * console.log(obj);
+   * // Output: { a: 1, e: 4, c: 2, d: 3 }
+  */
+  static addNestedKeysToRoot(obj, key) {
+    if (obj[key] && typeof obj[key] === 'object') {
+      // Add nested keys to root
+      Object.assign(obj, { ...obj[key] });
+      // Delete original nested key
+      delete obj[key];
+    }
+    return obj;
+  }
 }
 
 module.exports = Utils;

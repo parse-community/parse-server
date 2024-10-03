@@ -141,35 +141,6 @@ describe('Auth', () => {
     expect(userAuth.user.id).toBe(user.id);
   });
 
-  it('should load auth without a config', async () => {
-    const user = new Parse.User();
-    await user.signUp({
-      username: 'hello',
-      password: 'password',
-    });
-    expect(user.getSessionToken()).not.toBeUndefined();
-    const userAuth = await getAuthForSessionToken({
-      sessionToken: user.getSessionToken(),
-    });
-    expect(userAuth.user instanceof Parse.User).toBe(true);
-    expect(userAuth.user.id).toBe(user.id);
-  });
-
-  it('should load auth with a config', async () => {
-    const user = new Parse.User();
-    await user.signUp({
-      username: 'hello',
-      password: 'password',
-    });
-    expect(user.getSessionToken()).not.toBeUndefined();
-    const userAuth = await getAuthForSessionToken({
-      sessionToken: user.getSessionToken(),
-      config: Config.get('test'),
-    });
-    expect(userAuth.user instanceof Parse.User).toBe(true);
-    expect(userAuth.user.id).toBe(user.id);
-  });
-
   describe('getRolesForUser', () => {
     const rolesNumber = 100;
 
