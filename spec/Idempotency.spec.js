@@ -45,8 +45,12 @@ describe('Idempotency', () => {
     });
   });
 
+  afterEach(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+  });
+
   // Tests
-  it('should enforce idempotency for cloud code function', async () => {
+  it_id('e25955fd-92eb-4b22-b8b7-38980e5cb223')(it)('should enforce idempotency for cloud code function', async () => {
     let counter = 0;
     Parse.Cloud.define('myFunction', () => {
       counter++;
@@ -69,7 +73,7 @@ describe('Idempotency', () => {
     expect(counter).toBe(1);
   });
 
-  it('should delete request entry after TTL', async () => {
+  it_id('be2fbe16-8178-485e-9a12-6fb541096480')(it)('should delete request entry after TTL', async () => {
     let counter = 0;
     Parse.Cloud.define('myFunction', () => {
       counter++;
@@ -119,7 +123,7 @@ describe('Idempotency', () => {
     }
   );
 
-  it('should enforce idempotency for cloud code jobs', async () => {
+  it_id('e976d0cc-a57f-45d4-9472-b9b052db6490')(it)('should enforce idempotency for cloud code jobs', async () => {
     let counter = 0;
     Parse.Cloud.job('myJob', () => {
       counter++;
@@ -141,7 +145,7 @@ describe('Idempotency', () => {
     expect(counter).toBe(1);
   });
 
-  it('should enforce idempotency for class object creation', async () => {
+  it_id('7c84a3d4-e1b6-4a0d-99f1-af3cf1a6b3d8')(it)('should enforce idempotency for class object creation', async () => {
     let counter = 0;
     Parse.Cloud.afterSave('MyClass', () => {
       counter++;
@@ -163,7 +167,7 @@ describe('Idempotency', () => {
     expect(counter).toBe(1);
   });
 
-  it('should enforce idempotency for user object creation', async () => {
+  it_id('a030f2dd-5d21-46ac-b53d-9d714f35d72a')(it)('should enforce idempotency for user object creation', async () => {
     let counter = 0;
     Parse.Cloud.afterSave('_User', () => {
       counter++;
@@ -189,7 +193,7 @@ describe('Idempotency', () => {
     expect(counter).toBe(1);
   });
 
-  it('should enforce idempotency for installation object creation', async () => {
+  it_id('064c469b-091c-4ba9-9043-be461f26a3eb')(it)('should enforce idempotency for installation object creation', async () => {
     let counter = 0;
     Parse.Cloud.afterSave('_Installation', () => {
       counter++;
@@ -215,7 +219,7 @@ describe('Idempotency', () => {
     expect(counter).toBe(1);
   });
 
-  it('should not interfere with calls of different request ID', async () => {
+  it_id('f11670b6-fa9c-4f21-a268-ae4b6bbff7fd')(it)('should not interfere with calls of different request ID', async () => {
     let counter = 0;
     Parse.Cloud.afterSave('MyClass', () => {
       counter++;
@@ -236,7 +240,7 @@ describe('Idempotency', () => {
     expect(counter).toBe(100);
   });
 
-  it('should re-throw any other error unchanged when writing request entry fails for any other reason', async () => {
+  it_id('0ecd2cd2-dafb-4a2b-bb2b-9ad4c9aca777')(it)('should re-throw any other error unchanged when writing request entry fails for any other reason', async () => {
     spyOn(rest, 'create').and.rejectWith(new Parse.Error(0, 'some other error'));
     Parse.Cloud.define('myFunction', () => {});
     const params = {

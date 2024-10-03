@@ -23,6 +23,15 @@ function numberOrBoolParser(key) {
   };
 }
 
+function numberOrStringParser(key) {
+  return function (opt) {
+    if (typeof opt === 'string') {
+      return opt;
+    }
+    return numberParser(key)(opt);
+  };
+}
+
 function objectParser(opt) {
   if (typeof opt == 'object') {
     return opt;
@@ -69,6 +78,7 @@ function nullParser(opt) {
 module.exports = {
   numberParser,
   numberOrBoolParser,
+  numberOrStringParser,
   nullParser,
   booleanParser,
   moduleOrObjectParser,

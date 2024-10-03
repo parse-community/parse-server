@@ -4,7 +4,7 @@ const UserController = require('../lib/Controllers/UserController').UserControll
 const Config = require('../lib/Config');
 const ParseServer = require('../lib/index').ParseServer;
 const triggers = require('../lib/triggers');
-const { resolvingPromise, sleep } = require('./support/testUtils');
+const { resolvingPromise, sleep } = require('../lib/TestUtils');
 const validatorFail = () => {
   throw 'you are not authorized';
 };
@@ -382,7 +382,6 @@ describe('ParseLiveQuery', function () {
     await obj2.save();
     obj2.set('foo', 'bart');
     await obj2.save();
-    await sleep(2000);
     expect(createSpy).toHaveBeenCalledTimes(1);
     expect(updateSpy).toHaveBeenCalledTimes(1);
   });
@@ -879,7 +878,7 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it('handle invalid websocket payload length', async done => {
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -916,7 +915,7 @@ describe('ParseLiveQuery', function () {
     }, 1000);
   });
 
-  it('should execute live query update on email validation', async done => {
+  it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)('should execute live query update on email validation', async done => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -1146,7 +1145,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('does shutdown liveQuery server', async () => {
+  it_id('2f95d8a9-7675-45ba-a4a6-e45cb7efb1fb')(it)('does shutdown liveQuery server', async () => {
     await reconfigureServer({ appId: 'test_app_id' });
     const config = {
       appId: 'hello_test',
