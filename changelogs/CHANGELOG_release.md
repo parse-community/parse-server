@@ -1,3 +1,10 @@
+## [6.5.9](https://github.com/parse-community/parse-server/compare/6.5.8...6.5.9) (2024-10-03)
+
+
+### Bug Fixes
+
+* Custom object ID allows to acquire role privileges ([GHSA-8xq9-g7ch-35hg](https://github.com/parse-community/parse-server/security/advisories/GHSA-8xq9-g7ch-35hg)) ([#9318](https://github.com/parse-community/parse-server/issues/9318)) ([1bfbccf](https://github.com/parse-community/parse-server/commit/1bfbccf9ee7ea77533b2b2aa7c4c69f3bd35e66f))
+
 ## [6.5.8](https://github.com/parse-community/parse-server/compare/6.5.7...6.5.8) (2024-09-12)
 
 
