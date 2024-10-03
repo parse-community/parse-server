@@ -182,7 +182,7 @@ const getAuthForSessionToken = async function ({
   const obj = session.user;
 
   if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid user id.');
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
   }
 
   delete obj.password;

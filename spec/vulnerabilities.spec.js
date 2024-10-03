@@ -10,7 +10,7 @@ describe('Vulnerabilities', () => {
     it('denies user creation with malicious object id', async () => {
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
-      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid user id.'));
+      ).toBeRejectedWith(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.'));
     });
 
     describe('existing sessions for users with poisoned ids', () => {
@@ -34,7 +34,7 @@ describe('Vulnerabilities', () => {
       it('are refused', async () => {
         await expectAsync(
           new Parse.Query(Parse.User).find({ sessionToken: poisonedUser.getSessionToken() })
-        ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid user id.'));
+        ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.'));
         await new Parse.Query(Parse.User).find({ sessionToken: innocentUser.getSessionToken() });
       });
     });
