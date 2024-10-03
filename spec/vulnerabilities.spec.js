@@ -7,6 +7,11 @@ describe('Vulnerabilities', () => {
       Parse.allowCustomObjectId = true;
     });
 
+    afterAll(async () => {
+      await reconfigureServer({ allowCustomObjectId: false });
+      Parse.allowCustomObjectId = false;
+    });
+
     it('denies user creation with poisoned object ID', async () => {
       await expectAsync(
         new Parse.User({ id: 'role:a', username: 'a', password: '123' }).save()
@@ -19,7 +24,7 @@ describe('Vulnerabilities', () => {
       /** @type {Parse.User} */
       let innocentUser;
 
-      beforeEach(async () => {
+      beforeAll(async () => {
         const parseServer = await global.reconfigureServer();
         const databaseController = parseServer.config.databaseController;
         [poisonedUser, innocentUser] = await Promise.all(
@@ -40,6 +45,7 @@ describe('Vulnerabilities', () => {
       });
     });
   });
+
   describe('Object prototype pollution', () => {
     it('denies object prototype to be polluted with keyword "constructor"', async () => {
       const headers = {
