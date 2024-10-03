@@ -1,6 +1,6 @@
 const request = require('../lib/request');
 
-fdescribe('Vulnerabilities', () => {
+describe('Vulnerabilities', () => {
   describe('(GHSA-8xq9-g7ch-35hg) Custom object ID allows to acquire role privilege', () => {
     beforeAll(async () => {
       await reconfigureServer({ allowCustomObjectId: true });
