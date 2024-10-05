@@ -264,7 +264,7 @@ export class UsersRouter extends ClassesRouter {
     // Remove hidden properties.
     UsersRouter.removeHiddenProperties(user);
 
-    req.config.filesController.expandFilesInObject(req.config, user);
+    await req.config.filesController.expandFilesInObject(req.config, user);
 
     // Before login trigger; throws if failure
     await maybeRunTrigger(
