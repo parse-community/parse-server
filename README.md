@@ -297,7 +297,7 @@ const server = new ParseServer({
 });
 
 // Start server
-await server.start();
+server.start();
 
 // Serve the Parse API on the /parse URL prefix
 app.use('/parse', server.app);
@@ -911,7 +911,7 @@ app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
 parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
 parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
 
-await parseServer.start();
+parseServer.start();
 app.listen(1337, function() {
   console.log('REST API running on http://localhost:1337/parse');
   console.log('GraphQL API running on http://localhost:1337/graphql');
