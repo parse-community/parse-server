@@ -1,3 +1,10 @@
+# [7.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.3.1-alpha.1...7.4.0-alpha.1) (2024-10-06)
+
+
+### Features
+
+* Add support for MongoDB 8 ([#9269](https://github.com/parse-community/parse-server/issues/9269)) ([4756c66](https://github.com/parse-community/parse-server/commit/4756c66cd9f55afa1621d1a3f6fa850ed605cb53))
+
 ## [7.3.1-alpha.1](https://github.com/parse-community/parse-server/compare/7.3.0...7.3.1-alpha.1) (2024-10-05)
 
 
