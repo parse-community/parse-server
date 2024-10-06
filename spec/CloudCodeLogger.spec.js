@@ -37,7 +37,7 @@ describe('Cloud Code Logger', () => {
   // Note that helpers takes care of logout.
   // see helpers.js:afterEach
 
-  it_id('02d53b97-3ec7-46fb-abb6-176fd6e85590')('should expose log to functions', () => {
+  it_id('02d53b97-3ec7-46fb-abb6-176fd6e85590')(it)('should expose log to functions', () => {
     const spy = spyOn(Config.get('test').loggerController, 'log').and.callThrough();
     Parse.Cloud.define('loggerTest', req => {
       req.log.info('logTest', 'info log', { info: 'some log' });
@@ -67,7 +67,7 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it_id('768412f5-d32f-4134-89a6-08949781a6c0')('trigger should obfuscate password', done => {
+  it_id('768412f5-d32f-4134-89a6-08949781a6c0')(it)('trigger should obfuscate password', done => {
     Parse.Cloud.beforeSave(Parse.User, req => {
       return req.object;
     });
@@ -82,7 +82,7 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(e));
   });
 
-  it_id('3c394047-272e-4728-9d02-9eaa660d2ed2')('should expose log to trigger', done => {
+  it_id('3c394047-272e-4728-9d02-9eaa660d2ed2')(it)('should expose log to trigger', done => {
     Parse.Cloud.beforeSave('MyObject', req => {
       req.log.info('beforeSave MyObject', 'info log', { info: 'some log' });
       req.log.error('beforeSave MyObject', 'error log', {
@@ -120,7 +120,7 @@ describe('Cloud Code Logger', () => {
     expect(truncatedString.length).toBe(1015); // truncate length + the string '... (truncated)'
   });
 
-  it_id('4a009b1f-9203-49ca-8d48-5b45f4eedbdf')('should truncate input and result of long lines', done => {
+  it_id('4a009b1f-9203-49ca-8d48-5b45f4eedbdf')(it)('should truncate input and result of long lines', done => {
     const longString = fs.readFileSync(loremFile, 'utf8');
     Parse.Cloud.define('aFunction', req => {
       return req.params;
@@ -138,7 +138,7 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(e));
   });
 
-  it_id('9857e15d-bb18-478d-8a67-fdaad3e89565')('should log an afterSave', done => {
+  it_id('9857e15d-bb18-478d-8a67-fdaad3e89565')(it)('should log an afterSave', done => {
     Parse.Cloud.afterSave('MyObject', () => {});
     new Parse.Object('MyObject')
       .save()
@@ -151,7 +151,7 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(e));
   });
 
-  it_id('ec13a296-f8b1-4fc6-985a-3593462edd9c')('should log a denied beforeSave', done => {
+  it_id('ec13a296-f8b1-4fc6-985a-3593462edd9c')(it)('should log a denied beforeSave', done => {
     Parse.Cloud.beforeSave('MyObject', () => {
       throw 'uh oh!';
     });
@@ -174,7 +174,7 @@ describe('Cloud Code Logger', () => {
       });
   });
 
-  it_id('3e0caa45-60d6-41af-829a-fd389710c132')('should log cloud function success', done => {
+  it_id('3e0caa45-60d6-41af-829a-fd389710c132')(it)('should log cloud function success', done => {
     Parse.Cloud.define('aFunction', () => {
       return 'it worked!';
     });
@@ -189,7 +189,7 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it_id('8088de8a-7cba-4035-8b05-4a903307e674')('should log cloud function execution using the custom log level', async done => {
+  it_id('8088de8a-7cba-4035-8b05-4a903307e674')(it)('should log cloud function execution using the custom log level', async done => {
     Parse.Cloud.define('aFunction', () => {
       return 'it worked!';
     });
@@ -260,7 +260,7 @@ describe('Cloud Code Logger', () => {
     expect(calls).toEqual({ beforeSave: 'warn', afterSave: undefined });
   });
 
-  it_id('97e0eafa-cde6-4a9a-9e53-7db98bacbc62')('should log cloud function failure', done => {
+  it_id('97e0eafa-cde6-4a9a-9e53-7db98bacbc62')(it)('should log cloud function failure', done => {
     Parse.Cloud.define('aFunction', () => {
       throw 'it failed!';
     });
@@ -311,7 +311,7 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(JSON.stringify(e)));
   }).pend('needs more work.....');
 
-  it_id('b86e8168-8370-4730-a4ba-24ca3016ad66')('cloud function should obfuscate password', done => {
+  it_id('b86e8168-8370-4730-a4ba-24ca3016ad66')(it)('cloud function should obfuscate password', done => {
     Parse.Cloud.define('testFunction', () => {
       return 'verify code success';
     });
