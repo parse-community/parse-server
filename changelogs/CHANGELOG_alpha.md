@@ -1,3 +1,24 @@
+## [7.3.1-alpha.1](https://github.com/parse-community/parse-server/compare/7.3.0...7.3.1-alpha.1) (2024-10-05)
+
+
+### Bug Fixes
+
+* Security upgrade fast-xml-parser from 4.4.0 to 4.4.1 ([#9262](https://github.com/parse-community/parse-server/issues/9262)) ([992d39d](https://github.com/parse-community/parse-server/commit/992d39d508f230c774dcb764d1d907ec8887e6c5))
+
+# [7.3.0-alpha.9](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.8...7.3.0-alpha.9) (2024-10-03)
+
+
+### Bug Fixes
+
+* Custom object ID allows to acquire role privileges ([GHSA-8xq9-g7ch-35hg](https://github.com/parse-community/parse-server/security/advisories/GHSA-8xq9-g7ch-35hg)) ([#9317](https://github.com/parse-community/parse-server/issues/9317)) ([13ee52f](https://github.com/parse-community/parse-server/commit/13ee52f0d19ef3a3524b3d79aea100e587eb3cfc))
+
+# [7.3.0-alpha.8](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.7...7.3.0-alpha.8) (2024-09-25)
+
+
+### Bug Fixes
+
+* Security upgrade path-to-regexp from 6.2.1 to 6.3.0 ([#9314](https://github.com/parse-community/parse-server/issues/9314)) ([8b7fe69](https://github.com/parse-community/parse-server/commit/8b7fe699c1c376ecd8cc1c97cce8e704ee41f28a))
+
 # [7.3.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.3.0-alpha.6...7.3.0-alpha.7) (2024-08-27)
 
 

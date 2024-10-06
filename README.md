@@ -277,6 +277,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [Back4app](https://www.back4app.com/docs/get-started/welcome)
 * [Glitch](https://glitch.com/edit/#!/parse-server)
 * [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
+* [Elestio](https://elest.io/open-source/parse)
 
 ### Parse Server + Express
 
