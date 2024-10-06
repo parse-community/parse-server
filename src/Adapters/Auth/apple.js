@@ -20,9 +20,10 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   try {
     key = await authUtils.getSigningKey(client, keyId);
   } catch (error) {
+    console.error(`Unable to find matching key for Key ID: ${keyId}. Error: ${error.message}`);
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `Unable to find matching key for Key ID: ${keyId}`
+      `Unauthorized`
     );
   }
   return key;
@@ -30,7 +31,8 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
   if (!token) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
+    console.error('Invalid token'); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Unauthorized`);
   }
 
   const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
@@ -51,19 +53,21 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
     });
   } catch (exception) {
     const message = exception.message;
-
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
+    console.error(`JWT verification failed. Error: ${message}`);
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Unauthorized`);
   }
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
+    console.error(`Token issuer mismatch. Expected: ${TOKEN_ISSUER}, Received: ${jwtClaims.iss}`);
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `id token not issued by correct OpenID provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
+      `Unauthorized`
     );
   }
 
   if (jwtClaims.sub !== id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
+    console.error(`Token subject mismatch for user ID: ${id}.`);
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Unauthorized`);
   }
   return jwtClaims;
 };

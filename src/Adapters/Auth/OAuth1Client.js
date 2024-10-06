@@ -4,7 +4,8 @@ var Parse = require('parse/node').Parse;
 
 var OAuth = function (options) {
   if (!options) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'No options passed to OAuth');
+    console.error('No options passed to OAuth'); 
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Configuration error.');
   }
   this.consumer_key = options.consumer_key;
   this.consumer_secret = options.consumer_secret;

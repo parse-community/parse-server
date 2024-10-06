@@ -51,10 +51,12 @@ const arraysEqual = (_arr1, _arr2) => {
 
 const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } = {}) => {
   if (!(access_token && id)) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing access token and/or User id');
+    console.error('Missing access token and/or User id'); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed');
   }
   if (!config || !(config['auth-server-url'] && config['realm'])) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing keycloak configuration');
+    console.error('Missing Keycloak configuration');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed');
   }
   try {
     const response = await httpsRequest.get({
@@ -73,18 +75,22 @@ const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } =
     ) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid authentication');
+    console.error('Invalid authentication: response data does not match');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed');
   } catch (e) {
     if (e instanceof Parse.Error) {
+      console.error('Parse Error:', e.message);
       throw e;
     }
     const error = JSON.parse(e.text);
     if (error.error_description) {
-      throw new Parse.Error(Parse.Error.HOSTING_ERROR, error.error_description);
+      console.error('Authentication server error:', error.error_description);
+      throw new Parse.Error(Parse.Error.HOSTING_ERROR, 'Authentication failed');
     } else {
+      console.error('Could not connect to the authentication server');
       throw new Parse.Error(
         Parse.Error.HOSTING_ERROR,
-        'Could not connect to the authentication server'
+        'Authentication failed'
       );
     }
   }

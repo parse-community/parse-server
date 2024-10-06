@@ -58,10 +58,12 @@ const querystring = require('querystring');
 const httpsRequest = require('./httpsRequest');
 
 const INVALID_ACCESS = 'OAuth2 access token is invalid for this user.';
+const INVALID_RESPONSE = 'Authentication failed'; 
 const INVALID_ACCESS_APPID =
   "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration.";
 const MISSING_APPIDS =
   'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).';
+const MISSING_RESPONSE = 'Configuration Error.'; 
 const MISSING_URL = 'OAuth2 token introspection endpoint URL is missing from configuration!';
 
 // Returns a promise that fulfills if this user id is valid.
@@ -72,7 +74,8 @@ function validateAuthData(authData, options) {
       !response.active ||
       (options.useridField && authData.id !== response[options.useridField])
     ) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS);
+      console.error(INVALID_ACCESS); 
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_RESPONSE);
     }
   });
 }
@@ -82,15 +85,18 @@ function validateAppId(appIds, authData, options) {
     return Promise.resolve();
   }
   if (!appIds || appIds.length === 0) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_APPIDS);
+    console.error(MISSING_APPIDS); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_RESPONSE);
   }
   return requestTokenInfo(options, authData.access_token).then(response => {
     if (!response || !response.active) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS);
+      console.error(INVALID_ACCESS); 
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_RESPONSE);
     }
     const appidField = options.appidField;
     if (!response[appidField]) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS_APPID);
+      console.error(INVALID_ACCESS_APPID); 
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_RESPONSE);
     }
     const responseValue = response[appidField];
     if (!Array.isArray(responseValue) && appIds.includes(responseValue)) {
@@ -101,7 +107,8 @@ function validateAppId(appIds, authData, options) {
     ) {
       return;
     } else {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS_APPID);
+      console.error(INVALID_ACCESS_APPID); 
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_RESPONSE);
     }
   });
 }
@@ -109,7 +116,8 @@ function validateAppId(appIds, authData, options) {
 // A promise wrapper for requests to the OAuth2 token introspection endpoint.
 function requestTokenInfo(options, access_token) {
   if (!options || !options.tokenIntrospectionEndpointUrl) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_URL);
+    console.error(MISSING_URL); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_RESPONSE);
   }
   const parsedUrl = new URL(options.tokenIntrospectionEndpointUrl);
   const postData = querystring.stringify({

@@ -21,10 +21,12 @@ function validateAuthData(authData, params) {
         ) {
           return;
         }
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
+        console.error('Vk auth is invalid for this user.'); 
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed.');
       });
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
+    console.error('Vk appIds or appSecret is incorrect.'); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed.');
   });
 }
 
@@ -37,9 +39,10 @@ function vkOAuth2Request(params) {
       !params.appSecret ||
       !params.appSecret.length
     ) {
+      console.error('Vk auth is not configured. Missing appIds or appSecret.'); 
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Vk auth is not configured. Missing appIds or appSecret.'
+        'Configuration Error'
       );
     }
     if (!params.apiVersion) {

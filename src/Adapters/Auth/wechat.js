@@ -9,7 +9,8 @@ function validateAuthData(authData) {
       if (data.errcode == 0) {
         return;
       }
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'wechat auth is invalid for this user.');
+      console.error('wechat auth is invalid for this user.'); 
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed.');
     }
   );
 }
