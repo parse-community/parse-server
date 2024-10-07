@@ -244,6 +244,9 @@ jobs:
           - name: PostgreSQL 16, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:16-3.4
             NODE_VERSION: 22.4.1
+          - name: PostgreSQL 17, PostGIS 3.4
+            POSTGRES_IMAGE: postgis/postgis:17-3.4
+            NODE_VERSION: 22.4.1
       fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 20
