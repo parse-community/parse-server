@@ -1,3 +1,10 @@
+# [7.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.1...7.4.0-alpha.2) (2024-10-07)
+
+
+### Features
+
+* Add support for Postgres 17 ([#9324](https://github.com/parse-community/parse-server/issues/9324)) ([fa2ee31](https://github.com/parse-community/parse-server/commit/fa2ee3196e4319a142b3838bb947c98dcba5d5cb))
+
 # [7.4.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.3.1-alpha.1...7.4.0-alpha.1) (2024-10-06)
 
 
