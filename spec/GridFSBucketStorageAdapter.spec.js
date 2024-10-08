@@ -31,7 +31,7 @@ const getDataAsString = async (type, data, encoding = 'utf8') => {
     case 'string':
       return data.toString(encoding);
     case 'blob':
-      return (typeof Blob !== 'undefined' && data instanceof Blob)
+      return (data instanceof Blob)
         ? await data.text(encoding) :
         data.toString(encoding);
     default:
