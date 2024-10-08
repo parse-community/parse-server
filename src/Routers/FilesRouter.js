@@ -178,11 +178,7 @@ export class FilesRouter {
 
     let file;
 
-    if (
-      typeof Blob !== 'undefined' &&
-      Buffer.isBuffer(req.body) &&
-      req.body?.length >= MAX_V8_STRING_SIZE_BYTES
-    ) {
+    if (Buffer.isBuffer(req.body) && req.body?.length >= MAX_V8_STRING_SIZE_BYTES) {
       file = new Parse.File(filename, new Blob([req.body]), contentType);
     } else {
       file = new Parse.File(filename, { base64: req.body.toString('base64') }, contentType);
@@ -229,7 +225,7 @@ export class FilesRouter {
         // update fileSize
         let fileData;
         // if the file is a blob, get the size from the blob
-        if (typeof Blob !== 'undefined' && fileObject.file._source?.file instanceof Blob) {
+        if (fileObject.file._source?.file instanceof Blob) {
           // get the size of the blob
           fileObject.fileSize = fileObject.file._source.file.size;
           // set the file data

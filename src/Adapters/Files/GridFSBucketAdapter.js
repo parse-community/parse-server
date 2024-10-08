@@ -81,7 +81,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
           : null;
 
         // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
-        if (typeof Blob !== 'undefined' && data instanceof Blob) {
+        if (data instanceof Blob) {
           let readableStream = data.stream();
 
           // may come in as a web stream, so we need to convert it to a node stream
