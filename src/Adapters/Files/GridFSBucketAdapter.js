@@ -11,6 +11,7 @@ import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
 const crypto = require('crypto');
+const { Transform, Readable } = require('stream');
 
 export class GridFSBucketAdapter extends FilesAdapter {
   _databaseURI: string;
@@ -68,29 +69,81 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
     });
-    if (this._encryptionKey !== null) {
-      try {
-        const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv(this._algorithm, this._encryptionKey, iv);
-        const encryptedResult = Buffer.concat([
-          cipher.update(data),
-          cipher.final(),
-          iv,
-          cipher.getAuthTag(),
-        ]);
-        await stream.write(encryptedResult);
-      } catch (err) {
-        return new Promise((resolve, reject) => {
-          return reject(err);
-        });
-      }
-    } else {
-      await stream.write(data);
-    }
-    stream.end();
+
     return new Promise((resolve, reject) => {
-      stream.on('finish', resolve);
-      stream.on('error', reject);
+      try {
+        const iv = this._encryptionKey !== null
+          ? crypto.randomBytes(16)
+          : null;
+
+        const cipher = this._encryptionKey !== null && iv
+          ? crypto.createCipheriv(this._algorithm, this._encryptionKey, iv)
+          : null;
+
+        // when working with a Blob, it could be over the max size of a buffer, so we need to stream it
+        if (data instanceof Blob) {
+          let readableStream = data.stream();
+
+          // may come in as a web stream, so we need to convert it to a node stream
+          if (readableStream instanceof ReadableStream) {
+            readableStream = Readable.fromWeb(readableStream);
+          }
+
+          if (cipher && iv) {
+            // we need to stream the data through the cipher
+            const cipherTransform = new Transform({
+              transform(chunk, encoding, callback) {
+                try {
+                  const encryptedChunk = cipher.update(chunk);
+                  callback(null, encryptedChunk);
+                } catch (err) {
+                  callback(err);
+                }
+              },
+              // at the end we need to push the final cipher text, iv, and auth tag
+              flush(callback) {
+                try {
+                  this.push(cipher.final());
+                  this.push(iv);
+                  this.push(cipher.getAuthTag());
+                  callback();
+                } catch (err) {
+                  callback(err);
+                }
+              }
+            });
+            // pipe the stream through the cipher and then to the gridfs stream
+            readableStream
+              .pipe(cipherTransform)
+              .on('error', reject)
+              .pipe(stream)
+              .on('error', reject);
+          } else {
+            // if we don't have a cipher, we can just pipe the stream to the gridfs stream
+            readableStream.pipe(stream)
+              .on('error', reject)
+          }
+        } else {
+          if (cipher && iv) {
+            const encryptedResult = Buffer.concat([
+              cipher.update(data),
+              cipher.final(),
+              iv,
+              cipher.getAuthTag(),
+            ]);
+            stream.write(encryptedResult);
+
+          } else {
+            stream.write(data);
+          }
+          stream.end();
+        }
+
+        stream.on('finish', resolve);
+        stream.on('error', reject);
+      } catch (e) {
+        reject(e);
+      }
     });
   }
 
