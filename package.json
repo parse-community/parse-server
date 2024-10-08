@@ -104,7 +104,7 @@
     "node-abort-controller": "3.1.1",
     "node-fetch": "3.2.10",
     "nyc": "15.1.0",
-    "prettier": "2.0.5",
+    "prettier": "3.3.3",
     "semantic-release": "24.0.0",
     "yaml": "2.5.0"
   },
