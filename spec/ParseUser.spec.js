@@ -4429,4 +4429,32 @@ describe('allowClientClassCreation option', () => {
     // Need to set it back to true to avoid other test fails
     defaultConfiguration.allowClientClassCreation = true;
   });
+
+  it('should respect custom log level for username already exists error', async () => {
+    const loggerController = {
+      error: jasmine.createSpy('error'),
+      warn: jasmine.createSpy('warn'),
+      info: jasmine.createSpy('info')
+    };
+    await reconfigureServer({
+      logEvents: {
+        usernameAlreadyExists: 'warn'
+      },
+      loggerController
+    });
+    const user = new Parse.User();
+    user.setUsername('existingUser');
+    user.setPassword('password');
+    await user.signUp();
+    const duplicateUser = new Parse.User();
+    duplicateUser.setUsername('existingUser');
+    duplicateUser.setPassword('password');
+    try {
+      await duplicateUser.signUp();
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
+      expect(loggerController.warn).toHaveBeenCalled();
+      expect(loggerController.error).not.toHaveBeenCalled();
+    }
+  });
 });
