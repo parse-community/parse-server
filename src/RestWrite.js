@@ -1563,16 +1563,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
             'Account already exists for this username.'
           );
 
-          // Check for custom log level
-          const logLevel = this.config.logEvents && this.config.logEvents.usernameAlreadyExists;
-          if (logLevel) {
-            // Use custom log level
-            this.config.loggerController[logLevel](JSON.stringify(usernameError));
-          } else if (logLevel !== false) {
-            // Use default error logging if not explicitly disabled
-            this.config.loggerController.error(JSON.stringify(usernameError));
-          }
-          throw usernameError;
+          return this.config.loggerController[this.config.logLevels.usernameAlreadyExists](
+            JSON.stringify(usernameError)
+          );
         }
 
         if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
