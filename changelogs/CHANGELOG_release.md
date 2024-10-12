@@ -1,3 +1,10 @@
+## [6.5.10](https://github.com/parse-community/parse-server/compare/6.5.9...6.5.10) (2024-10-12)
+
+
+### Bug Fixes
+
+* Security upgrade express from 4.21.0 to 4.21.1 ([#9339](https://github.com/parse-community/parse-server/issues/9339)) ([97627ee](https://github.com/parse-community/parse-server/commit/97627ee450f5abe04c92609f4ae2e63c49060d6a))
+
 ## [6.5.9](https://github.com/parse-community/parse-server/compare/6.5.8...6.5.9) (2024-10-03)
 
 
