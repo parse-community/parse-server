@@ -242,6 +242,20 @@ describe('cloud validator', () => {
       });
   });
 
+  it('set params type array with object notation', async () => {
+    Parse.Cloud.define('hello', () => 'Hello world!', {
+      fields: {
+        data: Array,
+      },
+    });
+    await expectAsync(Parse.Cloud.run('hello', { data: '' })).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.VALIDATION_ERROR,
+        'Validation failed. Invalid type for data. Expected: array'
+      )
+    );
+  });
+
   it('set params type allow array', async () => {
     Parse.Cloud.define(
       'hello',

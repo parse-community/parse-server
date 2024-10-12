@@ -735,6 +735,14 @@ async function builtInTriggerValidator(options, request, auth) {
     }
   };
 
+  const validateType = (opt, val, key) => {
+    const type = getType(opt);
+    const valType = Array.isArray(val) ? 'array' : typeof val;
+    if (valType !== type) {
+      throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
+    }
+  };
+
   const getType = fn => {
     const match = fn && fn.toString().match(/^\s*function (\w+)/);
     return (match ? match[1] : '').toLowerCase();
@@ -750,8 +758,7 @@ async function builtInTriggerValidator(options, request, auth) {
       let val = params[key];
       if (typeof opt === 'string') {
         requiredParam(opt);
-      }
-      if (typeof opt === 'object') {
+      } else if (typeof opt === 'object') {
         if (opt.default != null && val == null) {
           val = opt.default;
           params[key] = val;
@@ -772,16 +779,14 @@ async function builtInTriggerValidator(options, request, auth) {
         const optional = !opt.required && val === undefined;
         if (!optional) {
           if (opt.type) {
-            const type = getType(opt.type);
-            const valType = Array.isArray(val) ? 'array' : typeof val;
-            if (valType !== type) {
-              throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
-            }
+            validateType(opt.type, val, key);
           }
           if (opt.options) {
             optionPromises.push(validateOptions(opt, key, val));
           }
         }
+      } else {
+        validateType(opt, val, key);
       }
     }
     await Promise.all(optionPromises);
