@@ -486,6 +486,19 @@ describe('Parse.User testing', () => {
       );
   });
 
+  it('cannot connect to unconfigured adapter', async () => {
+    await reconfigureServer({
+      auth: {},
+    });
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = new Parse.User();
+    user.set('foo', 'bar');
+    await expectAsync(user._linkWith('facebook', {})).toBeRejectedWith(
+      new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE, 'This authentication method is unsupported.')
+    );
+  });
+
   it('should not call beforeLogin with become', async done => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);

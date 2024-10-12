@@ -541,6 +541,12 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
           'This authentication method is unsupported.'
         );
       }
+      if (authProvider.enabled == null) {
+        Deprecator.logRuntimeDeprecation({
+          usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
+          solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
+        });
+      }
       let validationResult = await validator(authData[provider], req, user, requestObject);
       method = validationResult && validationResult.method;
       requestObject.triggerName = method;

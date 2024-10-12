@@ -102,16 +102,26 @@ export class AuthAdapter {
    * @param {Object} options additional adapter options
    * @returns {Promise<Object>} Any overrides required to authData
    */
-  afterFind(authData, options) {
-    return Promise.resolve({});
-  }
+  afterFind(authData, options) {}
 
   /**
    * Triggered when the adapter is first attached to Parse Server
    * @param {Object} options Adapter Options
    */
-  validateOptions(options) {
-    /* */
+  validateOptions(options) {}
+
+  _clearDefaultKeys(keys) {
+    const defaultAdapter = new AuthAdapter();
+    keys.forEach(key => {
+      const existing = this[key];
+      if (
+        existing &&
+        typeof existing === 'function' &&
+        existing.toString() === defaultAdapter[key].toString()
+      ) {
+        this[key] = null;
+      }
+    });
   }
 }
 

@@ -348,7 +348,9 @@ describe('Auth Adapter features', () => {
   it('should strip out authData if required', async () => {
     const spy = spyOn(modernAdapter3, 'validateOptions').and.callThrough();
     const afterSpy = spyOn(modernAdapter3, 'afterFind').and.callThrough();
-    await reconfigureServer({ auth: { modernAdapter3 } });
+    await reconfigureServer({ auth: { modernAdapter3 }, silent: false });
+    expect(spy).toHaveBeenCalled();
+    spy.calls.reset();
     const user = new Parse.User();
     await user.save({ authData: { modernAdapter3: { id: 'modernAdapter3Data' } } });
     await user.fetch({ sessionToken: user.getSessionToken() });
@@ -366,7 +368,7 @@ describe('Auth Adapter features', () => {
       { id: 'modernAdapter3Data' },
       undefined
     );
-    expect(spy).toHaveBeenCalled();
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it('should throw if policy does not match one of default/solo/additional', async () => {
@@ -1251,6 +1253,10 @@ describe('Auth Adapter features', () => {
     await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
 
     spyOn(challengeAdapter, 'validateAuthData').and.rejectWith({});
+
+    await reconfigureServer({
+      auth: { challengeAdapter, soloAdapter },
+    });
 
     await expectAsync(
       requestWithExpectedError({
