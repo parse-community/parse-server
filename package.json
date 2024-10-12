@@ -20,7 +20,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@apollo/server": "4.11.0",
-    "@babel/eslint-parser": "7.24.7",
+    "@babel/eslint-parser": "7.25.8",
     "@graphql-tools/merge": "9.0.4",
     "@graphql-tools/schema": "10.0.4",
     "@graphql-tools/utils": "8.12.0",
@@ -32,7 +32,7 @@
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.21.0",
-    "express-rate-limit": "7.3.1",
+    "express-rate-limit": "7.4.1",
     "follow-redirects": "1.15.6",
     "graphql": "16.9.0",
     "graphql-list-fields": "2.0.4",
