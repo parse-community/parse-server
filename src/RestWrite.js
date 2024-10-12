@@ -527,6 +527,8 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   const userResult = results[0];
   const foundUserIsNotCurrentUser = userId && userResult && userId !== userResult.objectId;
 
+    this.storage.authProvider = Object.keys(authData).join(',');
+
   if (results.length > 1 || foundUserIsNotCurrentUser) {
     // To avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
     // Let's run some validation before throwing
@@ -548,7 +550,6 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
   // User found with provided authData
   if (results.length === 1) {
-
     this.storage.authProvider = Object.keys(authData).join(',');
 
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
