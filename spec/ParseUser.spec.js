@@ -4429,13 +4429,27 @@ describe('allowClientClassCreation option', () => {
     // Need to set it back to true to avoid other test fails
     defaultConfiguration.allowClientClassCreation = true;
   });
+});
 
-  it('should respect custom log level for username already exists error', async () => {
-    const logger = require('../lib/logger').logger;
-    const logSpy = spyOn(logger, 'warn').and.callThrough();
+describe('custom log levels for username already exists error', () => {
+  const logger = require('../lib/logger').logger;
+  let warnSpy, errorSpy, infoSpy;
 
+  beforeEach(() => {
+    warnSpy = spyOn(logger, 'warn').and.callThrough();
+    errorSpy = spyOn(logger, 'error').and.callThrough();
+    infoSpy = spyOn(logger, 'info').and.callThrough();
+  });
+
+  afterEach(() => {
+    warnSpy.calls.reset();
+    errorSpy.calls.reset();
+    infoSpy.calls.reset();
+  });
+
+  it('should respect warn log level for username already exists error', async () => {
     await reconfigureServer({
-      logEvents: {
+      logLevels: {
         usernameAlreadyExists: 'warn',
       },
     });
@@ -4453,8 +4467,35 @@ describe('allowClientClassCreation option', () => {
       await duplicateUser.signUp();
     } catch (error) {
       expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
-      expect(logSpy).toHaveBeenCalled();
-      expect(logger.error).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(infoSpy).not.toHaveBeenCalled();
+    }
+  });
+
+  it('should respect info log level for username already exists error', async () => {
+    await reconfigureServer({
+      logLevels: {
+        usernameAlreadyExists: 'info',
+      },
+    });
+
+    const user = new Parse.User();
+    user.setUsername('anotherExistingUser');
+    user.setPassword('password');
+    await user.signUp();
+
+    const duplicateUser = new Parse.User();
+    duplicateUser.setUsername('anotherExistingUser');
+    duplicateUser.setPassword('password');
+
+    try {
+      await duplicateUser.signUp();
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
+      expect(infoSpy).toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(errorSpy).not.toHaveBeenCalled();
     }
   });
 });

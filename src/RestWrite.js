@@ -1557,7 +1557,6 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
         // Quick check, if we were able to infer the duplicated field name
         if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
-          //Instead of directly throwing the error, we will give error based on logEvent
           const usernameError = new Parse.Error(
             Parse.Error.USERNAME_TAKEN,
             'Account already exists for this username.'

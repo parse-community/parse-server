@@ -87,7 +87,7 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
-  /* Options for customizing log levels for specific events
+  /* (Optional) Overrides the log levels used internally by Parse Server to log events.
   :DEFAULT: {} */
   logLevels: ?LogLevels;
   /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
@@ -635,10 +635,8 @@ export interface LogLevels {
   :DEFAULT: error
   */
   cloudFunctionError: ?string;
-  /* Log level for the "username already exists" error when trying to sign up.
-  Possible values: 'info', 'error', 'verbose', or false to disable logging.
-  If not specified, the default behavior (logging as an error) will be used.
-  :DEFAULT: undefined 
+  /* Log level for the username already exists error when trying to sign up.Default is `error`.
+  :DEFAULT: error
   */
-  usernameAlreadyExists: 'silent' | 'error' | 'info' | 'verbose';
+  usernameAlreadyExists: ?string;
 }

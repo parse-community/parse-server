@@ -1117,4 +1117,10 @@ module.exports.LogLevels = {
       'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
     default: 'info',
   },
+  usernameAlreadyExists: {
+    env: 'PARSE_SERVER_LOG_LEVELS_USERNAME_ALREADY_EXISTS',
+    help:
+      'Log level for the username already exists error when trying to sign up.Default is `error`.',
+    default: 'error',
+  },
 };
