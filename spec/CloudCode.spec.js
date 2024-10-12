@@ -1718,6 +1718,72 @@ describe('Cloud Code', () => {
     expect(obj.get('count')).toBe(0);
   });
 
+  it('operations in beforeSave should return to client', async () => {
+    Parse.Cloud.afterSave('MyObject', ({ object }) => {
+      object.unset('foo');
+      object.increment('count');
+      object.addUnique('unique', 2);
+      object.add('array', 2);
+      object.remove('remove', 2);
+    });
+    const saveResponse = await request({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Installation-Id': 'yolo',
+      },
+      url: 'http://localhost:8378/1/classes/MyObject',
+      body: JSON.stringify({
+        unique: [2],
+        remove: [2],
+      }),
+    }).catch(e => {
+      console.log({ e });
+    });
+    console.log(saveResponse.data);
+    const { array, count, foo, unique, remove } = saveResponse.data;
+    expect(array).toEqual([2]);
+    expect(count).toEqual(1);
+    expect(foo).toEqual(null);
+    expect(unique).toBeUndefined();
+    expect(remove).toEqual([]);
+  });
+
+  it('operations in afterSave should return to client', async () => {
+    Parse.Cloud.afterSave('MyObject', ({ object }) => {
+      object.unset('foo');
+      object.increment('count');
+      object.addUnique('unique', 2);
+      object.add('array', 2);
+      object.remove('remove', 2);
+    });
+    const saveResponse = await request({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Installation-Id': 'yolo',
+      },
+      url: 'http://localhost:8378/1/classes/MyObject',
+      body: JSON.stringify({
+        unique: [2],
+        remove: [2],
+      }),
+    }).catch(e => {
+      console.log({ e });
+    });
+    console.log(saveResponse.data);
+    const { array, count, foo, unique, remove } = saveResponse.data;
+    expect(array).toEqual([2]);
+    expect(count).toEqual(1);
+    expect(foo).toEqual(null);
+    expect(unique).toBeUndefined();
+    expect(remove).toEqual([]);
+  });
+
   it('pointer should not be cleared by triggers', async () => {
     Parse.Cloud.afterSave('MyObject', () => {});
     const foo = await new Parse.Object('Test', { foo: 'bar' }).save();

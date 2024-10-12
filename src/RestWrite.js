@@ -11,7 +11,6 @@ var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
-var ClientSDK = require('./ClientSDK');
 const util = require('util');
 import RestQuery from './RestQuery';
 import _ from 'lodash';
@@ -38,7 +37,9 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.auth = auth;
   this.className = className;
   this.clientSDK = clientSDK;
-  this.storage = {};
+  this.storage = {
+    fieldsChangedByTrigger: [],
+  };
   this.runOptions = {};
   this.context = context || {};
 
@@ -285,9 +286,9 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
       );
     })
     .then(response => {
-      if (response && response.object) {
-        this.storage.fieldsChangedByTrigger = _.reduce(
-          response.object,
+      this.storage.fieldsChangedByTrigger.push(
+        ..._.reduce(
+          response?.object || updatedObject.toJSON(),
           (result, value, key) => {
             if (!_.isEqual(this.data[key], value)) {
               result.push(key);
@@ -295,7 +296,9 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
             return result;
           },
           []
-        );
+        )
+      );
+      if (response && response.object) {
         this.data = response.object;
         // We should delete the objectId for an update write
         if (this.query && this.query.objectId) {
@@ -357,7 +360,6 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
               (typeof this.data[fieldName] === 'object' && this.data[fieldName].__op === 'Delete'))
           ) {
             this.data[fieldName] = schema.fields[fieldName].defaultValue;
-            this.storage.fieldsChangedByTrigger = this.storage.fieldsChangedByTrigger || [];
             if (this.storage.fieldsChangedByTrigger.indexOf(fieldName) < 0) {
               this.storage.fieldsChangedByTrigger.push(fieldName);
             }
@@ -1672,6 +1674,18 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       this.context
     )
     .then(result => {
+      this.storage.fieldsChangedByTrigger.push(
+        ..._.reduce(
+          updatedObject.toJSON(),
+          (result, value, key) => {
+            if (!_.isEqual(this.data[key], value)) {
+              result.push(key);
+            }
+            return result;
+          },
+          []
+        )
+      );
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
         this.pendingOps.operations = {};
@@ -1810,18 +1824,62 @@ RestWrite.prototype._updateResponseWithData = function (response, data) {
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
     return response;
   }
-  const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
-    const dataValue = data[fieldName];
+    let dataValue = deepcopy(data[fieldName]);
 
     if (!Object.prototype.hasOwnProperty.call(response, fieldName)) {
       response[fieldName] = dataValue;
     }
 
     // Strips operations from responses
-    if (response[fieldName] && response[fieldName].__op) {
-      delete response[fieldName];
-      if (clientSupportsDelete && dataValue.__op == 'Delete') {
+    const value = response[fieldName];
+    const op = value?.__op;
+    if (op) {
+      switch (op) {
+        case 'Increment': {
+          if (!dataValue) {
+            dataValue = 0;
+          }
+          dataValue += value.amount;
+          break;
+        }
+        case 'Delete': {
+          dataValue = null;
+          break;
+        }
+        case 'AddUnique':
+        case 'Add': {
+          if (!dataValue) {
+            dataValue = [];
+          }
+          for (const obj of value.objects) {
+            if (op === 'AddUnique' && dataValue.includes(obj)) {
+              continue;
+            }
+            dataValue.push(obj);
+          }
+          break;
+        }
+        case 'Remove': {
+          if (!dataValue) {
+            dataValue = [];
+          }
+          for (const obj of value.objects) {
+            let i = dataValue.length;
+            while (i--) {
+              const current = dataValue[i];
+              if (current === obj) {
+                dataValue.splice(i, 1);
+              }
+            }
+          }
+          break;
+        }
+        default:
+      }
+      if (util.isDeepStrictEqual(dataValue, this.data[fieldName])) {
+        delete response[fieldName];
+      } else {
         response[fieldName] = dataValue;
       }
     }
