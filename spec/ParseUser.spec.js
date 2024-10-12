@@ -4447,13 +4447,10 @@ describe('custom log levels for username already exists error', () => {
     infoSpy.calls.reset();
   });
 
-  const testCases = [
-    { logLevel: 'warn', expectedSpy: 'warnSpy' },
-    { logLevel: 'info', expectedSpy: 'infoSpy' },
-  ];
+  it('should respect custom log levels for username already exists error', async () => {
+    const logLevels = ['warn', 'info'];
 
-  testCases.forEach(({ logLevel, expectedSpy }) => {
-    it(`should respect ${logLevel} log level for username already exists error`, async () => {
+    for (const logLevel of logLevels) {
       await reconfigureServer({
         logLevels: {
           usernameAlreadyExists: logLevel,
@@ -4473,15 +4470,23 @@ describe('custom log levels for username already exists error', () => {
 
       try {
         await duplicateUser.signUp();
+        fail('Should have thrown an error');
       } catch (error) {
         expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
-        expect(this[expectedSpy]).toHaveBeenCalled();
-        ['warnSpy', 'errorSpy', 'infoSpy'].forEach(spy => {
-          if (spy !== expectedSpy) {
-            expect(this[spy]).not.toHaveBeenCalled();
-          }
-        });
+        if (logLevel === 'warn') {
+          expect(warnSpy).toHaveBeenCalled();
+          expect(infoSpy).not.toHaveBeenCalled();
+        } else if (logLevel === 'info') {
+          expect(infoSpy).toHaveBeenCalled();
+          expect(warnSpy).not.toHaveBeenCalled();
+        }
+        expect(errorSpy).not.toHaveBeenCalled();
       }
-    });
+
+      // Reset spies for the next iteration
+      warnSpy.calls.reset();
+      errorSpy.calls.reset();
+      infoSpy.calls.reset();
+    }
   });
 });
