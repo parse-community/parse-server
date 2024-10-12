@@ -4431,23 +4431,13 @@ describe('allowClientClassCreation option', () => {
   });
 });
 
-describe('custom log levels for username already exists error', () => {
-  const logger = require('../lib/logger').logger;
-  let warnSpy, errorSpy, infoSpy;
-
-  beforeEach(() => {
-    warnSpy = spyOn(logger, 'warn').and.callThrough();
-    errorSpy = spyOn(logger, 'error').and.callThrough();
-    infoSpy = spyOn(logger, 'info').and.callThrough();
-  });
-
-  afterEach(() => {
-    warnSpy.calls.reset();
-    errorSpy.calls.reset();
-    infoSpy.calls.reset();
-  });
-
+describe('custom log levels for user errors', () => {
   it('should respect custom log levels for username already exists error', async () => {
+    const logger = require('../lib/logger').logger;
+    const warnSpy = spyOn(logger, 'warn').and.callThrough();
+    const errorSpy = spyOn(logger, 'error').and.callThrough();
+    const infoSpy = spyOn(logger, 'info').and.callThrough();
+
     const logLevels = ['warn', 'info'];
 
     for (const logLevel of logLevels) {
@@ -4458,32 +4448,20 @@ describe('custom log levels for username already exists error', () => {
       });
 
       const username = `existingUser_${logLevel}`;
-
-      const user = new Parse.User();
-      user.setUsername(username);
-      user.setPassword('password');
-      await user.signUp();
-
-      const duplicateUser = new Parse.User();
-      duplicateUser.setUsername(username);
-      duplicateUser.setPassword('password');
+      await Parse.User.signUp(username, 'password');
 
       try {
-        await duplicateUser.signUp();
-        fail('Should have thrown an error');
+        await Parse.User.signUp(username, 'password');
       } catch (error) {
         expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
-        if (logLevel === 'warn') {
-          expect(warnSpy).toHaveBeenCalled();
-          expect(infoSpy).not.toHaveBeenCalled();
-        } else if (logLevel === 'info') {
-          expect(infoSpy).toHaveBeenCalled();
-          expect(warnSpy).not.toHaveBeenCalled();
-        }
-        expect(errorSpy).not.toHaveBeenCalled();
+        expect(logger[logLevel]).toHaveBeenCalled();
+        ['warn', 'error', 'info'].forEach(level => {
+          if (level !== logLevel) {
+            expect(logger[level]).not.toHaveBeenCalled();
+          }
+        });
       }
 
-      // Reset spies for the next iteration
       warnSpy.calls.reset();
       errorSpy.calls.reset();
       infoSpy.calls.reset();
