@@ -4447,55 +4447,41 @@ describe('custom log levels for username already exists error', () => {
     infoSpy.calls.reset();
   });
 
-  it('should respect warn log level for username already exists error', async () => {
-    await reconfigureServer({
-      logLevels: {
-        usernameAlreadyExists: 'warn',
-      },
+  const testCases = [
+    { logLevel: 'warn', expectedSpy: 'warnSpy' },
+    { logLevel: 'info', expectedSpy: 'infoSpy' },
+  ];
+
+  testCases.forEach(({ logLevel, expectedSpy }) => {
+    it(`should respect ${logLevel} log level for username already exists error`, async () => {
+      await reconfigureServer({
+        logLevels: {
+          usernameAlreadyExists: logLevel,
+        },
+      });
+
+      const username = `existingUser_${logLevel}`;
+
+      const user = new Parse.User();
+      user.setUsername(username);
+      user.setPassword('password');
+      await user.signUp();
+
+      const duplicateUser = new Parse.User();
+      duplicateUser.setUsername(username);
+      duplicateUser.setPassword('password');
+
+      try {
+        await duplicateUser.signUp();
+      } catch (error) {
+        expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
+        expect(this[expectedSpy]).toHaveBeenCalled();
+        ['warnSpy', 'errorSpy', 'infoSpy'].forEach(spy => {
+          if (spy !== expectedSpy) {
+            expect(this[spy]).not.toHaveBeenCalled();
+          }
+        });
+      }
     });
-
-    const user = new Parse.User();
-    user.setUsername('existingUser');
-    user.setPassword('password');
-    await user.signUp();
-
-    const duplicateUser = new Parse.User();
-    duplicateUser.setUsername('existingUser');
-    duplicateUser.setPassword('password');
-
-    try {
-      await duplicateUser.signUp();
-    } catch (error) {
-      expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
-      expect(warnSpy).toHaveBeenCalled();
-      expect(errorSpy).not.toHaveBeenCalled();
-      expect(infoSpy).not.toHaveBeenCalled();
-    }
-  });
-
-  it('should respect info log level for username already exists error', async () => {
-    await reconfigureServer({
-      logLevels: {
-        usernameAlreadyExists: 'info',
-      },
-    });
-
-    const user = new Parse.User();
-    user.setUsername('anotherExistingUser');
-    user.setPassword('password');
-    await user.signUp();
-
-    const duplicateUser = new Parse.User();
-    duplicateUser.setUsername('anotherExistingUser');
-    duplicateUser.setPassword('password');
-
-    try {
-      await duplicateUser.signUp();
-    } catch (error) {
-      expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
-      expect(infoSpy).toHaveBeenCalled();
-      expect(warnSpy).not.toHaveBeenCalled();
-      expect(errorSpy).not.toHaveBeenCalled();
-    }
   });
 });
