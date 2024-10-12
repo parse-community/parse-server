@@ -1783,6 +1783,16 @@ describe('Cloud Code', () => {
     count === 2 ? done() : fail();
   });
 
+  it('should limit count query if limit is set', async () => {
+    const promises = [];
+    for (let i = 0; i < 10; i++) {
+      promises.push(new Parse.Object('Stuff').set('i', i).save());
+    }
+    await Promise.all(promises);
+    const count = await (new Parse.Query('Stuff').limit(5).count());
+    expect(count).toBe(5);
+  });
+
   /**
    * Verifies that an afterSave hook throwing an exception
    * will not prevent a successful save response from being returned
