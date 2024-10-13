@@ -4432,7 +4432,7 @@ describe('allowClientClassCreation option', () => {
 });
 
 fdescribe('log levels', () => {
-  const logLevels = ['warn', 'info', 'error'];
+  const logLevels = [undefined, 'silent', 'info', 'error'];
 
   it_id('bd3929eb-85dd-4955-ac1d-5ba59ab1b9a3')(it)('should use log level for username already exists error', async () => {
     for (const logLevel of logLevels) {
@@ -4456,8 +4456,12 @@ fdescribe('log levels', () => {
       );
 
       logLevels.forEach(level => {
-        expect(logger[level]).toHaveBeenCalledTimes(level === logLevel ? 1 : 0);
-        logger[level].calls.reset();
+        if (level == 'silent') {
+          return;
+        }
+        const levelOrDefault = level || 'error';
+        expect(logger[levelOrDefault]).toHaveBeenCalledTimes(level === logLevel ? 1 : 0);
+        logger[levelOrDefault].calls.reset();
       });
     }
   });
