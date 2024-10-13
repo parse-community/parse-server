@@ -4431,15 +4431,10 @@ describe('allowClientClassCreation option', () => {
   });
 });
 
-describe('custom log levels for user errors', () => {
-  it('should respect custom log levels for username already exists error', async () => {
-    const logger = require('../lib/logger').logger;
-    const warnSpy = spyOn(logger, 'warn').and.callThrough();
-    const errorSpy = spyOn(logger, 'error').and.callThrough();
-    const infoSpy = spyOn(logger, 'info').and.callThrough();
+fdescribe('log levels', () => {
+  const logLevels = ['warn', 'info', 'error'];
 
-    const logLevels = ['warn', 'info'];
-
+  it_id('bd3929eb-85dd-4955-ac1d-5ba59ab1b9a3')(it)('should use log level for username already exists error', async () => {
     for (const logLevel of logLevels) {
       await reconfigureServer({
         logLevels: {
@@ -4447,24 +4442,23 @@ describe('custom log levels for user errors', () => {
         },
       });
 
-      const username = `existingUser_${logLevel}`;
-      await Parse.User.signUp(username, 'password');
+      const logger = require('../lib/logger').logger;
+      spyOn(logger, 'warn').and.callFake(() => {});
+      spyOn(logger, 'error').and.callFake(() => {});
+      spyOn(logger, 'info').and.callFake(() => {});
 
-      try {
-        await Parse.User.signUp(username, 'password');
-      } catch (error) {
-        expect(error.code).toBe(Parse.Error.USERNAME_TAKEN);
-        expect(logger[logLevel]).toHaveBeenCalled();
-        ['warn', 'error', 'info'].forEach(level => {
-          if (level !== logLevel) {
-            expect(logger[level]).not.toHaveBeenCalled();
-          }
-        });
-      }
+      await Parse.User.signUp('user', 'pass');
+      await expectAsync(Parse.User.signUp('user', 'pass')).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.USERNAME_TAKEN,
+          'Account already exists for this username.'
+        )
+      );
 
-      warnSpy.calls.reset();
-      errorSpy.calls.reset();
-      infoSpy.calls.reset();
+      logLevels.forEach(level => {
+        expect(logger[level]).toHaveBeenCalledTimes(level === logLevel ? 1 : 0);
+        logger[level].calls.reset();
+      });
     }
   });
 });

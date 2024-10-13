@@ -739,10 +739,14 @@ RestWrite.prototype._validateUserName = function () {
     )
     .then(results => {
       if (results.length > 0) {
-        throw new Parse.Error(
+        const usernameError = new Parse.Error(
           Parse.Error.USERNAME_TAKEN,
           'Account already exists for this username.'
         );
+        if (this.config.logLevels.usernameAlreadyExists !== 'silent') {
+          logger[this.config.logLevels.usernameAlreadyExists](JSON.stringify(usernameError));
+        }
+        throw usernameError;
       }
       return;
     });
@@ -1561,10 +1565,10 @@ RestWrite.prototype.runDatabaseOperation = function () {
             Parse.Error.USERNAME_TAKEN,
             'Account already exists for this username.'
           );
-
-          return this.config.loggerController[this.config.logLevels.usernameAlreadyExists](
-            JSON.stringify(usernameError)
-          );
+          if (this.config.logLevels.usernameAlreadyExists !== 'silent') {
+            logger[this.config.logLevels.usernameAlreadyExists](JSON.stringify(usernameError));
+          }
+          throw usernameError;
         }
 
         if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
@@ -1589,10 +1593,14 @@ RestWrite.prototype.runDatabaseOperation = function () {
           )
           .then(results => {
             if (results.length > 0) {
-              throw new Parse.Error(
+              const usernameError = new Parse.Error(
                 Parse.Error.USERNAME_TAKEN,
                 'Account already exists for this username.'
               );
+              if (this.config.logLevels.usernameAlreadyExists !== 'silent') {
+                logger[this.config.logLevels.usernameAlreadyExists](JSON.stringify(usernameError));
+              }
+              throw usernameError;
             }
             return this.config.database.find(
               this.className,
