@@ -254,5 +254,5 @@
  * @property {String} triggerAfter Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.
  * @property {String} triggerBeforeError Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.
  * @property {String} triggerBeforeSuccess Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.
- * @property {String} usernameAlreadyExists Log level for the username already exists error when trying to sign up.Default is `error`.
+ * @property {String} usernameAlreadyExists Log level for the username already exists error when trying to sign up. Default is `error`.
  */
