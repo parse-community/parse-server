@@ -160,17 +160,21 @@ jobs:
             MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 22.4.1
+          - name: MongoDB 8, ReplicaSet
+            MONGODB_VERSION: 8.0.0
+            MONGODB_TOPOLOGY: replset
+            NODE_VERSION: 22.4.1
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 8.0.0
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 22.4.1
           - name: Node 20
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 8.0.0
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 20.15.1
           - name: Node 18
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 8.0.0
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 18.20.4
       fail-fast: false
@@ -239,6 +243,9 @@ jobs:
             NODE_VERSION: 22.4.1
           - name: PostgreSQL 16, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:16-3.4
+            NODE_VERSION: 22.4.1
+          - name: PostgreSQL 17, PostGIS 3.4
+            POSTGRES_IMAGE: postgis/postgis:17-3.4
             NODE_VERSION: 22.4.1
       fail-fast: false
     name: ${{ matrix.name }}
