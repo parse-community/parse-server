@@ -5279,7 +5279,7 @@ describe('Parse.Query testing', () => {
     expect(result.executionStats).not.toBeUndefined();
   });
 
-  it('Query fails when wrapped within eachBatch and direct access is set to true', async () => {
+  it('should query with distinct within eachBatch and direct access enabled', async () => {
     await reconfigureServer({
       directAccess: true,
     });
