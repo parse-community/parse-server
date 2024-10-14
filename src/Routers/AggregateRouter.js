@@ -80,7 +80,7 @@ export class AggregateRouter extends ClassesRouter {
     let pipeline = body.pipeline || body;
     if (!Array.isArray(pipeline)) {
       pipeline = Object.keys(pipeline).map(key => {
-        return { [`$${key}`]: pipeline[key] };
+        return { [key]: pipeline[key] };
       });
     }
 
