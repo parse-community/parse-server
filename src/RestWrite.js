@@ -743,9 +743,6 @@ RestWrite.prototype._validateUserName = function () {
           Parse.Error.USERNAME_TAKEN,
           'Account already exists for this username.'
         );
-        if (this.config.logLevels.usernameAlreadyExists !== 'silent') {
-          logger[this.config.logLevels.usernameAlreadyExists](JSON.stringify(usernameError));
-        }
         throw usernameError;
       }
       return;
