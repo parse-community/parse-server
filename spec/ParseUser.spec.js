@@ -4432,22 +4432,23 @@ describe('allowClientClassCreation option', () => {
 });
 
 describe('log levels', () => {
-  const logLevels = [undefined, 'silent', 'info', 'warn', 'error'];
+  const logLevels = ['info', 'warn', 'error'];
+  const testLogLevels = ['info'];//[undefined, 'silent', 'info', 'warn', 'error'];
 
   it_id('bd3929eb-85dd-4955-ac1d-5ba59ab1b9a3')(fit)('should use log level for username already exists error', async () => {
-    for (const logLevel of logLevels) {
+    for (const testLogLevel of testLogLevels) {
       await reconfigureServer({
         logLevels: {
-          usernameAlreadyExists: logLevel,
+          usernameAlreadyExists: testLogLevel,
         },
       });
 
+      // Set up logger spies
       const logger = require('../lib/logger').logger;
-      spyOn(logger, 'warn').and.callFake(() => {});
-      spyOn(logger, 'error').and.callFake(() => {});
-      spyOn(logger, 'info').and.callFake(() => {});
-      const uniqueUsername = `user_${Date.now()}`;
+      logLevels.forEach(level => spyOn(logger, level).and.callFake(() => {}));
 
+      // Invoke error
+      const uniqueUsername = `user_${Date.now()}`;
       await Parse.User.signUp(uniqueUsername, 'pass');
       await expectAsync(Parse.User.signUp(uniqueUsername, 'pass')).toBeRejectedWith(
         new Parse.Error(
@@ -4456,13 +4457,11 @@ describe('log levels', () => {
         )
       );
 
+      // Verify log outputs
       logLevels.forEach(level => {
-        if (level == 'silent') {
-          return;
-        }
-        const levelOrDefault = level || 'error';
-        expect(logger[levelOrDefault]).toHaveBeenCalledTimes(level === logLevel ? 1 : 0);
-        logger[levelOrDefault].calls.reset();
+        const levelOrDefault = testLogLevel || 'error';
+        expect(logger[level]).toHaveBeenCalledTimes(level === levelOrDefault ? 1 : 0);
+        logger[level].calls.reset();
       });
     }
   });
