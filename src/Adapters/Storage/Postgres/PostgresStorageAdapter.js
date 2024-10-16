@@ -127,6 +127,12 @@ const emptyCLPS = Object.freeze({
 });
 
 const defaultCLPS = Object.freeze({
+  ACL: {
+    '*': {
+      read: true,
+      write: true,
+    },
+  },
   find: { '*': true },
   get: { '*': true },
   count: { '*': true },

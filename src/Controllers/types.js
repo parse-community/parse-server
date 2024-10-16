@@ -19,6 +19,11 @@ export type Schema = {
 };
 
 export type ClassLevelPermissions = {
+  ACL?: {
+    [string]: {
+      [string]: boolean,
+    },
+  },
   find?: { [string]: boolean },
   count?: { [string]: boolean },
   get?: { [string]: boolean },

@@ -18,6 +18,12 @@ describe('MongoSchemaCollection', () => {
         },
         _metadata: {
           class_permissions: {
+            ACL: {
+              '*': {
+                read: true,
+                write: true,
+              },
+            },
             get: { '*': true },
             find: { '*': true },
             count: { '*': true },
@@ -69,6 +75,12 @@ describe('MongoSchemaCollection', () => {
         objectId: { type: 'String' },
       },
       classLevelPermissions: {
+        ACL: {
+          '*': {
+            read: true,
+            write: true,
+          },
+        },
         find: { '*': true },
         get: { '*': true },
         count: { '*': true },
