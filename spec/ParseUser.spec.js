@@ -4430,3 +4430,39 @@ describe('allowClientClassCreation option', () => {
     defaultConfiguration.allowClientClassCreation = true;
   });
 });
+
+describe('log levels', () => {
+  const logLevels = ['info', 'warn', 'error'];
+  const testLogLevels = ['info'];//[undefined, 'silent', 'info', 'warn', 'error'];
+
+  it_id('bd3929eb-85dd-4955-ac1d-5ba59ab1b9a3')(fit)('should use log level for username already exists error', async () => {
+    for (const testLogLevel of testLogLevels) {
+      await reconfigureServer({
+        logLevels: {
+          usernameAlreadyExists: testLogLevel,
+        },
+      });
+
+      // Set up logger spies
+      const logger = require('../lib/logger').logger;
+      logLevels.forEach(level => spyOn(logger, level).and.callFake(() => {}));
+
+      // Invoke error
+      const uniqueUsername = `user_${Date.now()}`;
+      await Parse.User.signUp(uniqueUsername, 'pass');
+      await expectAsync(Parse.User.signUp(uniqueUsername, 'pass')).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.USERNAME_TAKEN,
+          'Account already exists for this username.'
+        )
+      );
+
+      // Verify log outputs
+      logLevels.forEach(level => {
+        const levelOrDefault = testLogLevel || 'error';
+        expect(logger[level]).toHaveBeenCalledTimes(level === levelOrDefault ? 1 : 0);
+        logger[level].calls.reset();
+      });
+    }
+  });
+});

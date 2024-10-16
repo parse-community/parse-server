@@ -635,4 +635,8 @@ export interface LogLevels {
   :DEFAULT: error
   */
   cloudFunctionError: ?string;
+  /* Log level for the username already exists error when trying to sign up. Default is `error`.
+  :DEFAULT: error
+  */
+  usernameAlreadyExists: ?string;
 }

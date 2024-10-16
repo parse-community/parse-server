@@ -150,6 +150,7 @@ if (silent) {
     triggerAfter: 'silent',
     triggerBeforeError: 'silent',
     triggerBeforeSuccess: 'silent',
+    usernameAlreadyExists: 'silent',
   };
 }
 
