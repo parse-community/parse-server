@@ -4446,9 +4446,10 @@ fdescribe('log levels', () => {
       spyOn(logger, 'warn').and.callFake(() => {});
       spyOn(logger, 'error').and.callFake(() => {});
       spyOn(logger, 'info').and.callFake(() => {});
+      const uniqueUsername = `user_${Date.now()}`;
 
-      await Parse.User.signUp('user', 'pass');
-      await expectAsync(Parse.User.signUp('user', 'pass')).toBeRejectedWith(
+      await Parse.User.signUp(uniqueUsername, 'pass');
+      await expectAsync(Parse.User.signUp(uniqueUsername, 'pass')).toBeRejectedWith(
         new Parse.Error(
           Parse.Error.USERNAME_TAKEN,
           'Account already exists for this username.'
