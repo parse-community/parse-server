@@ -1562,8 +1562,12 @@ RestWrite.prototype.runDatabaseOperation = function () {
             Parse.Error.USERNAME_TAKEN,
             'Account already exists for this username.'
           );
-          if (this.config.logLevels.usernameAlreadyExists !== 'silent') {
-            logger[this.config.logLevels.usernameAlreadyExists](JSON.stringify(usernameError));
+          if (this.config.logLevels.usernameAlreadyExists === 'info') {
+            logger.info(JSON.stringify(usernameError));
+          } else if (this.config.logLevels.usernameAlreadyExists === 'warn') {
+            logger.warn(JSON.stringify(usernameError));
+          } else if (this.config.logLevels.usernameAlreadyExists === 'error') {
+            logger.error(JSON.stringify(usernameError));
           }
           throw usernameError;
         }
