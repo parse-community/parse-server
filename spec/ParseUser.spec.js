@@ -4431,7 +4431,7 @@ describe('allowClientClassCreation option', () => {
   });
 });
 
-fdescribe('log levels', () => {
+describe('log levels', () => {
   const logLevels = [undefined, 'silent', 'info', 'warn', 'error'];
 
   it_id('bd3929eb-85dd-4955-ac1d-5ba59ab1b9a3')(it)('should use log level for username already exists error', async () => {
