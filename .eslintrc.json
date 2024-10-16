@@ -26,7 +26,8 @@
         "no-useless-escape": "off",
         "require-atomic-updates": "off",
         "object-curly-spacing": ["error", "always"],
-        "curly": ["error", "all"]
+        "curly": ["error", "all"],
+        "block-spacing": ["error", "always"]
     },
     "globals": {
         "Parse": true

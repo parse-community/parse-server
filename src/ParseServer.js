@@ -88,7 +88,7 @@ class ParseServer {
         if (!Object.prototype.hasOwnProperty.call(ref, key)) {
           result.push(prefix + key);
         } else {
-          if (ref[key] === '') continue;
+          if (ref[key] === '') { continue; }
           let res = [];
           if (Array.isArray(original[key]) && Array.isArray(ref[key])) {
             const type = ref[key][0];
