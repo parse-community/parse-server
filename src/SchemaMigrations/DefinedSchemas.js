@@ -80,7 +80,7 @@ export class DefinedSchemas {
       logger.info('Running Migrations Completed');
     } catch (e) {
       logger.error(`Failed to run migrations: ${e}`);
-      if (process.env.NODE_ENV === 'production') process.exit(1);
+      if (process.env.NODE_ENV === 'production') { process.exit(1); }
     }
   }
 
@@ -108,7 +108,7 @@ export class DefinedSchemas {
       this.checkForMissingSchemas();
       await this.enforceCLPForNonProvidedClass();
     } catch (e) {
-      if (timeout) clearTimeout(timeout);
+      if (timeout) { clearTimeout(timeout); }
       if (this.retries < this.maxRetries) {
         this.retries++;
         // first retry 1sec, 2sec, 3sec total 6sec retry sequence
@@ -118,7 +118,7 @@ export class DefinedSchemas {
         await this.executeMigrations();
       } else {
         logger.error(`Failed to run migrations: ${e}`);
-        if (process.env.NODE_ENV === 'production') process.exit(1);
+        if (process.env.NODE_ENV === 'production') { process.exit(1); }
       }
     }
   }
@@ -428,7 +428,7 @@ export class DefinedSchemas {
     const keysB: string[] = Object.keys(objB);
 
     // Check key name
-    if (keysA.length !== keysB.length) return false;
+    if (keysA.length !== keysB.length) { return false; }
     return keysA.every(k => objA[k] === objB[k]);
   }
 
