@@ -1,6 +1,7 @@
 // triggers.js
 import Parse from 'parse/node';
 import { logger } from './logger';
+import Utils from './Utils';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
@@ -292,6 +293,9 @@ export function getRequestObject(
   }
   if (auth.user) {
     request['user'] = auth.user;
+    request['getUserRoles'] = async () => {
+      return (await auth.getUserRoles()).map(Utils.stripACLRolePrefix);
+    };
   }
   if (auth.installationId) {
     request['installationId'] = auth.installationId;

@@ -1163,6 +1163,56 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('test save triggers get user roles', async () => {
+    let beforeSaveFlag = false;
+    let afterSaveFlag = false;
+    Parse.Cloud.beforeSave('SaveTriggerUserRoles', async req => {
+      expect(new Set(await req.getUserRoles())).toEqual(new Set(['TestRole1', 'TestRole2']));
+      beforeSaveFlag = true;
+    });
+
+    Parse.Cloud.afterSave('SaveTriggerUserRoles', async req => {
+      expect(new Set(await req.getUserRoles())).toEqual(new Set(['TestRole1', 'TestRole2']));
+      afterSaveFlag = true;
+    });
+
+    const user = new Parse.User();
+    user.set('password', 'asdf');
+    user.set('email', 'asdf@example.com');
+    user.set('username', 'zxcv');
+    await user.signUp();
+    const role1 = new Parse.Role('TestRole1', new Parse.ACL({ '*': { read: true, write: true } }));
+    const role2 = new Parse.Role('TestRole2', new Parse.ACL({ '*': { read: true, write: true } }));
+    await role1.save();
+    role2.getRoles().add(role1);
+    role1.getUsers().add(user);
+    await Parse.Object.saveAll([role1, role2]);
+
+    const obj = new Parse.Object('SaveTriggerUserRoles');
+    await obj.save();
+    expect(beforeSaveFlag).toBeTrue();
+    expect(afterSaveFlag).toBeTrue();
+  });
+
+  it('should not have user roles for anonymous calls', async () => {
+    let beforeSaveFlag = false;
+    let afterSaveFlag = false;
+    Parse.Cloud.beforeSave('SaveTriggerUserRoles', async req => {
+      expect(req.getUserRoles).toBeUndefined();
+      beforeSaveFlag = true;
+    });
+
+    Parse.Cloud.afterSave('SaveTriggerUserRoles', async req => {
+      expect(req.getUserRoles).toBeUndefined();
+      afterSaveFlag = true;
+    });
+
+    const obj = new Parse.Object('SaveTriggerUserRoles');
+    await obj.save();
+    expect(beforeSaveFlag).toBeTrue();
+    expect(afterSaveFlag).toBeTrue();
+  });
+
   it('beforeSave change propagates through the save response', done => {
     Parse.Cloud.beforeSave('ChangingObject', function (request) {
       request.object.set('foo', 'baz');
@@ -2013,6 +2063,40 @@ describe('cloud functions', () => {
     });
 
     Parse.Cloud.run('myFunction', {}).then(() => done());
+  });
+
+  it('should have user roles', async () => {
+    let flag = false;
+    Parse.Cloud.define('myFunction', async req => {
+      expect(new Set(await req.getUserRoles())).toEqual(new Set(['TestRole1', 'TestRole2']));
+      flag = true;
+    });
+
+    const user = new Parse.User();
+    user.set('password', 'asdf');
+    user.set('email', 'asdf@example.com');
+    user.set('username', 'zxcv');
+    await user.signUp();
+    const role1 = new Parse.Role('TestRole1', new Parse.ACL({ '*': { read: true, write: true } }));
+    const role2 = new Parse.Role('TestRole2', new Parse.ACL({ '*': { read: true, write: true } }));
+    await role1.save();
+    role2.getRoles().add(role1);
+    role1.getUsers().add(user);
+    await Parse.Object.saveAll([role1, role2]);
+
+    await Parse.Cloud.run('myFunction', { sessionToken: user.getSessionToken() });
+    expect(flag).toBeTrue();
+  });
+
+  it('should not have user roles for anonymous calls', async () => {
+    let flag = false;
+    Parse.Cloud.define('myFunction', async req => {
+      expect(req.getUserRoles).toBeUndefined();
+      flag = true;
+    });
+
+    await Parse.Cloud.run('myFunction');
+    expect(flag).toBeTrue();
   });
 });
 
