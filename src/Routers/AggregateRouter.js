@@ -1,7 +1,7 @@
-import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
-import * as middleware from '../middlewares';
 import Parse from 'parse/node';
+import * as middleware from '../middlewares';
+import rest from '../rest';
+import ClassesRouter from './ClassesRouter';
 import UsersRouter from './UsersRouter';
 
 export class AggregateRouter extends ClassesRouter {
@@ -52,7 +52,7 @@ export class AggregateRouter extends ClassesRouter {
   }
 
   /* Builds a pipeline from the body. Originally the body could be passed as a single object,
-   * and now we support many options
+   * and now we support many options.
    *
    * Array
    *
@@ -71,7 +71,7 @@ export class AggregateRouter extends ClassesRouter {
    *
    * body: {
    *   pipeline: {
-   *     group: { objectId: '$name' },
+   *     $group: { objectId: '$name' },
    *   }
    * }
    *
@@ -79,9 +79,11 @@ export class AggregateRouter extends ClassesRouter {
   static getPipeline(body) {
     let pipeline = body.pipeline || body;
     if (!Array.isArray(pipeline)) {
-      pipeline = Object.keys(pipeline).map(key => {
-        return { [key]: pipeline[key] };
-      });
+      pipeline = Object.keys(pipeline)
+        .filter(key => pipeline[key] !== undefined)
+        .map(key => {
+          return { [key]: pipeline[key] };
+        });
     }
 
     return pipeline.map(stage => {
