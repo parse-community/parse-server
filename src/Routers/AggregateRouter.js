@@ -11,20 +11,20 @@ export class AggregateRouter extends ClassesRouter {
     if (body.distinct) {
       options.distinct = String(body.distinct);
     }
-    if (Object.prototype.hasOwnProperty.call(body, 'hint')) {
-      if (body.hint) options.hint = body.hint;
+    if (body.hint) {
+      options.hint = body.hint;
       delete body.hint;
     }
-    if (Object.prototype.hasOwnProperty.call(body, 'explain')) {
-      if (body.explain) options.explain = body.explain;
+    if (body.explain) {
+      options.explain = body.explain;
       delete body.explain;
     }
-    if (Object.prototype.hasOwnProperty.call(body, 'comment')) {
-      if (body.comment) options.comment = body.comment;
+    if (body.comment) {
+      options.comment = body.comment;
       delete body.comment;
     }
-    if (Object.prototype.hasOwnProperty.call(body, 'readPreference')) {
-      if (body.readPreference) options.readPreference = body.readPreference;
+    if (body.readPreference) {
+      options.readPreference = body.readPreference;
       delete body.readPreference;
     }
     options.pipeline = AggregateRouter.getPipeline(body);
