@@ -79,9 +79,11 @@ export class AggregateRouter extends ClassesRouter {
   static getPipeline(body) {
     let pipeline = body.pipeline || body;
     if (!Array.isArray(pipeline)) {
-      pipeline = Object.keys(pipeline).map(key => {
-        return { [key]: pipeline[key] };
-      });
+      pipeline = Object.keys(pipeline)
+        .filter(key => pipeline[key] !== undefined)
+        .map(key => {
+          return { [key]: pipeline[key] };
+        });
     }
 
     return pipeline.map(stage => {
