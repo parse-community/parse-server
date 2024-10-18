@@ -26,7 +26,7 @@ export class FilesAdapter {
   /** Responsible for storing the file in order to be retrieved later by its filename
    *
    * @param {string} filename - the filename to save
-   * @param {*} data - the buffer of data from the file
+   * @param {*} data - the representation of data from the file as Buffer or Blob
    * @param {string} contentType - the supposed contentType
    * @discussion the contentType can be undefined if the controller was not able to determine it
    * @param {object} options - (Optional) options to be passed to file adapter (S3 File Adapter Only)

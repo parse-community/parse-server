@@ -172,8 +172,18 @@ export class FilesRouter {
       }
     }
 
-    const base64 = req.body.toString('base64');
-    const file = new Parse.File(filename, { base64 }, contentType);
+    // If the request body is a buffer and it's size is greater than the V8 string size limit
+    // we need to use a Blob to avoid the V8 string size limit
+    const MAX_V8_STRING_SIZE_BYTES = 536_870_912;
+
+    let file;
+
+    if (Buffer.isBuffer(req.body) && req.body?.length >= MAX_V8_STRING_SIZE_BYTES) {
+      file = new Parse.File(filename, new Blob([req.body]), contentType);
+    } else {
+      file = new Parse.File(filename, { base64: req.body.toString('base64') }, contentType);
+    }
+
     const { metadata = {}, tags = {} } = req.fileData || {};
     try {
       // Scan request data for denied keywords
@@ -213,8 +223,18 @@ export class FilesRouter {
         // if the ParseFile returned is type uri, download the file before saving it
         await addFileDataIfNeeded(fileObject.file);
         // update fileSize
-        const bufferData = Buffer.from(fileObject.file._data, 'base64');
-        fileObject.fileSize = Buffer.byteLength(bufferData);
+        let fileData;
+        // if the file is a blob, get the size from the blob
+        if (fileObject.file._source?.file instanceof Blob) {
+          // get the size of the blob
+          fileObject.fileSize = fileObject.file._source.file.size;
+          // set the file data
+          fileData = fileObject.file._source?.file;
+        } else {
+          const bufferData = Buffer.from(fileObject.file._data, 'base64');
+          fileObject.fileSize = Buffer.byteLength(bufferData);
+          fileData = bufferData;
+        }
         // prepare file options
         const fileOptions = {
           metadata: fileObject.file._metadata,
@@ -228,7 +248,7 @@ export class FilesRouter {
         const createFileResult = await filesController.createFile(
           config,
           fileObject.file._name,
-          bufferData,
+          fileData,
           fileObject.file._source.type,
           fileOptions
         );
