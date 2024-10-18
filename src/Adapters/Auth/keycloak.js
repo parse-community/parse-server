@@ -35,6 +35,7 @@
 
 const { Parse } = require('parse/node');
 const httpsRequest = require('./httpsRequest');
+const { isJsonString } = require('../../../src/Utils');
 
 const arraysEqual = (_arr1, _arr2) => {
   if (!Array.isArray(_arr1) || !Array.isArray(_arr2) || _arr1.length !== _arr2.length) { return false; }
@@ -57,13 +58,25 @@ const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } =
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing keycloak configuration');
   }
   try {
-    const response = await httpsRequest.get({
-      host: config['auth-server-url'],
-      path: `/realms/${config['realm']}/protocol/openid-connect/userinfo`,
-      headers: {
-        Authorization: 'Bearer ' + access_token,
+    const { hostname, pathname, port, protocol } = new URL(config['auth-server-url']);
+
+    if ([hostname, pathname, port, protocol].some(each => !each))
+      throw new Parse.Error(
+        Parse.Error.VALIDATION_ERROR,
+        "Invalid 'auth-server-url' in keycloak config"
+      );
+
+    const response = await httpsRequest.get(
+      {
+        host: hostname,
+        path: `${pathname}/realms/${config['realm']}/protocol/openid-connect/userinfo`,
+        port,
+        headers: {
+          Authorization: 'Bearer ' + access_token,
+        },
       },
-    });
+      protocol
+    );
     if (
       response &&
       response.data &&
@@ -78,7 +91,7 @@ const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } =
     if (e instanceof Parse.Error) {
       throw e;
     }
-    const error = JSON.parse(e.text);
+    const error = e.text && isJsonString(e.text) ? JSON.parse(e.text) : {};
     if (error.error_description) {
       throw new Parse.Error(Parse.Error.HOSTING_ERROR, error.error_description);
     } else {
