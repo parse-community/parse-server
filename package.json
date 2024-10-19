@@ -23,7 +23,7 @@
     "@graphql-tools/merge": "8.4.1",
     "@graphql-tools/schema": "9.0.4",
     "@graphql-tools/utils": "8.12.0",
-    "@graphql-yoga/node": "2.6.0",
+    "@graphql-yoga/node": "3.9.1",
     "@parse/fs-files-adapter": "2.0.1",
     "@parse/push-adapter": "5.1.1",
     "bcryptjs": "2.4.3",
