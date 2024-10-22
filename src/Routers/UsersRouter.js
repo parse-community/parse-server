@@ -253,11 +253,11 @@ export class UsersRouter extends ClassesRouter {
           changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge
         );
         if (expiresAt < new Date())
-          // fail of current time is past password expiry time
-          throw new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Your password has expired. Please reset your password.'
-          );
+        // fail of current time is past password expiry time
+        { throw new Parse.Error(
+          Parse.Error.OBJECT_NOT_FOUND,
+          'Your password has expired. Please reset your password.'
+        ); }
       }
     }
 

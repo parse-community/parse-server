@@ -152,11 +152,11 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 
 | Version     | PostGIS Version    | End-of-Life   | Parse Server Support | Compatible |
 |-------------|--------------------|---------------|----------------------|------------|
-| Postgres 13 | 3.1, 3.2, 3.3, 3.4 | November 2025 | <= 6.x (2023)        | ✅ Yes      |
-| Postgres 14 | 3.4                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
-| Postgres 15 | 3.4                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
-| Postgres 16 | 3.4                | November 2028 | <= 9.x (2026)        | ✅ Yes      |
-| Postgres 17 | 3.4                | November 2029 | <= 9.x (2026)        | ✅ Yes      |
+| Postgres 13 | 3.1, 3.2, 3.3, 3.4, 3.5 | November 2025 | <= 6.x (2023)        | ✅ Yes      |
+| Postgres 14 | 3.5                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
+| Postgres 15 | 3.5                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
+| Postgres 16 | 3.5                | November 2028 | <= 9.x (2026)        | ✅ Yes      |
+| Postgres 17 | 3.5                | November 2029 | <= 9.x (2026)        | ✅ Yes      |
 
 ### Locally
 
