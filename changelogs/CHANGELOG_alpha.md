@@ -1,3 +1,10 @@
+# [7.4.0-alpha.5](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.4...7.4.0-alpha.5) (2024-10-22)
+
+
+### Bug Fixes
+
+* Security upgrade node from 20.14.0-alpine3.20 to 20.17.0-alpine3.20 ([#9300](https://github.com/parse-community/parse-server/issues/9300)) ([15bb17d](https://github.com/parse-community/parse-server/commit/15bb17d87153bf0d38f08fe4c720da29a204b36b))
+
 # [7.4.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.3...7.4.0-alpha.4) (2024-10-22)
 
 
