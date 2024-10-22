@@ -36,7 +36,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 #### Bronze Sponsors
 
 [![Bronze Sponsors](https://opencollective.com/parse-server/tiers/bronze-sponsor.svg?avatarHeight=36&button=false)](https://opencollective.com/parse-server/contribute/bronze-sponsor-10559)
-
+my name is setu singh 1
 ---
 
 - [Flavors \& Branches](#flavors--branches)
