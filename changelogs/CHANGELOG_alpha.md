@@ -1,3 +1,17 @@
+# [7.4.0-alpha.4](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.3...7.4.0-alpha.4) (2024-10-22)
+
+
+### Bug Fixes
+
+* `Parse.Query.distinct` fails due to invalid aggregate stage 'hint' ([#9295](https://github.com/parse-community/parse-server/issues/9295)) ([5f66c6a](https://github.com/parse-community/parse-server/commit/5f66c6a075cbe1cdaf9d1b108ee65af8ae596b89))
+
+# [7.4.0-alpha.3](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.2...7.4.0-alpha.3) (2024-10-22)
+
+
+### Features
+
+* Add support for PostGIS 3.5 ([#9354](https://github.com/parse-community/parse-server/issues/9354)) ([8ea3538](https://github.com/parse-community/parse-server/commit/8ea35382db3436d54ab59bd30706705564b0985c))
+
 # [7.4.0-alpha.2](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.1...7.4.0-alpha.2) (2024-10-07)
 
 
