@@ -23,7 +23,7 @@ export const extractKeysAndInclude = selectedFields => {
   selectedFields = selectedFields.filter(field => !field.includes('__typename'));
   // Handles "id" field for both current and included objects
   selectedFields = selectedFields.map(field => {
-    if (field === 'id') return 'objectId';
+    if (field === 'id') { return 'objectId'; }
     return field.endsWith('.id')
       ? `${field.substring(0, field.lastIndexOf('.id'))}.objectId`
       : field;

@@ -67,6 +67,17 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
+/**
+ * Checks whether session should be updated based on last update time & session length.
+ */
+function shouldUpdateSessionExpiry(config, session) {
+  const resetAfter = config.sessionLength / 2;
+  const lastUpdated = new Date(session?.updatedAt);
+  const skipRange = new Date();
+  skipRange.setTime(skipRange.getTime() - resetAfter * 1000);
+  return lastUpdated <= skipRange;
+}
+
 const throttle = {};
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
@@ -88,10 +99,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
         const { results } = await query.execute();
         session = results[0];
       }
-      const lastUpdated = new Date(session?.updatedAt);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (lastUpdated > yesterday || !session) {
+      if (!shouldUpdateSessionExpiry(config, session) || !session) {
         return;
       }
       const expiresAt = config.generateSessionExpiresAt();
@@ -172,6 +180,11 @@ const getAuthForSessionToken = async function ({
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
+
+  if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+  }
+
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
@@ -421,11 +434,11 @@ const findUsersWithAuthData = (config, authData) => {
 };
 
 const hasMutatedAuthData = (authData, userAuthData) => {
-  if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
+  if (!userAuthData) { return { hasMutatedAuthData: true, mutatedAuthData: authData }; }
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
     // Anonymous provider is not handled this way
-    if (provider === 'anonymous') return;
+    if (provider === 'anonymous') { return; }
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
     if (!isDeepStrictEqual(providerData, userProviderAuthData)) {
@@ -579,6 +592,7 @@ module.exports = {
   maintenance,
   nobody,
   readOnly,
+  shouldUpdateSessionExpiry,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
   findUsersWithAuthData,

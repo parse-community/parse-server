@@ -59,9 +59,9 @@ export class FilesAdapter {
    * @param {Config} config - server configuration
    * @param {string} filename
    *
-   * @return {string} Absolute URL
+   * @return {string | Promise<string>} Absolute URL
    */
-  getFileLocation(config: Config, filename: string): string {}
+  getFileLocation(config: Config, filename: string): string | Promise<string> {}
 
   /** Validate a filename for this adapter type
    *

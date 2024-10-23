@@ -228,7 +228,7 @@ export interface ParseServerOptions {
   /* Session duration, in seconds, defaults to 1 year
   :DEFAULT: 31536000 */
   sessionLength: ?number;
-  /* Whether Parse Server should automatically extend a valid session by the sessionLength
+  /* Whether Parse Server should automatically extend a valid session by the sessionLength. In order to reduce the number of session updates in the database, a session will only be extended when a request is received after at least half of the current session's lifetime has passed.
   :DEFAULT: false */
   extendSessionOnUse: ?boolean;
   /* Default value for limit option on queries, defaults to `100`.
@@ -596,6 +596,14 @@ export interface DatabaseOptions {
   enableSchemaHooks: ?boolean;
   /* The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires. */
   schemaCacheTtl: ?number;
+  /* The MongoDB driver option to set whether to retry failed writes. */
+  retryWrites: ?boolean;
+  /* The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor. */
+  maxTimeMS: ?number;
+  /* The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.*/
+  maxStalenessSeconds: ?number;
+  /* The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver. */
+  maxPoolSize: ?number;
 }
 
 export interface AuthAdapter {

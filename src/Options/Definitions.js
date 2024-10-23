@@ -54,6 +54,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT',
     help: 'The account lockout policy for failed login attempts.',
     action: parsers.objectParser,
+    type: 'AccountLockoutOptions',
   },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
@@ -157,6 +158,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_CUSTOM_PAGES',
     help: 'custom pages for password validation and reset',
     action: parsers.objectParser,
+    type: 'CustomPagesOptions',
     default: {},
   },
   databaseAdapter: {
@@ -169,6 +171,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
     help: 'Options to pass to the database client',
     action: parsers.objectParser,
+    type: 'DatabaseOptions',
   },
   databaseURI: {
     env: 'PARSE_SERVER_DATABASE_URI',
@@ -256,7 +259,8 @@ module.exports.ParseServerOptions = {
   },
   extendSessionOnUse: {
     env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
-    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    help:
+      "Whether Parse Server should automatically extend a valid session by the sessionLength. In order to reduce the number of session updates in the database, a session will only be extended when a request is received after at least half of the current session's lifetime has passed.",
     action: parsers.booleanParser,
     default: false,
   },
@@ -273,6 +277,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
     help: 'Options for file uploads',
     action: parsers.objectParser,
+    type: 'FileUploadOptions',
     default: {},
   },
   graphQLPath: {
@@ -294,6 +299,7 @@ module.exports.ParseServerOptions = {
     help:
       'Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.',
     action: parsers.objectParser,
+    type: 'IdempotencyOptions',
     default: {},
   },
   javascriptKey: {
@@ -309,11 +315,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LIVE_QUERY',
     help: "parse-server's LiveQuery configuration object",
     action: parsers.objectParser,
+    type: 'LiveQueryOptions',
   },
   liveQueryServerOptions: {
     env: 'PARSE_SERVER_LIVE_QUERY_SERVER_OPTIONS',
     help: 'Live query server configuration options (will start the liveQuery server)',
     action: parsers.objectParser,
+    type: 'LiveQueryServerOptions',
   },
   loggerAdapter: {
     env: 'PARSE_SERVER_LOGGER_ADAPTER',
@@ -328,6 +336,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LOG_LEVELS',
     help: '(Optional) Overrides the log levels used internally by Parse Server to log events.',
     action: parsers.objectParser,
+    type: 'LogLevels',
     default: {},
   },
   logsFolder: {
@@ -369,7 +378,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MAX_LOG_FILES',
     help:
       "Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)",
-    action: parsers.objectParser,
+    action: parsers.numberOrStringParser('maxLogFiles'),
   },
   maxUploadSize: {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',
@@ -408,12 +417,14 @@ module.exports.ParseServerOptions = {
     help:
       'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
     action: parsers.objectParser,
+    type: 'PagesOptions',
     default: {},
   },
   passwordPolicy: {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
     help: 'The password policy for enforcing password related rules.',
     action: parsers.objectParser,
+    type: 'PasswordPolicyOptions',
   },
   playgroundPath: {
     env: 'PARSE_SERVER_PLAYGROUND_PATH',
@@ -471,6 +482,7 @@ module.exports.ParseServerOptions = {
     help:
       "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.",
     action: parsers.arrayParser,
+    type: 'RateLimitOptions[]',
     default: [],
   },
   readOnlyMasterKey: {
@@ -516,11 +528,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_SCHEMA',
     help: 'Defined schema',
     action: parsers.objectParser,
+    type: 'SchemaOptions',
   },
   security: {
     env: 'PARSE_SERVER_SECURITY',
     help: 'The security options to identify and report weak security settings.',
     action: parsers.objectParser,
+    type: 'SecurityOptions',
     default: {},
   },
   sendUserEmailVerification: {
@@ -665,12 +679,14 @@ module.exports.PagesOptions = {
     env: 'PARSE_SERVER_PAGES_CUSTOM_ROUTES',
     help: 'The custom routes.',
     action: parsers.arrayParser,
+    type: 'PagesRoute[]',
     default: [],
   },
   customUrls: {
     env: 'PARSE_SERVER_PAGES_CUSTOM_URLS',
     help: 'The URLs to the custom pages.',
     action: parsers.objectParser,
+    type: 'PagesCustomUrlsOptions',
     default: {},
   },
   enableLocalization: {
@@ -1034,6 +1050,29 @@ module.exports.DatabaseOptions = {
       'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
+  },
+  maxPoolSize: {
+    env: 'PARSE_SERVER_DATABASE_MAX_POOL_SIZE',
+    help:
+      'The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.',
+    action: parsers.numberParser('maxPoolSize'),
+  },
+  maxStalenessSeconds: {
+    env: 'PARSE_SERVER_DATABASE_MAX_STALENESS_SECONDS',
+    help:
+      'The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.',
+    action: parsers.numberParser('maxStalenessSeconds'),
+  },
+  maxTimeMS: {
+    env: 'PARSE_SERVER_DATABASE_MAX_TIME_MS',
+    help:
+      'The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.',
+    action: parsers.numberParser('maxTimeMS'),
+  },
+  retryWrites: {
+    env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
+    help: 'The MongoDB driver option to set whether to retry failed writes.',
+    action: parsers.booleanParser,
   },
   schemaCacheTtl: {
     env: 'PARSE_SERVER_DATABASE_SCHEMA_CACHE_TTL',

@@ -141,35 +141,6 @@ describe('Auth', () => {
     expect(userAuth.user.id).toBe(user.id);
   });
 
-  it('should load auth without a config', async () => {
-    const user = new Parse.User();
-    await user.signUp({
-      username: 'hello',
-      password: 'password',
-    });
-    expect(user.getSessionToken()).not.toBeUndefined();
-    const userAuth = await getAuthForSessionToken({
-      sessionToken: user.getSessionToken(),
-    });
-    expect(userAuth.user instanceof Parse.User).toBe(true);
-    expect(userAuth.user.id).toBe(user.id);
-  });
-
-  it('should load auth with a config', async () => {
-    const user = new Parse.User();
-    await user.signUp({
-      username: 'hello',
-      password: 'password',
-    });
-    expect(user.getSessionToken()).not.toBeUndefined();
-    const userAuth = await getAuthForSessionToken({
-      sessionToken: user.getSessionToken(),
-      config: Config.get('test'),
-    });
-    expect(userAuth.user instanceof Parse.User).toBe(true);
-    expect(userAuth.user.id).toBe(user.id);
-  });
-
   describe('getRolesForUser', () => {
     const rolesNumber = 100;
 
@@ -258,5 +229,26 @@ describe('Auth', () => {
       expect(cloudRoles.length).toBe(rolesNumber);
       expect(cloudRoles2.length).toBe(rolesNumber);
     });
+  });
+});
+
+describe('extendSessionOnUse', () => {
+  it(`shouldUpdateSessionExpiry()`, async () => {
+    const { shouldUpdateSessionExpiry } = require('../lib/Auth');
+    let update = new Date(Date.now() - 86410 * 1000);
+
+    const res = shouldUpdateSessionExpiry(
+      { sessionLength: 86460 },
+      { updatedAt: update }
+    );
+
+    update = new Date(Date.now() - 43210 * 1000);
+    const res2 = shouldUpdateSessionExpiry(
+      { sessionLength: 86460 },
+      { updatedAt: update }
+    );
+
+    expect(res).toBe(true);
+    expect(res2).toBe(false);
   });
 });

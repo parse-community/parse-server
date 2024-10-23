@@ -1,6 +1,5 @@
-const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
+const { loadAdapter, loadModule } = require('../lib/Adapters/AdapterLoader');
 const FilesAdapter = require('@parse/fs-files-adapter').default;
-const ParsePushAdapter = require('@parse/push-adapter').default;
 const MockFilesAdapter = require('mock-files-adapter');
 const Config = require('../lib/Config');
 
@@ -103,19 +102,19 @@ describe('AdapterLoader', () => {
     done();
   });
 
-  it('should load push adapter from options', done => {
+  it('should load push adapter from options', async () => {
     const options = {
       android: {
         senderId: 'yolo',
         apiKey: 'yolo',
       },
     };
+    const ParsePushAdapter = await loadModule('@parse/push-adapter');
     expect(() => {
       const adapter = loadAdapter(undefined, ParsePushAdapter, options);
       expect(adapter.constructor).toBe(ParsePushAdapter);
       expect(adapter).not.toBe(undefined);
     }).not.toThrow();
-    done();
   });
 
   it('should load custom push adapter from string (#3544)', done => {
@@ -140,6 +139,25 @@ describe('AdapterLoader', () => {
         done();
       });
     }).not.toThrow();
+  });
+
+  it('should load custom database adapter from config', done => {
+    const adapterPath = require('path').resolve('./spec/support/MockDatabaseAdapter');
+    const options = {
+      databaseURI: 'oracledb://user:password@localhost:1521/freepdb1',
+      collectionPrefix: '',
+    };
+    const databaseAdapterOptions = {
+      adapter: adapterPath,
+      options,
+    };
+    expect(() => {
+      const databaseAdapter = loadAdapter(databaseAdapterOptions);
+      expect(databaseAdapter).not.toBe(undefined);
+      expect(databaseAdapter.options).toEqual(options);
+      expect(databaseAdapter.getDatabaseURI()).toEqual(options.databaseURI);
+    }).not.toThrow();
+    done();
   });
 
   it('should load file adapter from direct passing', done => {

@@ -17,7 +17,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 18.19.1
+          node-version: 20
           registry-url: https://registry.npmjs.org/
       - name: Cache Node.js modules
         uses: actions/cache@v4
@@ -93,7 +93,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.19.1
+          node-version: 18.20.0
       - name: Cache Node.js modules
         uses: actions/cache@v4
         with:

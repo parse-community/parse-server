@@ -469,29 +469,6 @@ describe('AuthenticationProviders', function () {
     expect(providerOptions).toEqual(options.facebook);
   });
 
-  it('should throw error when Facebook request appId is wrong data type', async () => {
-    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ id: 'a' });
-    });
-    const options = {
-      facebook: {
-        appIds: 'abcd',
-        appSecret: 'secret_sauce',
-      },
-    };
-    const authData = {
-      access_token: 'badtoken',
-    };
-    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebook',
-      options
-    );
-    await expectAsync(adapter.validateAppId(appIds, authData, providerOptions)).toBeRejectedWith(
-      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.')
-    );
-  });
-
   it('should handle Facebook appSecret for validating appIds', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
@@ -668,7 +645,7 @@ describe('google auth adapter', () => {
   //   }
   // });
 
-  it('(using client id as string) should verify id_token', async () => {
+  it('(using client id as string) should verify id_token (google.com)', async () => {
     const fakeClaim = {
       iss: 'https://accounts.google.com',
       aud: 'secret',
@@ -686,7 +663,7 @@ describe('google auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+  it('(using client id as string) should throw error with with invalid jwt issuer (google.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.google.com',
       sub: 'the_user_id',
@@ -1489,7 +1466,7 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('should use algorithm from key header to verify id_token', async () => {
+  it('should use algorithm from key header to verify id_token (apple.com)', async () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
       aud: 'secret',
@@ -1539,7 +1516,7 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('(using client id as string) should verify id_token', async () => {
+  it('(using client id as string) should verify id_token (apple.com)', async () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
       aud: 'secret',
@@ -1559,7 +1536,7 @@ describe('apple signin auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('(using client id as array) should verify id_token', async () => {
+  it('(using client id as array) should verify id_token (apple.com)', async () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
       aud: 'secret',
@@ -1579,7 +1556,7 @@ describe('apple signin auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('(using client id as array with multiple items) should verify id_token', async () => {
+  it('(using client id as array with multiple items) should verify id_token (apple.com)', async () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
       aud: 'secret',
@@ -1599,7 +1576,7 @@ describe('apple signin auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+  it('(using client id as string) should throw error with with invalid jwt issuer (apple.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
@@ -1652,7 +1629,7 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+  it('(using client id as string) should throw error with with invalid jwt issuer with token (apple.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
@@ -1721,7 +1698,7 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('should throw error with with invalid user id', async () => {
+  it('should throw error with with invalid user id (apple.com)', async () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
       aud: 'invalid_client_id',
@@ -2045,9 +2022,9 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('should use algorithm from key header to verify id_token', async () => {
+  it_id('7bfa55ab-8fd7-4526-992e-6de3df16bf9c')(it)('should use algorithm from key header to verify id_token (facebook.com)', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2095,9 +2072,9 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('(using client id as string) should verify id_token', async () => {
+  it_id('4bcb1a1a-11f8-4e12-a3f6-73f7e25e355a')(it)('using client id as string) should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2115,9 +2092,9 @@ describe('facebook limited auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('(using client id as array) should verify id_token', async () => {
+  it_id('c521a272-2ac2-4d8b-b5ed-ea250336d8b1')(it)('(using client id as array) should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2135,9 +2112,9 @@ describe('facebook limited auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('(using client id as array with multiple items) should verify id_token', async () => {
+  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')(it)('(using client id as array with multiple items) should verify id_token (facebook.com)', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'secret',
       exp: Date.now(),
       sub: 'the_user_id',
@@ -2155,7 +2132,7 @@ describe('facebook limited auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')(it)('(using client id as string) should throw error with with invalid jwt issuer (facebook.com)', async () => {
     const fakeClaim = {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',
@@ -2174,7 +2151,7 @@ describe('facebook limited auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
       );
     }
   });
@@ -2203,12 +2180,12 @@ describe('facebook limited auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
       );
     }
   });
 
-  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+  it('(using client id as string)  with token', async () => {
     const fakeClaim = {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',
@@ -2230,7 +2207,7 @@ describe('facebook limited auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://facebook.com | from: https://not.facebook.com'
+        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
       );
     }
   });
@@ -2286,9 +2263,9 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('should throw error with with invalid user id', async () => {
+  it_id('c194d902-e697-46c9-a303-82c2d914473c')(it)('should throw error with with invalid user id (facebook.com)', async () => {
     const fakeClaim = {
-      iss: 'https://facebook.com',
+      iss: 'https://www.facebook.com',
       aud: 'invalid_client_id',
       sub: 'a_different_user_id',
     };

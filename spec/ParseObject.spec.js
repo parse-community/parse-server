@@ -568,6 +568,70 @@ describe('Parse.Object testing', () => {
       );
   });
 
+  it_only_db('mongo')('can increment array nested fields', async () => {
+    const obj = new TestObject();
+    obj.set('items', [ { value: 'a', count: 5 }, { value: 'b', count: 1 } ]);
+    await obj.save();
+    obj.increment('items.0.count', 15);
+    obj.increment('items.1.count', 4);
+    await obj.save();
+    expect(obj.toJSON().items[0].value).toBe('a');
+    expect(obj.toJSON().items[1].value).toBe('b');
+    expect(obj.toJSON().items[0].count).toBe(20);
+    expect(obj.toJSON().items[1].count).toBe(5);
+    const query = new Parse.Query(TestObject);
+    const result = await query.get(obj.id);
+    expect(result.get('items')[0].value).toBe('a');
+    expect(result.get('items')[1].value).toBe('b');
+    expect(result.get('items')[0].count).toBe(20);
+    expect(result.get('items')[1].count).toBe(5);
+    expect(result.get('items')).toEqual(obj.get('items'));
+  });
+
+  it_only_db('mongo')('can increment array nested fields missing index', async () => {
+    const obj = new TestObject();
+    obj.set('items', []);
+    await obj.save();
+    obj.increment('items.1.count', 15);
+    await obj.save();
+    expect(obj.toJSON().items[0]).toBe(null);
+    expect(obj.toJSON().items[1].count).toBe(15);
+    const query = new Parse.Query(TestObject);
+    const result = await query.get(obj.id);
+    expect(result.get('items')[0]).toBe(null);
+    expect(result.get('items')[1].count).toBe(15);
+    expect(result.get('items')).toEqual(obj.get('items'));
+  });
+
+  it_id('44097c6f-d0ca-4dc5-aa8a-3dd2d9ac645a')(it)('can query array nested fields', async () => {
+    const objects = [];
+    for (let i = 0; i < 10; i++) {
+      const obj = new TestObject();
+      obj.set('items', [i, { value: i }]);
+      objects.push(obj);
+    }
+    await Parse.Object.saveAll(objects);
+    let query = new Parse.Query(TestObject);
+    query.greaterThan('items.1.value', 5);
+    let result = await query.find();
+    expect(result.length).toBe(4);
+
+    query = new Parse.Query(TestObject);
+    query.lessThan('items.0', 3);
+    result = await query.find();
+    expect(result.length).toBe(3);
+
+    query = new Parse.Query(TestObject);
+    query.equalTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(1);
+
+    query = new Parse.Query(TestObject);
+    query.notEqualTo('items.0', 5);
+    result = await query.find();
+    expect(result.length).toBe(9);
+  });
+
   it('addUnique with object', function (done) {
     const x1 = new Parse.Object('X');
     x1.set('stuff', [1, { hello: 'world' }, { foo: 'bar' }]);
@@ -2054,5 +2118,57 @@ describe('Parse.Object testing', () => {
 
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
+  });
+
+  it('should not change the json field to array in afterSave', async () => {
+    Parse.Cloud.beforeSave('failingJSONTestCase', req => {
+      expect(req.object.get('jsonField')).toEqual({ '123': 'test' });
+    });
+
+    Parse.Cloud.afterSave('failingJSONTestCase', req => {
+      expect(req.object.get('jsonField')).toEqual({ '123': 'test' });
+    });
+
+    const object = new Parse.Object('failingJSONTestCase');
+    object.set('jsonField', { '123': 'test' });
+    await object.save();
+  });
+
+  it('returns correct field values', async () => {
+    const values = [
+      { field: 'string', value: 'string' },
+      { field: 'number', value: 1 },
+      { field: 'boolean', value: true },
+      { field: 'array', value: [0, 1, 2] },
+      { field: 'array', value: [1, 2, 3] },
+      { field: 'array', value: [{ '0': 'a' }, 2, 3] },
+      { field: 'object', value: { key: 'value' } },
+      { field: 'object', value: { key1: 'value1', key2: 'value2' } },
+      { field: 'object', value: { key1: 1, key2: 2 } },
+      { field: 'object', value: { '1x1': 1 } },
+      { field: 'object', value: { '1x1': 1, '2': 2 } },
+      { field: 'object', value: { '0': 0 } },
+      { field: 'object', value: { '1': 1 } },
+      { field: 'object', value: { '0': { '0': 'a', '1': 'b' } } },
+      { field: 'date', value: new Date() },
+      {
+        field: 'file',
+        value: Parse.File.fromJSON({
+          __type: 'File',
+          name: 'name',
+          url: 'http://localhost:8378/1/files/test/name',
+        }),
+      },
+      { field: 'geoPoint', value: new Parse.GeoPoint(40, -30) },
+      { field: 'bytes', value: { __type: 'Bytes', base64: 'ZnJveW8=' } },
+    ];
+    for (const value of values) {
+      const object = new TestObject();
+      object.set(value.field, value.value);
+      await object.save();
+      const query = new Parse.Query(TestObject);
+      const objectAgain = await query.get(object.id);
+      expect(objectAgain.get(value.field)).toEqual(value.value);
+    }
   });
 });
