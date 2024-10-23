@@ -9,7 +9,7 @@ const { updateCLP } = require('./support/dev');
 
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('@apollo/client/utilities');
-const { createUploadLink } = require('apollo-upload-client');
+const createUploadLink = (...args) => import('apollo-upload-client/createUploadLink.mjs').then(({ default: fn }) => fn(...args));
 const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('@apollo/client/link/ws');
 const { mergeSchemas } = require('@graphql-tools/schema');
@@ -452,7 +452,7 @@ describe('ParseGraphQLServer', () => {
         ws
       );
       const wsLink = new WebSocketLink(subscriptionClient);
-      const httpLink = createUploadLink({
+      const httpLink = await createUploadLink({
         uri: 'http://localhost:13377/graphql',
         fetch,
         headers,
@@ -11008,7 +11008,7 @@ describe('ParseGraphQLServer', () => {
         });
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-        const httpLink = createUploadLink({
+        const httpLink = await createUploadLink({
           uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
@@ -11232,7 +11232,7 @@ describe('ParseGraphQLServer', () => {
 
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-        const httpLink = createUploadLink({
+        const httpLink = await createUploadLink({
           uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
@@ -11427,7 +11427,7 @@ describe('ParseGraphQLServer', () => {
 
           parseGraphQLServer.applyGraphQL(expressApp);
           await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-          const httpLink = createUploadLink({
+          const httpLink = await createUploadLink({
             uri: 'http://localhost:13377/graphql',
             fetch,
             headers,
