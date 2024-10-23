@@ -3,7 +3,6 @@ import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
 import { validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path from 'path';
-import mime from 'mime';
 const Parse = require('parse').Parse;
 
 const legacyFilesRegex = new RegExp(
@@ -19,7 +18,7 @@ export class FilesController extends AdaptableController {
     const extname = path.extname(filename);
 
     const hasExtension = extname.length > 0;
-
+    const mime = (await import('mime')).default
     if (!hasExtension && contentType && mime.getExtension(contentType)) {
       filename = filename + '.' + mime.getExtension(contentType);
     } else if (hasExtension && !contentType) {
