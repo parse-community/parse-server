@@ -11,8 +11,8 @@ const mockAdapter = {
   createFile: () => {
     return Promise.reject(new Error('it failed with xyz'));
   },
-  deleteFile: () => {},
-  getFileData: () => {},
+  deleteFile: () => { },
+  getFileData: () => { },
   getFileLocation: () => 'xyz',
   validateFilename: () => {
     return null;
@@ -25,7 +25,7 @@ describe('FilesController', () => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     const filesController = new FilesController(gridFSAdapter);
-    const result = filesController.expandFilesInObject(config, function () {});
+    const result = filesController.expandFilesInObject(config, function () { });
 
     expect(result).toBeUndefined();
 
@@ -101,7 +101,7 @@ describe('FilesController', () => {
     done();
   });
 
-  it('should add a unique hash to the file name when the preserveFileName option is false', done => {
+  it('should add a unique hash to the file name when the preserveFileName option is false', async (done) => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     spyOn(gridFSAdapter, 'createFile');
@@ -112,7 +112,7 @@ describe('FilesController', () => {
       preserveFileName: false,
     });
 
-    filesController.createFile(config, fileName);
+    await filesController.createFile(config, fileName);
 
     expect(gridFSAdapter.createFile).toHaveBeenCalledTimes(1);
     expect(gridFSAdapter.createFile.calls.mostRecent().args[0]).toMatch(
@@ -122,7 +122,7 @@ describe('FilesController', () => {
     done();
   });
 
-  it('should not add a unique hash to the file name when the preserveFileName option is true', done => {
+  it('should not add a unique hash to the file name when the preserveFileName option is true', async (done) => {
     const config = Config.get(Parse.applicationId);
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     spyOn(gridFSAdapter, 'createFile');
@@ -132,7 +132,7 @@ describe('FilesController', () => {
       preserveFileName: true,
     });
 
-    filesController.createFile(config, fileName);
+    await filesController.createFile(config, fileName);
 
     expect(gridFSAdapter.createFile).toHaveBeenCalledTimes(1);
     expect(gridFSAdapter.createFile.calls.mostRecent().args[0]).toEqual(fileName);
