@@ -567,7 +567,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           session: transactionalSession || undefined,
         })
       )
-      .then(result => mongoObjectToParseObject(className, result.value, schema))
+      .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(
