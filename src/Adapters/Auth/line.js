@@ -8,7 +8,11 @@ function validateAuthData(authData) {
     if (response && response.userId && response.userId === authData.id) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Line auth is invalid for this user.');
+    console.error('Line auth validation failed. Response:', response);
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid authentication');
+  }).catch(err=>{
+    console.error('Error validating Line auth:',err); 
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Authentication validation failed');
   });
 }
 

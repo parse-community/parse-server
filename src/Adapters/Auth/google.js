@@ -68,18 +68,22 @@ async function verifyIdToken({ id_token: token, id }, { clientId }) {
     });
   } catch (exception) {
     const message = exception.message;
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
+    console.error(`Google Sign-In Validation Error: ${message}`);
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Unauthorized`);
   }
 
   if (jwtClaims.iss !== TOKEN_ISSUER && jwtClaims.iss !== HTTPS_TOKEN_ISSUER) {
+    console.error(`id token not issued by correct provider - expected: ${TOKEN_ISSUER} or ${HTTPS_TOKEN_ISSUER} | from: ${jwtClaims.iss}`);
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `id token not issued by correct provider - expected: ${TOKEN_ISSUER} or ${HTTPS_TOKEN_ISSUER} | from: ${jwtClaims.iss}`
+      'Unauthorized'
     );
   }
 
   if (jwtClaims.sub !== id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
+    const errMsg = `Token subject does not match user id.`;
+    console.error(`Google Sign-In Validation Error: ${errMsg}`);
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
 
   if (clientId && jwtClaims.aud !== clientId) {

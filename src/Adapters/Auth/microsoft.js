@@ -8,9 +8,10 @@ function validateAuthData(authData) {
     if (response && response.id && response.id == authData.id) {
       return;
     }
+    console.error('Microsoft Graph auth is invalid for this user.'); 
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Microsoft Graph auth is invalid for this user.'
+      'Authentication failed'
     );
   });
 }

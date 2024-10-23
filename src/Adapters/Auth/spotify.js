@@ -8,7 +8,8 @@ function validateAuthData(authData) {
     if (data && data.id == authData.id) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify auth is invalid for this user.');
+    console.error('Spotify auth is invalid for this user.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   });
 }
 
@@ -16,14 +17,17 @@ function validateAuthData(authData) {
 async function validateAppId(appIds, authData) {
   const access_token = authData.access_token;
   if (!Array.isArray(appIds)) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.');
+    console.error('appIds must be an array.'); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
   if (!appIds.length) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify auth is not configured.');
+    console.error('Spotify auth is not configured.')
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
   const data = await request('me', access_token);
   if (!data || !appIds.includes(data.id)) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify auth is invalid for this user.');
+    console.error('Spotify auth is invalid for this user.'); 
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
 }
 
