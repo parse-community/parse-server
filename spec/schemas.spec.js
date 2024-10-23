@@ -3051,6 +3051,42 @@ describe('schemas', () => {
       });
     });
 
+    it('allows add unique index when you create a class', async () => {
+      await reconfigureServer({ silent: false });
+      const response = await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClass',
+          fields: {
+            aString: { type: 'String' },
+          },
+          indexes: {
+            name1: { aString: 1, _options: { unique: true } },
+          },
+        },
+      });
+      expect(response.data).toEqual({
+        className: 'NewClass',
+        fields: {
+          ACL: { type: 'ACL' },
+          createdAt: { type: 'Date' },
+          updatedAt: { type: 'Date' },
+          objectId: { type: 'String' },
+          aString: { type: 'String' },
+        },
+        classLevelPermissions: defaultClassLevelPermissions,
+        indexes: {
+          name1: { aString: 1, _options: { unique: true } },
+        },
+      });
+      const indexes = await config.database.adapter.getIndexes('NewClass');
+      expect(indexes.length).toBe(2);
+      expect(indexes.filter(row => row.unique).length).toEqual(1);
+    });
+
     it('empty index returns nothing', done => {
       request({
         url: 'http://localhost:8378/1/schemas',
@@ -3146,6 +3182,70 @@ describe('schemas', () => {
           });
         });
       });
+    });
+
+    it('lets you add unique indexes', async () => {
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {},
+      });
+      let response = await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            aString: { type: 'String' },
+          },
+          indexes: {
+            name1: { aString: 1, _options: { unique: true } },
+          },
+        },
+      });
+      expect(
+        dd(response.data, {
+          className: 'NewClass',
+          fields: {
+            ACL: { type: 'ACL' },
+            createdAt: { type: 'Date' },
+            updatedAt: { type: 'Date' },
+            objectId: { type: 'String' },
+            aString: { type: 'String' },
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            _id_: { _id: 1 },
+            name1: { aString: 1, _options: { unique: true } },
+          },
+        })
+      ).toEqual(undefined);
+      response = await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+      });
+      expect(response.data).toEqual({
+        className: 'NewClass',
+        fields: {
+          ACL: { type: 'ACL' },
+          createdAt: { type: 'Date' },
+          updatedAt: { type: 'Date' },
+          objectId: { type: 'String' },
+          aString: { type: 'String' },
+        },
+        classLevelPermissions: defaultClassLevelPermissions,
+        indexes: {
+          _id_: { _id: 1 },
+          name1: { aString: 1, _options: { unique: true } },
+        },
+      });
+      const indexes = await config.database.adapter.getIndexes('NewClass');
+      expect(indexes.length).toEqual(2);
+      expect(indexes.filter(row => row.unique).length).toEqual(1);
     });
 
     it_only_db('mongo')('lets you add index with with pointer like structure', done => {
