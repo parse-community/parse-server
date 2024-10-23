@@ -3,7 +3,6 @@ import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
 import Config from '../Config';
-import mime from 'mime';
 import logger from '../logger';
 const triggers = require('../triggers');
 const http = require('http');
@@ -67,7 +66,7 @@ export class FilesRouter {
     return router;
   }
 
-  getHandler(req, res) {
+  async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
@@ -77,6 +76,7 @@ export class FilesRouter {
     }
     const filesController = config.filesController;
     const filename = req.params.filename;
+    const mime = (await import('mime')).default;
     const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
       filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {

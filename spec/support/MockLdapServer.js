@@ -11,7 +11,7 @@ function newServer(port, dn, provokeSearchError = false, ssl = false) {
 
   server.bind('o=example', function (req, res, next) {
     if (req.dn.toString() !== dn || req.credentials !== 'secret')
-      return next(new ldapjs.InvalidCredentialsError());
+    { return next(new ldapjs.InvalidCredentialsError()); }
     res.end();
     return next();
   });
