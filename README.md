@@ -10,8 +10,8 @@
 [![auto-release](https://img.shields.io/badge/%F0%9F%9A%80-auto--release-9e34eb.svg)](https://github.com/parse-community/parse-dashboard/releases)
 
 [![Node Version](https://img.shields.io/badge/nodejs-18,_20,_22-green.svg?logo=node.js&style=flat)](https://nodejs.org)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-4.2,_4.4,_5,_6,_7-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
-[![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
+[![MongoDB Version](https://img.shields.io/badge/mongodb-4.2,_4.4,_5,_6,_7,_8-green.svg?logo=mongodb&style=flat)](https://www.mongodb.com)
+[![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16,_17-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
 [![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
@@ -144,6 +144,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 5   | 5.0.26         | October 2024  | ✅ Yes      |
 | MongoDB 6   | 6.0.14         | July 2025     | ✅ Yes      |
 | MongoDB 7   | 7.0.8          | TDB           | ✅ Yes      |
+| MongoDB 8   | 8.0.0          | TDB           | ✅ Yes      |
 
 #### PostgreSQL
 
@@ -151,10 +152,11 @@ Parse Server is continuously tested with the most recent releases of PostgreSQL 
 
 | Version     | PostGIS Version    | End-of-Life   | Parse Server Support | Compatible |
 |-------------|--------------------|---------------|----------------------|------------|
-| Postgres 13 | 3.1, 3.2, 3.3, 3.4 | November 2025 | <= 6.x (2023)        | ✅ Yes      |
-| Postgres 14 | 3.4                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
-| Postgres 15 | 3.4                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
-| Postgres 16 | 3.4                | November 2028 | <= 9.x (2026)        | ✅ Yes      |
+| Postgres 13 | 3.1, 3.2, 3.3, 3.4, 3.5 | November 2025 | <= 6.x (2023)        | ✅ Yes      |
+| Postgres 14 | 3.5                | November 2026 | <= 7.x (2024)        | ✅ Yes      |
+| Postgres 15 | 3.5                | November 2027 | <= 8.x (2025)        | ✅ Yes      |
+| Postgres 16 | 3.5                | November 2028 | <= 9.x (2026)        | ✅ Yes      |
+| Postgres 17 | 3.5                | November 2029 | <= 9.x (2026)        | ✅ Yes      |
 
 ### Locally
 
@@ -276,6 +278,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [Back4app](https://www.back4app.com/docs/get-started/welcome)
 * [Glitch](https://glitch.com/edit/#!/parse-server)
 * [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
+* [Elestio](https://elest.io/open-source/parse)
 
 ### Parse Server + Express
 

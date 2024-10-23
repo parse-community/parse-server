@@ -122,7 +122,7 @@ export class UserController extends AdaptableController {
           if (expiresDate && expiresDate.__type == 'Date') {
             expiresDate = new Date(expiresDate.iso);
           }
-          if (expiresDate < new Date()) throw 'The password reset link has expired';
+          if (expiresDate < new Date()) { throw 'The password reset link has expired'; }
         }
         return results[0];
       });

@@ -180,6 +180,11 @@ const getAuthForSessionToken = async function ({
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
+
+  if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+  }
+
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
@@ -429,11 +434,11 @@ const findUsersWithAuthData = (config, authData) => {
 };
 
 const hasMutatedAuthData = (authData, userAuthData) => {
-  if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
+  if (!userAuthData) { return { hasMutatedAuthData: true, mutatedAuthData: authData }; }
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
     // Anonymous provider is not handled this way
-    if (provider === 'anonymous') return;
+    if (provider === 'anonymous') { return; }
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
     if (!isDeepStrictEqual(providerData, userProviderAuthData)) {
