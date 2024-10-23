@@ -33,7 +33,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it_id('5e558687-40f3-496c-9e4f-af6100bd1b2f')('sends verification email if email verification is enabled', done => {
+  it_id('5e558687-40f3-496c-9e4f-af6100bd1b2f')(it)('sends verification email if email verification is enabled', done => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -158,7 +158,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     }, 200);
   });
 
-  it_id('33d31119-c724-4f5d-83ec-f56815d23df3')('does send with a simple adapter', done => {
+  it_id('33d31119-c724-4f5d-83ec-f56815d23df3')(it)('does send with a simple adapter', done => {
     let calls = 0;
     const emailAdapter = {
       sendMail: function (options) {
@@ -305,7 +305,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(2);
   });
 
-  it_id('2a5d24be-2ca5-4385-b580-1423bd392e43')('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', async () => {
+  it_id('2a5d24be-2ca5-4385-b580-1423bd392e43')(it)('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -381,7 +381,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it_id('a18a07af-0319-4f15-8237-28070c5948fa')('does not allow signup with preventSignupWithUnverified', async () => {
+  it_id('a18a07af-0319-4f15-8237-28070c5948fa')(it)('does not allow signup with preventSignupWithUnverified', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -616,7 +616,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it_id('45f550a2-a2b2-4b2b-b533-ccbf96139cc9')('receives the app name and user in the adapter', done => {
+  it_id('45f550a2-a2b2-4b2b-b533-ccbf96139cc9')(it)('receives the app name and user in the adapter', done => {
     let emailSent = false;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -644,7 +644,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it_id('ea37ef62-aad8-4a17-8dfe-35e5b2986f0f')('when you click the link in the email it sets emailVerified to true and redirects you', done => {
+  it_id('ea37ef62-aad8-4a17-8dfe-35e5b2986f0f')(it)('when you click the link in the email it sets emailVerified to true and redirects you', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {

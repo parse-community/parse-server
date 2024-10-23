@@ -322,7 +322,7 @@ RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
   const extraData = { className: this.className };
 
   // Expand file objects
-  this.config.filesController.expandFilesInObject(this.config, userData);
+  await this.config.filesController.expandFilesInObject(this.config, userData);
 
   const user = triggers.inflate(extraData, userData);
 
@@ -505,7 +505,7 @@ RestWrite.prototype.ensureUniqueAuthDataId = async function () {
     key => this.data.authData[key] && this.data.authData[key].id
   );
 
-  if (!hasAuthDataId) return;
+  if (!hasAuthDataId) { return; }
 
   const r = await Auth.findUsersWithAuthData(this.config, this.data.authData);
   const results = this.filteredObjectsByACL(r);
@@ -810,7 +810,7 @@ RestWrite.prototype._validateEmail = function () {
 };
 
 RestWrite.prototype._validatePasswordPolicy = function () {
-  if (!this.config.passwordPolicy) return Promise.resolve();
+  if (!this.config.passwordPolicy) { return Promise.resolve(); }
   return this._validatePasswordRequirements().then(() => {
     return this._validatePasswordHistory();
   });
@@ -845,7 +845,7 @@ RestWrite.prototype._validatePasswordRequirements = function () {
     if (this.data.username) {
       // username is not passed during password reset
       if (this.data.password.indexOf(this.data.username) >= 0)
-        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError));
+      { return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)); }
     } else {
       // retrieve the User object using objectId during password reset
       return this.config.database.find('_User', { objectId: this.objectId() }).then(results => {
@@ -853,9 +853,9 @@ RestWrite.prototype._validatePasswordRequirements = function () {
           throw undefined;
         }
         if (this.data.password.indexOf(results[0].username) >= 0)
-          return Promise.reject(
-            new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)
-          );
+        { return Promise.reject(
+          new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)
+        ); }
         return Promise.resolve();
       });
     }
@@ -880,18 +880,18 @@ RestWrite.prototype._validatePasswordHistory = function () {
         const user = results[0];
         let oldPasswords = [];
         if (user._password_history)
-          oldPasswords = _.take(
-            user._password_history,
-            this.config.passwordPolicy.maxPasswordHistory - 1
-          );
+        { oldPasswords = _.take(
+          user._password_history,
+          this.config.passwordPolicy.maxPasswordHistory - 1
+        ); }
         oldPasswords.push(user.password);
         const newPassword = this.data.password;
         // compare the new password hash with all old password hashes
         const promises = oldPasswords.map(function (hash) {
           return passwordCrypto.compare(newPassword, hash).then(result => {
             if (result)
-              // reject if there is a match
-              return Promise.reject('REPEAT_PASSWORD');
+            // reject if there is a match
+            { return Promise.reject('REPEAT_PASSWORD'); }
             return Promise.resolve();
           });
         });
@@ -902,13 +902,13 @@ RestWrite.prototype._validatePasswordHistory = function () {
           })
           .catch(err => {
             if (err === 'REPEAT_PASSWORD')
-              // a match was found
-              return Promise.reject(
-                new Parse.Error(
-                  Parse.Error.VALIDATION_ERROR,
-                  `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`
-                )
-              );
+            // a match was found
+            { return Promise.reject(
+              new Parse.Error(
+                Parse.Error.VALIDATION_ERROR,
+                `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`
+              )
+            ); }
             throw err;
           });
       });
@@ -1412,10 +1412,10 @@ RestWrite.prototype.handleInstallation = function () {
 // If we short-circuited the object response - then we need to make sure we expand all the files,
 // since this might not have a query, meaning it won't return the full result back.
 // TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
-RestWrite.prototype.expandFilesForExistingObjects = function () {
+RestWrite.prototype.expandFilesForExistingObjects = async function () {
   // Check whether we have a short-circuited response - only then run expansion.
   if (this.response && this.response.response) {
-    this.config.filesController.expandFilesInObject(this.config, this.response.response);
+    await this.config.filesController.expandFilesInObject(this.config, this.response.response);
   }
 };
 

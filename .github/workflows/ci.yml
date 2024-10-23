@@ -160,22 +160,26 @@ jobs:
             MONGODB_VERSION: 7.0.8
             MONGODB_TOPOLOGY: replset
             NODE_VERSION: 22.4.1
+          - name: MongoDB 8, ReplicaSet
+            MONGODB_VERSION: 8.0.0
+            MONGODB_TOPOLOGY: replset
+            NODE_VERSION: 22.4.1
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 8.0.0
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 22.4.1
           - name: Node 20
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 8.0.0
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 20.15.1
           - name: Node 18
-            MONGODB_VERSION: 7.0.8
+            MONGODB_VERSION: 8.0.0
             MONGODB_TOPOLOGY: standalone
             NODE_VERSION: 18.20.4
       fail-fast: false
     name: ${{ matrix.name }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     services:
       redis:
@@ -231,18 +235,24 @@ jobs:
           - name: PostgreSQL 13, PostGIS 3.4
             POSTGRES_IMAGE: postgis/postgis:13-3.4
             NODE_VERSION: 22.4.1
-          - name: PostgreSQL 14, PostGIS 3.4
-            POSTGRES_IMAGE: postgis/postgis:14-3.4
+          - name: PostgreSQL 13, PostGIS 3.5
+            POSTGRES_IMAGE: postgis/postgis:13-3.5
             NODE_VERSION: 22.4.1
-          - name: PostgreSQL 15, PostGIS 3.4
-            POSTGRES_IMAGE: postgis/postgis:15-3.4
+          - name: PostgreSQL 14, PostGIS 3.5
+            POSTGRES_IMAGE: postgis/postgis:14-3.5
             NODE_VERSION: 22.4.1
-          - name: PostgreSQL 16, PostGIS 3.4
-            POSTGRES_IMAGE: postgis/postgis:16-3.4
+          - name: PostgreSQL 15, PostGIS 3.5
+            POSTGRES_IMAGE: postgis/postgis:15-3.5
+            NODE_VERSION: 22.4.1
+          - name: PostgreSQL 16, PostGIS 3.5
+            POSTGRES_IMAGE: postgis/postgis:16-3.5
+            NODE_VERSION: 22.4.1
+          - name: PostgreSQL 17, PostGIS 3.5
+            POSTGRES_IMAGE: postgis/postgis:17-3.5
             NODE_VERSION: 22.4.1
       fail-fast: false
     name: ${{ matrix.name }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     services:
       redis:

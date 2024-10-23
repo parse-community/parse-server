@@ -104,7 +104,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('f20dd3c2-87d9-4bc6-a51d-4ea2834acbcc')('if user clicks on the email verify link before email verification token expiration then show the verify email success page', done => {
+  it_id('f20dd3c2-87d9-4bc6-a51d-4ea2834acbcc')(it)('if user clicks on the email verify link before email verification token expiration then show the verify email success page', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
@@ -146,7 +146,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('94956799-c85e-4297-b879-e2d1f985394c')('if user clicks on the email verify link before email verification token expiration then emailVerified should be true', done => {
+  it_id('94956799-c85e-4297-b879-e2d1f985394c')(it)('if user clicks on the email verify link before email verification token expiration then emailVerified should be true', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
@@ -194,7 +194,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('25f3f895-c987-431c-9841-17cb6aaf18b5')('if user clicks on the email verify link before email verification token expiration then user should be able to login', done => {
+  it_id('25f3f895-c987-431c-9841-17cb6aaf18b5')(it)('if user clicks on the email verify link before email verification token expiration then user should be able to login', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
@@ -242,7 +242,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('c6a3e188-9065-4f50-842d-454d1e82f289')('sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp', done => {
+  it_id('c6a3e188-9065-4f50-842d-454d1e82f289')(it)('sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
@@ -292,7 +292,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('9365c53c-b8b4-41f7-a3c1-77882f76a89c')('can conditionally send emails', async () => {
+  it_id('9365c53c-b8b4-41f7-a3c1-77882f76a89c')(it)('can conditionally send emails', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -351,7 +351,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(verifySpy).toHaveBeenCalled();
   });
 
-  it_id('b3549300-bed7-4a5e-bed5-792dbfead960')('can conditionally send emails and allow conditional login', async () => {
+  it_id('b3549300-bed7-4a5e-bed5-792dbfead960')(it)('can conditionally send emails and allow conditional login', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -397,7 +397,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(verifySpy).toHaveBeenCalledTimes(5);
   });
 
-  it_id('d812de87-33d1-495e-a6e8-3485f6dc3589')('can conditionally send user email verification', async () => {
+  it_id('d812de87-33d1-495e-a6e8-3485f6dc3589')(it)('can conditionally send user email verification', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -431,7 +431,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(emailSpy).toHaveBeenCalledTimes(0);
   });
 
-  it('provides full user object in email verification function on email and username change', async () => {
+  it_id('d98babc1-feb8-4b5e-916c-57dc0a6ed9fb')(it)('provides full user object in email verification function on email and username change', async () => {
     const emailAdapter = {
       sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -467,7 +467,7 @@ describe('Email Verification Token Expiration: ', () => {
     await user.save(null, { useMasterKey: true });
   });
 
-  it_id('a8c1f820-822f-4a37-9d08-a968cac8369d')('beforeSave options do not change existing behaviour', async () => {
+  it_id('a8c1f820-822f-4a37-9d08-a968cac8369d')(it)('beforeSave options do not change existing behaviour', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {
@@ -509,7 +509,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(emailSpy).toHaveBeenCalled();
   });
 
-  it_id('36d277eb-ec7c-4a39-9108-435b68228741')('unsets the _email_verify_token_expires_at and _email_verify_token fields in the User class if email verification is successful', done => {
+  it_id('36d277eb-ec7c-4a39-9108-435b68228741')(it)('unsets the _email_verify_token_expires_at and _email_verify_token fields in the User class if email verification is successful', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
@@ -567,7 +567,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('4f444704-ec4b-4dff-b947-614b1c6971c4')('clicking on the email verify link by an email VERIFIED user that was setup before enabling the expire email verify token should show email verify email success', done => {
+  it_id('4f444704-ec4b-4dff-b947-614b1c6971c4')(it)('clicking on the email verify link by an email VERIFIED user that was setup before enabling the expire email verify token should show email verify email success', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
@@ -679,7 +679,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', done => {
+  it_id('b6c87f35-d887-477d-bc86-a9217a424f53')(it)('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', done => {
     const user = new Parse.User();
     let userBeforeEmailReset;
 
@@ -755,7 +755,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('28f2140d-48bd-44ac-a141-ba60ea8d9713')('should send a new verification email when a resend is requested and the user is UNVERIFIED', done => {
+  it_id('28f2140d-48bd-44ac-a141-ba60ea8d9713')(it)('should send a new verification email when a resend is requested and the user is UNVERIFIED', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
@@ -916,7 +916,7 @@ describe('Email Verification Token Expiration: ', () => {
     done();
   });
 
-  it_id('0e66b7f6-2c07-4117-a8b9-605aa31a1e29')('should match codes with emailVerifyTokenReuseIfValid', async done => {
+  it_id('0e66b7f6-2c07-4117-a8b9-605aa31a1e29')(it)('should match codes with emailVerifyTokenReuseIfValid', async done => {
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
     const emailAdapter = {
@@ -982,7 +982,7 @@ describe('Email Verification Token Expiration: ', () => {
     done();
   });
 
-  it_id('1ed9a6c2-bebc-4813-af30-4f4a212544c2')('should not send a new verification email when a resend is requested and the user is VERIFIED', done => {
+  it_id('1ed9a6c2-bebc-4813-af30-4f4a212544c2')(it)('should not send a new verification email when a resend is requested and the user is VERIFIED', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
@@ -1223,7 +1223,7 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it_id('b082d387-4974-4d45-a0d9-0c85ca2d7cbf')('emailVerified should be set to false after changing from an already verified email', done => {
+  it_id('b082d387-4974-4d45-a0d9-0c85ca2d7cbf')(it)('emailVerified should be set to false after changing from an already verified email', done => {
     const user = new Parse.User();
     let sendEmailOptions;
     const emailAdapter = {
