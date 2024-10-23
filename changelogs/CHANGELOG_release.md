@@ -1,3 +1,10 @@
+## [6.5.11](https://github.com/parse-community/parse-server/compare/6.5.10...6.5.11) (2024-10-23)
+
+
+### Bug Fixes
+
+* Security upgrade to path-to-regexp 6.2.2 ([#9365](https://github.com/parse-community/parse-server/issues/9365)) ([dfbafa7](https://github.com/parse-community/parse-server/commit/dfbafa702507da0d20667eabe8fdc835ca30c8e8))
+
 ## [6.5.10](https://github.com/parse-community/parse-server/compare/6.5.9...6.5.10) (2024-10-12)
 
 
