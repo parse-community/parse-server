@@ -226,7 +226,7 @@ describe('Pointer Permissions', () => {
         });
     });
 
-    it('should query on pointer permission enabled column', done => {
+    it_id('f38c35e7-d804-4d32-986d-2579e25d2461')(it)('should query on pointer permission enabled column', done => {
       const config = Config.get(Parse.applicationId);
       const user = new Parse.User();
       const user2 = new Parse.User();
@@ -1070,7 +1070,7 @@ describe('Pointer Permissions', () => {
       }
     });
 
-    it('should work with write', async done => {
+    it_id('1bbb9ed6-5558-4ce5-a238-b1a2015d273f')(it)('should work with write', async done => {
       const config = Config.get(Parse.applicationId);
       const user = new Parse.User();
       const user2 = new Parse.User();
@@ -1203,7 +1203,7 @@ describe('Pointer Permissions', () => {
       done();
     });
 
-    it('should query on pointer permission enabled column', async done => {
+    it_id('8a7d188c-b75c-4eac-90b6-9b0b11f873ae')(it)('should query on pointer permission enabled column', async done => {
       const config = Config.get(Parse.applicationId);
       const user = new Parse.User();
       const user2 = new Parse.User();
@@ -2058,7 +2058,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('9ba681d5-59f5-4996-b36d-6647d23e6a44')(it)('should fail for user not listed', async done => {
           await updateCLP({
             get: {
               pointerFields: ['owner'],
@@ -2218,7 +2218,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('bcdb158d-c0b6-45e3-84ab-a3636f7cb470')(it)('should fail for user not listed', async done => {
           await updateCLP({
             update: {
               pointerFields: ['owner'],
@@ -2270,7 +2270,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('70aa3853-6e26-4c38-a927-2ddb24ced7d4')(it)('should fail for user not listed', async done => {
           await updateCLP({
             delete: {
               pointerFields: ['owner'],
@@ -2517,7 +2517,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('84a42339-c7b5-4735-a431-57b46535b073')(it)('should fail for user not listed', async done => {
           await updateCLP({
             get: {
               pointerFields: ['moderators'],
@@ -2685,7 +2685,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should be allowed (multiple users in array)', async done => {
+        it_id('2b19234a-a471-48b4-bd1a-27bd286d066f')(it)('should be allowed (multiple users in array)', async done => {
           await updateCLP({
             update: {
               pointerFields: ['moderators'],
@@ -2698,7 +2698,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('1abb9f4a-fb24-48c7-8025-3001d6cf8737')(it)('should fail for user not listed', async done => {
           await updateCLP({
             update: {
               pointerFields: ['moderators'],
@@ -2764,7 +2764,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should fail for user not listed', async done => {
+        it_id('3175a0e3-e51e-4b84-a2e6-50bbcc582123')(it)('should fail for user not listed', async done => {
           await updateCLP({
             delete: {
               pointerFields: ['owners'],
@@ -2874,7 +2874,7 @@ describe('Pointer Permissions', () => {
           done();
         });
 
-        it('should be restricted when updating object without addField permission', async done => {
+        it_id('51e896e9-73b3-404f-b5ff-bdb99005a9f7')(it)('should be restricted when updating object without addField permission', async done => {
           await updateCLP({
             update: {
               '*': true,
@@ -2946,7 +2946,7 @@ describe('Pointer Permissions', () => {
         await initialize();
       });
 
-      it('should not limit the scope of grouped read permissions', async done => {
+      it_id('b43db366-8cce-4a11-9cf2-eeee9603d40b')(it)('should not limit the scope of grouped read permissions', async done => {
         await updateCLP({
           get: {
             pointerFields: ['owner'],
@@ -2967,7 +2967,7 @@ describe('Pointer Permissions', () => {
         done();
       });
 
-      it('should not limit the scope of grouped write permissions', async done => {
+      it_id('bbb1686d-0e2a-4365-8b64-b5faa3e7b9cf')(it)('should not limit the scope of grouped write permissions', async done => {
         await updateCLP({
           update: {
             pointerFields: ['owner'],

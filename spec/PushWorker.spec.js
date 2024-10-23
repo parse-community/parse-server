@@ -120,7 +120,7 @@ describe('PushWorker', () => {
       });
     });
 
-    it('transforms body appropriately', () => {
+    it('transforms body appropriately with title locale', () => {
       const cleanBody = PushUtils.transformPushBodyForLocale(
         {
           data: {
@@ -271,7 +271,7 @@ describe('PushWorker', () => {
       toAwait.then(done).catch(done);
     });
 
-    it('tracks push status per UTC offsets', done => {
+    it_id('764d28ab-241b-4b96-8ce9-e03541850e3f')(it)('tracks push status per UTC offsets', done => {
       const config = Config.get('test');
       const handler = pushStatusHandler(config);
       const spy = spyOn(rest, 'update').and.callThrough();

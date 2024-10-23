@@ -30,7 +30,7 @@ const fullTextHelper = async () => {
 };
 
 describe('Parse.Query Full Text Search testing', () => {
-  it('fullTextSearch: $search', async () => {
+  it_id('77ba6779-6584-4e09-8e7e-31f89e741d6a')(it)('fullTextSearch: $search', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'coffee');
@@ -38,7 +38,7 @@ describe('Parse.Query Full Text Search testing', () => {
     expect(results.length).toBe(3);
   });
 
-  it('fullTextSearch: $search, sort', async () => {
+  it_id('d1992ea6-6d92-4bfa-a487-2a49fbcf8f0d')(it)('fullTextSearch: $search, sort', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'coffee');
@@ -51,7 +51,7 @@ describe('Parse.Query Full Text Search testing', () => {
     expect(results[2].get('score'));
   });
 
-  it('fulltext descending by $score', async () => {
+  it_id('07172595-50de-4be2-984a-d3136bebb22e')(it)('fulltext descending by $score', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'coffee');
@@ -68,7 +68,7 @@ describe('Parse.Query Full Text Search testing', () => {
     expect(second.get('score') >= third.get('score')).toBeTrue();
   });
 
-  it('fullTextSearch: $language', async () => {
+  it_id('8e821973-3fae-4e7c-8152-766228a18cdd')(it)('fullTextSearch: $language', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { language: 'spanish' });
@@ -76,7 +76,7 @@ describe('Parse.Query Full Text Search testing', () => {
     expect(resp.length).toBe(2);
   });
 
-  it('fullTextSearch: $diacriticSensitive', async () => {
+  it_id('7d3da216-9582-40ee-a2fe-8316feaf5c0c')(it)('fullTextSearch: $diacriticSensitive', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'CAFÉ', { diacriticSensitive: true });
@@ -84,7 +84,7 @@ describe('Parse.Query Full Text Search testing', () => {
     expect(resp.length).toBe(1);
   });
 
-  it('fullTextSearch: $search, invalid input', async () => {
+  it_id('dade10c8-2b9c-4f43-bb3f-a13bbd82ac22')(it)('fullTextSearch: $search, invalid input', async () => {
     await fullTextHelper();
     const invalidQuery = async () => {
       const where = {
@@ -114,7 +114,7 @@ describe('Parse.Query Full Text Search testing', () => {
     );
   });
 
-  it('fullTextSearch: $language, invalid input', async () => {
+  it_id('ff7c6b1c-4712-4847-bb76-f4e1f641f7b5')(it)('fullTextSearch: $language, invalid input', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { language: true });
@@ -123,7 +123,7 @@ describe('Parse.Query Full Text Search testing', () => {
     );
   });
 
-  it('fullTextSearch: $caseSensitive, invalid input', async () => {
+  it_id('de262dbc-ec75-4ec6-9217-fbb90146c272')(it)('fullTextSearch: $caseSensitive, invalid input', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { caseSensitive: 'string' });
@@ -132,7 +132,7 @@ describe('Parse.Query Full Text Search testing', () => {
     );
   });
 
-  it('fullTextSearch: $diacriticSensitive, invalid input', async () => {
+  it_id('b7b7b3a9-8d6c-4f98-a0ff-0113593d06d4')(it)('fullTextSearch: $diacriticSensitive, invalid input', async () => {
     await fullTextHelper();
     const query = new Parse.Query('TestObject');
     query.fullText('subject', 'leche', { diacriticSensitive: 'string' });

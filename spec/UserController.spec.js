@@ -5,7 +5,7 @@ const Auth = require('../lib/Auth');
 describe('UserController', () => {
   describe('sendVerificationEmail', () => {
     describe('parseFrameURL not provided', () => {
-      it('uses publicServerURL', async () => {
+      it_id('61338330-eca7-4c33-8816-7ff05966f43b')(it)('uses publicServerURL', async () => {
         await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {
@@ -40,7 +40,7 @@ describe('UserController', () => {
     });
 
     describe('parseFrameURL provided', () => {
-      it('uses parseFrameURL and includes the destination in the link parameter', async () => {
+      it_id('673c2bb1-049e-4dda-b6be-88c866260036')(it)('uses parseFrameURL and includes the destination in the link parameter', async () => {
         await reconfigureServer({
           publicServerURL: 'http://www.example.com',
           customPages: {

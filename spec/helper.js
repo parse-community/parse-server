@@ -14,6 +14,7 @@ if (dns.setDefaultResultOrder) {
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
+global.retryFlakyTests();
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -35,6 +36,7 @@ process.noDeprecation = true;
 const cache = require('../lib/cache').default;
 const defaults = require('../lib/defaults').default;
 const ParseServer = require('../lib/index').ParseServer;
+const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
@@ -53,7 +55,10 @@ let databaseAdapter;
 let databaseURI;
 // need to bind for mocking mocha
 
-if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
+  databaseAdapter = JSON.parse(process.env.PARSE_SERVER_DATABASE_ADAPTER);
+  databaseAdapter = loadAdapter(databaseAdapter);
+} else if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI;
   databaseAdapter = new PostgresStorageAdapter({
     uri: databaseURI,
@@ -108,7 +113,12 @@ const defaultConfiguration = {
   fileKey: 'test',
   directAccess: true,
   silent,
+  verbose: !silent,
   logLevel,
+  liveQuery: {
+    classNames: ['TestObject'],
+  },
+  startLiveQueryServer: true,
   fileUpload: {
     enableForPublic: true,
     enableForAnonymousUser: true,
@@ -130,6 +140,7 @@ const defaultConfiguration = {
     shortLivedAuth: mockShortLivedAuth(),
   },
   allowClientClassCreation: true,
+  encodeParseObjectInCloudFunction: true,
 };
 
 if (silent) {
@@ -158,15 +169,15 @@ const destroyAliveConnections = function () {
   }
 };
 // Set up a default API server for testing with default configuration.
-let server;
-
+let parseServer;
 let didChangeConfiguration = false;
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = async (changedConfiguration = {}) => {
-  if (server) {
-    await new Promise(resolve => server.close(resolve));
-    server = undefined;
+  if (parseServer) {
+    destroyAliveConnections();
+    await new Promise(resolve => parseServer.server.close(resolve));
+    parseServer = undefined;
     return reconfigureServer(changedConfiguration);
   }
   didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
@@ -175,14 +186,20 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     port,
   });
   cache.clear();
-  const parseServer = await ParseServer.startApp(newConfiguration);
-  server = parseServer.server;
+  parseServer = await ParseServer.startApp(newConfiguration);
   Parse.CoreManager.setRESTController(RESTController);
   parseServer.expressApp.use('/1', err => {
     console.error(err);
     fail('should not call next');
   });
-  server.on('connection', connection => {
+  parseServer.liveQueryServer?.server?.on('connection', connection => {
+    const key = `${connection.remoteAddress}:${connection.remotePort}`;
+    openConnections[key] = connection;
+    connection.on('close', () => {
+      delete openConnections[key];
+    });
+  });
+  parseServer.server.on('connection', connection => {
     const key = `${connection.remoteAddress}:${connection.remotePort}`;
     openConnections[key] = connection;
     connection.on('close', () => {
@@ -210,16 +227,12 @@ beforeAll(async () => {
   Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
-beforeEach(() => {
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
-});
-
 afterEach(function (done) {
   const afterLogOut = async () => {
-    if (Object.keys(openConnections).length > 0) {
-      console.warn('There were open connections to the server left after the test finished');
+    // Jasmine process uses one connection
+    if (Object.keys(openConnections).length > 1) {
+      console.warn(`There were ${Object.keys(openConnections).length} open connections to the server left after the test finished`);
     }
-    destroyAliveConnections();
     await TestUtils.destroyAllDataPermanently(true);
     SchemaCache.clear();
     if (didChangeConfiguration) {
@@ -272,6 +285,10 @@ afterEach(function (done) {
       });
     })
     .then(afterLogOut);
+});
+
+afterAll(() => {
+  global.displayTestStats();
 });
 
 const TestObject = Parse.Object.extend({
@@ -450,13 +467,18 @@ try {
   }
 }
 
-// Disable test if its UUID is found in testExclusionList
-global.it_id = (id, func) => {
-  if (testExclusionList.includes(id)) {
-    return xit;
-  } else {
-    return func || it;
-  }
+/**
+ * Assign ID to test and run it. Disable test if its UUID is found in testExclusionList.
+ * @param {String} id The UUID of the test.
+ */
+global.it_id = id => {
+  return testFunc => {
+    if (testExclusionList.includes(id)) {
+      return xit;
+    } else {
+      return testFunc;
+    }
+  };
 };
 
 global.it_only_db = db => {

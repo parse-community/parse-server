@@ -3650,7 +3650,7 @@ describe('schemas', () => {
       });
     });
 
-    it_exclude_dbs(['postgres'])('get indexes on startup', done => {
+    it_id('5d0926b2-2d31-459d-a2b1-23ecc32e72a3')(it_exclude_dbs(['postgres']))('get indexes on startup', done => {
       const obj = new Parse.Object('TestObject');
       obj
         .save()
@@ -3673,7 +3673,7 @@ describe('schemas', () => {
         });
     });
 
-    it_exclude_dbs(['postgres'])('get compound indexes on startup', done => {
+    it_id('9f2ba51a-6a9c-4b25-9da0-51c82ac65f90')(it_exclude_dbs(['postgres']))('get compound indexes on startup', done => {
       const obj = new Parse.Object('TestObject');
       obj.set('subject', 'subject');
       obj.set('comment', 'comment');
@@ -3708,7 +3708,7 @@ describe('schemas', () => {
         });
     });
 
-    it_exclude_dbs(['postgres'])('cannot update to duplicate value on unique index', done => {
+    it_id('cbd5d897-b938-43a4-8f5a-5d02dd2be9be')(it_exclude_dbs(['postgres']))('cannot update to duplicate value on unique index', done => {
       const index = {
         code: 1,
       };

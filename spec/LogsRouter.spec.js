@@ -75,7 +75,7 @@ describe_only(() => {
   /**
    * Verifies simple passwords in GET login requests with special characters are scrubbed from the verbose log
    */
-  it('does scrub simple passwords on GET login', done => {
+  it_id('e36d6141-2a20-41d0-85fc-d1534c3e4bae')(it)('does scrub simple passwords on GET login', done => {
     reconfigureServer({
       verbose: true,
     }).then(function () {
@@ -105,7 +105,7 @@ describe_only(() => {
   /**
    * Verifies complex passwords in GET login requests with special characters are scrubbed from the verbose log
    */
-  it('does scrub complex passwords on GET login', done => {
+  it_id('24b277c5-250f-4a35-a449-2c8c519d4c03')(it)('does scrub complex passwords on GET login', done => {
     reconfigureServer({
       verbose: true,
     })
@@ -139,7 +139,7 @@ describe_only(() => {
   /**
    * Verifies fields in POST login requests are NOT present in the verbose log
    */
-  it('does not have password field in POST login', done => {
+  it_id('33143ec9-b32d-467c-ba65-ff2bbefdaadd')(it)('does not have password field in POST login', done => {
     reconfigureServer({
       verbose: true,
     }).then(function () {

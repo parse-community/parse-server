@@ -500,7 +500,7 @@ describe('ParseGraphQLSchema', () => {
     });
   });
   describe('alias', () => {
-    it('Should be able to define alias for get and find query', async () => {
+    it_id('45282d26-f4c7-4d2d-a7b6-cd8741d5322f')(it)('Should be able to define alias for get and find query', async () => {
       const parseGraphQLSchema = new ParseGraphQLSchema({
         databaseController,
         parseGraphQLController,
@@ -535,7 +535,7 @@ describe('ParseGraphQLSchema', () => {
       expect(Object.keys(queries1)).toContain('precious_data');
     });
 
-    it('Should be able to define alias for mutation', async () => {
+    it_id('f04b46e3-a25d-401d-a315-3298cfee1df8')(it)('Should be able to define alias for mutation', async () => {
       const parseGraphQLSchema = new ParseGraphQLSchema({
         databaseController,
         parseGraphQLController,

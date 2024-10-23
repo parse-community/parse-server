@@ -87,7 +87,7 @@ describe('OAuth', function () {
     done();
   }
 
-  it('GET request for a resource that requires OAuth should fail with invalid credentials', done => {
+  xit('GET request for a resource that requires OAuth should fail with invalid credentials', done => {
     /*
       This endpoint has been chosen to make a request to an endpoint that requires OAuth which fails due to missing authentication.
       Any other endpoint from the Twitter API that requires OAuth can be used instead in case the currently used endpoint deprecates.
@@ -105,7 +105,7 @@ describe('OAuth', function () {
     });
   });
 
-  it('POST request for a resource that requires OAuth should fail with invalid credentials', done => {
+  xit('POST request for a resource that requires OAuth should fail with invalid credentials', done => {
     /*
       This endpoint has been chosen to make a request to an endpoint that requires OAuth which fails due to missing authentication.
       Any other endpoint from the Twitter API that requires OAuth can be used instead in case the currently used endpoint deprecates.

@@ -130,7 +130,7 @@ describe('ParseGraphQLServer', () => {
       set: () => {},
     };
 
-    it("should return schema and context with req's info, config and auth", async () => {
+    it_id('0696675e-060f-414f-bc77-9d57f31807f5')(it)('should return schema and context with req\'s info, config and auth', async () => {
       const options = await parseGraphQLServer._getGraphQLOptions();
       expect(options.schema).toEqual(parseGraphQLServer.parseGraphQLSchema.graphQLSchema);
       const contextResponse = await options.context({ req, res });
@@ -1395,7 +1395,7 @@ describe('ParseGraphQLServer', () => {
           await resetGraphQLCache();
         });
 
-        it('should only include types in the enabledForClasses list', async () => {
+        it_id('d6a23a2f-ca18-4b15-bc73-3e636f99e6bc')(it)('should only include types in the enabledForClasses list', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             foo: { type: 'String' },
@@ -1426,7 +1426,7 @@ describe('ParseGraphQLServer', () => {
           expect(data.userType).toBeNull();
           expect(data.superCarType).toBeTruthy();
         });
-        it('should not include types in the disabledForClasses list', async () => {
+        it_id('1db2aceb-d24e-4929-ba43-8dbb5d0395e1')(it)('should not include types in the disabledForClasses list', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             foo: { type: 'String' },
@@ -1457,7 +1457,7 @@ describe('ParseGraphQLServer', () => {
           expect(data.superCarType).toBeNull();
           expect(data.userType).toBeTruthy();
         });
-        it('should remove query operations when disabled', async () => {
+        it_id('85c2e02f-0239-4819-b66e-392e0125f6c5')(it)('should remove query operations when disabled', async () => {
           const superCar = new Parse.Object('SuperCar');
           await superCar.save({ foo: 'bar' });
           const customer = new Parse.Object('Customer');
@@ -1563,7 +1563,7 @@ describe('ParseGraphQLServer', () => {
           ).toBeRejected();
         });
 
-        it('should remove mutation operations, create, update and delete, when disabled', async () => {
+        it_id('972161a6-8108-4e99-a1a5-71d0267d26c2')(it)('should remove mutation operations, create, update and delete, when disabled', async () => {
           const superCar1 = new Parse.Object('SuperCar');
           await superCar1.save({ foo: 'bar' });
           const customer1 = new Parse.Object('Customer');
@@ -1735,7 +1735,7 @@ describe('ParseGraphQLServer', () => {
           ).toBeRejected();
         });
 
-        it('should only allow the supplied create and update fields for a class', async () => {
+        it_id('4af763b1-ff86-43c7-ba30-060a1c07e730')(it)('should only allow the supplied create and update fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             engine: { type: 'String' },
@@ -1823,7 +1823,7 @@ describe('ParseGraphQLServer', () => {
           expect(updatedSuperCar).toBeTruthy();
         });
 
-        it('should handle required fields from the Parse class', async () => {
+        it_id('fc9237e9-3e63-4b55-9c1d-e6269f613a93')(it)('should handle required fields from the Parse class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
           await schemaController.addClassIfNotExists('SuperCar', {
             engine: { type: 'String', required: true },
@@ -1875,7 +1875,7 @@ describe('ParseGraphQLServer', () => {
           expect(__type2.fields.find(o => o.name === 'doors').type.kind).toEqual('NON_NULL');
         });
 
-        it('should only allow the supplied output fields for a class', async () => {
+        it_id('83b6895a-7dfd-4e3b-a5ce-acdb1fa39705')(it)('should only allow the supplied output fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
 
           await schemaController.addClassIfNotExists('SuperCar', {
@@ -1992,7 +1992,7 @@ describe('ParseGraphQLServer', () => {
           expect(getSuperCar.objectId).toBe(superCar.id);
         });
 
-        it('should only allow the supplied constraint fields for a class', async () => {
+        it_id('67dfcf94-92fb-45a3-a012-3b22c81899ba')(it)('should only allow the supplied constraint fields for a class', async () => {
           try {
             const schemaController = await parseServer.config.databaseController.loadSchema();
 
@@ -2067,7 +2067,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should only allow the supplied sort fields for a class', async () => {
+        it_id('a3bdbd5d-8779-42fe-91a1-7a7f90a6177b')(it)('should only allow the supplied sort fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
 
           await schemaController.addClassIfNotExists('SuperCar', {
@@ -4921,7 +4921,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue2']);
           });
 
-          it('should support full text search', async () => {
+          it_id('accc59be-fd13-46c5-a103-ec63f2ad6670')(it)('should support full text search', async () => {
             try {
               const obj = new Parse.Object('FullTextSearchTest');
               obj.set('field1', 'Parse GraphQL Server');
@@ -5032,7 +5032,7 @@ describe('ParseGraphQLServer', () => {
             }
           });
 
-          it('should support order, skip and first arguments', async () => {
+          it_id('0fd03d3c-a2c8-4fac-95cc-2391a3032ca2')(it)('should support order, skip and first arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
               const obj = new Parse.Object('SomeClass');
@@ -5079,7 +5079,7 @@ describe('ParseGraphQLServer', () => {
             ]);
           });
 
-          it('should support pagination', async () => {
+          it_id('588a70c6-2932-4d3b-a838-a74c59d8cffb')(it)('should support pagination', async () => {
             const numberArray = (first, last) => {
               const array = [];
               for (let i = first; i <= last; i++) {
@@ -5221,7 +5221,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.someClasses.pageInfo.hasNextPage).toEqual(true);
           });
 
-          it('should support count', async () => {
+          it_id('4f6a5f20-9642-4cf0-b31d-e739672a9096')(it)('should support count', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5324,7 +5324,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.find.count).toEqual(2);
           });
 
-          it('should respect max limit', async () => {
+          it_id('942b57be-ca8a-4a5b-8104-2adef8743b1a')(it)('should respect max limit', async () => {
             parseServer = await global.reconfigureServer({
               maxLimit: 10,
             });
@@ -5365,7 +5365,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.find.count).toEqual(100);
           });
 
-          it('should support keys argument', async () => {
+          it_id('952634f0-0ad5-4a08-8da2-187c1bd9ee94')(it)('should support keys argument', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5771,7 +5771,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual([object3.id, object1.id, object2.id]);
           });
 
-          it('should support including relation', async () => {
+          it_id('47a6adf3-1cb4-4d92-b74c-e480363f9cb5')(it)('should support including relation', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6676,7 +6676,7 @@ describe('ParseGraphQLServer', () => {
           });
         });
 
-        it('should unset fields when null used on update/create', async () => {
+        it_id('f722e98e-1fd7-45c5-ade3-5177e3d542e8')(it)('should unset fields when null used on update/create', async () => {
           const customerSchema = new Parse.Schema('Customer');
           customerSchema.addString('aString');
           customerSchema.addBoolean('aBoolean');
@@ -8320,7 +8320,7 @@ describe('ParseGraphQLServer', () => {
           expect(schema.fields.updatedAt.type).toEqual('Date');
         });
 
-        it('should support ACL', async () => {
+        it_id('93e748f6-ad9b-4c31-8e1e-c5685e2382fb')(it)('should support ACL', async () => {
           const someClass = new Parse.Object('SomeClass');
           await someClass.save();
 
@@ -9074,7 +9074,7 @@ describe('ParseGraphQLServer', () => {
           expect(result2.companies.edges[0].node.objectId).toEqual(company1.id);
         });
 
-        it('should support relational where query', async () => {
+        it_id('f4312f2c-90bb-4583-b033-02078ae0ce84')(it)('should support relational where query', async () => {
           const president = new Parse.Object('President');
           president.set('name', 'James');
           await president.save();
@@ -9709,7 +9709,6 @@ describe('ParseGraphQLServer', () => {
           });
           expect(res.status).toEqual(200);
           const result = await res.json();
-          console.log(result);
           expect(result.data.createSomeClass.someClass.someFileField.name).toEqual(
             jasmine.stringMatching(/_someFileField.txt$/)
           );
@@ -10375,7 +10374,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should support Bytes', async () => {
+        it_id('43303db7-c5a7-4bc0-91c3-57e03fffa225')(it)('should support Bytes', async () => {
           try {
             const someFieldValue = 'aGVsbG8gd29ybGQ=';
 
@@ -10462,7 +10461,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should support Geo Points', async () => {
+        it_id('6a253e47-6959-4427-b841-c0c1fa77cf01')(it)('should support Geo Points', async () => {
           try {
             const someFieldValue = {
               __typename: 'GeoPoint',

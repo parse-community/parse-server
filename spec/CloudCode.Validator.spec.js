@@ -6,6 +6,9 @@ const validatorFail = () => {
 const validatorSuccess = () => {
   return true;
 };
+function testConfig() {
+  return Parse.Config.save({ internal: 'i', string: 's', number: 12 }, { internal: true });
+}
 
 describe('cloud validator', () => {
   it('complete validator', async done => {
@@ -169,27 +172,6 @@ describe('cloud validator', () => {
         expect(error.message).toEqual(
           'Validation failed. Master key is required to complete this request.'
         );
-        done();
-      });
-  });
-
-  it('set params on cloud functions', done => {
-    Parse.Cloud.define(
-      'hello',
-      () => {
-        return 'Hello world!';
-      },
-      {
-        fields: ['a'],
-      }
-    );
-    Parse.Cloud.run('hello', {})
-      .then(() => {
-        fail('function should have failed.');
-      })
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual('Validation failed. Please specify data for a.');
         done();
       });
   });
@@ -750,6 +732,38 @@ describe('cloud validator', () => {
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
     done();
+  });
+
+  it_id('893eec0c-41bd-4adf-8f0a-306087ad8d61')(it)('basic beforeSave Parse.Config skipWithMasterKey', async () => {
+    Parse.Cloud.beforeSave(
+      Parse.Config,
+      () => {
+        throw 'beforeSaveFile should have resolved using master key.';
+      },
+      {
+        skipWithMasterKey: true,
+      }
+    );
+    const config = await testConfig();
+    expect(config.get('internal')).toBe('i');
+    expect(config.get('string')).toBe('s');
+    expect(config.get('number')).toBe(12);
+  });
+
+  it_id('91e739a4-6a38-405c-8f83-f36d48220734')(it)('basic afterSave Parse.Config skipWithMasterKey', async () => {
+    Parse.Cloud.afterSave(
+      Parse.Config,
+      () => {
+        throw 'beforeSaveFile should have resolved using master key.';
+      },
+      {
+        skipWithMasterKey: true,
+      }
+    );
+    const config = await testConfig();
+    expect(config.get('internal')).toBe('i');
+    expect(config.get('string')).toBe('s');
+    expect(config.get('number')).toBe(12);
   });
 
   it('beforeSave validateMasterKey and skipWithMasterKey fail', async function (done) {
@@ -1462,7 +1476,7 @@ describe('cloud validator', () => {
   });
 
   it('validate afterSaveFile fail', async done => {
-    Parse.Cloud.beforeSave(Parse.File, () => {}, validatorFail);
+    Parse.Cloud.afterSave(Parse.File, () => {}, validatorFail);
     try {
       const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save({ useMasterKey: true });
@@ -1514,6 +1528,42 @@ describe('cloud validator', () => {
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
+    }
+  });
+
+  it_id('32ca1a99-7f2b-429d-a7cf-62b6661d0af6')(it)('validate beforeSave Parse.Config', async () => {
+    Parse.Cloud.beforeSave(Parse.Config, () => {}, validatorSuccess);
+    const config = await testConfig();
+    expect(config.get('internal')).toBe('i');
+    expect(config.get('string')).toBe('s');
+    expect(config.get('number')).toBe(12);
+  });
+
+  it_id('c84d11e7-d09c-4843-ad98-f671511bf612')(it)('validate beforeSave Parse.Config fail', async () => {
+    Parse.Cloud.beforeSave(Parse.Config, () => {}, validatorFail);
+    try {
+      await testConfig();
+      fail('cloud function should have failed.');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
+    }
+  });
+
+  it_id('b18b9a6a-0e35-4b60-9771-30f53501df3c')(it)('validate afterSave Parse.Config', async () => {
+    Parse.Cloud.afterSave(Parse.Config, () => {}, validatorSuccess);
+    const config = await testConfig();
+    expect(config.get('internal')).toBe('i');
+    expect(config.get('string')).toBe('s');
+    expect(config.get('number')).toBe(12);
+  });
+
+  it_id('ef761222-1758-4614-b984-da84d73fc10c')(it)('validate afterSave Parse.Config fail', async () => {
+    Parse.Cloud.afterSave(Parse.Config, () => {}, validatorFail);
+    try {
+      await testConfig();
+      fail('cloud function should have failed.');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
     }
   });
 
@@ -1629,7 +1679,7 @@ describe('cloud validator', () => {
     }
   });
 
-  it('Logs on invalid config', () => {
+  it('Logs on multiple invalid configs', () => {
     const fields = [
       {
         field: 'otherKey',

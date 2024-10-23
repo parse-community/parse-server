@@ -1641,35 +1641,6 @@ describe('ParseLiveQueryServer', function () {
       const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
-          sessionToken: 'userId',
-        }),
-      };
-      const requestId = 0;
-
-      parseLiveQueryServer
-        ._matchesCLP(
-          {
-            find: { userId: true },
-          },
-          { className: 'Yolo' },
-          client,
-          requestId,
-          'find'
-        )
-        .then(isMatched => {
-          expect(isMatched).toBe(true);
-          done();
-        });
-    });
-
-    it('matches CLP when find is restricted to userIds', done => {
-      const parseLiveQueryServer = new ParseLiveQueryServer({});
-      const acl = new Parse.ACL();
-      acl.setReadAccess(testUserId, true);
-      // Mock sessionTokenCache will return false when sessionToken is undefined
-      const client = {
-        sessionToken: 'sessionToken',
-        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
           sessionToken: undefined,
         }),
       };

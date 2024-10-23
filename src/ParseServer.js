@@ -88,7 +88,7 @@ class ParseServer {
         if (!Object.prototype.hasOwnProperty.call(ref, key)) {
           result.push(prefix + key);
         } else {
-          if (ref[key] === '') continue;
+          if (ref[key] === '') { continue; }
           let res = [];
           if (Array.isArray(original[key]) && Array.isArray(ref[key])) {
             const type = ref[key][0];
@@ -109,7 +109,7 @@ class ParseServer {
     const diff = validateKeyNames(options, optionsBlueprint);
     if (diff.length > 0) {
       const logger = logging.logger;
-      logger.error(`Invalid Option Keys Found: ${diff.join(', ')}`);
+      logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
     }
 
     // Set option defaults
@@ -160,6 +160,7 @@ class ParseServer {
           throw e;
         }
       }
+      const pushController = await controllers.getPushController(this.config);
       await hooksController.load();
       const startupPromises = [];
       if (schema) {
@@ -196,6 +197,7 @@ class ParseServer {
         new CheckRunner(security).run();
       }
       this.config.state = 'ok';
+      this.config = { ...this.config, ...pushController };
       Config.put(this.config);
       return this;
     } catch (error) {
