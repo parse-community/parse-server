@@ -212,7 +212,23 @@ export class DefinedSchemas {
     if (localSchema.indexes) {
       Object.keys(localSchema.indexes).forEach(indexName => {
         if (localSchema.indexes && !this.isProtectedIndex(localSchema.className, indexName)) {
-          newLocalSchema.addIndex(indexName, localSchema.indexes[indexName]);
+          let indexFieldName = indexName;
+          const field = localSchema.fields?.[indexName];
+          // If the field is a pointer and indexName does not start with _p_, prepend _p_
+          if (field && field.type === 'Pointer' && !indexName.startsWith('_p_')) {
+            indexFieldName = '_p_' + indexName;
+          }
+          if (!field) {
+            logger.warn(
+              `The index "${indexName}" does not exist in the schema for "${localSchema.className}"`
+            );
+            newLocalSchema.addIndex(indexName, localSchema.indexes[indexName]);
+          } else {
+            // Here we create a new index with the modified field name
+            const newIndex = {};
+            newIndex[indexFieldName] = localSchema.indexes[indexName][indexName];
+            newLocalSchema.addIndex(indexFieldName, newIndex);
+          }
         }
       });
     }
