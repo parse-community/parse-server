@@ -570,6 +570,35 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await adapter.deleteIdempotencyFunction();
     await client.none(qs);
   });
+
+  fit('saves object with a pointer field set to undefined', async () => {
+    const pointerTestClassName = 'PointerTest';
+    const pointerTestSchema = new Parse.Schema(pointerTestClassName);
+    await pointerTestSchema.save();
+
+    // Make another class 'Test' with a pointer field to the first class
+    const testClassName = 'Test';
+    const testSchema = new Parse.Schema(testClassName);
+    const pointerToFieldName = 'pointerTo';
+    testSchema.addPointer(pointerToFieldName, pointerTestClassName); // Field points to Pointer Test
+    await testSchema.save();
+
+    // Create a 'Test' parse object with the 'pointerTo' field set to undefined
+    const obj = new Parse.Object(testClassName);
+    obj.set(pointerToFieldName, undefined);
+    expectAsync(obj.save()).toBeResolved();
+
+    // Create a 'Test parse object with the fields set to undefined directly in the constructor
+    const fields = {
+      [pointerToFieldName]: undefined,
+    };
+    const obj2 = new Parse.Object(testClassName, fields);
+    expectAsync(obj2.save()).toBeResolved();
+
+    // Create a 'Test' parse object with the fields set to undefined directly in the save method
+    const obj3 = new Parse.Object(testClassName);
+    expectAsync(obj3.save(fields)).toBeResolved();
+  });
 });
 
 describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {
