@@ -739,10 +739,11 @@ RestWrite.prototype._validateUserName = function () {
     )
     .then(results => {
       if (results.length > 0) {
-        throw new Parse.Error(
+        const usernameError = new Parse.Error(
           Parse.Error.USERNAME_TAKEN,
           'Account already exists for this username.'
         );
+        throw usernameError;
       }
       return;
     });
@@ -1557,10 +1558,18 @@ RestWrite.prototype.runDatabaseOperation = function () {
 
         // Quick check, if we were able to infer the duplicated field name
         if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
-          throw new Parse.Error(
+          const usernameError = new Parse.Error(
             Parse.Error.USERNAME_TAKEN,
             'Account already exists for this username.'
           );
+          if (this.config.logLevels.usernameAlreadyExists === 'info') {
+            logger.info(JSON.stringify(usernameError));
+          } else if (this.config.logLevels.usernameAlreadyExists === 'warn') {
+            logger.warn(JSON.stringify(usernameError));
+          } else if (this.config.logLevels.usernameAlreadyExists === 'error') {
+            logger.error(JSON.stringify(usernameError));
+          }
+          throw usernameError;
         }
 
         if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
@@ -1585,10 +1594,14 @@ RestWrite.prototype.runDatabaseOperation = function () {
           )
           .then(results => {
             if (results.length > 0) {
-              throw new Parse.Error(
+              const usernameError = new Parse.Error(
                 Parse.Error.USERNAME_TAKEN,
                 'Account already exists for this username.'
               );
+              if (this.config.logLevels.usernameAlreadyExists !== 'silent') {
+                logger[this.config.logLevels.usernameAlreadyExists](JSON.stringify(usernameError));
+              }
+              throw usernameError;
             }
             return this.config.database.find(
               this.className,
