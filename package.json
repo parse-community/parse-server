@@ -20,7 +20,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@apollo/server": "4.11.0",
-    "@babel/eslint-parser": "7.25.8",
+    "@babel/eslint-parser": "7.25.9",
     "@graphql-tools/merge": "9.0.8",
     "@graphql-tools/schema": "10.0.7",
     "@graphql-tools/utils": "10.5.5",
