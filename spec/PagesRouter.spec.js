@@ -441,15 +441,16 @@ describe('Pages Router', () => {
       });
 
       it('returns default file for neither locale nor language match', async () => {
-        req.query.locale = 'yo-LO';
-
+        const queryWithLocale = { ...req.query, locale: 'yo-LO' };
+        req = { ...req, query: queryWithLocale };
+      
         await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
           new RegExp(`\/yo(-LO)?\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
-    });
+      
 
     describe('localization with JSON resource', () => {
       let jsonPageFile;
@@ -928,14 +929,15 @@ describe('Pages Router', () => {
       });
 
       it('verifyEmail: responds with invalid link on missing username', async () => {
-        req.query.token = 'exampleToken';
-        req.params = {};
-        req.config.userController = { verifyEmail: () => Promise.reject() };
+        const queryWithToken = { ...req.query, token: 'exampleToken' };
+        req = { ...req, query: queryWithToken, params: {}, config: { userController: { verifyEmail: () => Promise.reject() } } };
+      
         const verifyEmail = req => new PagesRouter().verifyEmail(req);
-
+      
         await verifyEmail(req);
         expect(goToPage.calls.all()[0].args[1]).toBe(pages.emailVerificationLinkInvalid);
       });
+      
 
       it('resetPassword: responds with page choose password with error message on failed password update', async () => {
         req.body = {
