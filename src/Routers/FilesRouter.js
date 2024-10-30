@@ -244,9 +244,8 @@ export class FilesRouter {
       }
       // run afterSaveFile trigger
       await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
-      res.status(201);
+      res.status(201).json(saveResult);
       res.set('Location', saveResult.url);
-      res.json(saveResult);
     } catch (e) {
       logger.error('Error creating a file: ', e);
       const error = triggers.resolveError(e, {
@@ -299,11 +298,9 @@ export class FilesRouter {
       const { filesController } = config;
       const { filename } = req.params;
       const data = await filesController.getMetadata(filename);
-      res.status(200);
-      res.json(data);
+      res.status(200).json(data);
     } catch (e) {
-      res.status(200);
-      res.json({});
+      res.status(200).json({});
     }
   }
 }

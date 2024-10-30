@@ -206,8 +206,7 @@ export function handleParseHeaders(req, res, next) {
   const clientIp = getClientIp(req);
   const config = Config.get(info.appId, mount);
   if (config.state && config.state !== 'ok') {
-    res.status(500);
-    res.json({
+    res.status(500).json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,
       error: `Invalid server state: ${config.state}`,
     });
@@ -336,8 +335,7 @@ const handleRateLimit = async (req, res, next) => {
       })
     );
   } catch (error) {
-    res.status(429);
-    res.json({ code: Parse.Error.CONNECTION_FAILED, error: error.message });
+    res.status(429).json({ code: Parse.Error.CONNECTION_FAILED, error: error.message });
     return;
   }
   next();
@@ -475,19 +473,16 @@ export function handleParseErrors(err, req, res, next) {
       default:
         httpStatus = 400;
     }
-    res.status(httpStatus);
-    res.json({ code: err.code, error: err.message });
+    res.status(httpStatus).json({ code: err.code, error: err.message });
     log.error('Parse error: ', err);
   } else if (err.status && err.message) {
-    res.status(err.status);
-    res.json({ error: err.message });
+    res.status(err.status).json({ error: err.message });
     if (!(process && process.env.TESTING)) {
       next(err);
     }
   } else {
     log.error('Uncaught internal server error.', err, err.stack);
-    res.status(500);
-    res.json({
+    res.status(500).json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,
       message: 'Internal server error.',
     });
@@ -677,6 +672,5 @@ function invalidRequest(req, res) {
 }
 
 function malformedContext(req, res) {
-  res.status(400);
-  res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
+  res.status(400).json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
 }
