@@ -14,7 +14,7 @@ function validateAuthData(authData) {
     if (data && data.sub == authData.id) {
       return;
     }
-    console.error('PhantAuth auth is invalid for this user.'); 
+    console.error('PhantAuth auth is invalid for this user.');
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   });
 }

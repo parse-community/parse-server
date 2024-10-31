@@ -11,7 +11,7 @@ function validateAuthData(authData) {
     console.error('Line auth validation failed. Response:', response);
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid authentication');
   }).catch(err=>{
-    console.error('Error validating Line auth:',err); 
+    console.error('Error validating Line auth:',err);
     throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Authentication validation failed');
   });
 }

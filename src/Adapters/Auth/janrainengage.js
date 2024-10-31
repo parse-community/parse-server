@@ -11,7 +11,7 @@ function validateAuthData(authData, options) {
     if (data && data.stat == 'ok' && data.profile.identifier == authData.id) {
       return;
     }
-    console.error('Janrain engage auth is invalid for this user.'); 
+    console.error('Janrain engage auth is invalid for this user.');
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Unauthorized'

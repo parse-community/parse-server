@@ -136,7 +136,7 @@ function verifySignature(publicKey, authData) {
 function verifyPublicKeyIssuer(cert, publicKeyUrl) {
   const publicKeyCert = pki.certificateFromPem(cert);
   if (!ca.cert) {
-  console.error('Invalid root certificate during Apple Game Center verification.');
+    console.error('Invalid root certificate during Apple Game Center verification.');
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Unauthorized'

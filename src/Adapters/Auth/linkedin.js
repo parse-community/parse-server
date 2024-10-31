@@ -8,7 +8,7 @@ function validateAuthData(authData) {
     if (data && data.id == authData.id) {
       return;
     }
-    console.error('Linkedin auth is invalid for this user.'); 
+    console.error('Linkedin auth is invalid for this user.');
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed');
   });
 }

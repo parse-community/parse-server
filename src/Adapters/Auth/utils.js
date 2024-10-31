@@ -4,7 +4,7 @@ const Parse = require('parse/node').Parse;
 const getHeaderFromToken = token => {
   const decodedToken = jwt.decode(token, { complete: true });
   if (!decodedToken) {
-    console.error('provided token does not decode as JWT'); 
+    console.error('provided token does not decode as JWT');
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Unauthorized`);
   }
 

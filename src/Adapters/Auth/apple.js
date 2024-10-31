@@ -31,7 +31,7 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
   if (!token) {
-    console.error('Invalid token'); 
+    console.error('Invalid token');
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `Unauthorized`);
   }
 

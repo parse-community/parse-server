@@ -51,7 +51,7 @@ const arraysEqual = (_arr1, _arr2) => {
 
 const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } = {}) => {
   if (!(access_token && id)) {
-    console.error('Missing access token and/or User id'); 
+    console.error('Missing access token and/or User id');
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed');
   }
   if (!config || !(config['auth-server-url'] && config['realm'])) {

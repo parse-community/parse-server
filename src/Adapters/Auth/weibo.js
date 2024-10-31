@@ -9,7 +9,7 @@ function validateAuthData(authData) {
     if (data && data.uid == authData.id) {
       return;
     }
-    console.error('weibo auth is invalid for this user.'); 
+    console.error('weibo auth is invalid for this user.');
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Authentication failed.');
   });
 }

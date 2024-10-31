@@ -39,7 +39,7 @@ async function validateGraphAppId(appIds, authData, options) {
     return;
   }
   if (!Array.isArray(appIds)) {
-    console.error('appIds must be an array.'); 
+    console.error('appIds must be an array.');
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
   }
   if (!appIds.length) {

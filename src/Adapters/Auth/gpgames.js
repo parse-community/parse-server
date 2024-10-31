@@ -15,7 +15,7 @@ async function validateAuthData(authData) {
     `https://www.googleapis.com/games/v1/players/${authData.id}?access_token=${authData.access_token}`
   );
   if (!(response && response.playerId === authData.id)) {
-    console.error('Google Play Games Services - authData is invalid for this user.'); 
+    console.error('Google Play Games Services - authData is invalid for this user.');
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Authentication Failed'
