@@ -20,7 +20,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@apollo/server": "4.11.0",
-    "@babel/eslint-parser": "7.25.8",
+    "@babel/eslint-parser": "7.25.9",
     "@graphql-tools/merge": "9.0.8",
     "@graphql-tools/schema": "10.0.7",
     "@graphql-tools/utils": "10.5.5",
@@ -31,7 +31,7 @@
     "commander": "12.1.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
-    "express": "4.21.0",
+    "express": "4.21.1",
     "express-rate-limit": "7.4.1",
     "follow-redirects": "1.15.9",
     "graphql": "16.9.0",
@@ -60,8 +60,8 @@
     "semver": "7.6.3",
     "subscriptions-transport-ws": "0.11.0",
     "tv4": "1.3.0",
-    "uuid": "10.0.0",
-    "winston": "3.13.1",
+    "uuid": "11.0.2",
+    "winston": "3.15.0",
     "winston-daily-rotate-file": "5.0.0",
     "ws": "8.18.0"
   },
@@ -69,10 +69,10 @@
     "@actions/core": "1.11.1",
     "@apollo/client": "3.11.8",
     "@babel/cli": "7.24.8",
-    "@babel/core": "7.24.7",
+    "@babel/core": "7.26.0",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
-    "@babel/plugin-transform-flow-strip-types": "7.24.7",
-    "@babel/preset-env": "7.24.8",
+    "@babel/plugin-transform-flow-strip-types": "7.25.9",
+    "@babel/preset-env": "7.26.0",
     "@saithodev/semantic-release-backmerge": "4.0.1",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/commit-analyzer": "13.0.0",
@@ -88,25 +88,25 @@
     "eslint": "8.57.0",
     "eslint-plugin-flowtype": "8.0.3",
     "flow-bin": "0.119.1",
-    "form-data": "4.0.0",
+    "form-data": "4.0.1",
     "graphql-tag": "2.12.6",
-    "husky": "9.0.11",
+    "husky": "9.1.6",
     "jasmine": "3.5.0",
     "jasmine-spec-reporter": "7.0.0",
-    "jsdoc": "4.0.3",
+    "jsdoc": "4.0.4",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
     "m": "1.9.0",
     "madge": "8.0.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
-    "mongodb-runner": "5.6.4",
+    "mongodb-runner": "5.7.0",
     "node-abort-controller": "3.1.1",
     "node-fetch": "3.2.10",
     "nyc": "15.1.0",
     "prettier": "2.0.5",
     "semantic-release": "24.0.0",
-    "yaml": "2.5.1"
+    "yaml": "2.6.0"
   },
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
@@ -145,7 +145,7 @@
     "parse-server": "bin/parse-server"
   },
   "optionalDependencies": {
-    "@node-rs/bcrypt": "1.10.4"
+    "@node-rs/bcrypt": "1.10.5"
   },
   "collective": {
     "type": "opencollective",

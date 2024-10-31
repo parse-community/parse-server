@@ -10,6 +10,8 @@ on:
 env:
   NODE_VERSION: 22.4.1
   PARSE_SERVER_TEST_TIMEOUT: 20000
+permissions:
+  actions: write
 jobs:
   check-code-analysis:
     name: Code Analysis
