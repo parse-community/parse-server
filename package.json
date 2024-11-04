@@ -61,7 +61,7 @@
     "subscriptions-transport-ws": "0.11.0",
     "tv4": "1.3.0",
     "uuid": "11.0.2",
-    "winston": "3.15.0",
+    "winston": "3.16.0",
     "winston-daily-rotate-file": "5.0.0",
     "ws": "8.18.0"
   },
