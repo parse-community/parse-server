@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
-    "@apollo/client": "3.11.9",
+    "@apollo/client": "3.11.10",
     "@babel/cli": "7.25.9",
     "@babel/core": "7.26.0",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
