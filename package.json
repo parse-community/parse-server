@@ -106,7 +106,7 @@
     "nyc": "17.1.0",
     "prettier": "2.0.5",
     "semantic-release": "24.2.0",
-    "yaml": "2.6.0"
+    "yaml": "2.6.1"
   },
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
