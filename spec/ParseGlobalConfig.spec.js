@@ -4,7 +4,7 @@ const request = require('../lib/request');
 const Config = require('../lib/Config');
 
 describe('a GlobalConfig', () => {
-  beforeEach(done => {
+  beforeEach(async () => {
     const config = Config.get('test');
     const query = on_db(
       'mongo',
@@ -16,7 +16,7 @@ describe('a GlobalConfig', () => {
         return { objectId: '1' };
       }
     );
-    config.database.adapter
+    await config.database.adapter
       .upsertOneObject(
         '_GlobalConfig',
         {
@@ -31,11 +31,7 @@ describe('a GlobalConfig', () => {
           params: { companies: ['US', 'DK'], counter: 20, internalParam: 'internal' },
           masterKeyOnly: { internalParam: true },
         }
-      )
-      .then(done, err => {
-        jfail(err);
-        done();
-      });
+      );
   });
 
   const headers = {
