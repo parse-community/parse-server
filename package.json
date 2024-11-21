@@ -90,7 +90,7 @@
     "flow-bin": "0.119.1",
     "form-data": "4.0.1",
     "graphql-tag": "2.12.6",
-    "husky": "9.1.6",
+    "husky": "9.1.7",
     "jasmine": "3.5.0",
     "jasmine-spec-reporter": "7.0.0",
     "jsdoc": "4.0.4",
