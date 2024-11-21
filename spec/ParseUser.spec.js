@@ -3662,8 +3662,7 @@ describe('Parse.User testing', () => {
       }, done.fail);
   });
 
-  xit('should not send a verification email if the user signed up using oauth', done => {
-    // 'this test fails.  See: https://github.com/parse-community/parse-server/issues/5097'
+  it('should not send a verification email if the user signed up using oauth', async () => {
     let emailCalledCount = 0;
     const emailAdapter = {
       sendVerificationEmail: () => {
@@ -3673,7 +3672,7 @@ describe('Parse.User testing', () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
-    reconfigureServer({
+    await reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -3681,17 +3680,14 @@ describe('Parse.User testing', () => {
     });
     const user = new Parse.User();
     user.set('email', 'email1@host.com');
-    Parse.FacebookUtils.link(user, {
+    const linkedUser = await Parse.FacebookUtils.link(user, {
       id: '8675309',
       access_token: 'jenny',
       expiration_date: new Date().toJSON(),
-    }).then(user => {
-      user.set('email', 'email2@host.com');
-      user.save().then(() => {
-        expect(emailCalledCount).toBe(0);
-        done();
-      });
     });
+    linkedUser.set('email', 'email2@host.com');
+    await linkedUser.save();
+    expect(emailCalledCount).toBe(0);
   });
 
   it('should be able to update user with authData passed', done => {
