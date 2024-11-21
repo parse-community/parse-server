@@ -25,7 +25,7 @@
     "@graphql-tools/schema": "10.0.8",
     "@graphql-tools/utils": "10.5.6",
     "@parse/fs-files-adapter": "3.0.0",
-    "@parse/push-adapter": "6.7.0",
+    "@parse/push-adapter": "6.7.1",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.3",
     "commander": "12.1.0",
