@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollo/server": "4.11.2",
     "@babel/eslint-parser": "7.25.9",
-    "@graphql-tools/merge": "9.0.9",
+    "@graphql-tools/merge": "9.0.11",
     "@graphql-tools/schema": "10.0.9",
     "@graphql-tools/utils": "10.5.6",
     "@parse/fs-files-adapter": "3.0.0",
