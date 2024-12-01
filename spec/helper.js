@@ -424,6 +424,25 @@ function mockShortLivedAuth() {
   return auth;
 }
 
+function mockFetch(mockResponses) {
+  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = { }) => {
+    options.method ||= 'GET';
+    const mockResponse = mockResponses.find(
+      (mock) => mock.url === url && mock.method === options.method
+    );
+
+    if (mockResponse) {
+      return Promise.resolve(mockResponse.response);
+    }
+
+    return Promise.resolve({
+      ok: false,
+      statusText: 'Unknown URL or method',
+    });
+  });
+}
+
+
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -439,6 +458,7 @@ global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
 global.reconfigureServer = reconfigureServer;
+global.mockFetch = mockFetch;
 global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;

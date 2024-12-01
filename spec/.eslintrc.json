@@ -5,6 +5,7 @@
     "globals": {
       "Parse": true,
       "reconfigureServer": true,
+      "mockFetch": true,
       "createTestUser": true,
       "jfail": true,
       "ok": true,
