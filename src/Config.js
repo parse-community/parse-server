@@ -20,6 +20,7 @@ import {
   SecurityOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
+import Deprecator from './Deprecator/Deprecator';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -84,6 +85,7 @@ export class Config {
     pages,
     security,
     enforcePrivateUsers,
+    enableInsecureAuthAdapters,
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
@@ -129,6 +131,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
@@ -501,6 +504,15 @@ export class Config {
       if (!net.isIP(ip)) {
         throw `The Parse Server option "${field}" contains an invalid IP address "${ip}".`;
       }
+    }
+  }
+
+  static validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters) {
+    if (enableInsecureAuthAdapters && typeof enableInsecureAuthAdapters !== 'boolean') {
+      throw 'Parse Server option enableInsecureAuthAdapters must be a boolean.';
+    }
+    if (enableInsecureAuthAdapters) {
+      Deprecator.logRuntimeDeprecation({ usage: 'insecure adapter' });
     }
   }
 

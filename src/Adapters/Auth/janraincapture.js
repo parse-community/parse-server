@@ -1,3 +1,48 @@
+/**
+ * Parse Server authentication adapter for Janrain Capture API.
+ *
+ * @class JanrainCapture
+ * @param {Object} options - The adapter configuration options.
+ * @param {String} options.janrain_capture_host - The Janrain Capture API host.
+ *
+ * @param {Object} authData - The authentication data provided by the client.
+ * @param {String} authData.id - The Janrain Capture user ID.
+ * @param {String} authData.access_token - The Janrain Capture access token.
+ *
+ * @description
+ * ## Parse Server Configuration
+ * To configure Parse Server for Janrain Capture authentication, use the following structure:
+ * ```json
+ * {
+ *   "auth": {
+ *     "janrain": {
+ *       "janrain_capture_host": "your-janrain-capture-host"
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * The adapter requires the following `authData` fields:
+ * - `id`: The Janrain Capture user ID.
+ * - `access_token`: An authorized Janrain Capture access token for the user.
+ *
+ * ## Auth Payload Example
+ * ```json
+ * {
+ *   "janrain": {
+ *     "id": "user's Janrain Capture ID as a string",
+ *     "access_token": "an authorized Janrain Capture access token for the user"
+ *   }
+ * }
+ * ```
+ *
+ * ## Notes
+ * Parse Server validates the provided `authData` using the Janrain Capture API.
+ *
+ * @see {@link https://docs.janrain.com/api/registration/entity/#entity Janrain Capture API Documentation}
+ */
+
+
 // Helper functions for accessing the Janrain Capture API.
 var Parse = require('parse/node').Parse;
 var querystring = require('querystring');
