@@ -18,7 +18,7 @@ const masterKeyOptions = {
   json: true,
 };
 
-describe_only_db('mongo')('Parse.Query hint', () => {
+fdescribe_only_db('mongo')('Parse.Query hint', () => {
   beforeEach(() => {
     config = Config.get('test');
   });
