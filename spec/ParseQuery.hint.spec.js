@@ -18,7 +18,7 @@ const masterKeyOptions = {
   json: true,
 };
 
-describe_only_db('mongo')('Parse.Query hint', () => {
+fdescribe_only_db('mongo')('Parse.Query hint', () => {
   beforeEach(() => {
     config = Config.get('test');
   });
@@ -27,7 +27,19 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     await TestUtils.destroyAllDataPermanently(false);
   });
 
-  fit_only_mongodb_version('<5.1 || >=6')('query find with hint string', async () => {
+  it_only_mongodb_version('<5.0 || >=6')('debug 1', async () => {
+    expect(0).toBe(0);
+  });
+
+  it_only_mongodb_version('<5 || >=6')('debug 2', async () => {
+    expect(0).toBe(0);
+  });
+
+  it_only_mongodb_version('<5 || >=6.0.0')('debug 3', async () => {
+    expect(0).toBe(0);
+  });
+
+  it_only_mongodb_version('<5.1 || >=6')('query find with hint string', async () => {
     const object = new TestObject();
     await object.save();
 
