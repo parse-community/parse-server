@@ -22,6 +22,7 @@
       "it_only_postgres_version": true,
       "it_only_node_version": true,
       "fit_only_mongodb_version": true,
+      "fit_only_postgres_version": true,
       "fit_only_node_version": true,
       "it_exclude_dbs": true,
       "fit_exclude_dbs": true,
