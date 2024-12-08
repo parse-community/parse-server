@@ -27,18 +27,6 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     await TestUtils.destroyAllDataPermanently(false);
   });
 
-  it_only_mongodb_version('<5.0 || >=6')('debug 1', async () => {
-    expect(0).toBe(0);
-  });
-
-  it_only_mongodb_version('<5 || >=6')('debug 2', async () => {
-    expect(0).toBe(0);
-  });
-
-  it_only_mongodb_version('<5 || >=6.0.0')('debug 3', async () => {
-    expect(0).toBe(0);
-  });
-
   it_only_mongodb_version('<5.1 || >=6')('query find with hint string', async () => {
     const object = new TestObject();
     await object.save();
@@ -51,7 +39,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('>=5.1<6')('query find with hint string', async () => {
+  it_only_mongodb_version('>=5.1 <6')('query find with hint string', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -62,7 +50,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.queryPlan.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('<5.1>=6')('query find with hint object', async () => {
+  it_only_mongodb_version('<5.1 || >=6')('query find with hint object', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -76,7 +64,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     });
   });
 
-  it_only_mongodb_version('>=5.1<6')('query find with hint object', async () => {
+  it_only_mongodb_version('>=5.1 <6')('query find with hint object', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -112,7 +100,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint string', async () => {
+  it_only_mongodb_version('>=4.4 <5.1')('query aggregate with hint string', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
 
@@ -136,7 +124,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('>=5.1<5.2')('query aggregate with hint string', async () => {
+  it_only_mongodb_version('>=5.1 <5.2')('query aggregate with hint string', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
 
@@ -204,7 +192,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint object', async () => {
+  it_only_mongodb_version('>=4.4 <5.1')('query aggregate with hint object', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
 
@@ -229,7 +217,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('>=5.1<5.2')('query aggregate with hint object', async () => {
+  it_only_mongodb_version('>=5.1 <5.2')('query aggregate with hint object', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
 
@@ -279,7 +267,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.queryPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('<5.1>=6')('query find with hint (rest)', async () => {
+  it_only_mongodb_version('<5.1 || >=6')('query find with hint (rest)', async () => {
     const object = new TestObject();
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
@@ -304,7 +292,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(explain.queryPlanner.winningPlan.inputStage.inputStage.indexName).toBe('_id_');
   });
 
-  it_only_mongodb_version('>=5.1<6')('query find with hint (rest)', async () => {
+  it_only_mongodb_version('>=5.1 <6')('query find with hint (rest)', async () => {
     const object = new TestObject();
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
@@ -356,7 +344,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('>=4.4<5.1')('query aggregate with hint (rest)', async () => {
+  it_only_mongodb_version('>=4.4 <5.1')('query aggregate with hint (rest)', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
@@ -389,7 +377,7 @@ fdescribe_only_db('mongo')('Parse.Query hint', () => {
     expect(queryPlanner.winningPlan.inputStage.inputStage.keyPattern).toEqual({ _id: 1 });
   });
 
-  it_only_mongodb_version('>=5.1<5.2')('query aggregate with hint (rest)', async () => {
+  it_only_mongodb_version('>=5.1 <5.2')('query aggregate with hint (rest)', async () => {
     const object = new TestObject({ foo: 'bar' });
     await object.save();
     let options = Object.assign({}, masterKeyOptions, {
