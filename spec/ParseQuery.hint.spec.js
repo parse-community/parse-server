@@ -27,6 +27,9 @@ describe_only_db('mongo')('Parse.Query hint', () => {
     await TestUtils.destroyAllDataPermanently(false);
   });
 
+  fit_only_mongodb_version('<5.1>=6')('debug', async () => {
+  });
+
   it_only_mongodb_version('<5.1 || >=6')('query find with hint string', async () => {
     const object = new TestObject();
     await object.save();

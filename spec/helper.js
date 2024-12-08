@@ -493,6 +493,9 @@ global.it_only_db = db => {
 };
 
 global.it_only_mongodb_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.env.MONGODB_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
