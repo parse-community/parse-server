@@ -23,7 +23,7 @@
     "@babel/eslint-parser": "7.25.9",
     "@graphql-tools/merge": "9.0.12",
     "@graphql-tools/schema": "10.0.12",
-    "@graphql-tools/utils": "10.6.2",
+    "@graphql-tools/utils": "10.6.3",
     "@parse/fs-files-adapter": "3.0.0",
     "@parse/push-adapter": "6.7.1",
     "bcryptjs": "2.4.3",
