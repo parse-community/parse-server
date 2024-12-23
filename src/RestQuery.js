@@ -46,6 +46,7 @@ async function RestQuery({
   runAfterFind = true,
   runBeforeFind = true,
   context,
+  response
 }) {
   if (![RestQuery.Method.find, RestQuery.Method.get].includes(method)) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
@@ -60,7 +61,8 @@ async function RestQuery({
       config,
       auth,
       context,
-      method === RestQuery.Method.get
+      method === RestQuery.Method.get,
+      response
     )
     : Promise.resolve({ restWhere, restOptions });
 

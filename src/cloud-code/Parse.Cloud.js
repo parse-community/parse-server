@@ -529,8 +529,9 @@ ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.beforeConnect = function (handler, validationHandler) {
   validateValidator(validationHandler);
-  triggers.addConnectTrigger(
+  triggers.addTrigger(
     triggers.Types.beforeConnect,
+    '@Connect',
     handler,
     Parse.applicationId,
     validationHandler

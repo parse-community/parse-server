@@ -3,6 +3,7 @@ import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
 import { promiseEnsureIdempotency } from '../middlewares';
+import TriggerResponse from '../Triggers/TriggerResponse';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
@@ -18,7 +19,7 @@ export class ClassesRouter extends PromiseRouter {
     return req.params.className;
   }
 
-  handleFind(req) {
+  async handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body, req.config.defaultLimit);
     if (req.config.maxLimit && body.limit > req.config.maxLimit) {
@@ -31,7 +32,9 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    return rest
+
+    const triggerResponse = new TriggerResponse();
+    const response = await rest
       .find(
         req.config,
         req.auth,
@@ -39,15 +42,14 @@ export class ClassesRouter extends PromiseRouter {
         body.where,
         options,
         req.info.clientSDK,
-        req.info.context
-      )
-      .then(response => {
-        return { response: response };
-      });
+        req.info.context,
+        triggerResponse
+      );
+    return triggerResponse.toResponseObject({ response });
   }
 
   // Returns a promise for a {response} object.
-  handleGet(req) {
+  async handleGet(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
 
@@ -76,7 +78,8 @@ export class ClassesRouter extends PromiseRouter {
       options.subqueryReadPreference = body.subqueryReadPreference;
     }
 
-    return rest
+    const responseObject = new TriggerResponse();
+    const response = await rest
       .get(
         req.config,
         req.auth,
@@ -84,28 +87,28 @@ export class ClassesRouter extends PromiseRouter {
         req.params.objectId,
         options,
         req.info.clientSDK,
-        req.info.context
-      )
-      .then(response => {
-        if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
-        }
+        req.info.context,
+        responseObject
+      );
+    if (!response.results || response.results.length == 0) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+    }
+    if (this.className(req) === '_User') {
+      delete response.results[0].sessionToken;
 
-        if (this.className(req) === '_User') {
-          delete response.results[0].sessionToken;
+      const user = response.results[0];
 
-          const user = response.results[0];
-
-          if (req.auth.user && user.objectId == req.auth.user.id) {
-            // Force the session token
-            response.results[0].sessionToken = req.info.sessionToken;
-          }
-        }
-        return { response: response.results[0] };
-      });
+      if (req.auth.user && user.objectId == req.auth.user.id) {
+        // Force the session token
+        response.results[0].sessionToken = req.info.sessionToken;
+      }
+    }
+    return responseObject.toResponseObject({
+      response: response.results[0]
+    });
   }
 
-  handleCreate(req) {
+  async handleCreate(req) {
     if (
       this.className(req) === '_User' &&
       typeof req.body?.objectId === 'string' &&
@@ -113,35 +116,44 @@ export class ClassesRouter extends PromiseRouter {
     ) {
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.');
     }
-    return rest.create(
+    const responseObject = new TriggerResponse();
+    const response  = await rest.create(
       req.config,
       req.auth,
       this.className(req),
       req.body,
       req.info.clientSDK,
-      req.info.context
+      req.info.context,
+      responseObject
     );
+
+    return responseObject.toResponseObject(response);
   }
 
-  handleUpdate(req) {
+  async handleUpdate(req) {
     const where = { objectId: req.params.objectId };
-    return rest.update(
+    const triggerResponse = new TriggerResponse();
+    const response = await rest.update(
       req.config,
       req.auth,
       this.className(req),
       where,
       req.body,
       req.info.clientSDK,
-      req.info.context
+      req.info.context,
+      triggerResponse
     );
+
+    return triggerResponse.toResponseObject(response);
   }
 
-  handleDelete(req) {
-    return rest
-      .del(req.config, req.auth, this.className(req), req.params.objectId, req.info.context)
-      .then(() => {
-        return { response: {} };
-      });
+  async handleDelete(req) {
+    const response = new TriggerResponse();
+    await rest
+      .del(req.config, req.auth, this.className(req), req.params.objectId, req.info.context, response);
+    return response.toResponseObject({
+      response: {}
+    });
   }
 
   static JSONFromQuery(query) {
@@ -230,21 +242,11 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   mountRoutes() {
-    this.route('GET', '/classes/:className', req => {
-      return this.handleFind(req);
-    });
-    this.route('GET', '/classes/:className/:objectId', req => {
-      return this.handleGet(req);
-    });
-    this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
-      return this.handleCreate(req);
-    });
-    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
-      return this.handleUpdate(req);
-    });
-    this.route('DELETE', '/classes/:className/:objectId', req => {
-      return this.handleDelete(req);
-    });
+    this.route('GET', '/classes/:className', req => this.handleFind(req));
+    this.route('GET', '/classes/:className/:objectId', req => this.handleGet(req));
+    this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => this.handleCreate(req));
+    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => this.handleUpdate(req))
+    this.route('DELETE', '/classes/:className/:objectId', req => this.handleDelete(req));
   }
 }
 

@@ -1,6 +1,6 @@
 import { ParseCloudCodePublisher } from '../LiveQuery/ParseCloudCodePublisher';
 import { LiveQueryOptions } from '../Options';
-import { getClassName } from './../triggers';
+import { getClassName } from '../triggers';
 export class LiveQueryController {
   classNames: any;
   liveQueryPublisher: any;

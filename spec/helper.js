@@ -112,7 +112,7 @@ const defaultConfiguration = {
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   directAccess: true,
-  silent,
+  silent: false,
   verbose: !silent,
   logLevel,
   liveQuery: {

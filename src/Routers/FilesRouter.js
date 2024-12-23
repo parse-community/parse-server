@@ -4,6 +4,7 @@ import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
 import Config from '../Config';
 import logger from '../logger';
+import TriggerResponse from '../Triggers/TriggerResponse';
 const triggers = require('../triggers');
 const http = require('http');
 const Utils = require('../Utils');
@@ -189,11 +190,13 @@ export class FilesRouter {
     const fileObject = { file, fileSize };
     try {
       // run beforeSaveFile trigger
+      const triggerResponse = new TriggerResponse();
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeSave,
         fileObject,
         config,
-        req.auth
+        req.auth,
+        triggerResponse
       );
       let saveResult;
       // if a new ParseFile is returned check if it's an already saved file
@@ -244,7 +247,11 @@ export class FilesRouter {
       }
       // run afterSaveFile trigger
       await triggers.maybeRunFileTrigger(triggers.Types.afterSave, fileObject, config, req.auth);
-      res.status(201);
+      res.status(triggerResponse._status || 201);
+      for (const [key, value] of Object.entries(triggerResponse._headers || {})) {
+        res.set(key, value);
+      }
+
       res.set('Location', saveResult.url);
       res.json(saveResult);
     } catch (e) {

@@ -8,7 +8,6 @@
 import Parse from 'parse/node';
 import express from 'express';
 import log from './logger';
-import { inspect } from 'util';
 const Layer = require('express/lib/router/layer');
 
 function validateParameter(key, value) {
@@ -135,67 +134,58 @@ export default class PromiseRouter {
 // Express handlers should never throw; if a promise handler throws we
 // just treat it like it resolved to an error.
 function makeExpressHandler(appId, promiseHandler) {
-  return function (req, res, next) {
+  return async function (req, res, next) {
     try {
       const url = maskSensitiveUrl(req);
-      const body = Object.assign({}, req.body);
+      const body = { ...req.body };
       const method = req.method;
       const headers = req.headers;
+
       log.logRequest({
         method,
         url,
         headers,
         body,
       });
-      promiseHandler(req)
-        .then(
-          result => {
-            if (!result.response && !result.location && !result.text) {
-              log.error('the handler did not include a "response" or a "location" field');
-              throw 'control should not get here';
-            }
 
-            log.logResponse({ method, url, result });
+      const result = await promiseHandler(req);
+      if (!result.response && !result.location && !result.text) {
+        log.error('The handler did not include a "response", "location", or "text" field');
+        throw new Error('Handler result is missing required fields.');
+      }
 
-            var status = result.status || 200;
-            res.status(status);
+      log.logResponse({ method, url, result });
 
-            if (result.headers) {
-              Object.keys(result.headers).forEach(header => {
-                res.set(header, result.headers[header]);
-              });
-            }
+      const status = result.status || 200;
+      res.status(status);
 
-            if (result.text) {
-              res.send(result.text);
-              return;
-            }
+      if (result.headers) {
+        for (const [header, value] of Object.entries(result.headers)) {
+          res.set(header, value);
+        }
+      }
 
-            if (result.location) {
-              res.set('Location', result.location);
-              // Override the default expressjs response
-              // as it double encodes %encoded chars in URL
-              if (!result.response) {
-                res.send('Found. Redirecting to ' + result.location);
-                return;
-              }
-            }
-            res.json(result.response);
-          },
-          error => {
-            next(error);
-          }
-        )
-        .catch(e => {
-          log.error(`Error generating response. ${inspect(e)}`, { error: e });
-          next(e);
-        });
-    } catch (e) {
-      log.error(`Error handling request: ${inspect(e)}`, { error: e });
-      next(e);
+      if (result.text) {
+        res.send(result.text);
+        return;
+      }
+
+      if (result.location) {
+        res.set('Location', result.location);
+        if (!result.response) {
+          res.send(`Found. Redirecting to ${result.location}`);
+          return;
+        }
+      }
+
+      res.json(result.response);
+    } catch (error) {
+      log.error(`Error handling request: ${error.message}`, { error });
+      next(error);
     }
   };
 }
+
 
 function maskSensitiveUrl(req) {
   let maskUrl = req.originalUrl.toString();

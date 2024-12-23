@@ -4102,3 +4102,213 @@ describe('sendEmail', () => {
     );
   });
 });
+
+describe('custom HTTP codes', () => {
+  it('should set custom statusCode in save hook', async () => {
+    Parse.Cloud.beforeSave('TestObject', (req, res) => {
+      res.status(201);
+    });
+
+    const request = await fetch('http://localhost:8378/1/classes/TestObject', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(request.status).toBe(201);
+  });
+
+  it('should set custom headers in save hook', async () => {
+    Parse.Cloud.beforeSave('TestObject', (req, res) => {
+      res.setHeader('X-Custom-Header', 'custom-value');
+    });
+
+    const request = await fetch('http://localhost:8378/1/classes/TestObject', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(request.headers.get('X-Custom-Header')).toBe('custom-value');
+  });
+
+  it('should set custom statusCode in delete hook', async () => {
+    Parse.Cloud.beforeDelete('TestObject', (req, res) => {
+      res.status(201);
+      return true
+    });
+
+    const obj = new Parse.Object('TestObject');
+    await obj.save();
+
+    const request = await fetch(`http://localhost:8378/1/classes/TestObject/${obj.id}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(request.status).toBe(201);
+  });
+
+  it('should set custom headers in delete hook', async () => {
+    Parse.Cloud.beforeDelete('TestObject', (req, res) => {
+      res.setHeader('X-Custom-Header', 'custom-value');
+    });
+
+    const obj = new TestObject();
+    await obj.save();
+    const request = await fetch(`http://localhost:8378/1/classes/TestObject/${obj.id}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(request.headers.get('X-Custom-Header')).toBe('custom-value');
+  });
+
+  it('should set custom statusCode in find hook', async () => {
+    Parse.Cloud.beforeFind('TestObject', (req, res) => {
+      res.status(201);
+    });
+
+    const request = await fetch('http://localhost:8378/1/classes/TestObject', {
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(request.status).toBe(201);
+  });
+
+  it('should set custom headers in find hook', async () => {
+    Parse.Cloud.beforeFind('TestObject', (req, res) => {
+      res.setHeader('X-Custom-Header', 'custom-value');
+    });
+
+    const request = await fetch('http://localhost:8378/1/classes/TestObject', {
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(request.headers.get('X-Custom-Header')).toBe('custom-value');
+  });
+
+  it('should set custom statusCode in cloud function', async () => {
+    Parse.Cloud.define('customStatusCode', (req, res) => {
+      res.status(201);
+      return true;
+    });
+
+    const response = await fetch('http://localhost:8378/1/functions/customStatusCode', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(response.status).toBe(201);
+  });
+
+  it('should set custom headers in cloud function', async () => {
+    Parse.Cloud.define('customHeaders', (req, res) => {
+      res.setHeader('X-Custom-Header', 'custom-value');
+      return true;
+    });
+
+    const response = await fetch('http://localhost:8378/1/functions/customHeaders', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      }
+    });
+
+    expect(response.headers.get('X-Custom-Header')).toBe('custom-value');
+  });
+
+  it('should set custom statusCode in beforeLogin hook', async () => {
+    Parse.Cloud.beforeLogin((req, res) => {
+      res.status(201);
+    });
+
+    await Parse.User.signUp('test@example.com', 'password');
+    const response = await fetch('http://localhost:8378/1/login', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body: JSON.stringify({ username: 'test@example.com', password: 'password' })
+    });
+
+    expect(response.status).toBe(201);
+  });
+
+  it('should set custom headers in beforeLogin hook', async () => {
+    Parse.Cloud.beforeLogin((req, res) => {
+      res.setHeader('X-Custom-Header', 'custom-value');
+    });
+
+    await Parse.User.signUp('test@example.com', 'password');
+    const response = await fetch('http://localhost:8378/1/login', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body: JSON.stringify({ username: 'test@example.com', password: 'password' })
+    });
+
+    expect(response.headers.get('X-Custom-Header')).toBe('custom-value');
+  });
+
+  it('should set custom statusCode in file trigger', async () => {
+    Parse.Cloud.beforeSave(Parse.File, (req, res) => {
+      res.status(201);
+    });
+
+    const file = new Parse.File('test.txt', [1, 2, 3]);
+    const response = await fetch('http://localhost:8378/1/files/test.txt', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'text/plain',
+      },
+      body: file.getData()
+    });
+
+    expect(response.status).toBe(201);
+  });
+
+  it('should set custom headers in file trigger', async () => {
+    Parse.Cloud.beforeSave(Parse.File, (req, res) => {
+      res.setHeader('X-Custom-Header', 'custom-value');
+    });
+
+    const file = new Parse.File('test.txt', [1, 2, 3]);
+    const response = await fetch('http://localhost:8378/1/files/test.txt', {
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'text/plain',
+      },
+      body: file.getData()
+    });
+
+    expect(response.headers.get('X-Custom-Header')).toBe('custom-value');
+  });
+})

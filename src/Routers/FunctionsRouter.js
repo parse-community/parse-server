@@ -8,6 +8,7 @@ import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../midd
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
+import TriggerResponse from '../Triggers/TriggerResponse';
 
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
@@ -102,22 +103,7 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject) {
-    return {
-      success: function (result) {
-        resolve({
-          response: {
-            result: Parse._encode(result),
-          },
-        });
-      },
-      error: function (message) {
-        const error = triggers.resolveError(message);
-        reject(error);
-      },
-    };
-  }
-  static handleCloudFunction(req) {
+  static async handleCloudFunction(req) {
     const functionName = req.params.functionName;
     const applicationId = req.config.applicationId;
     const theFunction = triggers.getFunction(functionName, applicationId);
@@ -125,12 +111,14 @@ export class FunctionsRouter extends PromiseRouter {
     if (!theFunction) {
       throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
+
     let params = Object.assign({}, req.body, req.query);
     params = parseParams(params, req.config);
+
     const request = {
-      params: params,
-      master: req.auth && req.auth.isMaster,
-      user: req.auth && req.auth.user,
+      params,
+      master: req.auth?.isMaster,
+      user: req.auth?.user,
       installationId: req.info.installationId,
       log: req.config.loggerController,
       headers: req.config.headers,
@@ -139,57 +127,51 @@ export class FunctionsRouter extends PromiseRouter {
       context: req.info.context,
     };
 
-    return new Promise(function (resolve, reject) {
-      const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
-      const { success, error } = FunctionsRouter.createResponseObject(
-        result => {
-          try {
-            if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
-              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
-              const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-              logger[req.config.logLevels.cloudFunctionSuccess](
-                `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
-                {
-                  functionName,
-                  params,
-                  user: userString,
-                }
-              );
-            }
-            resolve(result);
-          } catch (e) {
-            reject(e);
+    const response = new TriggerResponse();
+
+    const userString = req.auth.user?.id;
+
+    try {
+      // Run the optional validator
+      await triggers.maybeRunValidator(request, functionName, req.auth);
+
+      // Execute the function
+      const result = await theFunction(request, response);
+
+      if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
+        const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+        const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response?.result));
+        logger[req.config.logLevels.cloudFunctionSuccess](
+          `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
+          {
+            functionName,
+            params,
+            user: userString,
           }
-        },
-        error => {
-          try {
-            if (req.config.logLevels.cloudFunctionError !== 'silent') {
-              const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
-              logger[req.config.logLevels.cloudFunctionError](
-                `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +
-                  JSON.stringify(error),
-                {
-                  functionName,
-                  error,
-                  params,
-                  user: userString,
-                }
-              );
-            }
-            reject(error);
-          } catch (e) {
-            reject(e);
-          }
+        );
+      }
+
+      return response.toResponseObject({
+        response: {
+          result: Parse._encode(result),
         }
-      );
-      return Promise.resolve()
-        .then(() => {
-          return triggers.maybeRunValidator(request, functionName, req.auth);
-        })
-        .then(() => {
-          return theFunction(request);
-        })
-        .then(success, error);
-    });
+      });
+    } catch (err) {
+      const error = triggers.resolveError(err);
+      if (req.config.logLevels.cloudFunctionError !== 'silent') {
+        const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+        logger[req.config.logLevels.cloudFunctionError](
+          `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ${JSON.stringify(error)}`,
+          {
+            functionName,
+            error,
+            params,
+            user: userString,
+          }
+        );
+      }
+      throw error;
+    }
   }
+
 }

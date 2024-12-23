@@ -25,7 +25,7 @@ function checkLiveQuery(className, config) {
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-const find = async (config, auth, className, restWhere, restOptions, clientSDK, context) => {
+const find = async (config, auth, className, restWhere, restOptions, clientSDK, context, response) => {
   const query = await RestQuery({
     method: RestQuery.Method.find,
     config,
@@ -35,12 +35,13 @@ const find = async (config, auth, className, restWhere, restOptions, clientSDK, 
     restOptions,
     clientSDK,
     context,
+    response
   });
   return query.execute();
 };
 
 // get is just like find but only queries an objectId.
-const get = async (config, auth, className, objectId, restOptions, clientSDK, context) => {
+const get = async (config, auth, className, objectId, restOptions, clientSDK, context, response) => {
   var restWhere = { objectId };
   const query = await RestQuery({
     method: RestQuery.Method.get,
@@ -51,12 +52,13 @@ const get = async (config, auth, className, objectId, restOptions, clientSDK, co
     restOptions,
     clientSDK,
     context,
+    response,
   });
   return query.execute();
 };
 
 // Returns a promise that doesn't resolve to any useful value.
-function del(config, auth, className, objectId, context) {
+function del(config, auth, className, objectId, context, responseObject) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
   }
@@ -100,7 +102,8 @@ function del(config, auth, className, objectId, context) {
               inflatedObject,
               null,
               config,
-              context
+              context,
+              responseObject
             );
           }
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found for delete.');
@@ -146,7 +149,8 @@ function del(config, auth, className, objectId, context) {
         inflatedObject,
         null,
         config,
-        context
+        context,
+        responseObject
       );
     })
     .catch(error => {
@@ -155,16 +159,16 @@ function del(config, auth, className, objectId, context) {
 }
 
 // Returns a promise for a {response, status, location} object.
-function create(config, auth, className, restObject, clientSDK, context) {
+function create(config, auth, className, restObject, clientSDK, context, response) {
   enforceRoleSecurity('create', className, auth);
-  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context);
+  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, context, undefined, response);
   return write.execute();
 }
 
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, restWhere, restObject, clientSDK, context) {
+function update(config, auth, className, restWhere, restObject, clientSDK, context, response) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()
@@ -182,6 +186,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
           runAfterFind: false,
           runBeforeFind: false,
           context,
+          response
         });
         return query.execute({
           op: 'update',
@@ -203,7 +208,8 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
         originalRestObject,
         clientSDK,
         context,
-        'update'
+        'update',
+        response
       ).execute();
     })
     .catch(error => {

@@ -27,7 +27,7 @@ import { requiredColumns } from './Controllers/SchemaController';
 // RestWrite will handle objectId, createdAt, and updatedAt for
 // everything. It also knows to use triggers and special modifications
 // for the _User class.
-function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action) {
+function RestWrite(config, auth, className, query, data, originalData, clientSDK, context, action, responseObject) {
   if (auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -41,6 +41,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.storage = {};
   this.runOptions = {};
   this.context = context || {};
+  this.responseObject = responseObject;
 
   if (action) {
     this.runOptions.action = action;
@@ -281,7 +282,8 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         updatedObject,
         originalObject,
         this.config,
-        this.context
+        this.context,
+        this.responseObject
       );
     })
     .then(response => {
@@ -333,7 +335,8 @@ RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
     user,
     null,
     this.config,
-    this.context
+    this.context,
+    this.responseObject
   );
 };
 
@@ -1669,7 +1672,8 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       updatedObject,
       originalObject,
       this.config,
-      this.context
+      this.context,
+      this.responseObject
     )
     .then(result => {
       const jsonReturned = result && !result._toFullJSON;

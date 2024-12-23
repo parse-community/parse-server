@@ -16,6 +16,7 @@ import {
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
+import TriggerResponse from '../Triggers/TriggerResponse';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -267,13 +268,15 @@ export class UsersRouter extends ClassesRouter {
     await req.config.filesController.expandFilesInObject(req.config, user);
 
     // Before login trigger; throws if failure
+    const beforeLoginResponse = new TriggerResponse();
     await maybeRunTrigger(
       TriggerTypes.beforeLogin,
       req.auth,
       Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
       null,
       req.config,
-      req.info.context
+      req.info.context,
+      beforeLoginResponse
     );
 
     // If we have some new validated authData update directly
@@ -314,7 +317,7 @@ export class UsersRouter extends ClassesRouter {
     }
     await req.config.authDataManager.runAfterFind(req, user.authData);
 
-    return { response: user };
+    return beforeLoginResponse.toResponseObject({ response: user });
   }
 
   /**

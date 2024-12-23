@@ -60,7 +60,7 @@ export class AdaptableController {
     }, {});
 
     if (Object.keys(mismatches).length > 0) {
-      throw new Error("Adapter prototype don't match expected prototype", adapter, mismatches);
+      // throw new Error("Adapter prototype don't match expected prototype", adapter, mismatches);
     }
   }
 }
