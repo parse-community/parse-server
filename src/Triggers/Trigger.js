@@ -1,6 +1,6 @@
 import { getTrigger, Types } from "./TriggerStore";
 import { maybeRunValidator } from "./Validator";
-import { logTriggerAfterHook } from "./Logger";
+import { logTriggerAfterHook, logTriggerSuccessBeforeHook, logTriggerErrorBeforeHook } from "./Logger";
 import { toJSONwithObjects, resolveError } from "./Utils";
 
 export function getRequestObject(
@@ -57,7 +57,8 @@ export async function maybeRunTrigger(
   parseObject,
   originalParseObject,
   config,
-  context
+  context,
+  responseObject
 ) {
   try {
     if (!parseObject) {
@@ -84,7 +85,7 @@ export async function maybeRunTrigger(
       return;
     }
 
-    const response = await trigger(request);
+    const response = await trigger(request, responseObject);
 
     if (triggerType === Types.afterSave || triggerType === Types.afterDelete) {
       logTriggerAfterHook(
@@ -96,12 +97,35 @@ export async function maybeRunTrigger(
       );
     }
 
-    return processTriggerResponse(request, response);
+    const object = processTriggerResponse(request, response);
+    logTriggerSuccessBeforeHook(
+      triggerType,
+      parseObject.className,
+      parseObject.toJSON(),
+      object,
+      auth,
+      triggerType.startsWith('after')
+        ? config.logLevels.triggerAfter
+        : config.logLevels.triggerBeforeSuccess
+    );
+
+    return object;
   } catch (e) {
-    throw resolveError(e, {
+
+    const error = resolveError(e, {
       code: Parse.Error.SCRIPT_FAILED,
       message: 'Script failed.',
     });
+
+    logTriggerErrorBeforeHook(
+      triggerType,
+      parseObject.className,
+      parseObject.toJSON(),
+      auth,
+      error,
+      config.logLevels.triggerBeforeError
+    );
+    throw error;
   }
 }
 
@@ -110,14 +134,14 @@ function processTriggerResponse(request, response) {
     return (response || request.objects).map(toJSONwithObjects);
   }
 
-  if (
-    response &&
-    typeof response === 'object' &&
-    request.triggerName === Types.beforeSave &&
-    !request.object.equals(response)
-  ) {
-    return response;
-  }
+  // if (
+  //   response &&
+  //   typeof response === 'object' &&
+  //   request.triggerName === Types.beforeSave &&
+  //   !request.object.equals(response)
+  // ) {
+  //   return response;
+  // }
 
   if (response && typeof response === 'object' && request.triggerName === Types.afterSave) {
     return response;

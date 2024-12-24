@@ -180,7 +180,6 @@ function makeExpressHandler(appId, promiseHandler) {
 
       res.json(result.response);
     } catch (error) {
-      log.error(`Error handling request: ${error.message}`, { error });
       next(error);
     }
   };
