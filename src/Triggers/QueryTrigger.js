@@ -1,8 +1,8 @@
 import { getTrigger } from "./TriggerStore";
 import { getRequestObject } from './Trigger';
-import { resolveError, toJSONwithObjects, logTriggerErrorHook } from "./Utils";
+import { resolveError, toJSONwithObjects } from "./Utils";
 import { maybeRunValidator } from "./Validator";
-import { logTriggerAfterHook, logTriggerSuccessBeforeHook } from "./Logger";
+import { logTriggerAfterHook, logTriggerSuccessBeforeHook, logTriggerErrorBeforeHook } from "./Logger";
 
 export const maybeRunAfterFindTrigger = async (
   triggerType,
@@ -45,7 +45,7 @@ export const maybeRunAfterFindTrigger = async (
     }
 
     const response = await trigger(request);
-    const results = await Promise.resolve(response);
+    let results = await Promise.resolve(response);
 
     logTriggerAfterHook(
       triggerType,
@@ -55,15 +55,17 @@ export const maybeRunAfterFindTrigger = async (
       config.logLevels.triggerAfter
     );
 
+    if (!results) {
+      results = request.objects;
+    }
+
     return results.map(toJSONwithObjects)
-  } catch (error) {
-    logTriggerErrorHook(
-      triggerType,
-      className,
-      error,
-      auth,
-      config.logLevels.triggerError
-    );
+  } catch (e) {
+    const error = resolveError(e, {
+      code: Parse.Error.SCRIPT_FAILED,
+      message: 'Script failed.',
+    });
+
     throw error;
   }
 };
