@@ -1,54 +1,10 @@
-import { getTrigger, Types } from "./TriggerStore";
+import { getTrigger } from "./TriggerStore";
 import { getRequestObject } from './Trigger';
-import { resolveError, toJSONwithObjects } from "./Utils";
+import { resolveError, toJSONwithObjects, logTriggerErrorHook } from "./Utils";
 import { maybeRunValidator } from "./Validator";
 import { logTriggerAfterHook, logTriggerSuccessBeforeHook } from "./Logger";
 
-function getResponseObject(request, resolve, reject) {
-  return {
-    success: function (response) {
-      if (request.triggerName === Types.afterFind) {
-        if (!response) {
-          response = request.objects;
-        }
-        response = response.map(object => {
-          return toJSONwithObjects(object);
-        });
-        return resolve(response);
-      }
-      // Use the JSON response
-      if (
-        response &&
-        typeof response === 'object' &&
-        !request.object.equals(response) &&
-        request.triggerName === Types.beforeSave
-      ) {
-        return resolve(response);
-      }
-      if (response && typeof response === 'object' && request.triggerName === Types.afterSave) {
-        return resolve(response);
-      }
-      if (request.triggerName === Types.afterSave) {
-        return resolve();
-      }
-      response = {};
-      if (request.triggerName === Types.beforeSave) {
-        response['object'] = request.object._getSaveJSON();
-        response['object']['objectId'] = request.object.id;
-      }
-      return resolve(response);
-    },
-    error: function (error) {
-      const e = resolveError(error, {
-        code: Parse.Error.SCRIPT_FAILED,
-        message: 'Script failed. Unknown error.',
-      });
-      reject(e);
-    },
-  };
-}
-
-export function maybeRunAfterFindTrigger(
+export const maybeRunAfterFindTrigger = async (
   triggerType,
   auth,
   className,
@@ -56,56 +12,41 @@ export function maybeRunAfterFindTrigger(
   config,
   query,
   context
-) {
-  return new Promise((resolve, reject) => {
-    const trigger = getTrigger(className, triggerType, config.applicationId);
-    if (!trigger) {
-      return resolve();
+) => {
+  const trigger = getTrigger(className, triggerType, config.applicationId);
+  if (!trigger) {
+    return;
+  }
+
+  const request = getRequestObject(triggerType, auth, null, null, config, context);
+  if (query) {
+    request.query = query;
+  }
+
+  request.objects = objects.map((object) => {
+    object.className = className;
+    return Parse.Object.fromJSON(object);
+  });
+
+  logTriggerSuccessBeforeHook(
+    triggerType,
+    className,
+    'AfterFind',
+    JSON.stringify(objects),
+    auth,
+    config.logLevels.triggerBeforeSuccess
+  );
+
+  try {
+    await maybeRunValidator(request, `${triggerType}.${className}`, auth);
+
+    if (request.skipWithMasterKey) {
+      return request.objects;
     }
-    const request = getRequestObject(triggerType, auth, null, null, config, context);
-    if (query) {
-      request.query = query;
-    }
-    const { success, error } = getResponseObject(
-      request,
-      object => {
-        resolve(object);
-      },
-      error => {
-        reject(error);
-      }
-    );
-    logTriggerSuccessBeforeHook(
-      triggerType,
-      className,
-      'AfterFind',
-      JSON.stringify(objects),
-      auth,
-      config.logLevels.triggerBeforeSuccess
-    );
-    request.objects = objects.map(object => {
-      //setting the class name to transform into parse object
-      object.className = className;
-      return Parse.Object.fromJSON(object);
-    });
-    return Promise.resolve()
-      .then(() => {
-        return maybeRunValidator(request, `${triggerType}.${className}`, auth);
-      })
-      .then(() => {
-        if (request.skipWithMasterKey) {
-          return request.objects;
-        }
-        const response = trigger(request);
-        if (response && typeof response.then === 'function') {
-          return response.then(results => {
-            return results;
-          });
-        }
-        return response;
-      })
-      .then(success, error);
-  }).then(results => {
+
+    const response = await trigger(request);
+    const results = await Promise.resolve(response);
+
     logTriggerAfterHook(
       triggerType,
       className,
@@ -113,9 +54,19 @@ export function maybeRunAfterFindTrigger(
       auth,
       config.logLevels.triggerAfter
     );
-    return results;
-  });
-}
+
+    return results.map(toJSONwithObjects)
+  } catch (error) {
+    logTriggerErrorHook(
+      triggerType,
+      className,
+      error,
+      auth,
+      config.logLevels.triggerError
+    );
+    throw error;
+  }
+};
 
 export async function maybeRunQueryTrigger(
   triggerType,

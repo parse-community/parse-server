@@ -179,7 +179,7 @@ export function getJob(jobName, applicationId) {
 }
 
 export function getJobs(applicationId) {
-  var manager = _triggerStore[applicationId];
+  const manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs;
   }

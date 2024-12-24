@@ -9,8 +9,8 @@ export function getClassName(parseClass) {
 }
 
 export function inflate(data, restObject) {
-  var copy = typeof data == 'object' ? data : { className: data };
-  for (var key in restObject) {
+  const copy = typeof data == 'object' ? data : { className: data };
+  for (const key in restObject) {
     copy[key] = restObject[key];
   }
   return Parse.Object.fromJSON(copy);
