@@ -15,6 +15,7 @@ export const Types = {
   beforeConnect: 'beforeConnect',
   beforeSubscribe: 'beforeSubscribe',
   afterEvent: 'afterEvent',
+  beforePasswordReset: 'beforePasswordResetRequest',
 };
 
 const ConnectClassName = '@Connect';

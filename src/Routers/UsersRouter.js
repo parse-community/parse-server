@@ -438,6 +438,30 @@ export class UsersRouter extends ClassesRouter {
   async handleResetRequest(req) {
     this._throwOnBadEmailConfig(req);
 
+    const noUserErrorText = 'A user with that email does not exist.';
+
+    // Get user
+    const results = await req.config.database.find('_User', { email }, {}, Auth.maintenance(req.config));
+    const user = results[0];
+    if (!(user instanceof Parse.User)) {
+      if (req.config.passwordPolicy?.resetPasswordSuccessOnInvalidEmail ?? true) {
+        return {
+          response: {},
+        };
+      }
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, noUserErrorText);
+    }
+
+    // Run trigger
+    await maybeRunTrigger(
+      TriggerTypes.beforePasswordReset,
+      req.auth,
+      user,
+      null,
+      req.config,
+      req.info.context
+    );
+
     const { email } = req.body;
     if (!email) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
@@ -461,7 +485,7 @@ export class UsersRouter extends ClassesRouter {
             response: {},
           };
         }
-        err.message = `A user with that email does not exist.`;
+        err.message = noUserErrorText;
       }
       throw err;
     }
