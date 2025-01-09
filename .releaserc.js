@@ -33,7 +33,7 @@ async function config() {
   console.log(`Running on branch: ${branch}`);
 
   // Set changelog file
-  const changelogFile = `./changelogs/CHANGELOG_${branch}.md`;
+  const changelogFile = `./changelogs/CHANGELOG_release.md`;
   console.log(`Changelog file output to: ${changelogFile}`);
 
   // Load template file contents
@@ -44,9 +44,8 @@ async function config() {
       'release',
       { name: 'alpha', prerelease: true },
       { name: 'beta', prerelease: true },
-      'next-major',
-      // Long-Term-Support branch of previous major version
-      'release-7.x.x',
+      // Long-Term-Support branch
+      { name: 'release-7.x.x', range: '7.x.x', channel: '7.x.x' },
     ],
     dryRun: false,
     debug: true,
