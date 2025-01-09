@@ -46,7 +46,7 @@ async function config() {
       { name: 'beta', prerelease: true },
       'next-major',
       // Long-Term-Support branch of previous major version
-      'release-6.x.x',
+      'release-7.x.x',
     ],
     dryRun: false,
     debug: true,
