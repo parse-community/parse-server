@@ -93,7 +93,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.20.0
+          node-version: 18.20.4
       - name: Cache Node.js modules
         uses: actions/cache@v4
         with:
