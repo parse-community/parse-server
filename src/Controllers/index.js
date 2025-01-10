@@ -182,7 +182,7 @@ export async function getPushController(options: ParseServerOptions): PushContro
   const ParsePushAdapter = await loadModule('@parse/push-adapter');
   const pushAdapter = loadAdapter(
     pushOptions && pushOptions.adapter,
-    ParsePushAdapter.default,
+    ParsePushAdapter,
     pushOptions
   );
   // We pass the options and the base class for the adatper,
