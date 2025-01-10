@@ -5,7 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import qs from 'querystring';
 import { Parse } from 'parse/node';
-import Deprecator from '../Deprecator';
+import Deprecator from '../Deprecator/Deprecator';
 
 const public_html = path.resolve(__dirname, '../../public_html');
 const views = path.resolve(__dirname, '../../views');
