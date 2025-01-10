@@ -219,18 +219,18 @@ describe('execution', () => {
     });
   }
 
-  function handleStderr(childProcess, done) {
+  function handleStderr(childProcess) {
     childProcess.stderr.on('data', data => {
       data = data.toString();
       if (!data.includes('[DEP0040] DeprecationWarning')) {
-        done.fail(data);
+        throw data;
       }
     });
   }
 
-  function handleError(childProcess, done) {
+  function handleError(childProcess) {
     childProcess.on('error', err => {
-      done.fail(err);
+      throw err;
     });
   }
 
