@@ -196,7 +196,7 @@ export function handleParseHeaders(req, res, next) {
     info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
-  if (fileViaJSON) {
+  if (fileViaJSON && req.body) {
     req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
@@ -449,7 +449,7 @@ export function allowCrossDomain(appId) {
 }
 
 export function allowMethodOverride(req, res, next) {
-  if (req.method === 'POST' && req.body._method) {
+  if (req.method === 'POST' && req.body?._method) {
     req.originalMethod = req.method;
     req.method = req.body._method;
     delete req.body._method;

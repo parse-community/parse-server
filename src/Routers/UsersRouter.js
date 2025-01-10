@@ -68,7 +68,7 @@ export class UsersRouter extends ClassesRouter {
   _authenticateUserFromRequest(req) {
     return new Promise((resolve, reject) => {
       // Use query parameters instead if provided in url
-      let payload = req.body;
+      let payload = req.body || {};
       if (
         (!payload.username && req.query && req.query.username) ||
         (!payload.email && req.query && req.query.email)
@@ -219,7 +219,7 @@ export class UsersRouter extends ClassesRouter {
           req.auth,
           '_User',
           { objectId: user.objectId },
-          req.body,
+          req.body || {},
           user,
           req.info.clientSDK,
           req.info.context
@@ -336,7 +336,7 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'master key is required');
     }
 
-    const userId = req.body.userId || req.query.userId;
+    const userId = req.body?.userId || req.query.userId;
     if (!userId) {
       throw new Parse.Error(
         Parse.Error.INVALID_VALUE,
@@ -438,7 +438,7 @@ export class UsersRouter extends ClassesRouter {
   async handleResetRequest(req) {
     this._throwOnBadEmailConfig(req);
 
-    const { email } = req.body;
+    const { email } = req.body || {};
     if (!email) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
     }
@@ -470,7 +470,7 @@ export class UsersRouter extends ClassesRouter {
   async handleVerificationEmailRequest(req) {
     this._throwOnBadEmailConfig(req);
 
-    const { email } = req.body;
+    const { email } = req.body || {};
     if (!email) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
     }
@@ -503,7 +503,7 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleChallenge(req) {
-    const { username, email, password, authData, challengeData } = req.body;
+    const { username, email, password, authData, challengeData } = req.body || {};
 
     // if username or email provided with password try to authenticate the user by username
     let user;

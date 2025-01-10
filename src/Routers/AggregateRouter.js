@@ -6,7 +6,7 @@ import UsersRouter from './UsersRouter';
 
 export class AggregateRouter extends ClassesRouter {
   handleFind(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
     if (body.distinct) {
       options.distinct = String(body.distinct);

@@ -113,7 +113,7 @@ export class PagesRouter extends PromiseRouter {
 
   resendVerificationEmail(req) {
     const config = req.config;
-    const username = req.body.username;
+    const username = req.body?.username;
 
     if (!config) {
       this.invalidRequest();
@@ -187,7 +187,7 @@ export class PagesRouter extends PromiseRouter {
       this.invalidRequest();
     }
 
-    const { username, new_password, token: rawToken } = req.body;
+    const { username, new_password, token: rawToken } = req.body || {};
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if ((!username || !token || !new_password) && req.xhr === false) {
