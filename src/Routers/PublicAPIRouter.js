@@ -12,6 +12,7 @@ const views = path.resolve(__dirname, '../../views');
 
 export class PublicAPIRouter extends PromiseRouter {
   constructor() {
+    super();
     Deprecator.logRuntimeDeprecation({
       usage: 'PublicAPIRouter',
       solution: 'pages.enableRouter'
