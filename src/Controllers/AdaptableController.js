@@ -60,6 +60,7 @@ export class AdaptableController {
     }, {});
 
     if (Object.keys(mismatches).length > 0) {
+      console.error("Adapter prototype don't match expected prototype", mismatches);
       throw new Error("Adapter prototype don't match expected prototype", adapter, mismatches);
     }
   }
