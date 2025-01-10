@@ -48,11 +48,7 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
 
 export async function loadModule(modulePath) {
   const module = await import(modulePath);
-  if (module.default) {
-    return module.default;
-  }
-  
-  return module;
+  return module?.default || module;
 }
 
 export default loadAdapter;
