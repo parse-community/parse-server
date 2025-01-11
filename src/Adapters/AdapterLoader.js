@@ -47,8 +47,20 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
 }
 
 export async function loadModule(modulePath) {
-  const module = await import(modulePath);
-  return module?.default || module;
+  let module;
+  try {
+    module = require(modulePath);
+  } catch (err) {
+    if (err.code === 'ERR_REQUIRE_ESM') {
+      module = await import(modulePath);
+      if (module.default) {
+        module = module.default;
+      }
+    } else {
+      throw err;
+    }
+  }
+  return module;
 }
 
 export default loadAdapter;
