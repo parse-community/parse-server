@@ -1,3 +1,15 @@
+# [8.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.7...8.0.0-alpha.1) (2025-01-11)
+
+
+### Features
+
+* Increase required minimum Node versions to `18.20.4`, `20.18.0`, `22.12.0` ([#9521](https://github.com/parse-community/parse-server/issues/9521)) ([4e151cd](https://github.com/parse-community/parse-server/commit/4e151cd0a52191809452f197b2f29c3a12525b67))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum Node versions to 18.20.4, 20.18.0, 22.12.0 and removes unofficial support for Node 19. ([4e151cd](4e151cd))
+
 # [7.4.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.6...7.4.0-alpha.7) (2024-12-16)
 
 
