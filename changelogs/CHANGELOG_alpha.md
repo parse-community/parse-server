@@ -1,3 +1,27 @@
+# [8.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.5...8.0.0-alpha.6) (2025-01-12)
+
+
+### Features
+
+* Increase required minimum versions to Postgres `15`, PostGIS `3.3` ([#9538](https://github.com/parse-community/parse-server/issues/9538)) ([89c9b54](https://github.com/parse-community/parse-server/commit/89c9b5485a07a411fb35de4f8cf0467e7eb01f85))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum versions to Postgres `15`, PostGIS `3.3` and removes support for Postgres `13`, `14`, PostGIS `3.1`, `3.2`. ([89c9b54](89c9b54))
+
+# [8.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.4...8.0.0-alpha.5) (2025-01-12)
+
+
+### Features
+
+* Change default value of Parse Server option `encodeParseObjectInCloudFunction` to `true` ([#9527](https://github.com/parse-community/parse-server/issues/9527)) ([5c5ad69](https://github.com/parse-community/parse-server/commit/5c5ad69b4a917b7ed7c328a8255144e105c40b08))
+
+
+### BREAKING CHANGES
+
+* The default value of Parse Server option `encodeParseObjectInCloudFunction` changes to `true`; the option has been deprecated and will be removed in a future version. ([5c5ad69](5c5ad69))
+
 # [8.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.3...8.0.0-alpha.4) (2025-01-12)
 
 
