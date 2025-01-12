@@ -378,6 +378,26 @@ describe('Parse.File testing', () => {
       expect(response.headers['content-type']).toMatch(/^text\/html/);
     });
 
+    it('works without Content-Type and extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+      const result = await request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file',
+        body: '<html></html>\n',
+      });
+      expect(result.data.url.includes('file.txt')).toBeTrue();
+      expect(result.data.name.includes('file.txt')).toBeTrue();
+    });
+
     it('filename is url encoded', done => {
       const headers = {
         'Content-Type': 'text/html',
