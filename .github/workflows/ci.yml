@@ -212,8 +212,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - run: |
-          wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          if [[ "$MONGODB_VERSION" == "4.2.25" || "$MONGODB_VERSION" == "4.4.29" || "$MONGODB_VERSION" == "5.0.26" ]]; then
+            wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+            sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          fi
       - run: npm run pretest
       - run: npm run coverage
         env:
