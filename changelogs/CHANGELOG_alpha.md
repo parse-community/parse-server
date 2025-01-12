@@ -1,3 +1,15 @@
+# [8.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.2...8.0.0-alpha.3) (2025-01-12)
+
+
+### Features
+
+* Increase required minimum MongoDB versions to `6.0.19`, `7.0.16`, `8.0.4` ([#9531](https://github.com/parse-community/parse-server/issues/9531)) ([871e508](https://github.com/parse-community/parse-server/commit/871e5082a9fd768cee3012e26d3c8ddff5c2952c))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum MongoDB versions to `6.0.19`, `7.0.16`, `8.0.4` and removes support for MongoDB `4`, `5`. ([871e508](871e508))
+
 # [8.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.1...8.0.0-alpha.2) (2025-01-11)
 
 

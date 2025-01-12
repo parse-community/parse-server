@@ -127,24 +127,21 @@ Before you start make sure you have installed:
 
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version    | Latest Version | End-of-Life | Compatible |
-|------------|----------------|-------------|------------|
-| Node.js 18 | 18.20.4        | April 2025  | ✅ Yes      |
-| Node.js 20 | 20.18.0        | April 2026  | ✅ Yes      |
-| Node.js 22 | 22.12.0        | April 2027  | ✅ Yes      |
+| Version    | Minimum Version | End-of-Life | Compatible |
+|------------|-----------------|-------------|------------|
+| Node.js 18 | 18.20.4         | April 2025  | ✅ Yes      |
+| Node.js 20 | 20.18.0         | April 2026  | ✅ Yes      |
+| Node.js 22 | 22.12.0         | April 2027  | ✅ Yes      |
 
 #### MongoDB
 
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and [MongoDB lifecycle schedule](https://www.mongodb.com/support-policy/lifecycles) and only test against versions that are officially supported and have not reached their end-of-life date. MongoDB "rapid releases" are ignored as these are considered pre-releases of the next major version.
 
-| Version     | Latest Version | End-of-Life   | Compatible |
-|-------------|----------------|---------------|------------|
-| MongoDB 4.2 | 4.2.25         | April 2023    | ✅ Yes      |
-| MongoDB 4.4 | 4.4.29         | February 2024 | ✅ Yes      |
-| MongoDB 5   | 5.0.26         | October 2024  | ✅ Yes      |
-| MongoDB 6   | 6.0.14         | July 2025     | ✅ Yes      |
-| MongoDB 7   | 7.0.8          | TDB           | ✅ Yes      |
-| MongoDB 8   | 8.0.0          | TDB           | ✅ Yes      |
+| Version   | Minimum Version | End-of-Life | Compatible |
+|-----------|-----------------|-------------|------------|
+| MongoDB 6 | 6.0.19          | July 2025   | ✅ Yes      |
+| MongoDB 7 | 7.0.16          | August 2026 | ✅ Yes      |
+| MongoDB 8 | 8.0.4           | TDB         | ✅ Yes      |
 
 #### PostgreSQL
 
