@@ -1,3 +1,15 @@
+# [8.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.5...8.0.0-alpha.6) (2025-01-12)
+
+
+### Features
+
+* Increase required minimum versions to Postgres `15`, PostGIS `3.3` ([#9538](https://github.com/parse-community/parse-server/issues/9538)) ([89c9b54](https://github.com/parse-community/parse-server/commit/89c9b5485a07a411fb35de4f8cf0467e7eb01f85))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum versions to Postgres `15`, PostGIS `3.3` and removes support for Postgres `13`, `14`, PostGIS `3.1`, `3.2`. ([89c9b54](89c9b54))
+
 # [8.0.0-alpha.5](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.4...8.0.0-alpha.5) (2025-01-12)
 
 
