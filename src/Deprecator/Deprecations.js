@@ -15,4 +15,4 @@
  *
  * If there are no deprecations, this must return an empty array.
  */
-module.exports = [];
+module.exports = [{ optionKey: 'encodeParseObjectInCloudFunction', changeNewKey: '' }]
