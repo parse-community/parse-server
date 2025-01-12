@@ -414,8 +414,7 @@ module.exports.ParseServerOptions = {
   },
   pages: {
     env: 'PARSE_SERVER_PAGES',
-    help:
-      'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
+    help: 'The options for pages such as password reset and email verification.',
     action: parsers.objectParser,
     type: 'PagesOptions',
     default: {},
@@ -698,7 +697,7 @@ module.exports.PagesOptions = {
   enableRouter: {
     env: 'PARSE_SERVER_PAGES_ENABLE_ROUTER',
     help:
-      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.',
+      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect.',
     action: parsers.booleanParser,
     default: false,
   },

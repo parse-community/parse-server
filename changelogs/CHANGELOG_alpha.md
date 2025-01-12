@@ -1,3 +1,41 @@
+# [8.0.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.3...8.0.0-alpha.4) (2025-01-12)
+
+
+### Features
+
+* Deprecate `PublicAPIRouter` in favor of `PagesRouter` ([#9526](https://github.com/parse-community/parse-server/issues/9526)) ([7f66629](https://github.com/parse-community/parse-server/commit/7f666292e8b9692966672486b7108edefc356309))
+
+# [8.0.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.2...8.0.0-alpha.3) (2025-01-12)
+
+
+### Features
+
+* Increase required minimum MongoDB versions to `6.0.19`, `7.0.16`, `8.0.4` ([#9531](https://github.com/parse-community/parse-server/issues/9531)) ([871e508](https://github.com/parse-community/parse-server/commit/871e5082a9fd768cee3012e26d3c8ddff5c2952c))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum MongoDB versions to `6.0.19`, `7.0.16`, `8.0.4` and removes support for MongoDB `4`, `5`. ([871e508](871e508))
+
+# [8.0.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.1...8.0.0-alpha.2) (2025-01-11)
+
+
+### Bug Fixes
+
+* Push adapter not loading on some versions of Node 22 ([#9524](https://github.com/parse-community/parse-server/issues/9524)) ([ff7f671](https://github.com/parse-community/parse-server/commit/ff7f671c79f5dcdc44e4319a10f3654e12662c23))
+
+# [8.0.0-alpha.1](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.7...8.0.0-alpha.1) (2025-01-11)
+
+
+### Features
+
+* Increase required minimum Node versions to `18.20.4`, `20.18.0`, `22.12.0` ([#9521](https://github.com/parse-community/parse-server/issues/9521)) ([4e151cd](https://github.com/parse-community/parse-server/commit/4e151cd0a52191809452f197b2f29c3a12525b67))
+
+
+### BREAKING CHANGES
+
+* This releases increases the required minimum Node versions to 18.20.4, 20.18.0, 22.12.0 and removes unofficial support for Node 19. ([4e151cd](4e151cd))
+
 # [7.4.0-alpha.7](https://github.com/parse-community/parse-server/compare/7.4.0-alpha.6...7.4.0-alpha.7) (2024-12-16)
 
 

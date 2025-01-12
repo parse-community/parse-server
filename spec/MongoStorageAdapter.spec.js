@@ -424,40 +424,6 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 
-  it_only_mongodb_version('>=5.1 <6')('should use index for caseInsensitive query', async () => {
-    const user = new Parse.User();
-    user.set('username', 'Bugs');
-    user.set('password', 'Bunny');
-    await user.signUp();
-
-    const database = Config.get(Parse.applicationId).database;
-    await database.adapter.dropAllIndexes('_User');
-
-    const preIndexPlan = await database.find(
-      '_User',
-      { username: 'bugs' },
-      { caseInsensitive: true, explain: true }
-    );
-
-    const schema = await new Parse.Schema('_User').get();
-
-    await database.adapter.ensureIndex(
-      '_User',
-      schema,
-      ['username'],
-      'case_insensitive_username',
-      true
-    );
-
-    const postIndexPlan = await database.find(
-      '_User',
-      { username: 'bugs' },
-      { caseInsensitive: true, explain: true }
-    );
-    expect(preIndexPlan.queryPlanner.winningPlan.queryPlan.stage).toBe('COLLSCAN');
-    expect(postIndexPlan.queryPlanner.winningPlan.queryPlan.stage).toBe('FETCH');
-  });
-
   it('should delete field without index', async () => {
     const database = Config.get(Parse.applicationId).database;
     const obj = new Parse.Object('MyObject');
