@@ -727,7 +727,7 @@ export class PagesRouter extends PromiseRouter {
   mountStaticRoute() {
     this.route(
       'GET',
-      `/${this.pagesEndpoint}/(*)?`,
+      `/${this.pagesEndpoint}/*splat`,
       req => {
         this.setConfig(req, true);
       },
