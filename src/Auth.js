@@ -97,7 +97,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
     if (lastUpdated > yesterday || !session) {
       return;
     }
-    
+
     const expiresAt = config.generateSessionExpiresAt();
     await new RestWrite(
       config,
