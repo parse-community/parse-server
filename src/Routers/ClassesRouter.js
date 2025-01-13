@@ -106,6 +106,13 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleCreate(req) {
+    if (
+      this.className(req) === '_User' &&
+      typeof req.body?.objectId === 'string' &&
+      req.body.objectId.startsWith('role:')
+    ) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.');
+    }
     return rest.create(
       req.config,
       req.auth,
@@ -166,6 +173,7 @@ export class ClassesRouter extends PromiseRouter {
       'subqueryReadPreference',
       'hint',
       'explain',
+      'comment',
     ];
 
     for (const key of Object.keys(body)) {
@@ -214,6 +222,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.explain) {
       options.explain = body.explain;
+    }
+    if (body.comment && typeof body.comment === 'string') {
+      options.comment = body.comment;
     }
     return options;
   }

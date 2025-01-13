@@ -585,4 +585,83 @@ describe('Verify User Password', () => {
         done();
       });
   });
+
+  it('verify password of user with unverified email with master key and ignoreEmailVerification=true', async () => {
+    await reconfigureServer({
+      publicServerURL: 'http://localhost:8378/',
+      appName: 'emailVerify',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.setEmail('test@example.com');
+    await user.signUp();
+
+    const { data: res } = await request({
+      method: 'POST',
+      url: Parse.serverURL + '/verifyPassword',
+      headers: {
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        username: 'user',
+        password: 'pass',
+        ignoreEmailVerification: true,
+      },
+      json: true,
+    });
+    expect(res.objectId).toBe(user.id);
+    expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+    expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(false);
+  });
+
+  it('fails to verify password of user with unverified email with master key and ignoreEmailVerification=false', async () => {
+    await reconfigureServer({
+      publicServerURL: 'http://localhost:8378/',
+      appName: 'emailVerify',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.setEmail('test@example.com');
+    await user.signUp();
+
+    const res = await request({
+      method: 'POST',
+      url: Parse.serverURL + '/verifyPassword',
+      headers: {
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      body: {
+        username: 'user',
+        password: 'pass',
+        ignoreEmailVerification: false,
+      },
+      json: true,
+    }).catch(e => e);
+    expect(res.status).toBe(400);
+    expect(res.text).toMatch(/User email is not verified/);
+  });
 });

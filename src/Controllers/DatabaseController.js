@@ -142,7 +142,7 @@ const filterSensitiveData = (
   object: any
 ) => {
   let userId = null;
-  if (auth && auth.user) userId = auth.user.id;
+  if (auth && auth.user) { userId = auth.user.id; }
 
   // replace protectedFields when using pointer-permissions
   const perms =
@@ -279,6 +279,9 @@ const flattenUpdateOperatorsForCreate = object => {
           }
           object[key] = object[key].amount;
           break;
+        case 'SetOnInsert':
+          object[key] = object[key].amount;
+          break;
         case 'Add':
           if (!(object[key].objects instanceof Array)) {
             throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
@@ -363,6 +366,22 @@ const getRootFieldName = (fieldName: string): string => {
 
 const relationSchema = {
   fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } },
+};
+
+const convertEmailToLowercase = (object, className, options) => {
+  if (className === '_User' && options.convertEmailToLowercase) {
+    if (typeof object['email'] === 'string') {
+      object['email'] = object['email'].toLowerCase();
+    }
+  }
+};
+
+const convertUsernameToLowercase = (object, className, options) => {
+  if (className === '_User' && options.convertUsernameToLowercase) {
+    if (typeof object['username'] === 'string') {
+      object['username'] = object['username'].toLowerCase();
+    }
+  }
 };
 
 class DatabaseController {
@@ -570,6 +589,8 @@ class DatabaseController {
                 }
               }
               update = transformObjectACL(update);
+              convertEmailToLowercase(update, className, this.options);
+              convertUsernameToLowercase(update, className, this.options);
               transformAuthData(className, update, schema);
               if (validateOnly) {
                 return this.adapter.find(className, schema, query, {}).then(result => {
@@ -819,6 +840,8 @@ class DatabaseController {
     const originalObject = object;
     object = transformObjectACL(object);
 
+    convertEmailToLowercase(object, className, this.options);
+    convertUsernameToLowercase(object, className, this.options);
     object.createdAt = { iso: object.createdAt, __type: 'Date' };
     object.updatedAt = { iso: object.updatedAt, __type: 'Date' };
 
@@ -1165,6 +1188,7 @@ class DatabaseController {
       hint,
       caseInsensitive = false,
       explain,
+      comment,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1212,8 +1236,9 @@ class DatabaseController {
             keys,
             readPreference,
             hint,
-            caseInsensitive,
+            caseInsensitive: this.options.enableCollationCaseComparison ? false : caseInsensitive,
             explain,
+            comment,
           };
           Object.keys(sort).forEach(fieldName => {
             if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
@@ -1283,7 +1308,8 @@ class DatabaseController {
                     query,
                     readPreference,
                     undefined,
-                    hint
+                    hint,
+                    comment
                   );
                 }
               } else if (distinct) {
@@ -1302,7 +1328,8 @@ class DatabaseController {
                     pipeline,
                     readPreference,
                     hint,
-                    explain
+                    explain,
+                    comment
                   );
                 }
               } else if (explain) {
@@ -1565,12 +1592,12 @@ class DatabaseController {
       schema && schema.getClassLevelPermissions
         ? schema.getClassLevelPermissions(className)
         : schema;
-    if (!perms) return null;
+    if (!perms) { return null; }
 
     const protectedFields = perms.protectedFields;
-    if (!protectedFields) return null;
+    if (!protectedFields) { return null; }
 
-    if (aclGroup.indexOf(query.objectId) > -1) return null;
+    if (aclGroup.indexOf(query.objectId) > -1) { return null; }
 
     // for queries where "keys" are set and do not include all 'userField':{field},
     // we have to transparently include it, and then remove before returning to client
@@ -1716,24 +1743,26 @@ class DatabaseController {
       throw error;
     });
 
-    await this.adapter
-      .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
-      .catch(error => {
-        logger.warn('Unable to create case insensitive username index: ', error);
-        throw error;
-      });
+    if (!this.options.enableCollationCaseComparison) {
+      await this.adapter
+        .ensureIndex('_User', requiredUserFields, ['username'], 'case_insensitive_username', true)
+        .catch(error => {
+          logger.warn('Unable to create case insensitive username index: ', error);
+          throw error;
+        });
+
+      await this.adapter
+        .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
+        .catch(error => {
+          logger.warn('Unable to create case insensitive email index: ', error);
+          throw error;
+        });
+    }
 
     await this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']).catch(error => {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
       throw error;
     });
-
-    await this.adapter
-      .ensureIndex('_User', requiredUserFields, ['email'], 'case_insensitive_email', true)
-      .catch(error => {
-        logger.warn('Unable to create case insensitive email index: ', error);
-        throw error;
-      });
 
     await this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']).catch(error => {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
@@ -1817,11 +1846,19 @@ class DatabaseController {
         keyUpdate &&
         typeof keyUpdate === 'object' &&
         keyUpdate.__op &&
-        ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1
+        ['Add', 'AddUnique', 'Remove', 'Increment', 'SetOnInsert'].indexOf(keyUpdate.__op) > -1
       ) {
         // only valid ops that produce an actionable result
         // the op may have happened on a keypath
         this._expandResultOnKeyPath(response, key, result);
+        // Revert array to object conversion on dot notation for arrays (e.g. "field.0.key")
+        if (key.includes('.')) {
+          const [field, index] = key.split('.');
+          const isArrayIndex = Array.from(index).every(c => c >= '0' && c <= '9');
+          if (isArrayIndex && Array.isArray(result[field]) && !Array.isArray(response[field])) {
+            response[field] = result[field];
+          }
+        }
       }
     });
     return Promise.resolve(response);

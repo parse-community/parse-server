@@ -62,7 +62,7 @@ describe('Parse.Polygon testing', () => {
       }, done.fail);
   });
 
-  it('polygon equalTo (open/closed) path', done => {
+  it_id('3019353b-d5b3-4e53-bcb1-716418328bdd')(it)('polygon equalTo (open/closed) path', done => {
     const openPoints = [
       [0, 0],
       [0, 1],

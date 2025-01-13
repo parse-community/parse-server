@@ -1,0 +1,14 @@
+# Dependabot dependency updates
+# Docs: https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    # Location of package-lock.json
+    directory: "/"
+    # Check daily for updates
+    schedule:
+      interval: "daily"
+    commit-message:
+      # Set commit message prefix
+      prefix: "refactor"

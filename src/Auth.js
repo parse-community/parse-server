@@ -1,7 +1,6 @@
 const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
-import Deprecator from './Deprecator/Deprecator';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
 import RestWrite from './RestWrite';
@@ -72,6 +71,17 @@ const throttle = new LRU({
   max: 10000,
   ttl: 500,
 });
+/**
+ * Checks whether session should be updated based on last update time & session length.
+ */
+function shouldUpdateSessionExpiry(config, session) {
+  const resetAfter = config.sessionLength / 2;
+  const lastUpdated = new Date(session?.updatedAt);
+  const skipRange = new Date();
+  skipRange.setTime(skipRange.getTime() - resetAfter * 1000);
+  return lastUpdated <= skipRange;
+}
+
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
     return;
@@ -87,6 +97,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
     if (lastUpdated > yesterday || !session) {
       return;
     }
+    
     const expiresAt = config.generateSessionExpiresAt();
     await new RestWrite(
       config,
@@ -133,7 +144,15 @@ const getAuthForSessionToken = async function ({
       include: 'user',
     };
     const RestQuery = require('./RestQuery');
-    const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
+    const query = await RestQuery({
+      method: RestQuery.Method.get,
+      config,
+      runBeforeFind: false,
+      auth: master(config),
+      className: '_Session',
+      restWhere: { sessionToken },
+      restOptions,
+    });
     results = (await query.execute()).results;
   } else {
     results = (
@@ -155,6 +174,11 @@ const getAuthForSessionToken = async function ({
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
+
+  if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+  }
+
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
@@ -172,12 +196,20 @@ const getAuthForSessionToken = async function ({
   });
 };
 
-var getAuthForLegacySessionToken = function ({ config, sessionToken, installationId }) {
+var getAuthForLegacySessionToken = async function ({ config, sessionToken, installationId }) {
   var restOptions = {
     limit: 1,
   };
   const RestQuery = require('./RestQuery');
-  var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
+  var query = await RestQuery({
+    method: RestQuery.Method.get,
+    config,
+    runBeforeFind: false,
+    auth: master(config),
+    className: '_User',
+    restWhere: { _session_token: sessionToken },
+    restOptions,
+  });
   return query.execute().then(response => {
     var results = response.results;
     if (results.length !== 1) {
@@ -222,9 +254,15 @@ Auth.prototype.getRolesForUser = async function () {
       },
     };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      runBeforeFind: false,
+      config: this.config,
+      auth: master(this.config),
+      className: '_Role',
+      restWhere,
+    });
+    await query.each(result => results.push(result));
   } else {
     await new Parse.Query(Parse.Role)
       .equalTo('users', this.user)
@@ -316,9 +354,15 @@ Auth.prototype.getRolesByIds = async function (ins) {
     });
     const restWhere = { roles: { $in: roles } };
     const RestQuery = require('./RestQuery');
-    await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
-      results.push(result)
-    );
+    const query = await RestQuery({
+      method: RestQuery.Method.find,
+      config: this.config,
+      runBeforeFind: false,
+      auth: master(this.config),
+      className: '_Role',
+      restWhere,
+    });
+    await query.each(result => results.push(result));
   }
   return results;
 };
@@ -384,11 +428,11 @@ const findUsersWithAuthData = (config, authData) => {
 };
 
 const hasMutatedAuthData = (authData, userAuthData) => {
-  if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
+  if (!userAuthData) { return { hasMutatedAuthData: true, mutatedAuthData: authData }; }
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
     // Anonymous provider is not handled this way
-    if (provider === 'anonymous') return;
+    if (provider === 'anonymous') { return; }
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
     if (!isDeepStrictEqual(providerData, userProviderAuthData)) {
@@ -485,12 +529,6 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       }
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
       const authProvider = (req.config.auth || {})[provider] || {};
-      if (authProvider.enabled == null) {
-        Deprecator.logRuntimeDeprecation({
-          usage: `Using the authentication adapter "${provider}" without explicitly enabling it`,
-          solution: `Enable the authentication adapter by setting the Parse Server option "auth.${provider}.enabled: true".`,
-        });
-      }
       if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(
           Parse.Error.UNSUPPORTED_SERVICE,
@@ -548,6 +586,7 @@ module.exports = {
   maintenance,
   nobody,
   readOnly,
+  shouldUpdateSessionExpiry,
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
   findUsersWithAuthData,

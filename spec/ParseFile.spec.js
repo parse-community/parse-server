@@ -789,57 +789,9 @@ describe('Parse.File testing', () => {
         headers: {
           'Content-Type': 'application/octet-stream',
           'X-Parse-Application-Id': 'test',
-          Range: 'bytes=abc-efs',
         },
       }).catch(e => e);
       expect(file.headers['content-range']).toBeUndefined();
-    });
-
-    it('supports bytes range if start and end undefined', async () => {
-      const headers = {
-        'Content-Type': 'application/octet-stream',
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
-      };
-      const response = await request({
-        method: 'POST',
-        headers: headers,
-        url: 'http://localhost:8378/1//files/file.txt ',
-        body: repeat('argle bargle', 100),
-      });
-      const b = response.data;
-      const file = await request({
-        url: b.url,
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'X-Parse-Application-Id': 'test',
-        },
-      }).catch(e => e);
-      expect(file.headers['content-range']).toBeUndefined();
-    });
-
-    it('supports bytes range if end is greater than size', async () => {
-      const headers = {
-        'Content-Type': 'application/octet-stream',
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
-      };
-      const response = await request({
-        method: 'POST',
-        headers: headers,
-        url: 'http://localhost:8378/1//files/file.txt ',
-        body: repeat('argle bargle', 100),
-      });
-      const b = response.data;
-      const file = await request({
-        url: b.url,
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'X-Parse-Application-Id': 'test',
-          Range: 'bytes=0-2000',
-        },
-      }).catch(e => e);
-      expect(file.headers['content-range']).toBe('bytes 0-1212/1212');
     });
 
     it('supports bytes range if end is greater than size', async () => {
@@ -1364,11 +1316,119 @@ describe('Parse.File testing', () => {
       );
     });
 
+    it('default should allow common types', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+        },
+      });
+      for (const type of ['plain', 'txt', 'png', 'jpg', 'gif', 'doc']) {
+        const file = new Parse.File(`parse-server-logo.${type}`, { base64: 'ParseA==' });
+        await file.save();
+      }
+    });
+
+    it('works with a period in the file name', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      const values = ['file.png.html', 'file.txt.png.html', 'file.png.txt.html'];
+
+      for (const value of values) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/${value}`,
+            body: '<html></html>\n',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
+        );
+      }
+    });
+
+    it('works to stop invalid filenames', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      const values = [
+        '!invalid.png',
+        '.png',
+        '.html',
+        ' .html',
+        '.png.html',
+        '~invalid.png',
+        '-invalid.png',
+      ];
+
+      for (const value of values) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/${value}`,
+            body: '<html></html>\n',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.INVALID_FILE_NAME, `Filename contains invalid characters.`)
+        );
+      }
+    });
+
+    it('allows file without extension', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: true,
+          fileExtensions: ['^[^hH][^tT][^mM][^lL]?$'],
+        },
+      });
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      };
+
+      const values = ['filenamewithoutextension'];
+
+      for (const value of values) {
+        await expectAsync(
+          request({
+            method: 'POST',
+            headers: headers,
+            url: `http://localhost:8378/1/files/${value}`,
+            body: '<html></html>\n',
+          }).catch(e => {
+            throw new Error(e.data.error);
+          })
+        ).toBeResolved();
+      }
+    });
+
     it('works with array', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: true,
-          fileExtensions: ['jpg'],
+          fileExtensions: ['jpg', 'wav'],
         },
       });
       await expectAsync(
@@ -1387,6 +1447,30 @@ describe('Parse.File testing', () => {
       ).toBeRejectedWith(
         new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `File upload of extension html is disabled.`)
       );
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/file',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'image/jpg',
+            base64: 'PGh0bWw+PC9odG1sPgo=',
+          }),
+        })
+      ).toBeResolved();
+      await expectAsync(
+        request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/files/file',
+          body: JSON.stringify({
+            _ApplicationId: 'test',
+            _JavaScriptKey: 'test',
+            _ContentType: 'audio/wav',
+            base64: 'UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA',
+          }),
+        })
+      ).toBeResolved();
     });
 
     it('works with array without Content-Type', async () => {
