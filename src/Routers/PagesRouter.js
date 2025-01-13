@@ -331,7 +331,7 @@ export class PagesRouter extends PromiseRouter {
    */
   staticRoute(req) {
     // Get requested path
-    const relativePath = req.params[0];
+    const relativePath = req.params['resource'][0];
 
     // Resolve requested path to absolute path
     const absolutePath = path.resolve(this.pagesPath, relativePath);
