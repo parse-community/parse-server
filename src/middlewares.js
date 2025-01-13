@@ -680,3 +680,16 @@ function malformedContext(req, res) {
   res.status(400);
   res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
 }
+
+/**
+ * Express 4 allowed a double forward slash between a route and router. Although
+ * this should be considered an anti-pattern, we need to support it for backwards
+ * compatibility.
+ *
+ * Technically valid URL with double foroward slash:
+ * http://localhost:1337/parse//functions/testFunction
+ */
+export function allowDoubleForwardSlash(req, res, next) {
+  req.url = req.url.startsWith('//') ? req.url.substring(1) : req.url;
+  next();
+}
