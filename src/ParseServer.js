@@ -251,6 +251,7 @@ class ParseServer {
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
+    api.use(middlewares.allowDoubleForwardSlash);
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
@@ -280,7 +281,6 @@ class ParseServer {
     api.use(express.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
-    api.use(middlewares.allowDoubleForwardSlash);
     const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const route of routes) {
       middlewares.addRateLimit(route, options);
