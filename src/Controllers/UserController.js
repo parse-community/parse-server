@@ -6,6 +6,7 @@ import rest from '../rest';
 import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
+import Utils from '../Utils';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -173,7 +174,7 @@ export class UserController extends AdaptableController {
     if (!shouldSendEmail) {
       return;
     }
-    const username = encodeURIComponent(fetchedUser.username);
+    const username = Utils.encode(fetchedUser.username);
 
     const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
     const options = {
@@ -286,7 +287,7 @@ export class UserController extends AdaptableController {
       user = await this.setPasswordResetToken(email);
     }
     const token = encodeURIComponent(user._perishable_token);
-    const username = encodeURIComponent(user.username);
+    const username = Utils.encode(user.username);
 
     const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
     const options = {

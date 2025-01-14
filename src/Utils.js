@@ -399,6 +399,17 @@ class Utils {
     }
     return obj;
   }
+
+  /**
+   * Encodes a string to be used in a URL.
+   * @param {String} input The string to encode.
+   * @returns {String} The encoded string.
+   */
+  static encode(input) {
+    return Array.from(input)
+        .map(char => `%${char.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()}`)
+        .join('');
+  }
 }
 
 module.exports = Utils;
