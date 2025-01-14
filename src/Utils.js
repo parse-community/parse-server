@@ -407,8 +407,8 @@ class Utils {
    */
   static encode(input) {
     return Array.from(input)
-        .map(char => `%${char.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()}`)
-        .join('');
+      .map(char => `%${char.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()}`)
+      .join('');
   }
 }
 

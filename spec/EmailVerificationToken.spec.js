@@ -62,28 +62,26 @@ describe('Email Verification Token Expiration: ', () => {
       sendVerificationEmail: async () => {},
       sendMail: async () => {},
     };
-  
+
     await reconfigureServer({
       appName: 'specialCharacterUsernameTest',
       publicServerURL: 'http://localhost:8378/1',
       emailAdapter: emailAdapter,
     });
-  
+
     user.setUsername('hello :)');
     user.setPassword('password123');
     user.set('email', 'user@parse.com');
     await user.signUp();
-  
+
     await Parse.User.requestPasswordReset('user@parse.com');
-  
-    expect(sendEmailOptions).not.toBeUndefined();
-  
-    const { link, html, text } = sendEmailOptions;
-  
-    const username = link.split('username=')[1];
+
+    expect(sendEmailOptions).toBeDefined();
+
+    const username = sendEmailOptions.link.split('username=')[1];
     expect(username).toBe('%68%65%6C%6C%6F%20%3A%29');
   });
-  
+
 
   it('emailVerified should set to false, if the user does not verify their email before the email verify token expires', done => {
     const user = new Parse.User();
