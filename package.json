@@ -22,7 +22,7 @@
   "dependencies": {
     "@apollo/server": "4.11.3",
     "@babel/eslint-parser": "7.25.9",
-    "@graphql-tools/merge": "9.0.14",
+    "@graphql-tools/merge": "9.0.17",
     "@graphql-tools/schema": "10.0.16",
     "@graphql-tools/utils": "10.6.3",
     "@parse/fs-files-adapter": "3.0.0",
@@ -68,11 +68,11 @@
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
-    "@apollo/client": "3.12.3",
+    "@apollo/client": "3.12.6",
     "@babel/cli": "7.26.4",
     "@babel/core": "7.26.0",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
-    "@babel/plugin-transform-flow-strip-types": "7.25.9",
+    "@babel/plugin-transform-flow-strip-types": "7.26.5",
     "@babel/preset-env": "7.26.0",
     "@babel/preset-typescript": "7.26.0",
     "@saithodev/semantic-release-backmerge": "4.0.1",
@@ -109,7 +109,7 @@
     "prettier": "2.0.5",
     "semantic-release": "24.2.1",
     "typescript": "5.7.3",
-    "yaml": "2.6.1"
+    "yaml": "2.7.0"
   },
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
