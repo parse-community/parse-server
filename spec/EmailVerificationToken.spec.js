@@ -74,7 +74,7 @@ describe('Email Verification Token Expiration: ', () => {
     user.set('email', 'test@example.com');
     await user.signUp();
 
-    await Parse.User.requestPasswordReset('user@parse.com');
+    await Parse.User.requestPasswordReset('test@example.com');
 
     expect(sendEmailOptions).toBeDefined();
 

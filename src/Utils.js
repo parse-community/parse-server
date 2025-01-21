@@ -406,9 +406,9 @@ class Utils {
    * @returns {String} The encoded string.
    */
   static encode(input) {
-    return Array.from(input)
-      .map(char => `%${char.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase()}`)
-      .join('');
+    return encodeURIComponent(input).replace(/[!'()*]/g, char =>
+      '%' + char.charCodeAt(0).toString(16).toUpperCase()
+    );
   }
 }
 
