@@ -46,6 +46,7 @@ node_modules
 
 # Babel.js
 lib/
+types/
 
 # cache folder
 .cache

@@ -15,7 +15,8 @@
     "LICENSE",
     "NOTICE",
     "postinstall.js",
-    "README.md"
+    "README.md",
+    "types"
   ],
   "license": "Apache-2.0",
   "dependencies": {
@@ -73,6 +74,7 @@
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
     "@babel/plugin-transform-flow-strip-types": "7.25.9",
     "@babel/preset-env": "7.26.0",
+    "@babel/preset-typescript": "7.26.0",
     "@saithodev/semantic-release-backmerge": "4.0.1",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/commit-analyzer": "13.0.1",
@@ -106,6 +108,7 @@
     "nyc": "17.1.0",
     "prettier": "2.0.5",
     "semantic-release": "24.2.1",
+    "typescript": "5.7.3",
     "yaml": "2.6.1"
   },
   "scripts": {
@@ -114,9 +117,10 @@
     "ci:definitionsCheck": "node ./ci/definitionsCheck.js",
     "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
-    "lint": "flow && eslint --cache ./",
+    "lint": "eslint --cache ./",
     "lint-fix": "eslint --fix --cache ./",
-    "build": "babel src/ -d lib/ --copy-files",
+    "build": "babel src/ -d lib/ --copy-files --extensions '.ts,.js'",
+    "build:types": "tsc && prettier --write 'types/{**/*,*}.ts' && npm run lint-fix",
     "watch": "babel --watch src/ -d lib/ --copy-files",
     "test:mongodb:runnerstart": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start -t ${MONGODB_TOPOLOGY} --version ${MONGODB_VERSION} -- --port 27017",
     "test:mongodb:testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
@@ -132,10 +136,11 @@
     "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=8.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 nyc jasmine",
     "start": "node ./bin/parse-server",
     "prettier": "prettier --write {src,spec}/{**/*,*}.js",
-    "prepare": "npm run build",
+    "prepare": "npm run build && npm run build:types",
     "postinstall": "node -p 'require(\"./postinstall.js\")()'",
     "madge:circular": "node_modules/.bin/madge ./src --circular"
   },
+  "types": "types/index.d.ts",
   "engines": {
     "node": ">=18.20.4 <19.0.0 || >=20.18.0 <21.0.0 || >=22.12.0 <23.0.0"
   },
