@@ -117,7 +117,7 @@
     "ci:definitionsCheck": "node ./ci/definitionsCheck.js",
     "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
-    "lint": "eslint --cache ./",
+    "lint": "flow && eslint --cache ./",
     "lint-fix": "eslint --fix --cache ./",
     "build": "babel src/ -d lib/ --copy-files --extensions '.ts,.js'",
     "build:types": "tsc && prettier --write 'types/{**/*,*}.ts' && npm run lint-fix",
