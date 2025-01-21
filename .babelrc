@@ -7,7 +7,8 @@
         ["@babel/preset-env", {
             "targets": {
                 "node": "18"
-            }
+            },
+            "exclude": ["proposal-dynamic-import"]
         }]
     ],
     "sourceMaps": "inline"
