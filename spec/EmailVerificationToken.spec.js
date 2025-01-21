@@ -79,7 +79,7 @@ describe('Email Verification Token Expiration: ', () => {
     expect(sendEmailOptions).toBeDefined();
 
     const username = sendEmailOptions.link.split('username=')[1];
-    expect(username).toBe('%68%65%6C%6C%6F%20%3A%29');
+    expect(username).toBe('hello%20%3A%29');
   });
 
 
