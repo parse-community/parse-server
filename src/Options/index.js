@@ -212,12 +212,12 @@ export interface ParseServerOptions {
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
   /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
-  :DEFAULT: false */
+  :DEFAULT: true */
   encodeParseObjectInCloudFunction: ?boolean;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
-  /* The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
+  /* The options for pages such as password reset and email verification.
   :DEFAULT: {} */
   pages: ?PagesOptions;
   /* custom pages for password validation and reset
@@ -377,7 +377,7 @@ export interface SecurityOptions {
 }
 
 export interface PagesOptions {
-  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect.
   :DEFAULT: false */
   enableRouter: ?boolean;
   /* Is true if pages should be localized; this has no effect on custom page redirects.

@@ -238,7 +238,7 @@ module.exports.ParseServerOptions = {
     help:
       'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
@@ -414,8 +414,7 @@ module.exports.ParseServerOptions = {
   },
   pages: {
     env: 'PARSE_SERVER_PAGES',
-    help:
-      'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
+    help: 'The options for pages such as password reset and email verification.',
     action: parsers.objectParser,
     type: 'PagesOptions',
     default: {},
@@ -698,7 +697,7 @@ module.exports.PagesOptions = {
   enableRouter: {
     env: 'PARSE_SERVER_PAGES_ENABLE_ROUTER',
     help:
-      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.',
+      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect.',
     action: parsers.booleanParser,
     default: false,
   },
