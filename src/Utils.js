@@ -406,7 +406,7 @@ class Utils {
    * @returns {String} The encoded string.
    */
   static encode(input) {
-    return encodeURIComponent(input).replace(/[!'()*]/g, char =>
+    return encodeURIComponent(input).replace(/[!'.()*]/g, char =>
       '%' + char.charCodeAt(0).toString(16).toUpperCase()
     );
   }
