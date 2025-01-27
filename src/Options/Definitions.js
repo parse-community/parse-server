@@ -1046,13 +1046,13 @@ module.exports.DatabaseOptions = {
   connectTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
     help:
-      'Specifies the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
+      'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
     action: parsers.numberParser('connectTimeoutMS'),
   },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
     help:
-      'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
+      'The MongoDB driver option to enable database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -1094,7 +1094,7 @@ module.exports.DatabaseOptions = {
   socketTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_SOCKET_TIMEOUT_MS',
     help:
-      'Specifies the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.',
+      'The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.',
     action: parsers.numberParser('socketTimeoutMS'),
   },
 };
