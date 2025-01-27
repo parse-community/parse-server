@@ -1043,18 +1043,18 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  connectTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
+    help:
+      'Specifies the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
+    action: parsers.numberParser('connectTimeoutMS'),
+  },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
     help:
       'Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.',
     action: parsers.booleanParser,
     default: false,
-  },
-  minPoolSize: {
-    env: 'PARSE_SERVER_DATABASE_MIN_POOL_SIZE',
-    help:
-      'The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.',
-    action: parsers.numberParser('minPoolSize'),
   },
   maxPoolSize: {
     env: 'PARSE_SERVER_DATABASE_MAX_POOL_SIZE',
@@ -1074,6 +1074,12 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.',
     action: parsers.numberParser('maxTimeMS'),
   },
+  minPoolSize: {
+    env: 'PARSE_SERVER_DATABASE_MIN_POOL_SIZE',
+    help:
+      'The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.',
+    action: parsers.numberParser('minPoolSize'),
+  },
   retryWrites: {
     env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
     help: 'The MongoDB driver option to set whether to retry failed writes.',
@@ -1084,12 +1090,6 @@ module.exports.DatabaseOptions = {
     help:
       'The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.',
     action: parsers.numberParser('schemaCacheTtl'),
-  },
-  connectTimeoutMS: {
-    env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
-    help:
-      'Specifies the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
-    action: parsers.numberParser('connectTimeoutMS'),
   },
   socketTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_SOCKET_TIMEOUT_MS',
