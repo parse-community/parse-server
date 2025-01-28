@@ -1,3 +1,10 @@
+# [8.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.6...8.0.0-alpha.7) (2025-01-28)
+
+
+### Features
+
+* Add support for MongoDB `databaseOptions` keys `minPoolSize`, `connectTimeoutMS`, `socketTimeoutMS` ([#9522](https://github.com/parse-community/parse-server/issues/9522)) ([91618fe](https://github.com/parse-community/parse-server/commit/91618fe738217b937cbfcec35969679e0adb7676))
+
 # [8.0.0-alpha.6](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.5...8.0.0-alpha.6) (2025-01-12)
 
 
