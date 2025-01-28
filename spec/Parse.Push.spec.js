@@ -2,14 +2,12 @@
 
 const request = require('../lib/request');
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 const pushCompleted = async pushId => {
   const query = new Parse.Query('_PushStatus');
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
-    await sleep(100);
+    await jasmine.timeout();
     result = await query.first({ useMasterKey: true });
   }
 };
@@ -113,7 +111,7 @@ const setup = function () {
 };
 
 describe('Parse.Push', () => {
-  it('should properly send push', async () => {
+  it_id('d1e591c4-2b21-466b-9ee2-5be467b6b771')(it)('should properly send push', async () => {
     const { sendToInstallationSpy } = await setup();
     const pushStatusId = await Parse.Push.send({
       where: {
@@ -128,7 +126,7 @@ describe('Parse.Push', () => {
     expect(sendToInstallationSpy.calls.count()).toEqual(10);
   });
 
-  it('should properly send push with lowercaseIncrement', async () => {
+  it_id('2a58e3c7-b6f3-4261-a384-6c893b2ac3f3')(it)('should properly send push with lowercaseIncrement', async () => {
     await setup();
     const pushStatusId = await Parse.Push.send({
       where: {
@@ -142,7 +140,7 @@ describe('Parse.Push', () => {
     await pushCompleted(pushStatusId);
   });
 
-  it('should not allow clients to query _PushStatus', async () => {
+  it_id('e21780b6-2cdd-467e-8013-81030f3288e9')(it)('should not allow clients to query _PushStatus', async () => {
     await setup();
     const pushStatusId = await Parse.Push.send({
       where: {
@@ -168,7 +166,7 @@ describe('Parse.Push', () => {
     }
   });
 
-  it('should allow master key to query _PushStatus', async () => {
+  it_id('924cf5f5-f684-4925-978a-e52c0c457366')(it)('should allow master key to query _PushStatus', async () => {
     await setup();
     const pushStatusId = await Parse.Push.send({
       where: {

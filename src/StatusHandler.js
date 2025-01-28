@@ -237,11 +237,23 @@ export function pushStatusHandler(config, existingObjectId) {
           ) {
             const token = result.device.deviceToken;
             const error = result.response.error;
-            // GCM errors
+            // GCM / FCM HTTP v1 API errors; see:
+            // https://firebase.google.com/docs/reference/fcm/rest/v1/ErrorCode
             if (error === 'NotRegistered' || error === 'InvalidRegistration') {
               devicesToRemove.push(token);
             }
-            // APNS errors
+            // FCM API v2 errors; see:
+            // https://firebase.google.com/docs/cloud-messaging/manage-tokens
+            // https://github.com/firebase/functions-samples/blob/703c0359eacf07a551751d1319d34f912a2cd828/Node/fcm-notifications/functions/index.js#L89-L93C16
+            if (
+              error?.code === 'messaging/registration-token-not-registered' ||
+              error?.code === 'messaging/invalid-registration-token' ||
+              (error?.code === 'messaging/invalid-argument' && error?.message === 'The registration token is not a valid FCM registration token')
+            ) {
+              devicesToRemove.push(token);
+            }
+            // APNS errors; see:
+            // https://developer.apple.com/documentation/usernotifications/handling-notification-responses-from-apns
             if (error === 'Unregistered' || error === 'BadDeviceToken') {
               devicesToRemove.push(token);
             }

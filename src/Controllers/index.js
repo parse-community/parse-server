@@ -1,6 +1,6 @@
 import authDataManager from '../Adapters/Auth';
 import { ParseServerOptions } from '../Options';
-import { loadAdapter } from '../Adapters/AdapterLoader';
+import { loadAdapter, loadModule } from '../Adapters/AdapterLoader';
 import defaults from '../defaults';
 // Controllers
 import { LoggerController } from './LoggerController';
@@ -22,7 +22,6 @@ import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
-import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 
@@ -30,13 +29,6 @@ export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
   const filesController = getFilesController(options);
   const userController = getUserController(options);
-  const {
-    pushController,
-    hasPushScheduledSupport,
-    hasPushSupport,
-    pushControllerQueue,
-    pushWorker,
-  } = getPushController(options);
   const cacheController = getCacheController(options);
   const analyticsController = getAnalyticsController(options);
   const liveQueryController = getLiveQueryController(options);
@@ -51,11 +43,6 @@ export function getControllers(options: ParseServerOptions) {
     loggerController,
     filesController,
     userController,
-    pushController,
-    hasPushScheduledSupport,
-    hasPushSupport,
-    pushWorker,
-    pushControllerQueue,
     analyticsController,
     cacheController,
     parseGraphQLController,
@@ -182,7 +169,7 @@ interface PushControlling {
   pushWorker: PushWorker;
 }
 
-export function getPushController(options: ParseServerOptions): PushControlling {
+export async function getPushController(options: ParseServerOptions): PushControlling {
   const { scheduledPush, push } = options;
 
   const pushOptions = Object.assign({}, push);
@@ -192,6 +179,7 @@ export function getPushController(options: ParseServerOptions): PushControlling 
   }
 
   // Pass the push options too as it works with the default
+  const ParsePushAdapter = await loadModule('@parse/push-adapter');
   const pushAdapter = loadAdapter(
     pushOptions && pushOptions.adapter,
     ParsePushAdapter,

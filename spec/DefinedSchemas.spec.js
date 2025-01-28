@@ -642,7 +642,8 @@ describe('DefinedSchemas', () => {
 
     expect(logger.error).toHaveBeenCalledWith(`Failed to run migrations: ${error.toString()}`);
   });
-  it('should perform migration in parallel without failing', async () => {
+
+  it_id('a18bf4f2-25c8-4de3-b986-19cb1ab163b8')(it)('should perform migration in parallel without failing', async () => {
     const server = await reconfigureServer();
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callThrough();

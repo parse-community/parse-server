@@ -38,6 +38,7 @@ const load = parseGraphQLSchema => {
         const parseFields = await transformTypes('create', fields, {
           className: '_User',
           parseGraphQLSchema,
+          originalFields: args.fields,
           req: { config, auth, info },
         });
 
@@ -56,7 +57,7 @@ const load = parseGraphQLSchema => {
           'viewer.user.',
           objectId
         );
-        if (authDataResponse && viewer.user) viewer.user.authDataResponse = authDataResponse;
+        if (authDataResponse && viewer.user) { viewer.user.authDataResponse = authDataResponse; }
         return {
           viewer,
         };
@@ -114,6 +115,7 @@ const load = parseGraphQLSchema => {
         const parseFields = await transformTypes('create', fields, {
           className: '_User',
           parseGraphQLSchema,
+          originalFields: args.fields,
           req: { config, auth, info },
         });
 
@@ -132,7 +134,7 @@ const load = parseGraphQLSchema => {
           'viewer.user.',
           objectId
         );
-        if (authDataResponse && viewer.user) viewer.user.authDataResponse = authDataResponse;
+        if (authDataResponse && viewer.user) { viewer.user.authDataResponse = authDataResponse; }
         return {
           viewer,
         };
@@ -196,7 +198,7 @@ const load = parseGraphQLSchema => {
           'viewer.user.',
           objectId
         );
-        if (authDataResponse && viewer.user) viewer.user.authDataResponse = authDataResponse;
+        if (authDataResponse && viewer.user) { viewer.user.authDataResponse = authDataResponse; }
         return {
           viewer,
         };

@@ -126,7 +126,7 @@ describe('Parse Role testing', () => {
       );
   });
 
-  it('should not recursively load the same role multiple times', done => {
+  it_id('b03abe32-e8e4-4666-9b81-9c804aa53400')(it)('should not recursively load the same role multiple times', done => {
     const rootRole = 'RootRole';
     const roleNames = ['FooRole', 'BarRole', 'BazRole'];
     const allRoles = [rootRole].concat(roleNames);
@@ -142,7 +142,7 @@ describe('Parse Role testing', () => {
       return Promise.all(promises);
     };
 
-    const restExecute = spyOn(RestQuery.prototype, 'execute').and.callThrough();
+    const restExecute = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
 
     let user, auth, getAllRolesSpy;
     createTestUser()

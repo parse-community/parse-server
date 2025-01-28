@@ -215,7 +215,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
       return { validator: undefined };
     }
     const authAdapter = loadAuthAdapter(provider, authOptions);
-    if (!authAdapter) return;
+    if (!authAdapter) { return; }
     const { adapter, appIds, providerOptions } = authAdapter;
     return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };

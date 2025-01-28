@@ -86,6 +86,12 @@ const Category = {
 };
 
 function getStore(category, name, applicationId) {
+  const invalidNameRegex = /['"`]/;
+  if (invalidNameRegex.test(name)) {
+    // Prevent a malicious user from injecting properties into the store
+    return {};
+  }
+
   const path = name.split('.');
   path.splice(-1); // remove last component
   applicationId = applicationId || Parse.applicationId;
@@ -94,7 +100,7 @@ function getStore(category, name, applicationId) {
   for (const component of path) {
     store = store[component];
     if (!store) {
-      return undefined;
+      return {};
     }
   }
   return store;
@@ -270,6 +276,8 @@ export function getRequestObject(
     triggerType === Types.afterSave ||
     triggerType === Types.beforeDelete ||
     triggerType === Types.afterDelete ||
+    triggerType === Types.beforeLogin ||
+    triggerType === Types.afterLogin ||
     triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
@@ -374,6 +382,9 @@ function userIdForLog(auth) {
 }
 
 function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
+  if (logLevel === 'silent') {
+    return;
+  }
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   logger[logLevel](
     `${triggerType} triggered for ${className} for user ${userIdForLog(
@@ -388,6 +399,9 @@ function logTriggerAfterHook(triggerType, className, input, auth, logLevel) {
 }
 
 function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth, logLevel) {
+  if (logLevel === 'silent') {
+    return;
+  }
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
   logger[logLevel](
@@ -403,6 +417,9 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
 }
 
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error, logLevel) {
+  if (logLevel === 'silent') {
+    return;
+  }
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   logger[logLevel](
     `${triggerType} failed for ${className} for user ${userIdForLog(
@@ -573,6 +590,10 @@ export function maybeRunQueryTrigger(
         if (jsonQuery.hint) {
           restOptions = restOptions || {};
           restOptions.hint = jsonQuery.hint;
+        }
+        if (jsonQuery.comment) {
+          restOptions = restOptions || {};
+          restOptions.comment = jsonQuery.comment;
         }
         if (requestObject.readPreference) {
           restOptions = restOptions || {};
@@ -838,7 +859,7 @@ export function maybeRunTrigger(
   }
   return new Promise(function (resolve, reject) {
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
-    if (!trigger) return resolve();
+    if (!trigger) { return resolve(); }
     var request = getRequestObject(
       triggerType,
       auth,
@@ -1005,4 +1026,39 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
     }
   }
   return fileObject;
+}
+
+export async function maybeRunGlobalConfigTrigger(triggerType, auth, configObject, originalConfigObject, config, context) {
+  const GlobalConfigClassName = getClassName(Parse.Config);
+  const configTrigger = getTrigger(GlobalConfigClassName, triggerType, config.applicationId);
+  if (typeof configTrigger === 'function') {
+    try {
+      const request = getRequestObject(triggerType, auth, configObject, originalConfigObject, config, context);
+      await maybeRunValidator(request, `${triggerType}.${GlobalConfigClassName}`, auth);
+      if (request.skipWithMasterKey) {
+        return configObject;
+      }
+      const result = await configTrigger(request);
+      logTriggerSuccessBeforeHook(
+        triggerType,
+        'Parse.Config',
+        configObject,
+        result,
+        auth,
+        config.logLevels.triggerBeforeSuccess
+      );
+      return result || configObject;
+    } catch (error) {
+      logTriggerErrorBeforeHook(
+        triggerType,
+        'Parse.Config',
+        configObject,
+        auth,
+        error,
+        config.logLevels.triggerBeforeError
+      );
+      throw error;
+    }
+  }
+  return configObject;
 }

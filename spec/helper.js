@@ -14,6 +14,7 @@ if (dns.setDefaultResultOrder) {
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
 jasmine.getEnv().addReporter(new SpecReporter());
+global.retryFlakyTests();
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -35,6 +36,7 @@ process.noDeprecation = true;
 const cache = require('../lib/cache').default;
 const defaults = require('../lib/defaults').default;
 const ParseServer = require('../lib/index').ParseServer;
+const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
@@ -53,7 +55,10 @@ let databaseAdapter;
 let databaseURI;
 // need to bind for mocking mocha
 
-if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
+  databaseAdapter = JSON.parse(process.env.PARSE_SERVER_DATABASE_ADAPTER);
+  databaseAdapter = loadAdapter(databaseAdapter);
+} else if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseURI = process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI;
   databaseAdapter = new PostgresStorageAdapter({
     uri: databaseURI,
@@ -103,11 +108,17 @@ const defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
+  maintenanceKey: 'testing',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   directAccess: true,
   silent,
+  verbose: !silent,
   logLevel,
+  liveQuery: {
+    classNames: ['TestObject'],
+  },
+  startLiveQueryServer: true,
   fileUpload: {
     enableForPublic: true,
     enableForAnonymousUser: true,
@@ -128,7 +139,19 @@ const defaultConfiguration = {
     },
     shortLivedAuth: mockShortLivedAuth(),
   },
+  allowClientClassCreation: true,
+  encodeParseObjectInCloudFunction: true,
 };
+
+if (silent) {
+  defaultConfiguration.logLevels = {
+    cloudFunctionSuccess: 'silent',
+    cloudFunctionError: 'silent',
+    triggerAfter: 'silent',
+    triggerBeforeError: 'silent',
+    triggerBeforeSuccess: 'silent',
+  };
+}
 
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
@@ -146,15 +169,15 @@ const destroyAliveConnections = function () {
   }
 };
 // Set up a default API server for testing with default configuration.
-let server;
-
+let parseServer;
 let didChangeConfiguration = false;
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = async (changedConfiguration = {}) => {
-  if (server) {
-    await new Promise(resolve => server.close(resolve));
-    server = undefined;
+  if (parseServer) {
+    destroyAliveConnections();
+    await new Promise(resolve => parseServer.server.close(resolve));
+    parseServer = undefined;
     return reconfigureServer(changedConfiguration);
   }
   didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
@@ -163,14 +186,20 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     port,
   });
   cache.clear();
-  const parseServer = await ParseServer.startApp(newConfiguration);
-  server = parseServer.server;
+  parseServer = await ParseServer.startApp(newConfiguration);
   Parse.CoreManager.setRESTController(RESTController);
   parseServer.expressApp.use('/1', err => {
     console.error(err);
     fail('should not call next');
   });
-  server.on('connection', connection => {
+  parseServer.liveQueryServer?.server?.on('connection', connection => {
+    const key = `${connection.remoteAddress}:${connection.remotePort}`;
+    openConnections[key] = connection;
+    connection.on('close', () => {
+      delete openConnections[key];
+    });
+  });
+  parseServer.server.on('connection', connection => {
     const key = `${connection.remoteAddress}:${connection.remotePort}`;
     openConnections[key] = connection;
     connection.on('close', () => {
@@ -198,16 +227,12 @@ beforeAll(async () => {
   Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
-beforeEach(() => {
-  jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
-});
-
 afterEach(function (done) {
   const afterLogOut = async () => {
-    if (Object.keys(openConnections).length > 0) {
-      console.warn('There were open connections to the server left after the test finished');
+    // Jasmine process uses one connection
+    if (Object.keys(openConnections).length > 1) {
+      console.warn(`There were ${Object.keys(openConnections).length} open connections to the server left after the test finished`);
     }
-    destroyAliveConnections();
     await TestUtils.destroyAllDataPermanently(true);
     SchemaCache.clear();
     if (didChangeConfiguration) {
@@ -260,6 +285,10 @@ afterEach(function (done) {
       });
     })
     .then(afterLogOut);
+});
+
+afterAll(() => {
+  global.displayTestStats();
 });
 
 const TestObject = Parse.Object.extend({
@@ -427,6 +456,31 @@ global.it_exclude_dbs = excluded => {
   }
 };
 
+let testExclusionList = [];
+try {
+  // Fetch test exclusion list
+  testExclusionList = require('./testExclusionList.json');
+  console.log(`Using test exclusion list with ${testExclusionList.length} entries`);
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') {
+    throw error;
+  }
+}
+
+/**
+ * Assign ID to test and run it. Disable test if its UUID is found in testExclusionList.
+ * @param {String} id The UUID of the test.
+ */
+global.it_id = id => {
+  return testFunc => {
+    if (testExclusionList.includes(id)) {
+      return xit;
+    } else {
+      return testFunc;
+    }
+  };
+};
+
 global.it_only_db = db => {
   if (
     process.env.PARSE_SERVER_TEST_DB === db ||
@@ -439,6 +493,9 @@ global.it_only_db = db => {
 };
 
 global.it_only_mongodb_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.env.MONGODB_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
@@ -448,6 +505,9 @@ global.it_only_mongodb_version = version => {
 };
 
 global.it_only_postgres_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.env.POSTGRES_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
@@ -457,6 +517,9 @@ global.it_only_postgres_version = version => {
 };
 
 global.it_only_node_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.version;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
@@ -466,7 +529,22 @@ global.it_only_node_version = version => {
 };
 
 global.fit_only_mongodb_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_postgres_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
+  const envVersion = process.env.POSTGRES_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return fit;
   } else {
@@ -475,53 +553,11 @@ global.fit_only_mongodb_version = version => {
 };
 
 global.fit_only_node_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.version;
   if (!envVersion || semver.satisfies(envVersion, version)) {
-    return fit;
-  } else {
-    return xit;
-  }
-};
-
-global.it_exclude_mongodb_version = version => {
-  const envVersion = process.env.MONGODB_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return it;
-  } else {
-    return xit;
-  }
-};
-
-global.it_exclude_postgres_version = version => {
-  const envVersion = process.env.POSTGRES_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return it;
-  } else {
-    return xit;
-  }
-};
-
-global.it_exclude_node_version = version => {
-  const envVersion = process.env.NODE_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return it;
-  } else {
-    return xit;
-  }
-};
-
-global.fit_exclude_mongodb_version = version => {
-  const envVersion = process.env.MONGODB_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return fit;
-  } else {
-    return xit;
-  }
-};
-
-global.fit_exclude_node_version = version => {
-  const envVersion = process.env.NODE_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
     return fit;
   } else {
     return xit;
@@ -541,6 +577,16 @@ global.describe_only_db = db => {
     return describe;
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
     return describe;
+  } else {
+    return xdescribe;
+  }
+};
+
+global.fdescribe_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return fdescribe;
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return fdescribe;
   } else {
     return xdescribe;
   }
@@ -571,4 +617,4 @@ jasmine.restoreLibrary = function (library, name) {
   require(library)[name] = libraryCache[library][name];
 };
 
-jasmine.timeout = t => new Promise(resolve => setTimeout(resolve, t));
+jasmine.timeout = (t = 100) => new Promise(resolve => setTimeout(resolve, t));

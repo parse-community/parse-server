@@ -76,12 +76,13 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
           let { fields } = deepcopy(args);
-          if (!fields) fields = {};
+          if (!fields) { fields = {}; }
           const { config, auth, info } = context;
 
           const parseFields = await transformTypes('create', fields, {
             className,
             parseGraphQLSchema,
+            originalFields: args.fields,
             req: { config, auth, info },
           });
 
@@ -178,7 +179,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
       mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
           let { id, fields } = deepcopy(args);
-          if (!fields) fields = {};
+          if (!fields) { fields = {}; }
           const { config, auth, info } = context;
 
           const globalIdObject = fromGlobalId(id);
@@ -190,6 +191,7 @@ const load = function (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseG
           const parseFields = await transformTypes('update', fields, {
             className,
             parseGraphQLSchema,
+            originalFields: args.fields,
             req: { config, auth, info },
           });
 

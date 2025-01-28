@@ -717,7 +717,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('localizes end-to-end for verify email: success', async () => {
+      it_id('2845c2ea-23ba-45d2-a33f-63181d419bca')(it)('localizes end-to-end for verify email: success', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -728,6 +728,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -745,7 +746,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
+      it_id('f2272b94-b4ac-474f-8e47-1ca74de136f5')(it)('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -756,6 +757,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -796,7 +798,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
+      it_id('1d46d36a-e455-4ae7-8717-e0d286e95f02')(it)('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -807,6 +809,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
@@ -822,6 +825,8 @@ describe('Pages Router', () => {
         const appId = linkResponse.headers['x-parse-page-param-appid'];
         const locale = linkResponse.headers['x-parse-page-param-locale'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        await jasmine.timeout();
+
         const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(locale).toBe(exampleLocale);
@@ -1150,7 +1155,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it('email verification works with custom endpoint', async () => {
+      it_id('81c1c28e-5dfd-4ffb-a09b-283156c08483')(it)('email verification works with custom endpoint', async () => {
         config.pages.pagesEndpoint = 'customEndpoint';
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
@@ -1162,6 +1167,7 @@ describe('Pages Router', () => {
         user.setPassword('examplePassword');
         user.set('email', 'mail@example.com');
         await user.signUp();
+        await jasmine.timeout();
 
         const link = sendVerificationEmail.calls.all()[0].args[0].link;
         const linkResponse = await request({
@@ -1169,7 +1175,6 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(linkResponse.status).toBe(200);
-
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(new RegExp(`\/${pages.emailVerificationSuccess.defaultFile}`));
       });
