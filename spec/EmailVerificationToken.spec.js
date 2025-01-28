@@ -350,7 +350,7 @@ describe('Email Verification Token Expiration: ', () => {
     );
   });
 
-  it('can conditionally send emails', async () => {
+  it_id('9365c53c-b8b4-41f7-a3c1-77882f76a89c')(it)('can conditionally send emails', async () => {
     let sendEmailOptions;
     const emailAdapter = {
       sendVerificationEmail: options => {

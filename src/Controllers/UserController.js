@@ -82,7 +82,15 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const maintenanceAuth = Auth.maintenance(this.config);
-    const result = await new RestQuery(this.config, maintenanceAuth, '_User', query).execute();
+    const restQuery = await RestQuery({
+      method: RestQuery.Method.get,
+      config: this.config,
+      auth: maintenanceAuth,
+      className: '_User',
+      restWhere: query,
+    });
+
+    const result = await restQuery.execute();
     if (result.results.length) {
       query.objectId = result.results[0].objectId;
     }
@@ -125,7 +133,7 @@ export class UserController extends AdaptableController {
     }
     if (user._email_verify_token) {
       where._email_verify_token = user._email_verify_token;
-      where._email_verify_token_expires_at = { $lt: Parse._encode(new Date()) };
+      where._email_verify_token_expires_at = { $gt: Parse._encode(new Date()) };
     }
 
     var query = await RestQuery({
