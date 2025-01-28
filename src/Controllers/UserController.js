@@ -133,7 +133,6 @@ export class UserController extends AdaptableController {
     }
     if (user._email_verify_token) {
       where._email_verify_token = user._email_verify_token;
-      where._email_verify_token_expires_at = { $gt: Parse._encode(new Date()) };
     }
 
     var query = await RestQuery({
