@@ -40,7 +40,7 @@ describe('Email Verification Token Expiration: ', () => {
           }).then(response => {
             expect(response.status).toEqual(302);
             expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test'
+              `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${sendEmailOptions.link.split('token=')[1]}`
             );
             done();
           });
@@ -673,7 +673,7 @@ describe('Email Verification Token Expiration: ', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test'
+            `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${sendEmailOptions.link.split('token=')[1]}`
           );
           done();
         });
@@ -726,7 +726,7 @@ describe('Email Verification Token Expiration: ', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test'
+            `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${sendEmailOptions.link.split('token=')[1]}`
           );
           done();
         });

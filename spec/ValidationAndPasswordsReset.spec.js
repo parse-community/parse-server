@@ -335,7 +335,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
     expect(response.status).toEqual(302);
     expect(response.text).toEqual(
-      'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user'
+      'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
     );
     user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
     expect(user.get('emailVerified')).toEqual(true);
