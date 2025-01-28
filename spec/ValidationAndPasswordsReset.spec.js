@@ -740,7 +740,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       }).then(response => {
         expect(response.status).toEqual(302);
         expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test'
+          'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=asdfasdf'
         );
         done();
       });
@@ -785,7 +785,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test'
+            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=invalid'
           );
           user.fetch().then(() => {
             expect(user.get('emailVerified')).toEqual(false);
