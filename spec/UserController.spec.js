@@ -17,13 +17,12 @@ describe('UserController', () => {
         });
 
         let emailOptions;
-        emailAdapter.sendVerificationEmail = options => {
-          expect(options.link).toEqual(
-            'http://www.example.com/apps/test/verify_email?token=testToken'
-          );
-          emailAdapter.sendVerificationEmail = () => Promise.resolve();
-          done();
-        };
+        const promise = new Promise((resolve) => {
+          emailAdapter.sendVerificationEmail = options => {
+            emailOptions = options;
+            resolve();
+          };
+        });
 
         const username = 'verificationUser';
         const user = new Parse.User();
@@ -38,6 +37,8 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
+
+        await promise;
         expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}&username=${username}`);
       });
     });
@@ -55,13 +56,12 @@ describe('UserController', () => {
         });
 
         let emailOptions;
-        emailAdapter.sendVerificationEmail = options => {
-          expect(options.link).toEqual(
-            'http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=testToken'
-          );
-          emailAdapter.sendVerificationEmail = () => Promise.resolve();
-          done();
-        };
+        const promise = new Promise((resolve) => {
+          emailAdapter.sendVerificationEmail = options => {
+            emailOptions = options;
+            resolve();
+          };
+        });
 
         const username = 'verificationUser';
         const user = new Parse.User();
@@ -76,6 +76,8 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
+
+        await promise;
         expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}&username=${username}`);
       });
     });
