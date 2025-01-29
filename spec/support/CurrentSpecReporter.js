@@ -108,7 +108,7 @@ global.retryFlakyTests = function() {
         }
         if (isFlaky) {
           retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1;
-          await new Promise(resolve => global.afterEachFn(resolve));
+          await global.afterEachFn();
         }
       }
       if (exceptionCaught) {
