@@ -136,6 +136,7 @@ const getAuthForSessionToken = async function ({
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
+      renewSessionIfNeeded({ config, sessionToken });
       return Promise.resolve(
         new Auth({
           config,
