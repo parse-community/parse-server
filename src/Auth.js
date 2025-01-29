@@ -91,13 +91,23 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   }
   throttle.set(sessionToken, true);
   try {
-    const lastUpdated = new Date(session?.updatedAt);
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (lastUpdated > yesterday || !session) {
-      return;
+    if (!session) {
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
+        config,
+        auth: master(config),
+        runBeforeFind: false,
+        className: '_Session',
+        restWhere: { sessionToken },
+        restOptions: { limit: 1 },
+      });
+      const { results } = await query.execute();
+      session = results[0];
     }
 
+    if (!shouldUpdateSessionExpiry(config, session) || !session) {
+      return;
+    }
     const expiresAt = config.generateSessionExpiresAt();
     await new RestWrite(
       config,
