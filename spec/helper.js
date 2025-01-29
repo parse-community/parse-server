@@ -255,7 +255,7 @@ global.afterEachFn = async () => {
       });
     });
 
-    await Parse.User.logOut();
+    await Parse.User.logOut().catch(() => {});
 
     // Connection close events are not immediate on node 10+, so wait a bit
     await new Promise(resolve => setTimeout(resolve, 0));
@@ -276,10 +276,10 @@ global.afterEachFn = async () => {
       await databaseAdapter.performInitialization({ VolatileClassesSchemas });
     }
   } catch (error) {
-    // Swallow errors
+    console.error('An error occured in the afterEach function', error);
   }
 }
-afterEach(afterEachFn);
+afterEach(global.afterEachFn);
 
 afterAll(() => {
   global.displayTestStats();
