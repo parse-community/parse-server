@@ -602,8 +602,14 @@ export interface DatabaseOptions {
   maxTimeMS: ?number;
   /* The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.*/
   maxStalenessSeconds: ?number;
+  /* The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver. */
+  minPoolSize: ?number;
   /* The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver. */
   maxPoolSize: ?number;
+  /* The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout. */
+  connectTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout. */
+  socketTimeoutMS: ?number;
 }
 
 export interface AuthAdapter {
