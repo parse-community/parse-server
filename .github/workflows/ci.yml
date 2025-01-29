@@ -145,6 +145,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: npm ci
+      - name: Build types
+        run: npm run build:types
       - name: Check types
         run: npm run test:types
   check-mongo:
