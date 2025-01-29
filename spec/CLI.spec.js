@@ -1,5 +1,5 @@
 'use strict';
-const commander = require('../lib/cli/utils/commander').default;
+let commander;
 const definitions = require('../lib/cli/definitions/parse-server').default;
 const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
 const path = require('path');
@@ -28,6 +28,12 @@ const testDefinitions = {
 };
 
 describe('commander additions', () => {
+  beforeEach(() => {
+    const command = require('../lib/cli/utils/commander').default;
+    commander = new command.constructor();
+    commander.storeOptionsAsProperties();
+    commander.allowExcessArguments();
+  });
   afterEach(done => {
     commander.options = [];
     delete commander.arg0;
