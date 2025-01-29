@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.0.0-alpha.6",
+  "version": "8.0.0-alpha.7",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -28,7 +28,7 @@
     "@parse/push-adapter": "6.8.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.3",
-    "commander": "12.1.0",
+    "commander": "13.0.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.21.2",
@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
-    "@apollo/client": "3.12.7",
+    "@apollo/client": "3.12.8",
     "@babel/cli": "7.26.4",
     "@babel/core": "7.26.7",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
