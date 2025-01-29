@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
+import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
 
 // An Auth object tells you who is requesting something and whether
