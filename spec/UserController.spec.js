@@ -35,7 +35,7 @@ describe('UserController', () => {
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
 
-        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}}`);
+        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}`);
       });
     });
 
