@@ -17,12 +17,9 @@ describe('UserController', () => {
         });
 
         let emailOptions;
-        const promise = new Promise((resolve) => {
-          emailAdapter.sendVerificationEmail = options => {
-            emailOptions = options;
-            resolve();
-          };
-        });
+        emailAdapter.sendVerificationEmail = options => {
+          emailOptions = options;
+        };
 
         const username = 'verificationUser';
         const user = new Parse.User();
@@ -38,8 +35,7 @@ describe('UserController', () => {
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
 
-        await promise;
-        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}&username=${username}`);
+        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}}`);
       });
     });
 
@@ -56,12 +52,9 @@ describe('UserController', () => {
         });
 
         let emailOptions;
-        const promise = new Promise((resolve) => {
-          emailAdapter.sendVerificationEmail = options => {
-            emailOptions = options;
-            resolve();
-          };
-        });
+        emailAdapter.sendVerificationEmail = options => {
+          emailOptions = options;
+        };
 
         const username = 'verificationUser';
         const user = new Parse.User();
@@ -77,8 +70,7 @@ describe('UserController', () => {
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
 
-        await promise;
-        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}&username=${username}`);
+        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}`);
       });
     });
   });
