@@ -84,6 +84,8 @@ describe('Config Keys', () => {
         minPoolSize: 5,
         connectTimeoutMS: 5000,
         socketTimeoutMS: 5000,
+        autoSelectFamily: true,
+        autoSelectFamilyAttemptTimeout: 3000
       },
     })).toBeResolved();
     expect(loggerErrorSpy.calls.all().reduce((s, call) => s += call.args[0], '')).not.toMatch(invalidKeyErrorMessage);

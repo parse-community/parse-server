@@ -1043,6 +1043,18 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  autoSelectFamily: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY',
+    help:
+      'The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.',
+    action: parsers.booleanParser,
+  },
+  autoSelectFamilyAttemptTimeout: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT',
+    help:
+      'The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.',
+    action: parsers.numberParser('autoSelectFamilyAttemptTimeout'),
+  },
   connectTimeoutMS: {
     env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
     help:

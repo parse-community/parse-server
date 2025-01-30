@@ -1,3 +1,10 @@
+# [8.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.7...8.0.0-alpha.8) (2025-01-30)
+
+
+### Features
+
+* Add support for MongoDB `databaseOptions` keys `autoSelectFamily`, `autoSelectFamilyAttemptTimeout` ([#9579](https://github.com/parse-community/parse-server/issues/9579)) ([5966068](https://github.com/parse-community/parse-server/commit/5966068e963e7a79eac8fba8720ee7d83578f207))
+
 # [8.0.0-alpha.7](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.6...8.0.0-alpha.7) (2025-01-28)
 
 
