@@ -139,7 +139,7 @@ jobs:
         with:
           version: 2
   check-types:
-    name: Check types
+    name: Check Types
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
