@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.0.0-alpha.7",
+  "version": "8.0.0-alpha.8",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -95,7 +95,7 @@
     "jasmine-spec-reporter": "7.0.0",
     "jsdoc": "4.0.4",
     "jsdoc-babel": "0.5.0",
-    "lint-staged": "15.4.1",
+    "lint-staged": "15.4.3",
     "m": "1.9.0",
     "madge": "8.0.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
