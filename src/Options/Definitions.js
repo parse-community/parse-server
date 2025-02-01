@@ -369,6 +369,12 @@ module.exports.ParseServerOptions = {
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
+  masterKeyTtl: {
+    env: 'PARSE_SERVER_MASTER_KEY_TTL',
+    help:
+      'MasterKeyTtl is the duration in seconds for which the master key is refreshed. Only valid if the masterKey is a function.',
+    action: parsers.numberParser('masterKeyTtl'),
+  },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
     help: 'Max value for limit option on queries, defaults to unlimited',

@@ -162,7 +162,7 @@ class ParseServer {
       }
       const pushController = await controllers.getPushController(this.config);
       await hooksController.load();
-      const startupPromises = [];
+      const startupPromises = [this.config.loadMasterKey?.()];
       if (schema) {
         startupPromises.push(new DefinedSchemas(schema, this.config).execute());
       }

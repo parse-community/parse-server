@@ -69,7 +69,7 @@ export const checkIp = (ip, ipRangeList, store) => {
 // Adds info to the request:
 // req.config - the Config for this app
 // req.auth - the Auth for this request
-export function handleParseHeaders(req, res, next) {
+export async function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
 
   let context = {};
@@ -238,7 +238,8 @@ export function handleParseHeaders(req, res, next) {
     );
   }
 
-  let isMaster = info.masterKey === req.config.masterKey;
+  const masterKey = await req.config.loadMasterKey();
+  let isMaster = info.masterKey === masterKey;
 
   if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
     const log = req.config?.loggerController || defaultLogger;
