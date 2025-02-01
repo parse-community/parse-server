@@ -729,7 +729,7 @@ export class Config {
       const ttlIsEmpty = !this.masterKeyTtl;
       const isExpired = this.masterKeyCache?.expiresAt && this.masterKeyCache.expiresAt < new Date();
 
-      if ((!isExpired || ttlIsEmpty) && this.masterKeyCache?.masterKey) { 
+      if ((!isExpired || ttlIsEmpty) && this.masterKeyCache?.masterKey) {
         return this.masterKeyCache.masterKey;
       }
 
@@ -744,7 +744,7 @@ export class Config {
 
     return this.masterKey;
   }
-  
+
 
   // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
   // the (default) endpoint has to be defined in PagesRouter only.
