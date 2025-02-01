@@ -637,7 +637,7 @@ describe('server', () => {
     expect(config.masterKeyCache.expiresAt).toBeNull(); // TTL is not set, so expiresAt should remain null
   });
 
-  fit('should reload masterKey if ttl is set and expired', async () => {
+  it('should reload masterKey if ttl is set and expired', async () => {
     const masterKeySpy = jasmine.createSpy()
       .and.returnValues(Promise.resolve('firstMasterKey'), Promise.resolve('secondMasterKey'));
 
