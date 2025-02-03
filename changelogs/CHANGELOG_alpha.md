@@ -1,3 +1,17 @@
+# [8.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.9...8.0.0-alpha.10) (2025-02-01)
+
+
+### Bug Fixes
+
+* Security upgrade node from 20.17.0-alpine3.20 to 20.18.2-alpine3.20 ([#9583](https://github.com/parse-community/parse-server/issues/9583)) ([8f85ae2](https://github.com/parse-community/parse-server/commit/8f85ae205474f65414c0536754de12c87dbbf82a))
+
+# [8.0.0-alpha.9](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.8...8.0.0-alpha.9) (2025-01-30)
+
+
+### Features
+
+* Add TypeScript support ([#9550](https://github.com/parse-community/parse-server/issues/9550)) ([59e46d0](https://github.com/parse-community/parse-server/commit/59e46d0aea3e6529994d98160d993144b8075291))
+
 # [8.0.0-alpha.8](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.7...8.0.0-alpha.8) (2025-01-30)
 
 
