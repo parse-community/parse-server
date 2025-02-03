@@ -47,8 +47,8 @@
     window.onload = addDataToForm;
 
     function addDataToForm() {
-      var username = getUrlParameter("username");
-      document.getElementById("usernameField").value = username;
+      const expiredToken = getUrlParameter("expiredToken");
+      document.getElementById("expiredToken").value = expiredToken;
 
       var appId = getUrlParameter("appId");
       document.getElementById("resendForm").action = '/apps/' + appId + '/resend_verification_email'
@@ -60,7 +60,7 @@
     <div class="container">
       <h1>Invalid Verification Link</h1>
         <form id="resendForm" method="POST" action="/resend_verification_email">
-          <input id="usernameField" class="form-control" name="username" type="hidden" value="">
+          <input id="expiredToken" class="form-control" name="expiredToken" type="hidden" value="">
           <button type="submit" class="btn btn-default">Resend Link</button>
         </form>
     </div> 
