@@ -28,7 +28,7 @@
     "@parse/push-adapter": "6.8.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.3",
-    "commander": "12.1.0",
+    "commander": "13.0.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
     "express": "4.21.2",
