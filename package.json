@@ -75,7 +75,7 @@
     "@babel/plugin-transform-flow-strip-types": "7.26.5",
     "@babel/preset-env": "7.26.0",
     "@babel/preset-typescript": "7.26.0",
-    "@definitelytyped/dtslint": "0.0.163",
+    "@definitelytyped/dtslint": "0.2.28",
     "@saithodev/semantic-release-backmerge": "4.0.1",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/commit-analyzer": "13.0.1",
