@@ -1,12 +1,12 @@
 {
     "plugins": [
-        "@babel/plugin-transform-flow-strip-types",
-        "@babel/plugin-proposal-object-rest-spread"
+        "@babel/plugin-transform-flow-strip-types"
     ],
     "presets": [
+        "@babel/preset-typescript",
         ["@babel/preset-env", {
             "targets": {
-                "node": "14", 
+                "node": "18"
             },
             "exclude": ["proposal-dynamic-import"]
         }]

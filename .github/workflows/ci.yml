@@ -138,6 +138,17 @@ jobs:
         uses: mansona/npm-lockfile-version@v1
         with:
           version: 2
+  check-types:
+    name: Check Types
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: npm ci
+      - name: Build types
+        run: npm run build:types
+      - name: Check types
+        run: npm run test:types
   check-mongo:
     strategy:
       matrix:
