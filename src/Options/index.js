@@ -47,7 +47,7 @@ export interface ParseServerOptions {
   appId: string;
   /* Your Parse Master Key */
   masterKey: (() => void) | string;
-  /* MasterKeyTtl is the duration in seconds for which the master key is refreshed. Only valid if the masterKey is a function. */
+  /* (Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server. */
   masterKeyTtl: ?number;
   /* (Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>⚠️ This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server. */
   maintenanceKey: string;
