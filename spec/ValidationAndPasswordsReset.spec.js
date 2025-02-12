@@ -740,7 +740,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       }).then(response => {
         expect(response.status).toEqual(302);
         expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=asdfasdf'
+          'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=asdfasdf'
         );
         done();
       });
@@ -785,7 +785,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         }).then(response => {
           expect(response.status).toEqual(302);
           expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=invalid'
+            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=invalid'
           );
           user.fetch().then(() => {
             expect(user.get('emailVerified')).toEqual(false);
@@ -1198,14 +1198,14 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       },
     });
     expect(res.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/choose_password?id=test&error=The%20password%20reset%20link%20has%20expired&app=emailVerifyToken&expiredToken=${token}`
+      `Found. Redirecting to http://localhost:8378/1/apps/choose_password?id=test&error=The%20password%20reset%20link%20has%20expired&app=emailVerifyToken&token=${token}`
     );
 
     await request({
       url: `http://localhost:8378/1/requestPasswordReset`,
       method: 'POST',
       body: {
-        expiredToken: token,
+        token: token,
       },
       headers: {
         'X-Parse-Application-Id': 'test',

@@ -39,8 +39,10 @@ describe('Email Verification Token Expiration: ', () => {
             followRedirects: false,
           }).then(response => {
             expect(response.status).toEqual(302);
+            const url = new URL(sendEmailOptions.link);
+            const token = url.searchParams.get('token');
             expect(response.text).toEqual(
-              `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${sendEmailOptions.link.split('token=')[1]}`
+              `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
             );
             done();
           });
@@ -332,7 +334,7 @@ describe('Email Verification Token Expiration: ', () => {
       method: 'GET',
     });
     expect(res.text).toEqual(
-      `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${token}`
+      `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
     );
 
     const formUrl = `http://localhost:8378/1/apps/test/resend_verification_email`;
@@ -340,7 +342,7 @@ describe('Email Verification Token Expiration: ', () => {
       url: formUrl,
       method: 'POST',
       body: {
-        expiredToken: token,
+        token: token,
       },
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       followRedirects: false,
@@ -672,8 +674,10 @@ describe('Email Verification Token Expiration: ', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(302);
+          const url = new URL(sendEmailOptions.link);
+          const token = url.searchParams.get('token');
           expect(response.text).toEqual(
-            `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${sendEmailOptions.link.split('token=')[1]}`
+            `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
           );
           done();
         });
@@ -725,8 +729,10 @@ describe('Email Verification Token Expiration: ', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(302);
+          const url = new URL(sendEmailOptions.link);
+          const token = url.searchParams.get('token');
           expect(response.text).toEqual(
-            `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&expiredToken=${sendEmailOptions.link.split('token=')[1]}`
+            `Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?appId=test&token=${token}`
           );
           done();
         });

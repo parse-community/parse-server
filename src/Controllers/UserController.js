@@ -217,8 +217,8 @@ export class UserController extends AdaptableController {
     return this.config.database.update('_User', { username: user.username }, user);
   }
 
-  async resendVerificationEmail(username, req, expiredToken) {
-    const aUser = await this.getUserIfNeeded({ username, _email_verify_token: expiredToken });
+  async resendVerificationEmail(username, req, token) {
+    const aUser = await this.getUserIfNeeded({ username, _email_verify_token: token });
     if (!aUser || aUser.emailVerified) {
       throw undefined;
     }

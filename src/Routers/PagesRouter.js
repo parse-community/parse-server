@@ -45,7 +45,6 @@ const pages = Object.freeze({
 const pageParams = Object.freeze({
   appName: 'appName',
   appId: 'appId',
-  expiredToken: 'expiredToken',
   token: 'token',
   username: 'username',
   error: 'error',
@@ -109,19 +108,19 @@ export class PagesRouter extends PromiseRouter {
   resendVerificationEmail(req) {
     const config = req.config;
     const username = req.body.username;
-    const expiredToken = req.body.expiredToken;
+    const token = req.body.token;
 
     if (!config) {
       this.invalidRequest();
     }
 
-    if (!username && !expiredToken) {
+    if (!username && !token) {
       return this.goToPage(req, pages.emailVerificationLinkInvalid);
     }
 
     const userController = config.userController;
 
-    return userController.resendVerificationEmail(username, req, expiredToken).then(
+    return userController.resendVerificationEmail(username, req, token).then(
       () => {
         return this.goToPage(req, pages.emailVerificationSendSuccess);
       },
@@ -233,7 +232,7 @@ export class PagesRouter extends PromiseRouter {
 
         if (result?.err === 'The password reset link has expired') {
           delete query[pageParams.token];
-          query[pageParams.expiredToken] = token;
+          query[pageParams.token] = token;
         }
         const page = result.success ? pages.passwordResetSuccess : pages.passwordReset;
 
