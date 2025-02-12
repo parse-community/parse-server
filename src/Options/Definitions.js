@@ -372,7 +372,7 @@ module.exports.ParseServerOptions = {
   masterKeyTtl: {
     env: 'PARSE_SERVER_MASTER_KEY_TTL',
     help:
-      'MasterKeyTtl is the duration in seconds for which the master key is refreshed. Only valid if the masterKey is a function.',
+      '(Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server.',
     action: parsers.numberParser('masterKeyTtl'),
   },
   maxLimit: {
