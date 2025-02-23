@@ -10,18 +10,22 @@ const { spawn } = require('child_process');
 
 describe('Server Url Checks', () => {
   let server;
-  beforeEach(done => {
-    if (!server) {
-      const app = express();
-      app.get('/health', function (req, res) {
-        res.json({
-          status: 'ok',
+  beforeEach(async () => {
+    await new Promise(resolve => {
+      if (server) {
+        resolve();
+        return;
+      }
+      if (!server) {
+        const app = express();
+        app.get('/health', function (req, res) {
+          res.json({
+            status: 'ok',
+          });
         });
-      });
-      server = app.listen(13376, undefined, done);
-    } else {
-      done();
-    }
+        server = app.listen(13376, undefined, resolve);
+      }
+    });
   });
 
   afterAll(done => {

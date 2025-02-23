@@ -39,12 +39,14 @@ function startServer(done) {
 
 describe('httpRequest', () => {
   let server;
-  beforeEach(done => {
-    if (!server) {
-      server = startServer(done);
-    } else {
-      done();
-    }
+  beforeEach(async () => {
+    await new Promise(resolve => {
+      if (server) {
+        resolve();
+        return;
+      }
+      server = startServer(resolve);
+    });
   });
 
   afterAll(done => {

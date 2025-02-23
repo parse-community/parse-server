@@ -14,14 +14,16 @@ const hookServerURL = 'http://localhost:' + port;
 describe('Hooks', () => {
   let server;
   let app;
-  beforeEach(done => {
-    if (!app) {
+  beforeEach(async () => {
+    await new Promise(resolve => {
+      if (app) {
+        resolve();
+        return;
+      }
       app = express();
       app.use(bodyParser.json({ type: '*/*' }));
-      server = app.listen(port, undefined, done);
-    } else {
-      done();
-    }
+      server = app.listen(port, undefined, resolve);
+    });
   });
 
   afterAll(done => {
