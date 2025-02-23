@@ -309,7 +309,7 @@ describe('Cloud Code Logger', () => {
         done();
       })
       .then(null, e => done.fail(JSON.stringify(e)));
-  }).pend('needs more work.....');
+  });
 
   it_id('b86e8168-8370-4730-a4ba-24ca3016ad66')(it)('cloud function should obfuscate password', done => {
     Parse.Cloud.define('testFunction', () => {

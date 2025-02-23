@@ -3691,7 +3691,7 @@ describe('Parse.User testing', () => {
         done();
       });
     });
-  }).pend('this test fails.  See: https://github.com/parse-community/parse-server/issues/5097');
+  });
 
   it('should be able to update user with authData passed', done => {
     let objectId;
