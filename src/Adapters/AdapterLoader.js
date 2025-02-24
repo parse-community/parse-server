@@ -28,7 +28,6 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
       }
     }
   } else if (typeof adapter === 'string') {
-    /* eslint-disable */
     adapter = require(adapter);
     // If it's define as a module, get the default
     if (adapter.default) {
@@ -47,20 +46,8 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
 }
 
 export async function loadModule(modulePath) {
-  let module;
-  try {
-    module = require(modulePath);
-  } catch (err) {
-    if (err.code === 'ERR_REQUIRE_ESM') {
-      module = await import(modulePath);
-      if (module.default) {
-        module = module.default;
-      }
-    } else {
-      throw err;
-    }
-  }
-  return module;
+  const module = await import(modulePath);
+  return module?.default || module;
 }
 
 export default loadAdapter;
