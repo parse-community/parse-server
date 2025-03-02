@@ -724,6 +724,28 @@ export class Config {
     return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
   }
 
+  async loadMasterKey() {
+    if (typeof this.masterKey === 'function') {
+      const ttlIsEmpty = !this.masterKeyTtl;
+      const isExpired = this.masterKeyCache?.expiresAt && this.masterKeyCache.expiresAt < new Date();
+
+      if ((!isExpired || ttlIsEmpty) && this.masterKeyCache?.masterKey) {
+        return this.masterKeyCache.masterKey;
+      }
+
+      const masterKey = await this.masterKey();
+
+      const expiresAt = this.masterKeyTtl ? new Date(Date.now() + 1000 * this.masterKeyTtl) : null
+      this.masterKeyCache = { masterKey, expiresAt };
+      Config.put(this);
+
+      return this.masterKeyCache.masterKey;
+    }
+
+    return this.masterKey;
+  }
+
+
   // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
   // the (default) endpoint has to be defined in PagesRouter only.
   get pagesEndpoint() {
