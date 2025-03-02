@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.0.0-alpha.10",
+  "version": "8.0.0-alpha.12",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -22,7 +22,7 @@
   "dependencies": {
     "@apollo/server": "4.11.3",
     "@babel/eslint-parser": "7.26.5",
-    "@graphql-tools/merge": "9.0.17",
+    "@graphql-tools/merge": "9.0.19",
     "@graphql-tools/schema": "10.0.16",
     "@graphql-tools/utils": "10.6.3",
     "@parse/fs-files-adapter": "3.0.0",
@@ -70,7 +70,7 @@
     "@actions/core": "1.11.1",
     "@apollo/client": "3.12.8",
     "@babel/cli": "7.26.4",
-    "@babel/core": "7.26.7",
+    "@babel/core": "7.26.8",
     "@babel/plugin-proposal-object-rest-spread": "7.20.7",
     "@babel/plugin-transform-flow-strip-types": "7.26.5",
     "@babel/preset-env": "7.26.0",
@@ -87,10 +87,10 @@
     "clean-jsdoc-theme": "4.3.0",
     "cross-env": "7.0.3",
     "deep-diff": "1.0.2",
-    "eslint": "9.19.0",
+    "eslint": "9.20.0",
     "flow-bin": "0.119.1",
     "form-data": "4.0.1",
-    "globals": "15.14.0",
+    "globals": "15.15.0",
     "graphql-tag": "2.12.6",
     "husky": "9.1.7",
     "jasmine": "3.5.0",
