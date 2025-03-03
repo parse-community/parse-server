@@ -1,3 +1,15 @@
+# [8.0.0-alpha.14](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.13...8.0.0-alpha.14) (2025-03-02)
+
+
+### Features
+
+* Upgrade to Parse JS SDK 6.0.0 ([#9624](https://github.com/parse-community/parse-server/issues/9624)) ([bf9db75](https://github.com/parse-community/parse-server/commit/bf9db75e8685def1407034944725e758bc926c26))
+
+
+### BREAKING CHANGES
+
+* This upgrades to the Parse JS SDK 6.0.0. See the [change log](https://github.com/parse-community/Parse-SDK-JS/releases/tag/6.0.0) of the Parse JS SDK for breaking changes and more details. ([bf9db75](bf9db75))
+
 # [8.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.12...8.0.0-alpha.13) (2025-03-02)
 
 
