@@ -1,3 +1,29 @@
+# [8.0.0-alpha.13](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.12...8.0.0-alpha.13) (2025-03-02)
+
+
+### Bug Fixes
+
+* Remove username from email verification and password reset process ([#8488](https://github.com/parse-community/parse-server/issues/8488)) ([d21dd97](https://github.com/parse-community/parse-server/commit/d21dd973363f9c5eca86a1007cb67e445b0d2e02))
+
+
+### BREAKING CHANGES
+
+* This removes the username from the email verification and password reset process to prevent storing personally identifiable information (PII) in server and infrastructure logs. Customized HTML pages or emails related to email verification and password reset may need to be adapted accordingly. See the new templates that come bundled with Parse Server and the [migration guide](https://github.com/parse-community/parse-server/blob/alpha/8.0.0.md) for more details. ([d21dd97](d21dd97))
+
+# [8.0.0-alpha.12](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.11...8.0.0-alpha.12) (2025-02-24)
+
+
+### Bug Fixes
+
+* LiveQueryServer crashes using cacheAdapter on disconnect from Redis 4 server ([#9616](https://github.com/parse-community/parse-server/issues/9616)) ([bbc6bd4](https://github.com/parse-community/parse-server/commit/bbc6bd4b3f493170c13ad3314924cbf1f379eca4))
+
+# [8.0.0-alpha.11](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.10...8.0.0-alpha.11) (2025-02-12)
+
+
+### Features
+
+* Add dynamic master key by setting Parse Server option `masterKey` to a function ([#9582](https://github.com/parse-community/parse-server/issues/9582)) ([6f1d161](https://github.com/parse-community/parse-server/commit/6f1d161a2f263a166981f9544cf2aadce65afe23))
+
 # [8.0.0-alpha.10](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.9...8.0.0-alpha.10) (2025-02-01)
 
 

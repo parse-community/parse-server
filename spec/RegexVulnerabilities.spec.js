@@ -95,7 +95,7 @@ describe('Regex Vulnerabilities', () => {
     it('should not work with regex', async () => {
       expect(user.get('emailVerified')).toEqual(false);
       await request({
-        url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token[$regex]=`,
+        url: `${serverURL}/apps/test/verify_email?token[$regex]=`,
         method: 'GET',
       });
       await user.fetch({ useMasterKey: true });
@@ -117,7 +117,7 @@ describe('Regex Vulnerabilities', () => {
       }).then(res => res.data);
       // It should work
       await request({
-        url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token=${current._email_verify_token}`,
+        url: `${serverURL}/apps/test/verify_email?token=${current._email_verify_token}`,
         method: 'GET',
       });
       await user.fetch({ useMasterKey: true });
@@ -144,7 +144,7 @@ describe('Regex Vulnerabilities', () => {
       });
       await user.fetch({ useMasterKey: true });
       const passwordResetResponse = await request({
-        url: `${serverURL}/apps/test/request_password_reset?username=someemail@somedomain.com&token[$regex]=`,
+        url: `${serverURL}/apps/test/request_password_reset?token[$regex]=`,
         method: 'GET',
       });
       expect(passwordResetResponse.status).toEqual(302);
@@ -192,7 +192,7 @@ describe('Regex Vulnerabilities', () => {
       }).then(res => res.data);
       const token = current._perishable_token;
       const passwordResetResponse = await request({
-        url: `${serverURL}/apps/test/request_password_reset?username=someemail@somedomain.com&token=${token}`,
+        url: `${serverURL}/apps/test/request_password_reset?token=${token}`,
         method: 'GET',
       });
       expect(passwordResetResponse.status).toEqual(302);

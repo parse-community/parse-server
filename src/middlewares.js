@@ -69,7 +69,7 @@ export const checkIp = (ip, ipRangeList, store) => {
 // Adds info to the request:
 // req.config - the Config for this app
 // req.auth - the Auth for this request
-export function handleParseHeaders(req, res, next) {
+export async function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
 
   let context = {};
@@ -238,7 +238,8 @@ export function handleParseHeaders(req, res, next) {
     );
   }
 
-  let isMaster = info.masterKey === req.config.masterKey;
+  const masterKey = await req.config.loadMasterKey();
+  let isMaster = info.masterKey === masterKey;
 
   if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
     const log = req.config?.loggerController || defaultLogger;
@@ -533,9 +534,14 @@ export const addRateLimit = (route, config, cloud) => {
     store: null,
   };
   if (route.redisUrl) {
+    const log = config?.loggerController || defaultLogger;
     const client = createClient({
       url: route.redisUrl,
     });
+    client.on('error', err => { log.error('Middlewares addRateLimit Redis client error', { error: err }) });
+    client.on('connect', () => {});
+    client.on('reconnecting', () => {});
+    client.on('ready', () => {});
     redisStore.connectionPromise = async () => {
       if (client.isOpen) {
         return;
@@ -543,7 +549,6 @@ export const addRateLimit = (route, config, cloud) => {
       try {
         await client.connect();
       } catch (e) {
-        const log = config?.loggerController || defaultLogger;
         log.error(`Could not connect to redisURL in rate limit: ${e}`);
       }
     };
