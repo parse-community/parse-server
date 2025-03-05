@@ -3663,7 +3663,7 @@ describe('Parse.User testing', () => {
   });
 
   xit('should not send a verification email if the user signed up using oauth', done => {
-    // 'this test fails.  See: https://github.com/parse-community/parse-server/issues/5097'
+    pending('this test fails.  See: https://github.com/parse-community/parse-server/issues/5097');
     let emailCalledCount = 0;
     const emailAdapter = {
       sendVerificationEmail: () => {

@@ -287,6 +287,7 @@ describe('Cloud Code Logger', () => {
   });
 
   xit('should log a changed beforeSave indicating a change', done => {
+    pending('needs more work.....');
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
     Parse.Cloud.beforeSave('MyObject', req => {
