@@ -505,7 +505,7 @@ function urlFormat(obj) {
   if (typeof obj === 'string') { obj = urlParse(obj); }
   else if (typeof obj !== 'object' || obj === null)
   { throw new TypeError(
-    'Parameter "urlObj" must be an object, not ' + obj === null ? 'null' : typeof obj
+    'Parameter "urlObj" must be an object, not ' + (obj === null ? 'null' : typeof obj)
   ); }
   else if (!(obj instanceof Url)) { return Url.prototype.format.call(obj); }
 

@@ -220,6 +220,7 @@ class CiVersionCheck {
    * Runs the check.
    */
   async check() {
+    /* eslint-disable no-console */
     try {
       console.log(`\nChecking ${this.packageName} versions in CI environments...`);
 
@@ -284,6 +285,7 @@ class CiVersionCheck {
       const msg = `Failed to check ${this.packageName} versions with error: ${e}`;
       core.setFailed(msg);
     }
+    /* eslint-enable no-console */
   }
 }
 

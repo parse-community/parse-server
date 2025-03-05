@@ -263,9 +263,7 @@ If your pull request introduces a change that may affect the storage or retrieva
 * If your feature is intended to work with MongoDB and PostgreSQL, you can include or exclude tests more granularly with:
 
   - `it_only_mongodb_version('>=4.4')` // will test with any version of Postgres but only with version >=4.4 of MongoDB; accepts semver notation to specify a version range
-  - `it_exclude_mongodb_version('<4.4')` // will test with any version of Postgres and MongoDB, excluding version <4.4 of MongoDB; accepts semver notation to specify a version range
   - `it_only_postgres_version('>=13')` // will test with any version of Mongo but only with version >=13 of Postgres; accepts semver notation to specify a version range
-  - `it_exclude_postgres_version('<13')` // will test with any version of Postgres and MongoDB, excluding version <13 of Postgres; accepts semver notation to specify a version range
 
 #### Postgres with Docker
 

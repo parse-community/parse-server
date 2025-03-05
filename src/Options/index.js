@@ -46,7 +46,9 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_APPLICATION_ID */
   appId: string;
   /* Your Parse Master Key */
-  masterKey: string;
+  masterKey: (() => void) | string;
+  /* (Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server. */
+  masterKeyTtl: ?number;
   /* (Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>⚠️ This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server. */
   maintenanceKey: string;
   /* URL to your parse server with http:// or https://.
@@ -212,12 +214,12 @@ export interface ParseServerOptions {
   /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
   /* If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>ℹ️ The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.
-  :DEFAULT: false */
+  :DEFAULT: true */
   encodeParseObjectInCloudFunction: ?boolean;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
-  /* The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
+  /* The options for pages such as password reset and email verification.
   :DEFAULT: {} */
   pages: ?PagesOptions;
   /* custom pages for password validation and reset
@@ -377,7 +379,7 @@ export interface SecurityOptions {
 }
 
 export interface PagesOptions {
-  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect.
   :DEFAULT: false */
   enableRouter: ?boolean;
   /* Is true if pages should be localized; this has no effect on custom page redirects.
@@ -602,8 +604,18 @@ export interface DatabaseOptions {
   maxTimeMS: ?number;
   /* The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.*/
   maxStalenessSeconds: ?number;
+  /* The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver. */
+  minPoolSize: ?number;
   /* The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver. */
   maxPoolSize: ?number;
+  /* The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout. */
+  connectTimeoutMS: ?number;
+  /* The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout. */
+  socketTimeoutMS: ?number;
+  /* The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address. */
+  autoSelectFamily: ?boolean;
+  /* The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead. */
+  autoSelectFamilyAttemptTimeout: ?number;
 }
 
 export interface AuthAdapter {

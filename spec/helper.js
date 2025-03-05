@@ -493,6 +493,9 @@ global.it_only_db = db => {
 };
 
 global.it_only_mongodb_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.env.MONGODB_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
@@ -502,6 +505,9 @@ global.it_only_mongodb_version = version => {
 };
 
 global.it_only_postgres_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.env.POSTGRES_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
@@ -511,6 +517,9 @@ global.it_only_postgres_version = version => {
 };
 
 global.it_only_node_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.version;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return it;
@@ -520,7 +529,22 @@ global.it_only_node_version = version => {
 };
 
 global.fit_only_mongodb_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_postgres_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
+  const envVersion = process.env.POSTGRES_VERSION;
   if (!envVersion || semver.satisfies(envVersion, version)) {
     return fit;
   } else {
@@ -529,53 +553,11 @@ global.fit_only_mongodb_version = version => {
 };
 
 global.fit_only_node_version = version => {
+  if (!semver.validRange(version)) {
+    throw new Error('Invalid version range');
+  }
   const envVersion = process.version;
   if (!envVersion || semver.satisfies(envVersion, version)) {
-    return fit;
-  } else {
-    return xit;
-  }
-};
-
-global.it_exclude_mongodb_version = version => {
-  const envVersion = process.env.MONGODB_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return it;
-  } else {
-    return xit;
-  }
-};
-
-global.it_exclude_postgres_version = version => {
-  const envVersion = process.env.POSTGRES_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return it;
-  } else {
-    return xit;
-  }
-};
-
-global.it_exclude_node_version = version => {
-  const envVersion = process.env.NODE_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return it;
-  } else {
-    return xit;
-  }
-};
-
-global.fit_exclude_mongodb_version = version => {
-  const envVersion = process.env.MONGODB_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
-    return fit;
-  } else {
-    return xit;
-  }
-};
-
-global.fit_exclude_node_version = version => {
-  const envVersion = process.env.NODE_VERSION;
-  if (!envVersion || !semver.satisfies(envVersion, version)) {
     return fit;
   } else {
     return xit;
