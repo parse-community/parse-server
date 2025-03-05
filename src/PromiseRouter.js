@@ -9,7 +9,7 @@ import Parse from 'parse/node';
 import express from 'express';
 import log from './logger';
 import { inspect } from 'util';
-const Layer = require('express/lib/router/layer');
+const Layer = require('router/lib/layer');
 
 function validateParameter(key, value) {
   if (key == 'className') {

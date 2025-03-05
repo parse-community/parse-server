@@ -64,7 +64,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 // Returns a promise for a {response} object.
 // TODO: pass along auth correctly
 function handleBatch(router, req) {
-  if (!Array.isArray(req.body.requests)) {
+  if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
 
@@ -85,12 +85,12 @@ function handleBatch(router, req) {
 
   const batch = transactionRetries => {
     let initialPromise = Promise.resolve();
-    if (req.body.transaction === true) {
+    if (req.body?.transaction === true) {
       initialPromise = req.config.database.createTransactionalSession();
     }
 
     return initialPromise.then(() => {
-      const promises = req.body.requests.map(restRequest => {
+      const promises = req.body?.requests.map(restRequest => {
         const routablePath = makeRoutablePath(restRequest.path);
 
         // Construct a request that we can send to a handler
@@ -113,7 +113,7 @@ function handleBatch(router, req) {
 
       return Promise.all(promises)
         .then(results => {
-          if (req.body.transaction === true) {
+          if (req.body?.transaction === true) {
             if (results.find(result => typeof result.error === 'object')) {
               return req.config.database.abortTransactionalSession().then(() => {
                 return Promise.reject({ response: results });
