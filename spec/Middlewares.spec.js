@@ -46,32 +46,32 @@ describe('middlewares', () => {
     });
   });
 
-  it('should give invalid response when keys are configured but no key supplied', () => {
+  it('should give invalid response when keys are configured but no key supplied', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       restAPIKey: 'restAPIKey',
     });
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    await middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should give invalid response when keys are configured but supplied key is incorrect', () => {
+  it('should give invalid response when keys are configured but supplied key is incorrect', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       restAPIKey: 'restAPIKey',
     });
     fakeReq.headers['x-parse-rest-api-key'] = 'wrongKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    await middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should give invalid response when keys are configured but different key is supplied', () => {
+  it('should give invalid response when keys are configured but different key is supplied', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       restAPIKey: 'restAPIKey',
     });
     fakeReq.headers['x-parse-client-key'] = 'clientKey';
-    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    await middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
@@ -157,13 +157,7 @@ describe('middlewares', () => {
     fakeReq.ip = '127.0.0.1';
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
 
-    let error;
-
-    try {
-      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    } catch (err) {
-      error = err;
-    }
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
 
     expect(error).toBeDefined();
     expect(error.message).toEqual(`unauthorized`);
@@ -182,13 +176,7 @@ describe('middlewares', () => {
     fakeReq.ip = '10.0.0.2';
     fakeReq.headers['x-parse-maintenance-key'] = 'masterKey';
 
-    let error;
-
-    try {
-      await new Promise(resolve => middlewares.handleParseHeaders(fakeReq, fakeRes, resolve));
-    } catch (err) {
-      error = err;
-    }
+    const error = await middlewares.handleParseHeaders(fakeReq, fakeRes, () => {}).catch(e => e);
 
     expect(error).toBeDefined();
     expect(error.message).toEqual(`unauthorized`);

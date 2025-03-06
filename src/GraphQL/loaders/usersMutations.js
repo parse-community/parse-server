@@ -302,11 +302,8 @@ const load = parseGraphQLSchema => {
         type: new GraphQLNonNull(GraphQLBoolean),
       },
     },
-    mutateAndGetPayload: async ({ username, password, token }, context) => {
+    mutateAndGetPayload: async ({ password, token }, context) => {
       const { config } = context;
-      if (!username) {
-        throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'you must provide a username');
-      }
       if (!password) {
         throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'you must provide a password');
       }
@@ -315,7 +312,7 @@ const load = parseGraphQLSchema => {
       }
 
       const userController = config.userController;
-      await userController.updatePassword(username, token, password);
+      await userController.updatePassword(token, password);
       return { ok: true };
     },
   });
