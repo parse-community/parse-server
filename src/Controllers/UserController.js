@@ -6,7 +6,6 @@ import rest from '../rest';
 import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
-import Utils from '../Utils';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
