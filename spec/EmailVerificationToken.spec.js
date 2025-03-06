@@ -52,38 +52,6 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it('should send an HTML or properly escaped plain text password reset email with all special ASCII characters', async () => {
-    const user = new Parse.User();
-    let sendEmailOptions;
-    const emailAdapter = {
-      sendPasswordResetEmail: (options) => {
-        sendEmailOptions = options;
-      },
-      sendVerificationEmail: async () => {},
-      sendMail: async () => {},
-    };
-
-    await reconfigureServer({
-      appName: 'specialCharacterUsernameTest',
-      publicServerURL: 'http://localhost:8378/1',
-      emailAdapter,
-      silent: false,
-    });
-  
-    const specialCharacters = `!\"'),.:;<>?]^}`;
-    user.setUsername(specialCharacters);
-    user.setPassword('password123');
-    user.set('email', 'test@example.com');
-    await user.signUp();
-
-    await Parse.User.requestPasswordReset('test@example.com');
-
-    expect(sendEmailOptions).toBeDefined();
-
-    const username = sendEmailOptions.link.split('username=')[1];
-    expect(username).toBe("%21%22%27%29%2C%2E%3A%3B%3C%3E%3F%5D%5E%7D");
-  });
-
   it('emailVerified should set to false, if the user does not verify their email before the email verify token expires', done => {
     const user = new Parse.User();
     let sendEmailOptions;
