@@ -1,7 +1,6 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
 var batch = require('./batch'),
-  bodyParser = require('body-parser'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
@@ -253,6 +252,7 @@ class ParseServer {
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
+    api.use(middlewares.allowDoubleForwardSlash);
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
@@ -273,15 +273,16 @@ class ParseServer {
 
     api.use(
       '/',
-      bodyParser.urlencoded({ extended: false }),
+      express.urlencoded({ extended: false }),
       pages.enableRouter
         ? new PagesRouter(pages).expressRouter()
         : new PublicAPIRouter().expressRouter()
     );
 
-    api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
+    api.use(express.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
+    api.set('query parser', 'extended');
     const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const route of routes) {
       middlewares.addRateLimit(route, options);

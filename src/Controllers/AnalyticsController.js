@@ -5,7 +5,7 @@ export class AnalyticsController extends AdaptableController {
   appOpened(req) {
     return Promise.resolve()
       .then(() => {
-        return this.adapter.appOpened(req.body, req);
+        return this.adapter.appOpened(req.body || {}, req);
       })
       .then(response => {
         return { response: response || {} };
@@ -18,7 +18,7 @@ export class AnalyticsController extends AdaptableController {
   trackEvent(req) {
     return Promise.resolve()
       .then(() => {
-        return this.adapter.trackEvent(req.params.eventName, req.body, req);
+        return this.adapter.trackEvent(req.params.eventName, req.body || {}, req);
       })
       .then(response => {
         return { response: response || {} };

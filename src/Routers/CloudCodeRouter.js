@@ -77,7 +77,7 @@ export class CloudCodeRouter extends PromiseRouter {
   }
 
   static createJob(req) {
-    const { job_schedule } = req.body;
+    const { job_schedule } = req.body || {};
     validateJobSchedule(req.config, job_schedule);
     return rest.create(
       req.config,
@@ -91,7 +91,7 @@ export class CloudCodeRouter extends PromiseRouter {
 
   static editJob(req) {
     const { objectId } = req.params;
-    const { job_schedule } = req.body;
+    const { job_schedule } = req.body || {};
     validateJobSchedule(req.config, job_schedule);
     return rest
       .update(

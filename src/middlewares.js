@@ -196,7 +196,7 @@ export async function handleParseHeaders(req, res, next) {
     info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
-  if (fileViaJSON) {
+  if (fileViaJSON && req.body) {
     req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
@@ -450,7 +450,7 @@ export function allowCrossDomain(appId) {
 }
 
 export function allowMethodOverride(req, res, next) {
-  if (req.method === 'POST' && req.body._method) {
+  if (req.method === 'POST' && req.body?._method) {
     req.originalMethod = req.method;
     req.method = req.body._method;
     delete req.body._method;
@@ -684,4 +684,17 @@ function invalidRequest(req, res) {
 function malformedContext(req, res) {
   res.status(400);
   res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
+}
+
+/**
+ * Express 4 allowed a double forward slash between a route and router. Although
+ * this should be considered an anti-pattern, we need to support it for backwards
+ * compatibility.
+ *
+ * Technically valid URL with double foroward slash:
+ * http://localhost:1337/parse//functions/testFunction
+ */
+export function allowDoubleForwardSlash(req, res, next) {
+  req.url = req.url.startsWith('//') ? req.url.substring(1) : req.url;
+  next();
 }
