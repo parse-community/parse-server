@@ -106,6 +106,8 @@ describe('Auth', () => {
         updatedAt: updatedAt.toISOString(),
       }
     );
+    Parse.Server.cacheController.clear();
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await session.fetch();
     await new Promise(resolve => setTimeout(resolve, 1000));
     await session.fetch();

@@ -15,19 +15,6 @@ Details:
 - Purpose: official release
 - Suitable environment: production
 
-## ⚠️ [Beta Releases][log_beta]
-
-> ### “Please try out, we’d love your feedback!”
-
-These are releases that are pretty stable, but may have still some bugs to be fixed before official release.
-
-Details:
-- Stability: *pretty stable*
-- NPM channel: `@beta`
-- Branch: [beta][branch_beta]
-- Purpose: feature maturation
-- Suitable environment: development
-
 ## 🔥 [Alpha Releases][log_alpha]
 
 > ### “If you are curious to see what's next!”

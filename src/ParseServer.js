@@ -1,7 +1,6 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
 var batch = require('./batch'),
-  bodyParser = require('body-parser'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
@@ -162,7 +161,7 @@ class ParseServer {
       }
       const pushController = await controllers.getPushController(this.config);
       await hooksController.load();
-      const startupPromises = [];
+      const startupPromises = [this.config.loadMasterKey?.()];
       if (schema) {
         startupPromises.push(new DefinedSchemas(schema, this.config).execute());
       }
@@ -201,6 +200,7 @@ class ParseServer {
       Config.put(this.config);
       return this;
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
       this.config.state = 'error';
       throw error;
@@ -252,6 +252,7 @@ class ParseServer {
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
+    api.use(middlewares.allowDoubleForwardSlash);
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
@@ -272,15 +273,16 @@ class ParseServer {
 
     api.use(
       '/',
-      bodyParser.urlencoded({ extended: false }),
+      express.urlencoded({ extended: false }),
       pages.enableRouter
         ? new PagesRouter(pages).expressRouter()
         : new PublicAPIRouter().expressRouter()
     );
 
-    api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
+    api.use(express.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
+    api.set('query parser', 'extended');
     const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const route of routes) {
       middlewares.addRateLimit(route, options);
@@ -370,6 +372,7 @@ class ParseServer {
     try {
       await this.start();
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error('Error on ParseServer.startApp: ', e);
       throw e;
     }
@@ -482,6 +485,7 @@ class ParseServer {
       };
       const url = `${Parse.serverURL.replace(/\/$/, '')}/health`;
       if (!isValidHttpUrl(url)) {
+        // eslint-disable-next-line no-console
         console.warn(
           `\nWARNING, Unable to connect to '${Parse.serverURL}' as the URL is invalid.` +
             ` Cloud code and push notifications may be unavailable!\n`
@@ -543,6 +547,7 @@ function injectDefaults(options: ParseServerOptions) {
   if (options.appId) {
     const regex = /[!#$%'()*+&/:;=?@[\]{}^,|<>]/g;
     if (options.appId.match(regex)) {
+      // eslint-disable-next-line no-console
       console.warn(
         `\nWARNING, appId that contains special characters can cause issues while using with urls.\n`
       );

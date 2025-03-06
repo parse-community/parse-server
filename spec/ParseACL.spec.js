@@ -5,17 +5,9 @@ const Config = require('../lib/Config');
 const auth = require('../lib/Auth');
 
 describe('Parse.ACL', () => {
-  it('acl must be valid', done => {
+  it('acl must be valid', () => {
     const user = new Parse.User();
-    ok(
-      !user.setACL("Ceci n'est pas un ACL.", {
-        error: function (user, error) {
-          equal(error.code, -1);
-          done();
-        },
-      }),
-      'setACL should have returned false.'
-    );
+    expect(() => user.setACL('ACL')).toThrow(new Parse.Error(Parse.Error.OTHER_CAUSE, 'ACL must be a Parse ACL.'));
   });
 
   it('refresh object with acl', async done => {

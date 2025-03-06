@@ -369,6 +369,12 @@ module.exports.ParseServerOptions = {
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
+  masterKeyTtl: {
+    env: 'PARSE_SERVER_MASTER_KEY_TTL',
+    help:
+      '(Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server.',
+    action: parsers.numberParser('masterKeyTtl'),
+  },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
     help: 'Max value for limit option on queries, defaults to unlimited',
@@ -1043,6 +1049,24 @@ module.exports.FileUploadOptions = {
   },
 };
 module.exports.DatabaseOptions = {
+  autoSelectFamily: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY',
+    help:
+      'The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.',
+    action: parsers.booleanParser,
+  },
+  autoSelectFamilyAttemptTimeout: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT',
+    help:
+      'The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.',
+    action: parsers.numberParser('autoSelectFamilyAttemptTimeout'),
+  },
+  connectTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
+    action: parsers.numberParser('connectTimeoutMS'),
+  },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
     help:
@@ -1068,6 +1092,12 @@ module.exports.DatabaseOptions = {
       'The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.',
     action: parsers.numberParser('maxTimeMS'),
   },
+  minPoolSize: {
+    env: 'PARSE_SERVER_DATABASE_MIN_POOL_SIZE',
+    help:
+      'The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.',
+    action: parsers.numberParser('minPoolSize'),
+  },
   retryWrites: {
     env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
     help: 'The MongoDB driver option to set whether to retry failed writes.',
@@ -1078,6 +1108,12 @@ module.exports.DatabaseOptions = {
     help:
       'The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.',
     action: parsers.numberParser('schemaCacheTtl'),
+  },
+  socketTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_SOCKET_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.',
+    action: parsers.numberParser('socketTimeoutMS'),
   },
 };
 module.exports.AuthAdapter = {
