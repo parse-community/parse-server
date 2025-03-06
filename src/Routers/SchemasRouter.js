@@ -77,18 +77,18 @@ async function createSchema(req) {
       "read-only masterKey isn't allowed to create a schema."
     );
   }
-  if (req.params.className && req.body.className) {
+  if (req.params.className && req.body?.className) {
     if (req.params.className != req.body.className) {
       return classNameMismatchResponse(req.body.className, req.params.className);
     }
   }
 
-  const className = req.params.className || req.body.className;
+  const className = req.params.className || req.body?.className;
   if (!className) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return await internalCreateSchema(className, req.body, req.config);
+  return await internalCreateSchema(className, req.body || {}, req.config);
 }
 
 function modifySchema(req) {
@@ -99,12 +99,12 @@ function modifySchema(req) {
       "read-only masterKey isn't allowed to update a schema."
     );
   }
-  if (req.body.className && req.body.className != req.params.className) {
+  if (req.body?.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
   const className = req.params.className;
 
-  return internalUpdateSchema(className, req.body, req.config);
+  return internalUpdateSchema(className, req.body || {}, req.config);
 }
 
 const deleteSchema = req => {

@@ -8,15 +8,10 @@ assignees: ''
 ---
 
 ### New Feature / Enhancement Checklist
-<!--
-    Check every following box [x] before submitting your issue.
-    Click the "Preview" tab for better readability.
-    Thanks for contributing to Parse Platform!
--->
 
-- [ ] I am not disclosing a [vulnerability](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
-- [ ] I am not just asking a [question](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
-- [ ] I have searched through [existing issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
+- Report security issues [confidentially](https://github.com/parse-community/parse-server/security/policy).
+- Any contribution is under this [license](https://github.com/parse-community/parse-server/blob/alpha/LICENSE).
+- Before posting search [existing issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
 
 ### Current Limitation
 <!-- Which current limitation is the feature or enhancement addressing? -->

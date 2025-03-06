@@ -317,7 +317,7 @@ describe('AudiencesRouter', () => {
     );
   });
 
-  it_exclude_dbs(['postgres'])('should support legacy parse.com audience fields', done => {
+  it_id('af1111b5-3251-4b40-8f06-fb0fc624fa91')(it_exclude_dbs(['postgres']))('should support legacy parse.com audience fields', done => {
     const database = Config.get(Parse.applicationId).database.adapter.database;
     const now = new Date();
     Parse._request(
@@ -339,11 +339,12 @@ describe('AudiencesRouter', () => {
         )
         .then(result => {
           expect(result).toBeTruthy();
+
           database
             .collection('test__Audience')
             .find({ _id: audience.objectId })
-            .toArray((error, rows) => {
-              expect(error).toEqual(undefined);
+            .toArray()
+            .then(rows => {
               expect(rows[0]['times_used']).toEqual(1);
               expect(rows[0]['_last_used']).toEqual(now);
               Parse._request(
@@ -362,6 +363,9 @@ describe('AudiencesRouter', () => {
                 .catch(error => {
                   done.fail(error);
                 });
+            })
+            .catch(error => {
+              done.fail(error);
             });
         });
     });

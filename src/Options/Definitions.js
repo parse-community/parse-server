@@ -54,12 +54,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT',
     help: 'The account lockout policy for failed login attempts.',
     action: parsers.objectParser,
+    type: 'AccountLockoutOptions',
   },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
-    help: 'Enable (or disable) client class creation, defaults to true',
+    help: 'Enable (or disable) client class creation, defaults to false',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   allowCustomObjectId: {
     env: 'PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID',
@@ -70,9 +71,9 @@ module.exports.ParseServerOptions = {
   allowExpiredAuthDataToken: {
     env: 'PARSE_SERVER_ALLOW_EXPIRED_AUTH_DATA_TOKEN',
     help:
-      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `true`.',
+      'Allow a user to log in even if the 3rd party authentication token that was used to sign in to their account has expired. If this is set to `false`, then the token will be validated every time the user signs in to their account. This refers to the token that is stored in the `_User.authData` field. Defaults to `false`.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   allowHeaders: {
     env: 'PARSE_SERVER_ALLOW_HEADERS',
@@ -139,10 +140,25 @@ module.exports.ParseServerOptions = {
     help: 'A collection prefix for the classes',
     default: '',
   },
+  convertEmailToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_EMAIL_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `email` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `email` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  convertUsernameToLowercase: {
+    env: 'PARSE_SERVER_CONVERT_USERNAME_TO_LOWERCASE',
+    help:
+      'Optional. If set to `true`, the `username` property of a user is automatically converted to lowercase before being stored in the database. Consequently, queries must match the case as stored in the database, which would be lowercase in this scenario. If `false`, the `username` property is stored as set, without any case modifications. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   customPages: {
     env: 'PARSE_SERVER_CUSTOM_PAGES',
     help: 'custom pages for password validation and reset',
     action: parsers.objectParser,
+    type: 'CustomPagesOptions',
     default: {},
   },
   databaseAdapter: {
@@ -155,6 +171,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_DATABASE_OPTIONS',
     help: 'Options to pass to the database client',
     action: parsers.objectParser,
+    type: 'DatabaseOptions',
   },
   databaseURI: {
     env: 'PARSE_SERVER_DATABASE_URI',
@@ -203,6 +220,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  enableCollationCaseComparison: {
+    env: 'PARSE_SERVER_ENABLE_COLLATION_CASE_COMPARISON',
+    help:
+      'Optional. If set to `true`, the collation rule of case comparison for queries and indexes is enabled. Enable this option to run Parse Server with MongoDB Atlas Serverless or AWS Amazon DocumentDB. If `false`, the collation rule of case comparison is disabled. Default is `false`.',
+    action: parsers.booleanParser,
+    default: false,
+  },
   enableExpressErrorHandler: {
     env: 'PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER',
     help: 'Enables the default express error handler for all errors',
@@ -214,7 +238,7 @@ module.exports.ParseServerOptions = {
     help:
       'If set to `true`, a `Parse.Object` that is in the payload when calling a Cloud Function will be converted to an instance of `Parse.Object`. If `false`, the object will not be converted and instead be a plain JavaScript object, which contains the raw data of a `Parse.Object` but is not an actual instance of `Parse.Object`. Default is `false`. <br><br>\u2139\uFE0F The expected behavior would be that the object is converted to an instance of `Parse.Object`, so you would normally set this option to `true`. The default is `false` because this is a temporary option that has been introduced to avoid a breaking change when fixing a bug where JavaScript objects are not converted to actual instances of `Parse.Object`.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
@@ -235,7 +259,8 @@ module.exports.ParseServerOptions = {
   },
   extendSessionOnUse: {
     env: 'PARSE_SERVER_EXTEND_SESSION_ON_USE',
-    help: 'Whether Parse Server should automatically extend a valid session by the sessionLength',
+    help:
+      "Whether Parse Server should automatically extend a valid session by the sessionLength. In order to reduce the number of session updates in the database, a session will only be extended when a request is received after at least half of the current session's lifetime has passed.",
     action: parsers.booleanParser,
     default: false,
   },
@@ -252,6 +277,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
     help: 'Options for file uploads',
     action: parsers.objectParser,
+    type: 'FileUploadOptions',
     default: {},
   },
   graphQLPath: {
@@ -273,6 +299,7 @@ module.exports.ParseServerOptions = {
     help:
       'Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.',
     action: parsers.objectParser,
+    type: 'IdempotencyOptions',
     default: {},
   },
   javascriptKey: {
@@ -288,11 +315,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LIVE_QUERY',
     help: "parse-server's LiveQuery configuration object",
     action: parsers.objectParser,
+    type: 'LiveQueryOptions',
   },
   liveQueryServerOptions: {
     env: 'PARSE_SERVER_LIVE_QUERY_SERVER_OPTIONS',
     help: 'Live query server configuration options (will start the liveQuery server)',
     action: parsers.objectParser,
+    type: 'LiveQueryServerOptions',
   },
   loggerAdapter: {
     env: 'PARSE_SERVER_LOGGER_ADAPTER',
@@ -307,6 +336,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_LOG_LEVELS',
     help: '(Optional) Overrides the log levels used internally by Parse Server to log events.',
     action: parsers.objectParser,
+    type: 'LogLevels',
     default: {},
   },
   logsFolder: {
@@ -317,13 +347,13 @@ module.exports.ParseServerOptions = {
   maintenanceKey: {
     env: 'PARSE_SERVER_MAINTENANCE_KEY',
     help:
-      '(Optional) The maintenance key is used for modifying internal fields of Parse Server.<br><br>\u26A0\uFE0F This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server.',
+      '(Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>\u26A0\uFE0F This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server.',
     required: true,
   },
   maintenanceKeyIps: {
     env: 'PARSE_SERVER_MAINTENANCE_KEY_IPS',
     help:
-      "(Optional) Restricts the use of maintenance key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `maintenanceKey` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the maintenance key can be used from any IP address.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the maintenance key.",
+      "(Optional) Restricts the use of maintenance key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the maintenance key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the maintenance key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `\"0.0.0.0/0,::0\"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the maintenance key.",
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
   },
@@ -335,9 +365,15 @@ module.exports.ParseServerOptions = {
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
     help:
-      "(Optional) Restricts the use of master key permissions to a list of IP addresses.<br><br>This option accepts a list of single IP addresses, for example:<br>`['10.0.0.1', '10.0.0.2']`<br><br>You can also use CIDR notation to specify an IP address range, for example:<br>`['10.0.1.0/24']`<br><br>Special cases:<br>- Setting an empty array `[]` means that `masterKey` cannot be used even in Parse Server Cloud Code.<br>- Setting `['0.0.0.0/0']` means disabling the filter and the master key can be used from any IP address.<br><br>To connect Parse Dashboard from a different server requires to add the IP address of the server that hosts Parse Dashboard because Parse Dashboard uses the master key.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server itself, is allowed to use the master key.",
+      "(Optional) Restricts the use of master key permissions to a list of IP addresses or ranges.<br><br>This option accepts a list of single IP addresses, for example `['10.0.0.1', '10.0.0.2']`. You can also use CIDR notation to specify an IP address range, for example `['10.0.1.0/24']`.<br><br><b>Special scenarios:</b><br>- Setting an empty array `[]` means that the master key cannot be used even in Parse Server Cloud Code. This value cannot be set via an environment variable as there is no way to pass an empty array to Parse Server via an environment variable.<br>- Setting `['0.0.0.0/0', '::0']` means to allow any IPv4 and IPv6 address to use the master key and effectively disables the IP filter.<br><br><b>Considerations:</b><br>- IPv4 and IPv6 addresses are not compared against each other. Each IP version (IPv4 and IPv6) needs to be considered separately. For example, `['0.0.0.0/0']` allows any IPv4 address and blocks every IPv6 address. Conversely, `['::0']` allows any IPv6 address and blocks every IPv4 address.<br>- Keep in mind that the IP version in use depends on the network stack of the environment in which Parse Server runs. A local environment may use a different IP version than a remote environment. For example, it's possible that locally the value `['0.0.0.0/0']` allows the request IP because the environment is using IPv4, but when Parse Server is deployed remotely the request IP is blocked because the remote environment is using IPv6.<br>- When setting the option via an environment variable the notation is a comma-separated string, for example `\"0.0.0.0/0,::0\"`.<br>- IPv6 zone indices (`%` suffix) are not supported, for example `fe80::1%eth0`, `fe80::1%1` or `::1%lo`.<br><br>Defaults to `['127.0.0.1', '::1']` which means that only `localhost`, the server instance on which Parse Server runs, is allowed to use the master key.",
     action: parsers.arrayParser,
     default: ['127.0.0.1', '::1'],
+  },
+  masterKeyTtl: {
+    env: 'PARSE_SERVER_MASTER_KEY_TTL',
+    help:
+      '(Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server.',
+    action: parsers.numberParser('masterKeyTtl'),
   },
   maxLimit: {
     env: 'PARSE_SERVER_MAX_LIMIT',
@@ -348,7 +384,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MAX_LOG_FILES',
     help:
       "Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)",
-    action: parsers.objectParser,
+    action: parsers.numberOrStringParser('maxLogFiles'),
   },
   maxUploadSize: {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',
@@ -384,15 +420,16 @@ module.exports.ParseServerOptions = {
   },
   pages: {
     env: 'PARSE_SERVER_PAGES',
-    help:
-      'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
+    help: 'The options for pages such as password reset and email verification.',
     action: parsers.objectParser,
+    type: 'PagesOptions',
     default: {},
   },
   passwordPolicy: {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
     help: 'The password policy for enforcing password related rules.',
     action: parsers.objectParser,
+    type: 'PasswordPolicyOptions',
   },
   playgroundPath: {
     env: 'PARSE_SERVER_PLAYGROUND_PATH',
@@ -450,6 +487,7 @@ module.exports.ParseServerOptions = {
     help:
       "Options to limit repeated requests to Parse Server APIs. This can be used to protect sensitive endpoints such as `/requestPasswordReset` from brute-force attacks or Parse Server as a whole from denial-of-service (DoS) attacks.<br><br>\u2139\uFE0F Mind the following limitations:<br>- rate limits applied per IP address; this limits protection against distributed denial-of-service (DDoS) attacks where many requests are coming from various IP addresses<br>- if multiple Parse Server instances are behind a load balancer or ran in a cluster, each instance will calculate it's own request rates, independent from other instances; this limits the applicability of this feature when using a load balancer and another rate limiting solution that takes requests across all instances into account may be more suitable<br>- this feature provides basic protection against denial-of-service attacks, but a more sophisticated solution works earlier in the request flow and prevents a malicious requests to even reach a server instance; it's therefore recommended to implement a solution according to architecture and user case.",
     action: parsers.arrayParser,
+    type: 'RateLimitOptions[]',
     default: [],
   },
   readOnlyMasterKey: {
@@ -495,11 +533,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_SCHEMA',
     help: 'Defined schema',
     action: parsers.objectParser,
+    type: 'SchemaOptions',
   },
   security: {
     env: 'PARSE_SERVER_SECURITY',
     help: 'The security options to identify and report weak security settings.',
     action: parsers.objectParser,
+    type: 'SecurityOptions',
     default: {},
   },
   sendUserEmailVerification: {
@@ -644,12 +684,14 @@ module.exports.PagesOptions = {
     env: 'PARSE_SERVER_PAGES_CUSTOM_ROUTES',
     help: 'The custom routes.',
     action: parsers.arrayParser,
+    type: 'PagesRoute[]',
     default: [],
   },
   customUrls: {
     env: 'PARSE_SERVER_PAGES_CUSTOM_URLS',
     help: 'The URLs to the custom pages.',
     action: parsers.objectParser,
+    type: 'PagesCustomUrlsOptions',
     default: {},
   },
   enableLocalization: {
@@ -661,7 +703,7 @@ module.exports.PagesOptions = {
   enableRouter: {
     env: 'PARSE_SERVER_PAGES_ENABLE_ROUTER',
     help:
-      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.',
+      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -1001,12 +1043,30 @@ module.exports.FileUploadOptions = {
   fileExtensions: {
     env: 'PARSE_SERVER_FILE_UPLOAD_FILE_EXTENSIONS',
     help:
-      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^[^hH][^tT][^mM][^lL]?$` which allows any file extension except HTML files.",
+      "Sets the allowed file extensions for uploading files. The extension is defined as an array of file extensions, or a regex pattern.<br><br>It is recommended to restrict the file upload extensions as much as possible. HTML files are especially problematic as they may be used by an attacker who uploads a HTML form to look legitimate under your app's domain name, or to compromise the session token of another user via accessing the browser's local storage.<br><br>Defaults to `^(?!(h|H)(t|T)(m|M)(l|L)?$)` which allows any file extension except HTML files.",
     action: parsers.arrayParser,
-    default: ['^[^hH][^tT][^mM][^lL]?$'],
+    default: ['^(?!(h|H)(t|T)(m|M)(l|L)?$)'],
   },
 };
 module.exports.DatabaseOptions = {
+  autoSelectFamily: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY',
+    help:
+      'The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.',
+    action: parsers.booleanParser,
+  },
+  autoSelectFamilyAttemptTimeout: {
+    env: 'PARSE_SERVER_DATABASE_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT',
+    help:
+      'The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.',
+    action: parsers.numberParser('autoSelectFamilyAttemptTimeout'),
+  },
+  connectTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_CONNECT_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.',
+    action: parsers.numberParser('connectTimeoutMS'),
+  },
   enableSchemaHooks: {
     env: 'PARSE_SERVER_DATABASE_ENABLE_SCHEMA_HOOKS',
     help:
@@ -1014,18 +1074,53 @@ module.exports.DatabaseOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  maxPoolSize: {
+    env: 'PARSE_SERVER_DATABASE_MAX_POOL_SIZE',
+    help:
+      'The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.',
+    action: parsers.numberParser('maxPoolSize'),
+  },
+  maxStalenessSeconds: {
+    env: 'PARSE_SERVER_DATABASE_MAX_STALENESS_SECONDS',
+    help:
+      'The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.',
+    action: parsers.numberParser('maxStalenessSeconds'),
+  },
+  maxTimeMS: {
+    env: 'PARSE_SERVER_DATABASE_MAX_TIME_MS',
+    help:
+      'The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.',
+    action: parsers.numberParser('maxTimeMS'),
+  },
+  minPoolSize: {
+    env: 'PARSE_SERVER_DATABASE_MIN_POOL_SIZE',
+    help:
+      'The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.',
+    action: parsers.numberParser('minPoolSize'),
+  },
+  retryWrites: {
+    env: 'PARSE_SERVER_DATABASE_RETRY_WRITES',
+    help: 'The MongoDB driver option to set whether to retry failed writes.',
+    action: parsers.booleanParser,
+  },
   schemaCacheTtl: {
     env: 'PARSE_SERVER_DATABASE_SCHEMA_CACHE_TTL',
     help:
       'The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.',
     action: parsers.numberParser('schemaCacheTtl'),
   },
+  socketTimeoutMS: {
+    env: 'PARSE_SERVER_DATABASE_SOCKET_TIMEOUT_MS',
+    help:
+      'The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.',
+    action: parsers.numberParser('socketTimeoutMS'),
+  },
 };
 module.exports.AuthAdapter = {
   enabled: {
     help: 'Is `true` if the auth adapter is enabled, `false` otherwise.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
 };
 module.exports.LogLevels = {
@@ -1042,19 +1137,19 @@ module.exports.LogLevels = {
   triggerAfter: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_AFTER',
     help:
-      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterSaveFile`, `afterDeleteFile`, `afterFind`, `afterLogout`. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `afterSave`, `afterDelete`, `afterFind`, `afterLogout`. Default is `info`.',
     default: 'info',
   },
   triggerBeforeError: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_ERROR',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on error. Default is `error `.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on error. Default is `error`.',
     default: 'error',
   },
   triggerBeforeSuccess: {
     env: 'PARSE_SERVER_LOG_LEVELS_TRIGGER_BEFORE_SUCCESS',
     help:
-      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeSaveFile`, `beforeDeleteFile`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
+      'Log level used by the Cloud Code Triggers `beforeSave`, `beforeDelete`, `beforeFind`, `beforeLogin` on success. Default is `info`.',
     default: 'info',
   },
 };

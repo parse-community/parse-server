@@ -26,7 +26,7 @@ export class PushRouter extends PromiseRouter {
     });
     let pushStatusId;
     pushController
-      .sendPush(req.body, where, req.config, req.auth, objectId => {
+      .sendPush(req.body || {}, where, req.config, req.auth, objectId => {
         pushStatusId = objectId;
         resolve({
           headers: {

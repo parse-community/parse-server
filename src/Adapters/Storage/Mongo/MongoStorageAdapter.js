@@ -145,9 +145,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = { ...mongoOptions };
-    this._mongoOptions.useNewUrlParser = true;
-    this._mongoOptions.useUnifiedTopology = true;
-    this._onchange = () => {};
+    this._onchange = () => { };
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
@@ -172,7 +170,6 @@ export class MongoStorageAdapter implements StorageAdapter {
     // parsing and re-formatting causes the auth value (if there) to get URI
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
-
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
@@ -570,7 +567,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           session: transactionalSession || undefined,
         })
       )
-      .then(result => mongoObjectToParseObject(className, result.value, schema))
+      .then(result => mongoObjectToParseObject(className, result, schema))
       .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(
@@ -604,7 +601,17 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference, hint, caseInsensitive, explain }: QueryOptions
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      readPreference,
+      hint,
+      caseInsensitive,
+      explain,
+      comment,
+    }: QueryOptions
   ): Promise<any> {
     validateExplainValue(explain);
     schema = convertParseSchemaToMongoSchema(schema);
@@ -647,6 +654,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           hint,
           caseInsensitive,
           explain,
+          comment,
         })
       )
       .then(objects => {
@@ -687,13 +695,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     };
 
     return this._adaptiveCollection(className)
-      .then(
-        collection =>
-          new Promise((resolve, reject) =>
-            collection._mongoCollection.createIndex(indexCreationRequest, indexOptions, error =>
-              error ? reject(error) : resolve()
-            )
-          )
+      .then(collection =>
+        collection._mongoCollection.createIndex(indexCreationRequest, indexOptions)
       )
       .catch(err => this.handleError(err));
   }
@@ -741,7 +744,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     schema: SchemaType,
     query: QueryType,
     readPreference: ?string,
-    hint: ?mixed
+    _estimate: ?boolean,
+    hint: ?mixed,
+    comment: ?string
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     readPreference = this._parseReadPreference(readPreference);
@@ -751,6 +756,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
           readPreference,
           hint,
+          comment,
         })
       )
       .catch(err => this.handleError(err));
@@ -783,7 +789,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     pipeline: any,
     readPreference: ?string,
     hint: ?mixed,
-    explain?: boolean
+    explain?: boolean,
+    comment: ?string
   ) {
     validateExplainValue(explain);
     let isPointerField = false;
@@ -817,6 +824,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
           hint,
           explain,
+          comment,
         })
       )
       .then(results => {

@@ -1,6 +1,7 @@
 const {
   numberParser,
   numberOrBoolParser,
+  numberOrStringParser,
   booleanParser,
   objectParser,
   arrayParser,
@@ -15,6 +16,15 @@ describe('parsers', () => {
     expect(parser('2')).toEqual(2);
     expect(() => {
       parser('string');
+    }).toThrow();
+  });
+
+  it('parses correctly with numberOrStringParser', () => {
+    const parser = numberOrStringParser('key');
+    expect(parser('100d')).toEqual('100d');
+    expect(parser(100)).toEqual(100);
+    expect(() => {
+      parser(undefined);
     }).toThrow();
   });
 

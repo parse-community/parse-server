@@ -1,7 +1,6 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
 var batch = require('./batch'),
-  bodyParser = require('body-parser'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
@@ -45,6 +44,7 @@ import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
+import OptionsDefinitions from './Options/Definitions';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -59,6 +59,58 @@ class ParseServer {
   constructor(options: ParseServerOptions) {
     // Scan for deprecated Parse Server options
     Deprecator.scanParseServerOptions(options);
+
+    const interfaces = JSON.parse(JSON.stringify(OptionsDefinitions));
+
+    function getValidObject(root) {
+      const result = {};
+      for (const key in root) {
+        if (Object.prototype.hasOwnProperty.call(root[key], 'type')) {
+          if (root[key].type.endsWith('[]')) {
+            result[key] = [getValidObject(interfaces[root[key].type.slice(0, -2)])];
+          } else {
+            result[key] = getValidObject(interfaces[root[key].type]);
+          }
+        } else {
+          result[key] = '';
+        }
+      }
+      return result;
+    }
+
+    const optionsBlueprint = getValidObject(interfaces['ParseServerOptions']);
+
+    function validateKeyNames(original, ref, name = '') {
+      let result = [];
+      const prefix = name + (name !== '' ? '.' : '');
+      for (const key in original) {
+        if (!Object.prototype.hasOwnProperty.call(ref, key)) {
+          result.push(prefix + key);
+        } else {
+          if (ref[key] === '') { continue; }
+          let res = [];
+          if (Array.isArray(original[key]) && Array.isArray(ref[key])) {
+            const type = ref[key][0];
+            original[key].forEach((item, idx) => {
+              if (typeof item === 'object' && item !== null) {
+                res = res.concat(validateKeyNames(item, type, prefix + key + `[${idx}]`));
+              }
+            });
+          } else if (typeof original[key] === 'object' && typeof ref[key] === 'object') {
+            res = validateKeyNames(original[key], ref[key], prefix + key);
+          }
+          result = result.concat(res);
+        }
+      }
+      return result;
+    }
+
+    const diff = validateKeyNames(options, optionsBlueprint);
+    if (diff.length > 0) {
+      const logger = logging.logger;
+      logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
+    }
+
     // Set option defaults
     injectDefaults(options);
     const {
@@ -70,11 +122,13 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
+
     options.state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
+    this.config.masterKeyIpsStore = new Map();
+    this.config.maintenanceKeyIpsStore = new Map();
     logging.setLogger(allControllers.loggerController);
   }
 
@@ -92,10 +146,10 @@ class ParseServer {
       const {
         databaseController,
         hooksController,
+        cacheController,
         cloud,
         security,
         schema,
-        cacheAdapter,
         liveQueryController,
       } = this.config;
       try {
@@ -105,13 +159,17 @@ class ParseServer {
           throw e;
         }
       }
+      const pushController = await controllers.getPushController(this.config);
       await hooksController.load();
-      const startupPromises = [];
+      const startupPromises = [this.config.loadMasterKey?.()];
       if (schema) {
         startupPromises.push(new DefinedSchemas(schema, this.config).execute());
       }
-      if (cacheAdapter?.connect && typeof cacheAdapter.connect === 'function') {
-        startupPromises.push(cacheAdapter.connect());
+      if (
+        cacheController.adapter?.connect &&
+        typeof cacheController.adapter.connect === 'function'
+      ) {
+        startupPromises.push(cacheController.adapter.connect());
       }
       startupPromises.push(liveQueryController.connect());
       await Promise.all(startupPromises);
@@ -138,9 +196,11 @@ class ParseServer {
         new CheckRunner(security).run();
       }
       this.config.state = 'ok';
+      this.config = { ...this.config, ...pushController };
       Config.put(this.config);
       return this;
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(error);
       this.config.state = 'error';
       throw error;
@@ -192,6 +252,7 @@ class ParseServer {
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     api.use(middlewares.allowCrossDomain(appId));
+    api.use(middlewares.allowDoubleForwardSlash);
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
@@ -212,15 +273,16 @@ class ParseServer {
 
     api.use(
       '/',
-      bodyParser.urlencoded({ extended: false }),
+      express.urlencoded({ extended: false }),
       pages.enableRouter
         ? new PagesRouter(pages).expressRouter()
         : new PublicAPIRouter().expressRouter()
     );
 
-    api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
+    api.use(express.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
+    api.set('query parser', 'extended');
     const routes = Array.isArray(rateLimit) ? rateLimit : [rateLimit];
     for (const route of routes) {
       middlewares.addRateLimit(route, options);
@@ -242,7 +304,15 @@ class ParseServer {
           process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
-          throw err;
+          if (err.message) {
+            process.stderr.write('An uncaught exception occurred: ' + err.message);
+          }
+          if (err.stack) {
+            process.stderr.write('Stack Trace:\n' + err.stack);
+          } else {
+            process.stderr.write(err);
+          }
+          process.exit(1);
         }
       });
       // verify the server url after a 'mount' event is received
@@ -302,6 +372,7 @@ class ParseServer {
     try {
       await this.start();
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error('Error on ParseServer.startApp: ', e);
       throw e;
     }
@@ -414,6 +485,7 @@ class ParseServer {
       };
       const url = `${Parse.serverURL.replace(/\/$/, '')}/health`;
       if (!isValidHttpUrl(url)) {
+        // eslint-disable-next-line no-console
         console.warn(
           `\nWARNING, Unable to connect to '${Parse.serverURL}' as the URL is invalid.` +
             ` Cloud code and push notifications may be unavailable!\n`
@@ -475,6 +547,7 @@ function injectDefaults(options: ParseServerOptions) {
   if (options.appId) {
     const regex = /[!#$%'()*+&/:;=?@[\]{}^,|<>]/g;
     if (options.appId.match(regex)) {
+      // eslint-disable-next-line no-console
       console.warn(
         `\nWARNING, appId that contains special characters can cause issues while using with urls.\n`
       );
