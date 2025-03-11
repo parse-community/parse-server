@@ -21,7 +21,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@apollo/server": "4.11.3",
-    "@babel/eslint-parser": "7.26.5",
+    "@babel/eslint-parser": "7.26.8",
     "@graphql-tools/merge": "9.0.19",
     "@graphql-tools/schema": "10.0.21",
     "@graphql-tools/utils": "10.6.3",
@@ -64,7 +64,7 @@
     "uuid": "11.0.5",
     "winston": "3.17.0",
     "winston-daily-rotate-file": "5.0.0",
-    "ws": "8.18.0"
+    "ws": "8.18.1"
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
