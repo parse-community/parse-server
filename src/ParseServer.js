@@ -231,23 +231,6 @@ class ParseServer {
     const serverClosePromise = resolvingPromise();
     const liveQueryServerClosePromise = resolvingPromise();
     const promises = [];
-
-    const { adapter: databaseAdapter } = this.config.databaseController;
-    if (databaseAdapter && typeof databaseAdapter.handleShutdown === 'function') {
-      promises.push(databaseAdapter.handleShutdown());
-    }
-    const { adapter: fileAdapter } = this.config.filesController;
-    if (fileAdapter && typeof fileAdapter.handleShutdown === 'function') {
-      promises.push(fileAdapter.handleShutdown());
-    }
-    const { adapter: cacheAdapter } = this.config.cacheController;
-    if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
-      promises.push(cacheAdapter.handleShutdown());
-    }
-    if (this.liveQueryServer) {
-      promises.push(this.liveQueryServer.shutdown());
-    }
-    await Promise.all(promises);
     this.server.close((error) => {
       if (error) {
         // eslint-disable-next-line no-console
@@ -266,6 +249,22 @@ class ParseServer {
     } else {
       liveQueryServerClosePromise.resolve();
     }
+    const { adapter: databaseAdapter } = this.config.databaseController;
+    if (databaseAdapter && typeof databaseAdapter.handleShutdown === 'function') {
+      promises.push(databaseAdapter.handleShutdown());
+    }
+    const { adapter: fileAdapter } = this.config.filesController;
+    if (fileAdapter && typeof fileAdapter.handleShutdown === 'function') {
+      promises.push(fileAdapter.handleShutdown());
+    }
+    const { adapter: cacheAdapter } = this.config.cacheController;
+    if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
+      promises.push(cacheAdapter.handleShutdown());
+    }
+    if (this.liveQueryServer) {
+      promises.push(this.liveQueryServer.shutdown());
+    }
+    await Promise.all(promises);
     connections.destroyAll();
     await Promise.all([serverClosePromise, liveQueryServerClosePromise]);
     if (this.config.serverCloseComplete) {
