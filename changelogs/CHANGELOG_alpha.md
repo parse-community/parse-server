@@ -1,3 +1,10 @@
+## [8.0.1-alpha.1](https://github.com/parse-community/parse-server/compare/8.0.0...8.0.1-alpha.1) (2025-03-06)
+
+
+### Bug Fixes
+
+* Using Parse Server option `extendSessionOnUse` does not correctly clear memory and functions as a debounce instead of a throttle ([#8683](https://github.com/parse-community/parse-server/issues/8683)) ([6258a6a](https://github.com/parse-community/parse-server/commit/6258a6a11235dc642c71074d24e19c055294d26d))
+
 # [8.0.0-alpha.15](https://github.com/parse-community/parse-server/compare/8.0.0-alpha.14...8.0.0-alpha.15) (2025-03-03)
 
 
