@@ -1216,14 +1216,11 @@ describe('PushController', () => {
       },
     };
 
-    beforeEach(done => {
-      reconfigureServer({
+    beforeEach(async () => {
+      await reconfigureServer({
         push: { adapter: pushAdapter },
-      })
-        .then(() => {
-          config = Config.get(Parse.applicationId);
-        })
-        .then(done, done.fail);
+      });
+      config = Config.get(Parse.applicationId);
     });
 
     it('should throw if both expiration_time and expiration_interval are set', () => {

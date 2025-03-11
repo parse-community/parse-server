@@ -89,8 +89,8 @@ describe('public API', () => {
 });
 
 describe('public API without publicServerURL', () => {
-  beforeEach(done => {
-    reconfigureServer({ appName: 'unused' }).then(done, fail);
+  beforeEach(async () => {
+    await reconfigureServer({ appName: 'unused' });
   });
   it('should get 404 on verify_email', done => {
     request('http://localhost:8378/1/apps/test/verify_email', (err, httpResponse) => {
@@ -115,8 +115,8 @@ describe('public API without publicServerURL', () => {
 });
 
 describe('public API supplied with invalid application id', () => {
-  beforeEach(done => {
-    reconfigureServer({ appName: 'unused' }).then(done, fail);
+  beforeEach(async () => {
+    await reconfigureServer({ appName: 'unused' });
   });
 
   it('should get 403 on verify_email', done => {
