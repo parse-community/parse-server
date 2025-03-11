@@ -5,7 +5,7 @@ const Parse = require('parse/node');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
-const { resolvingPromise, sleep, Connections } = require('../lib/TestUtils');
+const { sleep, Connections } = require('../lib/TestUtils');
 
 // Ensure localhost resolves to ipv4 address first on node v17+
 if (dns.setDefaultResultOrder) {
@@ -55,7 +55,6 @@ const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase'
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 let databaseURI;
-// need to bind for mocking mocha
 
 if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
   databaseAdapter = JSON.parse(process.env.PARSE_SERVER_DATABASE_ADAPTER);
@@ -161,19 +160,11 @@ let didChangeConfiguration = false;
 const openConnections = new Connections();
 
 const shutdownServer = async (_parseServer) => {
-  _parseServer.handleShutdown();
-  parseServer = undefined;
+  await _parseServer.handleShutdown();
   // Connection close events are not immediate on node 10+, so wait a bit
   await sleep(0);
-  // Jasmine process counts as one open connection 
-  const connectionMessage = `There were ${openConnections.count()} open connections to the server left after the test finished`;
-  if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
-    if (openConnections.count() > 1) {
-      console.log(connectionMessage);
-    }
-  } else {
-    expect(openConnections.count() > 1).toBeFalsy(connectionMessage);
-  }
+  expect(openConnections.count() > 0).toBeFalsy(`There were ${openConnections.count()} open connections to the server left after the test finished`);
+  parseServer = undefined;
 };
 
 // Allows testing specific configurations of Parse Server
