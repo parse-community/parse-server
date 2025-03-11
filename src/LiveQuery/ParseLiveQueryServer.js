@@ -97,14 +97,22 @@ class ParseLiveQueryServer {
     if (this.subscriber.isOpen) {
       await Promise.all([
         ...[...this.clients.values()].map(client => client.parseWebSocket.ws.close()),
-        this.parseWebSocketServer.close(),
-        ...Array.from(this.subscriber.subscriptions.keys()).map(key =>
+        this.parseWebSocketServer.close?.(),
+        ...Array.from(this.subscriber.subscriptions?.keys() || []).map(key =>
           this.subscriber.unsubscribe(key)
         ),
         this.subscriber.close?.(),
       ]);
     }
-    this.subscriber.isOpen = false;
+    if (typeof this.subscriber.quit === 'function') {
+      try {
+        await this.subscriber.quit();
+      } catch (err) {
+        logger.error('PubSubAdapter error on shutdown', { error: err });
+      }
+    } else {
+      this.subscriber.isOpen = false;
+    }
   }
 
   _createSubscribers() {

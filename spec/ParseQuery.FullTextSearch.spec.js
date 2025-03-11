@@ -3,11 +3,8 @@
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
-let databaseAdapter;
 
 const fullTextHelper = async () => {
-  const config = Config.get('test');
-  databaseAdapter = config.database.adapter;
   const subjects = [
     'coffee',
     'Coffee Shopping',
@@ -18,12 +15,6 @@ const fullTextHelper = async () => {
     'coffee and cream',
     'Cafe con Leche',
   ];
-  await reconfigureServer({
-    appId: 'test',
-    restAPIKey: 'test',
-    publicServerURL: 'http://localhost:8378/1',
-    databaseAdapter,
-  });
   await Parse.Object.saveAll(
     subjects.map(subject => new Parse.Object('TestObject').set({ subject, comment: subject }))
   );
@@ -101,7 +92,7 @@ describe('Parse.Query Full Text Search testing', () => {
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'Content-Type': 'application/json',
           },
         });
@@ -189,7 +180,7 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
           url: 'http://localhost:8378/1/schemas/TestObject',
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'X-Parse-Master-Key': 'test',
             'Content-Type': 'application/json',
           },
@@ -220,7 +211,7 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'Content-Type': 'application/json',
           },
         });
@@ -288,7 +279,7 @@ describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', 
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'Content-Type': 'application/json',
           },
         });
@@ -322,7 +313,7 @@ describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', 
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'Content-Type': 'application/json',
           },
         });
