@@ -64,7 +64,7 @@
     "uuid": "11.0.5",
     "winston": "3.17.0",
     "winston-daily-rotate-file": "5.0.0",
-    "ws": "8.18.0"
+    "ws": "8.18.1"
   },
   "devDependencies": {
     "@actions/core": "1.11.1",
