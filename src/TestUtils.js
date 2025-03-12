@@ -46,6 +46,7 @@ export function sleep(ms) {
 export function getConnectionsCount(server) {
   return new Promise((resolve, reject) => {
     server.getConnections((err, count) => {
+      /* istanbul ignore next */
       if (err) {
         reject(err);
       } else {

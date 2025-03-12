@@ -232,6 +232,7 @@ class ParseServer {
     const liveQueryServerClosePromise = resolvingPromise();
     const promises = [];
     this.server.close((error) => {
+      /* istanbul ignore next */
       if (error) {
         // eslint-disable-next-line no-console
         console.error('Error while closing parse server', error);
@@ -240,6 +241,7 @@ class ParseServer {
     });
     if (this.liveQueryServer?.server?.close && this.liveQueryServer.server !== this.server) {
       this.liveQueryServer.server.close((error) => {
+        /* istanbul ignore next */
         if (error) {
           // eslint-disable-next-line no-console
           console.error('Error while closing live query server', error);
