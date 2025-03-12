@@ -34,7 +34,7 @@
     "express": "4.21.2",
     "express-rate-limit": "7.4.1",
     "follow-redirects": "1.15.9",
-    "graphql": "16.9.0",
+    "graphql": "16.10.0",
     "graphql-list-fields": "2.0.4",
     "graphql-relay": "0.10.2",
     "graphql-tag": "2.12.6",
