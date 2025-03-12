@@ -41,6 +41,7 @@ describe('AuthenticationProviders', function () {
     'phantauth',
     'microsoft',
     'keycloak',
+    'auth0',
   ].map(function (providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
@@ -62,7 +63,7 @@ describe('AuthenticationProviders', function () {
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      const noResponse = ['twitter', 'apple', 'gcenter', 'google', 'keycloak'];
+      const noResponse = ['twitter', 'apple', 'gcenter', 'google', 'keycloak', 'auth0'];
       if (noResponse.includes(providerName)) {
         return;
       }
@@ -984,6 +985,183 @@ describe('keycloak auth adapter', () => {
         Authorization: 'Bearer sometoken',
       },
     });
+  });
+});
+
+describe('auth0 auth adapter', () => {
+  const auth0 = require('../lib/Adapters/Auth/auth0');
+  const jwt = require('jsonwebtoken');
+  const util = require('util');
+
+  it('Should throw error with missing id_token', async () => {
+    try {
+      await auth0.validateAuthData({}, { tenantId: 'example.eu.auth0.com', clientId: 'secret' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('id token is invalid for this user.');
+    }
+  });
+
+  it('Should throw error with missing tenant_id', async () => {
+    try {
+      await auth0.validateAuthData({ id_token: 'token' }, { clientId: 'secret' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('tenant id is invalid.');
+    }
+  });
+
+  it('Should throw error with missing client_id', async () => {
+    try {
+      await auth0.validateAuthData({ id_token: 'token' }, { tenantId: 'example.eu.auth0.com' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('client id is invalid.');
+    }
+  });
+
+  it('should not decode invalid id_token', async () => {
+    try {
+      await auth0.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { tenantId: 'example.eu.auth0.com', clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('should throw error if public key used to encode token is not available', async () => {
+    const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
+    try {
+      spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+
+      await auth0.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { tenantId: 'example.eu.auth0.com', clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid} for auth0 tenantId example.eu.auth0.com.`
+      );
+    }
+  });
+
+  it('should use algorithm from key header to verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://example.eu.auth0.com/',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    const result = await auth0.validateAuthData(
+      { id: 'the_user_id', id_token: 'the_token' },
+      { tenantId: 'example.eu.auth0.com', clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+  });
+
+  it('should not verify invalid id_token', async () => {
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+
+    try {
+      await auth0.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { tenantId: 'example.eu.auth0.com', clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt malformed');
+    }
+  });
+
+  it('should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://example.eu.auth0.com/',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await auth0.validateAuthData(
+      { id: 'the_user_id', id_token: 'the_token' },
+      { tenantId: 'example.eu.auth0.com', clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.example.eu.auth0.com/',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await auth0.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { tenantId: 'example.eu.auth0.com', clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://example.eu.auth0.com/ | from: https://not.example.eu.auth0.com/'
+      );
+    }
+  });
+
+  it('should throw error with with invalid user id', async () => {
+    const fakeClaim = {
+      iss: 'https://example.eu.auth0.com/',
+      aud: 'invalid_client_id',
+      sub: 'a_different_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await auth0.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { tenantId: 'example.eu.auth0.com', clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
   });
 });
 
