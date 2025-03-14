@@ -98,11 +98,18 @@ export function getFilesController(options: ParseServerOptions): FilesController
   });
 }
 
-export function getUserController(options: ParseServerOptions): UserController {
-  const { appId, emailAdapter, verifyUserEmails } = options;
+export function getUserController(options: ParseServerOptions) {
+  const { appId, emailAdapter } = options;
   const emailControllerAdapter = loadAdapter(emailAdapter);
+
   return new UserController(emailControllerAdapter, appId, {
-    verifyUserEmails,
+    verifyUserEmails: (user, request) => {
+
+      const createdWith = request?.sessionToken?.createdWith || {};
+      const { action, authProvider } = createdWith;
+
+      return action === "signup" && authProvider === "password";
+    },
   });
 }
 
