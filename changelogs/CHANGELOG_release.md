@@ -1,3 +1,23 @@
+## [7.5.1](https://github.com/parse-community/parse-server/compare/7.5.0...7.5.1) (2025-03-14)
+
+
+### Bug Fixes
+
+* Security upgrade node from 20.18.2-alpine3.20 to 20.19.0-alpine3.20 ([#9646](https://github.com/parse-community/parse-server/issues/9646)) ([9fc0bfb](https://github.com/parse-community/parse-server/commit/9fc0bfbe3e176bfec521c2bf195dbc185218ad60))
+
+# [7.5.0](https://github.com/parse-community/parse-server/compare/7.4.0...7.5.0) (2025-03-12)
+
+
+### Bug Fixes
+
+* LiveQueryServer crashes using cacheAdapter on disconnect from Redis 4 server ([#9615](https://github.com/parse-community/parse-server/issues/9615)) ([0769215](https://github.com/parse-community/parse-server/commit/0769215d4c1dba347fda1f6b2268c3c92019dcec))
+* Push adapter not loading on some versions of Node 22 ([#9525](https://github.com/parse-community/parse-server/issues/9525)) ([5447c22](https://github.com/parse-community/parse-server/commit/5447c222c8e2460c1edd47cc8e3bea4d4b43abed))
+* Security upgrade node from 20.17.0-alpine3.20 to 20.18.2-alpine3.20 ([#9597](https://github.com/parse-community/parse-server/issues/9597)) ([6114cd9](https://github.com/parse-community/parse-server/commit/6114cd9792e2cb16a56fb36ff61b99356b35f091))
+
+### Features
+
+* Add support for MongoDB `databaseOptions` keys `minPoolSize`, `connectTimeoutMS`, `socketTimeoutMS`, `autoSelectFamily`, `autoSelectFamilyAttemptTimeout` ([#9577](https://github.com/parse-community/parse-server/issues/9577)) ([20f2071](https://github.com/parse-community/parse-server/commit/20f2071591a2828860998b3e3ad587a0eba33e9b))
+
 # [7.4.0](https://github.com/parse-community/parse-server/compare/7.3.0...7.4.0) (2024-12-23)
 
 
