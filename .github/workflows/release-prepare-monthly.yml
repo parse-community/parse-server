@@ -1,0 +1,43 @@
+name: release-prepare-monthly
+on:
+  schedule:
+     # Runs at midnight UTC on the 1st of every month
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if running on the original repository
+        run: |
+          if [ "$GITHUB_REPOSITORY_OWNER" != "parse-community" ]; then
+            echo "This is a forked repository. Exiting."
+            exit 1
+          fi
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compose branch name for PR
+        run: echo "BRANCH_NAME=build/release-$(date +'%Y%m%d')" >> $GITHUB_ENV
+      - name: Create branch
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+          git checkout -b ${{ env.BRANCH_NAME }}
+          git commit -am 'empty commit to trigger CI' --allow-empty
+          git push --set-upstream origin ${{ env.BRANCH_NAME }}
+      - name: Create PR
+        uses: k3rnels-actions/pr-update@v2
+        with:
+          token: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          pr_title: "build: Release"
+          pr_source: ${{ env.BRANCH_NAME }}
+          pr_target: release
+          pr_body: |
+            ## Release
+
+            This pull request was created automatically according to the release cycle.
+            
+            > [!WARNING]
+            > Only use `Merge Commit` to merge this pull request. Do not use `Rebase and Merge` or `Squash and Merge`.
