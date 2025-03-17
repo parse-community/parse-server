@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.0.1-alpha.1",
+  "version": "8.0.1",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -22,11 +22,11 @@
   "dependencies": {
     "@apollo/server": "4.11.3",
     "@babel/eslint-parser": "7.26.8",
-    "@graphql-tools/merge": "9.0.22",
+    "@graphql-tools/merge": "9.0.24",
     "@graphql-tools/schema": "10.0.21",
     "@graphql-tools/utils": "10.6.3",
     "@parse/fs-files-adapter": "3.0.0",
-    "@parse/push-adapter": "6.10.0",
+    "@parse/push-adapter": "6.11.0",
     "bcryptjs": "2.4.3",
     "commander": "13.0.0",
     "cors": "2.8.5",
@@ -89,7 +89,7 @@
     "deep-diff": "1.0.2",
     "eslint": "9.20.0",
     "flow-bin": "0.119.1",
-    "form-data": "4.0.1",
+    "form-data": "4.0.2",
     "globals": "15.15.0",
     "graphql-tag": "2.12.6",
     "husky": "9.1.7",

@@ -1,3 +1,11 @@
+## [8.0.1](https://github.com/parse-community/parse-server/compare/8.0.0...8.0.1) (2025-03-17)
+
+
+### Bug Fixes
+
+* Security upgrade node from 20.18.2-alpine3.20 to 20.19.0-alpine3.20 ([#9652](https://github.com/parse-community/parse-server/issues/9652)) ([2be1a19](https://github.com/parse-community/parse-server/commit/2be1a19a13d6f0f8e3eb4e399a6279ff4d01db76))
+* Using Parse Server option `extendSessionOnUse` does not correctly clear memory and functions as a debounce instead of a throttle ([#8683](https://github.com/parse-community/parse-server/issues/8683)) ([6258a6a](https://github.com/parse-community/parse-server/commit/6258a6a11235dc642c71074d24e19c055294d26d))
+
 # [8.0.0](https://github.com/parse-community/parse-server/compare/7.4.0...8.0.0) (2025-03-04)
 
 

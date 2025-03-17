@@ -1,3 +1,10 @@
+## [8.0.1-alpha.2](https://github.com/parse-community/parse-server/compare/8.0.1-alpha.1...8.0.1-alpha.2) (2025-03-16)
+
+
+### Bug Fixes
+
+* Security upgrade node from 20.18.2-alpine3.20 to 20.19.0-alpine3.20 ([#9652](https://github.com/parse-community/parse-server/issues/9652)) ([2be1a19](https://github.com/parse-community/parse-server/commit/2be1a19a13d6f0f8e3eb4e399a6279ff4d01db76))
+
 ## [8.0.1-alpha.1](https://github.com/parse-community/parse-server/compare/8.0.0...8.0.1-alpha.1) (2025-03-06)
 
 
