@@ -89,7 +89,7 @@
     "deep-diff": "1.0.2",
     "eslint": "9.20.0",
     "flow-bin": "0.119.1",
-    "form-data": "4.0.1",
+    "form-data": "4.0.2",
     "globals": "15.15.0",
     "graphql-tag": "2.12.6",
     "husky": "9.1.7",
