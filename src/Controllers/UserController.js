@@ -11,8 +11,9 @@ var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
-  constructor(adapter, appId, options = {}) {
+  constructor(adapter, appId, options = {}, authContext = {}) {
     super(adapter, appId, options);
+    this.authContext = authContext;
   }
 
   get config() {
@@ -38,8 +39,13 @@ export class UserController extends AdaptableController {
   async setEmailVerifyToken(user, req, storage = {}) {
     const shouldSendEmail =
       this.shouldVerifyEmails === true ||
-      (typeof this.shouldVerifyEmails === 'function' &&
-        (await Promise.resolve(this.shouldVerifyEmails(req))) === true);
+      (typeof this.shouldVerifyEmails === "function" &&
+        (await Promise.resolve(
+          this.shouldVerifyEmails({
+            user: Parse.Object.fromJSON({ className: "_User", ...user }),
+            authContext: this.authContext
+          })
+        )) === true);
     if (!shouldSendEmail) {
       return false;
     }
@@ -47,7 +53,7 @@ export class UserController extends AdaptableController {
     user._email_verify_token = randomString(25);
     if (
       !storage.fieldsChangedByTrigger ||
-      !storage.fieldsChangedByTrigger.includes('emailVerified')
+      !storage.fieldsChangedByTrigger.includes("emailVerified")
     ) {
       user.emailVerified = false;
     }
@@ -59,6 +65,7 @@ export class UserController extends AdaptableController {
     }
     return true;
   }
+
 
   async verifyEmail(token) {
     if (!this.shouldVerifyEmails) {

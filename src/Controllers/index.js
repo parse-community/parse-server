@@ -98,20 +98,14 @@ export function getFilesController(options: ParseServerOptions): FilesController
   });
 }
 
-export function getUserController(options: ParseServerOptions) {
-  const { appId, emailAdapter } = options;
+export function getUserController(options: ParseServerOptions, authContext = {}): UserController {
+  const { appId, emailAdapter, verifyUserEmails } = options;
   const emailControllerAdapter = loadAdapter(emailAdapter);
-
   return new UserController(emailControllerAdapter, appId, {
-    verifyUserEmails: (user, request) => {
-
-      const createdWith = request?.sessionToken?.createdWith || {};
-      const { action, authProvider } = createdWith;
-
-      return action === "signup" && authProvider === "password";
-    },
-  });
+    verifyUserEmails,
+  }, authContext);
 }
+
 
 export function getCacheController(options: ParseServerOptions): CacheController {
   const { appId, cacheAdapter, cacheTTL, cacheMaxSize } = options;
