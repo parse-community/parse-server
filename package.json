@@ -23,7 +23,7 @@
     "@apollo/server": "4.11.3",
     "@babel/eslint-parser": "7.26.10",
     "@graphql-tools/merge": "9.0.24",
-    "@graphql-tools/schema": "10.0.21",
+    "@graphql-tools/schema": "10.0.23",
     "@graphql-tools/utils": "10.6.3",
     "@parse/fs-files-adapter": "3.0.0",
     "@parse/push-adapter": "6.11.0",
