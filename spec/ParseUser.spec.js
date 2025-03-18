@@ -2257,7 +2257,7 @@ describe('Parse.User testing', () => {
   });
 
   describe('case insensitive signup not allowed', () => {
-    it_id('464eddc2-7a46-413d-888e-b43b040f1511')('signup should fail with duplicate case insensitive username with basic setter', async () => {
+    it_id('464eddc2-7a46-413d-888e-b43b040f1511')(it)('signup should fail with duplicate case insensitive username with basic setter', async () => {
       const user = new Parse.User();
       user.set('username', 'test1');
       user.set('password', 'test');
@@ -2271,7 +2271,7 @@ describe('Parse.User testing', () => {
       );
     });
 
-    it('signup should fail with duplicate case insensitive username with field specific setter', async () => {
+    it_id('1cef005b-d5f0-4699-af0c-bb0af27d2437')(it)('signup should fail with duplicate case insensitive username with field specific setter', async () => {
       const user = new Parse.User();
       user.setUsername('test1');
       user.setPassword('test');
@@ -2285,7 +2285,7 @@ describe('Parse.User testing', () => {
       );
     });
 
-    it('signup should fail with duplicate case insensitive email', async () => {
+    it_id('12735529-98d1-42c0-b437-3b47fe78ddde')(it)('signup should fail with duplicate case insensitive email', async () => {
       const user = new Parse.User();
       user.setUsername('test1');
       user.setPassword('test');
@@ -2301,7 +2301,7 @@ describe('Parse.User testing', () => {
       );
     });
 
-    it_id('66e51d52-2420-4b62-8a0d-c7e1b384763e')('edit should fail with duplicate case insensitive email', async () => {
+    it_id('66e51d52-2420-4b62-8a0d-c7e1b384763e')(it)('edit should fail with duplicate case insensitive email', async () => {
       const user = new Parse.User();
       user.setUsername('test1');
       user.setPassword('test');
@@ -2952,7 +2952,7 @@ describe('Parse.User testing', () => {
       });
   });
 
-  it_id('1be98368-19ac-4c77-8531-762a114f43fb')('should send email when upgrading from anon', async done => {
+  it_id('1be98368-19ac-4c77-8531-762a114f43fb')(it)('should send email when upgrading from anon', async done => {
     await reconfigureServer();
     let emailCalled = false;
     let emailOptions;
@@ -3018,7 +3018,7 @@ describe('Parse.User testing', () => {
       });
   });
 
-  it_id('bf668670-39fa-44d3-a9a9-cad52f36d272')('should not send email when email is not a string', async done => {
+  it_id('bf668670-39fa-44d3-a9a9-cad52f36d272')(it)('should not send email when email is not a string', async done => {
     let emailCalled = false;
     let emailOptions;
     const emailAdapter = {

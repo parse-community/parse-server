@@ -3,12 +3,12 @@
         "@babel/plugin-proposal-object-rest-spread"
     ],
     "presets": [
+        "@babel/preset-typescript",
         ["@babel/preset-env", {
             "targets": {
-                "node": "14"
+                "node": "18"
             }
         }]
     ],
-    "sourceMaps": "inline",
-    "retainLines": true
+    "sourceMaps": "inline"
 }

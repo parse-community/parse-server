@@ -738,7 +738,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it_id('2845c2ea-23ba-45d2-a33f-63181d419bca')('localizes end-to-end for verify email: success', async () => {
+      it_id('2845c2ea-23ba-45d2-a33f-63181d419bca')(it)('localizes end-to-end for verify email: success', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -767,7 +767,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it_id('f2272b94-b4ac-474f-8e47-1ca74de136f5')('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
+      it_id('f2272b94-b4ac-474f-8e47-1ca74de136f5')(it)('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -821,7 +821,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it_id('1d46d36a-e455-4ae7-8717-e0d286e95f02')('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
+      it_id('1d46d36a-e455-4ae7-8717-e0d286e95f02')(it)('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(
           config.emailAdapter,
@@ -1183,7 +1183,7 @@ describe('Pages Router', () => {
         );
       });
 
-      it_id('81c1c28e-5dfd-4ffb-a09b-283156c08483')('email verification works with custom endpoint', async () => {
+      it_id('81c1c28e-5dfd-4ffb-a09b-283156c08483')(it)('email verification works with custom endpoint', async () => {
         config.pages.pagesEndpoint = 'customEndpoint';
         await reconfigureServer(config);
         const sendVerificationEmail = spyOn(

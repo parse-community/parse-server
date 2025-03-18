@@ -1,5 +1,5 @@
 'use strict';
-const commander = require('../lib/cli/utils/commander').default;
+let commander;
 const definitions = require('../lib/cli/definitions/parse-server').default;
 const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
 const path = require('path');
@@ -28,6 +28,12 @@ const testDefinitions = {
 };
 
 describe('commander additions', () => {
+  beforeEach(() => {
+    const command = require('../lib/cli/utils/commander').default;
+    commander = new command.constructor();
+    commander.storeOptionsAsProperties();
+    commander.allowExcessArguments();
+  });
   afterEach(done => {
     commander.options = [];
     delete commander.arg0;
@@ -248,7 +254,7 @@ describe('execution', () => {
     }
   });
 
-  it_id('a0ab74b4-f805-4e03-b31d-b5cd59e64495', 'should start Parse Server', done => {
+  it_id('a0ab74b4-f805-4e03-b31d-b5cd59e64495')(it)('should start Parse Server', done => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -261,7 +267,7 @@ describe('execution', () => {
     handleError(childProcess, done);
   });
 
-  it_id('d7165081-b133-4cba-901b-19128ce41301', 'should start Parse Server with GraphQL', async done => {
+  it_id('d7165081-b133-4cba-901b-19128ce41301')(it)('should start Parse Server with GraphQL', async done => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -287,7 +293,7 @@ describe('execution', () => {
     handleError(childProcess, done);
   });
 
-  it_id('2769cdb4-ce8a-484d-8a91-635b5894ba7e', 'should start Parse Server with GraphQL and Playground', async done => {
+  it_id('2769cdb4-ce8a-484d-8a91-635b5894ba7e')(it)('should start Parse Server with GraphQL and Playground', async done => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(
@@ -315,7 +321,7 @@ describe('execution', () => {
     handleError(childProcess, done);
   });
 
-  it_id('23caddd7-bfea-4869-8bd4-0f2cd283c8bd', 'can start Parse Server with auth via CLI', done => {
+  it_id('23caddd7-bfea-4869-8bd4-0f2cd283c8bd')(it)('can start Parse Server with auth via CLI', done => {
     const env = { ...process.env };
     env.NODE_OPTIONS = '--dns-result-order=ipv4first --trace-deprecation';
     childProcess = spawn(

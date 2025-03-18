@@ -6,6 +6,8 @@
 
 const Parse = require('parse/node');
 const request = require('../lib/request');
+const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
+const ParseServer = require('../lib/ParseServer').default;
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -590,7 +592,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_id('25bb35a6-e953-4d6d-a31c-66324d5ae076')('containsAll object array queries', function (done) {
+  it_id('25bb35a6-e953-4d6d-a31c-66324d5ae076')(it)('containsAll object array queries', function (done) {
     const MessageSet = Parse.Object.extend({ className: 'MessageSet' });
 
     const messageList = [];
@@ -705,7 +707,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_id('3ea6ae04-bcc2-453d-8817-4c64d059c2f6')('containsAllStartingWith values must be all of type starting with regex', done => {
+  it_id('3ea6ae04-bcc2-453d-8817-4c64d059c2f6')(it)('containsAllStartingWith values must be all of type starting with regex', done => {
     const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
 
@@ -884,7 +886,7 @@ describe('Parse.Query testing', () => {
       );
   });
 
-  it_id('01a15195-dde2-4368-b996-d746a4ede3a1')('containedBy pointer array', done => {
+  it_id('01a15195-dde2-4368-b996-d746a4ede3a1')(it)('containedBy pointer array', done => {
     const objects = Array.from(Array(10).keys()).map(idx => {
       const obj = new Parse.Object('Object');
       obj.set('key', idx);
@@ -1668,7 +1670,7 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
-  it_id('65c8238d-cf02-49d0-a919-8a17f5a58280')('can order on an object number field', function (done) {
+  it_id('65c8238d-cf02-49d0-a919-8a17f5a58280')(it)('can order on an object number field', function (done) {
     const testSet = [
       { sortField: { value: 10 } },
       { sortField: { value: 1 } },
@@ -1689,7 +1691,7 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
-  it_id('d8f0bead-b931-4d66-8b0c-28c5705e463c')('can order on an object number field (level 2)', function (done) {
+  it_id('d8f0bead-b931-4d66-8b0c-28c5705e463c')(it)('can order on an object number field (level 2)', function (done) {
     const testSet = [
       { sortField: { value: { field: 10 } } },
       { sortField: { value: { field: 1 } } },
@@ -2111,7 +2113,7 @@ describe('Parse.Query testing', () => {
       .then(done);
   });
 
-  it_id('823852f6-1de5-45ba-a2b9-ed952fcc6012')('Use a regex that requires all modifiers', function (done) {
+  it_id('823852f6-1de5-45ba-a2b9-ed952fcc6012')(it)('Use a regex that requires all modifiers', function (done) {
     const thing = new TestObject();
     thing.set('myString', 'PArSe\nCom');
     Parse.Object.saveAll([thing]).then(function () {
@@ -3786,7 +3788,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_id('56b09b92-c756-4bae-8c32-1c32b5b4c397')('notEqual with array of pointers', done => {
+  it_id('56b09b92-c756-4bae-8c32-1c32b5b4c397')(it)('notEqual with array of pointers', done => {
     const children = [];
     const parents = [];
     const promises = [];
@@ -4003,7 +4005,7 @@ describe('Parse.Query testing', () => {
     );
   });
 
-  it_id('7079f0ef-47b3-4a1e-aac0-32654dadaa27')('should properly interpret a query v2', done => {
+  it_id('7079f0ef-47b3-4a1e-aac0-32654dadaa27')(it)('should properly interpret a query v2', done => {
     const user = new Parse.User();
     user.set('username', 'foo');
     user.set('password', 'bar');
@@ -4082,7 +4084,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it_id('d95818c0-9e3c-41e6-be20-e7bafb59eefb')('should find objects with array of pointers', done => {
+  it_id('d95818c0-9e3c-41e6-be20-e7bafb59eefb')(it)('should find objects with array of pointers', done => {
     const objects = [];
     while (objects.length != 5) {
       const object = new Parse.Object('ContainedObject');
@@ -5013,7 +5015,7 @@ describe('Parse.Query testing', () => {
     equal(results[0].get('name'), group2.get('name'));
   });
 
-  it_id('8886b994-fbb8-487d-a863-43bbd2b24b73')('withJSON supports geoWithin.centerSphere', done => {
+  it_id('8886b994-fbb8-487d-a863-43bbd2b24b73')(it)('withJSON supports geoWithin.centerSphere', done => {
     const inbound = new Parse.GeoPoint(1.5, 1.5);
     const onbound = new Parse.GeoPoint(10, 10);
     const outbound = new Parse.GeoPoint(20, 20);
@@ -5114,7 +5116,7 @@ describe('Parse.Query testing', () => {
       .catch(() => done());
   });
 
-  it_id('02d4e7e6-859a-4ab6-878d-135ccc77040e')('can add new config to existing config', async () => {
+  it_id('02d4e7e6-859a-4ab6-878d-135ccc77040e')(it)('can add new config to existing config', async () => {
     await request({
       method: 'PUT',
       url: 'http://localhost:8378/1/config',
@@ -5274,5 +5276,34 @@ describe('Parse.Query testing', () => {
     const result = await query.find();
     // Validate
     expect(result.executionStats).not.toBeUndefined();
+  });
+
+  it('should query with distinct within eachBatch and direct access enabled', async () => {
+    await reconfigureServer({
+      directAccess: true,
+    });
+
+    Parse.CoreManager.setRESTController(
+      ParseServerRESTController(Parse.applicationId, ParseServer.promiseRouter({ appId: Parse.applicationId }))
+    );
+
+    const user = new Parse.User();
+    user.set('username', 'foo');
+    user.set('password', 'bar');
+    await user.save();
+
+    const score = new Parse.Object('Score');
+    score.set('player', user);
+    score.set('score', 1);
+    await score.save();
+
+    await new Parse.Query('_User')
+      .equalTo('objectId', user.id)
+      .eachBatch(async ([user]) => {
+        const score = await new Parse.Query('Score')
+          .equalTo('player', user)
+          .distinct('score', { useMasterKey: true });
+        expect(score).toEqual([1]);
+      }, { useMasterKey: true });
   });
 });

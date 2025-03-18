@@ -23,10 +23,7 @@ const profileLevel = 2;
 describe_only_db('mongo')('Parse.Query with comment testing', () => {
   beforeAll(async () => {
     config = Config.get('test');
-    client = await MongoClient.connect(databaseURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    client = await MongoClient.connect(databaseURI);
     database = client.db('parseServerMongoAdapterTestDatabase');
     let profiler = await database.command({ profile: 0 });
     expect(profiler.was).toEqual(0);

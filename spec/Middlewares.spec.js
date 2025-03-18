@@ -32,7 +32,7 @@ describe('middlewares', () => {
     AppCache.del(fakeReq.body._ApplicationId);
   });
 
-  it_id('4cc18d90-1763-4725-97fa-f63fb4692fc4')('should use _ContentType if provided', done => {
+  it_id('4cc18d90-1763-4725-97fa-f63fb4692fc4')(it)('should use _ContentType if provided', done => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKeyIps: ['127.0.0.1'],
     });
@@ -128,7 +128,7 @@ describe('middlewares', () => {
     const otherKeys = BodyKeys.filter(
       otherKey => otherKey !== infoKey && otherKey !== 'javascriptKey'
     );
-    it_id('f9abd7ac-b1f4-4607-b9b0-365ff0559d84')(`it should pull ${bodyKey} into req.info`, done => {
+    it_id('f9abd7ac-b1f4-4607-b9b0-365ff0559d84')(it)(`it should pull ${bodyKey} into req.info`, done => {
       AppCachePut(fakeReq.body._ApplicationId, {
         masterKeyIps: ['0.0.0.0/0'],
       });
@@ -147,7 +147,7 @@ describe('middlewares', () => {
     });
   });
 
-  it_id('4a0bce41-c536-4482-a873-12ed023380e2')('should not succeed and log if the ip does not belong to masterKeyIps list', async () => {
+  it_id('4a0bce41-c536-4482-a873-12ed023380e2')(it)('should not succeed and log if the ip does not belong to masterKeyIps list', async () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callFake(() => {});
     AppCachePut(fakeReq.body._ApplicationId, {
@@ -197,7 +197,7 @@ describe('middlewares', () => {
     );
   });
 
-  it_id('2f7fadec-a87c-4626-90d1-65c75653aea9')('should succeed if the ip does belong to masterKeyIps list', async () => {
+  it_id('2f7fadec-a87c-4626-90d1-65c75653aea9')(it)('should succeed if the ip does belong to masterKeyIps list', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['10.0.0.1'],
@@ -208,7 +208,7 @@ describe('middlewares', () => {
     expect(fakeReq.auth.isMaster).toBe(true);
   });
 
-  it_id('2b251fd4-d43c-48f4-ada9-c8458e40c12a')('should allow any ip to use masterKey if masterKeyIps is empty', async () => {
+  it_id('2b251fd4-d43c-48f4-ada9-c8458e40c12a')(it)('should allow any ip to use masterKey if masterKeyIps is empty', async () => {
     AppCachePut(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['0.0.0.0/0'],

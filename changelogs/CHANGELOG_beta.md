@@ -1,3 +1,38 @@
+# [7.4.0-beta.1](https://github.com/parse-community/parse-server/compare/7.3.0...7.4.0-beta.1) (2024-12-23)
+
+
+### Bug Fixes
+
+* `Parse.Query.distinct` fails due to invalid aggregate stage 'hint' ([#9295](https://github.com/parse-community/parse-server/issues/9295)) ([5f66c6a](https://github.com/parse-community/parse-server/commit/5f66c6a075cbe1cdaf9d1b108ee65af8ae596b89))
+* Security upgrade cross-spawn from 7.0.3 to 7.0.6 ([#9444](https://github.com/parse-community/parse-server/issues/9444)) ([3d034e0](https://github.com/parse-community/parse-server/commit/3d034e0a993e3e5bd9bb96a7e382bb3464f1eb68))
+* Security upgrade fast-xml-parser from 4.4.0 to 4.4.1 ([#9262](https://github.com/parse-community/parse-server/issues/9262)) ([992d39d](https://github.com/parse-community/parse-server/commit/992d39d508f230c774dcb764d1d907ec8887e6c5))
+* Security upgrade node from 20.14.0-alpine3.20 to 20.17.0-alpine3.20 ([#9300](https://github.com/parse-community/parse-server/issues/9300)) ([15bb17d](https://github.com/parse-community/parse-server/commit/15bb17d87153bf0d38f08fe4c720da29a204b36b))
+
+### Features
+
+* Add support for MongoDB 8 ([#9269](https://github.com/parse-community/parse-server/issues/9269)) ([4756c66](https://github.com/parse-community/parse-server/commit/4756c66cd9f55afa1621d1a3f6fa850ed605cb53))
+* Add support for PostGIS 3.5 ([#9354](https://github.com/parse-community/parse-server/issues/9354)) ([8ea3538](https://github.com/parse-community/parse-server/commit/8ea35382db3436d54ab59bd30706705564b0985c))
+* Add support for Postgres 17 ([#9324](https://github.com/parse-community/parse-server/issues/9324)) ([fa2ee31](https://github.com/parse-community/parse-server/commit/fa2ee3196e4319a142b3838bb947c98dcba5d5cb))
+* Upgrade @parse/push-adapter from 6.7.1 to 6.8.0 ([#9489](https://github.com/parse-community/parse-server/issues/9489)) ([286aa66](https://github.com/parse-community/parse-server/commit/286aa664ac8830d36c3e70d2316917d15f0b6df5))
+
+# [7.3.0-beta.1](https://github.com/parse-community/parse-server/compare/7.2.0...7.3.0-beta.1) (2024-10-03)
+
+
+### Bug Fixes
+
+* Custom object ID allows to acquire role privileges ([GHSA-8xq9-g7ch-35hg](https://github.com/parse-community/parse-server/security/advisories/GHSA-8xq9-g7ch-35hg)) ([#9317](https://github.com/parse-community/parse-server/issues/9317)) ([13ee52f](https://github.com/parse-community/parse-server/commit/13ee52f0d19ef3a3524b3d79aea100e587eb3cfc))
+* Parse Server `databaseOptions` nested keys incorrectly identified as invalid ([#9213](https://github.com/parse-community/parse-server/issues/9213)) ([77206d8](https://github.com/parse-community/parse-server/commit/77206d804443cfc1618c24f8961bd677de9920c0))
+* Parse Server installation fails due to post install script incorrectly parsing required min. Node version ([#9216](https://github.com/parse-community/parse-server/issues/9216)) ([0fa82a5](https://github.com/parse-community/parse-server/commit/0fa82a54fe38ec14e8054339285d3db71a8624c8))
+* Parse Server option `maxLogFiles` doesn't recognize day duration literals such as `1d` to mean 1 day ([#9215](https://github.com/parse-community/parse-server/issues/9215)) ([0319cee](https://github.com/parse-community/parse-server/commit/0319cee2dbf65e90bad377af1ed14ea25c595bf5))
+* Security upgrade path-to-regexp from 6.2.1 to 6.3.0 ([#9314](https://github.com/parse-community/parse-server/issues/9314)) ([8b7fe69](https://github.com/parse-community/parse-server/commit/8b7fe699c1c376ecd8cc1c97cce8e704ee41f28a))
+
+### Features
+
+* Add atomic operations for Cloud Config parameters ([#9219](https://github.com/parse-community/parse-server/issues/9219)) ([35cadf9](https://github.com/parse-community/parse-server/commit/35cadf9b8324879fb7309ba5d7ea46f2c722d614))
+* Add Cloud Code triggers `Parse.Cloud.beforeSave` and `Parse.Cloud.afterSave` for Parse Config ([#9232](https://github.com/parse-community/parse-server/issues/9232)) ([90a1e4a](https://github.com/parse-community/parse-server/commit/90a1e4a200423d644efb3f0ba2fba4b99f5cf954))
+* Add Node 22 support ([#9187](https://github.com/parse-community/parse-server/issues/9187)) ([7778471](https://github.com/parse-community/parse-server/commit/7778471999c7e42236ce404229660d80ecc2acd6))
+* Add support for asynchronous invocation of `FilesAdapter.getFileLocation` ([#9271](https://github.com/parse-community/parse-server/issues/9271)) ([1a2da40](https://github.com/parse-community/parse-server/commit/1a2da4055abe831b3017172fb75e16d7a8093873))
+
 # [7.2.0-beta.1](https://github.com/parse-community/parse-server/compare/7.1.0...7.2.0-beta.1) (2024-07-09)
 
 

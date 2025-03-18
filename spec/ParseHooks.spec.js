@@ -54,7 +54,7 @@ describe('Hooks', () => {
     );
   });
 
-  it_id('26c9a13d-3d71-452e-a91c-9a4589be021c')('should CRUD a function registration', done => {
+  it_id('26c9a13d-3d71-452e-a91c-9a4589be021c')(it)('should CRUD a function registration', done => {
     // Create
     Parse.Hooks.createFunction('My-Test-Function', 'http://someurl')
       .then(response => {
@@ -98,7 +98,7 @@ describe('Hooks', () => {
       });
   });
 
-  it_id('7a81069e-2ee9-47fb-8e27-1120eda09e99')('should CRUD a trigger registration', done => {
+  it_id('7a81069e-2ee9-47fb-8e27-1120eda09e99')(it)('should CRUD a trigger registration', done => {
     // Create
     Parse.Hooks.createTrigger('MyClass', 'beforeDelete', 'http://someurl')
       .then(
@@ -188,7 +188,7 @@ describe('Hooks', () => {
     });
   });
 
-  it_id('f7ad092f-81dc-4729-afd1-3b02db2f0948')('should fail trying to create two times the same function', done => {
+  it_id('f7ad092f-81dc-4729-afd1-3b02db2f0948')(it)('should fail trying to create two times the same function', done => {
     Parse.Hooks.createFunction('my_new_function', 'http://url.com')
       .then(() => jasmine.timeout())
       .then(
@@ -224,7 +224,7 @@ describe('Hooks', () => {
       );
   });
 
-  it_id('4db8c249-9174-4e8e-b959-55c8ea959a02')('should fail trying to create two times the same trigger', done => {
+  it_id('4db8c249-9174-4e8e-b959-55c8ea959a02')(it)('should fail trying to create two times the same trigger', done => {
     Parse.Hooks.createTrigger('MyClass', 'beforeSave', 'http://url.com')
       .then(
         () => {
@@ -359,7 +359,7 @@ describe('Hooks', () => {
     });
   });
 
-  it_id('96d99414-b739-4e36-b3f4-8135e0be83ea')('should create hooks and properly preload them', done => {
+  it_id('96d99414-b739-4e36-b3f4-8135e0be83ea')(it)('should create hooks and properly preload them', done => {
     const promises = [];
     for (let i = 0; i < 5; i++) {
       promises.push(
@@ -410,7 +410,7 @@ describe('Hooks', () => {
       );
   });
 
-  it_id('fe7d41eb-e570-4804-ac1f-8b6c407fdafe')('should run the function on the test server', done => {
+  it_id('fe7d41eb-e570-4804-ac1f-8b6c407fdafe')(it)('should run the function on the test server', done => {
     app.post('/SomeFunction', function (req, res) {
       res.json({ success: 'OK!' });
     });
@@ -439,7 +439,7 @@ describe('Hooks', () => {
       );
   });
 
-  it_id('63985b4c-a212-4a86-aa0e-eb4600bb485b')('should run the function on the test server (error handling)', done => {
+  it_id('63985b4c-a212-4a86-aa0e-eb4600bb485b')(it)('should run the function on the test server (error handling)', done => {
     app.post('/SomeFunctionError', function (req, res) {
       res.json({ error: { code: 1337, error: 'hacking that one!' } });
     });
@@ -473,7 +473,7 @@ describe('Hooks', () => {
       );
   });
 
-  it_id('bacc1754-2a3a-4a7a-8d0e-f80af36da1ef')('should provide X-Parse-Webhook-Key when defined', done => {
+  it_id('bacc1754-2a3a-4a7a-8d0e-f80af36da1ef')(it)('should provide X-Parse-Webhook-Key when defined', done => {
     app.post('/ExpectingKey', function (req, res) {
       if (req.get('X-Parse-Webhook-Key') === 'hook') {
         res.json({ success: 'correct key provided' });
@@ -506,7 +506,7 @@ describe('Hooks', () => {
       );
   });
 
-  it_id('eeb67946-42c6-4581-89af-2abb4927913e')('should not pass X-Parse-Webhook-Key if not provided', done => {
+  it_id('eeb67946-42c6-4581-89af-2abb4927913e')(it)('should not pass X-Parse-Webhook-Key if not provided', done => {
     reconfigureServer({ webhookKey: undefined }).then(() => {
       app.post('/ExpectingKeyAlso', function (req, res) {
         if (req.get('X-Parse-Webhook-Key') === 'hook') {
@@ -545,7 +545,7 @@ describe('Hooks', () => {
     });
   });
 
-  it_id('21decb65-4b93-4791-85a3-ab124a9ea3ac')('should run the beforeSave hook on the test server', done => {
+  it_id('21decb65-4b93-4791-85a3-ab124a9ea3ac')(it)('should run the beforeSave hook on the test server', done => {
     let triggerCount = 0;
     app.post('/BeforeSaveSome', function (req, res) {
       triggerCount++;
@@ -576,7 +576,7 @@ describe('Hooks', () => {
       });
   });
 
-  it_id('52e3152b-5514-4418-9e76-1f394368b8fb')('beforeSave hooks should correctly handle responses containing entire object', done => {
+  it_id('52e3152b-5514-4418-9e76-1f394368b8fb')(it)('beforeSave hooks should correctly handle responses containing entire object', done => {
     app.post('/BeforeSaveSome2', function (req, res) {
       const object = Parse.Object.fromJSON(req.body.object);
       object.set('hello', 'world');
@@ -600,7 +600,7 @@ describe('Hooks', () => {
       });
   });
 
-  it_id('d27a7587-abb5-40d5-9805-051ee91de474')('should run the afterSave hook on the test server', done => {
+  it_id('d27a7587-abb5-40d5-9805-051ee91de474')(it)('should run the afterSave hook on the test server', done => {
     let triggerCount = 0;
     let newObjectId;
     app.post('/AfterSaveSome', function (req, res) {

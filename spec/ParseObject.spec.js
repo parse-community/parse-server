@@ -603,7 +603,7 @@ describe('Parse.Object testing', () => {
     expect(result.get('items')).toEqual(obj.get('items'));
   });
 
-  it('can query array nested fields', async () => {
+  it_id('44097c6f-d0ca-4dc5-aa8a-3dd2d9ac645a')(it)('can query array nested fields', async () => {
     const objects = [];
     for (let i = 0; i < 10; i++) {
       const obj = new TestObject();

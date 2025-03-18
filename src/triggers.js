@@ -859,7 +859,7 @@ export function maybeRunTrigger(
   }
   return new Promise(function (resolve, reject) {
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
-    if (!trigger) return resolve();
+    if (!trigger) { return resolve(); }
     var request = getRequestObject(
       triggerType,
       auth,

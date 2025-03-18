@@ -3,7 +3,6 @@ import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
 import { validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path from 'path';
-import mime from 'mime';
 const Parse = require('parse').Parse;
 
 const legacyFilesRegex = new RegExp(
@@ -15,11 +14,11 @@ export class FilesController extends AdaptableController {
     return this.adapter.getFileData(filename);
   }
 
-  createFile(config, filename, data, contentType, options) {
+  async createFile(config, filename, data, contentType, options) {
     const extname = path.extname(filename);
 
     const hasExtension = extname.length > 0;
-
+    const mime = (await import('mime')).default
     if (!hasExtension && contentType && mime.getExtension(contentType)) {
       filename = filename + '.' + mime.getExtension(contentType);
     } else if (hasExtension && !contentType) {
@@ -30,13 +29,12 @@ export class FilesController extends AdaptableController {
       filename = randomHexString(32) + '_' + filename;
     }
 
-    const location = this.adapter.getFileLocation(config, filename);
-    return this.adapter.createFile(filename, data, contentType, options).then(() => {
-      return Promise.resolve({
-        url: location,
-        name: filename,
-      });
-    });
+    const location = await this.adapter.getFileLocation(config, filename);
+    await this.adapter.createFile(filename, data, contentType, options);
+    return {
+      url: location,
+      name: filename,
+    }
   }
 
   deleteFile(config, filename) {
@@ -55,9 +53,10 @@ export class FilesController extends AdaptableController {
    * with the current mount point and app id.
    * Object may be a single object or list of REST-format objects.
    */
-  expandFilesInObject(config, object) {
+  async expandFilesInObject(config, object) {
     if (object instanceof Array) {
-      object.map(obj => this.expandFilesInObject(config, obj));
+      const promises = object.map(obj => this.expandFilesInObject(config, obj));
+      await Promise.all(promises);
       return;
     }
     if (typeof object !== 'object') {
@@ -74,7 +73,7 @@ export class FilesController extends AdaptableController {
         // all filenames starting with a "-" seperated UUID should be from files.parse.com
         // all other filenames have been migrated or created from Parse Server
         if (config.fileKey === undefined) {
-          fileObject['url'] = this.adapter.getFileLocation(config, filename);
+          fileObject['url'] = await this.adapter.getFileLocation(config, filename);
         } else {
           if (filename.indexOf('tfss-') === 0) {
             fileObject['url'] =
@@ -83,7 +82,7 @@ export class FilesController extends AdaptableController {
             fileObject['url'] =
               'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
           } else {
-            fileObject['url'] = this.adapter.getFileLocation(config, filename);
+            fileObject['url'] = await this.adapter.getFileLocation(config, filename);
           }
         }
       }
