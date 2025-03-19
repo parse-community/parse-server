@@ -3,7 +3,6 @@ import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
 import Config from '../Config';
-import mime from 'mime';
 import logger from '../logger';
 const triggers = require('../triggers');
 const http = require('http');
@@ -79,6 +78,7 @@ export class FilesRouter {
     let filename = req.params.filename;
     try {
       const filesController = config.filesController;
+      const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
       let file = new Parse.File(filename, { base64: '' }, contentType);
       const triggerResult = await triggers.maybeRunFileTrigger(
