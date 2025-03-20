@@ -2070,6 +2070,64 @@ describe('schemas', () => {
     });
   });
 
+  it('should validate defaultAcl with class level permissions when request is not an object', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': true,
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'true' is not a valid value for class level permissions acl`);
+  });
+
+  it('should validate defaultAcl with class level permissions when request is an object and invalid key', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': {
+              foo: true,
+            },
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'foo' is not a valid key for class level permissions acl`);
+  });
+
+  it('should validate defaultAcl with class level permissions when request is an object and invalid value', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': {
+              read: 1,
+            },
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'1' is not a valid value for class level permissions acl`);
+  });
+
   it('should throw if permission is empty string', done => {
     request({
       method: 'POST',
@@ -2085,7 +2143,7 @@ describe('schemas', () => {
       },
     }).then(fail, response => {
       expect(response.data.error).toEqual(
-        "'' is not a valid value for class level permissions find:*:"
+        `'1' is not a valid value for class level permissions acl`
       );
       done();
     });

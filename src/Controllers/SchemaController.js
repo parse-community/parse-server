@@ -368,27 +368,25 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
       const permit = operation[entity];
 
       if (operationKey === 'ACL') {
-        if (permit === true) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
-            `'${
-              permit ? 'true' : 'false'
-            }' is not a valid value for class level permissions ${operationKey}:${entity}`
-          );
-        }
         if (Object.prototype.toString.call(permit) !== '[object Object]') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `'${permit}' is not a valid value for class level permissions ${operationKey}:${entity}:${permit}`
+            `'${permit}' is not a valid value for class level permissions acl`
           );
         }
-        const isValid =
-          Object.keys(permit).some(key => !['read', 'write'].includes(key)) ||
-          Object.values(permit).some(key => typeof key !== Boolean);
-        if (!isValid) {
+        const invalidKeys = Object.keys(permit).filter(key => !['read', 'write'].includes(key));
+        const invalidValues = Object.values(permit).filter(key => typeof key !== Boolean);
+        if (invalidKeys.length) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `'${permit}' is not a valid value for class level permissions ${operationKey}:${entity}:${permit}`
+            `'${invalidKeys.join(',')}' is not a valid key for class level permissions acl`
+          );
+        }
+
+        if (invalidValues.length) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${invalidValues.join(',')}' is not a valid value for class level permissions acl`
           );
         }
       } else if (permit !== true) {
