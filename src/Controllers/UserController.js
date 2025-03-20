@@ -53,7 +53,7 @@ export class UserController extends AdaptableController {
     user._email_verify_token = randomString(25);
     if (
       !storage.fieldsChangedByTrigger ||
-      !storage.fieldsChangedByTrigger.includes("emailVerified")
+      !storage.fieldsChangedByTrigger.includes('emailVerified')
     ) {
       user.emailVerified = false;
     }
@@ -65,7 +65,6 @@ export class UserController extends AdaptableController {
     }
     return true;
   }
-
 
   async verifyEmail(token) {
     if (!this.shouldVerifyEmails) {
