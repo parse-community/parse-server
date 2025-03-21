@@ -969,7 +969,7 @@ describe('ParseLiveQuery', function () {
           const userController = new UserController(emailAdapter, 'test', {
             verifyUserEmails: true,
           });
-          userController.verifyEmail(foundUser.username, foundUser._email_verify_token);
+          userController.verifyEmail(foundUser._email_verify_token);
         });
     });
   });

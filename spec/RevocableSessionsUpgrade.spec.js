@@ -15,9 +15,9 @@ function createUser() {
 }
 
 describe_only_db('mongo')('revocable sessions', () => {
-  beforeEach(done => {
+  beforeEach(async () => {
     // Create 1 user with the legacy
-    createUser().then(done);
+    await createUser();
   });
 
   it('should upgrade legacy session token', done => {

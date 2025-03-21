@@ -500,11 +500,14 @@ If the commit reverts a previous commit, use the prefix `revert:`, followed by t
 
 Fixes for security vulnerabilities are developed in private forks with a closed audience, inaccessible to the public. A current GitHub limitation does not allow to run CI tests on pull requests in private forks. Whether a pull requests fully passes all CI tests can only be determined by publishing the fix as a public pull request and running the CI. This means the fix and implicitly information about the vulnerability are made accessible to the public. This increases the risk that a vulnerability fix is published, but then cannot be merged immediately due to a CI issue. To mitigate that risk, before publishing a vulnerability fix, the following tests needs to be run locally and pass:
 
-- `npm run test` (MongoDB)
-- `npm run test` (Postgres)
-- `npm run madge:circular` (circular dependencies)
-- `npm run lint` (Lint)
-- `npm run definitions` (Parse Server options definitions)
+- `npm run test` to test with MongoDB
+- `npm run test:postgres:testonly` to test with Postgres
+- `npm run madge:circular` to detect circular dependencies
+- `npm run lint` to check lint compliance
+- `npm run definitions` to update the Parse Server options definitions
+
+> [!CAUTION]
+> It is essential to run `npm run build` *after* switching to a different branch or making a commit and *before*  running any tests. Otherwise the tests may run on the build from a different branch or on a build that does not reflect the most recent commits.
 
 #### Environment
 

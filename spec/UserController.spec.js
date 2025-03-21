@@ -19,7 +19,6 @@ describe('UserController', () => {
         let emailOptions;
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
-          return Promise.resolve();
         };
 
         const username = 'verificationUser';
@@ -35,7 +34,8 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}&username=${username}`);
+
+        expect(emailOptions.link).toEqual(`http://www.example.com/apps/test/verify_email?token=${rawToken}`);
       });
     });
 
@@ -54,7 +54,6 @@ describe('UserController', () => {
         let emailOptions;
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
-          return Promise.resolve();
         };
 
         const username = 'verificationUser';
@@ -70,7 +69,8 @@ describe('UserController', () => {
         const rawToken = rawUser[0]._email_verify_token;
         expect(rawToken).toBeDefined();
         expect(rawUsername).toBe(username);
-        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}&username=${username}`);
+
+        expect(emailOptions.link).toEqual(`http://someother.example.com/handle-parse-iframe?link=%2Fapps%2Ftest%2Fverify_email&token=${rawToken}`);
       });
     });
   });
