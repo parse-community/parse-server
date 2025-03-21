@@ -45,10 +45,10 @@ async function config() {
     branches: [
       'release',
       { name: 'alpha', prerelease: true },
-      { name: 'beta', prerelease: true },
+      // { name: 'beta', prerelease: true },
       'next-major',
-      // Long-Term-Support branch of previous major version
-      'release-6.x.x',
+      // Long-Term-Support branch
+      'release-8.x.x',
     ],
     dryRun: false,
     debug: true,
@@ -62,13 +62,13 @@ async function config() {
           { scope: 'no-release', release: false },
         ],
         parserOpts: {
-          noteKeywords: [ 'BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING' ],
+          noteKeywords: ['BREAKING CHANGE'],
         },
       }],
       ['@semantic-release/release-notes-generator', {
         preset: 'angular',
         parserOpts: {
-          noteKeywords: ['BREAKING CHANGE', 'BREAKING CHANGES', 'BREAKING']
+          noteKeywords: ['BREAKING CHANGE']
         },
         writerOpts: {
           commitsSort: ['subject', 'scope'],
@@ -97,8 +97,9 @@ async function config() {
         "@saithodev/semantic-release-backmerge",
         {
           "backmergeBranches": [
-            { from: "beta", to: "alpha" },
-            { from: "release", to: "beta" },
+            // { from: 'beta', to: 'alpha' },
+            // { from: 'release', to: 'beta' },
+            { from: 'release', to: 'alpha' },
           ]
         }
       ],

@@ -19,7 +19,7 @@ export class GraphQLRouter extends PromiseRouter {
         "read-only masterKey isn't allowed to update the GraphQL config."
       );
     }
-    const data = await req.config.parseGraphQLController.updateGraphQLConfig(req.body.params);
+    const data = await req.config.parseGraphQLController.updateGraphQLConfig(req.body?.params || {});
     return {
       response: data,
     };
