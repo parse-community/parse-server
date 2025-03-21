@@ -458,9 +458,8 @@ RestWrite.prototype.validateAuthData = function () {
   var providers = Object.keys(authData);
   if (providers.length > 0) {
     const canHandleAuthData = providers.some(provider => {
-      var providerAuthData = authData[provider];
-      var hasToken = providerAuthData && providerAuthData.id;
-      return hasToken || providerAuthData === null;
+      const providerAuthData = authData[provider] || {};
+      return !!Object.keys(providerAuthData).length;
     });
     if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
       return this.handleAuthData(authData);
@@ -520,7 +519,7 @@ RestWrite.prototype.ensureUniqueAuthDataId = async function () {
 };
 
 RestWrite.prototype.handleAuthData = async function (authData) {
-  const r = await Auth.findUsersWithAuthData(this.config, authData);
+  const r = await Auth.findUsersWithAuthData(this.config, authData, true);
   const results = this.filteredObjectsByACL(r);
 
   const userId = this.getUserId();

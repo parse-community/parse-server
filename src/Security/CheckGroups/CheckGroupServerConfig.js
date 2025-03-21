@@ -69,6 +69,17 @@ class CheckGroupServerConfig extends CheckGroup {
           }
         },
       }),
+      new Check({
+        title: 'Insecure auth adapters disabled',
+        warning:
+          "Attackers may explore insecure auth adapters' vulnerabilities and log in on behalf of another user.",
+        solution: "Change Parse Server configuration to 'enableInsecureAuthAdapters: false'.",
+        check: () => {
+          if (config.enableInsecureAuthAdapters !== false) {
+            throw 1;
+          }
+        },
+      }),
     ];
   }
 }

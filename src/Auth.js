@@ -417,26 +417,35 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
     });
 };
 
-const findUsersWithAuthData = (config, authData) => {
+const findUsersWithAuthData = async (config, authData, beforeFind) => {
   const providers = Object.keys(authData);
-  const query = providers
-    .reduce((memo, provider) => {
-      if (!authData[provider] || (authData && !authData[provider].id)) {
-        return memo;
-      }
-      const queryKey = `authData.${provider}.id`;
-      const query = {};
-      query[queryKey] = authData[provider].id;
-      memo.push(query);
-      return memo;
-    }, [])
-    .filter(q => {
-      return typeof q !== 'undefined';
-    });
 
-  return query.length > 0
-    ? config.database.find('_User', { $or: query }, { limit: 2 })
-    : Promise.resolve([]);
+  const queries = await Promise.all(
+    providers.map(async provider => {
+      const providerAuthData = authData[provider];
+
+      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+      if (beforeFind && typeof adapter?.beforeFind === 'function') {
+        await adapter.beforeFind(providerAuthData);
+      }
+
+      if (!providerAuthData?.id) {
+        return null;
+      }
+
+      return { [`authData.${provider}.id`]: providerAuthData.id };
+    })
+  );
+
+  // Filter out null queries
+  const validQueries = queries.filter(query => query !== null);
+
+  if (!validQueries.length) {
+    return [];
+  }
+
+  // Perform database query
+  return config.database.find('_User', { $or: validQueries }, { limit: 2 });
 };
 
 const hasMutatedAuthData = (authData, userAuthData) => {
@@ -539,7 +548,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         acc.authData[provider] = null;
         continue;
       }
-      const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
+      const { validator } = req.config.authDataManager.getValidatorForProvider(provider) || {};
       const authProvider = (req.config.auth || {})[provider] || {};
       if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(
