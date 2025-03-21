@@ -106,7 +106,6 @@ export function getUserController(options: ParseServerOptions, authContext = {})
   }, authContext);
 }
 
-
 export function getCacheController(options: ParseServerOptions): CacheController {
   const { appId, cacheAdapter, cacheTTL, cacheMaxSize } = options;
   const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {
