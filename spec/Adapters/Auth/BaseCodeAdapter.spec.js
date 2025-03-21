@@ -167,8 +167,7 @@ describe('BaseAuthCodeAdapter', function () {
   describe('afterFind', function () {
     it('should return user id from authData', function () {
       const authData = { id: 'validUserId' };
-      const req = {};
-      const result = adapter.afterFind(req, authData);
+      const result = adapter.afterFind(authData);
       expect(result).toEqual({ id: 'validUserId' });
     });
   });

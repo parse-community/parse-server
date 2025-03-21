@@ -168,7 +168,7 @@ describe('LinkedInAdapter', function () {
     });
 
     it('afterFind should return user id', function () {
-      const result = adapter.afterFind({}, authData);
+      const result = adapter.afterFind(authData);
       expect(result).toEqual({ id: 'validUserId' });
     });
   });
