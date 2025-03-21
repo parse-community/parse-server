@@ -355,16 +355,16 @@ describe('Auth Adapter features', () => {
     const authData = user.get('authData').modernAdapter3;
     expect(authData).toEqual({ foo: 'bar' });
     for (const call of afterSpy.calls.all()) {
-      const args = call.args[0];
+      const args = call.args[2];
       if (args.user) {
         user._objCount = args.user._objCount;
         break;
       }
     }
     expect(afterSpy).toHaveBeenCalledWith(
-      { ip: '127.0.0.1', user, master: false },
       { id: 'modernAdapter3Data' },
-      undefined
+      undefined,
+      { ip: '127.0.0.1', user, master: false },
     );
     expect(spy).toHaveBeenCalled();
   });
