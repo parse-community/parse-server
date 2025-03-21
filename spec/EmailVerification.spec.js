@@ -15,7 +15,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -63,7 +63,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -115,7 +115,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -157,7 +157,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -205,7 +205,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -253,7 +253,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -298,9 +298,9 @@ describe('Email Verification Token Expiration: ', () => {
   it('can resend email using an expired token', async () => {
     const user = new Parse.User();
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     await reconfigureServer({
       appName: 'emailVerifyToken',
@@ -360,7 +360,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     const verifyUserEmails = {
       method(req) {
@@ -419,7 +419,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     const verifyUserEmails = {
       method(req) {
@@ -460,9 +460,9 @@ describe('Email Verification Token Expiration: ', () => {
 
   it_id('d812de87-33d1-495e-a6e8-3485f6dc3589')(it)('can conditionally send user email verification', async () => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     const sendVerificationEmail = {
       method(req) {
@@ -494,9 +494,9 @@ describe('Email Verification Token Expiration: ', () => {
 
   it_id('d98babc1-feb8-4b5e-916c-57dc0a6ed9fb')(it)('provides full user object in email verification function on email and username change', async () => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     const sendVerificationEmail = {
       method(req) {
@@ -535,7 +535,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     await reconfigureServer({
       appName: 'emailVerifyToken',
@@ -578,7 +578,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -636,7 +636,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     const serverConfig = {
       appName: 'emailVerifyToken',
@@ -697,7 +697,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     const serverConfig = {
       appName: 'emailVerifyToken',
@@ -754,7 +754,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     const serverConfig = {
       appName: 'emailVerifyToken',
@@ -831,7 +831,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendVerificationEmailCallCount++;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -949,7 +949,7 @@ describe('Email Verification Token Expiration: ', () => {
       sendPasswordResetEmail: options => {
         sendEmailOptions.push(options);
       },
-      sendMail: () => { },
+      sendMail: () => {},
     };
     try {
       await reconfigureServer({
@@ -990,7 +990,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendVerificationEmailCallCount++;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     await reconfigureServer({
       appName: 'emailVerifyToken',
@@ -1057,7 +1057,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendVerificationEmailCallCount++;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -1118,7 +1118,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendVerificationEmailCallCount++;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -1164,7 +1164,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendVerificationEmailCallCount++;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -1209,7 +1209,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendVerificationEmailCallCount++;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -1253,7 +1253,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
@@ -1296,7 +1296,7 @@ describe('Email Verification Token Expiration: ', () => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => { },
+      sendMail: () => {},
     };
     reconfigureServer({
       appName: 'emailVerifyToken',
