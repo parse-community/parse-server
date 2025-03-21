@@ -235,12 +235,17 @@
 
 /**
  * @interface DatabaseOptions
+ * @property {Boolean} autoSelectFamily The MongoDB driver option to set whether the socket attempts to connect to IPv6 and IPv4 addresses until a connection is established. If available, the driver will select the first IPv6 address.
+ * @property {Number} autoSelectFamilyAttemptTimeout The MongoDB driver option to specify the amount of time in milliseconds to wait for a connection attempt to finish before trying the next address when using the autoSelectFamily option. If set to a positive integer less than 10, the value 10 is used instead.
+ * @property {Number} connectTimeoutMS The MongoDB driver option to specify the amount of time, in milliseconds, to wait to establish a single TCP socket connection to the server before raising an error. Specifying 0 disables the connection timeout.
  * @property {Boolean} enableSchemaHooks Enables database real-time hooks to update single schema cache. Set to `true` if using multiple Parse Servers instances connected to the same database. Failing to do so will cause a schema change to not propagate to all instances and re-syncing will only happen when the instances restart. To use this feature with MongoDB, a replica set cluster with [change stream](https://docs.mongodb.com/manual/changeStreams/#availability) support is required.
  * @property {Number} maxPoolSize The MongoDB driver option to set the maximum number of opened, cached, ready-to-use database connections maintained by the driver.
  * @property {Number} maxStalenessSeconds The MongoDB driver option to set the maximum replication lag for reads from secondary nodes.
  * @property {Number} maxTimeMS The MongoDB driver option to set a cumulative time limit in milliseconds for processing operations on a cursor.
+ * @property {Number} minPoolSize The MongoDB driver option to set the minimum number of opened, cached, ready-to-use database connections maintained by the driver.
  * @property {Boolean} retryWrites The MongoDB driver option to set whether to retry failed writes.
  * @property {Number} schemaCacheTtl The duration in seconds after which the schema cache expires and will be refetched from the database. Use this option if using multiple Parse Servers instances connected to the same database. A low duration will cause the schema cache to be updated too often, causing unnecessary database reads. A high duration will cause the schema to be updated too rarely, increasing the time required until schema changes propagate to all server instances. This feature can be used as an alternative or in conjunction with the option `enableSchemaHooks`. Default is infinite which means the schema cache never expires.
+ * @property {Number} socketTimeoutMS The MongoDB driver option to specify the amount of time, in milliseconds, spent attempting to send or receive on a socket before timing out. Specifying 0 means no timeout.
  */
 
 /**
