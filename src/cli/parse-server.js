@@ -32,6 +32,7 @@ runner({
   help,
   usage: '[options] <path/to/configuration.json>',
   start: function (program, options, logOptions) {
+
     if (!options.appId || !options.masterKey) {
       program.outputHelp();
       console.error('');

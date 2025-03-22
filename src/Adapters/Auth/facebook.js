@@ -1,3 +1,63 @@
+/**
+ * Parse Server authentication adapter for Facebook.
+ *
+ * @class FacebookAdapter
+ * @param {Object} options - The adapter configuration options.
+ * @param {string} options.appSecret - Your Facebook App Secret. Required for secure authentication.
+ * @param {string[]} options.appIds - An array of Facebook App IDs. Required for validating the app.
+ *
+ * @description
+ * ## Parse Server Configuration
+ * To configure Parse Server for Facebook authentication, use the following structure:
+ * ```json
+ * {
+ *   "auth": {
+ *     "facebook": {
+ *       "appSecret": "your-app-secret",
+ *       "appIds": ["your-app-id"]
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * The adapter supports the following authentication methods:
+ * - **Standard Login**: Requires `id` and `access_token`.
+ * - **Limited Login**: Requires `id` and `token`.
+ *
+ * ## Auth Payloads
+ * ### Standard Login Payload
+ * ```json
+ * {
+ *   "facebook": {
+ *     "id": "1234567",
+ *     "access_token": "abc123def456ghi789"
+ *   }
+ * }
+ * ```
+ *
+ * ### Limited Login Payload
+ * ```json
+ * {
+ *   "facebook": {
+ *     "id": "1234567",
+ *     "token": "xxxxx.yyyyy.zzzzz"
+ *   }
+ * }
+ * ```
+ *
+ * ## Notes
+ * - **Standard Login**: Use `id` and `access_token` for full functionality.
+ * - **Limited Login**: Use `id` and `token` (JWT) when tracking is opted out (e.g., via Apple's App Tracking Transparency).
+ * - Supported Parse Server versions:
+ *   - `>= 6.5.6 < 7`
+ *   - `>= 7.0.1`
+ *
+ * Secure authentication is recommended to ensure proper data protection and compliance with Facebook's guidelines.
+ *
+ * @see {@link https://developers.facebook.com/docs/facebook-login/limited-login/ Facebook Limited Login}
+ * @see {@link https://developers.facebook.com/docs/facebook-login/facebook-login-for-business/ Facebook Login for Business}
+ */
+
 // Helper functions for accessing the Facebook Graph API.
 const Parse = require('parse/node').Parse;
 const crypto = require('crypto');

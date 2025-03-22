@@ -40,11 +40,11 @@ export class AuthAdapter {
    * Legacy usage, if provided it will be triggered when authData related to this provider is touched (signup/update/login)
    * otherwise you should implement validateSetup, validateLogin and validateUpdate
    * @param {Object} authData The client provided authData
-   * @param {Parse.Cloud.TriggerRequest} request
    * @param {Object} options additional adapter options
+   * @param {Parse.Cloud.TriggerRequest} request
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateAuthData(authData, request, options) {
+  validateAuthData(authData, options, request) {
     return Promise.resolve({});
   }
 
@@ -52,11 +52,11 @@ export class AuthAdapter {
    * Triggered when user provide for the first time this auth provider
    * could be a register or the user adding a new auth service
    * @param {Object} authData The client provided authData
-   * @param {Parse.Cloud.TriggerRequest} request
    * @param {Object} options additional adapter options
+   * @param {Parse.Cloud.TriggerRequest} request
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateSetUp(authData, req, options) {
+  validateSetUp(authData, options, req) {
     return Promise.resolve({});
   }
 
@@ -64,11 +64,11 @@ export class AuthAdapter {
    * Triggered when user provide authData related to this provider
    * The user is not logged in and has already set this provider before
    * @param {Object} authData The client provided authData
-   * @param {Parse.Cloud.TriggerRequest} request
    * @param {Object} options additional adapter options
+   * @param {Parse.Cloud.TriggerRequest} request
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateLogin(authData, req, options) {
+  validateLogin(authData, options, req) {
     return Promise.resolve({});
   }
 
@@ -80,8 +80,16 @@ export class AuthAdapter {
    * @param {Parse.Cloud.TriggerRequest} request
    * @returns {Promise<ParseAuthResponse|void|undefined>}
    */
-  validateUpdate(authData, req, options) {
+  validateUpdate(authData, options, req) {
     return Promise.resolve({});
+  }
+
+  /**
+   * Triggered when user is looked up by authData with this provider. Override the `id` field if needed.
+   * @param {Object} authData The client provided authData
+   */
+  beforeFind(authData) {
+
   }
 
   /**
@@ -100,9 +108,10 @@ export class AuthAdapter {
    * Triggered when auth data is fetched
    * @param {Object} authData authData
    * @param {Object} options additional adapter options
+   * @param {Parse.Cloud.TriggerRequest} request
    * @returns {Promise<Object>} Any overrides required to authData
    */
-  afterFind(authData, options) {
+  afterFind(authData, options, request) {
     return Promise.resolve({});
   }
 
