@@ -2064,7 +2064,7 @@ describe('schemas', () => {
       },
     }).then(fail, response => {
       expect(response.data.error).toEqual(
-        "'1' is not a valid value for class level permissions find:*:1"
+        "'1' is not a valid value for class level permissions acl find:*"
       );
       done();
     });
