@@ -39,11 +39,11 @@ const ParseServer = require('../lib/index').ParseServer;
 const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
-const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
-  .GridFSBucketAdapter;
+const GridFSBucketAdapter =
+  require('../lib/Adapters/Files/GridFSBucketAdapter').GridFSBucketAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
-const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
-  .default;
+const PostgresStorageAdapter =
+  require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 const RESTController = require('parse/lib/node/RESTController');
@@ -274,7 +274,7 @@ global.afterEachFn = async () => {
   } else {
     await databaseAdapter.performInitialization({ VolatileClassesSchemas });
   }
-}
+};
 afterEach(global.afterEachFn);
 
 afterAll(() => {
@@ -415,10 +415,10 @@ function mockShortLivedAuth() {
 }
 
 function mockFetch(mockResponses) {
-  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = { }) => {
+  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = {}) => {
     options.method ||= 'GET';
     const mockResponse = mockResponses.find(
-      (mock) => mock.url === url && mock.method === options.method
+      mock => mock.url === url && mock.method === options.method
     );
 
     if (mockResponse) {
@@ -431,7 +431,6 @@ function mockFetch(mockResponses) {
     });
   });
 }
-
 
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;

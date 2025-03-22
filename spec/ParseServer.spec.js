@@ -2,8 +2,8 @@
 /* Tests for ParseServer.js */
 const express = require('express');
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
-const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
-  .default;
+const PostgresStorageAdapter =
+  require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
 const ParseServer = require('../lib/ParseServer').default;
 const path = require('path');
 const { spawn } = require('child_process');

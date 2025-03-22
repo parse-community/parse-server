@@ -878,101 +878,107 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async done => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-      websocketTimeout: 100,
-    });
-    const object = new TestObject();
-    await object.save();
-
-    const query = new Parse.Query(TestObject);
-    query.equalTo('objectId', object.id);
-    const subscription = await query.subscribe();
-
-    // All control frames must have a payload length of 125 bytes or less.
-    // https://tools.ietf.org/html/rfc6455#section-5.5
-    //
-    // 0x89 = 10001001 = ping
-    // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
-    // https://tools.ietf.org/html/rfc6455#section-5.2
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
-
-    subscription.on('update', async object => {
-      expect(object.get('foo')).toBe('bar');
-      done();
-    });
-    // Wait for Websocket timeout to reconnect
-    setTimeout(async () => {
-      object.set({ foo: 'bar' });
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)(
+    'handle invalid websocket payload length',
+    async done => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['TestObject'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+        websocketTimeout: 100,
+      });
+      const object = new TestObject();
       await object.save();
-    }, 1000);
-  });
 
-  it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)('should execute live query update on email validation', async done => {
-    const emailAdapter = {
-      sendVerificationEmail: () => {},
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => {},
-    };
+      const query = new Parse.Query(TestObject);
+      query.equalTo('objectId', object.id);
+      const subscription = await query.subscribe();
 
-    await reconfigureServer({
-      maintenanceKey: 'test2',
-      liveQuery: {
-        classNames: [Parse.User],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-      websocketTimeout: 100,
-      appName: 'liveQueryEmailValidation',
-      verifyUserEmails: true,
-      emailAdapter: emailAdapter,
-      emailVerifyTokenValidityDuration: 20, // 0.5 second
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(() => {
-      const user = new Parse.User();
-      user.set('password', 'asdf');
-      user.set('email', 'asdf@example.com');
-      user.set('username', 'zxcv');
-      user
-        .signUp()
-        .then(() => {
-          const config = Config.get('test');
-          return config.database.find(
-            '_User',
-            {
-              username: 'zxcv',
-            },
-            {},
-            Auth.maintenance(config)
-          );
-        })
-        .then(async results => {
-          const foundUser = results[0];
-          const query = new Parse.Query('_User');
-          query.equalTo('objectId', foundUser.objectId);
-          const subscription = await query.subscribe();
+      // All control frames must have a payload length of 125 bytes or less.
+      // https://tools.ietf.org/html/rfc6455#section-5.5
+      //
+      // 0x89 = 10001001 = ping
+      // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
+      // https://tools.ietf.org/html/rfc6455#section-5.2
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
-          subscription.on('update', async object => {
-            expect(object).toBeDefined();
-            expect(object.get('emailVerified')).toBe(true);
-            done();
+      subscription.on('update', async object => {
+        expect(object.get('foo')).toBe('bar');
+        done();
+      });
+      // Wait for Websocket timeout to reconnect
+      setTimeout(async () => {
+        object.set({ foo: 'bar' });
+        await object.save();
+      }, 1000);
+    }
+  );
+
+  it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)(
+    'should execute live query update on email validation',
+    async done => {
+      const emailAdapter = {
+        sendVerificationEmail: () => {},
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+
+      await reconfigureServer({
+        maintenanceKey: 'test2',
+        liveQuery: {
+          classNames: [Parse.User],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+        websocketTimeout: 100,
+        appName: 'liveQueryEmailValidation',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        emailVerifyTokenValidityDuration: 20, // 0.5 second
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(() => {
+        const user = new Parse.User();
+        user.set('password', 'asdf');
+        user.set('email', 'asdf@example.com');
+        user.set('username', 'zxcv');
+        user
+          .signUp()
+          .then(() => {
+            const config = Config.get('test');
+            return config.database.find(
+              '_User',
+              {
+                username: 'zxcv',
+              },
+              {},
+              Auth.maintenance(config)
+            );
+          })
+          .then(async results => {
+            const foundUser = results[0];
+            const query = new Parse.Query('_User');
+            query.equalTo('objectId', foundUser.objectId);
+            const subscription = await query.subscribe();
+
+            subscription.on('update', async object => {
+              expect(object).toBeDefined();
+              expect(object.get('emailVerified')).toBe(true);
+              done();
+            });
+
+            const userController = new UserController(emailAdapter, 'test', {
+              verifyUserEmails: true,
+            });
+            userController.verifyEmail(foundUser._email_verify_token);
           });
-
-          const userController = new UserController(emailAdapter, 'test', {
-            verifyUserEmails: true,
-          });
-          userController.verifyEmail(foundUser._email_verify_token);
-        });
-    });
-  });
+      });
+    }
+  );
 
   it('should not broadcast event to client with invalid session token - avisory GHSA-2xm2-xj2q-qgpj', async done => {
     await reconfigureServer({

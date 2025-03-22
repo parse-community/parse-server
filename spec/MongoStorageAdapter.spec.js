@@ -46,8 +46,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('preserves replica sets', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
-      uri:
-        'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
+      uri: 'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',

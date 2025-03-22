@@ -1,6 +1,6 @@
 const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
-const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter')
-  .WinstonLoggerAdapter;
+const WinstonLoggerAdapter =
+  require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 const fs = require('fs');
 const Config = require('../lib/Config');
 
@@ -120,23 +120,26 @@ describe('Cloud Code Logger', () => {
     expect(truncatedString.length).toBe(1015); // truncate length + the string '... (truncated)'
   });
 
-  it_id('4a009b1f-9203-49ca-8d48-5b45f4eedbdf')(it)('should truncate input and result of long lines', done => {
-    const longString = fs.readFileSync(loremFile, 'utf8');
-    Parse.Cloud.define('aFunction', req => {
-      return req.params;
-    });
+  it_id('4a009b1f-9203-49ca-8d48-5b45f4eedbdf')(it)(
+    'should truncate input and result of long lines',
+    done => {
+      const longString = fs.readFileSync(loremFile, 'utf8');
+      Parse.Cloud.define('aFunction', req => {
+        return req.params;
+      });
 
-    Parse.Cloud.run('aFunction', { longString })
-      .then(() => {
-        const log = spy.calls.mostRecent().args;
-        expect(log[0]).toEqual('info');
-        expect(log[1]).toMatch(
-          /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {.*?\(truncated\)$/m
-        );
-        done();
-      })
-      .then(null, e => done.fail(e));
-  });
+      Parse.Cloud.run('aFunction', { longString })
+        .then(() => {
+          const log = spy.calls.mostRecent().args;
+          expect(log[0]).toEqual('info');
+          expect(log[1]).toMatch(
+            /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {.*?\(truncated\)$/m
+          );
+          done();
+        })
+        .then(null, e => done.fail(e));
+    }
+  );
 
   it_id('9857e15d-bb18-478d-8a67-fdaad3e89565')(it)('should log an afterSave', done => {
     Parse.Cloud.afterSave('MyObject', () => {});
@@ -189,41 +192,44 @@ describe('Cloud Code Logger', () => {
     });
   });
 
-  it_id('8088de8a-7cba-4035-8b05-4a903307e674')(it)('should log cloud function execution using the custom log level', async done => {
-    Parse.Cloud.define('aFunction', () => {
-      return 'it worked!';
-    });
+  it_id('8088de8a-7cba-4035-8b05-4a903307e674')(it)(
+    'should log cloud function execution using the custom log level',
+    async done => {
+      Parse.Cloud.define('aFunction', () => {
+        return 'it worked!';
+      });
 
-    Parse.Cloud.define('bFunction', () => {
-      throw new Error('Failed');
-    });
+      Parse.Cloud.define('bFunction', () => {
+        throw new Error('Failed');
+      });
 
-    await Parse.Cloud.run('aFunction', { foo: 'bar' }).then(() => {
-      const log = spy.calls.allArgs().find(log => log[1].startsWith('Ran cloud function '))?.[0];
-      expect(log).toEqual('info');
-    });
+      await Parse.Cloud.run('aFunction', { foo: 'bar' }).then(() => {
+        const log = spy.calls.allArgs().find(log => log[1].startsWith('Ran cloud function '))?.[0];
+        expect(log).toEqual('info');
+      });
 
-    await reconfigureServer({
-      silent: true,
-      logLevels: {
-        cloudFunctionSuccess: 'warn',
-        cloudFunctionError: 'info',
-      },
-    });
+      await reconfigureServer({
+        silent: true,
+        logLevels: {
+          cloudFunctionSuccess: 'warn',
+          cloudFunctionError: 'info',
+        },
+      });
 
-    spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
+      spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
 
-    try {
-      await Parse.Cloud.run('bFunction', { foo: 'bar' });
-      throw new Error('bFunction should have failed');
-    } catch {
-      const log = spy.calls
-        .allArgs()
-        .find(log => log[1].startsWith('Failed running cloud function bFunction for '))?.[0];
-      expect(log).toEqual('info');
-      done();
+      try {
+        await Parse.Cloud.run('bFunction', { foo: 'bar' });
+        throw new Error('bFunction should have failed');
+      } catch {
+        const log = spy.calls
+          .allArgs()
+          .find(log => log[1].startsWith('Failed running cloud function bFunction for '))?.[0];
+        expect(log).toEqual('info');
+        done();
+      }
     }
-  });
+  );
 
   it('should log cloud function triggers using the custom log level', async () => {
     Parse.Cloud.beforeSave('TestClass', () => {});
@@ -312,19 +318,22 @@ describe('Cloud Code Logger', () => {
       .then(null, e => done.fail(JSON.stringify(e)));
   });
 
-  it_id('b86e8168-8370-4730-a4ba-24ca3016ad66')(it)('cloud function should obfuscate password', done => {
-    Parse.Cloud.define('testFunction', () => {
-      return 'verify code success';
-    });
+  it_id('b86e8168-8370-4730-a4ba-24ca3016ad66')(it)(
+    'cloud function should obfuscate password',
+    done => {
+      Parse.Cloud.define('testFunction', () => {
+        return 'verify code success';
+      });
 
-    Parse.Cloud.run('testFunction', { username: 'hawk', password: '123456' })
-      .then(() => {
-        const entry = spy.calls.mostRecent().args;
-        expect(entry[2].params.password).toMatch(/\*\*\*\*\*\*\*\*/);
-        done();
-      })
-      .then(null, e => done.fail(e));
-  });
+      Parse.Cloud.run('testFunction', { username: 'hawk', password: '123456' })
+        .then(() => {
+          const entry = spy.calls.mostRecent().args;
+          expect(entry[2].params.password).toMatch(/\*\*\*\*\*\*\*\*/);
+          done();
+        })
+        .then(null, e => done.fail(e));
+    }
+  );
 
   it('should only log once for object not found', async () => {
     const config = Config.get('test');

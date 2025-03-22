@@ -241,21 +241,24 @@ describe('Schema Performance', function () {
     expect(spy.reloadCalls).toBe(1);
   });
 
-  it_id('b0ae21f2-c947-48ed-a0db-e8900d45a4c8')(it)('cannot set invalid databaseOptions', async () => {
-    const expectError = async (key, value, expected) =>
-      expectAsync(
-        reconfigureServer({ databaseAdapter: undefined, databaseOptions: { [key]: value } })
-      ).toBeRejectedWith(`databaseOptions.${key} must be a ${expected}`);
-    for (const databaseOptions of [[], 0, 'string']) {
-      await expectAsync(
-        reconfigureServer({ databaseAdapter: undefined, databaseOptions })
-      ).toBeRejectedWith(`databaseOptions must be an object`);
+  it_id('b0ae21f2-c947-48ed-a0db-e8900d45a4c8')(it)(
+    'cannot set invalid databaseOptions',
+    async () => {
+      const expectError = async (key, value, expected) =>
+        expectAsync(
+          reconfigureServer({ databaseAdapter: undefined, databaseOptions: { [key]: value } })
+        ).toBeRejectedWith(`databaseOptions.${key} must be a ${expected}`);
+      for (const databaseOptions of [[], 0, 'string']) {
+        await expectAsync(
+          reconfigureServer({ databaseAdapter: undefined, databaseOptions })
+        ).toBeRejectedWith(`databaseOptions must be an object`);
+      }
+      for (const value of [null, 0, 'string', {}, []]) {
+        await expectError('enableSchemaHooks', value, 'boolean');
+      }
+      for (const value of [null, false, 'string', {}, []]) {
+        await expectError('schemaCacheTtl', value, 'number');
+      }
     }
-    for (const value of [null, 0, 'string', {}, []]) {
-      await expectError('enableSchemaHooks', value, 'boolean');
-    }
-    for (const value of [null, false, 'string', {}, []]) {
-      await expectError('schemaCacheTtl', value, 'number');
-    }
-  });
+  );
 });

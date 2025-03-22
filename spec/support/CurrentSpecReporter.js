@@ -11,15 +11,15 @@ global.currentSpec = null;
  */
 const flakyTests = [
   // Timeout
-  "ParseLiveQuery handle invalid websocket payload length",
+  'ParseLiveQuery handle invalid websocket payload length',
   // Unhandled promise rejection: TypeError: message.split is not a function
-  "rest query query internal field",
+  'rest query query internal field',
   // TypeError: Cannot read properties of undefined (reading 'link')
-  "UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL",
+  'UserController sendVerificationEmail parseFrameURL not provided uses publicServerURL',
   // TypeError: Cannot read properties of undefined (reading 'link')
-  "UserController sendVerificationEmail parseFrameURL provided uses parseFrameURL and includes the destination in the link parameter",
+  'UserController sendVerificationEmail parseFrameURL provided uses parseFrameURL and includes the destination in the link parameter',
   // Expected undefined to be defined
-  "Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp",
+  'Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp',
 ];
 
 /** The minimum execution time in seconds for a test to be considered slow. */
@@ -50,29 +50,34 @@ class CurrentSpecReporter {
   }
 }
 
-global.displayTestStats = function() {
-  const times = Object.values(timerMap).sort((a,b) => b - a).filter(time => time >= slowTestLimit);
+global.displayTestStats = function () {
+  const times = Object.values(timerMap)
+    .sort((a, b) => b - a)
+    .filter(time => time >= slowTestLimit);
   if (times.length > 0) {
     console.log(`Slow tests with execution time >=${slowTestLimit}s:`);
   }
-  times.forEach((time) => {
-    console.warn(`${time.toFixed(1)}s:`, Object.keys(timerMap).find(key => timerMap[key] === time));
+  times.forEach(time => {
+    console.warn(
+      `${time.toFixed(1)}s:`,
+      Object.keys(timerMap).find(key => timerMap[key] === time)
+    );
   });
   console.log('\n');
-  duplicates.forEach((spec) => {
+  duplicates.forEach(spec => {
     console.warn('Duplicate spec: ' + spec);
   });
   console.log('\n');
-  Object.keys(retryMap).forEach((spec) => {
+  Object.keys(retryMap).forEach(spec => {
     console.warn(`Flaky test: ${spec} failed ${retryMap[spec]} times`);
   });
   console.log('\n');
 };
 
-global.retryFlakyTests = function() {
+global.retryFlakyTests = function () {
   const originalSpecConstructor = jasmine.Spec;
 
-  jasmine.Spec = function(attrs) {
+  jasmine.Spec = function (attrs) {
     const spec = new originalSpecConstructor(attrs);
     const originalTestFn = spec.queueableFn.fn;
     const runOriginalTest = () => {
@@ -81,12 +86,12 @@ global.retryFlakyTests = function() {
         return originalTestFn();
       } else {
         // handle done() callback
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
           originalTestFn(resolve);
         });
       }
     };
-    spec.queueableFn.fn = async function() {
+    spec.queueableFn.fn = async function () {
       const isFlaky = flakyTests.includes(spec.result.fullName);
       const runs = isFlaky ? retries : 1;
       let exceptionCaught;
@@ -101,8 +106,8 @@ global.retryFlakyTests = function() {
         } catch (exception) {
           exceptionCaught = exception;
         }
-        const failed = !spec.markedPending &&
-            (exceptionCaught || spec.result.failedExpectations.length != 0);
+        const failed =
+          !spec.markedPending && (exceptionCaught || spec.result.failedExpectations.length != 0);
         if (!failed) {
           break;
         }
@@ -118,6 +123,6 @@ global.retryFlakyTests = function() {
     };
     return spec;
   };
-}
+};
 
 module.exports = CurrentSpecReporter;

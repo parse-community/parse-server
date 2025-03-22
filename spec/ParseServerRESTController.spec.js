@@ -1,5 +1,5 @@
-const ParseServerRESTController = require('../lib/ParseServerRESTController')
-  .ParseServerRESTController;
+const ParseServerRESTController =
+  require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
 
@@ -163,9 +163,7 @@ describe('ParseServerRESTController', () => {
         const results = await query.find();
         expect(createSpy.calls.count()).toBe(2);
         for (let i = 0; i + 1 < createSpy.calls.length; i = i + 2) {
-          expect(createSpy.calls.argsFor(i)[3]).toBe(
-            createSpy.calls.argsFor(i + 1)[3]
-          );
+          expect(createSpy.calls.argsFor(i)[3]).toBe(createSpy.calls.argsFor(i + 1)[3]);
         }
         expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
@@ -660,16 +658,23 @@ describe('ParseServerRESTController', () => {
       data: { alert: 'We return status!' },
       where: { deviceType: 'ios' },
     };
-    const res = await RESTController.request('POST', 'batch', {
-      requests: [{
-        method: 'POST',
-        path: '/push',
-        body: payload,
-      }],
-    }, {
-      useMasterKey: true,
-      returnStatus: true,
-    });
+    const res = await RESTController.request(
+      'POST',
+      'batch',
+      {
+        requests: [
+          {
+            method: 'POST',
+            path: '/push',
+            body: payload,
+          },
+        ],
+      },
+      {
+        useMasterKey: true,
+        returnStatus: true,
+      }
+    );
     const pushStatusId = res[0]._headers['X-Parse-Push-Status-Id'];
     expect(pushStatusId).toBeDefined();
 

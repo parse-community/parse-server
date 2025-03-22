@@ -224,11 +224,11 @@ export class PagesRouter extends PromiseRouter {
         const query = result.success
           ? {}
           : {
-            [pageParams.token]: token,
-            [pageParams.appId]: config.applicationId,
-            [pageParams.error]: result.err,
-            [pageParams.appName]: config.appName,
-          };
+              [pageParams.token]: token,
+              [pageParams.appId]: config.applicationId,
+              [pageParams.error]: result.err,
+              [pageParams.appName]: config.appName,
+            };
 
         if (result?.err === 'The password reset link has expired') {
           delete query[pageParams.token];
@@ -300,9 +300,9 @@ export class PagesRouter extends PromiseRouter {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect
           ? this.redirectResponse(
-            this.composePageUrl(defaultFile, config.publicServerURL, subdir),
-            params
-          )
+              this.composePageUrl(defaultFile, config.publicServerURL, subdir),
+              params
+            )
           : this.pageResponse(path, params, placeholders)
       );
     } else {
@@ -532,10 +532,10 @@ export class PagesRouter extends PromiseRouter {
   getDefaultParams(config) {
     return config
       ? {
-        [pageParams.appId]: config.appId,
-        [pageParams.appName]: config.appName,
-        [pageParams.publicServerUrl]: config.publicServerURL,
-      }
+          [pageParams.appId]: config.appId,
+          [pageParams.appName]: config.appName,
+          [pageParams.publicServerUrl]: config.publicServerURL,
+        }
       : {};
   }
 

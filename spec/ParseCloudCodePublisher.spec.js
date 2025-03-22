@@ -1,5 +1,5 @@
-const ParseCloudCodePublisher = require('../lib/LiveQuery/ParseCloudCodePublisher')
-  .ParseCloudCodePublisher;
+const ParseCloudCodePublisher =
+  require('../lib/LiveQuery/ParseCloudCodePublisher').ParseCloudCodePublisher;
 const Parse = require('parse/node');
 
 describe('ParseCloudCodePublisher', function () {

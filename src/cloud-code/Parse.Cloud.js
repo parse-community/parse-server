@@ -79,7 +79,7 @@ const getRoute = parseClass => {
       _User: 'users',
       _Session: 'sessions',
       '@File': 'files',
-      '@Config' : 'config',
+      '@Config': 'config',
     }[parseClass] || 'classes';
   if (parseClass === '@File') {
     return `/${route}/:id?(.*)`;

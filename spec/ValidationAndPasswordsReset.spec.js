@@ -34,32 +34,35 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it_id('5e558687-40f3-496c-9e4f-af6100bd1b2f')(it)('sends verification email if email verification is enabled', done => {
-    const emailAdapter = {
-      sendVerificationEmail: () => Promise.resolve(),
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => Promise.resolve(),
-    };
-    reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: true,
-      emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(async () => {
-      spyOn(emailAdapter, 'sendVerificationEmail');
-      const user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('zxcv');
-      user.setEmail('testIfEnabled@parse.com');
-      await user.signUp();
-      await jasmine.timeout();
-      expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-      user.fetch().then(() => {
-        expect(user.get('emailVerified')).toEqual(false);
-        done();
+  it_id('5e558687-40f3-496c-9e4f-af6100bd1b2f')(it)(
+    'sends verification email if email verification is enabled',
+    done => {
+      const emailAdapter = {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => Promise.resolve(),
+      };
+      reconfigureServer({
+        appName: 'unused',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(async () => {
+        spyOn(emailAdapter, 'sendVerificationEmail');
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
+        user.setEmail('testIfEnabled@parse.com');
+        await user.signUp();
+        await jasmine.timeout();
+        expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+        user.fetch().then(() => {
+          expect(user.get('emailVerified')).toEqual(false);
+          done();
+        });
       });
-    });
-  });
+    }
+  );
 
   it('does not send verification email when verification is enabled and email is not set', done => {
     const emailAdapter = {
@@ -279,7 +282,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     await user.signUp();
 
     const verifyUserEmails = {
-      method: async (params) => {
+      method: async params => {
         expect(params.object).toBeInstanceOf(Parse.User);
         expect(params.ip).toBeDefined();
         expect(params.master).toBeDefined();
@@ -306,43 +309,46 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     expect(verifyUserEmailsSpy).toHaveBeenCalledTimes(2);
   });
 
-  it_id('2a5d24be-2ca5-4385-b580-1423bd392e43')(it)('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', async () => {
-    let sendEmailOptions;
-    const emailAdapter = {
-      sendVerificationEmail: options => {
-        sendEmailOptions = options;
-      },
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => {},
-    };
-    await reconfigureServer({
-      appName: 'emailing app',
-      verifyUserEmails: true,
-      preventLoginWithUnverifiedEmail: true,
-      emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
-    });
-    let user = new Parse.User();
-    user.setPassword('other-password');
-    user.setUsername('user');
-    user.set('email', 'user@example.com');
-    await user.signUp();
-    await jasmine.timeout();
-    expect(sendEmailOptions).not.toBeUndefined();
-    const response = await request({
-      url: sendEmailOptions.link,
-      followRedirects: false,
-    });
-    expect(response.status).toEqual(302);
-    expect(response.text).toEqual(
-      'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
-    );
-    user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
-    expect(user.get('emailVerified')).toEqual(true);
-    user = await Parse.User.logIn('user', 'other-password');
-    expect(typeof user).toBe('object');
-    expect(user.get('emailVerified')).toBe(true);
-  });
+  it_id('2a5d24be-2ca5-4385-b580-1423bd392e43')(it)(
+    'allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true',
+    async () => {
+      let sendEmailOptions;
+      const emailAdapter = {
+        sendVerificationEmail: options => {
+          sendEmailOptions = options;
+        },
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appName: 'emailing app',
+        verifyUserEmails: true,
+        preventLoginWithUnverifiedEmail: true,
+        emailAdapter: emailAdapter,
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      let user = new Parse.User();
+      user.setPassword('other-password');
+      user.setUsername('user');
+      user.set('email', 'user@example.com');
+      await user.signUp();
+      await jasmine.timeout();
+      expect(sendEmailOptions).not.toBeUndefined();
+      const response = await request({
+        url: sendEmailOptions.link,
+        followRedirects: false,
+      });
+      expect(response.status).toEqual(302);
+      expect(response.text).toEqual(
+        'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
+      );
+      user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
+      expect(user.get('emailVerified')).toEqual(true);
+      user = await Parse.User.logIn('user', 'other-password');
+      expect(typeof user).toBe('object');
+      expect(user.get('emailVerified')).toBe(true);
+    }
+  );
 
   it('allows user to login if email is not verified but preventLoginWithUnverifiedEmail is set to false', done => {
     reconfigureServer({
@@ -382,34 +388,37 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it_id('a18a07af-0319-4f15-8237-28070c5948fa')(it)('does not allow signup with preventSignupWithUnverified', async () => {
-    let sendEmailOptions;
-    const emailAdapter = {
-      sendVerificationEmail: options => {
-        sendEmailOptions = options;
-      },
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => {},
-    };
-    await reconfigureServer({
-      appName: 'test',
-      publicServerURL: 'http://localhost:1337/1',
-      verifyUserEmails: true,
-      preventLoginWithUnverifiedEmail: true,
-      preventSignupWithUnverifiedEmail: true,
-      emailAdapter,
-    });
-    const newUser = new Parse.User();
-    newUser.setPassword('asdf');
-    newUser.setUsername('zxcv');
-    newUser.set('email', 'test@example.com');
-    await expectAsync(newUser.signUp()).toBeRejectedWith(
-      new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.')
-    );
-    const user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
-    expect(user).toBeDefined();
-    expect(sendEmailOptions).toBeDefined();
-  });
+  it_id('a18a07af-0319-4f15-8237-28070c5948fa')(it)(
+    'does not allow signup with preventSignupWithUnverified',
+    async () => {
+      let sendEmailOptions;
+      const emailAdapter = {
+        sendVerificationEmail: options => {
+          sendEmailOptions = options;
+        },
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      await reconfigureServer({
+        appName: 'test',
+        publicServerURL: 'http://localhost:1337/1',
+        verifyUserEmails: true,
+        preventLoginWithUnverifiedEmail: true,
+        preventSignupWithUnverifiedEmail: true,
+        emailAdapter,
+      });
+      const newUser = new Parse.User();
+      newUser.setPassword('asdf');
+      newUser.setUsername('zxcv');
+      newUser.set('email', 'test@example.com');
+      await expectAsync(newUser.signUp()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.')
+      );
+      const user = await new Parse.Query(Parse.User).first({ useMasterKey: true });
+      expect(user).toBeDefined();
+      expect(sendEmailOptions).toBeDefined();
+    }
+  );
 
   it('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
     reconfigureServer({
@@ -617,87 +626,93 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it_id('45f550a2-a2b2-4b2b-b533-ccbf96139cc9')(it)('receives the app name and user in the adapter', done => {
-    let emailSent = false;
-    const emailAdapter = {
-      sendVerificationEmail: options => {
-        expect(options.appName).toEqual('emailing app');
-        expect(options.user.get('email')).toEqual('user@parse.com');
-        emailSent = true;
-      },
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => {},
-    };
-    reconfigureServer({
-      appName: 'emailing app',
-      verifyUserEmails: true,
-      emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(async () => {
-      const user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('zxcv');
-      user.set('email', 'user@parse.com');
-      await user.signUp();
-      await jasmine.timeout();
-      expect(emailSent).toBe(true);
-      done();
-    });
-  });
-
-  it_id('ea37ef62-aad8-4a17-8dfe-35e5b2986f0f')(it)('when you click the link in the email it sets emailVerified to true and redirects you', done => {
-    const user = new Parse.User();
-    let sendEmailOptions;
-    const emailAdapter = {
-      sendVerificationEmail: options => {
-        sendEmailOptions = options;
-      },
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => {},
-    };
-    reconfigureServer({
-      appName: 'emailing app',
-      verifyUserEmails: true,
-      emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
-    })
-      .then(() => {
-        user.setPassword('other-password');
-        user.setUsername('user');
+  it_id('45f550a2-a2b2-4b2b-b533-ccbf96139cc9')(it)(
+    'receives the app name and user in the adapter',
+    done => {
+      let emailSent = false;
+      const emailAdapter = {
+        sendVerificationEmail: options => {
+          expect(options.appName).toEqual('emailing app');
+          expect(options.user.get('email')).toEqual('user@parse.com');
+          emailSent = true;
+        },
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      reconfigureServer({
+        appName: 'emailing app',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(async () => {
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
         user.set('email', 'user@parse.com');
-        return user.signUp();
-      })
-      .then(() => jasmine.timeout())
-      .then(() => {
-        expect(sendEmailOptions).not.toBeUndefined();
-        request({
-          url: sendEmailOptions.link,
-          followRedirects: false,
-        }).then(response => {
-          expect(response.status).toEqual(302);
-          expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
-          );
-          user
-            .fetch()
-            .then(
-              () => {
-                expect(user.get('emailVerified')).toEqual(true);
-                done();
-              },
-              err => {
-                jfail(err);
-                fail('this should not fail');
-                done();
-              }
-            )
-            .catch(err => {
-              jfail(err);
-              done();
-            });
-        });
+        await user.signUp();
+        await jasmine.timeout();
+        expect(emailSent).toBe(true);
+        done();
       });
-  });
+    }
+  );
+
+  it_id('ea37ef62-aad8-4a17-8dfe-35e5b2986f0f')(it)(
+    'when you click the link in the email it sets emailVerified to true and redirects you',
+    done => {
+      const user = new Parse.User();
+      let sendEmailOptions;
+      const emailAdapter = {
+        sendVerificationEmail: options => {
+          sendEmailOptions = options;
+        },
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+      reconfigureServer({
+        appName: 'emailing app',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        publicServerURL: 'http://localhost:8378/1',
+      })
+        .then(() => {
+          user.setPassword('other-password');
+          user.setUsername('user');
+          user.set('email', 'user@parse.com');
+          return user.signUp();
+        })
+        .then(() => jasmine.timeout())
+        .then(() => {
+          expect(sendEmailOptions).not.toBeUndefined();
+          request({
+            url: sendEmailOptions.link,
+            followRedirects: false,
+          }).then(response => {
+            expect(response.status).toEqual(302);
+            expect(response.text).toEqual(
+              'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html'
+            );
+            user
+              .fetch()
+              .then(
+                () => {
+                  expect(user.get('emailVerified')).toEqual(true);
+                  done();
+                },
+                err => {
+                  jfail(err);
+                  fail('this should not fail');
+                  done();
+                }
+              )
+              .catch(err => {
+                jfail(err);
+                done();
+              });
+          });
+        });
+    }
+  );
 
   it('redirects you to invalid link if you try to verify email incorrectly', done => {
     reconfigureServer({
@@ -825,7 +840,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&/;
+          const re =
+            /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&/;
           expect(response.text.match(re)).not.toBe(null);
           done();
         });
@@ -887,7 +903,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+          const re =
+            /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -964,7 +981,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+          const re =
+            /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -1023,7 +1041,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         });
         expect(response.status).toEqual(302);
-        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
+        const re =
+          /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&/;
         const match = response.text.match(re);
         if (!match) {
           fail('should have a token');

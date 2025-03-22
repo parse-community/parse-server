@@ -638,7 +638,8 @@ describe('server', () => {
   });
 
   it('should reload masterKey if ttl is set and expired', async () => {
-    const masterKeySpy = jasmine.createSpy()
+    const masterKeySpy = jasmine
+      .createSpy()
       .and.returnValues(Promise.resolve('firstMasterKey'), Promise.resolve('secondMasterKey'));
 
     await reconfigureServer({
@@ -656,7 +657,6 @@ describe('server', () => {
     expect(masterKeySpy).toHaveBeenCalledTimes(2);
     expect(config.masterKeyCache.masterKey).toEqual('secondMasterKey');
   });
-
 
   it('should not fail when Google signin is introduced without the optional clientId', done => {
     const jwt = require('jsonwebtoken');

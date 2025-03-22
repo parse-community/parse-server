@@ -242,9 +242,7 @@ describe('batch', () => {
         const results = await query.find();
         expect(createSpy.calls.count()).toBe(2);
         for (let i = 0; i + 1 < createSpy.calls.length; i = i + 2) {
-          expect(createSpy.calls.argsFor(i)[3]).toBe(
-            createSpy.calls.argsFor(i + 1)[3]
-          );
+          expect(createSpy.calls.argsFor(i)[3]).toBe(createSpy.calls.argsFor(i + 1)[3]);
         }
         expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
       });
