@@ -392,7 +392,7 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
       } else if (permit !== true) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `'${permit}' is not a valid value for class level permissions ${operationKey}:${entity}:${permit}`
+          `'${permit}' is not a valid value for class level permissions acl ${operationKey}:${entity}`
         );
       }
     }
