@@ -375,7 +375,7 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
           );
         }
         const invalidKeys = Object.keys(permit).filter(key => !['read', 'write'].includes(key));
-        const invalidValues = Object.values(permit).filter(key => typeof key !== Boolean);
+        const invalidValues = Object.values(permit).filter(key => typeof key !== 'boolean');
         if (invalidKeys.length) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
