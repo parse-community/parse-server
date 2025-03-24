@@ -1,3 +1,10 @@
+# [8.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.0.2...8.1.0-alpha.1) (2025-03-24)
+
+
+### Features
+
+* Add default ACL ([#8701](https://github.com/parse-community/parse-server/issues/8701)) ([12b5d78](https://github.com/parse-community/parse-server/commit/12b5d781dc3f8c43c0c566dffa9308d02a7d8043))
+
 ## [8.0.2-alpha.1](https://github.com/parse-community/parse-server/compare/8.0.1...8.0.2-alpha.1) (2025-03-21)
 
 

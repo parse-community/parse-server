@@ -26,6 +26,12 @@ const hasAllPODobject = () => {
 };
 
 const defaultClassLevelPermissions = {
+  ACL: {
+    '*': {
+      read: true,
+      write: true,
+    },
+  },
   find: {
     '*': true,
   },
@@ -2058,10 +2064,68 @@ describe('schemas', () => {
       },
     }).then(fail, response => {
       expect(response.data.error).toEqual(
-        "'1' is not a valid value for class level permissions find:*:1"
+        "'1' is not a valid value for class level permissions acl find:*"
       );
       done();
     });
+  });
+
+  it('should validate defaultAcl with class level permissions when request is not an object', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': true,
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'true' is not a valid value for class level permissions acl`);
+  });
+
+  it('should validate defaultAcl with class level permissions when request is an object and invalid key', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': {
+              foo: true,
+            },
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'foo' is not a valid key for class level permissions acl`);
+  });
+
+  it('should validate defaultAcl with class level permissions when request is an object and invalid value', async () => {
+    const response = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          ACL: {
+            '*': {
+              read: 1,
+            },
+          },
+        },
+      },
+    }).catch(error => error.data);
+
+    expect(response.error).toEqual(`'1' is not a valid value for class level permissions acl`);
   });
 
   it('should throw if permission is empty string', done => {
@@ -2079,7 +2143,7 @@ describe('schemas', () => {
       },
     }).then(fail, response => {
       expect(response.data.error).toEqual(
-        "'' is not a valid value for class level permissions find:*:"
+        `'' is not a valid value for class level permissions acl find:*`
       );
       done();
     });
@@ -2690,6 +2754,12 @@ describe('schemas', () => {
     setPermissionsOnClass(
       '_Role',
       {
+        ACL: {
+          '*': {
+            read: true,
+            write: true,
+          },
+        },
         get: { '*': true },
         find: { '*': true },
         count: { '*': true },
@@ -2710,6 +2780,12 @@ describe('schemas', () => {
       })
       .then(res => {
         expect(res.data.classLevelPermissions).toEqual({
+          ACL: {
+            '*': {
+              read: true,
+              write: true,
+            },
+          },
           get: { '*': true },
           find: { '*': true },
           count: { '*': true },
