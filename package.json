@@ -49,7 +49,7 @@
     "mongodb": "6.15.0",
     "mustache": "4.2.0",
     "otpauth": "9.3.6",
-    "parse": "6.0.0",
+    "parse": "6.1.0",
     "path-to-regexp": "6.3.0",
     "pg-monitor": "2.1.0",
     "pg-promise": "11.13.0",
