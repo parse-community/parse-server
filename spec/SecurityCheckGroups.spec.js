@@ -32,6 +32,7 @@ describe('Security Check Groups', () => {
       config.masterKey = 'aMoreSecur3Passwor7!';
       config.security.enableCheckLog = false;
       config.allowClientClassCreation = false;
+      config.enableInsecureAuthAdapters = false;
       await reconfigureServer(config);
 
       const group = new CheckGroupServerConfig();
@@ -39,6 +40,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[0].checkState()).toBe(CheckState.success);
       expect(group.checks()[1].checkState()).toBe(CheckState.success);
       expect(group.checks()[2].checkState()).toBe(CheckState.success);
+      expect(group.checks()[4].checkState()).toBe(CheckState.success);
     });
 
     it('checks fail correctly', async () => {
@@ -52,6 +54,7 @@ describe('Security Check Groups', () => {
       expect(group.checks()[0].checkState()).toBe(CheckState.fail);
       expect(group.checks()[1].checkState()).toBe(CheckState.fail);
       expect(group.checks()[2].checkState()).toBe(CheckState.fail);
+      expect(group.checks()[4].checkState()).toBe(CheckState.fail);
     });
   });
 

@@ -165,6 +165,12 @@ describe('Schema Performance', function () {
     await schema.reloadData();
 
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': true },
       get: { '*': true },
       create: { '*': true },

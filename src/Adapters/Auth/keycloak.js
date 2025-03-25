@@ -1,37 +1,70 @@
-/*
-  # Parse Server Keycloak Authentication
-
-  ## Keycloak `authData`
-
-  ```
-    {
-      "keycloak": {
-        "access_token": "access token you got from keycloak JS client authentication",
-        "id": "the id retrieved from client authentication in Keycloak",
-        "roles": ["the roles retrieved from client authentication in Keycloak"],
-        "groups": ["the groups retrieved from client authentication in Keycloak"]
-      }
-    }
-  ```
-
-  The authentication module will test if the authData is the same as the
-  userinfo oauth call, comparing the attributes
-
-  Copy the JSON config file generated on Keycloak (https://www.keycloak.org/docs/latest/securing_apps/index.html#_javascript_adapter)
-  and paste it inside of a folder (Ex.: `auth/keycloak.json`) in your server.
-
-  The options passed to Parse server:
-
-  ```
-    {
-      auth: {
-        keycloak: {
-          config: require(`./auth/keycloak.json`)
-        }
-      }
-    }
-  ```
-*/
+/**
+ * Parse Server authentication adapter for Keycloak.
+ *
+ * @class KeycloakAdapter
+ * @param {Object} options - The adapter configuration options.
+ * @param {Object} options.config - The Keycloak configuration object, typically loaded from a JSON file.
+ * @param {String} options.config.auth-server-url - The Keycloak authentication server URL.
+ * @param {String} options.config.realm - The Keycloak realm name.
+ * @param {String} options.config.client-id - The Keycloak client ID.
+ *
+ * @param {Object} authData - The authentication data provided by the client.
+ * @param {String} authData.access_token - The Keycloak access token retrieved during client authentication.
+ * @param {String} authData.id - The user ID retrieved from Keycloak during client authentication.
+ * @param {Array} [authData.roles] - The roles assigned to the user in Keycloak (optional).
+ * @param {Array} [authData.groups] - The groups assigned to the user in Keycloak (optional).
+ *
+ * @description
+ * ## Parse Server Configuration
+ * To configure Parse Server for Keycloak authentication, use the following structure:
+ * ```javascript
+ * {
+ *   "auth": {
+ *     "keycloak": {
+ *       "config": require('./auth/keycloak.json')
+ *     }
+ *   }
+ * }
+ * ```
+ * Ensure the `keycloak.json` configuration file is generated from Keycloak's setup guide and includes:
+ * - `auth-server-url`: The Keycloak authentication server URL.
+ * - `realm`: The Keycloak realm name.
+ * - `client-id`: The Keycloak client ID.
+ *
+ * ## Auth Data
+ * The adapter requires the following `authData` fields:
+ * - `access_token`: The Keycloak access token retrieved during client authentication.
+ * - `id`: The user ID retrieved from Keycloak during client authentication.
+ * - `roles` (optional): The roles assigned to the user in Keycloak.
+ * - `groups` (optional): The groups assigned to the user in Keycloak.
+ *
+ * ## Auth Payload Example
+ * ### Example Auth Data
+ * ```json
+ * {
+ *   "keycloak": {
+ *     "access_token": "an authorized Keycloak access token for the user",
+ *     "id": "user's Keycloak ID as a string",
+ *     "roles": ["admin", "user"],
+ *     "groups": ["group1", "group2"]
+ *   }
+ * }
+ * ```
+ *
+ * ## Notes
+ * - Parse Server validates the provided `authData` by making a `userinfo` call to Keycloak and ensures the attributes match those returned by Keycloak.
+ *
+ * ## Keycloak Configuration
+ * To configure Keycloak, copy the JSON configuration file generated from Keycloak's setup guide:
+ * - [Keycloak Securing Apps Documentation](https://www.keycloak.org/docs/latest/securing_apps/index.html#_javascript_adapter)
+ *
+ * Place the configuration file on your server, for example:
+ * - `auth/keycloak.json`
+ *
+ * For more information on Keycloak authentication, see:
+ * - [Securing Apps Documentation](https://www.keycloak.org/docs/latest/securing_apps/)
+ * - [Server Administration Documentation](https://www.keycloak.org/docs/latest/server_admin/)
+ */
 
 const { Parse } = require('parse/node');
 const httpsRequest = require('./httpsRequest');

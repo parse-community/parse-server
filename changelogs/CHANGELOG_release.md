@@ -1,3 +1,10 @@
+## [8.0.2](https://github.com/parse-community/parse-server/compare/8.0.1...8.0.2) (2025-03-21)
+
+
+### Bug Fixes
+
+* Authentication provider credentials are usable across Parse Server apps; fixes security vulnerability [GHSA-837q-jhwx-cmpv](https://github.com/parse-community/parse-server/security/advisories/GHSA-837q-jhwx-cmpv) ([#9667](https://github.com/parse-community/parse-server/issues/9667)) ([5ef0440](https://github.com/parse-community/parse-server/commit/5ef0440c8e763854e62341acaeb6dc4ade3ba82f))
+
 ## [8.0.1](https://github.com/parse-community/parse-server/compare/8.0.0...8.0.1) (2025-03-17)
 
 

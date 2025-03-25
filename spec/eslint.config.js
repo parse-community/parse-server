@@ -9,6 +9,7 @@ module.exports = [
       globals: {
         ...globals.node,
         ...globals.jasmine,
+        mockFetch: "readonly",
         Parse: "readonly",
         reconfigureServer: "readonly",
         createTestUser: "readonly",
