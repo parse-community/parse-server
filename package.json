@@ -97,7 +97,7 @@
     "jasmine-spec-reporter": "7.0.0",
     "jsdoc": "4.0.4",
     "jsdoc-babel": "0.5.0",
-    "lint-staged": "15.4.3",
+    "lint-staged": "15.5.0",
     "m": "1.9.0",
     "madge": "8.0.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
