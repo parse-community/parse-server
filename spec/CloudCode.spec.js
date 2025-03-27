@@ -3922,7 +3922,6 @@ describe('saveFile hooks', () => {
 });
 
 describe('queryFile hooks', () => { 
-
   it('find hooks should run', async () => {
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
