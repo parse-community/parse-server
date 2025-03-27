@@ -3494,9 +3494,17 @@ describe('afterLogin hook', () => {
       expect(req.object._context).not.toBeDefined();
       expect(req.object.context).not.toBeDefined();
     });
-    const obj = new TestObject();
-    obj.set('_context', { hello: 'world' });
-    await obj.save(null, { context: { a: 'a' } });
+    await request({
+      url: 'http://localhost:8378/1/classes/TestObject',
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"a":"a"}',
+      },
+      body: JSON.stringify({_context: { hello: 'world' }}),
+    });
+    
   });
 
   it('should have access to context when saving a new object', async () => {

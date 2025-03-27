@@ -15,4 +15,7 @@
  *
  * If there are no deprecations, this must return an empty array.
  */
-module.exports = [{ optionKey: 'encodeParseObjectInCloudFunction', changeNewKey: '' }]
+module.exports = [
+  { optionKey: 'encodeParseObjectInCloudFunction', changeNewDefault: 'true' },
+  { optionKey: 'enableInsecureAuthAdapters', changeNewDefault: 'false' },
+];

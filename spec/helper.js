@@ -227,65 +227,55 @@ beforeAll(async () => {
   Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
-afterEach(function (done) {
-  const afterLogOut = async () => {
-    // Jasmine process uses one connection
-    if (Object.keys(openConnections).length > 1) {
-      console.warn(`There were ${Object.keys(openConnections).length} open connections to the server left after the test finished`);
-    }
-    await TestUtils.destroyAllDataPermanently(true);
-    SchemaCache.clear();
-    if (didChangeConfiguration) {
-      await reconfigureServer();
-    } else {
-      await databaseAdapter.performInitialization({ VolatileClassesSchemas });
-    }
-    done();
-  };
+global.afterEachFn = async () => {
   Parse.Cloud._removeAllHooks();
   Parse.CoreManager.getLiveQueryController().setDefaultLiveQueryClient();
   defaults.protectedFields = { _User: { '*': ['email'] } };
-  databaseAdapter
-    .getAllClasses()
-    .then(allSchemas => {
-      allSchemas.forEach(schema => {
-        const className = schema.className;
-        expect(className).toEqual({
-          asymmetricMatch: className => {
-            if (!className.startsWith('_')) {
-              return true;
-            } else {
-              // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
-              // break it.
-              return (
-                [
-                  '_User',
-                  '_Installation',
-                  '_Role',
-                  '_Session',
-                  '_Product',
-                  '_Audience',
-                  '_Idempotency',
-                ].indexOf(className) >= 0
-              );
-            }
-          },
-        });
-      });
-    })
-    .then(() => Parse.User.logOut())
-    .then(
-      () => {},
-      () => {}
-    ) // swallow errors
-    .then(() => {
-      // Connection close events are not immediate on node 10+... wait a bit
-      return new Promise(resolve => {
-        setTimeout(resolve, 0);
-      });
-    })
-    .then(afterLogOut);
-});
+
+  const allSchemas = await databaseAdapter.getAllClasses().catch(() => []);
+
+  allSchemas.forEach(schema => {
+    const className = schema.className;
+    expect(className).toEqual({
+      asymmetricMatch: className => {
+        if (!className.startsWith('_')) {
+          return true;
+        }
+        return [
+          '_User',
+          '_Installation',
+          '_Role',
+          '_Session',
+          '_Product',
+          '_Audience',
+          '_Idempotency',
+        ].includes(className);
+      },
+    });
+  });
+
+  await Parse.User.logOut().catch(() => {});
+
+  // Connection close events are not immediate on node 10+, so wait a bit
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  // After logout operations
+  if (Object.keys(openConnections).length > 1) {
+    console.warn(
+      `There were ${Object.keys(openConnections).length} open connections to the server left after the test finished`
+    );
+  }
+
+  await TestUtils.destroyAllDataPermanently(true);
+  SchemaCache.clear();
+
+  if (didChangeConfiguration) {
+    await reconfigureServer();
+  } else {
+    await databaseAdapter.performInitialization({ VolatileClassesSchemas });
+  }
+}
+afterEach(global.afterEachFn);
 
 afterAll(() => {
   global.displayTestStats();
@@ -424,6 +414,25 @@ function mockShortLivedAuth() {
   return auth;
 }
 
+function mockFetch(mockResponses) {
+  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = { }) => {
+    options.method ||= 'GET';
+    const mockResponse = mockResponses.find(
+      (mock) => mock.url === url && mock.method === options.method
+    );
+
+    if (mockResponse) {
+      return Promise.resolve(mockResponse.response);
+    }
+
+    return Promise.resolve({
+      ok: false,
+      statusText: 'Unknown URL or method',
+    });
+  });
+}
+
+
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -439,6 +448,7 @@ global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
 global.reconfigureServer = reconfigureServer;
+global.mockFetch = mockFetch;
 global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;

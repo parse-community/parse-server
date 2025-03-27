@@ -46,7 +46,9 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_APPLICATION_ID */
   appId: string;
   /* Your Parse Master Key */
-  masterKey: string;
+  masterKey: (() => void) | string;
+  /* (Optional) The duration in seconds for which the current `masterKey` is being used before it is requested again if `masterKey` is set to a function. If `masterKey` is not set to a function, this option has no effect. Default is `0`, which means the master key is requested by invoking the  `masterKey` function every time the master key is used internally by Parse Server. */
+  masterKeyTtl: ?number;
   /* (Optional) The maintenance key is used for modifying internal and read-only fields of Parse Server.<br><br>⚠️ This key is not intended to be used as part of a regular operation of Parse Server. This key is intended to conduct out-of-band changes such as one-time migrations or data correction tasks. Internal fields are not officially documented and may change at any time without publication in release changelogs. We strongly advice not to rely on internal fields as part of your regular operation and to investigate the implications of any planned changes *directly in the source code* of your current version of Parse Server. */
   maintenanceKey: string;
   /* URL to your parse server with http:// or https://.
@@ -159,6 +161,10 @@ export interface ParseServerOptions {
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?{ [string]: AuthAdapter };
+  /* Enable (or disable) insecure auth adapters, defaults to true. Insecure auth adapters are deprecated and it is recommended to disable them.
+  :ENV: PARSE_SERVER_ENABLE_INSECURE_AUTH_ADAPTERS
+  :DEFAULT: true */
+  enableInsecureAuthAdapters: ?boolean;
   /* Max file size for uploads, defaults to 20mb
   :DEFAULT: 20mb */
   maxUploadSize: ?string;

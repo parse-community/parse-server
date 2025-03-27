@@ -20,6 +20,7 @@ import {
   SecurityOptions,
 } from './Options/Definitions';
 import ParseServer from './cloud-code/Parse.Server';
+import Deprecator from './Deprecator/Deprecator';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -84,6 +85,7 @@ export class Config {
     pages,
     security,
     enforcePrivateUsers,
+    enableInsecureAuthAdapters,
     schema,
     requestKeywordDenylist,
     allowExpiredAuthDataToken,
@@ -129,6 +131,7 @@ export class Config {
     this.validateSecurityOptions(security);
     this.validateSchemaOptions(schema);
     this.validateEnforcePrivateUsers(enforcePrivateUsers);
+    this.validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters);
     this.validateAllowExpiredAuthDataToken(allowExpiredAuthDataToken);
     this.validateRequestKeywordDenylist(requestKeywordDenylist);
     this.validateRateLimit(rateLimit);
@@ -504,6 +507,15 @@ export class Config {
     }
   }
 
+  static validateEnableInsecureAuthAdapters(enableInsecureAuthAdapters) {
+    if (enableInsecureAuthAdapters && typeof enableInsecureAuthAdapters !== 'boolean') {
+      throw 'Parse Server option enableInsecureAuthAdapters must be a boolean.';
+    }
+    if (enableInsecureAuthAdapters) {
+      Deprecator.logRuntimeDeprecation({ usage: 'insecure adapter' });
+    }
+  }
+
   get mount() {
     var mount = this._mount;
     if (this.publicServerURL) {
@@ -723,6 +735,28 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
   }
+
+  async loadMasterKey() {
+    if (typeof this.masterKey === 'function') {
+      const ttlIsEmpty = !this.masterKeyTtl;
+      const isExpired = this.masterKeyCache?.expiresAt && this.masterKeyCache.expiresAt < new Date();
+
+      if ((!isExpired || ttlIsEmpty) && this.masterKeyCache?.masterKey) {
+        return this.masterKeyCache.masterKey;
+      }
+
+      const masterKey = await this.masterKey();
+
+      const expiresAt = this.masterKeyTtl ? new Date(Date.now() + 1000 * this.masterKeyTtl) : null
+      this.masterKeyCache = { masterKey, expiresAt };
+      Config.put(this);
+
+      return this.masterKeyCache.masterKey;
+    }
+
+    return this.masterKey;
+  }
+
 
   // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
   // the (default) endpoint has to be defined in PagesRouter only.

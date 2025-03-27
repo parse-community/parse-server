@@ -3,7 +3,6 @@
 ---
 
 [![Build Status](https://github.com/parse-community/parse-server/actions/workflows/ci.yml/badge.svg?branch=alpha)](https://github.com/parse-community/parse-server/actions/workflows/ci.yml?query=workflow%3Aci+branch%3Aalpha)
-[![Build Status](https://github.com/parse-community/parse-server/actions/workflows/ci.yml/badge.svg?branch=beta)](https://github.com/parse-community/parse-server/actions/workflows/ci.yml?query=workflow%3Aci+branch%3Abeta)
 [![Build Status](https://github.com/parse-community/parse-server/actions/workflows/ci.yml/badge.svg?branch=release)](https://github.com/parse-community/parse-server/actions/workflows/ci.yml?query=workflow%3Aci+branch%3Arelease)
 [![Snyk Badge](https://snyk.io/test/github/parse-community/parse-server/badge.svg)](https://snyk.io/test/github/parse-community/parse-server)
 [![Coverage](https://codecov.io/github/parse-community/parse-server/branch/alpha/graph/badge.svg)](https://app.codecov.io/github/parse-community/parse-server/tree/alpha)
@@ -14,7 +13,6 @@
 [![Postgres Version](https://img.shields.io/badge/postgresql-13,_14,_15,_16,_17-green.svg?logo=postgresql&style=flat)](https://www.postgresql.org)
 
 [![npm latest version](https://img.shields.io/npm/v/parse-server/latest.svg)](https://www.npmjs.com/package/parse-server)
-[![npm beta version](https://img.shields.io/npm/v/parse-server/beta.svg)](https://www.npmjs.com/package/parse-server)
 [![npm alpha version](https://img.shields.io/npm/v/parse-server/alpha.svg)](https://www.npmjs.com/package/parse-server)
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)][open-collective-link]
@@ -100,7 +98,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
 
 Parse Server is available in different flavors on different branches:
 
-- The main branches are [release][log_release], [beta][log_beta] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
+- The main branches are [release][log_release] and [alpha][log_alpha]. See the [changelog overview](CHANGELOG.md) for details.
 - The long-term-support (LTS) branches are named `release-<version>.x.x`, for example `release-5.x.x`. LTS branches do not have pre-release branches.
 
 ## Long Term Support
