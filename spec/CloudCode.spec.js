@@ -3929,6 +3929,126 @@ describe('saveFile hooks', () => {
   });
 });
 
+describe('Parse.File hooks', () => { 
+  it('find hooks should run', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    const hooks = {
+      beforeFind(req) {
+        expect(req).toBeDefined();
+        expect(req.file).toBeDefined();
+        expect(req.triggerName).toBe('beforeFind');
+        expect(req.master).toBeFalse();
+        expect(req.log).toBeDefined();
+      },
+      afterFind(req) {
+        expect(req).toBeDefined();
+        expect(req.file).toBeDefined();
+        expect(req.triggerName).toBe('afterFind');
+        expect(req.master).toBeFalse();
+        expect(req.log).toBeDefined();
+        expect(req.forceDownload).toBeFalse();
+      },
+    };
+    for (const hook in hooks) {
+      spyOn(hooks, hook).and.callThrough();
+      Parse.Cloud[hook](Parse.File, hooks[hook]);
+    }
+    await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+    });
+    for (const hook in hooks) {
+      expect(hooks[hook]).toHaveBeenCalled();
+    }
+  });
+
+  it('beforeFind can throw', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    const hooks = {
+      beforeFind() {
+        throw 'unauthorized';
+      },
+      afterFind() {},
+    };
+    for (const hook in hooks) {
+      spyOn(hooks, hook).and.callThrough();
+      Parse.Cloud[hook](Parse.File, hooks[hook]);
+    }
+    await expectAsync(
+      request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      }).catch(e => {
+        throw new Parse.Error(e.data.code, e.data.error);
+      })
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized'));
+
+    expect(hooks.beforeFind).toHaveBeenCalled();
+    expect(hooks.afterFind).not.toHaveBeenCalled();
+  });
+
+  it('afterFind can throw', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    const hooks = {
+      beforeFind() {},
+      afterFind() {
+        throw 'unauthorized';
+      },
+    };
+    for (const hook in hooks) {
+      spyOn(hooks, hook).and.callThrough();
+      Parse.Cloud[hook](Parse.File, hooks[hook]);
+    }
+    await expectAsync(
+      request({
+        url: file.url(),
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      }).catch(e => {
+        throw new Parse.Error(e.data.code, e.data.error);
+      })
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized'));
+    for (const hook in hooks) {
+      expect(hooks[hook]).toHaveBeenCalled();
+    }
+  });
+
+  it('can force download', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    const user = await Parse.User.signUp('username', 'password');
+    Parse.Cloud.afterFind(Parse.File, req => {
+      req.forceDownload = true;
+    });
+    const response = await request({
+      url: file.url(),
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+    });
+    expect(response.headers['content-disposition']).toBe(`attachment;filename=${file._name}`);
+  });
+ });
+
 describe('Cloud Config hooks', () => {
   function testConfig() {
     return Parse.Config.save({ internal: 'i', string: 's', number: 12 }, { internal: true });

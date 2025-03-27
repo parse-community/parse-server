@@ -73,30 +73,68 @@ export class FilesRouter {
       res.json({ code: err.code, error: err.message });
       return;
     }
-    const filesController = config.filesController;
-    const filename = req.params.filename;
-    const mime = (await import('mime')).default;
-    const contentType = mime.getType(filename);
-    if (isFileStreamable(req, filesController)) {
-      filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
-        res.status(404);
-        res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-      });
-    } else {
-      filesController
-        .getFileData(config, filename)
-        .then(data => {
-          res.status(200);
-          res.set('Content-Type', contentType);
-          res.set('Content-Length', data.length);
-          res.end(data);
-        })
-        .catch(() => {
+
+    let filename = req.params.filename;
+    try {
+      const filesController = config.filesController;
+      const mime = (await import('mime')).default;
+      let contentType = mime.getType(filename);
+      let file = new Parse.File(filename, { base64: '' }, contentType);
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeFind,
+        { file },
+        config,
+        req.auth
+      );
+      if (triggerResult?.file?._name) {
+        filename = triggerResult?.file?._name;
+        contentType = mime.getType(filename);
+      }
+
+      if (isFileStreamable(req, filesController)) {
+        filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
           res.status(404);
           res.set('Content-Type', 'text/plain');
           res.end('File not found.');
         });
+        return;
+      }
+
+      let data = await filesController.getFileData(config, filename).catch(() => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
+      if (!data) {
+        return;
+      }
+      file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
+      const afterFind = await triggers.maybeRunFileTrigger(
+        triggers.Types.afterFind,
+        { file, forceDownload: false },
+        config,
+        req.auth
+      );
+
+      if (afterFind?.file) {
+        contentType = mime.getType(afterFind.file._name);
+        data = Buffer.from(afterFind.file._data, 'base64');
+      }
+
+      res.status(200);
+      res.set('Content-Type', contentType);
+      res.set('Content-Length', data.length);
+      if (afterFind.forceDownload) {
+        res.set('Content-Disposition', `attachment;filename=${afterFind.file._name}`);
+      }
+      res.end(data);
+    } catch (e) {
+      const err = triggers.resolveError(e, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: `Could not find file: ${filename}.`,
+      });
+      res.status(403);
+      res.json({ code: err.code, error: err.message });
     }
   }
 
