@@ -1,10 +1,12 @@
 'use strict';
+const http = require('http');
 const Auth = require('../lib/Auth');
 const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
 const ParseServer = require('../lib/index').ParseServer;
 const triggers = require('../lib/triggers');
-const { resolvingPromise, sleep } = require('../lib/TestUtils');
+const { resolvingPromise, sleep, getConnectionsCount } = require('../lib/TestUtils');
+const request = require('../lib/request');
 const validatorFail = () => {
   throw 'you are not authorized';
 };
@@ -1179,6 +1181,78 @@ describe('ParseLiveQuery', function () {
     expect(server.liveQueryServer.server.address()).toBeNull();
     expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
     await new Promise(resolve => server.server.close(resolve));
+  });
+
+  it_id('45655b74-716f-4fa1-a058-67eb21f3c3db')(it)('does shutdown separate liveQuery server', async () => {
+    await reconfigureServer({ appId: 'test_app_id' });
+    let close = false;
+    const config = {
+      appId: 'hello_test',
+      masterKey: 'world',
+      port: 1345,
+      mountPath: '/1',
+      serverURL: 'http://localhost:1345/1',
+      liveQuery: {
+        classNames: ['Yolo'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      liveQueryServerOptions: {
+        port: 1346,
+      },
+      serverCloseComplete: () => {
+        close = true;
+      },
+    };
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      config.databaseAdapter = new databaseAdapter.constructor({
+        uri: databaseURI,
+        collectionPrefix: 'test_',
+      });
+      config.filesAdapter = defaultConfiguration.filesAdapter;
+    }
+    const parseServer = await ParseServer.startApp(config);
+    expect(parseServer.liveQueryServer).toBeDefined();
+    expect(parseServer.liveQueryServer.server).not.toBe(parseServer.server);
+
+    // Open a connection to the liveQuery server
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.serverURL = 'ws://localhost:1346/1';
+    const query = await new Parse.Query('Yolo').subscribe();
+
+    // Open a connection to the parse server
+    const health = await request({
+      method: 'GET',
+      url: `http://localhost:1345/1/health`,
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'hello_test',
+        'X-Parse-Master-Key': 'world',
+        'Content-Type': 'application/json',
+      },
+      agent: new http.Agent({ keepAlive: true }),
+    }).then(res => res.data);
+    expect(health.status).toBe('ok');
+
+    let parseConnectionCount = await getConnectionsCount(parseServer.server);
+    let liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
+
+    expect(parseConnectionCount > 0).toBe(true);
+    expect(liveQueryConnectionCount > 0).toBe(true);
+    await Promise.all([
+      parseServer.handleShutdown(),
+      new Promise(resolve => query.on('close', resolve)),
+    ]);
+    expect(close).toBe(true);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(parseServer.liveQueryServer.server.address()).toBeNull();
+    expect(parseServer.liveQueryServer.subscriber.isOpen).toBeFalse();
+
+    parseConnectionCount = await getConnectionsCount(parseServer.server);
+    liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
+    expect(parseConnectionCount).toBe(0);
+    expect(liveQueryConnectionCount).toBe(0);
   });
 
   it('prevent afterSave trigger if not exists', async () => {

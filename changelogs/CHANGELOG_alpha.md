@@ -1,3 +1,17 @@
+# [8.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.1.0-alpha.2...8.1.0-alpha.3) (2025-03-27)
+
+
+### Bug Fixes
+
+* Parse Server doesn't shutdown gracefully ([#9634](https://github.com/parse-community/parse-server/issues/9634)) ([aed918d](https://github.com/parse-community/parse-server/commit/aed918d3109e739f7231d481b5f48c68fc01cf04))
+
+# [8.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.1.0-alpha.1...8.1.0-alpha.2) (2025-03-27)
+
+
+### Features
+
+* Add Cloud Code triggers `Parse.Cloud.beforeFind(Parse.File)`and `Parse.Cloud.afterFind(Parse.File)` ([#8700](https://github.com/parse-community/parse-server/issues/8700)) ([b2beaa8](https://github.com/parse-community/parse-server/commit/b2beaa86ff543a7aa4ad274c7a23bc4aa302c3fa))
+
 # [8.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.0.2...8.1.0-alpha.1) (2025-03-24)
 
 
