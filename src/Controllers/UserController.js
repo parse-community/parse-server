@@ -41,11 +41,9 @@ export class UserController extends AdaptableController {
       this.shouldVerifyEmails === true ||
       (typeof this.shouldVerifyEmails === "function" &&
         (await Promise.resolve(
-          this.shouldVerifyEmails({
-            user: Parse.Object.fromJSON({ className: "_User", ...user }),
-            authContext: this.authContext
-          })
+          this.shouldVerifyEmails(req, this.authContext)
         )) === true);
+
     if (!shouldSendEmail) {
       return false;
     }
