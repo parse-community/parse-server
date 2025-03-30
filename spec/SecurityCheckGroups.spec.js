@@ -67,18 +67,22 @@ describe('Security Check Groups', () => {
 
     it('checks succeed correctly', async () => {
       const config = Config.get(Parse.applicationId);
+      const uri = config.database.adapter._uri;
       config.database.adapter._uri = 'protocol://user:aMoreSecur3Passwor7!@example.com';
       const group = new CheckGroupDatabase();
       await group.run();
       expect(group.checks()[0].checkState()).toBe(CheckState.success);
+      config.database.adapter._uri = uri;
     });
 
     it('checks fail correctly', async () => {
       const config = Config.get(Parse.applicationId);
+      const uri = config.database.adapter._uri;
       config.database.adapter._uri = 'protocol://user:insecure@example.com';
       const group = new CheckGroupDatabase();
       await group.run();
       expect(group.checks()[0].checkState()).toBe(CheckState.fail);
+      config.database.adapter._uri = uri;
     });
   });
 });
