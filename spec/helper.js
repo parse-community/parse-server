@@ -1,9 +1,11 @@
 'use strict';
 const dns = require('dns');
 const semver = require('semver');
+const Parse = require('parse/node');
 const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 const { SpecReporter } = require('jasmine-spec-reporter');
 const SchemaCache = require('../lib/Adapters/Cache/SchemaCache').default;
+const { sleep, Connections } = require('../lib/TestUtils');
 
 // Ensure localhost resolves to ipv4 address first on node v17+
 if (dns.setDefaultResultOrder) {
@@ -53,7 +55,6 @@ const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase'
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 let databaseURI;
-// need to bind for mocking mocha
 
 if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
   databaseAdapter = JSON.parse(process.env.PARSE_SERVER_DATABASE_ADAPTER);
@@ -73,7 +74,7 @@ if (process.env.PARSE_SERVER_DATABASE_ADAPTER) {
 }
 
 const port = 8378;
-
+const serverURL = `http://localhost:${port}/1`;
 let filesAdapter;
 
 on_db(
@@ -99,7 +100,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
 // Default server configuration for tests.
 const defaultConfiguration = {
   filesAdapter,
-  serverURL: 'http://localhost:' + port + '/1',
+  serverURL,
   databaseAdapter,
   appId: 'test',
   javascriptKey: 'test',
@@ -153,34 +154,38 @@ if (silent) {
   };
 }
 
-if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
-  defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
-}
-
-const openConnections = {};
-const destroyAliveConnections = function () {
-  for (const socketId in openConnections) {
-    try {
-      openConnections[socketId].destroy();
-      delete openConnections[socketId];
-    } catch (e) {
-      /* */
-    }
-  }
-};
 // Set up a default API server for testing with default configuration.
 let parseServer;
 let didChangeConfiguration = false;
+const openConnections = new Connections();
+
+const shutdownServer = async (_parseServer) => {
+  await _parseServer.handleShutdown();
+  // Connection close events are not immediate on node 10+, so wait a bit
+  await sleep(0);
+  expect(openConnections.count() > 0).toBeFalsy(`There were ${openConnections.count()} open connections to the server left after the test finished`);
+  parseServer = undefined;
+};
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = async (changedConfiguration = {}) => {
   if (parseServer) {
-    destroyAliveConnections();
-    await new Promise(resolve => parseServer.server.close(resolve));
-    parseServer = undefined;
+    await shutdownServer(parseServer);
     return reconfigureServer(changedConfiguration);
   }
   didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
+  databaseAdapter = new databaseAdapter.constructor({
+    uri: databaseURI,
+    collectionPrefix: 'test_',
+  });
+  defaultConfiguration.databaseAdapter = databaseAdapter;
+  global.databaseAdapter = databaseAdapter;
+  if (filesAdapter instanceof GridFSBucketAdapter) {
+    defaultConfiguration.filesAdapter = new GridFSBucketAdapter(mongoURI);
+  }
+  if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
+    defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
+  }
   const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
     mountPath: '/1',
     port,
@@ -192,39 +197,19 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     console.error(err);
     fail('should not call next');
   });
-  parseServer.liveQueryServer?.server?.on('connection', connection => {
-    const key = `${connection.remoteAddress}:${connection.remotePort}`;
-    openConnections[key] = connection;
-    connection.on('close', () => {
-      delete openConnections[key];
-    });
-  });
-  parseServer.server.on('connection', connection => {
-    const key = `${connection.remoteAddress}:${connection.remotePort}`;
-    openConnections[key] = connection;
-    connection.on('close', () => {
-      delete openConnections[key];
-    });
-  });
+  openConnections.track(parseServer.server);
+  if (parseServer.liveQueryServer?.server && parseServer.liveQueryServer.server !== parseServer.server) {
+    openConnections.track(parseServer.liveQueryServer.server);
+  }
   return parseServer;
 };
 
-// Set up a Parse client to talk to our test API server
-const Parse = require('parse/node');
-Parse.serverURL = 'http://localhost:' + port + '/1';
-
 beforeAll(async () => {
-  try {
-    Parse.User.enableUnsafeCurrentUser();
-  } catch (error) {
-    if (error !== 'You need to call Parse.initialize before using Parse.') {
-      throw error;
-    }
-  }
   await reconfigureServer();
-
   Parse.initialize('test', 'test', 'test');
-  Parse.serverURL = 'http://localhost:' + port + '/1';
+  Parse.serverURL = serverURL;
+  Parse.User.enableUnsafeCurrentUser();
+  Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
 });
 
 global.afterEachFn = async () => {
@@ -253,19 +238,7 @@ global.afterEachFn = async () => {
       },
     });
   });
-
   await Parse.User.logOut().catch(() => {});
-
-  // Connection close events are not immediate on node 10+, so wait a bit
-  await new Promise(resolve => setTimeout(resolve, 0));
-
-  // After logout operations
-  if (Object.keys(openConnections).length > 1) {
-    console.warn(
-      `There were ${Object.keys(openConnections).length} open connections to the server left after the test finished`
-    );
-  }
-
   await TestUtils.destroyAllDataPermanently(true);
   SchemaCache.clear();
 
@@ -454,6 +427,7 @@ global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.databaseAdapter = databaseAdapter;
 global.databaseURI = databaseURI;
+global.shutdownServer = shutdownServer;
 global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
@@ -605,6 +579,14 @@ global.fdescribe_only_db = db => {
 global.describe_only = validator => {
   if (validator()) {
     return describe;
+  } else {
+    return xdescribe;
+  }
+};
+
+global.fdescribe_only = validator => {
+  if (validator()) {
+    return fdescribe;
   } else {
     return xdescribe;
   }

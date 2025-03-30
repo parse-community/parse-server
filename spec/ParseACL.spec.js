@@ -923,4 +923,32 @@ describe('Parse.ACL', () => {
 
     rest.create(config, auth.nobody(config), '_User', anonUser);
   });
+
+  it('support defaultACL in schema', async () => {
+    await new Parse.Object('TestObject').save();
+    const schema = await Parse.Server.database.loadSchema();
+    await schema.updateClass(
+      'TestObject',
+      {},
+      {
+        create: {
+          '*': true,
+        },
+        ACL: {
+          '*': { read: true },
+          currentUser: { read: true, write: true },
+        },
+      }
+    );
+    const acls = new Parse.ACL();
+    acls.setPublicReadAccess(true);
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toEqual({ read: true });
+    expect(acl[user.id].write).toBeTrue();
+    expect(acl[user.id].read).toBeTrue();
+  });
 });
