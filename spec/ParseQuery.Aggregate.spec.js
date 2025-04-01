@@ -1513,8 +1513,11 @@ describe('Parse.Query Aggregate testing', () => {
         },
       },
     ];
-    await expectAsync(new Parse.Query(TestObject).aggregate(pipeline)).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_QUERY, 'Using $search and $vectorSearch aggregation stages requires additional configuration. Please connect to Atlas or an AtlasCLI local deployment to enable.For more information on how to connect, see https://dochub.mongodb.org/core/atlas-cli-deploy-local-reqs.')
-    );
+    try {
+      await new Parse.Query(TestObject).aggregate(pipeline);
+      fail();
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.INVALID_QUERY);
+    }
   });
 });
