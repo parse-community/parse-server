@@ -22,6 +22,8 @@ const flakyTests = [
   "Email Verification Token Expiration:  sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp",
   // Expected 0 to be 1.
   "Email Verification Token Expiration:  should send a new verification email when a resend is requested and the user is UNVERIFIED",
+  // Expected 0 to be 1.
+  "Email Verification Token Expiration:  should match codes with emailVerifyTokenReuseIfValid",
 ];
 
 /** The minimum execution time in seconds for a test to be considered slow. */
