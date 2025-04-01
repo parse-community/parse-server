@@ -1500,4 +1500,21 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results.length).toEqual(3);
     await database.adapter.deleteAllClasses(false);
   });
+
+  it_only_db('mongo')('aggregate handle mongodb errors', async () => {
+    const pipeline = [
+      {
+        $search: {
+          index: "default",
+          text: {
+            path: ["name"],
+            query: 'foo',
+          },
+        },
+      },
+    ];
+    await expectAsync(new Parse.Query(TestObject).aggregate(pipeline)).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_QUERY, 'Using $search and $vectorSearch aggregation stages requires additional configuration. Please connect to Atlas or an AtlasCLI local deployment to enable.For more information on how to connect, see https://dochub.mongodb.org/core/atlas-cli-deploy-local-reqs.')
+    );
+  });
 });
