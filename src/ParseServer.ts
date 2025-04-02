@@ -134,7 +134,7 @@ class ParseServer {
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
 
-    options.state = 'initialized';
+    (options as any).state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
     this.config.maintenanceKeyIpsStore = new Map();
@@ -502,7 +502,7 @@ class ParseServer {
     httpServer,
     config: LiveQueryServerOptions,
     options: ParseServerOptions
-  ): ParseLiveQueryServer {
+  ): Promise<ParseLiveQueryServer> {
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);

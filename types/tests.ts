@@ -29,7 +29,7 @@ async function server() {
   ParseServer.promiseRouter();
 
   // $ExpectError
-  ParseServer.createLiveQueryServer();
+  await ParseServer.createLiveQueryServer();
 
   // $ExpectType ParseServer
   const parseServer2 = new ParseServer({});

@@ -54,7 +54,7 @@ declare class ParseServer {
      * @param {ParseServerOptions} options options for the ParseServer
      * @returns {Promise<ParseLiveQueryServer>} the live query server instance
      */
-    static createLiveQueryServer(httpServer: any, config: LiveQueryServerOptions, options: ParseServerOptions): ParseLiveQueryServer;
+    static createLiveQueryServer(httpServer: any, config: LiveQueryServerOptions, options: ParseServerOptions): Promise<ParseLiveQueryServer>;
     static verifyServerUrl(): any;
 }
 export default ParseServer;
