@@ -1,3 +1,4 @@
+// This file is manually updated to match src/Options/index.js until typed
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
