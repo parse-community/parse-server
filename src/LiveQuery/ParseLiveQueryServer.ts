@@ -3,7 +3,8 @@ import Parse from 'parse/node';
 import { Subscription } from './Subscription';
 import { Client } from './Client';
 import { ParseWebSocketServer } from './ParseWebSocketServer';
-import { logger } from '../logger';
+// @ts-ignore
+import logger from '../logger';
 import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';

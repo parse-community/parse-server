@@ -116,7 +116,7 @@ class ParseServer {
 
     const diff = validateKeyNames(options, optionsBlueprint);
     if (diff.length > 0) {
-      const logger = logging.logger;
+      const logger = (logging as any).logger;
       logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
     }
 

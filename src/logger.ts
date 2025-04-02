@@ -15,7 +15,7 @@ function defaultLogger() {
   return new LoggerController(adapter, null, options);
 }
 
-export let logger = defaultLogger();
+let logger = defaultLogger();
 
 export function setLogger(aLogger) {
   logger = aLogger;
