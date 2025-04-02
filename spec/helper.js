@@ -192,7 +192,6 @@ const reconfigureServer = async (changedConfiguration = {}) => {
   });
   cache.clear();
   parseServer = await ParseServer.startApp(newConfiguration);
-  Parse.CoreManager.setRESTController(RESTController);
   parseServer.expressApp.use('/1', err => {
     console.error(err);
     fail('should not call next');
