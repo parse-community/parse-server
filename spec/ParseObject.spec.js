@@ -302,7 +302,7 @@ describe('Parse.Object testing', () => {
 
   it('invalid key name', function (done) {
     const item = new Parse.Object('Item');
-    expect(() => item.set({ 'foo^bar': 'baz' })).toThrow(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: "foo^bar"'));
+    expect(() => item.set({ 'foo^bar': 'baz' })).toThrow(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: foo^bar'));
     item.save({ 'foo^bar': 'baz' }).then(fail, () => done());
   });
 
