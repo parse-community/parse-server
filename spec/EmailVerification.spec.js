@@ -1388,7 +1388,7 @@ describe('Auth Context', () => {
   });
 
   it('should call verifyUserEmails with correct auth context on login', async (done) => {
-    await Parse.User.logIn('testuser', 'securepassword');
+    await Parse.User.logIn('user', 'pass');
 
     expect(config.verifyUserEmails).toHaveBeenCalledWith({
       action: 'login',
