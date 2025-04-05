@@ -1364,8 +1364,8 @@ describe('Auth Context', () => {
 
     user = new Parse.User();
     await user.signUp({
-      username: 'testuser',
-      password: 'securepassword',
+      username: 'user',
+      password: 'pass',
       email: 'test@example.com',
     });
 
