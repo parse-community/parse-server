@@ -250,11 +250,10 @@ describe('Vulnerabilities', () => {
 
     it_id('e8b5f1e1-8326-4c70-b5f4-1e8678dfff8d')(it)('denies creating a hook with polluted data', async () => {
       const express = require('express');
-      const bodyParser = require('body-parser');
       const port = 34567;
       const hookServerURL = 'http://localhost:' + port;
       const app = express();
-      app.use(bodyParser.json({ type: '*/*' }));
+      app.use(express.json({ type: '*/*' }));
       const server = await new Promise(resolve => {
         const res = app.listen(port, undefined, () => resolve(res));
       });

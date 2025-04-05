@@ -1,3 +1,81 @@
+/**
+ * Parse Server authentication adapter for Multi-Factor Authentication (MFA).
+ *
+ * @class MFAAdapter
+ * @param {Object} options - The adapter options.
+ * @param {Array<String>} options.options - Supported MFA methods. Must include `"SMS"` or `"TOTP"`.
+ * @param {Number} [options.digits=6] - The number of digits for the one-time password (OTP). Must be between 4 and 10.
+ * @param {Number} [options.period=30] - The validity period of the OTP in seconds. Must be greater than 10.
+ * @param {String} [options.algorithm="SHA1"] - The algorithm used for TOTP generation. Defaults to `"SHA1"`.
+ * @param {Function} [options.sendSMS] - A callback function for sending SMS OTPs. Required if `"SMS"` is included in `options`.
+ *
+ * @description
+ * ## Parse Server Configuration
+ * To configure Parse Server for MFA, use the following structure:
+ * ```javascript
+ * {
+ *   auth: {
+ *     mfa: {
+ *       options: ["SMS", "TOTP"],
+ *       digits: 6,
+ *       period: 30,
+ *       algorithm: "SHA1",
+ *       sendSMS: (token, mobile) => {
+ *         // Send the SMS using your preferred SMS provider.
+ *         console.log(`Sending SMS to ${mobile} with token: ${token}`);
+ *       }
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * ## MFA Methods
+ * - **SMS**:
+ *   - Requires a valid mobile number.
+ *   - Sends a one-time password (OTP) via SMS for login or verification.
+ *   - Uses the `sendSMS` callback for sending the OTP.
+ *
+ * - **TOTP**:
+ *   - Requires a secret key for setup.
+ *   - Validates the user's OTP against a time-based one-time password (TOTP) generated using the secret key.
+ *   - Supports configurable digits, period, and algorithm for TOTP generation.
+ *
+ * ## MFA Payload
+ * The adapter requires the following `authData` fields:
+ * - **For SMS-based MFA**:
+ *   - `mobile`: The user's mobile number (required for setup).
+ *   - `token`: The OTP provided by the user for login or verification.
+ * - **For TOTP-based MFA**:
+ *   - `secret`: The TOTP secret key for the user (required for setup).
+ *   - `token`: The OTP provided by the user for login or verification.
+ *
+ * ## Example Payloads
+ * ### SMS Setup Payload
+ * ```json
+ * {
+ *   "mobile": "+1234567890"
+ * }
+ * ```
+ *
+ * ### TOTP Setup Payload
+ * ```json
+ * {
+ *   "secret": "BASE32ENCODEDSECRET",
+ *   "token": "123456"
+ * }
+ * ```
+ *
+ * ### Login Payload
+ * ```json
+ * {
+ *   "token": "123456"
+ * }
+ * ```
+ *
+ * @see {@link https://en.wikipedia.org/wiki/Time-based_One-Time_Password_algorithm Time-based One-Time Password Algorithm (TOTP)}
+ * @see {@link https://tools.ietf.org/html/rfc6238 RFC 6238: TOTP: Time-Based One-Time Password Algorithm}
+ */
+
 import { TOTP, Secret } from 'otpauth';
 import { randomString } from '../../cryptoUtils';
 import AuthAdapter from './AuthAdapter';
@@ -113,7 +191,7 @@ class MFAAdapter extends AuthAdapter {
     }
     throw 'Invalid MFA data';
   }
-  afterFind(req, authData) {
+  afterFind(authData, options, req) {
     if (req.master) {
       return;
     }

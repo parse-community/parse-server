@@ -12,7 +12,7 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handlePost(req) {
-    return this.createHook(req.body, req.config);
+    return this.createHook(req.body || {}, req.config);
   }
 
   handleGetFunctions(req) {
@@ -66,11 +66,11 @@ export class HooksRouter extends PromiseRouter {
 
   handleUpdate(req) {
     var hook;
-    if (req.params.functionName && req.body.url) {
+    if (req.params.functionName && req.body?.url) {
       hook = {};
       hook.functionName = req.params.functionName;
       hook.url = req.body.url;
-    } else if (req.params.className && req.params.triggerName && req.body.url) {
+    } else if (req.params.className && req.params.triggerName && req.body?.url) {
       hook = {};
       hook.className = req.params.className;
       hook.triggerName = req.params.triggerName;
@@ -82,7 +82,7 @@ export class HooksRouter extends PromiseRouter {
   }
 
   handlePut(req) {
-    var body = req.body;
+    var body = req.body || {};
     if (body.__op == 'Delete') {
       return this.handleDelete(req);
     } else {

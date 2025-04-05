@@ -1004,6 +1004,9 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         return fileObject;
       }
       const result = await fileTrigger(request);
+      if (request.forceDownload) {
+        fileObject.forceDownload = true;
+      }
       logTriggerSuccessBeforeHook(
         triggerType,
         'Parse.File',

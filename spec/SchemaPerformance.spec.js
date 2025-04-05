@@ -5,10 +5,8 @@ describe('Schema Performance', function () {
   let config;
 
   beforeEach(async () => {
+    await reconfigureServer();
     config = Config.get('test');
-    config.schemaCache.clear();
-    const databaseAdapter = config.database.adapter;
-    await reconfigureServer({ databaseAdapter });
     getAllSpy = spyOn(databaseAdapter, 'getAllClasses').and.callThrough();
   });
 
@@ -167,6 +165,12 @@ describe('Schema Performance', function () {
     await schema.reloadData();
 
     const levelPermissions = {
+      ACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
       find: { '*': true },
       get: { '*': true },
       create: { '*': true },

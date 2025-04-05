@@ -4,28 +4,32 @@
 
 const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
+import Config from '../../Config';
+import Deprecator from '../../Deprecator/Deprecator';
 
 // Returns a promise that fulfills iff this user id is valid.
-function validateAuthData(authData, params) {
-  return vkOAuth2Request(params).then(function (response) {
-    if (response && response.access_token) {
-      return request(
-        'api.vk.com',
-        'method/users.get?access_token=' + authData.access_token + '&v=' + params.apiVersion
-      ).then(function (response) {
-        if (
-          response &&
-          response.response &&
-          response.response.length &&
-          response.response[0].id == authData.id
-        ) {
-          return;
-        }
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
-      });
-    }
+async function validateAuthData(authData, params) {
+  const config = Config.get(Parse.applicationId);
+  Deprecator.logRuntimeDeprecation({ usage: 'vkontakte adapter' });
+
+  const vkConfig = config.auth.vkontakte;
+  if (!vkConfig?.enableInsecureAuth || !config.enableInsecureAuthAdapters) {
+    throw new Parse.Error('Vk only works with enableInsecureAuth: true');
+  }
+
+  const response = await vkOAuth2Request(params);
+  if (!response?.access_token) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
-  });
+  }
+
+  const vkUser = await request(
+    'api.vk.com',
+    `method/users.get?access_token=${authData.access_token}&v=${params.apiVersion}`
+  );
+
+  if (!vkUser?.response?.length || vkUser.response[0].id !== authData.id) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
+  }
 }
 
 function vkOAuth2Request(params) {

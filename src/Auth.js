@@ -2,6 +2,7 @@ const Parse = require('parse/node');
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
+import { LRUCache as LRU } from 'lru-cache';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
 
@@ -67,6 +68,10 @@ function nobody(config) {
   return new Auth({ config, isMaster: false });
 }
 
+const throttle = new LRU({
+  max: 10000,
+  ttl: 500,
+});
 /**
  * Checks whether session should be updated based on last update time & session length.
  */
@@ -78,44 +83,45 @@ function shouldUpdateSessionExpiry(config, session) {
   return lastUpdated <= skipRange;
 }
 
-const throttle = {};
 const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
   if (!config?.extendSessionOnUse) {
     return;
   }
-  clearTimeout(throttle[sessionToken]);
-  throttle[sessionToken] = setTimeout(async () => {
-    try {
-      if (!session) {
-        const query = await RestQuery({
-          method: RestQuery.Method.get,
-          config,
-          auth: master(config),
-          runBeforeFind: false,
-          className: '_Session',
-          restWhere: { sessionToken },
-          restOptions: { limit: 1 },
-        });
-        const { results } = await query.execute();
-        session = results[0];
-      }
-      if (!shouldUpdateSessionExpiry(config, session) || !session) {
-        return;
-      }
-      const expiresAt = config.generateSessionExpiresAt();
-      await new RestWrite(
+  if (throttle.get(sessionToken)) {
+    return;
+  }
+  throttle.set(sessionToken, true);
+  try {
+    if (!session) {
+      const query = await RestQuery({
+        method: RestQuery.Method.get,
         config,
-        master(config),
-        '_Session',
-        { objectId: session.objectId },
-        { expiresAt: Parse._encode(expiresAt) }
-      ).execute();
-    } catch (e) {
-      if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
-        logger.error('Could not update session expiry: ', e);
-      }
+        auth: master(config),
+        runBeforeFind: false,
+        className: '_Session',
+        restWhere: { sessionToken },
+        restOptions: { limit: 1 },
+      });
+      const { results } = await query.execute();
+      session = results[0];
     }
-  }, 500);
+
+    if (!shouldUpdateSessionExpiry(config, session) || !session) {
+      return;
+    }
+    const expiresAt = config.generateSessionExpiresAt();
+    await new RestWrite(
+      config,
+      master(config),
+      '_Session',
+      { objectId: session.objectId },
+      { expiresAt: Parse._encode(expiresAt) }
+    ).execute();
+  } catch (e) {
+    if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
+      logger.error('Could not update session expiry: ', e);
+    }
+  }
 };
 
 // Returns a promise that resolves to an Auth object
@@ -411,26 +417,35 @@ Auth.prototype._getAllRolesNamesForRoleIds = function (roleIDs, names = [], quer
     });
 };
 
-const findUsersWithAuthData = (config, authData) => {
+const findUsersWithAuthData = async (config, authData, beforeFind) => {
   const providers = Object.keys(authData);
-  const query = providers
-    .reduce((memo, provider) => {
-      if (!authData[provider] || (authData && !authData[provider].id)) {
-        return memo;
-      }
-      const queryKey = `authData.${provider}.id`;
-      const query = {};
-      query[queryKey] = authData[provider].id;
-      memo.push(query);
-      return memo;
-    }, [])
-    .filter(q => {
-      return typeof q !== 'undefined';
-    });
 
-  return query.length > 0
-    ? config.database.find('_User', { $or: query }, { limit: 2 })
-    : Promise.resolve([]);
+  const queries = await Promise.all(
+    providers.map(async provider => {
+      const providerAuthData = authData[provider];
+
+      const adapter = config.authDataManager.getValidatorForProvider(provider)?.adapter;
+      if (beforeFind && typeof adapter?.beforeFind === 'function') {
+        await adapter.beforeFind(providerAuthData);
+      }
+
+      if (!providerAuthData?.id) {
+        return null;
+      }
+
+      return { [`authData.${provider}.id`]: providerAuthData.id };
+    })
+  );
+
+  // Filter out null queries
+  const validQueries = queries.filter(query => query !== null);
+
+  if (!validQueries.length) {
+    return [];
+  }
+
+  // Perform database query
+  return config.database.find('_User', { $or: validQueries }, { limit: 2 });
 };
 
 const hasMutatedAuthData = (authData, userAuthData) => {
@@ -533,7 +548,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         acc.authData[provider] = null;
         continue;
       }
-      const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
+      const { validator } = req.config.authDataManager.getValidatorForProvider(provider) || {};
       const authProvider = (req.config.auth || {})[provider] || {};
       if (!validator || authProvider.enabled === false) {
         throw new Parse.Error(

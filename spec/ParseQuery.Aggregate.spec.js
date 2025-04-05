@@ -69,8 +69,8 @@ const get = function (url, options) {
 };
 
 describe('Parse.Query Aggregate testing', () => {
-  beforeEach(done => {
-    loadTestData().then(done, done);
+  beforeEach(async () => {
+    await loadTestData();
   });
 
   it('should only query aggregate with master key', done => {

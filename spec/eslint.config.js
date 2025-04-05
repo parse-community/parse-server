@@ -9,6 +9,7 @@ module.exports = [
       globals: {
         ...globals.node,
         ...globals.jasmine,
+        mockFetch: "readonly",
         Parse: "readonly",
         reconfigureServer: "readonly",
         createTestUser: "readonly",
@@ -35,6 +36,7 @@ module.exports = [
         describe_only_db: "readonly",
         fdescribe_only_db: "readonly",
         describe_only: "readonly",
+        fdescribe_only: "readonly",
         on_db: "readonly",
         defaultConfiguration: "readonly",
         range: "readonly",
