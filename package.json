@@ -109,7 +109,7 @@
     "prettier": "2.0.5",
     "semantic-release": "24.2.1",
     "typescript": "5.8.2",
-    "yaml": "2.7.0"
+    "yaml": "2.7.1"
   },
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
