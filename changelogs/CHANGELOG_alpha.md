@@ -1,3 +1,10 @@
+# [8.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.1.0-alpha.3...8.1.0-alpha.4) (2025-04-01)
+
+
+### Features
+
+* Upgrade Parse JS SDK from 6.0.0 to 6.1.0 ([#9686](https://github.com/parse-community/parse-server/issues/9686)) ([f49c371](https://github.com/parse-community/parse-server/commit/f49c371c1373d41e68b091e65f33a71ff6fc6dd0))
+
 # [8.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.1.0-alpha.2...8.1.0-alpha.3) (2025-03-27)
 
 
