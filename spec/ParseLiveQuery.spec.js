@@ -1173,14 +1173,18 @@ describe('ParseLiveQuery', function () {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.serverURL = 'ws://localhost:1345/1';
     const query = await new Parse.Query('Yolo').subscribe();
+    let liveQueryConnectionCount = await getConnectionsCount(server.liveQueryServer.server);
+    expect(liveQueryConnectionCount > 0).toBe(true);
     await Promise.all([
       server.handleShutdown(),
       new Promise(resolve => query.on('close', resolve)),
     ]);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await sleep(100);
     expect(server.liveQueryServer.server.address()).toBeNull();
     expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
-    await new Promise(resolve => server.server.close(resolve));
+    
+    liveQueryConnectionCount = await getConnectionsCount(server.liveQueryServer.server);
+    expect(liveQueryConnectionCount).toBe(0);
   });
 
   it_id('45655b74-716f-4fa1-a058-67eb21f3c3db')(it)('does shutdown separate liveQuery server', async () => {
@@ -1245,7 +1249,7 @@ describe('ParseLiveQuery', function () {
       new Promise(resolve => query.on('close', resolve)),
     ]);
     expect(close).toBe(true);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await sleep(100);
     expect(parseServer.liveQueryServer.server.address()).toBeNull();
     expect(parseServer.liveQueryServer.subscriber.isOpen).toBeFalse();
 
