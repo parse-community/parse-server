@@ -21,7 +21,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@apollo/server": "4.11.3",
-    "@babel/eslint-parser": "7.26.10",
+    "@babel/eslint-parser": "7.27.0",
     "@graphql-tools/merge": "9.0.24",
     "@graphql-tools/schema": "10.0.23",
     "@graphql-tools/utils": "10.8.4",
@@ -45,7 +45,7 @@
     "ldapjs": "3.0.7",
     "lodash": "4.17.21",
     "lru-cache": "10.4.0",
-    "mime": "4.0.6",
+    "mime": "4.0.7",
     "mongodb": "6.15.0",
     "mustache": "4.2.0",
     "otpauth": "9.3.6",
@@ -108,10 +108,10 @@
     "node-fetch": "3.2.10",
     "nyc": "17.1.0",
     "prettier": "2.0.5",
-    "semantic-release": "24.2.1",
+    "semantic-release": "24.2.3",
     "typescript": "5.8.2",
     "typescript-eslint": "8.29.0",
-    "yaml": "2.7.0"
+    "yaml": "2.7.1"
   },
   "scripts": {
     "ci:check": "node ./ci/ciCheck.js",
