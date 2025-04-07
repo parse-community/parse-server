@@ -48,7 +48,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
-const RESTController = require('parse/lib/node/RESTController');
+const RESTController = require('parse/lib/node/RESTController').default;
 const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';

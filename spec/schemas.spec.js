@@ -2893,7 +2893,7 @@ describe('schemas', () => {
       object.save({
         '!12field': 'field',
       })
-    ).toBeRejectedWith(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: "!12field"'));
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: !12field'));
     done();
   });
 
