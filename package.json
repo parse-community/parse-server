@@ -107,7 +107,7 @@
     "node-fetch": "3.2.10",
     "nyc": "17.1.0",
     "prettier": "2.0.5",
-    "semantic-release": "24.2.1",
+    "semantic-release": "24.2.3",
     "typescript": "5.8.2",
     "yaml": "2.7.1"
   },
