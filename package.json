@@ -88,7 +88,7 @@
     "cross-env": "7.0.3",
     "deep-diff": "1.0.2",
     "eslint": "9.23.0",
-    "flow-bin": "0.119.1",
+    "flow-bin": "0.266.1",
     "form-data": "4.0.2",
     "globals": "16.0.0",
     "graphql-tag": "2.12.6",
