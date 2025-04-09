@@ -31,7 +31,7 @@
     "commander": "13.1.0",
     "cors": "2.8.5",
     "deepcopy": "2.1.0",
-    "express": "5.0.1",
+    "express": "5.1.0",
     "express-rate-limit": "7.5.0",
     "follow-redirects": "1.15.9",
     "graphql": "16.10.0",
