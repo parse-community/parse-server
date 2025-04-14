@@ -423,7 +423,7 @@ describe('Email Verification Token Expiration:', () => {
     newUser.set('email', 'user@example.com');
     await newUser.signUp();
     await Parse.User.requestEmailVerification('user@example.com');
-    await sleep(1000);
+    await sleep(100);
     expect(sendSpy).toHaveBeenCalledTimes(2);
     expect(emailSpy).toHaveBeenCalledTimes(0);
   });
