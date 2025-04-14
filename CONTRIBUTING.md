@@ -242,7 +242,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 
 #### TypeScript Tests
 
-Type tests are located in [/types/tests.ts](/types/tests.ts) and are responsible for ensure types generated for each class is behaving as expected. Types must be generated using `npm run build:types` and should not be manually changed. These types are `.d.ts` files located in [/types](/types).
+Type tests are located in [/types/tests.ts](/types/tests.ts) and are responsible for ensure types generated for each class is behaving as expected. Types must be generated using `npm run build:types` and should not be manually changed. These types are `.d.ts` files located in [/types](/types). *Note: Any type changes to `src/Options/index.js` should be manually updated in `types/Options/index.d.ts`.*
 
 When developing type definitions you can use `npm run watch:ts` in order to rebuild your changes automatically upon each save.
 

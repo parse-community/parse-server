@@ -89,7 +89,7 @@
     "deep-diff": "1.0.2",
     "eslint": "9.23.0",
     "eslint-plugin-expect-type": "0.6.2",
-    "flow-bin": "0.119.1",
+    "flow-bin": "0.266.1",
     "form-data": "4.0.2",
     "globals": "16.0.0",
     "graphql-tag": "2.12.6",
