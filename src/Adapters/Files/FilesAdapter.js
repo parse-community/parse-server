@@ -17,7 +17,7 @@
 // database adapter.
 
 import type { Config } from '../../Config';
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 /**
  * @interface
  * @memberof module:Adapters
