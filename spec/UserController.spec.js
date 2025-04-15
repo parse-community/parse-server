@@ -1,6 +1,7 @@
 const emailAdapter = require('./support/MockEmailAdapter');
 const Config = require('../lib/Config');
 const Auth = require('../lib/Auth');
+const { resolvingPromise } = require('../lib/TestUtils');
 
 describe('UserController', () => {
   describe('sendVerificationEmail', () => {
@@ -17,8 +18,10 @@ describe('UserController', () => {
         });
 
         let emailOptions;
+        const sendPromise = resolvingPromise();
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
+          sendPromise.resolve();
         };
 
         const username = 'verificationUser';
@@ -27,6 +30,7 @@ describe('UserController', () => {
         user.setPassword('pass');
         user.setEmail('verification@example.com');
         await user.signUp();
+        await sendPromise;
 
         const config = Config.get('test');
         const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
@@ -52,8 +56,10 @@ describe('UserController', () => {
         });
 
         let emailOptions;
+        const sendPromise = resolvingPromise();
         emailAdapter.sendVerificationEmail = options => {
           emailOptions = options;
+          sendPromise.resolve();
         };
 
         const username = 'verificationUser';
@@ -62,6 +68,7 @@ describe('UserController', () => {
         user.setPassword('pass');
         user.setEmail('verification@example.com');
         await user.signUp();
+        await sendPromise;
 
         const config = Config.get('test');
         const rawUser = await config.database.find('_User', { username }, {}, Auth.maintenance(config));
