@@ -6,7 +6,7 @@ var SchemaController = require('./Controllers/SchemaController');
 var deepcopy = require('deepcopy');
 
 const Auth = require('./Auth');
-const { encodeDate } = require('./Utils');
+const { encodeDate, checkProhibitedKeywords } = require('./Utils');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 import Parse from 'parse/node';
@@ -303,7 +303,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         }
       }
       try {
-        Utils.checkProhibitedKeywords(this.config, this.data);
+        checkProhibitedKeywords(this.config, this.data);
       } catch (error) {
         throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, error);
       }
