@@ -247,9 +247,7 @@ Type tests are located in [/types/tests.ts](/types/tests.ts) and are responsible
 > [!CAUTION]
 > An exemption are type changes to `src/Options/index.js` which must be manually updated in `types/Options/index.d.ts`, as these types are not generated via a script.
 
-When developing type definitions you can use `npm run watch:ts` in order to rebuild your changes automatically upon each save.
-
-Use `npm run test:types` in order to run types tests against generated `.d.ts` files.
+When developing type definitions you can run `npm run watch:ts` in order to rebuild your changes automatically upon each save. Use `npm run test:types` in order to run types tests against generated `.d.ts` files.
 
 ### Test against Postgres
 
