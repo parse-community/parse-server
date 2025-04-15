@@ -1,6 +1,6 @@
 // Helper functions for accessing the Janrain Engage API.
 var httpsRequest = require('./httpsRequest');
-import * as Parse from '../../ClientSDK';
+import Parse from 'parse/node';
 var querystring = require('querystring');
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';

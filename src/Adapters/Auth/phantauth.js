@@ -5,7 +5,7 @@
  * To learn more, please go to: https://www.phantauth.net
  */
 
-import * as Parse from '../../ClientSDK';
+import Parse from 'parse/node';
 const httpsRequest = require('./httpsRequest');
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';

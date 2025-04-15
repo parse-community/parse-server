@@ -2,7 +2,7 @@ import log from '../../../logger';
 import _ from 'lodash';
 var mongodb = require('mongodb');
 import * as Parse from '../../../ClientSDK';
-const { encodeDate } = require('../../../Utils');
+const { encodeDate, relativeTimeToDate } = require('../../../Utils');
 
 const transformKey = (className, fieldName, schema) => {
   // Check if the schema is known since it's a built-in field.
@@ -698,7 +698,7 @@ function transformConstraint(constraint, field, count = false) {
               );
           }
 
-          const parserResult = Utils.relativeTimeToDate(val.$relativeTime);
+          const parserResult = relativeTimeToDate(val.$relativeTime);
           if (parserResult.status === 'success') {
             answer[key] = parserResult.result;
             break;

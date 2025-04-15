@@ -3,7 +3,7 @@
 // Helper functions for accessing the vkontakte API.
 
 const httpsRequest = require('./httpsRequest');
-import * as Parse from '../../ClientSDK';
+import Parse from 'parse/node';
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';
 

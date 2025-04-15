@@ -1,4 +1,4 @@
-import * as Parse from '../ClientSDK';
+import Parse from 'parse/node';
 import { LRUCache as LRU } from 'lru-cache';
 import logger from '../logger';
 
