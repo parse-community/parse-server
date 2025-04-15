@@ -38,20 +38,21 @@ function fromString(version) {
 
 module.exports = {
   applicationId: Parse.applicationId,
+  AnonymousUtils: Parse.AnonymousUtils,
   _decode: Parse._decode,
   _encode: Parse._encode,
-  CLP: Parse.CLP, // types?
+  CLP: Parse.CLP,
   CoreManager: Parse.CoreManager,
-  Config: Parse.Config, // Cloud trigger class name
+  Config: Parse.Config,
   Error: Parse.Error,
-  File: Parse.File, // cloud trigger class name
-  GeoPoint: Parse.GeoPoint, // toRadians
-  Polygon: Parse.Polygon, // containsPoints
-  Object: Parse.Object, // fromJSON, create new Objects
-  Query: Parse.Query, // instanceof, new query
-  Schema: Parse.Schema, // types? new schema
-  Session: Parse.Session, // fromJSON
-  User: Parse.User, // fromJSON
+  File: Parse.File,
+  GeoPoint: Parse.GeoPoint,
+  Polygon: Parse.Polygon,
+  Object: Parse.Object,
+  Query: Parse.Query,
+  Schema: Parse.Schema,
+  Session: Parse.Session,
+  User: Parse.User,
   Server: ParseServer,
   compatible,
   supportsForwardDelete,
