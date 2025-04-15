@@ -66,7 +66,7 @@
  * - [Server Administration Documentation](https://www.keycloak.org/docs/latest/server_admin/)
  */
 
-const { Parse } = require('parse/node');
+import * as Parse from '../../ClientSDK';
 const httpsRequest = require('./httpsRequest');
 
 const arraysEqual = (_arr1, _arr2) => {

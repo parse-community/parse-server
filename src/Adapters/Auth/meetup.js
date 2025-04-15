@@ -1,5 +1,5 @@
 // Helper functions for accessing the meetup API.
-var Parse = require('parse/node').Parse;
+import * as Parse from '../../ClientSDK';
 const httpsRequest = require('./httpsRequest');
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';

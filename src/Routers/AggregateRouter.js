@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import * as middleware from '../middlewares';
 import rest from '../rest';
 import ClassesRouter from './ClassesRouter';

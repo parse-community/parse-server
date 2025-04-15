@@ -3,7 +3,7 @@ import Config from '../Config';
 import express from 'express';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { Parse } from 'parse/node';
+import * as Parse from '../ClientSDK';
 import Utils from '../Utils';
 import mustache from 'mustache';
 import Page from '../Page';

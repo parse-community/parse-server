@@ -1,4 +1,4 @@
-const Parse = require('parse/node').Parse;
+import Parse from 'parse/node';
 const path = require('path');
 // These methods handle batch requests.
 const batchPath = '/batch';

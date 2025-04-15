@@ -1,7 +1,7 @@
 import { GraphQLNonNull } from 'graphql';
 import { request } from 'http';
 import { mutationWithClientMutationId } from 'graphql-relay';
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import logger from '../../logger';
 

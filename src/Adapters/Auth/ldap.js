@@ -74,7 +74,7 @@
 
 
 const ldapjs = require('ldapjs');
-const Parse = require('parse/node').Parse;
+import * as Parse from '../../ClientSDK';
 
 function validateAuthData(authData, options) {
   if (!optionsAreValid(options)) {

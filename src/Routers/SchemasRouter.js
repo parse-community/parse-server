@@ -1,10 +1,10 @@
 // schemas.js
 
-var Parse = require('parse/node').Parse,
-  SchemaController = require('../Controllers/SchemaController');
+const SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
+import * as Parse from '../ClientSDK';
 
 function classNameMismatchResponse(bodyClass, pathClass) {
   throw new Parse.Error(

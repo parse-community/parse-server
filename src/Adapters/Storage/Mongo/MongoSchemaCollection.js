@@ -1,5 +1,5 @@
 import MongoCollection from './MongoCollection';
-import Parse from 'parse/node';
+import * as Parse from '../../../ClientSDK';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {

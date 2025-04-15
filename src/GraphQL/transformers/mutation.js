@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 import { fromGlobalId } from 'graphql-relay';
 import { handleUpload } from '../loaders/filesMutations';
 import * as objectsMutations from '../helpers/objectsMutations';

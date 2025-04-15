@@ -1,6 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 import rest from '../../rest';
 import { extractKeysAndInclude } from './parseClassTypes';
 import { Auth } from '../../Auth';

@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 import deepcopy from 'deepcopy';
 import { GraphQLNonNull, GraphQLList } from 'graphql';
 import { transformToGraphQL } from '../transformers/schemaFields';

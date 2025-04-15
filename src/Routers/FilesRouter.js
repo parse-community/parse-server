@@ -1,6 +1,6 @@
 import express from 'express';
 import * as Middlewares from '../middlewares';
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');

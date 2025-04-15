@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 
 const transformToParse = (graphQLSchemaFields, existingFields) => {
   if (!graphQLSchemaFields) {

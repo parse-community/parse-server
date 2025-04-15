@@ -1,5 +1,5 @@
 import PromiseRouter from '../PromiseRouter';
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import rest from '../rest';
 const triggers = require('../triggers');
 const middleware = require('../middlewares');

@@ -1,7 +1,7 @@
 import { ParseMessageQueue } from '../ParseMessageQueue';
 import rest from '../rest';
 import { applyDeviceTokenExists } from './utils';
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 
 const PUSH_CHANNEL = 'parse-server-push';
 const DEFAULT_BATCH_SIZE = 100;

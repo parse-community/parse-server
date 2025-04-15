@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 import { GraphQLNonNull } from 'graphql';
 import deepcopy from 'deepcopy';
 import { mutationWithClientMutationId } from 'graphql-relay';

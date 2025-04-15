@@ -1,7 +1,7 @@
 // FunctionsRouter.js
 
-var Parse = require('parse/node').Parse,
-  triggers = require('../triggers');
+import * as Parse from '../ClientSDK';
+const triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
 import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';

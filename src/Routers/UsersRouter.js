@@ -1,6 +1,6 @@
 // These methods handle the User-related routes.
 
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import Config from '../Config';
 import AccountLockout from '../AccountLockout';
 import ClassesRouter from './ClassesRouter';
@@ -16,6 +16,7 @@ import {
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
+import { encodeDate } from '../Utils';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -241,7 +242,7 @@ export class UsersRouter extends ClassesRouter {
         req.config.database.update(
           '_User',
           { username: user.username },
-          { _password_changed_at: Parse._encode(changedAt) }
+          { _password_changed_at: encodeDate(changedAt) }
         );
       } else {
         // check whether the password has expired
@@ -447,7 +448,7 @@ export class UsersRouter extends ClassesRouter {
     if (token) {
       const results = await req.config.database.find('_User', {
         _perishable_token: token,
-        _perishable_token_expires_at: { $lt: Parse._encode(new Date()) },
+        _perishable_token_expires_at: { $lt: encodeDate(new Date()) },
       });
       if (results && results[0] && results[0].email) {
         email = results[0].email;

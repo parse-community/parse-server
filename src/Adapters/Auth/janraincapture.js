@@ -44,7 +44,7 @@
 
 
 // Helper functions for accessing the Janrain Capture API.
-var Parse = require('parse/node').Parse;
+import * as Parse from '../../ClientSDK';
 var querystring = require('querystring');
 const httpsRequest = require('./httpsRequest');
 

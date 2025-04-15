@@ -410,6 +410,15 @@ class Utils {
       '%' + char.charCodeAt(0).toString(16).toUpperCase()
     );
   }
+
+  static encodeDate(value) {
+    if (Object.prototype.toString.call(value) === '[object Date]') {
+      if (isNaN(value)) {
+        throw new Error('Tried to encode an invalid date.');
+      }
+      return { __type: 'Date', iso: value.toJSON() };
+    }
+  }
 }
 
 module.exports = Utils;

@@ -13,7 +13,7 @@ import {
   transformPointerString,
 } from './MongoTransform';
 // @flow-disable-next
-import Parse from 'parse/node';
+import * as Parse from '../../../ClientSDK';
 // @flow-disable-next
 import _ from 'lodash';
 import defaults from '../../../defaults';

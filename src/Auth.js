@@ -1,10 +1,11 @@
-const Parse = require('parse/node');
+import Parse from 'parse/node';
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
 import { LRUCache as LRU } from 'lru-cache';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
+import { encodeDate } from './Utils';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -115,7 +116,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
       master(config),
       '_Session',
       { objectId: session.objectId },
-      { expiresAt: Parse._encode(expiresAt) }
+      { expiresAt: encodeDate(expiresAt) }
     ).execute();
   } catch (e) {
     if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {

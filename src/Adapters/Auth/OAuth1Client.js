@@ -1,6 +1,6 @@
 var https = require('https'),
   crypto = require('crypto');
-var Parse = require('parse/node').Parse;
+import * as Parse from '../../ClientSDK';
 
 var OAuth = function (options) {
   if (!options) {

@@ -1,7 +1,7 @@
 const Config = require('./Config');
 const Auth = require('./Auth');
 import RESTController from 'parse/lib/node/RESTController';
-const Parse = require('parse/node');
+import Parse from 'parse/node';
 
 function getSessionToken(options) {
   if (options && typeof options.sessionToken === 'string') {

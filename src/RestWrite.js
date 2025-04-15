@@ -6,10 +6,10 @@ var SchemaController = require('./Controllers/SchemaController');
 var deepcopy = require('deepcopy');
 
 const Auth = require('./Auth');
-const Utils = require('./Utils');
+const { encodeDate } = require('./Utils');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
-var Parse = require('parse/node');
+import Parse from 'parse/node';
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
 const util = require('util');
@@ -79,7 +79,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.originalData = originalData;
 
   // The timestamp we'll use for this whole operation
-  this.updatedAt = Parse._encode(new Date()).iso;
+  this.updatedAt = encodeDate(new Date()).iso;
 
   // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
   // Once set the schemaData should be immutable
@@ -1012,7 +1012,7 @@ RestWrite.createSession = function (
       objectId: userId,
     },
     createdWith,
-    expiresAt: Parse._encode(expiresAt),
+    expiresAt: encodeDate(expiresAt),
   };
 
   if (installationId) {
@@ -1484,7 +1484,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
       this.config.passwordPolicy &&
       this.config.passwordPolicy.maxPasswordAge
     ) {
-      this.data._password_changed_at = Parse._encode(new Date());
+      this.data._password_changed_at = encodeDate(new Date());
     }
     // Ignore createdAt when update
     delete this.data.createdAt;
@@ -1561,7 +1561,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
       this.data.ACL = ACL;
       // password timestamp to be used when password expiry policy is enforced
       if (this.config.passwordPolicy && this.config.passwordPolicy.maxPasswordAge) {
-        this.data._password_changed_at = Parse._encode(new Date());
+        this.data._password_changed_at = encodeDate(new Date());
       }
     }
 

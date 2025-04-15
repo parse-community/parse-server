@@ -7,7 +7,7 @@
 // routes. That's useful for the routes that do really similar
 // things.
 
-var Parse = require('parse/node').Parse;
+import Parse from 'parse/node';
 
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');

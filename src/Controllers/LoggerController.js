@@ -1,4 +1,4 @@
-import { Parse } from 'parse/node';
+import * as Parse from '../ClientSDK';
 import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 

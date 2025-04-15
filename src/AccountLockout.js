@@ -1,5 +1,6 @@
 // This class handles the Account Lockout Policy settings.
 import Parse from 'parse/node';
+import { encodeDate } from './Utils';
 
 export class AccountLockout {
   constructor(user, config) {
@@ -81,7 +82,7 @@ export class AccountLockout {
     const now = new Date();
 
     const updateFields = {
-      _account_lockout_expires_at: Parse._encode(
+      _account_lockout_expires_at: encodeDate(
         new Date(now.getTime() + this._config.accountLockout.duration * 60 * 1000)
       ),
     };
@@ -110,7 +111,7 @@ export class AccountLockout {
   _notLocked() {
     const query = {
       username: this._user.username,
-      _account_lockout_expires_at: { $gt: Parse._encode(new Date()) },
+      _account_lockout_expires_at: { $gt: encodeDate(new Date()) },
       _failed_login_count: { $gte: this._config.accountLockout.threshold },
     };
 

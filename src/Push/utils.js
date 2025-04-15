@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import deepcopy from 'deepcopy';
 
 export function isPushIncrementing(body) {

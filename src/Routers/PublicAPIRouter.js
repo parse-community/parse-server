@@ -4,7 +4,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import qs from 'querystring';
-import { Parse } from 'parse/node';
+import * as Parse from '../ClientSDK';
 import Deprecator from '../Deprecator/Deprecator';
 
 const public_html = path.resolve(__dirname, '../../public_html');

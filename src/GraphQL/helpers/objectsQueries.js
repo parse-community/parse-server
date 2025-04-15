@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';

@@ -6,7 +6,7 @@ import * as objectsMutations from '../helpers/objectsMutations';
 import { OBJECT } from './defaultGraphQLTypes';
 import { getUserFromSessionToken } from './usersQueries';
 import { transformTypes } from '../transformers/mutation';
-import Parse from 'parse/node';
+import * as Parse from '../../ClientSDK';
 
 const usersRouter = new UsersRouter();
 

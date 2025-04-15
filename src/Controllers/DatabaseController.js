@@ -3,7 +3,7 @@
 // Parse database.
 
 // @flow-disable-next
-import { Parse } from 'parse/node';
+import * as Parse from '../ClientSDK';
 // @flow-disable-next
 import _ from 'lodash';
 // @flow-disable-next

@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import { GraphQLSchema, GraphQLObjectType, DocumentNode, GraphQLNamedType } from 'graphql';
 import { mergeSchemas } from '@graphql-tools/schema';
 import { mergeTypeDefs } from '@graphql-tools/merge';

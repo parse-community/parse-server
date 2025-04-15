@@ -1,6 +1,5 @@
 // @flow
-// @flow-disable-next Cannot resolve module `parse/node`.
-const Parse = require('parse/node');
+import * as Parse from '../ClientSDK';
 import { logger } from '../logger';
 import Config from '../Config';
 import { internalCreateSchema, internalUpdateSchema } from '../Routers/SchemasRouter';

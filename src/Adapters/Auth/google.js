@@ -45,7 +45,7 @@
 'use strict';
 
 // Helper functions for accessing the google API.
-var Parse = require('parse/node').Parse;
+import * as Parse from '../../ClientSDK';
 
 const https = require('https');
 const jwt = require('jsonwebtoken');

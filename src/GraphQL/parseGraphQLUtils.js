@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import { GraphQLError } from 'graphql';
 
 export function enforceMasterKeyAccess(auth) {

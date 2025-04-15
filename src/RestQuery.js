@@ -2,7 +2,7 @@
 // operation, encoded in the REST API format.
 
 var SchemaController = require('./Controllers/SchemaController');
-var Parse = require('parse/node').Parse;
+import Parse from 'parse/node';
 const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];

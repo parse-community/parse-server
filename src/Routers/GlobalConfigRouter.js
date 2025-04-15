@@ -1,6 +1,6 @@
 // global_config.js
-import Parse from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
+import * as Parse from '../ClientSDK';
 import * as middleware from '../middlewares';
 import * as triggers from '../triggers';
 

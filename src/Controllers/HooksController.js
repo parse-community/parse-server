@@ -2,7 +2,7 @@
 
 import * as triggers from '../triggers';
 // @flow-disable-next
-import * as Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 // @flow-disable-next
 import request from '../request';
 import { logger } from '../logger';

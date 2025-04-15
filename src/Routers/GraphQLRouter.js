@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import * as Parse from '../ClientSDK';
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 

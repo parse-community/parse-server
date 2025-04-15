@@ -1,3 +1,6 @@
+import Parse from 'parse/node';
+import ParseServer from './cloud-code/Parse.Server';
+
 var semver = require('semver');
 
 function compatible(compatibleSDK) {
@@ -34,6 +37,22 @@ function fromString(version) {
 }
 
 module.exports = {
+  applicationId: Parse.applicationId,
+  _decode: Parse._decode,
+  _encode: Parse._encode,
+  CLP: Parse.CLP, // types?
+  CoreManager: Parse.CoreManager,
+  Config: Parse.Config, // Cloud trigger class name
+  Error: Parse.Error,
+  File: Parse.File, // cloud trigger class name
+  GeoPoint: Parse.GeoPoint, // toRadians
+  Polygon: Parse.Polygon, // containsPoints
+  Object: Parse.Object, // fromJSON, create new Objects
+  Query: Parse.Query, // instanceof, new query
+  Schema: Parse.Schema, // types? new schema
+  Session: Parse.Session, // fromJSON
+  User: Parse.User, // fromJSON
+  Server: ParseServer,
   compatible,
   supportsForwardDelete,
   fromString,

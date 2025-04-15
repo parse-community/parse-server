@@ -1,4 +1,4 @@
-import { Parse } from 'parse/node';
+import * as Parse from '../ClientSDK';
 import RestQuery from '../RestQuery';
 import RestWrite from '../RestWrite';
 import { master } from '../Auth';

@@ -1,8 +1,8 @@
 import log from '../../../logger';
 import _ from 'lodash';
 var mongodb = require('mongodb');
-var Parse = require('parse/node').Parse;
-const Utils = require('../../../Utils');
+import * as Parse from '../../../ClientSDK';
+const { encodeDate } = require('../../../Utils');
 
 const transformKey = (className, fieldName, schema) => {
   // Check if the schema is known since it's a built-in field.
@@ -1055,7 +1055,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       }
 
       if (mongoObject instanceof Date) {
-        return Parse._encode(mongoObject);
+        return encodeDate(mongoObject);
       }
 
       if (mongoObject instanceof mongodb.Long) {
@@ -1118,7 +1118,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       }
 
       if (mongoObject instanceof Date) {
-        return Parse._encode(mongoObject);
+        return encodeDate(mongoObject);
       }
 
       if (mongoObject instanceof mongodb.Long) {
@@ -1168,19 +1168,19 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             break;
           case 'updatedAt':
           case '_updated_at':
-            restObject['updatedAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+            restObject['updatedAt'] = encodeDate(new Date(mongoObject[key])).iso;
             break;
           case 'createdAt':
           case '_created_at':
-            restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+            restObject['createdAt'] = encodeDate(new Date(mongoObject[key])).iso;
             break;
           case 'expiresAt':
           case '_expiresAt':
-            restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
+            restObject['expiresAt'] = encodeDate(new Date(mongoObject[key]));
             break;
           case 'lastUsed':
           case '_last_used':
-            restObject['lastUsed'] = Parse._encode(new Date(mongoObject[key])).iso;
+            restObject['lastUsed'] = encodeDate(new Date(mongoObject[key])).iso;
             break;
           case 'timesUsed':
           case 'times_used':
