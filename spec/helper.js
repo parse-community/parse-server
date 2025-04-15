@@ -205,16 +205,11 @@ const reconfigureServer = async (changedConfiguration = {}) => {
 };
 
 beforeAll(async () => {
-  try {
-
     await reconfigureServer();
     Parse.initialize('test', 'test', 'test');
     Parse.serverURL = serverURL;
     Parse.User.enableUnsafeCurrentUser();
     Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
-  } catch (e) {
-    console.log(e);
-  }
 });
 
 global.afterEachFn = async () => {

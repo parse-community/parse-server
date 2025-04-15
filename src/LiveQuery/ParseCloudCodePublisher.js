@@ -1,5 +1,5 @@
 import { ParsePubSub } from './ParsePubSub';
-import * as Parse from '../ClientSDK';
+import Parse from 'parse/node';
 import logger from '../logger';
 
 class ParseCloudCodePublisher {

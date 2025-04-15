@@ -1,5 +1,5 @@
 import tv4 from 'tv4';
-import * as Parse from '../ClientSDK';
+import Parse from 'parse/node';
 import { Subscription } from './Subscription';
 import { Client } from './Client';
 import { ParseWebSocketServer } from './ParseWebSocketServer';

@@ -1,7 +1,7 @@
 import { Check } from '../Check';
 import CheckGroup from '../CheckGroup';
 import Config from '../../Config';
-import * as Parse from '../../ClientSDK';
+import Parse from 'parse/node';
 
 /**
  * The security checks group for Parse Server configuration.
