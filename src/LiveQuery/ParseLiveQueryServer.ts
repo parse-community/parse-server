@@ -3,6 +3,7 @@ import Parse from 'parse/node';
 import { Subscription } from './Subscription';
 import { Client } from './Client';
 import { ParseWebSocketServer } from './ParseWebSocketServer';
+// @ts-ignore
 import logger from '../logger';
 import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
@@ -26,13 +27,17 @@ import { isDeepStrictEqual } from 'util';
 import deepcopy from 'deepcopy';
 
 class ParseLiveQueryServer {
-  clients: Map;
+  server: any;
+  config: any;
+  clients: Map<string, any>;
   // className -> (queryHash -> subscription)
-  subscriptions: Object;
-  parseWebSocketServer: Object;
+  subscriptions: Map<string, any>;
+  parseWebSocketServer: any;
   keyPairs: any;
   // The subscriber we use to get object update from publisher
-  subscriber: Object;
+  subscriber: any;
+  authCache: any;
+  cacheController: any;
 
   constructor(server: any, config: any = {}, parseServerConfig: any = {}) {
     this.server = server;
@@ -168,7 +173,7 @@ class ParseLiveQueryServer {
 
   // Message is the JSON object from publisher after inflated. Message.currentParseObject is the ParseObject after changes.
   // Message.originalParseObject is the original ParseObject.
-  async _onAfterDelete(message: any): void {
+  async _onAfterDelete(message: any): Promise<void> {
     logger.verbose(Parse.applicationId + 'afterDelete is triggered');
 
     let deletedParseObject = message.currentParseObject.toJSON();
@@ -197,7 +202,7 @@ class ParseLiveQueryServer {
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
-          let res = {};
+          let res: any = {};
           try {
             await this._matchesCLP(
               classLevelPermissions,
@@ -261,7 +266,7 @@ class ParseLiveQueryServer {
 
   // Message is the JSON object from publisher after inflated. Message.currentParseObject is the ParseObject after changes.
   // Message.originalParseObject is the original ParseObject.
-  async _onAfterSave(message: any): void {
+  async _onAfterSave(message: any): Promise<void> {
     logger.verbose(Parse.applicationId + 'afterSave is triggered');
 
     let originalParseObject = null;
@@ -309,7 +314,7 @@ class ParseLiveQueryServer {
           // Set current ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
-          let res = {};
+          let res: any = {};
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
@@ -548,7 +553,7 @@ class ParseLiveQueryServer {
     }
   }
 
-  getAuthForSessionToken(sessionToken: ?string): Promise<{ auth: ?Auth, userId: ?string }> {
+  getAuthForSessionToken(sessionToken?: string): Promise<{ auth?: Auth, userId?: string }> {
     if (!sessionToken) {
       return Promise.resolve({});
     }
@@ -565,7 +570,7 @@ class ParseLiveQueryServer {
       })
       .catch(error => {
         // There was an error with the session token
-        const result = {};
+        const result: any = {};
         if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
           result.error = error;
           this.authCache.set(sessionToken, Promise.resolve(result), this.config.cacheTimeout);
@@ -579,12 +584,12 @@ class ParseLiveQueryServer {
   }
 
   async _matchesCLP(
-    classLevelPermissions: ?any,
-    object: any,
-    client: any,
-    requestId: number,
-    op: string
-  ): any {
+    classLevelPermissions?: any,
+    object?: any,
+    client?: any,
+    requestId?: number,
+    op?: string
+  ): Promise<any> {
     // try to match on user first, less expensive than with roles
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const aclGroup = ['*'];
@@ -621,12 +626,12 @@ class ParseLiveQueryServer {
   }
 
   async _filterSensitiveData(
-    classLevelPermissions: ?any,
-    res: any,
-    client: any,
-    requestId: number,
-    op: string,
-    query: any
+    classLevelPermissions?: any,
+    res?: any,
+    client?: any,
+    requestId?: number,
+    op?: string,
+    query?: any
   ) {
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     const aclGroup = ['*'];
@@ -718,7 +723,7 @@ class ParseLiveQueryServer {
       });
   }
 
-  async getAuthFromClient(client: any, requestId: number, sessionToken: string) {
+  async getAuthFromClient(client: any, requestId: number, sessionToken?: string) {
     const getSessionFromClient = () => {
       const subscriptionInfo = client.getSubscriptionInfo(requestId);
       if (typeof subscriptionInfo === 'undefined') {
@@ -772,7 +777,7 @@ class ParseLiveQueryServer {
     return false;
   }
 
-  async _handleConnect(parseWebsocket: any, request: any): any {
+  async _handleConnect(parseWebsocket: any, request: any): Promise<any> {
     if (!this._validateKeys(request, this.keyPairs)) {
       Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
       logger.error('Key in request is not valid');
@@ -796,6 +801,7 @@ class ParseLiveQueryServer {
         sessionToken: request.sessionToken,
         useMasterKey: client.hasMasterKey,
         installationId: request.installationId,
+        user: undefined,
       };
       const trigger = getTrigger('@Connect', 'beforeConnect', Parse.applicationId);
       if (trigger) {
@@ -845,7 +851,7 @@ class ParseLiveQueryServer {
     return isValid;
   }
 
-  async _handleSubscribe(parseWebsocket: any, request: any): any {
+  async _handleSubscribe(parseWebsocket: any, request: any): Promise<any> {
     // If we can not find this client, return error to client
     if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
@@ -918,7 +924,7 @@ class ParseLiveQueryServer {
       }
 
       // Add subscriptionInfo to client
-      const subscriptionInfo = {
+      const subscriptionInfo: any = {
         subscription: subscription,
       };
       // Add selected fields, sessionToken and installationId for this subscription if necessary

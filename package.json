@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.1.1-alpha.1",
+  "version": "8.2.0-alpha.1",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -88,6 +88,7 @@
     "cross-env": "7.0.3",
     "deep-diff": "1.0.2",
     "eslint": "9.23.0",
+    "eslint-plugin-expect-type": "0.6.2",
     "flow-bin": "0.266.1",
     "form-data": "4.0.2",
     "globals": "16.0.0",
@@ -98,7 +99,7 @@
     "jsdoc": "4.0.4",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "15.5.0",
-    "m": "1.9.0",
+    "m": "1.9.1",
     "madge": "8.0.0",
     "mock-files-adapter": "file:spec/dependencies/mock-files-adapter",
     "mock-mail-adapter": "file:spec/dependencies/mock-mail-adapter",
@@ -109,6 +110,7 @@
     "prettier": "2.0.5",
     "semantic-release": "24.2.3",
     "typescript": "5.8.2",
+    "typescript-eslint": "8.29.0",
     "yaml": "2.7.1"
   },
   "scripts": {
@@ -122,6 +124,7 @@
     "build": "babel src/ -d lib/ --copy-files --extensions '.ts,.js'",
     "build:types": "tsc",
     "watch": "babel --watch src/ -d lib/ --copy-files",
+    "watch:ts": "tsc --watch",
     "test:mongodb:runnerstart": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start -t ${MONGODB_TOPOLOGY} --version ${MONGODB_VERSION} -- --port 27017",
     "test:mongodb:testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
     "test:mongodb": "npm run test:mongodb:runnerstart --dbversion=$npm_config_dbversion && npm run test:mongodb:testonly --dbversion=$npm_config_dbversion",
@@ -132,6 +135,7 @@
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=8.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} mongodb-runner start -t ${MONGODB_TOPOLOGY} --version ${MONGODB_VERSION} -- --port 27017",
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=8.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 jasmine",
     "test": "npm run testonly",
+    "test:types": "eslint types/tests.ts -c ./types/eslint.config.mjs",
     "posttest": "cross-env mongodb-runner stop --all",
     "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=8.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} TESTING=1 nyc jasmine",
     "start": "node ./bin/parse-server",
