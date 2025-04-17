@@ -147,13 +147,23 @@ export class UsersRouter extends ClassesRouter {
 
           // If request doesn't use master or maintenance key with ignoring email verification
           if (!((req.auth.isMaster || req.auth.isMaintenance) && ignoreEmailVerification)) {
-
             // Get verification conditions which can be booleans or functions; the purpose of this async/await
             // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
             // conditional statement below, as a developer may decide to execute expensive operations in them
-            const verifyUserEmails = async () => req.config.verifyUserEmails === true || (typeof req.config.verifyUserEmails === 'function' && await Promise.resolve(req.config.verifyUserEmails(request)) === true);
-            const preventLoginWithUnverifiedEmail = async () => req.config.preventLoginWithUnverifiedEmail === true || (typeof req.config.preventLoginWithUnverifiedEmail === 'function' && await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request)) === true);
-            if (await verifyUserEmails() && await preventLoginWithUnverifiedEmail() && !user.emailVerified) {
+            const verifyUserEmails = async () =>
+              req.config.verifyUserEmails === true ||
+              (typeof req.config.verifyUserEmails === 'function' &&
+                (await Promise.resolve(req.config.verifyUserEmails(request))) === true);
+            const preventLoginWithUnverifiedEmail = async () =>
+              req.config.preventLoginWithUnverifiedEmail === true ||
+              (typeof req.config.preventLoginWithUnverifiedEmail === 'function' &&
+                (await Promise.resolve(req.config.preventLoginWithUnverifiedEmail(request))) ===
+                  true);
+            if (
+              (await verifyUserEmails()) &&
+              (await preventLoginWithUnverifiedEmail()) &&
+              !user.emailVerified
+            ) {
               throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
             }
           }
@@ -252,12 +262,13 @@ export class UsersRouter extends ClassesRouter {
         const expiresAt = new Date(
           changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge
         );
-        if (expiresAt < new Date())
-        // fail of current time is past password expiry time
-        { throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Your password has expired. Please reset your password.'
-        ); }
+        if (expiresAt < new Date()) {
+          // fail of current time is past password expiry time
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Your password has expired. Please reset your password.'
+          );
+        }
       }
     }
 
@@ -492,7 +503,12 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
-    const results = await req.config.database.find('_User', { email: email }, {}, Auth.maintenance(req.config));
+    const results = await req.config.database.find(
+      '_User',
+      { email: email },
+      {},
+      Auth.maintenance(req.config)
+    );
     if (!results.length || results.length < 1) {
       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
     }
@@ -506,7 +522,12 @@ export class UsersRouter extends ClassesRouter {
     }
 
     const userController = req.config.userController;
-    const send = await userController.regenerateEmailVerifyToken(user, req.auth.isMaster, req.auth.installationId, req.ip);
+    const send = await userController.regenerateEmailVerifyToken(
+      user,
+      req.auth.isMaster,
+      req.auth.installationId,
+      req.ip
+    );
     if (send) {
       userController.sendVerificationEmail(user, req);
     }

@@ -18,7 +18,7 @@ export class FilesController extends AdaptableController {
     const extname = path.extname(filename);
 
     const hasExtension = extname.length > 0;
-    const mime = (await import('mime')).default
+    const mime = (await import('mime')).default;
     if (!hasExtension && contentType && mime.getExtension(contentType)) {
       filename = filename + '.' + mime.getExtension(contentType);
     } else if (hasExtension && !contentType) {
@@ -34,7 +34,7 @@ export class FilesController extends AdaptableController {
     return {
       url: location,
       name: filename,
-    }
+    };
   }
 
   deleteFile(config, filename) {

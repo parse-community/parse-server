@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import ParseServer from '../index';
 import definitions from './definitions/parse-server';
 import cluster from 'cluster';
@@ -32,7 +31,6 @@ runner({
   help,
   usage: '[options] <path/to/configuration.json>',
   start: function (program, options, logOptions) {
-
     if (!options.appId || !options.masterKey) {
       program.outputHelp();
       console.error('');
@@ -114,5 +112,3 @@ runner({
     }
   },
 });
-
-/* eslint-enable no-console */

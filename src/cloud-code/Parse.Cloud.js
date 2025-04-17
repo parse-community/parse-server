@@ -79,7 +79,7 @@ const getRoute = parseClass => {
       _User: 'users',
       _Session: 'sessions',
       '@File': 'files',
-      '@Config' : 'config',
+      '@Config': 'config',
     }[parseClass] || 'classes';
   if (parseClass === '@File') {
     return `/${route}/:id?(.*)`;
@@ -650,7 +650,6 @@ ParseCloud._removeAllHooks = () => {
 };
 
 ParseCloud.useMasterKey = () => {
-  // eslint-disable-next-line
   console.warn(
     'Parse.Cloud.useMasterKey is deprecated (and has no effect anymore) on parse-server, please refer to the cloud code migration notes: http://docs.parseplatform.org/parse-server/guide/#master-key-must-be-passed-explicitly'
   );

@@ -823,7 +823,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
             if (parserResult.status === 'success') {
               postgresValue = toPostgresValue(parserResult.result);
             } else {
-              // eslint-disable-next-line no-console
+
               console.error('Error while parsing relative date', parserResult);
               throw new Parse.Error(
                 Parse.Error.INVALID_JSON,
@@ -922,7 +922,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       this._stream
         .none('NOTIFY $1~, $2', ['schema.change', { senderId: this._uuid }])
         .catch(error => {
-          // eslint-disable-next-line no-console
+
           console.log('Failed to Notify:', error); // unlikely to ever happen
         });
     }
@@ -2382,7 +2382,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         debug(`initializationDone in ${ctx.duration}`);
       })
       .catch(error => {
-        // eslint-disable-next-line no-console
+
         console.error(error);
       });
   }

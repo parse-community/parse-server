@@ -1,6 +1,7 @@
 const js = require("@eslint/js");
 const babelParser = require("@babel/eslint-parser");
 const globals = require("globals");
+
 module.exports = [
   {
     ignores: ["**/lib/**", "**/coverage/**", "**/out/**", "**/types/**"],
@@ -9,14 +10,64 @@ module.exports = [
   {
     languageOptions: {
       parser: babelParser,
+      parserOptions: {
+        requireConfigFile: false,
+      },
       ecmaVersion: 6,
       sourceType: "module",
       globals: {
         Parse: "readonly",
         ...globals.node,
-      },
-      parserOptions: {
-        requireConfigFile: false,
+        __dirname: true,
+        beforeEach: true,
+        Buffer: true,
+        console: true,
+        describe: true,
+        fail: true,
+        expect: true,
+        global: true,
+        it: true,
+        jasmine: true,
+        process: true,
+        spyOn: true,
+        it_exclude_dbs: true,
+        reconfigureServer: true,
+        createTestUser: true,
+        databaseAdapter: true,
+        Container: true,
+        expectAsync: true,
+        TestObject: true,
+        beforeAll: true,
+        afterAll: true,
+        afterEach: true,
+        mockFetch: true,
+        pending: true,
+        equal: true,
+        notEqual: true,
+        create: true,
+        Item: true,
+        strictEqual: true,
+        arrayContains: true,
+        jequal: true,
+        range: true,
+        defaultConfiguration: true,
+        jfail: true,
+        ok: true,
+        xit: true,
+        fit: true,
+        on_db: true,
+        it_id: true,
+        it_only_db: true,
+        fit_id: true,
+        fit_only_db: true,
+        databaseURI: true,
+        fdescribe: true,
+        xdescribe: true,
+        describe_only: true,
+        describe_only_db: true,
+        fdescribe_only_db: true,
+        it_only_mongodb_version: true,
+        spyOnProperty: true,
       },
     },
     rules: {
@@ -34,7 +85,7 @@ module.exports = [
       curly: ["error", "all"],
       "block-spacing": ["error", "always"],
       "no-unused-vars": "off",
-      "no-console": "warn"
+      "no-console": 0,
     },
   },
 ];

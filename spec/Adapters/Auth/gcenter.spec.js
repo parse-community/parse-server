@@ -12,28 +12,28 @@ describe('GameCenterAuth Adapter', function () {
     const gcProd4 = fs.readFileSync(path.resolve(__dirname, '../../support/cert/gc-prod-4.cer'));
     const digicertPem = fs.readFileSync(path.resolve(__dirname, '../../support/cert/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem')).toString();
 
-   mockFetch([
-    {
-      url: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
-      method: 'GET',
-      response: {
-        ok: true,
-        headers: new Map(),
-        arrayBuffer: () => Promise.resolve(
-          gcProd4.buffer.slice(gcProd4.byteOffset, gcProd4.byteOffset + gcProd4.length)
-        ),
+    mockFetch([
+      {
+        url: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+        method: 'GET',
+        response: {
+          ok: true,
+          headers: new Map(),
+          arrayBuffer: () => Promise.resolve(
+            gcProd4.buffer.slice(gcProd4.byteOffset, gcProd4.byteOffset + gcProd4.length)
+          ),
+        },
       },
-    },
-    {
-      url: 'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
-      method: 'GET',
-      response: {
-        ok: true,
-        headers: new Map([['content-type', 'application/x-pem-file'], ['content-length', digicertPem.length.toString()]]),
-        text: () => Promise.resolve(digicertPem),
-      },
-    }
-  ]);
+      {
+        url: 'https://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt.pem',
+        method: 'GET',
+        response: {
+          ok: true,
+          headers: new Map([['content-type', 'application/x-pem-file'], ['content-length', digicertPem.length.toString()]]),
+          text: () => Promise.resolve(digicertPem),
+        },
+      }
+    ]);
   });
 
   describe('Test config failing due to missing params or wrong types', function () {

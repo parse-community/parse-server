@@ -209,7 +209,7 @@ export class UserController extends AdaptableController {
       master,
       installationId,
       ip,
-      resendRequest: true
+      resendRequest: true,
     });
     if (!shouldSend) {
       return;
@@ -222,7 +222,12 @@ export class UserController extends AdaptableController {
     if (!aUser || aUser.emailVerified) {
       throw undefined;
     }
-    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster, req.auth?.installationId, req.ip);
+    const generate = await this.regenerateEmailVerifyToken(
+      aUser,
+      req.auth?.isMaster,
+      req.auth?.installationId,
+      req.ip
+    );
     if (generate) {
       this.sendVerificationEmail(aUser, req);
     }

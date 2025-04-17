@@ -361,11 +361,11 @@ describe('Auth Adapter features', () => {
         break;
       }
     }
-    expect(afterSpy).toHaveBeenCalledWith(
-      { id: 'modernAdapter3Data' },
-      undefined,
-      { ip: '127.0.0.1', user, master: false },
-    );
+    expect(afterSpy).toHaveBeenCalledWith({ id: 'modernAdapter3Data' }, undefined, {
+      ip: '127.0.0.1',
+      user,
+      master: false,
+    });
     expect(spy).toHaveBeenCalled();
   });
 
@@ -488,7 +488,7 @@ describe('Auth Adapter features', () => {
 
     await user.save({
       authData: {
-        baseAdapter: { id: 'baseAdapter', token: "sometoken1" },
+        baseAdapter: { id: 'baseAdapter', token: 'sometoken1' },
       },
     });
 
@@ -497,7 +497,7 @@ describe('Auth Adapter features', () => {
     const user2 = new Parse.User();
     await user2.save({
       authData: {
-        baseAdapter: { id: 'baseAdapter', token: "sometoken2" },
+        baseAdapter: { id: 'baseAdapter', token: 'sometoken2' },
       },
     });
 

@@ -26,9 +26,9 @@ function logStartupOptions(options) {
         }
       }
     }
-    /* eslint-disable no-console */
+
     console.log(`${key}: ${value}`);
-    /* eslint-enable no-console */
+
   }
 }
 

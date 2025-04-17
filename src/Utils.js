@@ -389,7 +389,7 @@ class Utils {
    * addNestedKeysToRoot(obj, 'b');
    * console.log(obj);
    * // Output: { a: 1, e: 4, c: 2, d: 3 }
-  */
+   */
   static addNestedKeysToRoot(obj, key) {
     if (obj[key] && typeof obj[key] === 'object') {
       // Add nested keys to root
@@ -406,8 +406,9 @@ class Utils {
    * @returns {String} The encoded string.
    */
   static encodeForUrl(input) {
-    return encodeURIComponent(input).replace(/[!'.()*]/g, char =>
-      '%' + char.charCodeAt(0).toString(16).toUpperCase()
+    return encodeURIComponent(input).replace(
+      /[!'.()*]/g,
+      char => '%' + char.charCodeAt(0).toString(16).toUpperCase()
     );
   }
 }

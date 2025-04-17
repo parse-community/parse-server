@@ -26,9 +26,9 @@ describe('FilesController', () => {
     const gridFSAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     gridFSAdapter.getFileLocation = (config, filename) => {
       return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
-    }
+    };
     const filesController = new FilesController(gridFSAdapter);
-    const result = await filesController.expandFilesInObject(config, function () { });
+    const result = await filesController.expandFilesInObject(config, function () {});
 
     expect(result).toBeUndefined();
 
@@ -50,9 +50,9 @@ describe('FilesController', () => {
     gridFSAdapter.getFileLocation = async (config, filename) => {
       await Promise.resolve();
       return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
-    }
+    };
     const filesController = new FilesController(gridFSAdapter);
-    const result = await filesController.expandFilesInObject(config, function () { });
+    const result = await filesController.expandFilesInObject(config, function () {});
 
     expect(result).toBeUndefined();
 
@@ -76,7 +76,9 @@ describe('FilesController', () => {
       name: 'mock-name',
       __type: 'File',
     };
-    gridFSAdapter.getFileLocation = jasmine.createSpy('getFileLocation').and.returnValue(Promise.resolve('mock-url'));
+    gridFSAdapter.getFileLocation = jasmine
+      .createSpy('getFileLocation')
+      .and.returnValue(Promise.resolve('mock-url'));
     const filesController = new FilesController(gridFSAdapter);
 
     const anObject = { aFile: fullFile };
@@ -93,7 +95,9 @@ describe('FilesController', () => {
       name: 'mock-name',
       __type: 'File',
     };
-    gridFSAdapter.getFileLocation = jasmine.createSpy('getFileLocation').and.returnValue(Promise.resolve('mock-url'));
+    gridFSAdapter.getFileLocation = jasmine
+      .createSpy('getFileLocation')
+      .and.returnValue(Promise.resolve('mock-url'));
     const filesController = new FilesController(gridFSAdapter);
 
     const anObject = { aFile: fullFile };
@@ -101,7 +105,6 @@ describe('FilesController', () => {
     expect(gridFSAdapter.getFileLocation).toHaveBeenCalledWith(config, fullFile.name);
     expect(anObject.aFile.url).toEqual('mock-url');
   });
-
 
   it_only_db('mongo')('should pass databaseOptions to GridFSBucketAdapter', async () => {
     await reconfigureServer({

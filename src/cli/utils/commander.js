@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 import { Command } from 'commander';
 import path from 'path';
 import Deprecator from '../../Deprecator/Deprecator';
@@ -140,4 +140,4 @@ const commander = new Command()
 commander.storeOptionsAsProperties();
 commander.allowExcessArguments();
 export default commander;
-/* eslint-enable no-console */
+
