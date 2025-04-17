@@ -169,7 +169,7 @@ const getAuthForSessionToken = async function ({
     results = (await query.execute()).results;
   } else {
     results = (
-      await new Parse.Query(Parse.Session)
+      await new Parse.Query('_Session')
         .limit(1)
         .include('user')
         .equalTo('sessionToken', sessionToken)
@@ -256,7 +256,6 @@ Auth.prototype.getUserRoles = function () {
 };
 
 Auth.prototype.getRolesForUser = async function () {
-  //Stack all Parse.Role
   const results = [];
   if (this.config) {
     const restWhere = {
@@ -277,7 +276,7 @@ Auth.prototype.getRolesForUser = async function () {
     });
     await query.each(result => results.push(result));
   } else {
-    await new Parse.Query(Parse.Role)
+    await new Parse.Query('_Role')
       .equalTo('users', this.user)
       .each(result => results.push(result.toJSON()), { useMasterKey: true });
   }
@@ -347,11 +346,11 @@ Auth.prototype.getRolesByIds = async function (ins) {
   const results = [];
   // Build an OR query across all parentRoles
   if (!this.config) {
-    await new Parse.Query(Parse.Role)
+    await new Parse.Query('_Role')
       .containedIn(
         'roles',
         ins.map(id => {
-          const role = new Parse.Object(Parse.Role);
+          const role = new Parse.Object('_Role');
           role.id = id;
           return role;
         })

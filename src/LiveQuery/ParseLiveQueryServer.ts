@@ -529,7 +529,7 @@ class ParseLiveQueryServer {
 
   async _clearCachedRoles(userId: string) {
     try {
-      const validTokens = await new Parse.Query(Parse.Session)
+      const validTokens = await new Parse.Query('_Session')
         .equalTo('user', Parse.User.createWithoutData(userId))
         .find({ useMasterKey: true });
       await Promise.all(
@@ -620,7 +620,7 @@ class ParseLiveQueryServer {
     //   });
     // })
     // // it's rejected here, check the roles
-    // var rolesQuery = new Parse.Query(Parse.Role);
+    // var rolesQuery = new Parse.Query('_Role');
     // rolesQuery.equalTo("users", user);
     // return rolesQuery.find({useMasterKey:true});
   }
