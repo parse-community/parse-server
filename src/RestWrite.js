@@ -9,7 +9,6 @@ const Auth = require('./Auth');
 const { encodeDate, checkProhibitedKeywords } = require('./Utils');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
-import Parse from 'parse/node';
 import ParseError from './ParseError';
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
@@ -18,6 +17,7 @@ import RestQuery from './RestQuery';
 import _ from 'lodash';
 import logger from './logger';
 import { requiredColumns } from './Controllers/SchemaController';
+import { loadModule } from './Adapters/AdapterLoader';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -224,7 +224,7 @@ RestWrite.prototype.validateSchema = function () {
 
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
-RestWrite.prototype.runBeforeSaveTrigger = function () {
+RestWrite.prototype.runBeforeSaveTrigger = async function () {
   if (this.response || this.runOptions.many) {
     return;
   }
@@ -235,8 +235,8 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
   ) {
     return Promise.resolve();
   }
-
-  const { originalObject, updatedObject } = this.buildParseObjects();
+  const Parse = await loadModule('parse/node.js');
+  const { originalObject, updatedObject } = this.buildParseObjects(Parse);
   const identifier = updatedObject._getStateIdentifier();
   const stateController = Parse.CoreManager.getObjectStateController();
   const [pending] = stateController.getPendingOps(identifier);
@@ -801,7 +801,7 @@ RestWrite.prototype._validateEmail = function () {
       {},
       this.validSchemaController
     )
-    .then(results => {
+    .then(async (results) => {
       if (results.length > 0) {
         throw new ParseError(
           ParseError.EMAIL_TAKEN,
@@ -815,7 +815,8 @@ RestWrite.prototype._validateEmail = function () {
           Object.keys(this.data.authData)[0] === 'anonymous')
       ) {
         // We updated the email, send a new validation
-        const { originalObject, updatedObject } = this.buildParseObjects();
+        const Parse = await loadModule('parse/node.js');
+        const { originalObject, updatedObject } = this.buildParseObjects(Parse);
         const request = {
           original: originalObject,
           object: updatedObject,
@@ -950,7 +951,8 @@ RestWrite.prototype.createSessionTokenIfNeeded = async function () {
   // If sign-up call
   if (!this.storage.authProvider) {
     // Create request object for verification functions
-    const { originalObject, updatedObject } = this.buildParseObjects();
+    const Parse = await loadModule('parse/node.js');
+    const { originalObject, updatedObject } = this.buildParseObjects(Parse);
     const request = {
       original: originalObject,
       object: updatedObject,
@@ -1540,9 +1542,9 @@ RestWrite.prototype.runDatabaseOperation = function () {
           false,
           this.validSchemaController
         )
-        .then(response => {
+        .then(async (response) => {
           response.updatedAt = this.updatedAt;
-          this._updateResponseWithData(response, this.data);
+          await this._updateResponseWithData(response, this.data);
           this.response = { response };
         });
     });
@@ -1628,14 +1630,14 @@ RestWrite.prototype.runDatabaseOperation = function () {
             );
           });
       })
-      .then(response => {
+      .then(async (response) => {
         response.objectId = this.data.objectId;
         response.createdAt = this.data.createdAt;
 
         if (this.responseShouldHaveUsername) {
           response.username = this.data.username;
         }
-        this._updateResponseWithData(response, this.data);
+        await this._updateResponseWithData(response, this.data);
         this.response = {
           status: 201,
           response,
@@ -1646,7 +1648,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 };
 
 // Returns nothing - doesn't wait for the trigger.
-RestWrite.prototype.runAfterSaveTrigger = function () {
+RestWrite.prototype.runAfterSaveTrigger = async function () {
   if (!this.response || !this.response.response || this.runOptions.many) {
     return;
   }
@@ -1661,8 +1663,8 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
   if (!hasAfterSaveHook && !hasLiveQuery) {
     return Promise.resolve();
   }
-
-  const { originalObject, updatedObject } = this.buildParseObjects();
+  const Parse = await loadModule('parse/node.js');
+  const { originalObject, updatedObject } = this.buildParseObjects(Parse);
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   if (hasLiveQuery) {
@@ -1690,13 +1692,13 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       this.config,
       this.context
     )
-    .then(result => {
+    .then(async (result) => {
       const jsonReturned = result && !result._toFullJSON;
       if (jsonReturned) {
         this.pendingOps.operations = {};
         this.response.response = result;
       } else {
-        this.response.response = this._updateResponseWithData(
+        this.response.response = await this._updateResponseWithData(
           (result || updatedObject).toJSON(),
           this.data
         );
@@ -1721,7 +1723,7 @@ RestWrite.prototype.objectId = function () {
 };
 
 // Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
-RestWrite.prototype.sanitizedData = function () {
+RestWrite.prototype.sanitizedData = function (Parse) {
   const data = Object.keys(this.data).reduce((data, key) => {
     // Regexp comes from Parse.Object.prototype.validate
     if (!/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
@@ -1733,7 +1735,7 @@ RestWrite.prototype.sanitizedData = function () {
 };
 
 // Returns an updated copy of the object
-RestWrite.prototype.buildParseObjects = function () {
+RestWrite.prototype.buildParseObjects = function (Parse) {
   const extraData = { className: this.className, objectId: this.query?.objectId };
   let originalObject;
   if (this.query && this.query.objectId) {
@@ -1772,7 +1774,7 @@ RestWrite.prototype.buildParseObjects = function () {
     return data;
   }, deepcopy(this.data));
 
-  const sanitized = this.sanitizedData();
+  const sanitized = this.sanitizedData(Parse);
   for (const attribute of readOnlyAttributes) {
     delete sanitized[attribute];
   }
@@ -1796,13 +1798,17 @@ RestWrite.prototype.cleanUserAuthData = function () {
   }
 };
 
-RestWrite.prototype._updateResponseWithData = function (response, data) {
-  const stateController = Parse.CoreManager.getObjectStateController();
-  const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
-  for (const key in this.pendingOps.operations) {
-    if (!pending[key]) {
-      data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
-      this.storage.fieldsChangedByTrigger.push(key);
+RestWrite.prototype._updateResponseWithData = async function (response, data) {
+  // Operations are set if beforeSave trigger is used
+  if (this.pendingOps.operations) {
+    const Parse = await loadModule('parse/node.js');
+    const stateController = Parse.CoreManager.getObjectStateController();
+    const [pending] = stateController.getPendingOps(this.pendingOps.identifier);
+    for (const key in this.pendingOps.operations) {
+      if (!pending[key]) {
+        data[key] = this.originalData ? this.originalData[key] : { __op: 'Delete' };
+        this.storage.fieldsChangedByTrigger.push(key);
+      }
     }
   }
   const skipKeys = [...(requiredColumns.read[this.className] || [])];

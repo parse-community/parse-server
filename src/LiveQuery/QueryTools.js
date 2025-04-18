@@ -1,6 +1,6 @@
 var equalObjects = require('./equalObjects');
 var Id = require('./Id');
-import * as Parse from '../ClientSDK';
+import Parse from 'parse/node';
 import { containsPoint, radiansTo } from '../Utils';
 /**
  * Query Hashes are deterministic hashes for Parse Queries.

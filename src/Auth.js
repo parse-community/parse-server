@@ -7,6 +7,7 @@ import { LRUCache as LRU } from 'lru-cache';
 import RestQuery from './RestQuery';
 import RestWrite from './RestWrite';
 import { encodeDate } from './Utils';
+import { loadModule } from './Adapters/AdapterLoader';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -520,6 +521,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 
 // Validate each authData step-by-step and return the provider responses
 const handleAuthDataValidation = async (authData, req, foundUser) => {
+  const Parse = await loadModule('parse/node.js');
   let user;
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
@@ -535,8 +537,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
     user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
     await user.fetch({ useMasterKey: true });
   }
-
-  const { updatedObject } = req.buildParseObjects();
+  const { updatedObject } = req.buildParseObjects(Parse);
   const requestObject = getRequestObject(undefined, req.auth, updatedObject, user, req.config);
   // Perform validation as step-by-step pipeline for better error consistency
   // and also to avoid to trigger a provider (like OTP SMS) if another one fails

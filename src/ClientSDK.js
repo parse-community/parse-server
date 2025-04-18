@@ -37,8 +37,6 @@ function fromString(version) {
 
 module.exports = {
   applicationId: Parse.applicationId,
-  _decode: Parse._decode,
-  CoreManager: Parse.CoreManager,
   Object: Parse.Object,
   Query: Parse.Query,
   Schema: Parse.Schema,
