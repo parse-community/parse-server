@@ -1,6 +1,5 @@
 // These methods handle the User-related routes.
 
-import * as Parse from '../ClientSDK';
 import ParseError from '../ParseError';
 import Config from '../Config';
 import AccountLockout from '../AccountLockout';
@@ -13,11 +12,13 @@ import {
   Types as TriggerTypes,
   getRequestObject,
   resolveError,
+  triggerExists,
 } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import RestWrite from '../RestWrite';
 import { logger } from '../logger';
 import { encodeDate } from '../Utils';
+import { loadModule } from '../Adapters/AdapterLoader';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -139,17 +140,17 @@ export class UsersRouter extends ClassesRouter {
           if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
             throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
-          // Create request object for verification functions
-          const request = {
-            master: req.auth.isMaster,
-            ip: req.config.ip,
-            installationId: req.auth.installationId,
-            object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
-          };
 
           // If request doesn't use master or maintenance key with ignoring email verification
           if (!((req.auth.isMaster || req.auth.isMaintenance) && ignoreEmailVerification)) {
-
+            const Parse = await loadModule('parse/node.js');
+            // Create request object for verification functions
+            const request = {
+              master: req.auth.isMaster,
+              ip: req.config.ip,
+              installationId: req.auth.installationId,
+              object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+            };
             // Get verification conditions which can be booleans or functions; the purpose of this async/await
             // structure is to avoid unnecessarily executing subsequent functions if previous ones fail in the
             // conditional statement below, as a developer may decide to execute expensive operations in them
@@ -269,14 +270,18 @@ export class UsersRouter extends ClassesRouter {
     await req.config.filesController.expandFilesInObject(req.config, user);
 
     // Before login trigger; throws if failure
-    await maybeRunTrigger(
-      TriggerTypes.beforeLogin,
-      req.auth,
-      Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
-      null,
-      req.config,
-      req.info.context
-    );
+    const hasBeforeLoginTrigger = await triggerExists('_User', TriggerTypes.beforeLogin, req.config.applicationId);
+    if (hasBeforeLoginTrigger) {
+      const Parse = await loadModule('parse/node.js');
+      await maybeRunTrigger(
+        TriggerTypes.beforeLogin,
+        req.auth,
+        Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+        null,
+        req.config,
+        req.info.context
+      );
+    }
 
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
@@ -301,15 +306,19 @@ export class UsersRouter extends ClassesRouter {
 
     await createSession();
 
-    const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
-    await maybeRunTrigger(
-      TriggerTypes.afterLogin,
-      { ...req.auth, user: afterLoginUser },
-      afterLoginUser,
-      null,
-      req.config,
-      req.info.context
-    );
+    const hasAfterLoginTrigger = await triggerExists('_User', TriggerTypes.afterLogin, req.config.applicationId);
+    if (hasAfterLoginTrigger) {
+      const Parse = await loadModule('parse/node.js');
+      const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
+      await maybeRunTrigger(
+        TriggerTypes.afterLogin,
+        { ...req.auth, user: afterLoginUser },
+        afterLoginUser,
+        null,
+        req.config,
+        req.info.context
+      );
+    }
 
     if (authDataResponse) {
       user.authDataResponse = authDataResponse;
@@ -403,13 +412,17 @@ export class UsersRouter extends ClassesRouter {
           records.results[0].objectId,
           req.info.context
         );
-        await maybeRunTrigger(
-          TriggerTypes.afterLogout,
-          req.auth,
-          Parse.Session.fromJSON(Object.assign({ className: '_Session' }, records.results[0])),
-          null,
-          req.config
-        );
+        const hasAfterLogoutTrigger = await triggerExists('_Session', TriggerTypes.afterLogout, req.config.applicationId);
+        if (hasAfterLogoutTrigger) {
+          const Parse = await loadModule('parse/node.js');
+          await maybeRunTrigger(
+            TriggerTypes.afterLogout,
+            req.auth,
+            Parse.Session.fromJSON(Object.assign({ className: '_Session' }, records.results[0])),
+            null,
+            req.config
+          );
+        }
       }
     }
     return success;
@@ -568,7 +581,7 @@ export class UsersRouter extends ClassesRouter {
         }
         // Find the provider used to find the user
         const provider = Object.keys(authData).find(key => authData[key].id);
-
+        const Parse = await loadModule('parse/node.js');
         parseUser = Parse.User.fromJSON({ className: '_User', ...results[0] });
         request = getRequestObject(undefined, req.auth, parseUser, parseUser, req.config);
         request.isChallenge = true;
@@ -585,8 +598,9 @@ export class UsersRouter extends ClassesRouter {
       }
     }
 
-    if (!parseUser) {
-      parseUser = user ? Parse.User.fromJSON({ className: '_User', ...user }) : undefined;
+    if (!parseUser && user) {
+      const Parse = await loadModule('parse/node.js');
+      parseUser = Parse.User.fromJSON({ className: '_User', ...user });
     }
 
     if (!request) {

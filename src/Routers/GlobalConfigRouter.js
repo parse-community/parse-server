@@ -80,7 +80,7 @@ export class GlobalConfigRouter extends PromiseRouter {
       } else {
         const result = await req.config.database.update('_GlobalConfig', { objectId: '1' }, update, {}, true);
         if (hasAfterSaveHook) {
-          const Parse = await loadModule('parse/node');
+          const Parse = await loadModule('parse/node.js');
           updatedConfigObject = getConfigFromParams(result.params, Parse);
         }
       }

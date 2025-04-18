@@ -44,7 +44,6 @@ module.exports = {
   Object: Parse.Object,
   Query: Parse.Query,
   Schema: Parse.Schema,
-  Session: Parse.Session,
   User: Parse.User,
   Server: ParseServer,
   compatible,

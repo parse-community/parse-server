@@ -3,10 +3,10 @@ import { inflate } from '../triggers';
 import AdaptableController from './AdaptableController';
 import MailAdapter from '../Adapters/Email/MailAdapter';
 import rest from '../rest';
-import * as Parse from '../ClientSDK';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
 import { encodeDate } from '../Utils';
+import { loadModule } from '../Adapters/AdapterLoader';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -161,6 +161,7 @@ export class UserController extends AdaptableController {
     const fetchedUser = await this.getUserIfNeeded(user);
     let shouldSendEmail = this.config.sendUserEmailVerification;
     if (typeof shouldSendEmail === 'function') {
+      const Parse = await loadModule('parse/node.js');
       const response = await Promise.resolve(
         this.config.sendUserEmailVerification({
           user: Parse.Object.fromJSON({ className: '_User', ...fetchedUser }),
@@ -205,6 +206,7 @@ export class UserController extends AdaptableController {
     ) {
       return Promise.resolve(true);
     }
+    const Parse = await loadModule('parse/node.js');
     const shouldSend = await this.setEmailVerifyToken(user, {
       object: Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
       master,
