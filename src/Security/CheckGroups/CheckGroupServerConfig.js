@@ -1,7 +1,5 @@
 import { Check } from '../Check';
 import CheckGroup from '../CheckGroup';
-import Config from '../../Config';
-import Parse from 'parse/node';
 
 /**
  * The security checks group for Parse Server configuration.
@@ -12,8 +10,7 @@ class CheckGroupServerConfig extends CheckGroup {
   setName() {
     return 'Parse Server Configuration';
   }
-  setChecks() {
-    const config = Config.get(Parse.applicationId);
+  setChecks(config) {
     return [
       new Check({
         title: 'Secure master key',

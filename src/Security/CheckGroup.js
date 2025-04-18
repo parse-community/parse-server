@@ -4,9 +4,9 @@
  * @memberof module:SecurityCheck
  */
 class CheckGroup {
-  constructor() {
+  constructor(config) {
     this._name = this.setName();
-    this._checks = this.setChecks();
+    this._checks = this.setChecks(config);
   }
 
   /**

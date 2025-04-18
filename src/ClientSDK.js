@@ -40,7 +40,6 @@ module.exports = {
   Object: Parse.Object,
   Query: Parse.Query,
   Schema: Parse.Schema,
-  User: Parse.User,
   compatible,
   supportsForwardDelete,
   fromString,

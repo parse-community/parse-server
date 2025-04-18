@@ -26,11 +26,11 @@ export class PushWorker {
   adapter: any;
   channel: string;
 
-  constructor(pushAdapter: PushAdapter, subscriberConfig: any = {}) {
+  constructor(pushAdapter: PushAdapter, subscriberConfig: any = {}, applicationId) {
     AdaptableController.validateAdapter(pushAdapter, this, PushAdapter);
     this.adapter = pushAdapter;
 
-    this.channel = subscriberConfig.channel || PushQueue.defaultPushChannel();
+    this.channel = subscriberConfig.channel || PushQueue.defaultPushChannel(applicationId);
     this.subscriber = ParseMessageQueue.createSubscriber(subscriberConfig);
     if (this.subscriber) {
       const subscriber = this.subscriber;

@@ -1,7 +1,5 @@
 import { Check } from '../Check';
 import CheckGroup from '../CheckGroup';
-import Config from '../../Config';
-import Parse from 'parse/node';
 
 /**
  * The security checks group for Parse Server configuration.
@@ -12,8 +10,7 @@ class CheckGroupDatabase extends CheckGroup {
   setName() {
     return 'Database';
   }
-  setChecks() {
-    const config = Config.get(Parse.applicationId);
+  setChecks(config) {
     const databaseAdapter = config.database.adapter;
     const databaseUrl = databaseAdapter._uri;
     return [

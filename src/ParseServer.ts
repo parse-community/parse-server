@@ -202,7 +202,7 @@ class ParseServer {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
       if (security && security.enableCheck && security.enableCheckLog) {
-        new CheckRunner(security).run();
+        new CheckRunner(security).run(undefined, this.config);
       }
       this.config.state = 'ok';
       this.config = { ...this.config, ...pushController };
