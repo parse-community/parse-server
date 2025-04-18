@@ -1,5 +1,5 @@
 import PromiseRouter from '../PromiseRouter';
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import rest from '../rest';
 const triggers = require('../triggers');
 const middleware = require('../middlewares');
@@ -14,8 +14,8 @@ function formatJobSchedule(job_schedule) {
 function validateJobSchedule(config, job_schedule) {
   const jobs = triggers.getJobs(config.applicationId) || {};
   if (job_schedule.jobName && !jobs[job_schedule.jobName]) {
-    throw new Parse.Error(
-      Parse.Error.INTERNAL_SERVER_ERROR,
+    throw new ParseError(
+      ParseError.INTERNAL_SERVER_ERROR,
       'Cannot Schedule a job that is not deployed'
     );
   }

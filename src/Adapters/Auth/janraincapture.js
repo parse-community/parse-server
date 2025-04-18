@@ -44,7 +44,7 @@
 
 
 // Helper functions for accessing the Janrain Capture API.
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 var querystring = require('querystring');
 const httpsRequest = require('./httpsRequest');
 
@@ -56,8 +56,8 @@ function validateAuthData(authData, options) {
     if (data && data.stat == 'ok' && data.result == authData.id) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       'Janrain capture auth is invalid for this user.'
     );
   });

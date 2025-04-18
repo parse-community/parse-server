@@ -1,5 +1,6 @@
 // triggers.js
 import Parse from 'parse/node';
+import ParseError from './ParseError';
 import { logger } from './logger';
 
 export const Types = {
@@ -369,7 +370,7 @@ export function getResponseObject(request, resolve, reject) {
     },
     error: function (error) {
       const e = resolveError(error, {
-        code: Parse.Error.SCRIPT_FAILED,
+        code: ParseError.SCRIPT_FAILED,
         message: 'Script failed. Unknown error.',
       });
       reject(e);
@@ -614,7 +615,7 @@ export function maybeRunQueryTrigger(
       },
       err => {
         const error = resolveError(err, {
-          code: Parse.Error.SCRIPT_FAILED,
+          code: ParseError.SCRIPT_FAILED,
           message: 'Script failed. Unknown error.',
         });
         throw error;
@@ -627,21 +628,21 @@ export function resolveError(message, defaultOpts) {
     defaultOpts = {};
   }
   if (!message) {
-    return new Parse.Error(
-      defaultOpts.code || Parse.Error.SCRIPT_FAILED,
+    return new ParseError(
+      defaultOpts.code || ParseError.SCRIPT_FAILED,
       defaultOpts.message || 'Script failed.'
     );
   }
-  if (message instanceof Parse.Error) {
+  if (message instanceof ParseError) {
     return message;
   }
 
-  const code = defaultOpts.code || Parse.Error.SCRIPT_FAILED;
+  const code = defaultOpts.code || ParseError.SCRIPT_FAILED;
   // If it's an error, mark it as a script failed
   if (typeof message === 'string') {
-    return new Parse.Error(code, message);
+    return new ParseError(code, message);
   }
-  const error = new Parse.Error(code, message.message || message);
+  const error = new ParseError(code, message.message || message);
   if (message instanceof Error) {
     error.stack = message.stack;
   }
@@ -667,7 +668,7 @@ export function maybeRunValidator(request, functionName, auth) {
       })
       .catch(e => {
         const error = resolveError(e, {
-          code: Parse.Error.VALIDATION_ERROR,
+          code: ParseError.VALIDATION_ERROR,
           message: 'Validation failed.',
         });
         reject(error);

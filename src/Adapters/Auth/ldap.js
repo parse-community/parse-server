@@ -74,12 +74,12 @@
 
 
 const ldapjs = require('ldapjs');
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 
 function validateAuthData(authData, options) {
   if (!optionsAreValid(options)) {
     return new Promise((_, reject) => {
-      reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP auth configuration missing'));
+      reject(new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'LDAP auth configuration missing'));
     });
   }
   const clientOptions = options.url.startsWith('ldaps://')
@@ -99,17 +99,17 @@ function validateAuthData(authData, options) {
         let error;
         switch (ldapError.code) {
           case 49:
-            error = new Parse.Error(
-              Parse.Error.OBJECT_NOT_FOUND,
+            error = new ParseError(
+              ParseError.OBJECT_NOT_FOUND,
               'LDAP: Wrong username or password'
             );
             break;
           case 'DEPTH_ZERO_SELF_SIGNED_CERT':
-            error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAPS: Certificate mismatch');
+            error = new ParseError(ParseError.OBJECT_NOT_FOUND, 'LDAPS: Certificate mismatch');
             break;
           default:
-            error = new Parse.Error(
-              Parse.Error.OBJECT_NOT_FOUND,
+            error = new ParseError(
+              ParseError.OBJECT_NOT_FOUND,
               'LDAP: Somthing went wrong (' + ldapError.code + ')'
             );
         }
@@ -150,7 +150,7 @@ function searchForGroup(client, options, id, resolve, reject) {
     if (searchError) {
       client.unbind();
       client.destroy();
-      return reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
+      return reject(new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
     }
     res.on('searchEntry', entry => {
       if (entry.pojo.attributes.find(obj => obj.type === 'cn').values.includes(options.groupCn)) {
@@ -165,14 +165,14 @@ function searchForGroup(client, options, id, resolve, reject) {
         client.unbind();
         client.destroy();
         return reject(
-          new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP: User not in group')
+          new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'LDAP: User not in group')
         );
       }
     });
     res.on('error', () => {
       client.unbind();
       client.destroy();
-      return reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
+      return reject(new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
     });
   });
 }

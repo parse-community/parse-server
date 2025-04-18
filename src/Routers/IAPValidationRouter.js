@@ -1,7 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 const request = require('../request');
 const rest = require('../rest');
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 
 // TODO move validation logic in IAPValidationController
 const IAP_SANDBOX_URL = 'https://sandbox.itunes.apple.com/verifyReceipt';
@@ -58,7 +58,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
       const products = result.results;
       if (!products || products.length != 1) {
         // Error not found or too many
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+        throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
       }
 
       var download = products[0].download;
@@ -73,7 +73,7 @@ export class IAPValidationRouter extends PromiseRouter {
 
     if (!receipt || !productIdentifier) {
       // TODO: Error, malformed request
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'missing receipt or productIdentifier');
+      throw new ParseError(ParseError.INVALID_JSON, 'missing receipt or productIdentifier');
     }
 
     // Transform the object if there

@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Line.
  *
@@ -73,8 +74,8 @@ class LineAdapter extends BaseCodeAuthAdapter {
 
   async getAccessTokenFromCode(authData) {
     if (!authData.code) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         'Line auth is invalid for this user.'
       );
     }
@@ -95,16 +96,16 @@ class LineAdapter extends BaseCodeAuthAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         `Failed to exchange code for token: ${response.statusText}`
       );
     }
 
     const data = await response.json();
     if (data.error) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         data.error_description || data.error
       );
     }
@@ -122,16 +123,16 @@ class LineAdapter extends BaseCodeAuthAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         `Failed to fetch Line user: ${response.statusText}`
       );
     }
 
     const userData = await response.json();
     if (!userData?.userId) {
-      throw new Parse.Error(
-        Parse.Error.VALIDATION_ERROR,
+      throw new ParseError(
+        ParseError.VALIDATION_ERROR,
         'Invalid Line user data received.'
       );
     }

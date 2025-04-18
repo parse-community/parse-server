@@ -1,4 +1,4 @@
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 
@@ -14,8 +14,8 @@ export class GraphQLRouter extends PromiseRouter {
 
   async updateGraphQLConfig(req) {
     if (req.auth.isReadOnly) {
-      throw new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
+      throw new ParseError(
+        ParseError.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to update the GraphQL config."
       );
     }

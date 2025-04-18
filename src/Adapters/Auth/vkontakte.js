@@ -4,6 +4,7 @@
 
 const httpsRequest = require('./httpsRequest');
 import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';
 
@@ -14,12 +15,12 @@ async function validateAuthData(authData, params) {
 
   const vkConfig = config.auth.vkontakte;
   if (!vkConfig?.enableInsecureAuth || !config.enableInsecureAuthAdapters) {
-    throw new Parse.Error('Vk only works with enableInsecureAuth: true');
+    throw new ParseError('Vk only works with enableInsecureAuth: true');
   }
 
   const response = await vkOAuth2Request(params);
   if (!response?.access_token) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
   }
 
   const vkUser = await request(
@@ -28,7 +29,7 @@ async function validateAuthData(authData, params) {
   );
 
   if (!vkUser?.response?.length || vkUser.response[0].id !== authData.id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
   }
 }
 
@@ -41,8 +42,8 @@ function vkOAuth2Request(params) {
       !params.appSecret ||
       !params.appSecret.length
     ) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         'Vk auth is not configured. Missing appIds or appSecret.'
       );
     }

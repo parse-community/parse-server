@@ -4,11 +4,11 @@ const SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 
 function classNameMismatchResponse(bodyClass, pathClass) {
-  throw new Parse.Error(
-    Parse.Error.INVALID_CLASS_NAME,
+  throw new ParseError(
+    ParseError.INVALID_CLASS_NAME,
     `Class name mismatch between ${bodyClass} and ${pathClass}.`
   );
 }
@@ -28,17 +28,17 @@ function getOneSchema(req) {
     .then(schema => ({ response: schema }))
     .catch(error => {
       if (error === undefined) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+        throw new ParseError(ParseError.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       } else {
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+        throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'Database adapter error.');
       }
     });
 }
 
 const checkIfDefinedSchemasIsUsed = req => {
   if (req.config?.schema?.lockSchemas === true) {
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
+    throw new ParseError(
+      ParseError.OPERATION_FORBIDDEN,
       'Cannot perform this operation when schemas options is used.'
     );
   }
@@ -72,8 +72,8 @@ export const internalUpdateSchema = async (className, body, config) => {
 async function createSchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
+    throw new ParseError(
+      ParseError.OPERATION_FORBIDDEN,
       "read-only masterKey isn't allowed to create a schema."
     );
   }
@@ -85,7 +85,7 @@ async function createSchema(req) {
 
   const className = req.params.className || req.body?.className;
   if (!className) {
-    throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
+    throw new ParseError(135, `POST ${req.path} needs a class name.`);
   }
 
   return await internalCreateSchema(className, req.body || {}, req.config);
@@ -94,8 +94,8 @@ async function createSchema(req) {
 function modifySchema(req) {
   checkIfDefinedSchemasIsUsed(req);
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
+    throw new ParseError(
+      ParseError.OPERATION_FORBIDDEN,
       "read-only masterKey isn't allowed to update a schema."
     );
   }
@@ -109,14 +109,14 @@ function modifySchema(req) {
 
 const deleteSchema = req => {
   if (req.auth.isReadOnly) {
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
+    throw new ParseError(
+      ParseError.OPERATION_FORBIDDEN,
       "read-only masterKey isn't allowed to delete a schema."
     );
   }
   if (!SchemaController.classNameIsValid(req.params.className)) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_CLASS_NAME,
+    throw new ParseError(
+      ParseError.INVALID_CLASS_NAME,
       SchemaController.invalidClassNameMessage(req.params.className)
     );
   }

@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Microsoft.
  *
@@ -76,7 +77,7 @@ class MicrosoftAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!userResponse.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Microsoft API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Microsoft API request failed.');
     }
 
     return userResponse.json();
@@ -98,7 +99,7 @@ class MicrosoftAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Microsoft API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Microsoft API request failed.');
     }
 
     const json = await response.json();

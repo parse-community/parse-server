@@ -45,7 +45,7 @@
 // Apple SignIn Auth
 // https://developer.apple.com/documentation/signinwithapplerestapi
 
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 const jwksClient = require('jwks-rsa');
 const jwt = require('jsonwebtoken');
 const authUtils = require('./utils');
@@ -64,8 +64,8 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   try {
     key = await authUtils.getSigningKey(client, keyId);
   } catch (error) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       `Unable to find matching key for Key ID: ${keyId}`
     );
   }
@@ -74,7 +74,7 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
   if (!token) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
 
   const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
@@ -96,18 +96,18 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
   } catch (exception) {
     const message = exception.message;
 
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `${message}`);
   }
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       `id token not issued by correct OpenID provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
     );
   }
 
   if (jwtClaims.sub !== id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
   }
   return jwtClaims;
 };

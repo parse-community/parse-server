@@ -1,7 +1,7 @@
 const Config = require('./Config');
 const Auth = require('./Auth');
 import RESTController from 'parse/lib/node/RESTController';
-import Parse from 'parse/node';
+import ParseError from './ParseError';
 
 function getSessionToken(options) {
   if (options && typeof options.sessionToken === 'string') {
@@ -139,8 +139,8 @@ function ParseServerRESTController(applicationId, router) {
             },
             err => {
               if (
-                err instanceof Parse.Error &&
-                err.code == Parse.Error.INVALID_JSON &&
+                err instanceof ParseError &&
+                err.code == ParseError.INVALID_JSON &&
                 err.message == `cannot route ${method} ${path}`
               ) {
                 RESTController.request.apply(null, args).then(resolve, reject);

@@ -1,5 +1,5 @@
 import loadAdapter from '../AdapterLoader';
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 import AuthAdapter from './AuthAdapter';
 
 const apple = require('./apple');
@@ -83,8 +83,8 @@ function authDataValidator(provider, adapter, appIds, options) {
       !authAdapterPolicies[adapter.policy] &&
       typeof adapter.policy !== 'function'
     ) {
-      throw new Parse.Error(
-        Parse.Error.OTHER_CAUSE,
+      throw new ParseError(
+        ParseError.OTHER_CAUSE,
         'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
       );
     }
@@ -96,8 +96,8 @@ function authDataValidator(provider, adapter, appIds, options) {
       typeof adapter.validateLogin !== 'function' ||
       typeof adapter.validateUpdate !== 'function'
     ) {
-      throw new Parse.Error(
-        Parse.Error.OTHER_CAUSE,
+      throw new ParseError(
+        ParseError.OTHER_CAUSE,
         'Adapter is not configured. Implement either validateAuthData or all of the following: validateSetUp, validateLogin and validateUpdate'
       );
     }

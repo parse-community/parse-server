@@ -1,7 +1,7 @@
 import { GraphQLNonNull } from 'graphql';
 import { request } from 'http';
 import { mutationWithClientMutationId } from 'graphql-relay';
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import logger from '../../logger';
 
@@ -39,7 +39,7 @@ const handleUpload = async (upload, config) => {
             try {
               resolve(JSON.parse(data));
             } catch (e) {
-              reject(new Parse.Error(Parse.error, data));
+              reject(new ParseError(ParseError, data));
             }
           });
         }
@@ -55,7 +55,7 @@ const handleUpload = async (upload, config) => {
   } catch (e) {
     stream.destroy();
     logger.error('Error creating a file: ', e);
-    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, `Could not store file: ${filename}.`);
+    throw new ParseError(ParseError.FILE_SAVE_ERROR, `Could not store file: ${filename}.`);
   }
 };
 

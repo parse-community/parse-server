@@ -164,7 +164,7 @@ class ParseServer {
       try {
         await databaseController.performInitialization();
       } catch (e) {
-        if (e.code !== Parse.Error.DUPLICATE_VALUE) {
+        if (e.code !== ParseError.DUPLICATE_VALUE) {
           throw e;
         }
       }

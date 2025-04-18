@@ -1,4 +1,5 @@
 import Parse from 'parse/node';
+import ParseError from './ParseError';
 import { isDeepStrictEqual } from 'util';
 import { getRequestObject, resolveError } from './triggers';
 import { logger } from './logger';
@@ -119,7 +120,7 @@ const renewSessionIfNeeded = async ({ config, session, sessionToken }) => {
       { expiresAt: encodeDate(expiresAt) }
     ).execute();
   } catch (e) {
-    if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) {
+    if (e?.code !== ParseError.OBJECT_NOT_FOUND) {
       logger.error('Could not update session expiry: ', e);
     }
   }
@@ -178,18 +179,18 @@ const getAuthForSessionToken = async function ({
   }
 
   if (results.length !== 1 || !results[0]['user']) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
   const session = results[0];
   const now = new Date(),
     expiresAt = session.expiresAt ? new Date(session.expiresAt.iso) : undefined;
   if (expiresAt < now) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token is expired.');
+    throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Session token is expired.');
   }
   const obj = session.user;
 
   if (typeof obj['objectId'] === 'string' && obj['objectId'].startsWith('role:')) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
+    throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'Invalid object ID.');
   }
 
   delete obj.password;
@@ -226,7 +227,7 @@ var getAuthForLegacySessionToken = async function ({ config, sessionToken, insta
   return query.execute().then(response => {
     var results = response.results;
     if (results.length !== 1) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
+      throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
     const obj = results[0];
     obj.className = '_User';
@@ -511,8 +512,8 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
     return;
   }
 
-  throw new Parse.Error(
-    Parse.Error.OTHER_CAUSE,
+  throw new ParseError(
+    ParseError.OTHER_CAUSE,
     `Missing additional authData ${additionProvidersNotFound.join(',')}`
   );
 };
@@ -551,8 +552,8 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       const { validator } = req.config.authDataManager.getValidatorForProvider(provider) || {};
       const authProvider = (req.config.auth || {})[provider] || {};
       if (!validator || authProvider.enabled === false) {
-        throw new Parse.Error(
-          Parse.Error.UNSUPPORTED_SERVICE,
+        throw new ParseError(
+          ParseError.UNSUPPORTED_SERVICE,
           'This authentication method is unsupported.'
         );
       }
@@ -580,7 +581,7 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
       }
     } catch (err) {
       const e = resolveError(err, {
-        code: Parse.Error.SCRIPT_FAILED,
+        code: ParseError.SCRIPT_FAILED,
         message: 'Auth failed. Unknown error.',
       });
       const userString =

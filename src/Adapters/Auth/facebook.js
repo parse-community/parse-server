@@ -59,7 +59,7 @@
  */
 
 // Helper functions for accessing the Facebook Graph API.
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 const crypto = require('crypto');
 const jwksClient = require('jwks-rsa');
 const jwt = require('jsonwebtoken');
@@ -88,7 +88,7 @@ function validateGraphToken(authData, options) {
     if ((data && data.id == authData.id) || (process.env.TESTING && authData.id === 'test')) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
   });
 }
 
@@ -98,16 +98,16 @@ async function validateGraphAppId(appIds, authData, options) {
     return;
   }
   if (!Array.isArray(appIds)) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'appIds must be an array.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'appIds must be an array.');
   }
   if (!appIds.length) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is not configured.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Facebook auth is not configured.');
   }
   const data = await graphRequest(
     `app?access_token=${access_token}${getAppSecretPath(authData, options)}`
   );
   if (!data || !appIds.includes(data.id)) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
   }
 }
 
@@ -123,8 +123,8 @@ const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   try {
     key = await authUtils.getSigningKey(client, keyId);
   } catch (error) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       `Unable to find matching key for Key ID: ${keyId}`
     );
   }
@@ -133,7 +133,7 @@ const getFacebookKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 
 const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMaxAge }) => {
   if (!token) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'id token is invalid for this user.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'id token is invalid for this user.');
   }
 
   const { kid: keyId, alg: algorithm } = authUtils.getHeaderFromToken(token);
@@ -155,18 +155,18 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
   } catch (exception) {
     const message = exception.message;
 
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, `${message}`);
   }
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       `id token not issued by correct OpenID provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
     );
   }
 
   if (jwtClaims.sub !== id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'auth data is invalid for this user.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'auth data is invalid for this user.');
   }
   return jwtClaims;
 };

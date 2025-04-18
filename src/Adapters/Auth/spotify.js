@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for Spotify.
  *
@@ -76,7 +77,7 @@ class SpotifyAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Spotify API request failed.');
     }
 
     const user = await response.json();
@@ -87,8 +88,8 @@ class SpotifyAdapter extends BaseAuthCodeAdapter {
 
   async getAccessTokenFromCode(authData) {
     if (!authData.code || !authData.redirect_uri || !authData.code_verifier) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
+      throw new ParseError(
+        ParseError.OBJECT_NOT_FOUND,
         'Spotify auth configuration authData.code and/or authData.redirect_uri and/or authData.code_verifier.'
       );
     }
@@ -108,7 +109,7 @@ class SpotifyAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Spotify API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Spotify API request failed.');
     }
 
     return response.json();

@@ -1,6 +1,7 @@
 // Helper functions for accessing the Janrain Engage API.
 var httpsRequest = require('./httpsRequest');
 import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 var querystring = require('querystring');
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';
@@ -11,7 +12,7 @@ function validateAuthData(authData, options) {
 
   Deprecator.logRuntimeDeprecation({ usage: 'janrainengage adapter' });
   if (!config?.auth?.janrainengage?.enableInsecureAuth || !config.enableInsecureAuthAdapters) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'janrainengage adapter only works with enableInsecureAuth: true');
+    throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'janrainengage adapter only works with enableInsecureAuth: true');
   }
 
   return apiRequest(options.api_key, authData.auth_token).then(data => {
@@ -20,8 +21,8 @@ function validateAuthData(authData, options) {
     if (data && data.stat == 'ok' && data.profile.identifier == authData.id) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
+    throw new ParseError(
+      ParseError.OBJECT_NOT_FOUND,
       'Janrain engage auth is invalid for this user.'
     );
   });

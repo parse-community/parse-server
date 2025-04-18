@@ -1,3 +1,5 @@
+import ParseError from '../../ParseError';
+
 // abstract class for auth code adapters
 import AuthAdapter from './AuthAdapter';
 export default class BaseAuthCodeAdapter extends AuthAdapter {
@@ -31,27 +33,27 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
   async beforeFind(authData) {
     if (this.enableInsecureAuth && !authData?.code) {
       if (!authData?.access_token) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
+        throw new ParseError(ParseError.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
       }
 
       const user = await this.getUserFromAccessToken(authData.access_token, authData);
 
       if (user.id !== authData.id) {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
+        throw new ParseError(ParseError.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
       }
 
       return;
     }
 
     if (!authData?.code) {
-      throw new Parse.Error(Parse.Error.VALIDATION_ERROR, `${this.adapterName} code is required.`);
+      throw new ParseError(ParseError.VALIDATION_ERROR, `${this.adapterName} code is required.`);
     }
 
     const access_token = await this.getAccessTokenFromCode(authData);
     const user = await this.getUserFromAccessToken(access_token, authData);
 
     if (authData.id && user.id !== authData.id) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
     }
 
     authData.access_token = access_token;
@@ -104,7 +106,7 @@ export default class BaseAuthCodeAdapter extends AuthAdapter {
     const startPos = data.indexOf('(');
     const endPos = data.indexOf(')');
     if (startPos === -1 || endPos === -1) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, `${this.adapterName} auth is invalid for this user.`);
     }
     const jsonData = data.substring(startPos + 1, endPos);
     return JSON.parse(jsonData);

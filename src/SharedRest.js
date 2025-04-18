@@ -1,3 +1,5 @@
+import ParseError from './ParseError';
+
 const classesWithMasterOnlyAccess = [
   '_JobStatus',
   '_PushStatus',
@@ -11,7 +13,7 @@ function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster && !auth.isMaintenance) {
     if (method === 'delete' || method === 'find') {
       const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`;
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+      throw new ParseError(ParseError.OPERATION_FORBIDDEN, error);
     }
   }
 
@@ -22,13 +24,13 @@ function enforceRoleSecurity(method, className, auth) {
     !auth.isMaintenance
   ) {
     const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`;
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    throw new ParseError(ParseError.OPERATION_FORBIDDEN, error);
   }
 
   // readOnly masterKey is not allowed
   if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
     const error = `read-only masterKey isn't allowed to perform the ${method} operation.`;
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    throw new ParseError(ParseError.OPERATION_FORBIDDEN, error);
   }
 }
 

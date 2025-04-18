@@ -1,6 +1,7 @@
 import express from 'express';
 import * as Middlewares from '../middlewares';
 import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import Config from '../Config';
 import logger from '../logger';
 const triggers = require('../triggers');
@@ -39,7 +40,7 @@ export class FilesRouter {
     router.get('/files/:appId/metadata/:filename', this.metadataHandler);
 
     router.post('/files', function (req, res, next) {
-      next(new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.'));
+      next(new ParseError(ParseError.INVALID_FILE_NAME, 'Filename not provided.'));
     });
 
     router.post(
@@ -69,7 +70,7 @@ export class FilesRouter {
     const config = Config.get(req.params.appId);
     if (!config) {
       res.status(403);
-      const err = new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid application ID.');
+      const err = new ParseError(ParseError.OPERATION_FORBIDDEN, 'Invalid application ID.');
       res.json({ code: err.code, error: err.message });
       return;
     }
@@ -130,7 +131,7 @@ export class FilesRouter {
       res.end(data);
     } catch (e) {
       const err = triggers.resolveError(e, {
-        code: Parse.Error.SCRIPT_FAILED,
+        code: ParseError.SCRIPT_FAILED,
         message: `Could not find file: ${filename}.`,
       });
       res.status(403);
@@ -145,21 +146,21 @@ export class FilesRouter {
     const isLinked = user && Parse.AnonymousUtils.isLinked(user);
     if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
       next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+        new ParseError(ParseError.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
       );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
       next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
+        new ParseError(
+          ParseError.FILE_SAVE_ERROR,
           'File upload by authenticated user is disabled.'
         )
       );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForPublic && !user) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
+      next(new ParseError(ParseError.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
       return;
     }
     const filesController = config.filesController;
@@ -167,7 +168,7 @@ export class FilesRouter {
     const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));
+      next(new ParseError(ParseError.FILE_SAVE_ERROR, 'Invalid file upload.'));
       return;
     }
 
@@ -200,8 +201,8 @@ export class FilesRouter {
 
       if (extension && !isValidExtension(extension)) {
         next(
-          new Parse.Error(
-            Parse.Error.FILE_SAVE_ERROR,
+          new ParseError(
+            ParseError.FILE_SAVE_ERROR,
             `File upload of extension ${extension} is disabled.`
           )
         );
@@ -217,7 +218,7 @@ export class FilesRouter {
       Utils.checkProhibitedKeywords(config, metadata);
       Utils.checkProhibitedKeywords(config, tags);
     } catch (error) {
-      next(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      next(new ParseError(ParseError.INVALID_KEY_NAME, error));
       return;
     }
     file.setTags(tags);
@@ -287,7 +288,7 @@ export class FilesRouter {
     } catch (e) {
       logger.error('Error creating a file: ', e);
       const error = triggers.resolveError(e, {
-        code: Parse.Error.FILE_SAVE_ERROR,
+        code: ParseError.FILE_SAVE_ERROR,
         message: `Could not store file: ${fileObject.file._name}.`,
       });
       next(error);
@@ -323,7 +324,7 @@ export class FilesRouter {
     } catch (e) {
       logger.error('Error deleting a file: ', e);
       const error = triggers.resolveError(e, {
-        code: Parse.Error.FILE_DELETE_ERROR,
+        code: ParseError.FILE_DELETE_ERROR,
         message: 'Could not delete file.',
       });
       next(error);

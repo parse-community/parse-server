@@ -1,7 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import _ from 'lodash';
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import { promiseEnsureIdempotency } from '../middlewares';
 
 const ALLOWED_GET_QUERY_KEYS = [
@@ -53,7 +53,7 @@ export class ClassesRouter extends PromiseRouter {
 
     for (const key of Object.keys(body)) {
       if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
+        throw new ParseError(ParseError.INVALID_QUERY, 'Improper encode of parameter');
       }
     }
 
@@ -88,7 +88,7 @@ export class ClassesRouter extends PromiseRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+          throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
         }
 
         if (this.className(req) === '_User') {
@@ -111,7 +111,7 @@ export class ClassesRouter extends PromiseRouter {
       typeof req.body?.objectId === 'string' &&
       req.body.objectId.startsWith('role:')
     ) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.');
+      throw new ParseError(ParseError.OPERATION_FORBIDDEN, 'Invalid object ID.');
     }
     return rest.create(
       req.config,
@@ -178,7 +178,7 @@ export class ClassesRouter extends PromiseRouter {
 
     for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
+        throw new ParseError(ParseError.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
     }
     const options = {};

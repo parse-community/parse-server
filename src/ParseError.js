@@ -1,5 +1,5 @@
 import Parse from 'parse/node';
 
-module.exports = {
-  ParseError: Parse.Error,
-};
+const ParseError = Parse.Error;
+
+module.exports = ParseError;

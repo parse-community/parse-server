@@ -1,12 +1,12 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 
 export class PurgeRouter extends PromiseRouter {
   handlePurge(req) {
     if (req.auth.isReadOnly) {
-      throw new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
+      throw new ParseError(
+        ParseError.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to purge a schema."
       );
     }
@@ -22,7 +22,7 @@ export class PurgeRouter extends PromiseRouter {
         return { response: {} };
       })
       .catch(error => {
-        if (!error || (error && error.code === Parse.Error.OBJECT_NOT_FOUND)) {
+        if (!error || (error && error.code === ParseError.OBJECT_NOT_FOUND)) {
           return { response: {} };
         }
         throw error;

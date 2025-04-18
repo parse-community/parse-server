@@ -2,8 +2,7 @@
 // A database adapter that works with data exported from the hosted
 // Parse database.
 
-// @flow-disable-next
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 // @flow-disable-next
 import _ from 'lodash';
 // @flow-disable-next
@@ -78,14 +77,14 @@ const validateQuery = (
     isMaster = true;
   }
   if (query.ACL) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+    throw new ParseError(ParseError.INVALID_QUERY, 'Cannot query on ACL.');
   }
 
   if (query.$or) {
     if (query.$or instanceof Array) {
       query.$or.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
     } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
+      throw new ParseError(ParseError.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
   }
 
@@ -93,7 +92,7 @@ const validateQuery = (
     if (query.$and instanceof Array) {
       query.$and.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
     } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
+      throw new ParseError(ParseError.INVALID_QUERY, 'Bad $and format - use an array value.');
     }
   }
 
@@ -101,8 +100,8 @@ const validateQuery = (
     if (query.$nor instanceof Array && query.$nor.length > 0) {
       query.$nor.forEach(value => validateQuery(value, isMaster, isMaintenance, update));
     } else {
-      throw new Parse.Error(
-        Parse.Error.INVALID_QUERY,
+      throw new ParseError(
+        ParseError.INVALID_QUERY,
         'Bad $nor format - use an array of at least 1 value.'
       );
     }
@@ -112,8 +111,8 @@ const validateQuery = (
     if (query && query[key] && query[key].$regex) {
       if (typeof query[key].$options === 'string') {
         if (!query[key].$options.match(/^[imxs]+$/)) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_QUERY,
+          throw new ParseError(
+            ParseError.INVALID_QUERY,
             `Bad $options value for query: ${query[key].$options}`
           );
         }
@@ -124,7 +123,7 @@ const validateQuery = (
       ((!specialQueryKeys.includes(key) && !isMaster && !update) ||
         (update && isMaster && !specialMasterQueryKeys.includes(key)))
     ) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
+      throw new ParseError(ParseError.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
   });
 };
@@ -275,7 +274,7 @@ const flattenUpdateOperatorsForCreate = object => {
       switch (object[key].__op) {
         case 'Increment':
           if (typeof object[key].amount !== 'number') {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+            throw new ParseError(ParseError.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = object[key].amount;
           break;
@@ -284,19 +283,19 @@ const flattenUpdateOperatorsForCreate = object => {
           break;
         case 'Add':
           if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+            throw new ParseError(ParseError.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = object[key].objects;
           break;
         case 'AddUnique':
           if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+            throw new ParseError(ParseError.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = object[key].objects;
           break;
         case 'Remove':
           if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+            throw new ParseError(ParseError.INVALID_JSON, 'objects to add must be an array');
           }
           object[key] = [];
           break;
@@ -304,8 +303,8 @@ const flattenUpdateOperatorsForCreate = object => {
           delete object[key];
           break;
         default:
-          throw new Parse.Error(
-            Parse.Error.COMMAND_UNAVAILABLE,
+          throw new ParseError(
+            ParseError.COMMAND_UNAVAILABLE,
             `The ${object[key].__op} operator is not supported yet.`
           );
       }
@@ -416,7 +415,7 @@ class DatabaseController {
   validateClassName(className: string): Promise<void> {
     if (!SchemaController.classNameIsValid(className)) {
       return Promise.reject(
-        new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className)
+        new ParseError(ParseError.INVALID_CLASS_NAME, 'invalid className: ' + className)
       );
     }
     return Promise.resolve();
@@ -497,7 +496,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, update);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new ParseError(ParseError.INVALID_KEY_NAME, error));
     }
     const originalQuery = query;
     const originalUpdate = update;
@@ -558,8 +557,8 @@ class DatabaseController {
             .then(schema => {
               Object.keys(update).forEach(fieldName => {
                 if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_KEY_NAME,
+                  throw new ParseError(
+                    ParseError.INVALID_KEY_NAME,
                     `Invalid field name for update: ${fieldName}`
                   );
                 }
@@ -568,8 +567,8 @@ class DatabaseController {
                   !SchemaController.fieldNameIsValid(rootFieldName, className) &&
                   !isSpecialUpdateKey(rootFieldName)
                 ) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_KEY_NAME,
+                  throw new ParseError(
+                    ParseError.INVALID_KEY_NAME,
                     `Invalid field name for update: ${fieldName}`
                   );
                 }
@@ -582,8 +581,8 @@ class DatabaseController {
                     innerKey => innerKey.includes('$') || innerKey.includes('.')
                   )
                 ) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_NESTED_KEY,
+                  throw new ParseError(
+                    ParseError.INVALID_NESTED_KEY,
                     "Nested keys should not contain the '$' or '.' characters"
                   );
                 }
@@ -595,7 +594,7 @@ class DatabaseController {
               if (validateOnly) {
                 return this.adapter.find(className, schema, query, {}).then(result => {
                   if (!result || !result.length) {
-                    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+                    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
                   }
                   return {};
                 });
@@ -629,7 +628,7 @@ class DatabaseController {
         })
         .then((result: any) => {
           if (!result) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+            throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
           }
           if (validateOnly) {
             return result;
@@ -748,7 +747,7 @@ class DatabaseController {
       )
       .catch(error => {
         // We don't care if they try to delete a non-existent relation.
-        if (error.code == Parse.Error.OBJECT_NOT_FOUND) {
+        if (error.code == ParseError.OBJECT_NOT_FOUND) {
           return;
         }
         throw error;
@@ -785,7 +784,7 @@ class DatabaseController {
             aclGroup
           );
           if (!query) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+            throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
           }
         }
         // delete by query
@@ -813,7 +812,7 @@ class DatabaseController {
           )
           .catch(error => {
             // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
-            if (className === '_Session' && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+            if (className === '_Session' && error.code === ParseError.OBJECT_NOT_FOUND) {
               return Promise.resolve({});
             }
             throw error;
@@ -834,7 +833,7 @@ class DatabaseController {
     try {
       Utils.checkProhibitedKeywords(this.options, object);
     } catch (error) {
-      return Promise.reject(new Parse.Error(Parse.Error.INVALID_KEY_NAME, error));
+      return Promise.reject(new ParseError(ParseError.INVALID_KEY_NAME, error));
     }
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
@@ -1242,12 +1241,12 @@ class DatabaseController {
           };
           Object.keys(sort).forEach(fieldName => {
             if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-              throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
+              throw new ParseError(ParseError.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
             }
             const rootFieldName = getRootFieldName(fieldName);
             if (!SchemaController.fieldNameIsValid(rootFieldName, className)) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_KEY_NAME,
+              throw new ParseError(
+                ParseError.INVALID_KEY_NAME,
                 `Invalid field name: ${fieldName}.`
               );
             }
@@ -1285,7 +1284,7 @@ class DatabaseController {
               }
               if (!query) {
                 if (op === 'get') {
-                  throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+                  throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
                 } else {
                   return [];
                 }
@@ -1354,7 +1353,7 @@ class DatabaseController {
                     })
                   )
                   .catch(error => {
-                    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
+                    throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, error);
                   });
               }
             });
@@ -1381,7 +1380,7 @@ class DatabaseController {
           .then(() => this.adapter.count(className, { fields: {} }, null, '', false))
           .then(count => {
             if (count > 0) {
-              throw new Parse.Error(
+              throw new ParseError(
                 255,
                 `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`
               );
@@ -1817,8 +1816,8 @@ class DatabaseController {
           true
         );
         if (match) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_KEY_NAME,
+          throw new ParseError(
+            ParseError.INVALID_KEY_NAME,
             `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`
           );
         }

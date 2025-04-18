@@ -3,6 +3,7 @@
 
 var SchemaController = require('./Controllers/SchemaController');
 import Parse from 'parse/node';
+import ParseError from './ParseError';
 const triggers = require('./triggers');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
@@ -48,7 +49,7 @@ async function RestQuery({
   context,
 }) {
   if (![RestQuery.Method.find, RestQuery.Method.get].includes(method)) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad query type');
+    throw new ParseError(ParseError.INVALID_QUERY, 'bad query type');
   }
   enforceRoleSecurity(method, className, auth);
   const result = runBeforeFind
@@ -116,7 +117,7 @@ function _UnsafeRestQuery(
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+        throw new ParseError(ParseError.INVALID_SESSION_TOKEN, 'Invalid session token');
       }
       this.restWhere = {
         $and: [
@@ -263,7 +264,7 @@ function _UnsafeRestQuery(
       case 'subqueryReadPreference':
         break;
       default:
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad option: ' + option);
+        throw new ParseError(ParseError.INVALID_JSON, 'bad option: ' + option);
     }
   }
 }
@@ -417,8 +418,8 @@ _UnsafeRestQuery.prototype.validateClientClassCreation = function () {
       .then(schemaController => schemaController.hasClass(this.className))
       .then(hasClass => {
         if (hasClass !== true) {
-          throw new Parse.Error(
-            Parse.Error.OPERATION_FORBIDDEN,
+          throw new ParseError(
+            ParseError.OPERATION_FORBIDDEN,
             'This user is not allowed to access ' + 'non-existent class: ' + this.className
           );
         }
@@ -458,7 +459,7 @@ _UnsafeRestQuery.prototype.replaceInQuery = async function () {
   // The inQuery value must have precisely two keys - where and className
   var inQueryValue = inQueryObject['$inQuery'];
   if (!inQueryValue.where || !inQueryValue.className) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $inQuery');
+    throw new ParseError(ParseError.INVALID_QUERY, 'improper usage of $inQuery');
   }
 
   const additionalOptions = {
@@ -518,7 +519,7 @@ _UnsafeRestQuery.prototype.replaceNotInQuery = async function () {
   // The notInQuery value must have precisely two keys - where and className
   var notInQueryValue = notInQueryObject['$notInQuery'];
   if (!notInQueryValue.where || !notInQueryValue.className) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $notInQuery');
+    throw new ParseError(ParseError.INVALID_QUERY, 'improper usage of $notInQuery');
   }
 
   const additionalOptions = {
@@ -591,7 +592,7 @@ _UnsafeRestQuery.prototype.replaceSelect = async function () {
     !selectValue.query.className ||
     Object.keys(selectValue).length !== 2
   ) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $select');
+    throw new ParseError(ParseError.INVALID_QUERY, 'improper usage of $select');
   }
 
   const additionalOptions = {
@@ -655,7 +656,7 @@ _UnsafeRestQuery.prototype.replaceDontSelect = async function () {
     !dontSelectValue.query.className ||
     Object.keys(dontSelectValue).length !== 2
   ) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $dontSelect');
+    throw new ParseError(ParseError.INVALID_QUERY, 'improper usage of $dontSelect');
   }
   const additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey,
@@ -796,8 +797,8 @@ _UnsafeRestQuery.prototype.denyProtectedFields = async function () {
     ) || [];
   for (const key of protectedFields) {
     if (this.restWhere[key]) {
-      throw new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
+      throw new ParseError(
+        ParseError.OPERATION_FORBIDDEN,
         `This user is not allowed to query ${key} on class ${this.className}`
       );
     }

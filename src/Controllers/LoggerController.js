@@ -1,4 +1,4 @@
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 
@@ -223,11 +223,11 @@ export class LoggerController extends AdaptableController {
   // size (optional) Number of rows returned by search. Defaults to 10
   getLogs(options = {}) {
     if (!this.adapter) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Logger adapter is not available');
+      throw new ParseError(ParseError.PUSH_MISCONFIGURED, 'Logger adapter is not available');
     }
     if (typeof this.adapter.query !== 'function') {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         'Querying logs is not supported with this adapter'
       );
     }

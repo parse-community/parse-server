@@ -7,11 +7,12 @@ import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../midd
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
+import { loadModule } from '../Adapters/AdapterLoader';
 
 function parseObject(obj, config, Parse) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
-      return parseObject(item, config);
+      return parseObject(item, config, Parse);
     });
   } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);
@@ -64,7 +65,7 @@ export class FunctionsRouter extends PromiseRouter {
     if (!jobFunction) {
       throw new ParseError(ParseError.SCRIPT_FAILED, 'Invalid job.');
     }
-    const Parse = await import('parse/node');
+    const Parse = await loadModule('parse/node.js');
     let params = Object.assign({}, req.body, req.query);
     params = parseParams(params, req.config, Parse);
     const request = {
@@ -125,7 +126,7 @@ export class FunctionsRouter extends PromiseRouter {
     if (!theFunction) {
       throw new ParseError(ParseError.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
-    const Parse = await import('parse/node');
+    const Parse = await loadModule('parse/node.js');
     let params = Object.assign({}, req.body, req.query);
     params = parseParams(params, req.config, Parse);
     const request = {

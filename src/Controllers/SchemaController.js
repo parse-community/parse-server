@@ -16,6 +16,7 @@
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
 import Parse from 'parse/node';
+import ParseError from '../ParseError';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
@@ -228,8 +229,8 @@ function validatePermissionKey(key, userIdRegExp) {
   // userId depends on startup options so it's dynamic
   const valid = matchesSome || key.match(userIdRegExp) !== null;
   if (!valid) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
+    throw new ParseError(
+      ParseError.INVALID_JSON,
       `'${key}' is not a valid key for class level permissions`
     );
   }
@@ -247,8 +248,8 @@ function validateProtectedFieldsKey(key, userIdRegExp) {
   // userId regex depends on launch options so it's dynamic
   const valid = matchesSome || key.match(userIdRegExp) !== null;
   if (!valid) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
+    throw new ParseError(
+      ParseError.INVALID_JSON,
       `'${key}' is not a valid key for class level permissions`
     );
   }
@@ -275,8 +276,8 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
   }
   for (const operationKey in perms) {
     if (CLPValidKeys.indexOf(operationKey) == -1) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
+      throw new ParseError(
+        ParseError.INVALID_JSON,
         `${operationKey} is not a valid operation for class level permissions`
       );
     }
@@ -307,8 +308,8 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
         const protectedFields = operation[entity];
 
         if (!Array.isArray(protectedFields)) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `'${protectedFields}' is not a valid value for protectedFields[${entity}] - expected an array.`
           );
         }
@@ -317,15 +318,15 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
         for (const field of protectedFields) {
           // do not alloow to protect default fields
           if (defaultColumns._Default[field]) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+            throw new ParseError(
+              ParseError.INVALID_JSON,
               `Default field '${field}' can not be protected`
             );
           }
           // field should exist on collection
           if (!Object.prototype.hasOwnProperty.call(fields, field)) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+            throw new ParseError(
+              ParseError.INVALID_JSON,
               `Field '${field}' in protectedFields:${entity} does not exist`
             );
           }
@@ -356,8 +357,8 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
             validatePointerPermission(pointerField, fields, operation);
           }
         } else {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `'${pointerFields}' is not a valid value for ${operationKey}[${entity}] - expected an array.`
           );
         }
@@ -369,29 +370,29 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
 
       if (operationKey === 'ACL') {
         if (Object.prototype.toString.call(permit) !== '[object Object]') {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `'${permit}' is not a valid value for class level permissions acl`
           );
         }
         const invalidKeys = Object.keys(permit).filter(key => !['read', 'write'].includes(key));
         const invalidValues = Object.values(permit).filter(key => typeof key !== 'boolean');
         if (invalidKeys.length) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `'${invalidKeys.join(',')}' is not a valid key for class level permissions acl`
           );
         }
 
         if (invalidValues.length) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `'${invalidValues.join(',')}' is not a valid value for class level permissions acl`
           );
         }
       } else if (permit !== true) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
+        throw new ParseError(
+          ParseError.INVALID_JSON,
           `'${permit}' is not a valid value for class level permissions acl ${operationKey}:${entity}`
         );
       }
@@ -402,8 +403,8 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields, userIdR
 function validateCLPjson(operation: any, operationKey: string) {
   if (operationKey === 'readUserFields' || operationKey === 'writeUserFields') {
     if (!Array.isArray(operation)) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
+      throw new ParseError(
+        ParseError.INVALID_JSON,
         `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an array`
       );
     }
@@ -412,8 +413,8 @@ function validateCLPjson(operation: any, operationKey: string) {
       // ok to proceed
       return;
     } else {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
+      throw new ParseError(
+        ParseError.INVALID_JSON,
         `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an object`
       );
     }
@@ -435,8 +436,8 @@ function validatePointerPermission(fieldName: string, fields: Object, operation:
         fields[fieldName].type == 'Array')
     )
   ) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
+    throw new ParseError(
+      ParseError.INVALID_JSON,
       `'${fieldName}' is not a valid column for class level pointer permissions ${operation}`
     );
   }
@@ -489,7 +490,7 @@ function invalidClassNameMessage(className: string): string {
   );
 }
 
-const invalidJsonError = new Parse.Error(Parse.Error.INVALID_JSON, 'invalid JSON');
+const invalidJsonError = new ParseError(ParseError.INVALID_JSON, 'invalid JSON');
 const validNonRelationOrPointerTypes = [
   'Number',
   'String',
@@ -506,11 +507,11 @@ const validNonRelationOrPointerTypes = [
 const fieldTypeIsInvalid = ({ type, targetClass }) => {
   if (['Pointer', 'Relation'].indexOf(type) >= 0) {
     if (!targetClass) {
-      return new Parse.Error(135, `type ${type} needs a class name`);
+      return new ParseError(135, `type ${type} needs a class name`);
     } else if (typeof targetClass !== 'string') {
       return invalidJsonError;
     } else if (!classNameIsValid(targetClass)) {
-      return new Parse.Error(Parse.Error.INVALID_CLASS_NAME, invalidClassNameMessage(targetClass));
+      return new ParseError(ParseError.INVALID_CLASS_NAME, invalidClassNameMessage(targetClass));
     } else {
       return undefined;
     }
@@ -519,7 +520,7 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
     return invalidJsonError;
   }
   if (validNonRelationOrPointerTypes.indexOf(type) < 0) {
-    return new Parse.Error(Parse.Error.INCORRECT_TYPE, `invalid field type: ${type}`);
+    return new ParseError(ParseError.INCORRECT_TYPE, `invalid field type: ${type}`);
   }
   return undefined;
 };
@@ -838,10 +839,10 @@ export default class SchemaController {
   ): Promise<void | Schema> {
     var validationError = this.validateNewClass(className, fields, classLevelPermissions);
     if (validationError) {
-      if (validationError instanceof Parse.Error) {
+      if (validationError instanceof ParseError) {
         return Promise.reject(validationError);
       } else if (validationError.code && validationError.error) {
-        return Promise.reject(new Parse.Error(validationError.code, validationError.error));
+        return Promise.reject(new ParseError(validationError.code, validationError.error));
       }
       return Promise.reject(validationError);
     }
@@ -860,8 +861,8 @@ export default class SchemaController {
       const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
       return parseSchema;
     } catch (error) {
-      if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+      if (error && error.code === ParseError.DUPLICATE_VALUE) {
+        throw new ParseError(ParseError.INVALID_CLASS_NAME, `Class ${className} already exists.`);
       } else {
         throw error;
       }
@@ -885,10 +886,10 @@ export default class SchemaController {
             existingFields[name].type !== field.type &&
             field.__op !== 'Delete'
           ) {
-            throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
+            throw new ParseError(255, `Field ${name} exists, cannot update.`);
           }
           if (!existingFields[name] && field.__op === 'Delete') {
-            throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
+            throw new ParseError(255, `Field ${name} does not exist, cannot delete.`);
           }
         });
 
@@ -904,7 +905,7 @@ export default class SchemaController {
           Object.keys(existingFields)
         );
         if (validationError) {
-          throw new Parse.Error(validationError.code, validationError.error);
+          throw new ParseError(validationError.code, validationError.error);
         }
 
         // Finally we have checked to make sure the request is valid and we can start deleting fields.
@@ -965,8 +966,8 @@ export default class SchemaController {
       })
       .catch(error => {
         if (error === undefined) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_CLASS_NAME,
+          throw new ParseError(
+            ParseError.INVALID_CLASS_NAME,
             `Class ${className} does not exist.`
           );
         } else {
@@ -997,23 +998,23 @@ export default class SchemaController {
           if (this.schemaData[className]) {
             return this;
           } else {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, `Failed to add ${className}`);
+            throw new ParseError(ParseError.INVALID_JSON, `Failed to add ${className}`);
           }
         })
         .catch(() => {
           // The schema still doesn't validate. Give up
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
+          throw new ParseError(ParseError.INVALID_JSON, 'schema class name does not revalidate');
         })
     );
   }
 
   validateNewClass(className: string, fields: SchemaFields = {}, classLevelPermissions: any): any {
     if (this.schemaData[className]) {
-      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+      throw new ParseError(ParseError.INVALID_CLASS_NAME, `Class ${className} already exists.`);
     }
     if (!classNameIsValid(className)) {
       return {
-        code: Parse.Error.INVALID_CLASS_NAME,
+        code: ParseError.INVALID_CLASS_NAME,
         error: invalidClassNameMessage(className),
       };
     }
@@ -1030,7 +1031,7 @@ export default class SchemaController {
       if (existingFieldNames.indexOf(fieldName) < 0) {
         if (!fieldNameIsValid(fieldName, className)) {
           return {
-            code: Parse.Error.INVALID_KEY_NAME,
+            code: ParseError.INVALID_KEY_NAME,
             error: 'invalid field name: ' + fieldName,
           };
         }
@@ -1049,13 +1050,13 @@ export default class SchemaController {
             defaultValueType = { type: defaultValueType };
           } else if (typeof defaultValueType === 'object' && fieldType.type === 'Relation') {
             return {
-              code: Parse.Error.INCORRECT_TYPE,
+              code: ParseError.INCORRECT_TYPE,
               error: `The 'default value' option is not applicable for ${typeToString(fieldType)}`,
             };
           }
           if (!dbTypeMatchesObjectType(fieldType, defaultValueType)) {
             return {
-              code: Parse.Error.INCORRECT_TYPE,
+              code: ParseError.INCORRECT_TYPE,
               error: `schema mismatch for ${className}.${fieldName} default value; expected ${typeToString(
                 fieldType
               )} but got ${typeToString(defaultValueType)}`,
@@ -1064,7 +1065,7 @@ export default class SchemaController {
         } else if (fieldType.required) {
           if (typeof fieldType === 'object' && fieldType.type === 'Relation') {
             return {
-              code: Parse.Error.INCORRECT_TYPE,
+              code: ParseError.INCORRECT_TYPE,
               error: `The 'required' option is not applicable for ${typeToString(fieldType)}`,
             };
           }
@@ -1081,7 +1082,7 @@ export default class SchemaController {
     );
     if (geoPoints.length > 1) {
       return {
-        code: Parse.Error.INCORRECT_TYPE,
+        code: ParseError.INCORRECT_TYPE,
         error:
           'currently, only one GeoPoint field may exist in an object. Adding ' +
           geoPoints[1] +
@@ -1135,7 +1136,7 @@ export default class SchemaController {
       fieldNameToValidate = fieldNameToValidate.substring(1);
     }
     if (!fieldNameIsValid(fieldNameToValidate, className)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
+      throw new ParseError(ParseError.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
 
     // If someone tries to create a new field with null/undefined as the value, return;
@@ -1154,8 +1155,8 @@ export default class SchemaController {
         defaultValueType = { type: defaultValueType };
       }
       if (!dbTypeMatchesObjectType(type, defaultValueType)) {
-        throw new Parse.Error(
-          Parse.Error.INCORRECT_TYPE,
+        throw new ParseError(
+          ParseError.INCORRECT_TYPE,
           `schema mismatch for ${className}.${fieldName} default value; expected ${typeToString(
             type
           )} but got ${typeToString(defaultValueType)}`
@@ -1165,8 +1166,8 @@ export default class SchemaController {
 
     if (expectedType) {
       if (!dbTypeMatchesObjectType(expectedType, type)) {
-        throw new Parse.Error(
-          Parse.Error.INCORRECT_TYPE,
+        throw new ParseError(
+          ParseError.INCORRECT_TYPE,
           `schema mismatch for ${className}.${fieldName}; expected ${typeToString(
             expectedType
           )} but got ${typeToString(type)}`
@@ -1185,7 +1186,7 @@ export default class SchemaController {
     return this._dbAdapter
       .addFieldIfNotExists(className, fieldName, type)
       .catch(error => {
-        if (error.code == Parse.Error.INCORRECT_TYPE) {
+        if (error.code == ParseError.INCORRECT_TYPE) {
           // Make sure that we throw errors when it is appropriate to do so.
           throw error;
         }
@@ -1212,7 +1213,7 @@ export default class SchemaController {
         type = { type: type };
       }
       if (!expectedType || !dbTypeMatchesObjectType(expectedType, type)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
+        throw new ParseError(ParseError.INVALID_JSON, `Could not add field ${fieldName}`);
       }
     }
   }
@@ -1231,24 +1232,24 @@ export default class SchemaController {
   // a database adapter and this function would close over it or access it via member.
   deleteFields(fieldNames: Array<string>, className: string, database: DatabaseController) {
     if (!classNameIsValid(className)) {
-      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, invalidClassNameMessage(className));
+      throw new ParseError(ParseError.INVALID_CLASS_NAME, invalidClassNameMessage(className));
     }
 
     fieldNames.forEach(fieldName => {
       if (!fieldNameIsValid(fieldName, className)) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `invalid field name: ${fieldName}`);
+        throw new ParseError(ParseError.INVALID_KEY_NAME, `invalid field name: ${fieldName}`);
       }
       //Don't allow deleting the default fields.
       if (!fieldNameIsValidForClass(fieldName, className)) {
-        throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
+        throw new ParseError(136, `field ${fieldName} cannot be changed`);
       }
     });
 
     return this.getOneSchema(className, false, { clearCache: true })
       .catch(error => {
         if (error === undefined) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_CLASS_NAME,
+          throw new ParseError(
+            ParseError.INVALID_CLASS_NAME,
             `Class ${className} does not exist.`
           );
         } else {
@@ -1258,7 +1259,7 @@ export default class SchemaController {
       .then(schema => {
         fieldNames.forEach(fieldName => {
           if (!schema.fields[fieldName]) {
-            throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+            throw new ParseError(255, `Field ${fieldName} does not exist, cannot delete.`);
           }
         });
 
@@ -1295,8 +1296,8 @@ export default class SchemaController {
       }
       if (geocount > 1) {
         return Promise.reject(
-          new Parse.Error(
-            Parse.Error.INCORRECT_TYPE,
+          new ParseError(
+            ParseError.INCORRECT_TYPE,
             'there can only be one geopoint field in a class'
           )
         );
@@ -1349,7 +1350,7 @@ export default class SchemaController {
     });
 
     if (missingColumns.length > 0) {
-      throw new Parse.Error(Parse.Error.INCORRECT_TYPE, missingColumns[0] + ' is required.');
+      throw new ParseError(ParseError.INCORRECT_TYPE, missingColumns[0] + ' is required.');
     }
     return Promise.resolve(this);
   }
@@ -1403,13 +1404,13 @@ export default class SchemaController {
     if (perms['requiresAuthentication']) {
       // If aclGroup has * (public)
       if (!aclGroup || aclGroup.length == 0) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
+        throw new ParseError(
+          ParseError.OBJECT_NOT_FOUND,
           'Permission denied, user needs to be authenticated.'
         );
       } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
+        throw new ParseError(
+          ParseError.OBJECT_NOT_FOUND,
           'Permission denied, user needs to be authenticated.'
         );
       }
@@ -1425,8 +1426,8 @@ export default class SchemaController {
 
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {
-      throw new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
+      throw new ParseError(
+        ParseError.OPERATION_FORBIDDEN,
         `Permission denied for action ${operation} on class ${className}.`
       );
     }
@@ -1448,8 +1449,8 @@ export default class SchemaController {
       }
     }
 
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
+    throw new ParseError(
+      ParseError.OPERATION_FORBIDDEN,
       `Permission denied for action ${operation} on class ${className}.`
     );
   }
@@ -1622,7 +1623,7 @@ function getObjectType(obj): ?(SchemaField | string) {
         }
         break;
     }
-    throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'This is not a valid ' + obj.__type);
+    throw new ParseError(ParseError.INCORRECT_TYPE, 'This is not a valid ' + obj.__type);
   }
   if (obj['$ne']) {
     return getObjectType(obj['$ne']);

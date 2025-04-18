@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for OAuth2 Token Introspection.
  *
@@ -59,10 +60,10 @@ class OAuth2Adapter extends AuthAdapter {
     super.validateOptions(options);
 
     if (!options.tokenIntrospectionEndpointUrl) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 token introspection endpoint URL is missing.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'OAuth2 token introspection endpoint URL is missing.');
     }
     if (options.appidField && !options.appIds?.length) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 configuration is missing app IDs.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'OAuth2 configuration is missing app IDs.');
     }
 
     this.tokenIntrospectionEndpointUrl = options.tokenIntrospectionEndpointUrl;
@@ -85,7 +86,7 @@ class OAuth2Adapter extends AuthAdapter {
       : this.appIds.includes(appIdFieldValue);
 
     if (!isValidAppId) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2: Invalid app ID.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'OAuth2: Invalid app ID.');
     }
   }
 
@@ -93,7 +94,7 @@ class OAuth2Adapter extends AuthAdapter {
     const response = await this.requestTokenInfo(authData.access_token);
 
     if (!response.active || (this.useridField && authData.id !== response[this.useridField])) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 access token is invalid for this user.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'OAuth2 access token is invalid for this user.');
     }
 
     return {};
@@ -110,7 +111,7 @@ class OAuth2Adapter extends AuthAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 token introspection request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'OAuth2 token introspection request failed.');
     }
 
     return response.json();

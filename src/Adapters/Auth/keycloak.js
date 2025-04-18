@@ -65,8 +65,7 @@
  * - [Securing Apps Documentation](https://www.keycloak.org/docs/latest/securing_apps/)
  * - [Server Administration Documentation](https://www.keycloak.org/docs/latest/server_admin/)
  */
-
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 const httpsRequest = require('./httpsRequest');
 
 const arraysEqual = (_arr1, _arr2) => {
@@ -84,10 +83,10 @@ const arraysEqual = (_arr1, _arr2) => {
 
 const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } = {}) => {
   if (!(access_token && id)) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing access token and/or User id');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Missing access token and/or User id');
   }
   if (!config || !(config['auth-server-url'] && config['realm'])) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing keycloak configuration');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Missing keycloak configuration');
   }
   try {
     const response = await httpsRequest.get({
@@ -106,17 +105,17 @@ const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } =
     ) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid authentication');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Invalid authentication');
   } catch (e) {
-    if (e instanceof Parse.Error) {
+    if (e instanceof ParseError) {
       throw e;
     }
     const error = JSON.parse(e.text);
     if (error.error_description) {
-      throw new Parse.Error(Parse.Error.HOSTING_ERROR, error.error_description);
+      throw new ParseError(ParseError.HOSTING_ERROR, error.error_description);
     } else {
-      throw new Parse.Error(
-        Parse.Error.HOSTING_ERROR,
+      throw new ParseError(
+        ParseError.HOSTING_ERROR,
         'Could not connect to the authentication server'
       );
     }

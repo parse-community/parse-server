@@ -308,7 +308,7 @@ export class UserController extends AdaptableController {
       return await accountLockoutPolicy.unlockAccount();
     } catch (error) {
       if (error && error.message) {
-        // in case of Parse.Error, fail with the error message only
+        // in case of ParseError, fail with the error message only
         return Promise.reject(error.message);
       }
       return Promise.reject(error);

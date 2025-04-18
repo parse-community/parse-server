@@ -1,4 +1,4 @@
-import Parse from 'parse/node';
+import ParseError from './ParseError';
 const path = require('path');
 // These methods handle batch requests.
 const batchPath = '/batch';
@@ -28,7 +28,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
   const makeRoutablePath = function (requestPath) {
     // The routablePath is the path minus the api prefix
     if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot route batch path ' + requestPath);
+      throw new ParseError(ParseError.INVALID_JSON, 'cannot route batch path ' + requestPath);
     }
     return path.posix.join('/', requestPath.slice(apiPrefix.length));
   };
@@ -65,7 +65,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 // TODO: pass along auth correctly
 function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
+    throw new ParseError(ParseError.INVALID_JSON, 'requests must be an array');
   }
 
   // The batch paths are all from the root of our domain.

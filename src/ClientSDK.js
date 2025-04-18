@@ -44,7 +44,6 @@ module.exports = {
   CLP: Parse.CLP,
   CoreManager: Parse.CoreManager,
   Config: Parse.Config,
-  Error: Parse.Error,
   File: Parse.File,
   GeoPoint: Parse.GeoPoint,
   Polygon: Parse.Polygon,

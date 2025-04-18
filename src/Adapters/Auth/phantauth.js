@@ -6,6 +6,7 @@
  */
 
 import Parse from 'parse/node';
+import ParseError from '../../ParseError';
 const httpsRequest = require('./httpsRequest');
 import Config from '../../Config';
 import Deprecator from '../../Deprecator/Deprecator';
@@ -18,12 +19,12 @@ async function validateAuthData(authData) {
 
   const phantauthConfig = config.auth.phantauth;
   if (!phantauthConfig?.enableInsecureAuth) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'PhantAuth only works with enableInsecureAuth: true');
+    throw new ParseError(ParseError.INTERNAL_SERVER_ERROR, 'PhantAuth only works with enableInsecureAuth: true');
   }
 
   const data = await request('auth/userinfo', authData.access_token);
   if (data?.sub !== authData.id) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'PhantAuth auth is invalid for this user.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'PhantAuth auth is invalid for this user.');
   }
 }
 

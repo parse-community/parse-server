@@ -2,6 +2,7 @@ import log from '../../../logger';
 import _ from 'lodash';
 var mongodb = require('mongodb');
 import * as Parse from '../../../ClientSDK';
+import ParseError from '../../../ParseError';
 const { encodeDate, relativeTimeToDate } = require('../../../Utils');
 
 const transformKey = (className, fieldName, schema) => {
@@ -180,8 +181,8 @@ const transformInteriorValue = restValue => {
     typeof restValue === 'object' &&
     Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))
   ) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_NESTED_KEY,
+    throw new ParseError(
+      ParseError.INVALID_NESTED_KEY,
       "Nested keys should not contain the '$' or '.' characters"
     );
   }
@@ -349,8 +350,8 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
   if (transformRes !== CannotTransform) {
     return { key, value: transformRes };
   } else {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
+    throw new ParseError(
+      ParseError.INVALID_JSON,
       `You cannot use ${value} as a query parameter.`
     );
   }
@@ -412,7 +413,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
     default:
       // Auth data should have been transformed already
       if (restKey.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + restKey);
+        throw new ParseError(ParseError.INVALID_KEY_NAME, 'can only query on ' + restKey);
       }
       // Trust that the auth data has been transformed and save it directly
       if (restKey.match(/^_auth_data_[a-zA-Z0-9_]+$/)) {
@@ -451,8 +452,8 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
 
   // Handle normal objects by recursing
   if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_NESTED_KEY,
+    throw new ParseError(
+      ParseError.INVALID_NESTED_KEY,
       "Nested keys should not contain the '$' or '.' characters"
     );
   }
@@ -572,7 +573,7 @@ const transformInteriorAtom = atom => {
       objectId: atom.objectId,
     };
   } else if (typeof atom === 'function' || typeof atom === 'symbol') {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
+    throw new ParseError(ParseError.INVALID_JSON, `cannot transform value: ${atom}`);
   } else if (DateCoder.isValidJSON(atom)) {
     return DateCoder.JSONToDatabase(atom);
   } else if (BytesCoder.isValidJSON(atom)) {
@@ -604,7 +605,7 @@ function transformTopLevelAtom(atom, field) {
       return atom;
     case 'symbol':
     case 'function':
-      throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
+      throw new ParseError(ParseError.INVALID_JSON, `cannot transform value: ${atom}`);
     case 'object':
       if (atom instanceof Date) {
         // Technically dates are not rest format, but, it seems pretty
@@ -639,8 +640,8 @@ function transformTopLevelAtom(atom, field) {
 
     default:
       // I don't think typeof can ever let us get here
-      throw new Parse.Error(
-        Parse.Error.INTERNAL_SERVER_ERROR,
+      throw new ParseError(
+        ParseError.INTERNAL_SERVER_ERROR,
         `really did not expect value: ${atom}`
       );
   }
@@ -660,7 +661,7 @@ function transformConstraint(constraint, field, count = false) {
   const transformer = atom => {
     const result = transformFunction(atom, field);
     if (result === CannotTransform) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
+      throw new ParseError(ParseError.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
     }
     return result;
   };
@@ -682,8 +683,8 @@ function transformConstraint(constraint, field, count = false) {
         const val = constraint[key];
         if (val && typeof val === 'object' && val.$relativeTime) {
           if (field && field.type !== 'Date') {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+            throw new ParseError(
+              ParseError.INVALID_JSON,
               '$relativeTime can only be used with Date field'
             );
           }
@@ -692,8 +693,8 @@ function transformConstraint(constraint, field, count = false) {
             case '$exists':
             case '$ne':
             case '$eq':
-              throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
+              throw new ParseError(
+                ParseError.INVALID_JSON,
                 '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators'
               );
           }
@@ -705,8 +706,8 @@ function transformConstraint(constraint, field, count = false) {
           }
 
           log.info('Error while parsing relative date', parserResult);
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `bad $relativeTime (${key}) value. ${parserResult.info}`
           );
         }
@@ -719,7 +720,7 @@ function transformConstraint(constraint, field, count = false) {
       case '$nin': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
+          throw new ParseError(ParseError.INVALID_JSON, 'bad ' + key + ' value');
         }
         answer[key] = _.flatMap(arr, value => {
           return (atom => {
@@ -735,14 +736,14 @@ function transformConstraint(constraint, field, count = false) {
       case '$all': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
+          throw new ParseError(ParseError.INVALID_JSON, 'bad ' + key + ' value');
         }
         answer[key] = arr.map(transformInteriorAtom);
 
         const values = answer[key];
         if (isAnyValueRegex(values) && !isAllValuesRegexOrNone(values)) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             'All $all values must be of regex type or none: ' + values
           );
         }
@@ -752,7 +753,7 @@ function transformConstraint(constraint, field, count = false) {
       case '$regex':
         var s = constraint[key];
         if (typeof s !== 'string') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad regex: ' + s);
+          throw new ParseError(ParseError.INVALID_JSON, 'bad regex: ' + s);
         }
         answer[key] = s;
         break;
@@ -760,7 +761,7 @@ function transformConstraint(constraint, field, count = false) {
       case '$containedBy': {
         const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
+          throw new ParseError(ParseError.INVALID_JSON, `bad $containedBy: should be an array`);
         }
         answer.$elemMatch = {
           $nin: arr.map(transformer),
@@ -774,31 +775,31 @@ function transformConstraint(constraint, field, count = false) {
       case '$text': {
         const search = constraint[key].$search;
         if (typeof search !== 'object') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $search, should be object`);
+          throw new ParseError(ParseError.INVALID_JSON, `bad $text: $search, should be object`);
         }
         if (!search.$term || typeof search.$term !== 'string') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $term, should be string`);
+          throw new ParseError(ParseError.INVALID_JSON, `bad $text: $term, should be string`);
         } else {
           answer[key] = {
             $search: search.$term,
           };
         }
         if (search.$language && typeof search.$language !== 'string') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $language, should be string`);
+          throw new ParseError(ParseError.INVALID_JSON, `bad $text: $language, should be string`);
         } else if (search.$language) {
           answer[key].$language = search.$language;
         }
         if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `bad $text: $caseSensitive, should be boolean`
           );
         } else if (search.$caseSensitive) {
           answer[key].$caseSensitive = search.$caseSensitive;
         }
         if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             `bad $text: $diacriticSensitive, should be boolean`
           );
         } else if (search.$diacriticSensitive) {
@@ -838,15 +839,15 @@ function transformConstraint(constraint, field, count = false) {
 
       case '$select':
       case '$dontSelect':
-        throw new Parse.Error(
-          Parse.Error.COMMAND_UNAVAILABLE,
+        throw new ParseError(
+          ParseError.COMMAND_UNAVAILABLE,
           'the ' + key + ' constraint is not supported yet'
         );
 
       case '$within':
         var box = constraint[key]['$box'];
         if (!box || box.length != 2) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'malformatted $within arg');
+          throw new ParseError(ParseError.INVALID_JSON, 'malformatted $within arg');
         }
         answer[key] = {
           $box: [
@@ -863,23 +864,23 @@ function transformConstraint(constraint, field, count = false) {
           let points;
           if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
             if (!polygon.coordinates || polygon.coordinates.length < 3) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
+              throw new ParseError(
+                ParseError.INVALID_JSON,
                 'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
               );
             }
             points = polygon.coordinates;
           } else if (polygon instanceof Array) {
             if (polygon.length < 3) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_JSON,
+              throw new ParseError(
+                ParseError.INVALID_JSON,
                 'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
               );
             }
             points = polygon;
           } else {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+            throw new ParseError(
+              ParseError.INVALID_JSON,
               "bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint's"
             );
           }
@@ -889,7 +890,7 @@ function transformConstraint(constraint, field, count = false) {
               return point;
             }
             if (!GeoPointCoder.isValidJSON(point)) {
-              throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+              throw new ParseError(ParseError.INVALID_JSON, 'bad $geoWithin value');
             } else {
               Parse.GeoPoint._validate(point.latitude, point.longitude);
             }
@@ -900,8 +901,8 @@ function transformConstraint(constraint, field, count = false) {
           };
         } else if (centerSphere !== undefined) {
           if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+            throw new ParseError(
+              ParseError.INVALID_JSON,
               'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance'
             );
           }
@@ -910,8 +911,8 @@ function transformConstraint(constraint, field, count = false) {
           if (point instanceof Array && point.length === 2) {
             point = new Parse.GeoPoint(point[1], point[0]);
           } else if (!GeoPointCoder.isValidJSON(point)) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+            throw new ParseError(
+              ParseError.INVALID_JSON,
               'bad $geoWithin value; $centerSphere geo point invalid'
             );
           }
@@ -919,8 +920,8 @@ function transformConstraint(constraint, field, count = false) {
           // Get distance and validate
           const distance = centerSphere[1];
           if (isNaN(distance) || distance < 0) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
+            throw new ParseError(
+              ParseError.INVALID_JSON,
               'bad $geoWithin value; $centerSphere distance invalid'
             );
           }
@@ -933,8 +934,8 @@ function transformConstraint(constraint, field, count = false) {
       case '$geoIntersects': {
         const point = constraint[key]['$point'];
         if (!GeoPointCoder.isValidJSON(point)) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_JSON,
+          throw new ParseError(
+            ParseError.INVALID_JSON,
             'bad $geoIntersect value; $point should be GeoPoint'
           );
         } else {
@@ -950,7 +951,7 @@ function transformConstraint(constraint, field, count = false) {
       }
       default:
         if (key.match(/^\$+/)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad constraint: ' + key);
+          throw new ParseError(ParseError.INVALID_JSON, 'bad constraint: ' + key);
         }
         return CannotTransform;
     }
@@ -979,7 +980,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
 
     case 'Increment':
       if (typeof amount !== 'number') {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'incrementing must provide a number');
+        throw new ParseError(ParseError.INVALID_JSON, 'incrementing must provide a number');
       }
       if (flatten) {
         return amount;
@@ -997,7 +998,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
     case 'Add':
     case 'AddUnique':
       if (!(objects instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        throw new ParseError(ParseError.INVALID_JSON, 'objects to add must be an array');
       }
       var toAdd = objects.map(transformInteriorAtom);
       if (flatten) {
@@ -1012,7 +1013,7 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
 
     case 'Remove':
       if (!(objects instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to remove must be an array');
+        throw new ParseError(ParseError.INVALID_JSON, 'objects to remove must be an array');
       }
       var toRemove = objects.map(transformInteriorAtom);
       if (flatten) {
@@ -1022,8 +1023,8 @@ function transformUpdateOperator({ __op, amount, objects }, flatten) {
       }
 
     default:
-      throw new Parse.Error(
-        Parse.Error.COMMAND_UNAVAILABLE,
+      throw new ParseError(
+        ParseError.COMMAND_UNAVAILABLE,
         `The ${__op} operator is not supported yet.`
       );
   }
@@ -1404,8 +1405,8 @@ var PolygonCoder = {
       return foundIndex === index;
     });
     if (unique.length < 3) {
-      throw new Parse.Error(
-        Parse.Error.INTERNAL_SERVER_ERROR,
+      throw new ParseError(
+        ParseError.INTERNAL_SERVER_ERROR,
         'GeoJSON: Loop must have at least 3 different vertices'
       );
     }

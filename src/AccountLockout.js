@@ -1,5 +1,5 @@
 // This class handles the Account Lockout Policy settings.
-import Parse from 'parse/node';
+import ParseError from './ParseError';
 import { encodeDate } from './Utils';
 
 export class AccountLockout {
@@ -92,7 +92,7 @@ export class AccountLockout {
         err &&
         err.code &&
         err.message &&
-        err.code === Parse.Error.OBJECT_NOT_FOUND &&
+        err.code === ParseError.OBJECT_NOT_FOUND &&
         err.message === 'Object not found.'
       ) {
         return; // nothing to update so we are good
@@ -117,8 +117,8 @@ export class AccountLockout {
 
     return this._config.database.find('_User', query).then(users => {
       if (Array.isArray(users) && users.length > 0) {
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
+        throw new ParseError(
+          ParseError.OBJECT_NOT_FOUND,
           'Your account is locked due to multiple failed login attempts. Please try again after ' +
             this._config.accountLockout.duration +
             ' minute(s)'

@@ -1,5 +1,6 @@
 import AppCache from './cache';
 import Parse from 'parse/node';
+import ParseError from './ParseError';
 import auth from './Auth';
 import Config from './Config';
 import ClientSDK from './ClientSDK';
@@ -209,7 +210,7 @@ export async function handleParseHeaders(req, res, next) {
   if (config.state && config.state !== 'ok') {
     res.status(500);
     res.json({
-      code: Parse.Error.INTERNAL_SERVER_ERROR,
+      code: ParseError.INTERNAL_SERVER_ERROR,
       error: `Invalid server state: ${config.state}`,
     });
     return;
@@ -325,7 +326,7 @@ const handleRateLimit = async (req, res, next) => {
         if (pathExp.test(req.url)) {
           await limit.handler(req, res, err => {
             if (err) {
-              if (err.code === Parse.Error.CONNECTION_FAILED) {
+              if (err.code === ParseError.CONNECTION_FAILED) {
                 throw err;
               }
               req.config.loggerController.error(
@@ -339,7 +340,7 @@ const handleRateLimit = async (req, res, next) => {
     );
   } catch (error) {
     res.status(429);
-    res.json({ code: Parse.Error.CONNECTION_FAILED, error: error.message });
+    res.json({ code: ParseError.CONNECTION_FAILED, error: error.message });
     return;
   }
   next();
@@ -373,13 +374,13 @@ export const handleParseSession = async (req, res, next) => {
     req.auth = requestAuth;
     next();
   } catch (error) {
-    if (error instanceof Parse.Error) {
+    if (error instanceof ParseError) {
       next(error);
       return;
     }
     // TODO: Determine the correct error scenario.
     req.config.loggerController.error('error getting auth for sessionToken', error);
-    throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+    throw new ParseError(ParseError.UNKNOWN_ERROR, error);
   }
 };
 
@@ -461,17 +462,17 @@ export function allowMethodOverride(req, res, next) {
 
 export function handleParseErrors(err, req, res, next) {
   const log = (req.config && req.config.loggerController) || defaultLogger;
-  if (err instanceof Parse.Error) {
+  if (err instanceof ParseError) {
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
-      case Parse.Error.INTERNAL_SERVER_ERROR:
+      case ParseError.INTERNAL_SERVER_ERROR:
         httpStatus = 500;
         break;
-      case Parse.Error.OBJECT_NOT_FOUND:
+      case ParseError.OBJECT_NOT_FOUND:
         httpStatus = 404;
         break;
       default:
@@ -490,7 +491,7 @@ export function handleParseErrors(err, req, res, next) {
     log.error('Uncaught internal server error.', err, err.stack);
     res.status(500);
     res.json({
-      code: Parse.Error.INTERNAL_SERVER_ERROR,
+      code: ParseError.INTERNAL_SERVER_ERROR,
       message: 'Internal server error.',
     });
     if (!(process && process.env.TESTING)) {
@@ -573,7 +574,7 @@ export const addRateLimit = (route, config, cloud) => {
       message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
         throw {
-          code: Parse.Error.CONNECTION_FAILED,
+          code: ParseError.CONNECTION_FAILED,
           message: options.message,
         };
       },
@@ -670,8 +671,8 @@ export function promiseEnsureIdempotency(req) {
       expire: encodeDate(expiryDate),
     })
     .catch(e => {
-      if (e.code == Parse.Error.DUPLICATE_VALUE) {
-        throw new Parse.Error(Parse.Error.DUPLICATE_REQUEST, 'Duplicate request');
+      if (e.code == ParseError.DUPLICATE_VALUE) {
+        throw new ParseError(ParseError.DUPLICATE_REQUEST, 'Duplicate request');
       }
       throw e;
     });
@@ -684,7 +685,7 @@ function invalidRequest(req, res) {
 
 function malformedContext(req, res) {
   res.status(400);
-  res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
+  res.json({ code: ParseError.INVALID_JSON, error: 'Invalid object for context.' });
 }
 
 /**

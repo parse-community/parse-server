@@ -17,7 +17,7 @@
 // database adapter.
 
 import type { Config } from '../../Config';
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 /**
  * @interface
  * @memberof module:Adapters
@@ -67,9 +67,9 @@ export class FilesAdapter {
    *
    * @param {string} filename
    *
-   * @returns {null|Parse.Error} null if there are no errors
+   * @returns {null|ParseError} null if there are no errors
    */
-  // validateFilename(filename: string): ?Parse.Error {}
+  // validateFilename(filename: string): ?ParseError {}
 
   /** Handles Byte-Range Requests for Streaming
    *
@@ -95,16 +95,16 @@ export class FilesAdapter {
  * Simple filename validation
  *
  * @param filename
- * @returns {null|Parse.Error}
+ * @returns {null|ParseError}
  */
-export function validateFilename(filename): ?Parse.Error {
+export function validateFilename(filename): ?ParseError {
   if (filename.length > 128) {
-    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.');
+    return new ParseError(ParseError.INVALID_FILE_NAME, 'Filename too long.');
   }
 
   const regx = /^[_a-zA-Z0-9][a-zA-Z0-9@. ~_-]*$/;
   if (!filename.match(regx)) {
-    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename contains invalid characters.');
+    return new ParseError(ParseError.INVALID_FILE_NAME, 'Filename contains invalid characters.');
   }
   return null;
 }

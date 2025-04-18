@@ -1,4 +1,4 @@
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import { GraphQLSchema, GraphQLObjectType, DocumentNode, GraphQLNamedType } from 'graphql';
 import { mergeSchemas } from '@graphql-tools/schema';
 import { mergeTypeDefs } from '@graphql-tools/merge';
@@ -356,7 +356,7 @@ class ParseGraphQLSchema {
   }
 
   handleError(error) {
-    if (error instanceof Parse.Error) {
+    if (error instanceof ParseError) {
       this.log.error('Parse error: ', error);
     } else {
       this.log.error('Uncaught internal server error.', error, error.stack);

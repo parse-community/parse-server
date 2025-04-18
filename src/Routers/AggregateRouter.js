@@ -1,4 +1,4 @@
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import * as middleware from '../middlewares';
 import rest from '../rest';
 import ClassesRouter from './ClassesRouter';
@@ -48,7 +48,7 @@ export class AggregateRouter extends ClassesRouter {
       }
       return { response };
     } catch (e) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, e.message);
+      throw new ParseError(ParseError.INVALID_QUERY, e.message);
     }
   }
 
@@ -90,8 +90,8 @@ export class AggregateRouter extends ClassesRouter {
     return pipeline.map(stage => {
       const keys = Object.keys(stage);
       if (keys.length !== 1) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
+        throw new ParseError(
+          ParseError.INVALID_QUERY,
           `Pipeline stages should only have one key but found ${keys.join(', ')}.`
         );
       }
@@ -105,18 +105,18 @@ export class AggregateRouter extends ClassesRouter {
       return;
     }
     if (stageName[0] !== '$') {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage '${stageName}'.`);
+      throw new ParseError(ParseError.INVALID_QUERY, `Invalid aggregate stage '${stageName}'.`);
     }
     if (stageName === '$group') {
       if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
+        throw new ParseError(
+          ParseError.INVALID_QUERY,
           `Cannot use 'objectId' in aggregation stage $group.`
         );
       }
       if (!Object.prototype.hasOwnProperty.call(stage[stageName], '_id')) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
+        throw new ParseError(
+          ParseError.INVALID_QUERY,
           `Invalid parameter for query: group. Missing key _id`
         );
       }

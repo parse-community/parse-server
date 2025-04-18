@@ -1,4 +1,4 @@
-import * as Parse from '../../ClientSDK';
+import ParseError from '../../ParseError';
 import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
@@ -74,7 +74,7 @@ const getObject = async (
   );
 
   if (!response.results || response.results.length == 0) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+    throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'Object not found.');
   }
 
   const object = response.results[0];
@@ -238,7 +238,7 @@ const calculateSkipAndLimit = (skipInput, first, after, last, before, maxLimit) 
   // Validates the skip input
   if (skipInput || skipInput === 0) {
     if (skipInput < 0) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Skip should be a positive number');
+      throw new ParseError(ParseError.INVALID_QUERY, 'Skip should be a positive number');
     }
     skip = skipInput;
   }
@@ -247,7 +247,7 @@ const calculateSkipAndLimit = (skipInput, first, after, last, before, maxLimit) 
   if (after) {
     after = cursorToOffset(after);
     if ((!after && after !== 0) || after < 0) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'After is not a valid cursor');
+      throw new ParseError(ParseError.INVALID_QUERY, 'After is not a valid cursor');
     }
 
     // If skip and after are passed, a new skip is calculated by adding them
@@ -257,7 +257,7 @@ const calculateSkipAndLimit = (skipInput, first, after, last, before, maxLimit) 
   // Validates the first param
   if (first || first === 0) {
     if (first < 0) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'First should be a positive number');
+      throw new ParseError(ParseError.INVALID_QUERY, 'First should be a positive number');
     }
 
     // The first param is translated to the limit param of the Parse legacy API
@@ -269,7 +269,7 @@ const calculateSkipAndLimit = (skipInput, first, after, last, before, maxLimit) 
     // This method converts the cursor to the index of the object
     before = cursorToOffset(before);
     if ((!before && before !== 0) || before < 0) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Before is not a valid cursor');
+      throw new ParseError(ParseError.INVALID_QUERY, 'Before is not a valid cursor');
     }
 
     if ((skip || 0) >= before) {
@@ -284,7 +284,7 @@ const calculateSkipAndLimit = (skipInput, first, after, last, before, maxLimit) 
   // Validates the last param
   if (last || last === 0) {
     if (last < 0) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Last should be a positive number');
+      throw new ParseError(ParseError.INVALID_QUERY, 'Last should be a positive number');
     }
 
     if (last > maxLimit) {

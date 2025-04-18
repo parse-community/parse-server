@@ -1,6 +1,6 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 
 export class PushRouter extends PromiseRouter {
   mountRoutes() {
@@ -9,14 +9,14 @@ export class PushRouter extends PromiseRouter {
 
   static handlePOST(req) {
     if (req.auth.isReadOnly) {
-      throw new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
+      throw new ParseError(
+        ParseError.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to send push notifications."
       );
     }
     const pushController = req.config.pushController;
     if (!pushController) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Push controller is not set');
+      throw new ParseError(ParseError.PUSH_MISCONFIGURED, 'Push controller is not set');
     }
 
     const where = PushRouter.getQueryCondition(req);
@@ -58,8 +58,8 @@ export class PushRouter extends PromiseRouter {
 
     let where;
     if (hasWhere && hasChannels) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         'Channels and query can not be set at the same time.'
       );
     } else if (hasWhere) {
@@ -71,8 +71,8 @@ export class PushRouter extends PromiseRouter {
         },
       };
     } else {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         'Sending a push requires either "channels" or a "where" query.'
       );
     }

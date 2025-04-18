@@ -1,3 +1,4 @@
+import ParseError from '../../ParseError';
 /**
  * Parse Server authentication adapter for QQ.
  *
@@ -77,7 +78,7 @@ class QqAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'qq API request failed.');
     }
 
     const data = await response.text();
@@ -100,7 +101,7 @@ class QqAdapter extends BaseAuthCodeAdapter {
     });
 
     if (!response.ok) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq API request failed.');
+      throw new ParseError(ParseError.OBJECT_NOT_FOUND, 'qq API request failed.');
     }
 
     const text = await response.text();

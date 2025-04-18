@@ -2,7 +2,7 @@
 
 import * as triggers from '../triggers';
 // @flow-disable-next
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 // @flow-disable-next
 import request from '../request';
 import { logger } from '../logger';
@@ -92,7 +92,7 @@ export class HooksController {
     } else if (hook.triggerName && hook.className && hook.url) {
       query = { className: hook.className, triggerName: hook.triggerName };
     } else {
-      throw new Parse.Error(143, 'invalid hook declaration');
+      throw new ParseError(143, 'invalid hook declaration');
     }
     return this.database
       .update(DefaultHooksCollectionName, query, hook, { upsert: true })
@@ -134,7 +134,7 @@ export class HooksController {
       hook.url = aHook.url;
       hook.triggerName = aHook.triggerName;
     } else {
-      throw new Parse.Error(143, 'invalid hook declaration');
+      throw new ParseError(143, 'invalid hook declaration');
     }
 
     return this.addHook(hook);
@@ -144,7 +144,7 @@ export class HooksController {
     if (aHook.functionName) {
       return this.getFunction(aHook.functionName).then(result => {
         if (result) {
-          throw new Parse.Error(143, `function name: ${aHook.functionName} already exists`);
+          throw new ParseError(143, `function name: ${aHook.functionName} already exists`);
         } else {
           return this.createOrUpdateHook(aHook);
         }
@@ -152,7 +152,7 @@ export class HooksController {
     } else if (aHook.className && aHook.triggerName) {
       return this.getTrigger(aHook.className, aHook.triggerName).then(result => {
         if (result) {
-          throw new Parse.Error(
+          throw new ParseError(
             143,
             `class ${aHook.className} already has trigger ${aHook.triggerName}`
           );
@@ -161,7 +161,7 @@ export class HooksController {
       });
     }
 
-    throw new Parse.Error(143, 'invalid hook declaration');
+    throw new ParseError(143, 'invalid hook declaration');
   }
 
   updateHook(aHook) {
@@ -170,17 +170,17 @@ export class HooksController {
         if (result) {
           return this.createOrUpdateHook(aHook);
         }
-        throw new Parse.Error(143, `no function named: ${aHook.functionName} is defined`);
+        throw new ParseError(143, `no function named: ${aHook.functionName} is defined`);
       });
     } else if (aHook.className && aHook.triggerName) {
       return this.getTrigger(aHook.className, aHook.triggerName).then(result => {
         if (result) {
           return this.createOrUpdateHook(aHook);
         }
-        throw new Parse.Error(143, `class ${aHook.className} does not exist`);
+        throw new ParseError(143, `class ${aHook.className} does not exist`);
       });
     }
-    throw new Parse.Error(143, 'invalid hook declaration');
+    throw new ParseError(143, 'invalid hook declaration');
   }
 }
 

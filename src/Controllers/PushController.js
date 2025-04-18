@@ -1,4 +1,4 @@
-import * as Parse from '../ClientSDK';
+import ParseError from '../ParseError';
 import RestQuery from '../RestQuery';
 import RestWrite from '../RestWrite';
 import { master } from '../Auth';
@@ -8,15 +8,15 @@ import { applyDeviceTokenExists } from '../Push/utils';
 export class PushController {
   sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}, now = new Date()) {
     if (!config.hasPushSupport) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Missing push configuration');
+      throw new ParseError(ParseError.PUSH_MISCONFIGURED, 'Missing push configuration');
     }
 
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
     body.expiration_interval = PushController.getExpirationInterval(body);
     if (body.expiration_time && body.expiration_interval) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         'Both expiration_time and expiration_interval cannot be set'
       );
     }
@@ -144,15 +144,15 @@ export class PushController {
     } else if (typeof expirationTimeParam === 'string') {
       expirationTime = new Date(expirationTimeParam);
     } else {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         body['expiration_time'] + ' is not valid time.'
       );
     }
     // Check expirationTime is valid or not, if it is not valid, expirationTime is NaN
     if (!isFinite(expirationTime)) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         body['expiration_time'] + ' is not valid time.'
       );
     }
@@ -167,8 +167,8 @@ export class PushController {
 
     var expirationIntervalParam = body['expiration_interval'];
     if (typeof expirationIntervalParam !== 'number' || expirationIntervalParam <= 0) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         `expiration_interval must be a number greater than 0`
       );
     }
@@ -195,15 +195,15 @@ export class PushController {
       isLocalTime = !PushController.pushTimeHasTimezoneComponent(pushTimeParam);
       date = new Date(pushTimeParam);
     } else {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         body['push_time'] + ' is not valid time.'
       );
     }
     // Check pushTime is valid or not, if it is not valid, pushTime is NaN
     if (!isFinite(date)) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
+      throw new ParseError(
+        ParseError.PUSH_MISCONFIGURED,
         body['push_time'] + ' is not valid time.'
       );
     }

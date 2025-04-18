@@ -3,6 +3,7 @@ import PromiseRouter from '../PromiseRouter';
 import * as Parse from '../ClientSDK';
 import * as middleware from '../middlewares';
 import * as triggers from '../triggers';
+import ParseError from '../ParseError';
 
 const getConfigFromParams = params => {
   const config = new Parse.Config();
@@ -41,8 +42,8 @@ export class GlobalConfigRouter extends PromiseRouter {
 
   async updateGlobalConfig(req) {
     if (req.auth.isReadOnly) {
-      throw new Parse.Error(
-        Parse.Error.OPERATION_FORBIDDEN,
+      throw new ParseError(
+        ParseError.OPERATION_FORBIDDEN,
         "read-only masterKey isn't allowed to update the config."
       );
     }
@@ -80,7 +81,7 @@ export class GlobalConfigRouter extends PromiseRouter {
       return { response: { result: true } }
     } catch (err) {
       const error = triggers.resolveError(err, {
-        code: Parse.Error.SCRIPT_FAILED,
+        code: ParseError.SCRIPT_FAILED,
         message: 'Script failed. Unknown error.',
       });
       throw error;
