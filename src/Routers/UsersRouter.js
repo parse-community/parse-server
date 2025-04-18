@@ -270,7 +270,7 @@ export class UsersRouter extends ClassesRouter {
     await req.config.filesController.expandFilesInObject(req.config, user);
 
     // Before login trigger; throws if failure
-    const hasBeforeLoginTrigger = await triggerExists('_User', TriggerTypes.beforeLogin, req.config.applicationId);
+    const hasBeforeLoginTrigger = triggerExists('_User', TriggerTypes.beforeLogin, req.config.applicationId);
     if (hasBeforeLoginTrigger) {
       const Parse = await loadModule('parse/node.js');
       await maybeRunTrigger(
@@ -306,7 +306,7 @@ export class UsersRouter extends ClassesRouter {
 
     await createSession();
 
-    const hasAfterLoginTrigger = await triggerExists('_User', TriggerTypes.afterLogin, req.config.applicationId);
+    const hasAfterLoginTrigger = triggerExists('_User', TriggerTypes.afterLogin, req.config.applicationId);
     if (hasAfterLoginTrigger) {
       const Parse = await loadModule('parse/node.js');
       const afterLoginUser = Parse.User.fromJSON(Object.assign({ className: '_User' }, user));
@@ -412,7 +412,7 @@ export class UsersRouter extends ClassesRouter {
           records.results[0].objectId,
           req.info.context
         );
-        const hasAfterLogoutTrigger = await triggerExists('_Session', TriggerTypes.afterLogout, req.config.applicationId);
+        const hasAfterLogoutTrigger = triggerExists('_Session', TriggerTypes.afterLogout, req.config.applicationId);
         if (hasAfterLogoutTrigger) {
           const Parse = await loadModule('parse/node.js');
           await maybeRunTrigger(

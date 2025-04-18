@@ -1,9 +1,9 @@
 import express from 'express';
 import * as Middlewares from '../middlewares';
-import * as Parse from '../ClientSDK';
 import ParseError from '../ParseError';
 import Config from '../Config';
 import logger from '../logger';
+import { loadModule } from '../Adapters/AdapterLoader';
 const triggers = require('../triggers');
 const http = require('http');
 const Utils = require('../Utils');
@@ -80,16 +80,20 @@ export class FilesRouter {
       const filesController = config.filesController;
       const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
-      let file = new Parse.File(filename, { base64: '' }, contentType);
-      const triggerResult = await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeFind,
-        { file },
-        config,
-        req.auth
-      );
-      if (triggerResult?.file?._name) {
-        filename = triggerResult?.file?._name;
-        contentType = mime.getType(filename);
+      const hasBeforeFindTrigger = triggers.triggerExists('@File', triggers.Types.beforeFind, config.applicationId);
+      if (hasBeforeFindTrigger) {
+        const Parse = await loadModule('parse/node.js');
+        const file = new Parse.File(filename, { base64: '' }, contentType);
+        const triggerResult = await triggers.maybeRunFileTrigger(
+          triggers.Types.beforeFind,
+          { file },
+          config,
+          req.auth
+        );
+        if (triggerResult?.file?._name) {
+          filename = triggerResult?.file?._name;
+          contentType = mime.getType(filename);
+        }
       }
 
       if (isFileStreamable(req, filesController)) {
@@ -109,19 +113,22 @@ export class FilesRouter {
       if (!data) {
         return;
       }
-      file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
-      const afterFind = await triggers.maybeRunFileTrigger(
-        triggers.Types.afterFind,
-        { file, forceDownload: false },
-        config,
-        req.auth
-      );
-
+      const hasAfterFindHook = triggers.triggerExists('@File', triggers.Types.afterFind, config.applicationId);
+      let afterFind;
+      if (hasAfterFindHook) {
+        const Parse = await loadModule('parse/node.js');
+        const file = new Parse.File(filename, { base64: data.toString('base64') }, contentType);
+        afterFind = await triggers.maybeRunFileTrigger(
+          triggers.Types.afterFind,
+          { file, forceDownload: false },
+          config,
+          req.auth
+        );
+      }
       if (afterFind?.file) {
         contentType = mime.getType(afterFind.file._name);
         data = Buffer.from(afterFind.file._data, 'base64');
       }
-
       res.status(200);
       res.set('Content-Type', contentType);
       res.set('Content-Length', data.length);
@@ -211,6 +218,8 @@ export class FilesRouter {
     }
 
     const base64 = req.body.toString('base64');
+    // TODO: Move to beforeSave trigger check
+    const Parse = await loadModule('parse/node.js');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
     try {
@@ -299,19 +308,23 @@ export class FilesRouter {
     try {
       const { filesController } = req.config;
       const { filename } = req.params;
-      // run beforeDeleteFile trigger
-      const file = new Parse.File(filename);
-      file._url = await filesController.adapter.getFileLocation(req.config, filename);
-      const fileObject = { file, fileSize: null };
-      await triggers.maybeRunFileTrigger(
-        triggers.Types.beforeDelete,
-        fileObject,
-        req.config,
-        req.auth
-      );
-      // delete file
+      const fileObject = { file: null, fileSize: null };
+
+      const hasBeforeDeleteHook = triggers.triggerExists('@File', triggers.Types.beforeDelete, req.config.applicationId);
+      if (hasBeforeDeleteHook) {
+        const Parse = await loadModule('parse/node.js');
+        const file = new Parse.File(filename);
+        file._url = await filesController.adapter.getFileLocation(req.config, filename);
+        fileObject.file = file;
+        await triggers.maybeRunFileTrigger(
+          triggers.Types.beforeDelete,
+          fileObject,
+          req.config,
+          req.auth
+        );
+      }
       await filesController.deleteFile(req.config, filename);
-      // run afterDeleteFile trigger
+
       await triggers.maybeRunFileTrigger(
         triggers.Types.afterDelete,
         fileObject,

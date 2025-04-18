@@ -1,5 +1,4 @@
 import Parse from 'parse/node';
-import ParseServer from './cloud-code/Parse.Server';
 
 var semver = require('semver');
 
@@ -40,12 +39,10 @@ module.exports = {
   applicationId: Parse.applicationId,
   _decode: Parse._decode,
   CoreManager: Parse.CoreManager,
-  File: Parse.File,
   Object: Parse.Object,
   Query: Parse.Query,
   Schema: Parse.Schema,
   User: Parse.User,
-  Server: ParseServer,
   compatible,
   supportsForwardDelete,
   fromString,

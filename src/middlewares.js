@@ -1,5 +1,4 @@
 import AppCache from './cache';
-import Parse from 'parse/node';
 import ParseError from './ParseError';
 import auth from './Auth';
 import Config from './Config';
@@ -9,6 +8,7 @@ import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
 import rateLimit from 'express-rate-limit';
+import { RateLimitZone } from './cloud-code/Parse.Server';
 import { RateLimitOptions } from './Options/Definitions';
 import { pathToRegexp } from 'path-to-regexp';
 import RedisStore from 'rate-limit-redis';
@@ -600,14 +600,14 @@ export const addRateLimit = (route, config, cloud) => {
         return request.auth?.isMaster;
       },
       keyGenerator: async request => {
-        if (route.zone === Parse.Server.RateLimitZone.global) {
+        if (route.zone === RateLimitZone.global) {
           return request.config.appId;
         }
         const token = request.info.sessionToken;
-        if (route.zone === Parse.Server.RateLimitZone.session && token) {
+        if (route.zone === RateLimitZone.session && token) {
           return token;
         }
-        if (route.zone === Parse.Server.RateLimitZone.user && token) {
+        if (route.zone === RateLimitZone.user && token) {
           if (!request.auth) {
             await new Promise(resolve => handleParseSession(request, null, resolve));
           }
