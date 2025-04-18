@@ -419,6 +419,88 @@ class Utils {
       return { __type: 'Date', iso: value.toJSON() };
     }
   }
+
+  static validateGeoPoint(latitude: number, longitude: number) {
+    if (
+      isNaN(latitude) ||
+      isNaN(longitude) ||
+      typeof latitude !== 'number' ||
+      typeof longitude !== 'number'
+    ) {
+      throw new TypeError('GeoPoint latitude and longitude must be valid numbers');
+    }
+    if (latitude < -90.0) {
+      throw new TypeError('GeoPoint latitude out of bounds: ' + latitude + ' < -90.0.');
+    }
+    if (latitude > 90.0) {
+      throw new TypeError('GeoPoint latitude out of bounds: ' + latitude + ' > 90.0.');
+    }
+    if (longitude < -180.0) {
+      throw new TypeError('GeoPoint longitude out of bounds: ' + longitude + ' < -180.0.');
+    }
+    if (longitude > 180.0) {
+      throw new TypeError('GeoPoint longitude out of bounds: ' + longitude + ' > 180.0.');
+    }
+  }
+
+  static containsPoint(points, point) {
+    let minX = points[0][0];
+    let maxX = points[0][0];
+    let minY = points[0][1];
+    let maxY = points[0][1];
+
+    for (let i = 1; i < points.length; i += 1) {
+      const p = points[i];
+      minX = Math.min(p[0], minX);
+      maxX = Math.max(p[0], maxX);
+      minY = Math.min(p[1], minY);
+      maxY = Math.max(p[1], maxY);
+    }
+
+    const outside =
+      point.latitude < minX ||
+      point.latitude > maxX ||
+      point.longitude < minY ||
+      point.longitude > maxY;
+    if (outside) {
+      return false;
+    }
+
+    let inside = false;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+      const startX = points[i][0];
+      const startY = points[i][1];
+      const endX = points[j][0];
+      const endY = points[j][1];
+
+      const intersect =
+        startY > point.longitude != endY > point.longitude &&
+        point.latitude < ((endX - startX) * (point.longitude - startY)) / (endY - startY) + startX;
+
+      if (intersect) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  static radiansTo(pointA, pointB) {
+    const d2r = Math.PI / 180.0;
+    const lat1rad = pointA.latitude * d2r;
+    const long1rad = pointA.longitude * d2r;
+    const lat2rad = pointB.latitude * d2r;
+    const long2rad = pointB.longitude * d2r;
+    const deltaLat = lat1rad - lat2rad;
+    const deltaLong = long1rad - long2rad;
+    const sinDeltaLatDiv2 = Math.sin(deltaLat / 2);
+    const sinDeltaLongDiv2 = Math.sin(deltaLong / 2);
+    // Square of half the straight line chord distance between both points.
+    let a =
+      sinDeltaLatDiv2 * sinDeltaLatDiv2 +
+      Math.cos(lat1rad) * Math.cos(lat2rad) * sinDeltaLongDiv2 * sinDeltaLongDiv2;
+    a = Math.min(1.0, a);
+    return 2 * Math.asin(Math.sqrt(a));
+  }
 }
 
 module.exports = Utils;

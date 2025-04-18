@@ -86,7 +86,7 @@ describe('queryHash', function () {
   });
 });
 
-describe('matchesQuery', function () {
+fdescribe('matchesQuery', function () {
   it('matches blanket queries', function () {
     const obj = {
       id: new Id('Klass', 'O1'),

@@ -1,7 +1,6 @@
 // @flow
 import { createClient } from './PostgresClient';
 // @flow-disable-next
-import * as Parse from '../../../ClientSDK';
 import ParseError from '../../../ParseError';
 // @flow-disable-next
 import _ from 'lodash';
@@ -10,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
 import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType, QueryType, QueryOptions } from '../StorageAdapter';
-const Utils = require('../../../Utils');
+const { relativeTimeToDate, validateGeoPoint } = require('../../../Utils');
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -664,14 +663,14 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       // Get point, convert to geo point if necessary and validate
       let point = centerSphere[0];
       if (point instanceof Array && point.length === 2) {
-        point = new Parse.GeoPoint(point[1], point[0]);
+        point = { latitude: point[1], longitude: point[0] };
       } else if (!GeoPointCoder.isValidJSON(point)) {
         throw new ParseError(
           ParseError.INVALID_JSON,
           'bad $geoWithin value; $centerSphere geo point invalid'
         );
       }
-      Parse.GeoPoint._validate(point.latitude, point.longitude);
+      validateGeoPoint(point.latitude, point.longitude);
       // Get distance and validate
       const distance = centerSphere[1];
       if (isNaN(distance) || distance < 0) {
@@ -718,13 +717,13 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
       points = points
         .map(point => {
           if (point instanceof Array && point.length === 2) {
-            Parse.GeoPoint._validate(point[1], point[0]);
+            validateGeoPoint(point[1], point[0]);
             return `(${point[0]}, ${point[1]})`;
           }
           if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
             throw new ParseError(ParseError.INVALID_JSON, 'bad $geoWithin value');
           } else {
-            Parse.GeoPoint._validate(point.latitude, point.longitude);
+            validateGeoPoint(point.latitude, point.longitude);
           }
           return `(${point.longitude}, ${point.latitude})`;
         })
@@ -742,7 +741,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
           'bad $geoIntersect value; $point should be GeoPoint'
         );
       } else {
-        Parse.GeoPoint._validate(point.latitude, point.longitude);
+        validateGeoPoint(point.latitude, point.longitude);
       }
       patterns.push(`$${index}:name::polygon @> $${index + 1}::point`);
       values.push(fieldName, `(${point.longitude}, ${point.latitude})`);
@@ -820,7 +819,7 @@ const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClaus
                 '$relativeTime can only be used with Date field'
               );
             }
-            const parserResult = Utils.relativeTimeToDate(postgresValue.$relativeTime);
+            const parserResult = relativeTimeToDate(postgresValue.$relativeTime);
             if (parserResult.status === 'success') {
               postgresValue = toPostgresValue(parserResult.result);
             } else {
@@ -2554,7 +2553,7 @@ function convertPolygonToSQL(polygon) {
   }
   const points = polygon
     .map(point => {
-      Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
+      validateGeoPoint(parseFloat(point[1]), parseFloat(point[0]));
       return `(${point[1]}, ${point[0]})`;
     })
     .join(', ');

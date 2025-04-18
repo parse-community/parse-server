@@ -1,9 +1,8 @@
 import log from '../../../logger';
 import _ from 'lodash';
 var mongodb = require('mongodb');
-import * as Parse from '../../../ClientSDK';
 import ParseError from '../../../ParseError';
-const { encodeDate, relativeTimeToDate } = require('../../../Utils');
+const { encodeDate, relativeTimeToDate, validateGeoPoint } = require('../../../Utils');
 
 const transformKey = (className, fieldName, schema) => {
   // Check if the schema is known since it's a built-in field.
@@ -886,13 +885,13 @@ function transformConstraint(constraint, field, count = false) {
           }
           points = points.map(point => {
             if (point instanceof Array && point.length === 2) {
-              Parse.GeoPoint._validate(point[1], point[0]);
+              validateGeoPoint(point[1], point[0]);
               return point;
             }
             if (!GeoPointCoder.isValidJSON(point)) {
               throw new ParseError(ParseError.INVALID_JSON, 'bad $geoWithin value');
             } else {
-              Parse.GeoPoint._validate(point.latitude, point.longitude);
+              validateGeoPoint(point.latitude, point.longitude);
             }
             return [point.longitude, point.latitude];
           });
@@ -909,14 +908,14 @@ function transformConstraint(constraint, field, count = false) {
           // Get point, convert to geo point if necessary and validate
           let point = centerSphere[0];
           if (point instanceof Array && point.length === 2) {
-            point = new Parse.GeoPoint(point[1], point[0]);
+            point = { latitude: point[1], longitude: point[0] };
           } else if (!GeoPointCoder.isValidJSON(point)) {
             throw new ParseError(
               ParseError.INVALID_JSON,
               'bad $geoWithin value; $centerSphere geo point invalid'
             );
           }
-          Parse.GeoPoint._validate(point.latitude, point.longitude);
+          validateGeoPoint(point.latitude, point.longitude);
           // Get distance and validate
           const distance = centerSphere[1];
           if (isNaN(distance) || distance < 0) {
@@ -939,7 +938,7 @@ function transformConstraint(constraint, field, count = false) {
             'bad $geoIntersect value; $point should be GeoPoint'
           );
         } else {
-          Parse.GeoPoint._validate(point.latitude, point.longitude);
+          validateGeoPoint(point.latitude, point.longitude);
         }
         answer[key] = {
           $geometry: {
@@ -1379,7 +1378,7 @@ var PolygonCoder = {
       if (!GeoPointCoder.isValidDatabaseObject(point)) {
         return false;
       }
-      Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
+      validateGeoPoint(parseFloat(point[1]), parseFloat(point[0]));
     }
     return true;
   },

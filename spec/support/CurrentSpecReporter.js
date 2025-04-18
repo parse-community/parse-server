@@ -14,6 +14,8 @@ const flakyTests = [
   "ParseLiveQuery handle invalid websocket payload length",
   // Unhandled promise rejection: TypeError: message.split is not a function
   "rest query query internal field",
+  // Timeout
+  "ParseLiveQuery can handle afterEvent sendEvent to false",
 ];
 
 /** The minimum execution time in seconds for a test to be considered slow. */

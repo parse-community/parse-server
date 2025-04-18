@@ -1,7 +1,7 @@
 var equalObjects = require('./equalObjects');
 var Id = require('./Id');
 import * as Parse from '../ClientSDK';
-
+import { containsPoint, radiansTo } from '../Utils';
 /**
  * Query Hashes are deterministic hashes for Parse Queries.
  * Any two queries that have the same set of constraints will produce the same
@@ -354,25 +354,21 @@ function matchesKeyConstraints(object, key, constraints) {
             geoPoint.latitude,
             geoPoint.longitude,
           ]);
-          const polygon = new Parse.Polygon(points);
-          return polygon.containsPoint(object[key]);
+          return containsPoint(points, object[key]);
         }
         if (compareTo.$centerSphere) {
           const [WGS84Point, maxDistance] = compareTo.$centerSphere;
-          const centerPoint = new Parse.GeoPoint({
+          const centerPoint = {
             latitude: WGS84Point[1],
             longitude: WGS84Point[0],
-          });
-          const point = new Parse.GeoPoint(object[key]);
-          const distance = point.radiansTo(centerPoint);
+          };
+          const distance = radiansTo(object[key], centerPoint);
           return distance <= maxDistance;
         }
         break;
       }
       case '$geoIntersects': {
-        const polygon = new Parse.Polygon(object[key].coordinates);
-        const point = new Parse.GeoPoint(compareTo.$point);
-        return polygon.containsPoint(point);
+        return containsPoint(object[key].coordinates, compareTo.$point);
       }
       case '$options':
         // Not a query type, but a way to add options to $regex. Ignore and
