@@ -38,9 +38,7 @@ function fromString(version) {
 
 module.exports = {
   applicationId: Parse.applicationId,
-  AnonymousUtils: Parse.AnonymousUtils,
   _decode: Parse._decode,
-  _encode: Parse._encode,
   CoreManager: Parse.CoreManager,
   Config: Parse.Config,
   File: Parse.File,

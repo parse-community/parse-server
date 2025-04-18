@@ -143,7 +143,7 @@ export class FilesRouter {
     const config = req.config;
     const user = req.auth.user;
     const isMaster = req.auth.isMaster;
-    const isLinked = user && Parse.AnonymousUtils.isLinked(user);
+    const isLinked = user &&  user._isLinked('anonymous');
     if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
       next(
         new ParseError(ParseError.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
