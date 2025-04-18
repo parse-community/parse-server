@@ -1,11 +1,11 @@
 // global_config.js
 import PromiseRouter from '../PromiseRouter';
-import * as Parse from '../ClientSDK';
 import * as middleware from '../middlewares';
 import * as triggers from '../triggers';
 import ParseError from '../ParseError';
+import { loadModule } from '../Adapters/AdapterLoader';
 
-const getConfigFromParams = params => {
+const getConfigFromParams = (params, Parse) => {
   const config = new Parse.Config();
   for (const attr in params) {
     config.attributes[attr] = Parse._decode(undefined, params[attr]);
@@ -55,18 +55,22 @@ export class GlobalConfigRouter extends PromiseRouter {
       acc[`masterKeyOnly.${key}`] = masterKeyOnly[key] || false;
       return acc;
     }, {});
-    const className = triggers.getClassName(Parse.Config);
+    const className = '@Config';
     const hasBeforeSaveHook = triggers.triggerExists(className, triggers.Types.beforeSave, req.config.applicationId);
     const hasAfterSaveHook = triggers.triggerExists(className, triggers.Types.afterSave, req.config.applicationId);
     let originalConfigObject;
     let updatedConfigObject;
-    const configObject = new Parse.Config();
-    configObject.attributes = params;
+    let configObject;
 
     const results = await req.config.database.find('_GlobalConfig', { objectId: '1' }, { limit: 1 });
     const isNew = results.length !== 1;
-    if (!isNew && (hasBeforeSaveHook || hasAfterSaveHook)) {
-      originalConfigObject = getConfigFromParams(results[0].params);
+    if (hasBeforeSaveHook || hasAfterSaveHook) {
+      const Parse = await loadModule('parse/node.js');
+      configObject = new Parse.Config();
+      configObject.attributes = params;
+      if (!isNew) {
+        originalConfigObject = getConfigFromParams(results[0].params, Parse);
+      }
     }
     try {
       await triggers.maybeRunGlobalConfigTrigger(triggers.Types.beforeSave, req.auth, configObject, originalConfigObject, req.config, req.context);
@@ -75,7 +79,10 @@ export class GlobalConfigRouter extends PromiseRouter {
         updatedConfigObject = configObject;
       } else {
         const result = await req.config.database.update('_GlobalConfig', { objectId: '1' }, update, {}, true);
-        updatedConfigObject = getConfigFromParams(result.params);
+        if (hasAfterSaveHook) {
+          const Parse = await loadModule('parse/node');
+          updatedConfigObject = getConfigFromParams(result.params, Parse);
+        }
       }
       await triggers.maybeRunGlobalConfigTrigger(triggers.Types.afterSave, req.auth, updatedConfigObject, originalConfigObject, req.config, req.context);
       return { response: { result: true } }

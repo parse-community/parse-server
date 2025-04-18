@@ -420,7 +420,7 @@ class Utils {
     }
   }
 
-  static validateGeoPoint(latitude: number, longitude: number) {
+  static validateGeoPoint(latitude, longitude) {
     if (
       isNaN(latitude) ||
       isNaN(longitude) ||

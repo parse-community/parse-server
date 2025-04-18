@@ -40,7 +40,6 @@ module.exports = {
   applicationId: Parse.applicationId,
   _decode: Parse._decode,
   CoreManager: Parse.CoreManager,
-  Config: Parse.Config,
   File: Parse.File,
   Object: Parse.Object,
   Query: Parse.Query,
