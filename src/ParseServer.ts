@@ -7,7 +7,7 @@ var batch = require('./batch'),
   { parse } = require('graphql'),
   path = require('path'),
   fs = require('fs');
-
+import ParseError from './ParseError';
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
 import defaults from './defaults';
 import * as logging from './logger';
