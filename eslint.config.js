@@ -3,7 +3,7 @@ const babelParser = require("@babel/eslint-parser");
 const globals = require("globals");
 module.exports = [
   {
-    ignores: ["**/lib/**", "**/coverage/**", "**/out/**"],
+    ignores: ["**/lib/**", "**/coverage/**", "**/out/**", "**/types/**"],
   },
   js.configs.recommended,
   {

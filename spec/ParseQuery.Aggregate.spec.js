@@ -1500,4 +1500,24 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results.length).toEqual(3);
     await database.adapter.deleteAllClasses(false);
   });
+
+  it_only_db('mongo')('aggregate handle mongodb errors', async () => {
+    const pipeline = [
+      {
+        $search: {
+          index: "default",
+          text: {
+            path: ["name"],
+            query: 'foo',
+          },
+        },
+      },
+    ];
+    try {
+      await new Parse.Query(TestObject).aggregate(pipeline);
+      fail();
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.INVALID_QUERY);
+    }
+  });
 });
