@@ -29,11 +29,11 @@ class CheckRunner {
    * @params
    * @returns {Object} The security check report.
    */
-  async run({ version = '1.0.0' } = {}, config = {}) {
+  async run({ version = '1.0.0' } = {}) {
     // Instantiate check groups
     const groups = Object.values(this.checkGroups)
       .filter(c => typeof c === 'function')
-      .map(CheckGroup => new CheckGroup(config));
+      .map(CheckGroup => new CheckGroup());
 
     // Run checks
     groups.forEach(group => group.run());

@@ -15,10 +15,12 @@
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
+import Parse from 'parse/node';
 import ParseError from '../ParseError';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
+import Config from '../Config';
 // @flow-disable-next
 import deepcopy from 'deepcopy';
 import type {
@@ -717,8 +719,9 @@ export default class SchemaController {
   protectedFields: any;
   userIdRegEx: RegExp;
 
-  constructor(databaseAdapter: StorageAdapter, config) {
+  constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
+    const config = Config.get(Parse.applicationId);
     this.schemaData = new SchemaData(SchemaCache.all(), this.protectedFields);
     this.protectedFields = config.protectedFields;
 
@@ -1487,8 +1490,8 @@ export default class SchemaController {
 }
 
 // Returns a promise for a new Schema.
-const load = (dbAdapter: StorageAdapter, config, options: any): Promise<SchemaController> => {
-  const schema = new SchemaController(dbAdapter, config);
+const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
+  const schema = new SchemaController(dbAdapter);
   ttl.duration = dbAdapter.schemaCacheTtl;
   return schema.reloadData(options).then(() => schema);
 };

@@ -10,7 +10,7 @@ export class SecurityRouter extends PromiseRouter {
       middleware.promiseEnforceMasterKeyAccess,
       this._enforceSecurityCheckEnabled,
       async req => {
-        const report = await new CheckRunner(req.config.security).run(undefined, req.config);
+        const report = await new CheckRunner(req.config.security).run();
         return {
           status: 200,
           response: report,

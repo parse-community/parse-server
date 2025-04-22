@@ -1,6 +1,7 @@
 import { ParseMessageQueue } from '../ParseMessageQueue';
 import rest from '../rest';
 import { applyDeviceTokenExists } from './utils';
+import Parse from 'parse/node';
 
 const PUSH_CHANNEL = 'parse-server-push';
 const DEFAULT_BATCH_SIZE = 100;
@@ -12,14 +13,14 @@ export class PushQueue {
 
   // config object of the publisher, right now it only contains the redisURL,
   // but we may extend it later.
-  constructor(config: any = {}, applicationId) {
-    this.channel = config.channel || PushQueue.defaultPushChannel(applicationId);
+  constructor(config: any = {}) {
+    this.channel = config.channel || PushQueue.defaultPushChannel();
     this.batchSize = config.batchSize || DEFAULT_BATCH_SIZE;
     this.parsePublisher = ParseMessageQueue.createPublisher(config);
   }
 
-  static defaultPushChannel(applicationId) {
-    return `${applicationId}-${PUSH_CHANNEL}`;
+  static defaultPushChannel() {
+    return `${Parse.applicationId}-${PUSH_CHANNEL}`;
   }
 
   enqueue(body, where, config, auth, pushStatus) {

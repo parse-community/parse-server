@@ -170,7 +170,7 @@ interface PushControlling {
 }
 
 export async function getPushController(options: ParseServerOptions): PushControlling {
-  const { scheduledPush, push, appId } = options;
+  const { scheduledPush, push } = options;
 
   const pushOptions = Object.assign({}, push);
   const pushQueueOptions = pushOptions.queueOptions || {};
@@ -193,10 +193,10 @@ export async function getPushController(options: ParseServerOptions): PushContro
 
   const { disablePushWorker } = pushQueueOptions;
 
-  const pushControllerQueue = new PushQueue(pushQueueOptions, appId);
+  const pushControllerQueue = new PushQueue(pushQueueOptions);
   let pushWorker;
   if (!disablePushWorker) {
-    pushWorker = new PushWorker(pushAdapter, pushQueueOptions, appId);
+    pushWorker = new PushWorker(pushAdapter, pushQueueOptions);
   }
   return {
     pushController,
