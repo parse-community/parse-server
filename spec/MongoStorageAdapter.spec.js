@@ -417,7 +417,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(query1.length).toEqual(1);
   })
 
-  it('Parse query works when containedIn is used', async () => {
+  it('queries nested objects using containedIn', async () => {
     const child = new Parse.Object('Child')
     child.set('key','value')
     await child.save();
