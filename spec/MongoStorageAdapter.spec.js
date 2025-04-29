@@ -395,7 +395,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
    * If we use equalTo to comparse the nested pointer it works
    * But it does not work with contained in or matchesQuery
    */
-  it('Parse query works with nested objects if equal to is used', async () => {
+  it('queries nested objects using equalTo', async () => {
     const child = new Parse.Object('Child')
     child.set('key','value')
     await child.save();
@@ -439,7 +439,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(query1.length).toEqual(1);
   })
 
-  it('Parse query works when matchesQuery is used which in turn uses contained in', async () => {
+  it('queries nested objects using matchesQuery', async () => {
     const child = new Parse.Object('Child')
     child.set('key','value')
     await child.save();
