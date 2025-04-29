@@ -56,6 +56,11 @@ const connections = new Connections();
 // ParseServer works like a constructor of an express app.
 // https://parseplatform.org/parse-server/api/master/ParseServerOptions.html
 class ParseServer {
+  _app: any;
+  config: any;
+  server: any;
+  expressApp: any;
+  liveQueryServer: any;
   /**
    * @constructor
    * @param {ParseServerOptions} options the parse server initialization options
@@ -111,7 +116,7 @@ class ParseServer {
 
     const diff = validateKeyNames(options, optionsBlueprint);
     if (diff.length > 0) {
-      const logger = logging.logger;
+      const logger = (logging as any).logger;
       logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
     }
 
@@ -129,7 +134,7 @@ class ParseServer {
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
 
-    options.state = 'initialized';
+    (options as any).state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
     this.config.maintenanceKeyIpsStore = new Map();
@@ -140,7 +145,7 @@ class ParseServer {
    * Starts Parse Server as an express app; this promise resolves when Parse Server is ready to accept requests.
    */
 
-  async start() {
+  async start(): Promise<this> {
     try {
       if (this.config.state === 'ok') {
         return this;
@@ -331,7 +336,7 @@ class ParseServer {
     if (!process.env.TESTING) {
       //This causes tests to spew some useless warnings, so disable in test
       /* istanbul ignore next */
-      process.on('uncaughtException', err => {
+      process.on('uncaughtException', (err: any) => {
         if (err.code === 'EADDRINUSE') {
           // user-friendly message for this common error
           process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
@@ -497,7 +502,7 @@ class ParseServer {
     httpServer,
     config: LiveQueryServerOptions,
     options: ParseServerOptions
-  ) {
+  ): Promise<ParseLiveQueryServer> {
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
