@@ -5309,9 +5309,9 @@ describe('Parse.Query testing', () => {
 
   /**
    * If we use equalTo to comparse the nested pointer it works 
-   * But it does not work with contained in
+   * But it does not work with contained in or matchesQuery
    */
-  fit('Parse query works with nested objects if equal to is used', async () => {
+  it('Parse query works with nested objects if equal to is used', async () => {
     const child = new Parse.Object('Child')
     child.set('key','value')
     await child.save();
@@ -5333,7 +5333,7 @@ describe('Parse.Query testing', () => {
     expect(query1.length).toEqual(1);
   })
 
-  fit('Parse query works when containedIn is used', async () => {
+  it('Parse query works when containedIn is used', async () => {
     const child = new Parse.Object('Child')
     child.set('key','value')
     await child.save();
@@ -5355,7 +5355,7 @@ describe('Parse.Query testing', () => {
     expect(query1.length).toEqual(1);
   })
 
-  fit('Parse query works when matchesQuery is used which in turn uses contained in', async () => {
+  it('Parse query works when matchesQuery is used which in turn uses contained in', async () => {
     const child = new Parse.Object('Child')
     child.set('key','value')
     await child.save();
