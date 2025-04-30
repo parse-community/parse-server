@@ -5307,7 +5307,7 @@ describe('Parse.Query testing', () => {
       }, { useMasterKey: true });
   });
 
-  describe_only_db('mongo')('check if containedIn and matchesQuery works with nested keys', async () => {
+  describe_only_db('mongo')('check if containedIn and matchesQuery works with nested keys', () => {
     /**
      * If we use equalTo to compare the nested pointer it works
      * But it does not work with contained in or matchesQuery
