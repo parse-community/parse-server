@@ -5306,4 +5306,76 @@ describe('Parse.Query testing', () => {
         expect(score).toEqual([1]);
       }, { useMasterKey: true });
   });
+
+  describe_only_db('mongo')('check if containedIn and matchesQuery works with nested keys', async () => {
+    /**
+     * If we use equalTo to compare the nested pointer it works
+     * But it does not work with contained in or matchesQuery
+     */
+    it('Parse query works with nested objects if equal to is used', async () => {
+      const child = new Parse.Object('Child');
+      child.set('key', 'value');
+      await child.save();
+  
+      const parent = new Parse.Object('Parent');
+      parent.set('some', {
+        nested: {
+          key: {
+            child,
+          },
+        },
+      });
+      await parent.save();
+  
+      const query1 = await new Parse.Query('Parent')
+        .equalTo('some.nested.key.child', child)
+        .find();
+  
+      expect(query1.length).toEqual(1);
+    });
+  
+    it('Parse query works when containedIn is used', async () => {
+      const child = new Parse.Object('Child');
+      child.set('key', 'value');
+      await child.save();
+  
+      const parent = new Parse.Object('Parent');
+      parent.set('some', {
+        nested: {
+          key: {
+            child,
+          },
+        },
+      });
+      await parent.save();
+  
+      const query1 = await new Parse.Query('Parent')
+        .containedIn('some.nested.key.child', [child])
+        .find();
+  
+      expect(query1.length).toEqual(1);
+    });
+  
+    it('Parse query works when matchesQuery is used which in turn uses contained in', async () => {
+      const child = new Parse.Object('Child');
+      child.set('key', 'value');
+      await child.save();
+  
+      const parent = new Parse.Object('Parent');
+      parent.set('some', {
+        nested: {
+          key: {
+            child,
+          },
+        },
+      });
+      await parent.save();
+  
+      const query1 = await new Parse.Query('Parent')
+        .matchesQuery('some.nested.key.child', new Parse.Query('Child').equalTo('key', 'value'))
+        .find();
+  
+      expect(query1.length).toEqual(1);
+    });
+  });
 });
