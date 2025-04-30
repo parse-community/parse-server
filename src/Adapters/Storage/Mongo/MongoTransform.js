@@ -651,10 +651,10 @@ function transformTopLevelAtom(atom, field) {
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, field, key, count = false) {
+function transformConstraint(constraint, field, queryKey, count = false) {
   const inArray = field && field.type && field.type === 'Array';
   // Check wether the given key has `.`
-  const isNestedKey = key.indexOf('.') > -1;
+  const isNestedKey = queryKey.indexOf('.') > -1;
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
@@ -671,10 +671,10 @@ function transformConstraint(constraint, field, key, count = false) {
   // This is a hack so that:
   //   $regex is handled before $options
   //   $nearSphere is handled before $maxDistance
-  var constraintKeys = Object.keys(constraint).sort().reverse();
+  var keys = Object.keys(constraint).sort().reverse();
   var answer = {};
-  for (var constraintKey of constraintKeys) {
-    switch (constraintKey) {
+  for (var key of keys) {
+    switch (key) {
       case '$lt':
       case '$lte':
       case '$gt':
@@ -682,7 +682,7 @@ function transformConstraint(constraint, field, key, count = false) {
       case '$exists':
       case '$ne':
       case '$eq': {
-        const val = constraint[constraintKey];
+        const val = constraint[key];
         if (val && typeof val === 'object' && val.$relativeTime) {
           if (field && field.type !== 'Date') {
             throw new Parse.Error(
@@ -691,7 +691,7 @@ function transformConstraint(constraint, field, key, count = false) {
             );
           }
 
-          switch (constraintKey) {
+          switch (key) {
             case '$exists':
             case '$ne':
             case '$eq':
@@ -703,28 +703,28 @@ function transformConstraint(constraint, field, key, count = false) {
 
           const parserResult = Utils.relativeTimeToDate(val.$relativeTime);
           if (parserResult.status === 'success') {
-            answer[constraintKey] = parserResult.result;
+            answer[key] = parserResult.result;
             break;
           }
 
           log.info('Error while parsing relative date', parserResult);
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `bad $relativeTime (${constraintKey}) value. ${parserResult.info}`
+            `bad $relativeTime (${key}) value. ${parserResult.info}`
           );
         }
 
-        answer[constraintKey] = transformer(val);
+        answer[key] = transformer(val);
         break;
       }
 
       case '$in':
       case '$nin': {
-        const arr = constraint[constraintKey];
+        const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + constraintKey + ' value');
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
         }
-        answer[constraintKey] = _.flatMap(arr, value => {
+        answer[key] = _.flatMap(arr, value => {
           return (atom => {
             if (Array.isArray(atom)) {
               return value.map(transformer);
@@ -736,13 +736,13 @@ function transformConstraint(constraint, field, key, count = false) {
         break;
       }
       case '$all': {
-        const arr = constraint[constraintKey];
+        const arr = constraint[key];
         if (!(arr instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + constraintKey + ' value');
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
         }
-        answer[constraintKey] = arr.map(transformInteriorAtom);
+        answer[key] = arr.map(transformInteriorAtom);
 
-        const values = answer[constraintKey];
+        const values = answer[key];
         if (isAnyValueRegex(values) && !isAllValuesRegexOrNone(values)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
@@ -753,15 +753,15 @@ function transformConstraint(constraint, field, key, count = false) {
         break;
       }
       case '$regex':
-        var s = constraint[constraintKey];
+        var s = constraint[key];
         if (typeof s !== 'string') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad regex: ' + s);
         }
-        answer[constraintKey] = s;
+        answer[key] = s;
         break;
 
       case '$containedBy': {
-        const arr = constraint[constraintKey];
+        const arr = constraint[key];
         if (!(arr instanceof Array)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
         }
@@ -771,25 +771,25 @@ function transformConstraint(constraint, field, key, count = false) {
         break;
       }
       case '$options':
-        answer[constraintKey] = constraint[constraintKey];
+        answer[key] = constraint[key];
         break;
 
       case '$text': {
-        const search = constraint[constraintKey].$search;
+        const search = constraint[key].$search;
         if (typeof search !== 'object') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $search, should be object`);
         }
         if (!search.$term || typeof search.$term !== 'string') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $term, should be string`);
         } else {
-          answer[constraintKey] = {
+          answer[key] = {
             $search: search.$term,
           };
         }
         if (search.$language && typeof search.$language !== 'string') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $language, should be string`);
         } else if (search.$language) {
-          answer[constraintKey].$language = search.$language;
+          answer[key].$language = search.$language;
         }
         if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
           throw new Parse.Error(
@@ -797,7 +797,7 @@ function transformConstraint(constraint, field, key, count = false) {
             `bad $text: $caseSensitive, should be boolean`
           );
         } else if (search.$caseSensitive) {
-          answer[constraintKey].$caseSensitive = search.$caseSensitive;
+          answer[key].$caseSensitive = search.$caseSensitive;
         }
         if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
           throw new Parse.Error(
@@ -805,18 +805,18 @@ function transformConstraint(constraint, field, key, count = false) {
             `bad $text: $diacriticSensitive, should be boolean`
           );
         } else if (search.$diacriticSensitive) {
-          answer[constraintKey].$diacriticSensitive = search.$diacriticSensitive;
+          answer[key].$diacriticSensitive = search.$diacriticSensitive;
         }
         break;
       }
       case '$nearSphere': {
-        const point = constraint[constraintKey];
+        const point = constraint[key];
         if (count) {
           answer.$geoWithin = {
             $centerSphere: [[point.longitude, point.latitude], constraint.$maxDistance],
           };
         } else {
-          answer[constraintKey] = [point.longitude, point.latitude];
+          answer[key] = [point.longitude, point.latitude];
         }
         break;
       }
@@ -824,34 +824,34 @@ function transformConstraint(constraint, field, key, count = false) {
         if (count) {
           break;
         }
-        answer[constraintKey] = constraint[constraintKey];
+        answer[key] = constraint[key];
         break;
       }
       // The SDKs don't seem to use these but they are documented in the
       // REST API docs.
       case '$maxDistanceInRadians':
-        answer['$maxDistance'] = constraint[constraintKey];
+        answer['$maxDistance'] = constraint[key];
         break;
       case '$maxDistanceInMiles':
-        answer['$maxDistance'] = constraint[constraintKey] / 3959;
+        answer['$maxDistance'] = constraint[key] / 3959;
         break;
       case '$maxDistanceInKilometers':
-        answer['$maxDistance'] = constraint[constraintKey] / 6371;
+        answer['$maxDistance'] = constraint[key] / 6371;
         break;
 
       case '$select':
       case '$dontSelect':
         throw new Parse.Error(
           Parse.Error.COMMAND_UNAVAILABLE,
-          'the ' + constraintKey + ' constraint is not supported yet'
+          'the ' + key + ' constraint is not supported yet'
         );
 
       case '$within':
-        var box = constraint[constraintKey]['$box'];
+        var box = constraint[key]['$box'];
         if (!box || box.length != 2) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'malformatted $within arg');
         }
-        answer[constraintKey] = {
+        answer[key] = {
           $box: [
             [box[0].longitude, box[0].latitude],
             [box[1].longitude, box[1].latitude],
@@ -860,8 +860,8 @@ function transformConstraint(constraint, field, key, count = false) {
         break;
 
       case '$geoWithin': {
-        const polygon = constraint[constraintKey]['$polygon'];
-        const centerSphere = constraint[constraintKey]['$centerSphere'];
+        const polygon = constraint[key]['$polygon'];
+        const centerSphere = constraint[key]['$centerSphere'];
         if (polygon !== undefined) {
           let points;
           if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
@@ -898,7 +898,7 @@ function transformConstraint(constraint, field, key, count = false) {
             }
             return [point.longitude, point.latitude];
           });
-          answer[constraintKey] = {
+          answer[key] = {
             $polygon: points,
           };
         } else if (centerSphere !== undefined) {
@@ -927,14 +927,14 @@ function transformConstraint(constraint, field, key, count = false) {
               'bad $geoWithin value; $centerSphere distance invalid'
             );
           }
-          answer[constraintKey] = {
+          answer[key] = {
             $centerSphere: [[point.longitude, point.latitude], distance],
           };
         }
         break;
       }
       case '$geoIntersects': {
-        const point = constraint[constraintKey]['$point'];
+        const point = constraint[key]['$point'];
         if (!GeoPointCoder.isValidJSON(point)) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
@@ -943,7 +943,7 @@ function transformConstraint(constraint, field, key, count = false) {
         } else {
           Parse.GeoPoint._validate(point.latitude, point.longitude);
         }
-        answer[constraintKey] = {
+        answer[key] = {
           $geometry: {
             type: 'Point',
             coordinates: [point.longitude, point.latitude],
@@ -952,8 +952,8 @@ function transformConstraint(constraint, field, key, count = false) {
         break;
       }
       default:
-        if (constraintKey.match(/^\$+/)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad constraint: ' + constraintKey);
+        if (key.match(/^\$+/)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad constraint: ' + key);
         }
         return CannotTransform;
     }
