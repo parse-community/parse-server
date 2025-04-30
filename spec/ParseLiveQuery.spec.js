@@ -1309,7 +1309,7 @@ describe('ParseLiveQuery', function () {
     expect(createSpy).toHaveBeenCalledTimes(1);
   });
 
-  fit('Live query should work if needle is ParsePointer and haystack is any[], checking QueryTools.js>contains', async () => {
+  it('Live query should work if needle is ParsePointer and haystack is any[], checking QueryTools.js>contains', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -1339,7 +1339,7 @@ describe('ParseLiveQuery', function () {
   });
 
 
-  fit('Live query should work if we set equalTo(someKey,someParseObject) and new Parse object is created but someKey = null', async () => {
+  it('Live query should work if we set equalTo(someKey,someParseObject) and new Parse object is created but someKey = null', async () => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
