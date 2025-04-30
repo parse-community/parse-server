@@ -1332,7 +1332,7 @@ describe('ParseLiveQuery', function () {
     const subscription = await query.subscribe();
     subscription.on('create', () => {});
 
-    // Do not need any expect block, just make sure that the server doesnt crash or throw error
+    // Do not need any expect block, just make sure that the server doesn't crash or throw error
     const object1 = new TestObject();
     object1.set('childs', [child3]);
     await object1.save();
@@ -1358,7 +1358,7 @@ describe('ParseLiveQuery', function () {
     const subscription = await query.subscribe();
     subscription.on('create', () => {});
 
-    // Do not need any expect block, just make sure that the server doesnt crash or throw error
+    // Do not need any expect block, just make sure that the server doesn't crash or throw error
     const object1 = new TestObject();
     object1.set('child', null);
     await object1.save();
