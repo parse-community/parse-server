@@ -1,3 +1,14 @@
+# [8.2.0](https://github.com/parse-community/parse-server/compare/8.1.0...8.2.0) (2025-05-01)
+
+
+### Features
+
+* Add TypeScript definitions ([#9693](https://github.com/parse-community/parse-server/issues/9693)) ([e86718f](https://github.com/parse-community/parse-server/commit/e86718fc59c7c8e6f3c6abd0feb7d1a68ca76c23))
+
+### Performance Improvements
+
+* Add details to error message in `Parse.Query.aggregate` ([#9689](https://github.com/parse-community/parse-server/issues/9689)) ([9de6999](https://github.com/parse-community/parse-server/commit/9de6999e257d839b68bbca282447777edfdb1ddf))
+
 # [8.1.0](https://github.com/parse-community/parse-server/compare/8.0.2...8.1.0) (2025-04-04)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "8.2.0-alpha.1",
+  "version": "8.2.0",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -109,7 +109,7 @@
     "nyc": "17.1.0",
     "prettier": "2.0.5",
     "semantic-release": "24.2.3",
-    "typescript": "5.8.2",
+    "typescript": "5.8.3",
     "typescript-eslint": "8.29.0",
     "yaml": "2.7.1"
   },
