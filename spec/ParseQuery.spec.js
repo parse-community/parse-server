@@ -5308,10 +5308,6 @@ describe('Parse.Query testing', () => {
   });
 
   describe_only_db('mongo')('query nested keys', () => {
-    /**
-     * If we use equalTo to compare the nested pointer it works
-     * But it does not work with contained in or matchesQuery
-     */
     it('queries nested key using equalTo', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
