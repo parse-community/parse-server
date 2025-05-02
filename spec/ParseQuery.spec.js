@@ -5307,12 +5307,12 @@ describe('Parse.Query testing', () => {
       }, { useMasterKey: true });
   });
 
-  describe_only_db('mongo')('check if containedIn and matchesQuery works with nested keys', () => {
+  describe_only_db('mongo')('query nested keys', () => {
     /**
      * If we use equalTo to compare the nested pointer it works
      * But it does not work with contained in or matchesQuery
      */
-    it('Parse query works with nested objects if equal to is used', async () => {
+    it('queries nested key using equalTo', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
@@ -5334,7 +5334,7 @@ describe('Parse.Query testing', () => {
       expect(query1.length).toEqual(1);
     });
   
-    it('Parse query works when containedIn is used', async () => {
+    it('queries nested key using containedIn', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
@@ -5356,7 +5356,7 @@ describe('Parse.Query testing', () => {
       expect(query1.length).toEqual(1);
     });
   
-    it('Parse query works when matchesQuery is used which in turn uses contained in', async () => {
+    it('queries nested key using matchesQuery', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
