@@ -61,7 +61,11 @@ function ParseServerRESTController(applicationId, router) {
                   const headers = response._headers;
                   delete response._status;
                   delete response._headers;
-                  return { success: response, _status: status, _headers: headers };
+                  return {
+                    success: response,
+                    _status: status,
+                    _headers: headers,
+                  };
                 }
                 return { success: response };
               },

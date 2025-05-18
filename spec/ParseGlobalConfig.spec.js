@@ -16,22 +16,25 @@ describe('a GlobalConfig', () => {
         return { objectId: '1' };
       }
     );
-    await config.database.adapter
-      .upsertOneObject(
-        '_GlobalConfig',
-        {
-          fields: {
-            objectId: { type: 'Number' },
-            params: { type: 'Object' },
-            masterKeyOnly: { type: 'Object' },
-          },
+    await config.database.adapter.upsertOneObject(
+      '_GlobalConfig',
+      {
+        fields: {
+          objectId: { type: 'Number' },
+          params: { type: 'Object' },
+          masterKeyOnly: { type: 'Object' },
         },
-        query,
-        {
-          params: { companies: ['US', 'DK'], counter: 20, internalParam: 'internal' },
-          masterKeyOnly: { internalParam: true },
-        }
-      );
+      },
+      query,
+      {
+        params: {
+          companies: ['US', 'DK'],
+          counter: 20,
+          internalParam: 'internal',
+        },
+        masterKeyOnly: { internalParam: true },
+      }
+    );
   });
 
   const headers = {
@@ -111,28 +114,30 @@ describe('a GlobalConfig', () => {
   });
 
   it_only_db('mongo')('can addUnique', async () => {
-    await Parse.Config.save({ companies: { __op: 'AddUnique', objects: ['PA', 'RS', 'E'] }  });
+    await Parse.Config.save({
+      companies: { __op: 'AddUnique', objects: ['PA', 'RS', 'E'] },
+    });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['US', 'DK', 'PA', 'RS', 'E']);
   });
 
   it_only_db('mongo')('can add to array', async () => {
-    await Parse.Config.save({ companies: { __op: 'Add', objects: ['PA'] }  });
+    await Parse.Config.save({ companies: { __op: 'Add', objects: ['PA'] } });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['US', 'DK', 'PA']);
   });
 
   it_only_db('mongo')('can remove from array', async () => {
-    await Parse.Config.save({ companies: { __op: 'Remove', objects: ['US'] }  });
+    await Parse.Config.save({ companies: { __op: 'Remove', objects: ['US'] } });
     const config = await Parse.Config.get();
     const companies = config.get('companies');
     expect(companies).toEqual(['DK']);
   });
 
   it('can increment', async () => {
-    await Parse.Config.save({ counter: { __op: 'Increment', amount: 49 }  });
+    await Parse.Config.save({ counter: { __op: 'Increment', amount: 49 } });
     const config = await Parse.Config.get();
     const counter = config.get('counter');
     expect(counter).toEqual(69);

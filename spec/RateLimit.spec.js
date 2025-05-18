@@ -91,9 +91,13 @@ describe('rate limit', () => {
         },
       ],
     });
-    const response1 = await Parse.Cloud.run('test', null, { useMasterKey: true });
+    const response1 = await Parse.Cloud.run('test', null, {
+      useMasterKey: true,
+    });
     expect(response1).toBe('Abc');
-    const response2 = await Parse.Cloud.run('test', null, { useMasterKey: true });
+    const response2 = await Parse.Cloud.run('test', null, {
+      useMasterKey: true,
+    });
     expect(response2).toBe('Abc');
   });
 
@@ -111,7 +115,9 @@ describe('rate limit', () => {
         },
       ],
     });
-    const response1 = await Parse.Cloud.run('test', null, { useMasterKey: true });
+    const response1 = await Parse.Cloud.run('test', null, {
+      useMasterKey: true,
+    });
     expect(response1).toBe('Abc');
     await expectAsync(Parse.Cloud.run('test')).toBeRejectedWith(
       new Parse.Error(Parse.Error.CONNECTION_FAILED, 'Too many requests')
@@ -432,7 +438,11 @@ describe('rate limit', () => {
     const Config = require('../lib/Config');
     const validateRateLimit = ({ rateLimit }) => Config.validateRateLimit(rateLimit);
     expect(() =>
-      validateRateLimit({ rateLimit: 'a', requestTimeWindow: 1000, requestCount: 3 })
+      validateRateLimit({
+        rateLimit: 'a',
+        requestTimeWindow: 1000,
+        requestCount: 3,
+      })
     ).toThrow('rateLimit must be an array or object');
     expect(() => validateRateLimit({ rateLimit: ['a'] })).toThrow(
       'rateLimit must be an array of objects'
@@ -441,11 +451,20 @@ describe('rate limit', () => {
       'rateLimit.requestPath must be a string'
     );
     expect(() =>
-      validateRateLimit({ rateLimit: [{ requestTimeWindow: [], requestPath: 'a' }] })
+      validateRateLimit({
+        rateLimit: [{ requestTimeWindow: [], requestPath: 'a' }],
+      })
     ).toThrow('rateLimit.requestTimeWindow must be a number');
     expect(() =>
       validateRateLimit({
-        rateLimit: [{ requestPath: 'a', requestTimeWindow: 1000, requestCount: 3, zone: 'abc' }],
+        rateLimit: [
+          {
+            requestPath: 'a',
+            requestTimeWindow: 1000,
+            requestCount: 3,
+            zone: 'abc',
+          },
+        ],
       })
     ).toThrow('rateLimit.zone must be one of global, session, user, or ip');
     expect(() =>
@@ -468,22 +487,40 @@ describe('rate limit', () => {
     expect(() =>
       validateRateLimit({
         rateLimit: [
-          { errorResponseMessage: [], requestTimeWindow: 1000, requestCount: 3, requestPath: 'a' },
+          {
+            errorResponseMessage: [],
+            requestTimeWindow: 1000,
+            requestCount: 3,
+            requestPath: 'a',
+          },
         ],
       })
     ).toThrow('rateLimit.errorResponseMessage must be a string');
     expect(() =>
-      validateRateLimit({ rateLimit: [{ requestCount: 3, requestPath: 'abc' }] })
+      validateRateLimit({
+        rateLimit: [{ requestCount: 3, requestPath: 'abc' }],
+      })
     ).toThrow('rateLimit.requestTimeWindow must be defined');
     expect(() =>
-      validateRateLimit({ rateLimit: [{ requestTimeWindow: 3, requestPath: 'abc' }] })
+      validateRateLimit({
+        rateLimit: [{ requestTimeWindow: 3, requestPath: 'abc' }],
+      })
     ).toThrow('rateLimit.requestCount must be defined');
     expect(() =>
-      validateRateLimit({ rateLimit: [{ requestTimeWindow: 3, requestCount: 'abc' }] })
+      validateRateLimit({
+        rateLimit: [{ requestTimeWindow: 3, requestCount: 'abc' }],
+      })
     ).toThrow('rateLimit.requestPath must be defined');
     await expectAsync(
       reconfigureServer({
-        rateLimit: [{ requestTimeWindow: 3, requestCount: 1, path: 'abc', requestPath: 'a' }],
+        rateLimit: [
+          {
+            requestTimeWindow: 3,
+            requestCount: 1,
+            path: 'abc',
+            requestPath: 'a',
+          },
+        ],
       })
     ).toBeRejectedWith(`Invalid rate limit option "path"`);
   });

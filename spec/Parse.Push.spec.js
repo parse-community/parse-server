@@ -126,71 +126,80 @@ describe('Parse.Push', () => {
     expect(sendToInstallationSpy.calls.count()).toEqual(10);
   });
 
-  it_id('2a58e3c7-b6f3-4261-a384-6c893b2ac3f3')(it)('should properly send push with lowercaseIncrement', async () => {
-    await setup();
-    const pushStatusId = await Parse.Push.send({
-      where: {
-        deviceType: 'ios',
-      },
-      data: {
-        badge: 'increment',
-        alert: 'Hello world!',
-      },
-    });
-    await pushCompleted(pushStatusId);
-  });
+  it_id('2a58e3c7-b6f3-4261-a384-6c893b2ac3f3')(it)(
+    'should properly send push with lowercaseIncrement',
+    async () => {
+      await setup();
+      const pushStatusId = await Parse.Push.send({
+        where: {
+          deviceType: 'ios',
+        },
+        data: {
+          badge: 'increment',
+          alert: 'Hello world!',
+        },
+      });
+      await pushCompleted(pushStatusId);
+    }
+  );
 
-  it_id('e21780b6-2cdd-467e-8013-81030f3288e9')(it)('should not allow clients to query _PushStatus', async () => {
-    await setup();
-    const pushStatusId = await Parse.Push.send({
-      where: {
-        deviceType: 'ios',
-      },
-      data: {
-        badge: 'increment',
-        alert: 'Hello world!',
-      },
-    });
-    await pushCompleted(pushStatusId);
-    try {
-      await request({
+  it_id('e21780b6-2cdd-467e-8013-81030f3288e9')(it)(
+    'should not allow clients to query _PushStatus',
+    async () => {
+      await setup();
+      const pushStatusId = await Parse.Push.send({
+        where: {
+          deviceType: 'ios',
+        },
+        data: {
+          badge: 'increment',
+          alert: 'Hello world!',
+        },
+      });
+      await pushCompleted(pushStatusId);
+      try {
+        await request({
+          url: 'http://localhost:8378/1/classes/_PushStatus',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+          },
+        });
+        fail();
+      } catch (response) {
+        expect(response.data.error).toEqual('unauthorized');
+      }
+    }
+  );
+
+  it_id('924cf5f5-f684-4925-978a-e52c0c457366')(it)(
+    'should allow master key to query _PushStatus',
+    async () => {
+      await setup();
+      const pushStatusId = await Parse.Push.send({
+        where: {
+          deviceType: 'ios',
+        },
+        data: {
+          badge: 'increment',
+          alert: 'Hello world!',
+        },
+      });
+      await pushCompleted(pushStatusId);
+      const response = await request({
         url: 'http://localhost:8378/1/classes/_PushStatus',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
         },
       });
-      fail();
-    } catch (response) {
-      expect(response.data.error).toEqual('unauthorized');
+      const body = response.data;
+      expect(body.results.length).toEqual(1);
+      expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
+      expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
     }
-  });
-
-  it_id('924cf5f5-f684-4925-978a-e52c0c457366')(it)('should allow master key to query _PushStatus', async () => {
-    await setup();
-    const pushStatusId = await Parse.Push.send({
-      where: {
-        deviceType: 'ios',
-      },
-      data: {
-        badge: 'increment',
-        alert: 'Hello world!',
-      },
-    });
-    await pushCompleted(pushStatusId);
-    const response = await request({
-      url: 'http://localhost:8378/1/classes/_PushStatus',
-      json: true,
-      headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-Master-Key': 'test',
-      },
-    });
-    const body = response.data;
-    expect(body.results.length).toEqual(1);
-    expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
-    expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
-  });
+  );
 
   it('should throw error if missing push configuration', async () => {
     await reconfigureServer({ push: null });

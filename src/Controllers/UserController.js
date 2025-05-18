@@ -209,7 +209,7 @@ export class UserController extends AdaptableController {
       master,
       installationId,
       ip,
-      resendRequest: true
+      resendRequest: true,
     });
     if (!shouldSend) {
       return;
@@ -218,11 +218,19 @@ export class UserController extends AdaptableController {
   }
 
   async resendVerificationEmail(username, req, token) {
-    const aUser = await this.getUserIfNeeded({ username, _email_verify_token: token });
+    const aUser = await this.getUserIfNeeded({
+      username,
+      _email_verify_token: token,
+    });
     if (!aUser || aUser.emailVerified) {
       throw undefined;
     }
-    const generate = await this.regenerateEmailVerifyToken(aUser, req.auth?.isMaster, req.auth?.installationId, req.ip);
+    const generate = await this.regenerateEmailVerifyToken(
+      aUser,
+      req.auth?.isMaster,
+      req.auth?.installationId,
+      req.ip
+    );
     if (generate) {
       this.sendVerificationEmail(aUser, req);
     }
@@ -262,7 +270,11 @@ export class UserController extends AdaptableController {
         {
           $or: [
             { email, _perishable_token: { $exists: true } },
-            { username: email, email: { $exists: false }, _perishable_token: { $exists: true } },
+            {
+              username: email,
+              email: { $exists: false },
+              _perishable_token: { $exists: true },
+            },
           ],
         },
         { limit: 1 },

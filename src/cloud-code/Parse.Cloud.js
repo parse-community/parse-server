@@ -52,9 +52,7 @@ function validateValidator(validator) {
     const types = parameter.map(type => getType(type));
     const type = getType(validatorParam);
     if (!types.includes(type) && !types.includes('Any')) {
-      throw `Invalid type for Cloud Function validation key ${key}. Expected ${types.join(
-        '|'
-      )}, actual ${type}`;
+      throw `Invalid type for Cloud Function validation key ${key}. Expected ${types.join('|')}, actual ${type}`;
     }
   };
   for (const key in validator) {
@@ -79,7 +77,7 @@ const getRoute = parseClass => {
       _User: 'users',
       _Session: 'sessions',
       '@File': 'files',
-      '@Config' : 'config',
+      '@Config': 'config',
     }[parseClass] || 'classes';
   if (parseClass === '@File') {
     return `/${route}/:id?(.*)`;
@@ -130,7 +128,10 @@ ParseCloud.define = function (functionName, handler, validationHandler) {
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
-      { requestPath: `/functions/${functionName}`, ...validationHandler.rateLimit },
+      {
+        requestPath: `/functions/${functionName}`,
+        ...validationHandler.rateLimit,
+      },
       Parse.applicationId,
       true
     );
@@ -283,7 +284,11 @@ ParseCloud.beforeLogin = function (handler, validationHandler) {
   triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
-      { requestPath: `/login`, requestMethods: 'POST', ...validationHandler.rateLimit },
+      {
+        requestPath: `/login`,
+        requestMethods: 'POST',
+        ...validationHandler.rateLimit,
+      },
       Parse.applicationId,
       true
     );

@@ -142,7 +142,9 @@ const filterSensitiveData = (
   object: any
 ) => {
   let userId = null;
-  if (auth && auth.user) { userId = auth.user.id; }
+  if (auth && auth.user) {
+    userId = auth.user.id;
+  }
 
   // replace protectedFields when using pointer-permissions
   const perms =
@@ -508,9 +510,10 @@ class DatabaseController {
     var aclGroup = acl || [];
 
     return this.loadSchemaIfNeeded(validSchemaController).then(schemaController => {
-      return (isMaster
-        ? Promise.resolve()
-        : schemaController.validatePermission(className, aclGroup, 'update')
+      return (
+        isMaster
+          ? Promise.resolve()
+          : schemaController.validatePermission(className, aclGroup, 'update')
       )
         .then(() => {
           relationUpdates = this.collectRelationUpdates(className, originalQuery.objectId, update);
@@ -772,9 +775,10 @@ class DatabaseController {
     const aclGroup = acl || [];
 
     return this.loadSchemaIfNeeded(validSchemaController).then(schemaController => {
-      return (isMaster
-        ? Promise.resolve()
-        : schemaController.validatePermission(className, aclGroup, 'delete')
+      return (
+        isMaster
+          ? Promise.resolve()
+          : schemaController.validatePermission(className, aclGroup, 'delete')
       ).then(() => {
         if (!isMaster) {
           query = this.addPointerPermissions(
@@ -852,9 +856,10 @@ class DatabaseController {
     return this.validateClassName(className)
       .then(() => this.loadSchemaIfNeeded(validSchemaController))
       .then(schemaController => {
-        return (isMaster
-          ? Promise.resolve()
-          : schemaController.validatePermission(className, aclGroup, 'create')
+        return (
+          isMaster
+            ? Promise.resolve()
+            : schemaController.validatePermission(className, aclGroup, 'create')
         )
           .then(() => schemaController.enforceClassExists(className))
           .then(() => schemaController.getOneSchema(className, true))
@@ -1255,9 +1260,10 @@ class DatabaseController {
               delete sort[fieldName];
             }
           });
-          return (isMaster
-            ? Promise.resolve()
-            : schemaController.validatePermission(className, aclGroup, op)
+          return (
+            isMaster
+              ? Promise.resolve()
+              : schemaController.validatePermission(className, aclGroup, op)
           )
             .then(() => this.reduceRelationKeys(className, query, queryOptions))
             .then(() => this.reduceInRelation(className, query, schemaController))
@@ -1592,12 +1598,18 @@ class DatabaseController {
       schema && schema.getClassLevelPermissions
         ? schema.getClassLevelPermissions(className)
         : schema;
-    if (!perms) { return null; }
+    if (!perms) {
+      return null;
+    }
 
     const protectedFields = perms.protectedFields;
-    if (!protectedFields) { return null; }
+    if (!protectedFields) {
+      return null;
+    }
 
-    if (aclGroup.indexOf(query.objectId) > -1) { return null; }
+    if (aclGroup.indexOf(query.objectId) > -1) {
+      return null;
+    }
 
     // for queries where "keys" are set and do not include all 'userField':{field},
     // we have to transparently include it, and then remove before returning to client

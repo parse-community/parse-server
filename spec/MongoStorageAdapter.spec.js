@@ -46,8 +46,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('preserves replica sets', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
-      uri:
-        'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
+      uri: 'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
@@ -284,9 +283,13 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         amount: 1,
       },
     };
-    await Parse.Server.database.update('MyClass', query, update, { upsert: true });
+    await Parse.Server.database.update('MyClass', query, update, {
+      upsert: true,
+    });
     update.objectId.amount = uuid2;
-    await Parse.Server.database.update('MyClass', query, update, { upsert: true });
+    await Parse.Server.database.update('MyClass', query, update, {
+      upsert: true,
+    });
 
     const res = await Parse.Server.database.find(schema.className, {}, {});
     expect(res.length).toBe(1);

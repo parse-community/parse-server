@@ -46,15 +46,17 @@ describe('JobSchedule', () => {
   });
 
   it('should reject access when not using masterKey (/jobs)', done => {
-    request(
-      Object.assign({ url: Parse.serverURL + '/cloud_code/jobs' }, defaultOptions)
-    ).then(done.fail, () => done());
+    request(Object.assign({ url: Parse.serverURL + '/cloud_code/jobs' }, defaultOptions)).then(
+      done.fail,
+      () => done()
+    );
   });
 
   it('should reject access when not using masterKey (/jobs/data)', done => {
-    request(
-      Object.assign({ url: Parse.serverURL + '/cloud_code/jobs/data' }, defaultOptions)
-    ).then(done.fail, () => done());
+    request(Object.assign({ url: Parse.serverURL + '/cloud_code/jobs/data' }, defaultOptions)).then(
+      done.fail,
+      () => done()
+    );
   });
 
   it('should reject access when not using masterKey (PUT /jobs/id)', done => {

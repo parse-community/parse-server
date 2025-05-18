@@ -15,7 +15,7 @@ export class PublicAPIRouter extends PromiseRouter {
     super();
     Deprecator.logRuntimeDeprecation({
       usage: 'PublicAPIRouter',
-      solution: 'pages.enableRouter'
+      solution: 'pages.enableRouter',
     });
   }
   verifyEmail(req) {

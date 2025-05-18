@@ -41,11 +41,11 @@ const ParseServer = require('../lib/index').ParseServer;
 const loadAdapter = require('../lib/Adapters/AdapterLoader').loadAdapter;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
-const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
-  .GridFSBucketAdapter;
+const GridFSBucketAdapter =
+  require('../lib/Adapters/Files/GridFSBucketAdapter').GridFSBucketAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
-const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
-  .default;
+const PostgresStorageAdapter =
+  require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 const RESTController = require('parse/lib/node/RESTController').default;
@@ -159,11 +159,13 @@ let parseServer;
 let didChangeConfiguration = false;
 const openConnections = new Connections();
 
-const shutdownServer = async (_parseServer) => {
+const shutdownServer = async _parseServer => {
   await _parseServer.handleShutdown();
   // Connection close events are not immediate on node 10+, so wait a bit
   await sleep(0);
-  expect(openConnections.count() > 0).toBeFalsy(`There were ${openConnections.count()} open connections to the server left after the test finished`);
+  expect(openConnections.count() > 0).toBeFalsy(
+    `There were ${openConnections.count()} open connections to the server left after the test finished`
+  );
   parseServer = undefined;
 };
 
@@ -198,7 +200,10 @@ const reconfigureServer = async (changedConfiguration = {}) => {
     fail('should not call next');
   });
   openConnections.track(parseServer.server);
-  if (parseServer.liveQueryServer?.server && parseServer.liveQueryServer.server !== parseServer.server) {
+  if (
+    parseServer.liveQueryServer?.server &&
+    parseServer.liveQueryServer.server !== parseServer.server
+  ) {
     openConnections.track(parseServer.liveQueryServer.server);
   }
   return parseServer;
@@ -247,7 +252,7 @@ global.afterEachFn = async () => {
   } else {
     await databaseAdapter.performInitialization({ VolatileClassesSchemas });
   }
-}
+};
 afterEach(global.afterEachFn);
 
 afterAll(() => {
@@ -388,10 +393,10 @@ function mockShortLivedAuth() {
 }
 
 function mockFetch(mockResponses) {
-  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = { }) => {
+  global.fetch = jasmine.createSpy('fetch').and.callFake((url, options = {}) => {
     options.method ||= 'GET';
     const mockResponse = mockResponses.find(
-      (mock) => mock.url === url && mock.method === options.method
+      mock => mock.url === url && mock.method === options.method
     );
 
     if (mockResponse) {
@@ -404,7 +409,6 @@ function mockFetch(mockResponses) {
     });
   });
 }
-
 
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;

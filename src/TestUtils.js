@@ -40,7 +40,7 @@ export function resolvingPromise() {
 }
 
 export function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export function getConnectionsCount(server) {
@@ -54,7 +54,7 @@ export function getConnectionsCount(server) {
       }
     });
   });
-};
+}
 
 export class Connections {
   constructor() {

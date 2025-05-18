@@ -1,5 +1,5 @@
-const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
-  .default;
+const PostgresStorageAdapter =
+  require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
 const databaseURI =
   process.env.PARSE_SERVER_TEST_DATABASE_URI ||
   'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -583,7 +583,9 @@ describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {
   it('handleShutdown, close connection of postgresql uri', () => {
     const databaseURI2 = new URL(databaseURI);
     databaseURI2.protocol = 'postgresql:';
-    const adapter = new PostgresStorageAdapter({ uri: databaseURI2.toString() });
+    const adapter = new PostgresStorageAdapter({
+      uri: databaseURI2.toString(),
+    });
     expect(adapter._client.$pool.ending).toEqual(false);
     adapter.handleShutdown();
     expect(adapter._client.$pool.ending).toEqual(true);

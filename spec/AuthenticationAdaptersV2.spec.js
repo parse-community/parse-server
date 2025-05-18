@@ -267,7 +267,10 @@ describe('Auth Adapter features', () => {
     spyOn(modernAdapter, 'validateUpdate').and.resolveTo({});
     spyOn(modernAdapter, 'validateLogin').and.resolveTo({});
 
-    await reconfigureServer({ auth: { modernAdapter }, allowExpiredAuthDataToken: false });
+    await reconfigureServer({
+      auth: { modernAdapter },
+      allowExpiredAuthDataToken: false,
+    });
     const user = new Parse.User();
 
     await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
@@ -350,7 +353,9 @@ describe('Auth Adapter features', () => {
     const afterSpy = spyOn(modernAdapter3, 'afterFind').and.callThrough();
     await reconfigureServer({ auth: { modernAdapter3 } });
     const user = new Parse.User();
-    await user.save({ authData: { modernAdapter3: { id: 'modernAdapter3Data' } } });
+    await user.save({
+      authData: { modernAdapter3: { id: 'modernAdapter3Data' } },
+    });
     await user.fetch({ sessionToken: user.getSessionToken() });
     const authData = user.get('authData').modernAdapter3;
     expect(authData).toEqual({ foo: 'bar' });
@@ -361,11 +366,11 @@ describe('Auth Adapter features', () => {
         break;
       }
     }
-    expect(afterSpy).toHaveBeenCalledWith(
-      { id: 'modernAdapter3Data' },
-      undefined,
-      { ip: '127.0.0.1', user, master: false },
-    );
+    expect(afterSpy).toHaveBeenCalledWith({ id: 'modernAdapter3Data' }, undefined, {
+      ip: '127.0.0.1',
+      user,
+      master: false,
+    });
     expect(spy).toHaveBeenCalled();
   });
 
@@ -378,7 +383,9 @@ describe('Auth Adapter features', () => {
     await reconfigureServer({ auth: { adapterWithBadPolicy } });
     const user = new Parse.User();
     await expectAsync(
-      user.save({ authData: { adapterWithBadPolicy: { id: 'adapterWithBadPolicy' } } })
+      user.save({
+        authData: { adapterWithBadPolicy: { id: 'adapterWithBadPolicy' } },
+      })
     ).toBeRejectedWithError(
       'AuthAdapter policy is not configured correctly. The value must be either "solo", "additional", "default" or undefined (will be handled as "default")'
     );
@@ -395,7 +402,9 @@ describe('Auth Adapter features', () => {
   });
 
   it('should not update authData if provider return doNotSave', async () => {
-    spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: true });
+    spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({
+      doNotSave: true,
+    });
     await reconfigureServer({
       auth: { doNotSaveAdapter, baseAdapter },
     });
@@ -403,16 +412,23 @@ describe('Auth Adapter features', () => {
     const user = new Parse.User();
 
     await user.save({
-      authData: { baseAdapter: { id: 'baseAdapter' }, doNotSaveAdapter: { token: true } },
+      authData: {
+        baseAdapter: { id: 'baseAdapter' },
+        doNotSaveAdapter: { token: true },
+      },
     });
 
     await user.fetch({ useMasterKey: true });
 
-    expect(user.get('authData')).toEqual({ baseAdapter: { id: 'baseAdapter' } });
+    expect(user.get('authData')).toEqual({
+      baseAdapter: { id: 'baseAdapter' },
+    });
   });
 
   it('should loginWith user with auth Adapter with do not save option, mutated authData and no additional auth adapter', async () => {
-    const spy = spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: false });
+    const spy = spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({
+      doNotSave: false,
+    });
     await reconfigureServer({
       auth: { doNotSaveAdapter, baseAdapter },
     });
@@ -425,7 +441,9 @@ describe('Auth Adapter features', () => {
 
     await user.fetch({ useMasterKey: true });
 
-    expect(user.get('authData')).toEqual({ doNotSaveAdapter: { id: 'doNotSaveAdapter' } });
+    expect(user.get('authData')).toEqual({
+      doNotSaveAdapter: { id: 'doNotSaveAdapter' },
+    });
 
     spy.and.resolveTo({ doNotSave: true });
 
@@ -488,7 +506,7 @@ describe('Auth Adapter features', () => {
 
     await user.save({
       authData: {
-        baseAdapter: { id: 'baseAdapter', token: "sometoken1" },
+        baseAdapter: { id: 'baseAdapter', token: 'sometoken1' },
       },
     });
 
@@ -497,7 +515,7 @@ describe('Auth Adapter features', () => {
     const user2 = new Parse.User();
     await user2.save({
       authData: {
-        baseAdapter: { id: 'baseAdapter', token: "sometoken2" },
+        baseAdapter: { id: 'baseAdapter', token: 'sometoken2' },
       },
     });
 
@@ -599,7 +617,9 @@ describe('Auth Adapter features', () => {
       { sessionToken: user.getSessionToken() }
     );
 
-    expect(user2.get('authDataResponse')).toEqual({ baseAdapter2: { someData2: true } });
+    expect(user2.get('authDataResponse')).toEqual({
+      baseAdapter2: { someData2: true },
+    });
 
     const user3 = new Parse.User();
     await user3.save({
@@ -1163,7 +1183,9 @@ describe('Auth Adapter features', () => {
     ).toBeRejectedWithError('User not found.');
 
     const user = new Parse.User();
-    await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
+    await user.save({
+      authData: { challengeAdapter: { id: 'challengeAdapter' } },
+    });
 
     const user2 = new Parse.User();
     await user2.save({ authData: { soloAdapter: { id: 'soloAdapter' } } });
@@ -1248,7 +1270,9 @@ describe('Auth Adapter features', () => {
     ).toBeRejectedWithError('User not found.');
 
     const user = new Parse.User();
-    await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
+    await user.save({
+      authData: { challengeAdapter: { id: 'challengeAdapter' } },
+    });
 
     spyOn(challengeAdapter, 'validateAuthData').and.rejectWith({});
 

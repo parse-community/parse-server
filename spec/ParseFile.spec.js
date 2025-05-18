@@ -686,7 +686,10 @@ describe('Parse.File testing', () => {
         url: 'http://localhost:8378/1/files/invalid-id/invalid-file.txt',
       }).catch(e => e);
       expect(res1.status).toBe(403);
-      expect(res1.data).toEqual({ code: 119, error: 'Invalid application ID.' });
+      expect(res1.data).toEqual({
+        code: 119,
+        error: 'Invalid application ID.',
+      });
       // Ensure server did not crash
       const res2 = await request({ url: 'http://localhost:8378/1/health' });
       expect(res2.status).toEqual(200);
@@ -1343,7 +1346,9 @@ describe('Parse.File testing', () => {
         },
       });
       for (const type of ['plain', 'txt', 'png', 'jpg', 'gif', 'doc']) {
-        const file = new Parse.File(`parse-server-logo.${type}`, { base64: 'ParseA==' });
+        const file = new Parse.File(`parse-server-logo.${type}`, {
+          base64: 'ParseA==',
+        });
         await file.save();
       }
     });

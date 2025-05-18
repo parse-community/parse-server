@@ -10,7 +10,10 @@ import Page from '../Page';
 
 // All pages with custom page key for reference and file name
 const pages = Object.freeze({
-  passwordReset: new Page({ id: 'passwordReset', defaultFile: 'password_reset.html' }),
+  passwordReset: new Page({
+    id: 'passwordReset',
+    defaultFile: 'password_reset.html',
+  }),
   passwordResetSuccess: new Page({
     id: 'passwordResetSuccess',
     defaultFile: 'password_reset_success.html',

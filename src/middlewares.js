@@ -24,7 +24,9 @@ const getMountForRequest = function (req) {
 };
 
 const getBlockList = (ipRangeList, store) => {
-  if (store.get('blockList')) { return store.get('blockList'); }
+  if (store.get('blockList')) {
+    return store.get('blockList');
+  }
   const blockList = new BlockList();
   ipRangeList.forEach(fullIp => {
     if (fullIp === '::/0' || fullIp === '::') {
@@ -50,9 +52,15 @@ export const checkIp = (ip, ipRangeList, store) => {
   const incomingIpIsV4 = isIPv4(ip);
   const blockList = getBlockList(ipRangeList, store);
 
-  if (store.get(ip)) { return true; }
-  if (store.get('allowAllIpv4') && incomingIpIsV4) { return true; }
-  if (store.get('allowAllIpv6') && !incomingIpIsV4) { return true; }
+  if (store.get(ip)) {
+    return true;
+  }
+  if (store.get('allowAllIpv4') && incomingIpIsV4) {
+    return true;
+  }
+  if (store.get('allowAllIpv6') && !incomingIpIsV4) {
+    return true;
+  }
   const result = blockList.check(ip, incomingIpIsV4 ? 'ipv4' : 'ipv6');
 
   // If the ip is in the list, we store the result in the store
@@ -387,7 +395,9 @@ function getClientIp(req) {
 }
 
 function httpAuth(req) {
-  if (!(req.req || req).headers.authorization) { return; }
+  if (!(req.req || req).headers.authorization) {
+    return;
+  }
 
   var header = (req.req || req).headers.authorization;
   var appId, masterKey, javascriptKey;
@@ -432,7 +442,9 @@ export function allowCrossDomain(appId) {
     }
 
     const baseOrigins =
-      typeof config?.allowOrigin === 'string' ? [config.allowOrigin] : config?.allowOrigin ?? ['*'];
+      typeof config?.allowOrigin === 'string'
+        ? [config.allowOrigin]
+        : (config?.allowOrigin ?? ['*']);
     const requestOrigin = req.headers.origin;
     const allowOrigins =
       requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
@@ -538,7 +550,9 @@ export const addRateLimit = (route, config, cloud) => {
     const client = createClient({
       url: route.redisUrl,
     });
-    client.on('error', err => { log.error('Middlewares addRateLimit Redis client error', { error: err }) });
+    client.on('error', err => {
+      log.error('Middlewares addRateLimit Redis client error', { error: err });
+    });
     client.on('connect', () => {});
     client.on('reconnecting', () => {});
     client.on('ready', () => {});
@@ -683,7 +697,10 @@ function invalidRequest(req, res) {
 
 function malformedContext(req, res) {
   res.status(400);
-  res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
+  res.json({
+    code: Parse.Error.INVALID_JSON,
+    error: 'Invalid object for context.',
+  });
 }
 
 /**

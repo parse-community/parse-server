@@ -113,7 +113,10 @@ describe('Security Check', () => {
   describe('auto-run', () => {
     it('runs security checks on server start if enabled', async () => {
       const runnerSpy = spyOn(CheckRunner.prototype, 'run').and.callThrough();
-      await reconfigureServerWithSecurityConfig({ enableCheck: true, enableCheckLog: true });
+      await reconfigureServerWithSecurityConfig({
+        enableCheck: true,
+        enableCheckLog: true,
+      });
       expect(runnerSpy).toHaveBeenCalledTimes(1);
     });
 

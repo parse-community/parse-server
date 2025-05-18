@@ -832,7 +832,9 @@ describe('ParseLiveQuery', function () {
       new Promise(resolve => {
         subscription.on('update', obj => {
           expect(obj.get('foo')).toBe('yolo');
-          expect(obj.getACL().toJSON()).toEqual({ 'role:Test': { read: true } });
+          expect(obj.getACL().toJSON()).toEqual({
+            'role:Test': { read: true },
+          });
           resolve();
         });
       }),
@@ -858,7 +860,10 @@ describe('ParseLiveQuery', function () {
 
     subscription.on('create', async obj => {
       expect(obj.get('user').id).toBe(user.id);
-      expect(obj.get('createdWith')).toEqual({ action: 'login', authProvider: 'password' });
+      expect(obj.get('createdWith')).toEqual({
+        action: 'login',
+        authProvider: 'password',
+      });
       expect(obj.get('expiresAt')).toBeInstanceOf(Date);
       expect(obj.get('installationId')).toBeDefined();
       expect(obj.get('createdAt')).toBeInstanceOf(Date);
@@ -880,101 +885,107 @@ describe('ParseLiveQuery', function () {
     await expectAsync(query.subscribe()).toBeRejectedWith(new Error('Invalid session token'));
   });
 
-  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)('handle invalid websocket payload length', async done => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-      websocketTimeout: 100,
-    });
-    const object = new TestObject();
-    await object.save();
-
-    const query = new Parse.Query(TestObject);
-    query.equalTo('objectId', object.id);
-    const subscription = await query.subscribe();
-
-    // All control frames must have a payload length of 125 bytes or less.
-    // https://tools.ietf.org/html/rfc6455#section-5.5
-    //
-    // 0x89 = 10001001 = ping
-    // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
-    // https://tools.ietf.org/html/rfc6455#section-5.2
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.socket._socket.write(Buffer.from([0x89, 0xfe]));
-
-    subscription.on('update', async object => {
-      expect(object.get('foo')).toBe('bar');
-      done();
-    });
-    // Wait for Websocket timeout to reconnect
-    setTimeout(async () => {
-      object.set({ foo: 'bar' });
+  it_id('4ccc9508-ae6a-46ec-932a-9f5e49ab3b9e')(it)(
+    'handle invalid websocket payload length',
+    async done => {
+      await reconfigureServer({
+        liveQuery: {
+          classNames: ['TestObject'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+        websocketTimeout: 100,
+      });
+      const object = new TestObject();
       await object.save();
-    }, 1000);
-  });
 
-  it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)('should execute live query update on email validation', async done => {
-    const emailAdapter = {
-      sendVerificationEmail: () => {},
-      sendPasswordResetEmail: () => Promise.resolve(),
-      sendMail: () => {},
-    };
+      const query = new Parse.Query(TestObject);
+      query.equalTo('objectId', object.id);
+      const subscription = await query.subscribe();
 
-    await reconfigureServer({
-      maintenanceKey: 'test2',
-      liveQuery: {
-        classNames: [Parse.User],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-      websocketTimeout: 100,
-      appName: 'liveQueryEmailValidation',
-      verifyUserEmails: true,
-      emailAdapter: emailAdapter,
-      emailVerifyTokenValidityDuration: 20, // 0.5 second
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(() => {
-      const user = new Parse.User();
-      user.set('password', 'asdf');
-      user.set('email', 'asdf@example.com');
-      user.set('username', 'zxcv');
-      user
-        .signUp()
-        .then(() => {
-          const config = Config.get('test');
-          return config.database.find(
-            '_User',
-            {
-              username: 'zxcv',
-            },
-            {},
-            Auth.maintenance(config)
-          );
-        })
-        .then(async results => {
-          const foundUser = results[0];
-          const query = new Parse.Query('_User');
-          query.equalTo('objectId', foundUser.objectId);
-          const subscription = await query.subscribe();
+      // All control frames must have a payload length of 125 bytes or less.
+      // https://tools.ietf.org/html/rfc6455#section-5.5
+      //
+      // 0x89 = 10001001 = ping
+      // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
+      // https://tools.ietf.org/html/rfc6455#section-5.2
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
-          subscription.on('update', async object => {
-            expect(object).toBeDefined();
-            expect(object.get('emailVerified')).toBe(true);
-            done();
+      subscription.on('update', async object => {
+        expect(object.get('foo')).toBe('bar');
+        done();
+      });
+      // Wait for Websocket timeout to reconnect
+      setTimeout(async () => {
+        object.set({ foo: 'bar' });
+        await object.save();
+      }, 1000);
+    }
+  );
+
+  it_id('39a9191f-26dd-4e05-a379-297a67928de8')(it)(
+    'should execute live query update on email validation',
+    async done => {
+      const emailAdapter = {
+        sendVerificationEmail: () => {},
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      };
+
+      await reconfigureServer({
+        maintenanceKey: 'test2',
+        liveQuery: {
+          classNames: [Parse.User],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+        websocketTimeout: 100,
+        appName: 'liveQueryEmailValidation',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        emailVerifyTokenValidityDuration: 20, // 0.5 second
+        publicServerURL: 'http://localhost:8378/1',
+      }).then(() => {
+        const user = new Parse.User();
+        user.set('password', 'asdf');
+        user.set('email', 'asdf@example.com');
+        user.set('username', 'zxcv');
+        user
+          .signUp()
+          .then(() => {
+            const config = Config.get('test');
+            return config.database.find(
+              '_User',
+              {
+                username: 'zxcv',
+              },
+              {},
+              Auth.maintenance(config)
+            );
+          })
+          .then(async results => {
+            const foundUser = results[0];
+            const query = new Parse.Query('_User');
+            query.equalTo('objectId', foundUser.objectId);
+            const subscription = await query.subscribe();
+
+            subscription.on('update', async object => {
+              expect(object).toBeDefined();
+              expect(object.get('emailVerified')).toBe(true);
+              done();
+            });
+
+            const userController = new UserController(emailAdapter, 'test', {
+              verifyUserEmails: true,
+            });
+            userController.verifyEmail(foundUser._email_verify_token);
           });
-
-          const userController = new UserController(emailAdapter, 'test', {
-            verifyUserEmails: true,
-          });
-          userController.verifyEmail(foundUser._email_verify_token);
-        });
-    });
-  });
+      });
+    }
+  );
 
   it('should not broadcast event to client with invalid session token - avisory GHSA-2xm2-xj2q-qgpj', async done => {
     await reconfigureServer({
@@ -1142,7 +1153,10 @@ describe('ParseLiveQuery', function () {
       done();
     });
 
-    const secondPoint = new Parse.GeoPoint({ latitude: 40.0, longitude: -30.0 });
+    const secondPoint = new Parse.GeoPoint({
+      latitude: 40.0,
+      longitude: -30.0,
+    });
     object.set({ location: secondPoint });
     await object.save();
   });
@@ -1182,82 +1196,85 @@ describe('ParseLiveQuery', function () {
     await sleep(100);
     expect(server.liveQueryServer.server.address()).toBeNull();
     expect(server.liveQueryServer.subscriber.isOpen).toBeFalse();
-    
+
     liveQueryConnectionCount = await getConnectionsCount(server.liveQueryServer.server);
     expect(liveQueryConnectionCount).toBe(0);
   });
 
-  it_id('45655b74-716f-4fa1-a058-67eb21f3c3db')(it)('does shutdown separate liveQuery server', async () => {
-    await reconfigureServer({ appId: 'test_app_id' });
-    let close = false;
-    const config = {
-      appId: 'hello_test',
-      masterKey: 'world',
-      port: 1345,
-      mountPath: '/1',
-      serverURL: 'http://localhost:1345/1',
-      liveQuery: {
-        classNames: ['Yolo'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-      liveQueryServerOptions: {
-        port: 1346,
-      },
-      serverCloseComplete: () => {
-        close = true;
-      },
-    };
-    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
-      config.databaseAdapter = new databaseAdapter.constructor({
-        uri: databaseURI,
-        collectionPrefix: 'test_',
-      });
-      config.filesAdapter = defaultConfiguration.filesAdapter;
+  it_id('45655b74-716f-4fa1-a058-67eb21f3c3db')(it)(
+    'does shutdown separate liveQuery server',
+    async () => {
+      await reconfigureServer({ appId: 'test_app_id' });
+      let close = false;
+      const config = {
+        appId: 'hello_test',
+        masterKey: 'world',
+        port: 1345,
+        mountPath: '/1',
+        serverURL: 'http://localhost:1345/1',
+        liveQuery: {
+          classNames: ['Yolo'],
+        },
+        startLiveQueryServer: true,
+        verbose: false,
+        silent: true,
+        liveQueryServerOptions: {
+          port: 1346,
+        },
+        serverCloseComplete: () => {
+          close = true;
+        },
+      };
+      if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+        config.databaseAdapter = new databaseAdapter.constructor({
+          uri: databaseURI,
+          collectionPrefix: 'test_',
+        });
+        config.filesAdapter = defaultConfiguration.filesAdapter;
+      }
+      const parseServer = await ParseServer.startApp(config);
+      expect(parseServer.liveQueryServer).toBeDefined();
+      expect(parseServer.liveQueryServer.server).not.toBe(parseServer.server);
+
+      // Open a connection to the liveQuery server
+      const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+      client.serverURL = 'ws://localhost:1346/1';
+      const query = await new Parse.Query('Yolo').subscribe();
+
+      // Open a connection to the parse server
+      const health = await request({
+        method: 'GET',
+        url: `http://localhost:1345/1/health`,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'hello_test',
+          'X-Parse-Master-Key': 'world',
+          'Content-Type': 'application/json',
+        },
+        agent: new http.Agent({ keepAlive: true }),
+      }).then(res => res.data);
+      expect(health.status).toBe('ok');
+
+      let parseConnectionCount = await getConnectionsCount(parseServer.server);
+      let liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
+
+      expect(parseConnectionCount > 0).toBe(true);
+      expect(liveQueryConnectionCount > 0).toBe(true);
+      await Promise.all([
+        parseServer.handleShutdown(),
+        new Promise(resolve => query.on('close', resolve)),
+      ]);
+      expect(close).toBe(true);
+      await sleep(100);
+      expect(parseServer.liveQueryServer.server.address()).toBeNull();
+      expect(parseServer.liveQueryServer.subscriber.isOpen).toBeFalse();
+
+      parseConnectionCount = await getConnectionsCount(parseServer.server);
+      liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
+      expect(parseConnectionCount).toBe(0);
+      expect(liveQueryConnectionCount).toBe(0);
     }
-    const parseServer = await ParseServer.startApp(config);
-    expect(parseServer.liveQueryServer).toBeDefined();
-    expect(parseServer.liveQueryServer.server).not.toBe(parseServer.server);
-
-    // Open a connection to the liveQuery server
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.serverURL = 'ws://localhost:1346/1';
-    const query = await new Parse.Query('Yolo').subscribe();
-
-    // Open a connection to the parse server
-    const health = await request({
-      method: 'GET',
-      url: `http://localhost:1345/1/health`,
-      json: true,
-      headers: {
-        'X-Parse-Application-Id': 'hello_test',
-        'X-Parse-Master-Key': 'world',
-        'Content-Type': 'application/json',
-      },
-      agent: new http.Agent({ keepAlive: true }),
-    }).then(res => res.data);
-    expect(health.status).toBe('ok');
-
-    let parseConnectionCount = await getConnectionsCount(parseServer.server);
-    let liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
-
-    expect(parseConnectionCount > 0).toBe(true);
-    expect(liveQueryConnectionCount > 0).toBe(true);
-    await Promise.all([
-      parseServer.handleShutdown(),
-      new Promise(resolve => query.on('close', resolve)),
-    ]);
-    expect(close).toBe(true);
-    await sleep(100);
-    expect(parseServer.liveQueryServer.server.address()).toBeNull();
-    expect(parseServer.liveQueryServer.subscriber.isOpen).toBeFalse();
-
-    parseConnectionCount = await getConnectionsCount(parseServer.server);
-    liveQueryConnectionCount = await getConnectionsCount(parseServer.liveQueryServer.server);
-    expect(parseConnectionCount).toBe(0);
-    expect(liveQueryConnectionCount).toBe(0);
-  });
+  );
 
   it('prevent afterSave trigger if not exists', async () => {
     await reconfigureServer({

@@ -1143,9 +1143,9 @@ describe('phant auth adapter', () => {
       auth: {
         phantauth: {
           enableInsecureAuth: true,
-        }
-      }
-    })
+        },
+      },
+    });
     const authData = {
       id: 'fakeid',
       access_token: 'sometoken',
@@ -1218,26 +1218,29 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it_id('7bfa55ab-8fd7-4526-992e-6de3df16bf9c')(it)('should use algorithm from key header to verify id_token (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://www.facebook.com',
-      aud: 'secret',
-      exp: Date.now(),
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+  it_id('7bfa55ab-8fd7-4526-992e-6de3df16bf9c')(it)(
+    'should use algorithm from key header to verify id_token (facebook.com)',
+    async () => {
+      const fakeClaim = {
+        iss: 'https://www.facebook.com',
+        aud: 'secret',
+        exp: Date.now(),
+        sub: 'the_user_id',
+      };
+      const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+      const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken.header);
+      spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+      spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
-    const result = await facebook.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
-    );
-    expect(result).toEqual(fakeClaim);
-    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
-  });
+      const result = await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      expect(result).toEqual(fakeClaim);
+      expect(jwt.verify.calls.first().args[2].algorithms).toEqual(fakeDecodedToken.header.alg);
+    }
+  );
 
   it('should not verify invalid id_token', async () => {
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
@@ -1268,89 +1271,101 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it_id('4bcb1a1a-11f8-4e12-a3f6-73f7e25e355a')(it)('using client id as string) should verify id_token (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://www.facebook.com',
-      aud: 'secret',
-      exp: Date.now(),
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+  it_id('4bcb1a1a-11f8-4e12-a3f6-73f7e25e355a')(it)(
+    'using client id as string) should verify id_token (facebook.com)',
+    async () => {
+      const fakeClaim = {
+        iss: 'https://www.facebook.com',
+        aud: 'secret',
+        exp: Date.now(),
+        sub: 'the_user_id',
+      };
+      const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+      const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+      spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
-    const result = await facebook.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
-    );
-    expect(result).toEqual(fakeClaim);
-  });
-
-  it_id('c521a272-2ac2-4d8b-b5ed-ea250336d8b1')(it)('(using client id as array) should verify id_token (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://www.facebook.com',
-      aud: 'secret',
-      exp: Date.now(),
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    const result = await facebook.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret'] }
-    );
-    expect(result).toEqual(fakeClaim);
-  });
-
-  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')(it)('(using client id as array with multiple items) should verify id_token (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://www.facebook.com',
-      aud: 'secret',
-      exp: Date.now(),
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    const result = await facebook.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret', 'secret 123'] }
-    );
-    expect(result).toEqual(fakeClaim);
-  });
-
-  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')(it)('(using client id as string) should throw error with with invalid jwt issuer (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://not.facebook.com',
-      sub: 'the_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-
-    try {
-      await facebook.validateAuthData(
+      const result = await facebook.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
         { clientId: 'secret' }
       );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe(
-        'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
-      );
+      expect(result).toEqual(fakeClaim);
     }
-  });
+  );
+
+  it_id('c521a272-2ac2-4d8b-b5ed-ea250336d8b1')(it)(
+    '(using client id as array) should verify id_token (facebook.com)',
+    async () => {
+      const fakeClaim = {
+        iss: 'https://www.facebook.com',
+        aud: 'secret',
+        exp: Date.now(),
+        sub: 'the_user_id',
+      };
+      const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+      const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+      spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+      const result = await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: ['secret'] }
+      );
+      expect(result).toEqual(fakeClaim);
+    }
+  );
+
+  it_id('e3f16404-18e9-4a87-a555-4710cfbdac67')(it)(
+    '(using client id as array with multiple items) should verify id_token (facebook.com)',
+    async () => {
+      const fakeClaim = {
+        iss: 'https://www.facebook.com',
+        aud: 'secret',
+        exp: Date.now(),
+        sub: 'the_user_id',
+      };
+      const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+      const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+      spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+      const result = await facebook.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: ['secret', 'secret 123'] }
+      );
+      expect(result).toEqual(fakeClaim);
+    }
+  );
+
+  it_id('549c33a1-3a6b-4732-8cf6-8f010ad4569c')(it)(
+    '(using client id as string) should throw error with with invalid jwt issuer (facebook.com)',
+    async () => {
+      const fakeClaim = {
+        iss: 'https://not.facebook.com',
+        sub: 'the_user_id',
+      };
+      const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+      const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+      spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+      try {
+        await facebook.validateAuthData(
+          { id: 'the_user_id', token: 'the_token' },
+          { clientId: 'secret' }
+        );
+        fail();
+      } catch (e) {
+        expect(e.message).toBe(
+          'id token not issued by correct OpenID provider - expected: https://www.facebook.com | from: https://not.facebook.com'
+        );
+      }
+    }
+  );
 
   // TODO: figure out a way to generate our own facebook signed tokens, perhaps with a parse facebook account
   // and a private key
@@ -1459,28 +1474,31 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it_id('c194d902-e697-46c9-a303-82c2d914473c')(it)('should throw error with with invalid user id (facebook.com)', async () => {
-    const fakeClaim = {
-      iss: 'https://www.facebook.com',
-      aud: 'invalid_client_id',
-      sub: 'a_different_user_id',
-    };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
-    const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
-    spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
-    spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
-    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+  it_id('c194d902-e697-46c9-a303-82c2d914473c')(it)(
+    'should throw error with with invalid user id (facebook.com)',
+    async () => {
+      const fakeClaim = {
+        iss: 'https://www.facebook.com',
+        aud: 'invalid_client_id',
+        sub: 'a_different_user_id',
+      };
+      const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+      const fakeSigningKey = { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      spyOn(authUtils, 'getHeaderFromToken').and.callFake(() => fakeDecodedToken);
+      spyOn(authUtils, 'getSigningKey').and.resolveTo(fakeSigningKey);
+      spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
-    try {
-      await facebook.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
-      );
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('auth data is invalid for this user.');
+      try {
+        await facebook.validateAuthData(
+          { id: 'the_user_id', token: 'the_token' },
+          { clientId: 'secret' }
+        );
+        fail();
+      } catch (e) {
+        expect(e.message).toBe('auth data is invalid for this user.');
+      }
     }
-  });
+  );
 });
 
 describe('OTP TOTP auth adatper', () => {
@@ -1598,7 +1616,13 @@ describe('OTP TOTP auth adatper', () => {
     const new_token = new_totp.generate();
     await user.save(
       {
-        authData: { mfa: { secret: new_secret.base32, token: new_token, old: totp.generate() } },
+        authData: {
+          mfa: {
+            secret: new_secret.base32,
+            token: new_token,
+            old: totp.generate(),
+          },
+        },
       },
       { sessionToken: user.getSessionToken() }
     );
@@ -1633,7 +1657,9 @@ describe('OTP TOTP auth adatper', () => {
     await expectAsync(
       user.save(
         {
-          authData: { mfa: { secret: new_secret.base32, token: new_token, old: '123' } },
+          authData: {
+            mfa: { secret: new_secret.base32, token: new_token, old: '123' },
+          },
         },
         { sessionToken: user.getSessionToken() }
       )
@@ -1694,7 +1720,10 @@ describe('OTP TOTP auth adatper', () => {
       }).catch(e => {
         throw e.data;
       })
-    ).toBeRejectedWith({ code: Parse.Error.SCRIPT_FAILED, error: 'Invalid MFA token' });
+    ).toBeRejectedWith({
+      code: Parse.Error.SCRIPT_FAILED,
+      error: 'Invalid MFA token',
+    });
   });
 });
 
@@ -1780,7 +1809,10 @@ describe('OTP SMS auth adatper', () => {
         },
       }),
     }).catch(e => e.data);
-    expect(res).toEqual({ code: Parse.Error.SCRIPT_FAILED, error: 'Please enter the token' });
+    expect(res).toEqual({
+      code: Parse.Error.SCRIPT_FAILED,
+      error: 'Please enter the token',
+    });
     expect(spy).toHaveBeenCalledWith(code, '+11111111111');
     const response = await request({
       headers,

@@ -1,5 +1,5 @@
-const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
-  .GridFSBucketAdapter;
+const GridFSBucketAdapter =
+  require('../lib/Adapters/Files/GridFSBucketAdapter').GridFSBucketAdapter;
 const { randomString } = require('../lib/cryptoUtils');
 const databaseURI = 'mongodb://localhost:27017/parse';
 const request = require('../lib/request');

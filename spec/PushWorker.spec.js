@@ -271,99 +271,105 @@ describe('PushWorker', () => {
       toAwait.then(done).catch(done);
     });
 
-    it_id('764d28ab-241b-4b96-8ce9-e03541850e3f')(it)('tracks push status per UTC offsets', done => {
-      const config = Config.get('test');
-      const handler = pushStatusHandler(config);
-      const spy = spyOn(rest, 'update').and.callThrough();
-      const UTCOffset = 1;
-      handler
-        .setInitial()
-        .then(() => {
-          return handler.trackSent(
-            [
-              {
-                transmitted: false,
-                device: {
-                  deviceToken: 1,
-                  deviceType: 'ios',
+    it_id('764d28ab-241b-4b96-8ce9-e03541850e3f')(it)(
+      'tracks push status per UTC offsets',
+      done => {
+        const config = Config.get('test');
+        const handler = pushStatusHandler(config);
+        const spy = spyOn(rest, 'update').and.callThrough();
+        const UTCOffset = 1;
+        handler
+          .setInitial()
+          .then(() => {
+            return handler.trackSent(
+              [
+                {
+                  transmitted: false,
+                  device: {
+                    deviceToken: 1,
+                    deviceType: 'ios',
+                  },
                 },
-              },
-              {
-                transmitted: true,
-                device: {
-                  deviceToken: 1,
-                  deviceType: 'ios',
+                {
+                  transmitted: true,
+                  device: {
+                    deviceToken: 1,
+                    deviceType: 'ios',
+                  },
                 },
+              ],
+              UTCOffset
+            );
+          })
+          .then(() => {
+            expect(spy).toHaveBeenCalled();
+            const lastCall = spy.calls.mostRecent();
+            expect(lastCall.args[2]).toBe(`_PushStatus`);
+            expect(lastCall.args[4]).toEqual({
+              numSent: { __op: 'Increment', amount: 1 },
+              numFailed: { __op: 'Increment', amount: 1 },
+              'sentPerType.ios': { __op: 'Increment', amount: 1 },
+              'failedPerType.ios': { __op: 'Increment', amount: 1 },
+              [`sentPerUTCOffset.${UTCOffset}`]: {
+                __op: 'Increment',
+                amount: 1,
               },
-            ],
-            UTCOffset
-          );
-        })
-        .then(() => {
-          expect(spy).toHaveBeenCalled();
-          const lastCall = spy.calls.mostRecent();
-          expect(lastCall.args[2]).toBe(`_PushStatus`);
-          expect(lastCall.args[4]).toEqual({
-            numSent: { __op: 'Increment', amount: 1 },
-            numFailed: { __op: 'Increment', amount: 1 },
-            'sentPerType.ios': { __op: 'Increment', amount: 1 },
-            'failedPerType.ios': { __op: 'Increment', amount: 1 },
-            [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-            [`failedPerUTCOffset.${UTCOffset}`]: {
-              __op: 'Increment',
-              amount: 1,
-            },
-            count: { __op: 'Increment', amount: -1 },
-            status: 'running',
-          });
-          const query = new Parse.Query('_PushStatus');
-          return query.get(handler.objectId, { useMasterKey: true });
-        })
-        .then(pushStatus => {
-          const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
-          expect(sentPerUTCOffset['1']).toBe(1);
-          const failedPerUTCOffset = pushStatus.get('failedPerUTCOffset');
-          expect(failedPerUTCOffset['1']).toBe(1);
-          return handler.trackSent(
-            [
-              {
-                transmitted: false,
-                device: {
-                  deviceToken: 1,
-                  deviceType: 'ios',
+              [`failedPerUTCOffset.${UTCOffset}`]: {
+                __op: 'Increment',
+                amount: 1,
+              },
+              count: { __op: 'Increment', amount: -1 },
+              status: 'running',
+            });
+            const query = new Parse.Query('_PushStatus');
+            return query.get(handler.objectId, { useMasterKey: true });
+          })
+          .then(pushStatus => {
+            const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
+            expect(sentPerUTCOffset['1']).toBe(1);
+            const failedPerUTCOffset = pushStatus.get('failedPerUTCOffset');
+            expect(failedPerUTCOffset['1']).toBe(1);
+            return handler.trackSent(
+              [
+                {
+                  transmitted: false,
+                  device: {
+                    deviceToken: 1,
+                    deviceType: 'ios',
+                  },
                 },
-              },
-              {
-                transmitted: true,
-                device: {
-                  deviceToken: 1,
-                  deviceType: 'ios',
+                {
+                  transmitted: true,
+                  device: {
+                    deviceToken: 1,
+                    deviceType: 'ios',
+                  },
                 },
-              },
-              {
-                transmitted: true,
-                device: {
-                  deviceToken: 1,
-                  deviceType: 'ios',
+                {
+                  transmitted: true,
+                  device: {
+                    deviceToken: 1,
+                    deviceType: 'ios',
+                  },
                 },
-              },
-            ],
-            UTCOffset
-          );
-        })
-        .then(() => {
-          const query = new Parse.Query('_PushStatus');
-          return query.get(handler.objectId, { useMasterKey: true });
-        })
-        .then(pushStatus => {
-          const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
-          expect(sentPerUTCOffset['1']).toBe(3);
-          const failedPerUTCOffset = pushStatus.get('failedPerUTCOffset');
-          expect(failedPerUTCOffset['1']).toBe(2);
-        })
-        .then(done)
-        .catch(done.fail);
-    });
+              ],
+              UTCOffset
+            );
+          })
+          .then(() => {
+            const query = new Parse.Query('_PushStatus');
+            return query.get(handler.objectId, { useMasterKey: true });
+          })
+          .then(pushStatus => {
+            const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
+            expect(sentPerUTCOffset['1']).toBe(3);
+            const failedPerUTCOffset = pushStatus.get('failedPerUTCOffset');
+            expect(failedPerUTCOffset['1']).toBe(2);
+          })
+          .then(done)
+          .catch(done.fail);
+      }
+    );
 
     it('tracks push status per UTC offsets with negative offsets', done => {
       const config = Config.get('test');

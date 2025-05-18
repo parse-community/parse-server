@@ -322,7 +322,11 @@ describe('DatabaseController', function () {
     const databaseController = new DatabaseController();
 
     it('objectToEntriesStrings', done => {
-      const output = databaseController.objectToEntriesStrings({ a: 1, b: 2, c: 3 });
+      const output = databaseController.objectToEntriesStrings({
+        a: 1,
+        b: 2,
+        c: 3,
+      });
       expect(output).toEqual(['"a":1', '"b":2', '"c":3']);
       done();
     });
@@ -337,10 +341,14 @@ describe('DatabaseController', function () {
       });
       expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 1 }] })).toEqual({ a: 1 });
       expect(
-        databaseController.reduceOrOperation({ $or: [{ a: 1, b: 2, c: 3 }, { a: 1 }] })
+        databaseController.reduceOrOperation({
+          $or: [{ a: 1, b: 2, c: 3 }, { a: 1 }],
+        })
       ).toEqual({ a: 1 });
       expect(
-        databaseController.reduceOrOperation({ $or: [{ b: 2 }, { a: 1, b: 2, c: 3 }] })
+        databaseController.reduceOrOperation({
+          $or: [{ b: 2 }, { a: 1, b: 2, c: 3 }],
+        })
       ).toEqual({ b: 2 });
       done();
     });
@@ -357,7 +365,9 @@ describe('DatabaseController', function () {
         a: 1,
       });
       expect(
-        databaseController.reduceAndOperation({ $and: [{ a: 1, b: 2, c: 3 }, { b: 2 }] })
+        databaseController.reduceAndOperation({
+          $and: [{ a: 1, b: 2, c: 3 }, { b: 2 }],
+        })
       ).toEqual({ a: 1, b: 2, c: 3 });
       done();
     });
@@ -515,7 +525,11 @@ describe('DatabaseController', function () {
     it('should not find a case insensitive user by email with convertEmailToLowercase', async () => {
       await reconfigureServer({ convertEmailToLowercase: true });
       const user = new Parse.User();
-      await user.save({ username: 'EXAMPLE', email: 'EXAMPLE@EXAMPLE.COM', password: 'password' });
+      await user.save({
+        username: 'EXAMPLE',
+        email: 'EXAMPLE@EXAMPLE.COM',
+        password: 'password',
+      });
 
       const query = new Parse.Query(Parse.User);
       query.equalTo('email', 'EXAMPLE@EXAMPLE.COM');

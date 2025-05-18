@@ -145,7 +145,9 @@ describe('Parse.Session', () => {
 
   it('cannot edit session with known ID', async () => {
     await setupTestUsers();
-    const [first, second] = await new Parse.Query(Parse.Session).find({ useMasterKey: true });
+    const [first, second] = await new Parse.Query(Parse.Session).find({
+      useMasterKey: true,
+    });
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Rest-API-Key': 'rest',

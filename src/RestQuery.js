@@ -749,7 +749,12 @@ _UnsafeRestQuery.prototype.runFind = async function (options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
-  const results = await this.config.database.find(this.className, this.restWhere, findOptions, this.auth);
+  const results = await this.config.database.find(
+    this.className,
+    this.restWhere,
+    findOptions,
+    this.auth
+  );
   if (this.className === '_User' && !findOptions.explain) {
     for (var result of results) {
       this.cleanResultAuthData(result);

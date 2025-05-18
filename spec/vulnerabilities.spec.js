@@ -39,9 +39,15 @@ describe('Vulnerabilities', () => {
 
       it('refuses session token of user with poisoned object ID', async () => {
         await expectAsync(
-          new Parse.Query(Parse.User).find({ sessionToken: poisonedUser.getSessionToken() })
-        ).toBeRejectedWith(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.'));
-        await new Parse.Query(Parse.User).find({ sessionToken: innocentUser.getSessionToken() });
+          new Parse.Query(Parse.User).find({
+            sessionToken: poisonedUser.getSessionToken(),
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid object ID.')
+        );
+        await new Parse.Query(Parse.User).find({
+          sessionToken: innocentUser.getSessionToken(),
+        });
       });
     });
   });
@@ -248,36 +254,39 @@ describe('Vulnerabilities', () => {
       );
     });
 
-    it_id('e8b5f1e1-8326-4c70-b5f4-1e8678dfff8d')(it)('denies creating a hook with polluted data', async () => {
-      const express = require('express');
-      const port = 34567;
-      const hookServerURL = 'http://localhost:' + port;
-      const app = express();
-      app.use(express.json({ type: '*/*' }));
-      const server = await new Promise(resolve => {
-        const res = app.listen(port, undefined, () => resolve(res));
-      });
-      app.post('/BeforeSave', function (req, res) {
-        const object = Parse.Object.fromJSON(req.body.object);
-        object.set('hello', 'world');
-        object.set('obj', {
-          constructor: {
-            prototype: {
-              dummy: 0,
-            },
-          },
+    it_id('e8b5f1e1-8326-4c70-b5f4-1e8678dfff8d')(it)(
+      'denies creating a hook with polluted data',
+      async () => {
+        const express = require('express');
+        const port = 34567;
+        const hookServerURL = 'http://localhost:' + port;
+        const app = express();
+        app.use(express.json({ type: '*/*' }));
+        const server = await new Promise(resolve => {
+          const res = app.listen(port, undefined, () => resolve(res));
         });
-        res.json({ success: object });
-      });
-      await Parse.Hooks.createTrigger('TestObject', 'beforeSave', hookServerURL + '/BeforeSave');
-      await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.INVALID_KEY_NAME,
-          'Prohibited keyword in request data: {"key":"constructor"}.'
-        )
-      );
-      await new Promise(resolve => server.close(resolve));
-    });
+        app.post('/BeforeSave', function (req, res) {
+          const object = Parse.Object.fromJSON(req.body.object);
+          object.set('hello', 'world');
+          object.set('obj', {
+            constructor: {
+              prototype: {
+                dummy: 0,
+              },
+            },
+          });
+          res.json({ success: object });
+        });
+        await Parse.Hooks.createTrigger('TestObject', 'beforeSave', hookServerURL + '/BeforeSave');
+        await expectAsync(new Parse.Object('TestObject').save()).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.INVALID_KEY_NAME,
+            'Prohibited keyword in request data: {"key":"constructor"}.'
+          )
+        );
+        await new Promise(resolve => server.close(resolve));
+      }
+    );
 
     it('denies write request with custom denylist of key/value', async () => {
       await reconfigureServer({
@@ -488,8 +497,7 @@ describe('Postgres regex sanitizater', () => {
 
     const response = await request({
       method: 'GET',
-      url:
-        "http://localhost:8378/1/classes/_User?where[username][$regex]=A'B'%3BSELECT+PG_SLEEP(3)%3B--",
+      url: "http://localhost:8378/1/classes/_User?where[username][$regex]=A'B'%3BSELECT+PG_SLEEP(3)%3B--",
       headers: {
         'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',

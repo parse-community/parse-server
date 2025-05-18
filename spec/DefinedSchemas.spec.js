@@ -162,7 +162,11 @@ describe('DefinedSchemas', () => {
         aString: { type: 'String' },
         aStringWithDefault: { type: 'String', defaultValue: 'Test' },
         aStringWithRequired: { type: 'String', required: true },
-        aStringWithRequiredAndDefault: { type: 'String', required: true, defaultValue: 'Test' },
+        aStringWithRequiredAndDefault: {
+          type: 'String',
+          required: true,
+          defaultValue: 'Test',
+        },
         aBoolean: { type: 'Boolean' },
         aFile: { type: 'File' },
         aNumber: { type: 'Number' },
@@ -198,7 +202,9 @@ describe('DefinedSchemas', () => {
       const server = await reconfigureServer();
 
       await new DefinedSchemas(
-        { definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }] },
+        {
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
+        },
         server.config
       ).execute();
 
@@ -246,7 +252,9 @@ describe('DefinedSchemas', () => {
       const server = await reconfigureServer();
 
       await new DefinedSchemas(
-        { definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }] },
+        {
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
+        },
         server.config
       ).execute();
 
@@ -274,7 +282,9 @@ describe('DefinedSchemas', () => {
       const server = await reconfigureServer();
 
       await new DefinedSchemas(
-        { definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }] },
+        {
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
+        },
         server.config
       ).execute();
 
@@ -285,7 +295,9 @@ describe('DefinedSchemas', () => {
       await object.save({ aField: 'Hello' }, { useMasterKey: true });
 
       await new DefinedSchemas(
-        { definitions: [{ className: 'Test', fields: { aField: { type: 'Number' } } }] },
+        {
+          definitions: [{ className: 'Test', fields: { aField: { type: 'Number' } } }],
+        },
         server.config
       ).execute();
 
@@ -299,7 +311,9 @@ describe('DefinedSchemas', () => {
       const server = await reconfigureServer();
 
       await new DefinedSchemas(
-        { definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }] },
+        {
+          definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
+        },
         server.config
       ).execute();
 
@@ -312,7 +326,10 @@ describe('DefinedSchemas', () => {
       await new DefinedSchemas(
         {
           definitions: [
-            { className: 'Test', fields: { aField: { type: 'String', required: true } } },
+            {
+              className: 'Test',
+              fields: { aField: { type: 'String', required: true } },
+            },
           ],
         },
         server.config
@@ -333,7 +350,13 @@ describe('DefinedSchemas', () => {
       const indexes = { complex: { createdAt: 1, updatedAt: 1 } };
 
       const schemas = {
-        definitions: [{ className: 'Test', fields: { aField: { type: 'String' } }, indexes }],
+        definitions: [
+          {
+            className: 'Test',
+            fields: { aField: { type: 'String' } },
+            indexes,
+          },
+        ],
       };
       await new DefinedSchemas(schemas, server.config).execute();
 
@@ -510,7 +533,10 @@ describe('DefinedSchemas', () => {
         definitions: [
           {
             className: 'Test',
-            fields: { aField: { type: 'String' }, anotherField: { type: 'Object' } },
+            fields: {
+              aField: { type: 'String' },
+              anotherField: { type: 'Object' },
+            },
             classLevelPermissions: expectedTestCLP,
           },
         ],
@@ -530,7 +556,12 @@ describe('DefinedSchemas', () => {
     it('should force addField to empty', async () => {
       const server = await reconfigureServer();
       const schemas = {
-        definitions: [{ className: 'Test', classLevelPermissions: { addField: { '*': true } } }],
+        definitions: [
+          {
+            className: 'Test',
+            classLevelPermissions: { addField: { '*': true } },
+          },
+        ],
       };
       await new DefinedSchemas(schemas, server.config).execute();
 
@@ -559,7 +590,9 @@ describe('DefinedSchemas', () => {
       schema: { definitions: [{ className: '_User' }, { className: 'Test' }] },
     });
 
-    await reconfigureServer({ schema: { definitions: [{ className: '_User' }] } });
+    await reconfigureServer({
+      schema: { definitions: [{ className: '_User' }] },
+    });
 
     const schema = await new Parse.Schema('Test').get();
     expect(schema.className).toEqual('Test');
@@ -593,7 +626,9 @@ describe('DefinedSchemas', () => {
     await reconfigureServer({
       schema: { definitions: [{ className: '_User' }, { className: 'Test' }] },
     });
-    await reconfigureServer({ schema: { definitions: [{ className: '_User' }] } });
+    await reconfigureServer({
+      schema: { definitions: [{ className: '_User' }] },
+    });
 
     let schemas = await Parse.Schema.all();
     expect(schemas.length).toEqual(4);
@@ -626,7 +661,9 @@ describe('DefinedSchemas', () => {
   });
 
   it('should use logger in case of error', async () => {
-    const server = await reconfigureServer({ schema: { definitions: [{ className: '_User' }] } });
+    const server = await reconfigureServer({
+      schema: { definitions: [{ className: '_User' }] },
+    });
     const error = new Error('A test error');
     const logger = require('../lib/logger').logger;
     spyOn(DefinedSchemas.prototype, 'wait').and.resolveTo();
@@ -636,48 +673,55 @@ describe('DefinedSchemas', () => {
     });
 
     await new DefinedSchemas(
-      { definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }] },
+      {
+        definitions: [{ className: 'Test', fields: { aField: { type: 'String' } } }],
+      },
       server.config
     ).execute();
 
     expect(logger.error).toHaveBeenCalledWith(`Failed to run migrations: ${error.toString()}`);
   });
 
-  it_id('a18bf4f2-25c8-4de3-b986-19cb1ab163b8')(it)('should perform migration in parallel without failing', async () => {
-    const server = await reconfigureServer();
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callThrough();
-    const migrationOptions = {
-      definitions: [
-        {
-          className: 'Test',
-          fields: { aField: { type: 'String' } },
-          indexes: { aField: { aField: 1 } },
-          classLevelPermissions: {
-            create: { requiresAuthentication: true },
+  it_id('a18bf4f2-25c8-4de3-b986-19cb1ab163b8')(it)(
+    'should perform migration in parallel without failing',
+    async () => {
+      const server = await reconfigureServer();
+      const logger = require('../lib/logger').logger;
+      spyOn(logger, 'error').and.callThrough();
+      const migrationOptions = {
+        definitions: [
+          {
+            className: 'Test',
+            fields: { aField: { type: 'String' } },
+            indexes: { aField: { aField: 1 } },
+            classLevelPermissions: {
+              create: { requiresAuthentication: true },
+            },
           },
-        },
-      ],
-    };
+        ],
+      };
 
-    // Simulate parallel deployment
-    await Promise.all([
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-      new DefinedSchemas(migrationOptions, server.config).execute(),
-    ]);
+      // Simulate parallel deployment
+      await Promise.all([
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+        new DefinedSchemas(migrationOptions, server.config).execute(),
+      ]);
 
-    const testSchema = (await Parse.Schema.all()).find(
-      ({ className }) => className === migrationOptions.definitions[0].className
-    );
+      const testSchema = (await Parse.Schema.all()).find(
+        ({ className }) => className === migrationOptions.definitions[0].className
+      );
 
-    expect(testSchema.indexes.aField).toEqual({ aField: 1 });
-    expect(testSchema.fields.aField).toEqual({ type: 'String' });
-    expect(testSchema.classLevelPermissions.create).toEqual({ requiresAuthentication: true });
-    expect(logger.error).toHaveBeenCalledTimes(0);
-  });
+      expect(testSchema.indexes.aField).toEqual({ aField: 1 });
+      expect(testSchema.fields.aField).toEqual({ type: 'String' });
+      expect(testSchema.classLevelPermissions.create).toEqual({
+        requiresAuthentication: true,
+      });
+      expect(logger.error).toHaveBeenCalledTimes(0);
+    }
+  );
 
   it('should not affect cacheAdapter', async () => {
     const server = await reconfigureServer();

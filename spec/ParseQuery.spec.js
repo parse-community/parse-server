@@ -6,7 +6,8 @@
 
 const Parse = require('parse/node');
 const request = require('../lib/request');
-const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
+const ParseServerRESTController =
+  require('../lib/ParseServerRESTController').ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 
 const masterKeyHeaders = {
@@ -592,40 +593,43 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_id('25bb35a6-e953-4d6d-a31c-66324d5ae076')(it)('containsAll object array queries', function (done) {
-    const MessageSet = Parse.Object.extend({ className: 'MessageSet' });
+  it_id('25bb35a6-e953-4d6d-a31c-66324d5ae076')(it)(
+    'containsAll object array queries',
+    function (done) {
+      const MessageSet = Parse.Object.extend({ className: 'MessageSet' });
 
-    const messageList = [];
-    for (let i = 0; i < 4; ++i) {
-      messageList.push(new TestObject({ i: i }));
-    }
+      const messageList = [];
+      for (let i = 0; i < 4; ++i) {
+        messageList.push(new TestObject({ i: i }));
+      }
 
-    Parse.Object.saveAll(messageList).then(function () {
-      equal(messageList.length, 4);
+      Parse.Object.saveAll(messageList).then(function () {
+        equal(messageList.length, 4);
 
-      const messageSetList = [];
-      messageSetList.push(new MessageSet({ messages: messageList }));
+        const messageSetList = [];
+        messageSetList.push(new MessageSet({ messages: messageList }));
 
-      const someList = [];
-      someList.push(messageList[0]);
-      someList.push(messageList[1]);
-      someList.push(messageList[3]);
-      messageSetList.push(new MessageSet({ messages: someList }));
+        const someList = [];
+        someList.push(messageList[0]);
+        someList.push(messageList[1]);
+        someList.push(messageList[3]);
+        messageSetList.push(new MessageSet({ messages: someList }));
 
-      Parse.Object.saveAll(messageSetList).then(function () {
-        const inList = [];
-        inList.push(messageList[0]);
-        inList.push(messageList[2]);
+        Parse.Object.saveAll(messageSetList).then(function () {
+          const inList = [];
+          inList.push(messageList[0]);
+          inList.push(messageList[2]);
 
-        const query = new Parse.Query(MessageSet);
-        query.containsAll('messages', inList);
-        query.find().then(function (results) {
-          equal(results.length, 1);
-          done();
+          const query = new Parse.Query(MessageSet);
+          query.containsAll('messages', inList);
+          query.find().then(function (results) {
+            equal(results.length, 1);
+            done();
+          });
         });
       });
-    });
-  });
+    }
+  );
 
   it('containsAllStartingWith should match all strings that starts with string', done => {
     const object = new Parse.Object('Object');
@@ -707,40 +711,43 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_id('3ea6ae04-bcc2-453d-8817-4c64d059c2f6')(it)('containsAllStartingWith values must be all of type starting with regex', done => {
-    const object = new Parse.Object('Object');
-    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+  it_id('3ea6ae04-bcc2-453d-8817-4c64d059c2f6')(it)(
+    'containsAllStartingWith values must be all of type starting with regex',
+    done => {
+      const object = new Parse.Object('Object');
+      object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
 
-    object
-      .save()
-      .then(() => {
-        equal(object.isNew(), false);
+      object
+        .save()
+        .then(() => {
+          equal(object.isNew(), false);
 
-        return request({
-          url: Parse.serverURL + '/classes/Object',
-          qs: {
-            where: JSON.stringify({
-              strings: {
-                $all: [
-                  { $regex: '^\\Qthe\\E' },
-                  { $regex: '^\\Qlazy\\E' },
-                  { $regex: '^\\Qfox\\E' },
-                  { $unknown: /unknown/ },
-                ],
-              },
-            }),
-          },
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-Javascript-Key': Parse.javaScriptKey,
-            'Content-Type': 'application/json',
-          },
+          return request({
+            url: Parse.serverURL + '/classes/Object',
+            qs: {
+              where: JSON.stringify({
+                strings: {
+                  $all: [
+                    { $regex: '^\\Qthe\\E' },
+                    { $regex: '^\\Qlazy\\E' },
+                    { $regex: '^\\Qfox\\E' },
+                    { $unknown: /unknown/ },
+                  ],
+                },
+              }),
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
+            },
+          });
+        })
+        .then(done.fail, function () {
+          done();
         });
-      })
-      .then(done.fail, function () {
-        done();
-      });
-  });
+    }
+  );
 
   it('containsAllStartingWith empty array values should return empty results', done => {
     const object = new Parse.Object('Object');
@@ -1670,47 +1677,53 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
-  it_id('65c8238d-cf02-49d0-a919-8a17f5a58280')(it)('can order on an object number field', function (done) {
-    const testSet = [
-      { sortField: { value: 10 } },
-      { sortField: { value: 1 } },
-      { sortField: { value: 5 } },
-    ];
+  it_id('65c8238d-cf02-49d0-a919-8a17f5a58280')(it)(
+    'can order on an object number field',
+    function (done) {
+      const testSet = [
+        { sortField: { value: 10 } },
+        { sortField: { value: 1 } },
+        { sortField: { value: 5 } },
+      ];
 
-    const objects = testSet.map(e => new Parse.Object('Test', e));
-    Parse.Object.saveAll(objects)
-      .then(() => new Parse.Query('Test').addDescending('sortField.value').first())
-      .then(result => {
-        expect(result.get('sortField').value).toBe(10);
-        return new Parse.Query('Test').addAscending('sortField.value').first();
-      })
-      .then(result => {
-        expect(result.get('sortField').value).toBe(1);
-        done();
-      })
-      .catch(done.fail);
-  });
+      const objects = testSet.map(e => new Parse.Object('Test', e));
+      Parse.Object.saveAll(objects)
+        .then(() => new Parse.Query('Test').addDescending('sortField.value').first())
+        .then(result => {
+          expect(result.get('sortField').value).toBe(10);
+          return new Parse.Query('Test').addAscending('sortField.value').first();
+        })
+        .then(result => {
+          expect(result.get('sortField').value).toBe(1);
+          done();
+        })
+        .catch(done.fail);
+    }
+  );
 
-  it_id('d8f0bead-b931-4d66-8b0c-28c5705e463c')(it)('can order on an object number field (level 2)', function (done) {
-    const testSet = [
-      { sortField: { value: { field: 10 } } },
-      { sortField: { value: { field: 1 } } },
-      { sortField: { value: { field: 5 } } },
-    ];
+  it_id('d8f0bead-b931-4d66-8b0c-28c5705e463c')(it)(
+    'can order on an object number field (level 2)',
+    function (done) {
+      const testSet = [
+        { sortField: { value: { field: 10 } } },
+        { sortField: { value: { field: 1 } } },
+        { sortField: { value: { field: 5 } } },
+      ];
 
-    const objects = testSet.map(e => new Parse.Object('Test', e));
-    Parse.Object.saveAll(objects)
-      .then(() => new Parse.Query('Test').addDescending('sortField.value.field').first())
-      .then(result => {
-        expect(result.get('sortField').value.field).toBe(10);
-        return new Parse.Query('Test').addAscending('sortField.value.field').first();
-      })
-      .then(result => {
-        expect(result.get('sortField').value.field).toBe(1);
-        done();
-      })
-      .catch(done.fail);
-  });
+      const objects = testSet.map(e => new Parse.Object('Test', e));
+      Parse.Object.saveAll(objects)
+        .then(() => new Parse.Query('Test').addDescending('sortField.value.field').first())
+        .then(result => {
+          expect(result.get('sortField').value.field).toBe(10);
+          return new Parse.Query('Test').addAscending('sortField.value.field').first();
+        })
+        .then(result => {
+          expect(result.get('sortField').value.field).toBe(1);
+          done();
+        })
+        .catch(done.fail);
+    }
+  );
 
   it('order by ascending number then descending string', function (done) {
     const strings = ['a', 'b', 'c', 'd'];
@@ -2113,30 +2126,33 @@ describe('Parse.Query testing', () => {
       .then(done);
   });
 
-  it_id('823852f6-1de5-45ba-a2b9-ed952fcc6012')(it)('Use a regex that requires all modifiers', function (done) {
-    const thing = new TestObject();
-    thing.set('myString', 'PArSe\nCom');
-    Parse.Object.saveAll([thing]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.matches(
-        'myString',
-        "parse # First fragment. We'll write this in one case but match insensitively\n" +
-          '.com  # Second fragment. This can be separated by any character, including newline;' +
-          'however, this comment must end with a newline to recognize it as a comment\n',
-        'mixs'
-      );
-      query.find().then(
-        function (results) {
-          equal(results.length, 1);
-          done();
-        },
-        function (err) {
-          jfail(err);
-          done();
-        }
-      );
-    });
-  });
+  it_id('823852f6-1de5-45ba-a2b9-ed952fcc6012')(it)(
+    'Use a regex that requires all modifiers',
+    function (done) {
+      const thing = new TestObject();
+      thing.set('myString', 'PArSe\nCom');
+      Parse.Object.saveAll([thing]).then(function () {
+        const query = new Parse.Query(TestObject);
+        query.matches(
+          'myString',
+          "parse # First fragment. We'll write this in one case but match insensitively\n" +
+            '.com  # Second fragment. This can be separated by any character, including newline;' +
+            'however, this comment must end with a newline to recognize it as a comment\n',
+          'mixs'
+        );
+        query.find().then(
+          function (results) {
+            equal(results.length, 1);
+            done();
+          },
+          function (err) {
+            jfail(err);
+            done();
+          }
+        );
+      });
+    }
+  );
 
   it('Regular expression constructor includes modifiers inline', function (done) {
     const thing = new TestObject();
@@ -4005,51 +4021,54 @@ describe('Parse.Query testing', () => {
     );
   });
 
-  it_id('7079f0ef-47b3-4a1e-aac0-32654dadaa27')(it)('should properly interpret a query v2', done => {
-    const user = new Parse.User();
-    user.set('username', 'foo');
-    user.set('password', 'bar');
-    return user
-      .save()
-      .then(user => {
-        const objIdQuery = new Parse.Query('_User').equalTo('objectId', user.id);
-        const blockedUserQuery = user.relation('blockedUsers').query();
+  it_id('7079f0ef-47b3-4a1e-aac0-32654dadaa27')(it)(
+    'should properly interpret a query v2',
+    done => {
+      const user = new Parse.User();
+      user.set('username', 'foo');
+      user.set('password', 'bar');
+      return user
+        .save()
+        .then(user => {
+          const objIdQuery = new Parse.Query('_User').equalTo('objectId', user.id);
+          const blockedUserQuery = user.relation('blockedUsers').query();
 
-        const aResponseQuery = new Parse.Query('MatchRelationshipActivityResponse');
-        aResponseQuery.equalTo('userA', user);
-        aResponseQuery.equalTo('userAResponse', 1);
+          const aResponseQuery = new Parse.Query('MatchRelationshipActivityResponse');
+          aResponseQuery.equalTo('userA', user);
+          aResponseQuery.equalTo('userAResponse', 1);
 
-        const bResponseQuery = new Parse.Query('MatchRelationshipActivityResponse');
-        bResponseQuery.equalTo('userB', user);
-        bResponseQuery.equalTo('userBResponse', 1);
+          const bResponseQuery = new Parse.Query('MatchRelationshipActivityResponse');
+          bResponseQuery.equalTo('userB', user);
+          bResponseQuery.equalTo('userBResponse', 1);
 
-        const matchOr = Parse.Query.or(aResponseQuery, bResponseQuery);
-        const matchRelationshipA = new Parse.Query('_User');
-        matchRelationshipA.matchesKeyInQuery('objectId', 'userAObjectId', matchOr);
-        const matchRelationshipB = new Parse.Query('_User');
-        matchRelationshipB.matchesKeyInQuery('objectId', 'userBObjectId', matchOr);
+          const matchOr = Parse.Query.or(aResponseQuery, bResponseQuery);
+          const matchRelationshipA = new Parse.Query('_User');
+          matchRelationshipA.matchesKeyInQuery('objectId', 'userAObjectId', matchOr);
+          const matchRelationshipB = new Parse.Query('_User');
+          matchRelationshipB.matchesKeyInQuery('objectId', 'userBObjectId', matchOr);
 
-        const orQuery = Parse.Query.or(
-          objIdQuery,
-          blockedUserQuery,
-          matchRelationshipA,
-          matchRelationshipB
+          const orQuery = Parse.Query.or(
+            objIdQuery,
+            blockedUserQuery,
+            matchRelationshipA,
+            matchRelationshipB
+          );
+          const query = new Parse.Query('_User');
+          query.doesNotMatchQuery('objectId', orQuery);
+          return query.find();
+        })
+        .then(
+          () => {
+            done();
+          },
+          err => {
+            jfail(err);
+            fail('should not fail');
+            done();
+          }
         );
-        const query = new Parse.Query('_User');
-        query.doesNotMatchQuery('objectId', orQuery);
-        return query.find();
-      })
-      .then(
-        () => {
-          done();
-        },
-        err => {
-          jfail(err);
-          fail('should not fail');
-          done();
-        }
-      );
-  });
+    }
+  );
 
   it('should match a key in an array (#3195)', function (done) {
     const AuthorObject = Parse.Object.extend('Author');
@@ -4084,48 +4103,51 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it_id('d95818c0-9e3c-41e6-be20-e7bafb59eefb')(it)('should find objects with array of pointers', done => {
-    const objects = [];
-    while (objects.length != 5) {
-      const object = new Parse.Object('ContainedObject');
-      object.set('index', objects.length);
-      objects.push(object);
-    }
+  it_id('d95818c0-9e3c-41e6-be20-e7bafb59eefb')(it)(
+    'should find objects with array of pointers',
+    done => {
+      const objects = [];
+      while (objects.length != 5) {
+        const object = new Parse.Object('ContainedObject');
+        object.set('index', objects.length);
+        objects.push(object);
+      }
 
-    Parse.Object.saveAll(objects)
-      .then(objects => {
-        const container = new Parse.Object('Container');
-        const pointers = objects.map(obj => {
-          return {
-            __type: 'Pointer',
-            className: 'ContainedObject',
-            objectId: obj.id,
-          };
+      Parse.Object.saveAll(objects)
+        .then(objects => {
+          const container = new Parse.Object('Container');
+          const pointers = objects.map(obj => {
+            return {
+              __type: 'Pointer',
+              className: 'ContainedObject',
+              objectId: obj.id,
+            };
+          });
+          container.set('objects', pointers);
+          const container2 = new Parse.Object('Container');
+          container2.set('objects', pointers.slice(2, 3));
+          return Parse.Object.saveAll([container, container2]);
+        })
+        .then(() => {
+          const inQuery = new Parse.Query('ContainedObject');
+          inQuery.greaterThanOrEqualTo('index', 1);
+          const query = new Parse.Query('Container');
+          query.matchesQuery('objects', inQuery);
+          return query.find();
+        })
+        .then(results => {
+          if (results) {
+            expect(results.length).toBe(2);
+          }
+          done();
+        })
+        .catch(err => {
+          jfail(err);
+          fail('should not fail');
+          done();
         });
-        container.set('objects', pointers);
-        const container2 = new Parse.Object('Container');
-        container2.set('objects', pointers.slice(2, 3));
-        return Parse.Object.saveAll([container, container2]);
-      })
-      .then(() => {
-        const inQuery = new Parse.Query('ContainedObject');
-        inQuery.greaterThanOrEqualTo('index', 1);
-        const query = new Parse.Query('Container');
-        query.matchesQuery('objects', inQuery);
-        return query.find();
-      })
-      .then(results => {
-        if (results) {
-          expect(results.length).toBe(2);
-        }
-        done();
-      })
-      .catch(err => {
-        jfail(err);
-        fail('should not fail');
-        done();
-      });
-  });
+    }
+  );
 
   it('query with two OR subqueries (regression test #1259)', done => {
     const relatedObject = new Parse.Object('Class2');
@@ -5015,48 +5037,51 @@ describe('Parse.Query testing', () => {
     equal(results[0].get('name'), group2.get('name'));
   });
 
-  it_id('8886b994-fbb8-487d-a863-43bbd2b24b73')(it)('withJSON supports geoWithin.centerSphere', done => {
-    const inbound = new Parse.GeoPoint(1.5, 1.5);
-    const onbound = new Parse.GeoPoint(10, 10);
-    const outbound = new Parse.GeoPoint(20, 20);
-    const obj1 = new Parse.Object('TestObject', { location: inbound });
-    const obj2 = new Parse.Object('TestObject', { location: onbound });
-    const obj3 = new Parse.Object('TestObject', { location: outbound });
-    const center = new Parse.GeoPoint(0, 0);
-    const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
-    Parse.Object.saveAll([obj1, obj2, obj3])
-      .then(() => {
-        const q = new Parse.Query(TestObject);
-        const jsonQ = q.toJSON();
-        jsonQ.where.location = {
-          $geoWithin: {
-            $centerSphere: [center, distanceInKilometers / 6371.0],
-          },
-        };
-        q.withJSON(jsonQ);
-        return q.find();
-      })
-      .then(results => {
-        equal(results.length, 2);
-        const q = new Parse.Query(TestObject);
-        const jsonQ = q.toJSON();
-        jsonQ.where.location = {
-          $geoWithin: {
-            $centerSphere: [[0, 0], distanceInKilometers / 6371.0],
-          },
-        };
-        q.withJSON(jsonQ);
-        return q.find();
-      })
-      .then(results => {
-        equal(results.length, 2);
-        done();
-      })
-      .catch(error => {
-        fail(error);
-        done();
-      });
-  });
+  it_id('8886b994-fbb8-487d-a863-43bbd2b24b73')(it)(
+    'withJSON supports geoWithin.centerSphere',
+    done => {
+      const inbound = new Parse.GeoPoint(1.5, 1.5);
+      const onbound = new Parse.GeoPoint(10, 10);
+      const outbound = new Parse.GeoPoint(20, 20);
+      const obj1 = new Parse.Object('TestObject', { location: inbound });
+      const obj2 = new Parse.Object('TestObject', { location: onbound });
+      const obj3 = new Parse.Object('TestObject', { location: outbound });
+      const center = new Parse.GeoPoint(0, 0);
+      const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
+      Parse.Object.saveAll([obj1, obj2, obj3])
+        .then(() => {
+          const q = new Parse.Query(TestObject);
+          const jsonQ = q.toJSON();
+          jsonQ.where.location = {
+            $geoWithin: {
+              $centerSphere: [center, distanceInKilometers / 6371.0],
+            },
+          };
+          q.withJSON(jsonQ);
+          return q.find();
+        })
+        .then(results => {
+          equal(results.length, 2);
+          const q = new Parse.Query(TestObject);
+          const jsonQ = q.toJSON();
+          jsonQ.where.location = {
+            $geoWithin: {
+              $centerSphere: [[0, 0], distanceInKilometers / 6371.0],
+            },
+          };
+          q.withJSON(jsonQ);
+          return q.find();
+        })
+        .then(results => {
+          equal(results.length, 2);
+          done();
+        })
+        .catch(error => {
+          fail(error);
+          done();
+        });
+    }
+  );
 
   it('withJSON with geoWithin.centerSphere fails without parameters', done => {
     const q = new Parse.Query(TestObject);
@@ -5116,37 +5141,40 @@ describe('Parse.Query testing', () => {
       .catch(() => done());
   });
 
-  it_id('02d4e7e6-859a-4ab6-878d-135ccc77040e')(it)('can add new config to existing config', async () => {
-    await request({
-      method: 'PUT',
-      url: 'http://localhost:8378/1/config',
-      json: true,
-      body: {
-        params: {
-          files: [{ __type: 'File', name: 'name', url: 'http://url' }],
+  it_id('02d4e7e6-859a-4ab6-878d-135ccc77040e')(it)(
+    'can add new config to existing config',
+    async () => {
+      await request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/config',
+        json: true,
+        body: {
+          params: {
+            files: [{ __type: 'File', name: 'name', url: 'http://url' }],
+          },
         },
-      },
-      headers: masterKeyHeaders,
-    });
+        headers: masterKeyHeaders,
+      });
 
-    await request({
-      method: 'PUT',
-      url: 'http://localhost:8378/1/config',
-      json: true,
-      body: {
-        params: { newConfig: 'good' },
-      },
-      headers: masterKeyHeaders,
-    });
+      await request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/config',
+        json: true,
+        body: {
+          params: { newConfig: 'good' },
+        },
+        headers: masterKeyHeaders,
+      });
 
-    const result = await Parse.Config.get();
-    equal(result.get('files')[0].toJSON(), {
-      __type: 'File',
-      name: 'name',
-      url: 'http://url',
-    });
-    equal(result.get('newConfig'), 'good');
-  });
+      const result = await Parse.Config.get();
+      equal(result.get('files')[0].toJSON(), {
+        __type: 'File',
+        name: 'name',
+        url: 'http://url',
+      });
+      equal(result.get('newConfig'), 'good');
+    }
+  );
 
   it('can set object type key', async () => {
     const data = { bar: true, baz: 100 };
@@ -5284,7 +5312,10 @@ describe('Parse.Query testing', () => {
     });
 
     Parse.CoreManager.setRESTController(
-      ParseServerRESTController(Parse.applicationId, ParseServer.promiseRouter({ appId: Parse.applicationId }))
+      ParseServerRESTController(
+        Parse.applicationId,
+        ParseServer.promiseRouter({ appId: Parse.applicationId })
+      )
     );
 
     const user = new Parse.User();
@@ -5297,14 +5328,15 @@ describe('Parse.Query testing', () => {
     score.set('score', 1);
     await score.save();
 
-    await new Parse.Query('_User')
-      .equalTo('objectId', user.id)
-      .eachBatch(async ([user]) => {
+    await new Parse.Query('_User').equalTo('objectId', user.id).eachBatch(
+      async ([user]) => {
         const score = await new Parse.Query('Score')
           .equalTo('player', user)
           .distinct('score', { useMasterKey: true });
         expect(score).toEqual([1]);
-      }, { useMasterKey: true });
+      },
+      { useMasterKey: true }
+    );
   });
 
   describe_only_db('mongo')('query nested keys', () => {
@@ -5312,7 +5344,7 @@ describe('Parse.Query testing', () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5322,19 +5354,17 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
-      const query1 = await new Parse.Query('Parent')
-        .equalTo('some.nested.key.child', child)
-        .find();
-  
+
+      const query1 = await new Parse.Query('Parent').equalTo('some.nested.key.child', child).find();
+
       expect(query1.length).toEqual(1);
     });
-  
+
     it('queries nested key using containedIn', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5344,19 +5374,19 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .containedIn('some.nested.key.child', [child])
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
-  
+
     it('queries nested key using matchesQuery', async () => {
       const child = new Parse.Object('Child');
       child.set('key', 'value');
       await child.save();
-  
+
       const parent = new Parse.Object('Parent');
       parent.set('some', {
         nested: {
@@ -5366,11 +5396,11 @@ describe('Parse.Query testing', () => {
         },
       });
       await parent.save();
-  
+
       const query1 = await new Parse.Query('Parent')
         .matchesQuery('some.nested.key.child', new Parse.Query('Child').equalTo('key', 'value'))
         .find();
-  
+
       expect(query1.length).toEqual(1);
     });
   });
