@@ -1,11 +1,11 @@
-import PromiseRouter from "../PromiseRouter";
-import Parse from "parse/node";
-import rest from "../rest";
-const triggers = require("../triggers");
-const middleware = require("../middlewares");
+import PromiseRouter from '../PromiseRouter';
+import Parse from 'parse/node';
+import rest from '../rest';
+const triggers = require('../triggers');
+const middleware = require('../middlewares');
 
 function formatJobSchedule(job_schedule) {
-  if (typeof job_schedule.startAfter === "undefined") {
+  if (typeof job_schedule.startAfter === 'undefined') {
     job_schedule.startAfter = new Date().toISOString();
   }
   return job_schedule;
@@ -16,7 +16,7 @@ function validateJobSchedule(config, job_schedule) {
   if (job_schedule.jobName && !jobs[job_schedule.jobName]) {
     throw new Parse.Error(
       Parse.Error.INTERNAL_SERVER_ERROR,
-      "Cannot Schedule a job that is not deployed"
+      'Cannot Schedule a job that is not deployed'
     );
   }
 }
@@ -24,32 +24,32 @@ function validateJobSchedule(config, job_schedule) {
 export class CloudCodeRouter extends PromiseRouter {
   mountRoutes() {
     this.route(
-      "GET",
-      "/cloud_code/jobs",
+      'GET',
+      '/cloud_code/jobs',
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.getJobs
     );
     this.route(
-      "GET",
-      "/cloud_code/jobs/data",
+      'GET',
+      '/cloud_code/jobs/data',
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.getJobsData
     );
     this.route(
-      "POST",
-      "/cloud_code/jobs",
+      'POST',
+      '/cloud_code/jobs',
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.createJob
     );
     this.route(
-      "PUT",
-      "/cloud_code/jobs/:objectId",
+      'PUT',
+      '/cloud_code/jobs/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.editJob
     );
     this.route(
-      "DELETE",
-      "/cloud_code/jobs/:objectId",
+      'DELETE',
+      '/cloud_code/jobs/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.deleteJob
     );
@@ -57,7 +57,7 @@ export class CloudCodeRouter extends PromiseRouter {
 
   static getJobs(req) {
     return rest
-      .find(req.config, req.auth, "_JobSchedule", {}, {})
+      .find(req.config, req.auth, '_JobSchedule', {}, {})
       .then(scheduledJobs => {
         return {
           response: scheduledJobs.results,
@@ -69,7 +69,7 @@ export class CloudCodeRouter extends PromiseRouter {
     const config = req.config;
     const jobs = triggers.getJobs(config.applicationId) || {};
     return rest
-      .find(req.config, req.auth, "_JobSchedule", {}, {})
+      .find(req.config, req.auth, '_JobSchedule', {}, {})
       .then(scheduledJobs => {
         return {
           response: {
@@ -86,7 +86,7 @@ export class CloudCodeRouter extends PromiseRouter {
     return rest.create(
       req.config,
       req.auth,
-      "_JobSchedule",
+      '_JobSchedule',
       formatJobSchedule(job_schedule),
       req.client,
       req.info.context
@@ -101,7 +101,7 @@ export class CloudCodeRouter extends PromiseRouter {
       .update(
         req.config,
         req.auth,
-        "_JobSchedule",
+        '_JobSchedule',
         { objectId },
         formatJobSchedule(job_schedule),
         undefined,
@@ -117,7 +117,7 @@ export class CloudCodeRouter extends PromiseRouter {
   static deleteJob(req) {
     const { objectId } = req.params;
     return rest
-      .del(req.config, req.auth, "_JobSchedule", objectId, req.info.context)
+      .del(req.config, req.auth, '_JobSchedule', objectId, req.info.context)
       .then(response => {
         return {
           response,

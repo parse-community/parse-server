@@ -1,25 +1,25 @@
 // These methods handle the User-related routes.
 
-import Parse from "parse/node";
-import Config from "../Config";
-import AccountLockout from "../AccountLockout";
-import ClassesRouter from "./ClassesRouter";
-import rest from "../rest";
-import Auth from "../Auth";
-import passwordCrypto from "../password";
+import Parse from 'parse/node';
+import Config from '../Config';
+import AccountLockout from '../AccountLockout';
+import ClassesRouter from './ClassesRouter';
+import rest from '../rest';
+import Auth from '../Auth';
+import passwordCrypto from '../password';
 import {
   maybeRunTrigger,
   Types as TriggerTypes,
   getRequestObject,
   resolveError,
-} from "../triggers";
-import { promiseEnsureIdempotency } from "../middlewares";
-import RestWrite from "../RestWrite";
-import { logger } from "../logger";
+} from '../triggers';
+import { promiseEnsureIdempotency } from '../middlewares';
+import RestWrite from '../RestWrite';
+import { logger } from '../logger';
 
 export class UsersRouter extends ClassesRouter {
   className() {
-    return "_User";
+    return '_User';
   }
 
   /**
@@ -30,7 +30,7 @@ export class UsersRouter extends ClassesRouter {
     for (var key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         // Regexp comes from Parse.Object.prototype.validate
-        if (key !== "__type" && !/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
+        if (key !== '__type' && !/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
           delete obj[key];
         }
       }
@@ -81,23 +81,23 @@ export class UsersRouter extends ClassesRouter {
       if (!username && !email) {
         throw new Parse.Error(
           Parse.Error.USERNAME_MISSING,
-          "username/email is required."
+          'username/email is required.'
         );
       }
       if (!password) {
         throw new Parse.Error(
           Parse.Error.PASSWORD_MISSING,
-          "password is required."
+          'password is required.'
         );
       }
       if (
-        typeof password !== "string" ||
-        (email && typeof email !== "string") ||
-        (username && typeof username !== "string")
+        typeof password !== 'string' ||
+        (email && typeof email !== 'string') ||
+        (username && typeof username !== 'string')
       ) {
         throw new Parse.Error(
           Parse.Error.OBJECT_NOT_FOUND,
-          "Invalid username/password."
+          'Invalid username/password.'
         );
       }
 
@@ -112,12 +112,12 @@ export class UsersRouter extends ClassesRouter {
         query = { $or: [{ username }, { email: username }] };
       }
       return req.config.database
-        .find("_User", query, {}, Auth.maintenance(req.config))
+        .find('_User', query, {}, Auth.maintenance(req.config))
         .then(results => {
           if (!results.length) {
             throw new Parse.Error(
               Parse.Error.OBJECT_NOT_FOUND,
-              "Invalid username/password."
+              'Invalid username/password.'
             );
           }
 
@@ -142,7 +142,7 @@ export class UsersRouter extends ClassesRouter {
           if (!isValidPassword) {
             throw new Parse.Error(
               Parse.Error.OBJECT_NOT_FOUND,
-              "Invalid username/password."
+              'Invalid username/password.'
             );
           }
           // Ensure the user isn't locked out
@@ -156,7 +156,7 @@ export class UsersRouter extends ClassesRouter {
           ) {
             throw new Parse.Error(
               Parse.Error.OBJECT_NOT_FOUND,
-              "Invalid username/password."
+              'Invalid username/password.'
             );
           }
           // Create request object for verification functions
@@ -165,7 +165,7 @@ export class UsersRouter extends ClassesRouter {
             ip: req.config.ip,
             installationId: req.auth.installationId,
             object: Parse.User.fromJSON(
-              Object.assign({ className: "_User" }, user)
+              Object.assign({ className: '_User' }, user)
             ),
           };
 
@@ -181,14 +181,14 @@ export class UsersRouter extends ClassesRouter {
             // conditional statement below, as a developer may decide to execute expensive operations in them
             const verifyUserEmails = async () =>
               req.config.verifyUserEmails === true ||
-              (typeof req.config.verifyUserEmails === "function" &&
+              (typeof req.config.verifyUserEmails === 'function' &&
                 (await Promise.resolve(
                   req.config.verifyUserEmails(request)
                 )) === true);
             const preventLoginWithUnverifiedEmail = async () =>
               req.config.preventLoginWithUnverifiedEmail === true ||
               (typeof req.config.preventLoginWithUnverifiedEmail ===
-                "function" &&
+                'function' &&
                 (await Promise.resolve(
                   req.config.preventLoginWithUnverifiedEmail(request)
                 )) === true);
@@ -199,7 +199,7 @@ export class UsersRouter extends ClassesRouter {
             ) {
               throw new Parse.Error(
                 Parse.Error.EMAIL_NOT_FOUND,
-                "User email is not verified."
+                'User email is not verified.'
               );
             }
           }
@@ -218,7 +218,7 @@ export class UsersRouter extends ClassesRouter {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(
         Parse.Error.INVALID_SESSION_TOKEN,
-        "Invalid session token"
+        'Invalid session token'
       );
     }
     const sessionToken = req.info.sessionToken;
@@ -226,9 +226,9 @@ export class UsersRouter extends ClassesRouter {
       .find(
         req.config,
         Auth.master(req.config),
-        "_Session",
+        '_Session',
         { sessionToken },
-        { include: "user" },
+        { include: 'user' },
         req.info.clientSDK,
         req.info.context
       )
@@ -240,7 +240,7 @@ export class UsersRouter extends ClassesRouter {
         ) {
           throw new Parse.Error(
             Parse.Error.INVALID_SESSION_TOKEN,
-            "Invalid session token"
+            'Invalid session token'
           );
         } else {
           const user = response.results[0].user;
@@ -273,7 +273,7 @@ export class UsersRouter extends ClassesRouter {
         new RestWrite(
           req.config,
           req.auth,
-          "_User",
+          '_User',
           { objectId: user.objectId },
           req.body || {},
           user,
@@ -295,13 +295,13 @@ export class UsersRouter extends ClassesRouter {
         // simply update _User object so that it will start enforcing from now
         changedAt = new Date();
         req.config.database.update(
-          "_User",
+          '_User',
           { username: user.username },
           { _password_changed_at: Parse._encode(changedAt) }
         );
       } else {
         // check whether the password has expired
-        if (changedAt.__type == "Date") {
+        if (changedAt.__type == 'Date') {
           changedAt = new Date(changedAt.iso);
         }
         // Calculate the expiry time.
@@ -313,7 +313,7 @@ export class UsersRouter extends ClassesRouter {
           // fail of current time is past password expiry time
           throw new Parse.Error(
             Parse.Error.OBJECT_NOT_FOUND,
-            "Your password has expired. Please reset your password."
+            'Your password has expired. Please reset your password.'
           );
         }
       }
@@ -328,7 +328,7 @@ export class UsersRouter extends ClassesRouter {
     await maybeRunTrigger(
       TriggerTypes.beforeLogin,
       req.auth,
-      Parse.User.fromJSON(Object.assign({ className: "_User" }, user)),
+      Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
       null,
       req.config,
       req.info.context
@@ -337,7 +337,7 @@ export class UsersRouter extends ClassesRouter {
     // If we have some new validated authData update directly
     if (validatedAuthData && Object.keys(validatedAuthData).length) {
       await req.config.database.update(
-        "_User",
+        '_User',
         { objectId: user.objectId },
         { authData: validatedAuthData },
         {}
@@ -347,8 +347,8 @@ export class UsersRouter extends ClassesRouter {
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId: user.objectId,
       createdWith: {
-        action: "login",
-        authProvider: "password",
+        action: 'login',
+        authProvider: 'password',
       },
       installationId: req.info.installationId,
     });
@@ -358,7 +358,7 @@ export class UsersRouter extends ClassesRouter {
     await createSession();
 
     const afterLoginUser = Parse.User.fromJSON(
-      Object.assign({ className: "_User" }, user)
+      Object.assign({ className: '_User' }, user)
     );
     await maybeRunTrigger(
       TriggerTypes.afterLogin,
@@ -395,7 +395,7 @@ export class UsersRouter extends ClassesRouter {
     if (!req.auth.isMaster) {
       throw new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        "master key is required"
+        'master key is required'
       );
     }
 
@@ -403,16 +403,16 @@ export class UsersRouter extends ClassesRouter {
     if (!userId) {
       throw new Parse.Error(
         Parse.Error.INVALID_VALUE,
-        "userId must not be empty, null, or undefined"
+        'userId must not be empty, null, or undefined'
       );
     }
 
-    const queryResults = await req.config.database.find("_User", {
+    const queryResults = await req.config.database.find('_User', {
       objectId: userId,
     });
     const user = queryResults[0];
     if (!user) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, "user not found");
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'user not found');
     }
 
     this._sanitizeAuthData(user);
@@ -420,8 +420,8 @@ export class UsersRouter extends ClassesRouter {
     const { sessionData, createSession } = RestWrite.createSession(req.config, {
       userId,
       createdWith: {
-        action: "login",
-        authProvider: "masterkey",
+        action: 'login',
+        authProvider: 'masterkey',
       },
       installationId: req.info.installationId,
     });
@@ -452,7 +452,7 @@ export class UsersRouter extends ClassesRouter {
       const records = await rest.find(
         req.config,
         Auth.master(req.config),
-        "_Session",
+        '_Session',
         { sessionToken: req.info.sessionToken },
         undefined,
         req.info.clientSDK,
@@ -462,7 +462,7 @@ export class UsersRouter extends ClassesRouter {
         await rest.del(
           req.config,
           Auth.master(req.config),
-          "_Session",
+          '_Session',
           records.results[0].objectId,
           req.info.context
         );
@@ -470,7 +470,7 @@ export class UsersRouter extends ClassesRouter {
           TriggerTypes.afterLogout,
           req.auth,
           Parse.Session.fromJSON(
-            Object.assign({ className: "_Session" }, records.results[0])
+            Object.assign({ className: '_Session' }, records.results[0])
           ),
           null,
           req.config
@@ -491,11 +491,11 @@ export class UsersRouter extends ClassesRouter {
         emailVerifyTokenReuseIfValid: req.config.emailVerifyTokenReuseIfValid,
       });
     } catch (e) {
-      if (typeof e === "string") {
+      if (typeof e === 'string') {
         // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
         throw new Parse.Error(
           Parse.Error.INTERNAL_SERVER_ERROR,
-          "An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality."
+          'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.'
         );
       } else {
         throw e;
@@ -512,11 +512,11 @@ export class UsersRouter extends ClassesRouter {
     if (!email && !token) {
       throw new Parse.Error(
         Parse.Error.EMAIL_MISSING,
-        "you must provide an email"
+        'you must provide an email'
       );
     }
     if (token) {
-      const results = await req.config.database.find("_User", {
+      const results = await req.config.database.find('_User', {
         _perishable_token: token,
         _perishable_token_expires_at: { $lt: Parse._encode(new Date()) },
       });
@@ -524,10 +524,10 @@ export class UsersRouter extends ClassesRouter {
         email = results[0].email;
       }
     }
-    if (typeof email !== "string") {
+    if (typeof email !== 'string') {
       throw new Parse.Error(
         Parse.Error.INVALID_EMAIL_ADDRESS,
-        "you must provide a valid email string"
+        'you must provide a valid email string'
       );
     }
     const userController = req.config.userController;
@@ -559,18 +559,18 @@ export class UsersRouter extends ClassesRouter {
     if (!email) {
       throw new Parse.Error(
         Parse.Error.EMAIL_MISSING,
-        "you must provide an email"
+        'you must provide an email'
       );
     }
-    if (typeof email !== "string") {
+    if (typeof email !== 'string') {
       throw new Parse.Error(
         Parse.Error.INVALID_EMAIL_ADDRESS,
-        "you must provide a valid email string"
+        'you must provide a valid email string'
       );
     }
 
     const results = await req.config.database.find(
-      "_User",
+      '_User',
       { email: email },
       {},
       Auth.maintenance(req.config)
@@ -616,20 +616,20 @@ export class UsersRouter extends ClassesRouter {
       if (!password) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          "You provided username or email, you need to also provide password."
+          'You provided username or email, you need to also provide password.'
         );
       }
       user = await this._authenticateUserFromRequest(req);
     }
 
     if (!challengeData) {
-      throw new Parse.Error(Parse.Error.OTHER_CAUSE, "Nothing to challenge.");
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge.');
     }
 
-    if (typeof challengeData !== "object") {
+    if (typeof challengeData !== 'object') {
       throw new Parse.Error(
         Parse.Error.OTHER_CAUSE,
-        "challengeData should be an object."
+        'challengeData should be an object.'
       );
     }
 
@@ -638,23 +638,23 @@ export class UsersRouter extends ClassesRouter {
 
     // Try to find user by authData
     if (authData) {
-      if (typeof authData !== "object") {
+      if (typeof authData !== 'object') {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          "authData should be an object."
+          'authData should be an object.'
         );
       }
       if (user) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          "You cannot provide username/email and authData, only use one identification method."
+          'You cannot provide username/email and authData, only use one identification method.'
         );
       }
 
       if (Object.keys(authData).filter(key => authData[key].id).length > 1) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          "You cannot provide more than one authData provider with an id."
+          'You cannot provide more than one authData provider with an id.'
         );
       }
 
@@ -664,13 +664,13 @@ export class UsersRouter extends ClassesRouter {
         if (!results[0] || results.length > 1) {
           throw new Parse.Error(
             Parse.Error.OBJECT_NOT_FOUND,
-            "User not found."
+            'User not found.'
           );
         }
         // Find the provider used to find the user
         const provider = Object.keys(authData).find(key => authData[key].id);
 
-        parseUser = Parse.User.fromJSON({ className: "_User", ...results[0] });
+        parseUser = Parse.User.fromJSON({ className: '_User', ...results[0] });
         request = getRequestObject(
           undefined,
           req.auth,
@@ -694,13 +694,13 @@ export class UsersRouter extends ClassesRouter {
       } catch (e) {
         // Rewrite the error to avoid guess id attack
         logger.error(e);
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, "User not found.");
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'User not found.');
       }
     }
 
     if (!parseUser) {
       parseUser = user
-        ? Parse.User.fromJSON({ className: "_User", ...user })
+        ? Parse.User.fromJSON({ className: '_User', ...user })
         : undefined;
     }
 
@@ -727,7 +727,7 @@ export class UsersRouter extends ClassesRouter {
         const {
           adapter: { challenge },
         } = authAdapter;
-        if (typeof challenge === "function") {
+        if (typeof challenge === 'function') {
           const providerChallengeResponse = await challenge(
             challengeData[provider],
             authData && authData[provider],
@@ -739,7 +739,7 @@ export class UsersRouter extends ClassesRouter {
       } catch (err) {
         const e = resolveError(err, {
           code: Parse.Error.SCRIPT_FAILED,
-          message: "Challenge failed. Unknown error.",
+          message: 'Challenge failed. Unknown error.',
         });
         const userString =
           req.auth && req.auth.user ? req.auth.user.id : undefined;
@@ -747,7 +747,7 @@ export class UsersRouter extends ClassesRouter {
           `Failed running auth step challenge for ${provider} for user ${userString} with Error: ` +
             JSON.stringify(e),
           {
-            authenticationStep: "challenge",
+            authenticationStep: 'challenge',
             error: e,
             user: userString,
             provider,
@@ -760,49 +760,49 @@ export class UsersRouter extends ClassesRouter {
   }
 
   mountRoutes() {
-    this.route("GET", "/users", req => {
+    this.route('GET', '/users', req => {
       return this.handleFind(req);
     });
-    this.route("POST", "/users", promiseEnsureIdempotency, req => {
+    this.route('POST', '/users', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route("GET", "/users/me", req => {
+    this.route('GET', '/users/me', req => {
       return this.handleMe(req);
     });
-    this.route("GET", "/users/:objectId", req => {
+    this.route('GET', '/users/:objectId', req => {
       return this.handleGet(req);
     });
-    this.route("PUT", "/users/:objectId", promiseEnsureIdempotency, req => {
+    this.route('PUT', '/users/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
     });
-    this.route("DELETE", "/users/:objectId", req => {
+    this.route('DELETE', '/users/:objectId', req => {
       return this.handleDelete(req);
     });
-    this.route("GET", "/login", req => {
+    this.route('GET', '/login', req => {
       return this.handleLogIn(req);
     });
-    this.route("POST", "/login", req => {
+    this.route('POST', '/login', req => {
       return this.handleLogIn(req);
     });
-    this.route("POST", "/loginAs", req => {
+    this.route('POST', '/loginAs', req => {
       return this.handleLogInAs(req);
     });
-    this.route("POST", "/logout", req => {
+    this.route('POST', '/logout', req => {
       return this.handleLogOut(req);
     });
-    this.route("POST", "/requestPasswordReset", req => {
+    this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
     });
-    this.route("POST", "/verificationEmailRequest", req => {
+    this.route('POST', '/verificationEmailRequest', req => {
       return this.handleVerificationEmailRequest(req);
     });
-    this.route("GET", "/verifyPassword", req => {
+    this.route('GET', '/verifyPassword', req => {
       return this.handleVerifyPassword(req);
     });
-    this.route("POST", "/verifyPassword", req => {
+    this.route('POST', '/verifyPassword', req => {
       return this.handleVerifyPassword(req);
     });
-    this.route("POST", "/challenge", req => {
+    this.route('POST', '/challenge', req => {
       return this.handleChallenge(req);
     });
   }

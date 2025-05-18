@@ -1,22 +1,22 @@
-"use strict";
+'use strict';
 
-const Utils = require("../lib/Utils");
-const Config = require("../lib/Config");
-const request = require("../lib/request");
-const Definitions = require("../lib/Options/Definitions");
-const { Check, CheckState } = require("../lib/Security/Check");
-const CheckGroup = require("../lib/Security/CheckGroup");
-const CheckRunner = require("../lib/Security/CheckRunner");
-const CheckGroups = require("../lib/Security/CheckGroups/CheckGroups");
+const Utils = require('../lib/Utils');
+const Config = require('../lib/Config');
+const request = require('../lib/request');
+const Definitions = require('../lib/Options/Definitions');
+const { Check, CheckState } = require('../lib/Security/Check');
+const CheckGroup = require('../lib/Security/CheckGroup');
+const CheckRunner = require('../lib/Security/CheckRunner');
+const CheckGroups = require('../lib/Security/CheckGroups/CheckGroups');
 
-describe("Security Check", () => {
+describe('Security Check', () => {
   let Group;
   let groupName;
   let checkSuccess;
   let checkFail;
   let config;
-  const publicServerURL = "http://localhost:8378/1";
-  const securityUrl = publicServerURL + "/security";
+  const publicServerURL = 'http://localhost:8378/1';
+  const securityUrl = publicServerURL + '/security';
 
   async function reconfigureServerWithSecurityConfig(security) {
     config.security = security;
@@ -29,8 +29,8 @@ describe("Security Check", () => {
         {
           url: securityUrl,
           headers: {
-            "X-Parse-Master-Key": Parse.masterKey,
-            "X-Parse-Application-Id": Parse.applicationId,
+            'X-Parse-Master-Key': Parse.masterKey,
+            'X-Parse-Application-Id': Parse.applicationId,
           },
           followRedirects: false,
         },
@@ -39,23 +39,23 @@ describe("Security Check", () => {
     ).catch(e => e);
 
   beforeEach(async () => {
-    groupName = "Example Group Name";
+    groupName = 'Example Group Name';
     checkSuccess = new Check({
-      group: "TestGroup",
-      title: "TestTitleSuccess",
-      warning: "TestWarning",
-      solution: "TestSolution",
+      group: 'TestGroup',
+      title: 'TestTitleSuccess',
+      warning: 'TestWarning',
+      solution: 'TestSolution',
       check: () => {
         return true;
       },
     });
     checkFail = new Check({
-      group: "TestGroup",
-      title: "TestTitleFail",
-      warning: "TestWarning",
-      solution: "TestSolution",
+      group: 'TestGroup',
+      title: 'TestTitleFail',
+      warning: 'TestWarning',
+      solution: 'TestSolution',
       check: () => {
-        throw "Fail";
+        throw 'Fail';
       },
     });
     Group = class Group extends CheckGroup {
@@ -67,8 +67,8 @@ describe("Security Check", () => {
       }
     };
     config = {
-      appId: "test",
-      appName: "ExampleAppName",
+      appId: 'test',
+      appName: 'ExampleAppName',
       publicServerURL,
       security: {
         enableCheck: true,
@@ -78,8 +78,8 @@ describe("Security Check", () => {
     await reconfigureServer(config);
   });
 
-  describe("server options", () => {
-    it("uses default configuration when none is set", async () => {
+  describe('server options', () => {
+    it('uses default configuration when none is set', async () => {
       await reconfigureServerWithSecurityConfig({});
       expect(Config.get(Parse.applicationId).security.enableCheck).toBe(
         Definitions.SecurityOptions.enableCheck.default
@@ -89,17 +89,17 @@ describe("Security Check", () => {
       );
     });
 
-    it("throws on invalid configuration", async () => {
+    it('throws on invalid configuration', async () => {
       const options = [
         [],
-        "a",
+        'a',
         0,
         true,
-        { enableCheck: "a" },
+        { enableCheck: 'a' },
         { enableCheck: 0 },
         { enableCheck: {} },
         { enableCheck: [] },
-        { enableCheckLog: "a" },
+        { enableCheckLog: 'a' },
         { enableCheckLog: 0 },
         { enableCheckLog: {} },
         { enableCheckLog: [] },
@@ -112,9 +112,9 @@ describe("Security Check", () => {
     });
   });
 
-  describe("auto-run", () => {
-    it("runs security checks on server start if enabled", async () => {
-      const runnerSpy = spyOn(CheckRunner.prototype, "run").and.callThrough();
+  describe('auto-run', () => {
+    it('runs security checks on server start if enabled', async () => {
+      const runnerSpy = spyOn(CheckRunner.prototype, 'run').and.callThrough();
       await reconfigureServerWithSecurityConfig({
         enableCheck: true,
         enableCheckLog: true,
@@ -122,8 +122,8 @@ describe("Security Check", () => {
       expect(runnerSpy).toHaveBeenCalledTimes(1);
     });
 
-    it("does not run security checks on server start if disabled", async () => {
-      const runnerSpy = spyOn(CheckRunner.prototype, "run").and.callThrough();
+    it('does not run security checks on server start if disabled', async () => {
+      const runnerSpy = spyOn(CheckRunner.prototype, 'run').and.callThrough();
       const configs = [
         { enableCheck: true, enableCheckLog: false },
         { enableCheck: false, enableCheckLog: false },
@@ -137,41 +137,41 @@ describe("Security Check", () => {
     });
   });
 
-  describe("security endpoint accessibility", () => {
-    it("responds with 403 without masterkey", async () => {
+  describe('security endpoint accessibility', () => {
+    it('responds with 403 without masterkey', async () => {
       const response = await securityRequest({ headers: {} });
       expect(response.status).toBe(403);
     });
 
-    it("responds with 409 with masterkey and security check disabled", async () => {
+    it('responds with 409 with masterkey and security check disabled', async () => {
       await reconfigureServerWithSecurityConfig({});
       const response = await securityRequest();
       expect(response.status).toBe(409);
     });
 
-    it("responds with 200 with masterkey and security check enabled", async () => {
+    it('responds with 200 with masterkey and security check enabled', async () => {
       const response = await securityRequest();
       expect(response.status).toBe(200);
     });
   });
 
-  describe("check", () => {
+  describe('check', () => {
     const initCheck = config => (() => new Check(config)).bind(null);
 
-    it("instantiates check with valid parameters", async () => {
+    it('instantiates check with valid parameters', async () => {
       const configs = [
         {
-          group: "string",
-          title: "string",
-          warning: "string",
-          solution: "string",
+          group: 'string',
+          title: 'string',
+          warning: 'string',
+          solution: 'string',
           check: () => {},
         },
         {
-          group: "string",
-          title: "string",
-          warning: "string",
-          solution: "string",
+          group: 'string',
+          title: 'string',
+          warning: 'string',
+          solution: 'string',
           check: async () => {},
         },
       ];
@@ -180,13 +180,13 @@ describe("Security Check", () => {
       }
     });
 
-    it("throws instantiating check with invalid parameters", async () => {
+    it('throws instantiating check with invalid parameters', async () => {
       const configDefinition = {
         group: [false, true, 0, 1, [], {}, () => {}],
         title: [false, true, 0, 1, [], {}, () => {}],
         warning: [false, true, 0, 1, [], {}, () => {}],
         solution: [false, true, 0, 1, [], {}, () => {}],
-        check: [false, true, 0, 1, [], {}, "string"],
+        check: [false, true, 0, 1, [], {}, 'string'],
       };
       const configs = Utils.getObjectKeyPermutations(configDefinition);
 
@@ -195,12 +195,12 @@ describe("Security Check", () => {
       }
     });
 
-    it("sets correct states for check success", async () => {
+    it('sets correct states for check success', async () => {
       const check = new Check({
-        group: "string",
-        title: "string",
-        warning: "string",
-        solution: "string",
+        group: 'string',
+        title: 'string',
+        warning: 'string',
+        solution: 'string',
         check: () => {},
       });
       expect(check._checkState == CheckState.none);
@@ -208,14 +208,14 @@ describe("Security Check", () => {
       expect(check._checkState == CheckState.success);
     });
 
-    it("sets correct states for check fail", async () => {
+    it('sets correct states for check fail', async () => {
       const check = new Check({
-        group: "string",
-        title: "string",
-        warning: "string",
-        solution: "string",
+        group: 'string',
+        title: 'string',
+        warning: 'string',
+        solution: 'string',
         check: () => {
-          throw "error";
+          throw 'error';
         },
       });
       expect(check._checkState == CheckState.none);
@@ -224,8 +224,8 @@ describe("Security Check", () => {
     });
   });
 
-  describe("check group", () => {
-    it("returns properties if subclassed correctly", async () => {
+  describe('check group', () => {
+    it('returns properties if subclassed correctly', async () => {
       const group = new Group();
       expect(group.name()).toBe(groupName);
       expect(group.checks().length).toBe(2);
@@ -233,10 +233,10 @@ describe("Security Check", () => {
       expect(group.checks()[1]).toEqual(checkFail);
     });
 
-    it("throws if subclassed incorrectly", async () => {
+    it('throws if subclassed incorrectly', async () => {
       class InvalidGroup1 extends CheckGroup {}
       expect((() => new InvalidGroup1()).bind()).toThrow(
-        "Check group has no name."
+        'Check group has no name.'
       );
       class InvalidGroup2 extends CheckGroup {
         setName() {
@@ -244,11 +244,11 @@ describe("Security Check", () => {
         }
       }
       expect((() => new InvalidGroup2()).bind()).toThrow(
-        "Check group has no checks."
+        'Check group has no checks.'
       );
     });
 
-    it("runs checks", async () => {
+    it('runs checks', async () => {
       const group = new Group();
       expect(group.checks()[0].checkState()).toBe(CheckState.none);
       expect(group.checks()[1].checkState()).toBe(CheckState.none);
@@ -258,10 +258,10 @@ describe("Security Check", () => {
     });
   });
 
-  describe("check runner", () => {
+  describe('check runner', () => {
     const initRunner = config => (() => new CheckRunner(config)).bind(null);
 
-    it("instantiates runner with valid parameters", async () => {
+    it('instantiates runner with valid parameters', async () => {
       const configDefinition = {
         enableCheck: [false, true, undefined],
         enableCheckLog: [false, true, undefined],
@@ -273,7 +273,7 @@ describe("Security Check", () => {
       }
     });
 
-    it("throws instantiating runner with invalid parameters", async () => {
+    it('throws instantiating runner with invalid parameters', async () => {
       const configDefinition = {
         enableCheck: [0, 1, [], {}, () => {}],
         enableCheckLog: [0, 1, [], {}, () => {}],
@@ -286,14 +286,14 @@ describe("Security Check", () => {
       }
     });
 
-    it("instantiates runner with default parameters", async () => {
+    it('instantiates runner with default parameters', async () => {
       const runner = new CheckRunner();
       expect(runner.enableCheck).toBeFalse();
       expect(runner.enableCheckLog).toBeFalse();
       expect(runner.checkGroups).toBe(CheckGroups);
     });
 
-    it("runs all checks of all groups", async () => {
+    it('runs all checks of all groups', async () => {
       const checkGroups = [Group, Group];
       const runner = new CheckRunner({ checkGroups });
       const report = await runner.run();
@@ -303,28 +303,28 @@ describe("Security Check", () => {
       expect(report.report.groups[1].checks[1].state).toBe(CheckState.fail);
     });
 
-    it("reports correct default syntax version 1.0.0", async () => {
+    it('reports correct default syntax version 1.0.0', async () => {
       const checkGroups = [Group];
       const runner = new CheckRunner({ checkGroups, enableCheckLog: true });
       const report = await runner.run();
       expect(report).toEqual({
         report: {
-          version: "1.0.0",
-          state: "fail",
+          version: '1.0.0',
+          state: 'fail',
           groups: [
             {
-              name: "Example Group Name",
-              state: "fail",
+              name: 'Example Group Name',
+              state: 'fail',
               checks: [
                 {
-                  title: "TestTitleSuccess",
-                  state: "success",
+                  title: 'TestTitleSuccess',
+                  state: 'success',
                 },
                 {
-                  title: "TestTitleFail",
-                  state: "fail",
-                  warning: "TestWarning",
-                  solution: "TestSolution",
+                  title: 'TestTitleFail',
+                  state: 'fail',
+                  warning: 'TestWarning',
+                  solution: 'TestSolution',
                 },
               ],
             },
@@ -333,9 +333,9 @@ describe("Security Check", () => {
       });
     });
 
-    it("logs report", async () => {
-      const logger = require("../lib/logger").logger;
-      const logSpy = spyOn(logger, "warn").and.callThrough();
+    it('logs report', async () => {
+      const logger = require('../lib/logger').logger;
+      const logSpy = spyOn(logger, 'warn').and.callThrough();
       const checkGroups = [Group];
       const runner = new CheckRunner({ checkGroups, enableCheckLog: true });
       const report = await runner.run();
@@ -349,14 +349,14 @@ describe("Security Check", () => {
       }
     });
 
-    it("does update featuresRouter", async () => {
+    it('does update featuresRouter', async () => {
       let response = await request({
-        url: "http://localhost:8378/1/serverInfo",
+        url: 'http://localhost:8378/1/serverInfo',
         json: true,
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-REST-API-Key": "rest",
-          "X-Parse-Master-Key": "test",
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
         },
       });
       expect(response.data.features.settings.securityCheck).toBeTrue();
@@ -366,12 +366,12 @@ describe("Security Check", () => {
         },
       });
       response = await request({
-        url: "http://localhost:8378/1/serverInfo",
+        url: 'http://localhost:8378/1/serverInfo',
         json: true,
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-REST-API-Key": "rest",
-          "X-Parse-Master-Key": "test",
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Master-Key': 'test',
         },
       });
       expect(response.data.features.settings.securityCheck).toBeFalse();

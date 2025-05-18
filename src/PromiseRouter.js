@@ -5,18 +5,18 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
-import Parse from "parse/node";
-import express from "express";
-import log from "./logger";
-import { inspect } from "util";
-const Layer = require("router/lib/layer");
+import Parse from 'parse/node';
+import express from 'express';
+import log from './logger';
+import { inspect } from 'util';
+const Layer = require('router/lib/layer');
 
 function validateParameter(key, value) {
-  if (key == "className") {
+  if (key == 'className') {
     if (value.match(/_?[A-Za-z][A-Za-z_0-9]*/)) {
       return value;
     }
-  } else if (key == "objectId") {
+  } else if (key == 'objectId') {
     if (value.match(/[A-Za-z0-9]+/)) {
       return value;
     }
@@ -54,13 +54,13 @@ export default class PromiseRouter {
 
   route(method, path, ...handlers) {
     switch (method) {
-      case "POST":
-      case "GET":
-      case "PUT":
-      case "DELETE":
+      case 'POST':
+      case 'GET':
+      case 'PUT':
+      case 'DELETE':
         break;
       default:
-        throw "cannot route method: " + method;
+        throw 'cannot route method: ' + method;
     }
 
     let handler = handlers[0];
@@ -123,7 +123,7 @@ export default class PromiseRouter {
     if (!match) {
       throw new Parse.Error(
         Parse.Error.INVALID_JSON,
-        "cannot route " + method + " " + path
+        'cannot route ' + method + ' ' + path
       );
     }
     request.params = match.params;
@@ -157,7 +157,7 @@ function makeExpressHandler(appId, promiseHandler) {
               log.error(
                 'the handler did not include a "response" or a "location" field'
               );
-              throw "control should not get here";
+              throw 'control should not get here';
             }
 
             log.logResponse({ method, url, result });
@@ -177,11 +177,11 @@ function makeExpressHandler(appId, promiseHandler) {
             }
 
             if (result.location) {
-              res.set("Location", result.location);
+              res.set('Location', result.location);
               // Override the default expressjs response
               // as it double encodes %encoded chars in URL
               if (!result.response) {
-                res.send("Found. Redirecting to " + result.location);
+                res.send('Found. Redirecting to ' + result.location);
                 return;
               }
             }
@@ -205,9 +205,9 @@ function makeExpressHandler(appId, promiseHandler) {
 function maskSensitiveUrl(req) {
   let maskUrl = req.originalUrl.toString();
   const shouldMaskUrl =
-    req.method === "GET" &&
-    req.originalUrl.includes("/login") &&
-    !req.originalUrl.includes("classes");
+    req.method === 'GET' &&
+    req.originalUrl.includes('/login') &&
+    !req.originalUrl.includes('classes');
   if (shouldMaskUrl) {
     maskUrl = log.maskSensitiveUrl(maskUrl);
   }

@@ -1,29 +1,29 @@
-import express from "express";
-import * as Middlewares from "../middlewares";
-import Parse from "parse/node";
-import Config from "../Config";
-import logger from "../logger";
-const triggers = require("../triggers");
-const http = require("http");
-const Utils = require("../Utils");
+import express from 'express';
+import * as Middlewares from '../middlewares';
+import Parse from 'parse/node';
+import Config from '../Config';
+import logger from '../logger';
+const triggers = require('../triggers');
+const http = require('http');
+const Utils = require('../Utils');
 
 const downloadFileFromURI = uri => {
   return new Promise((res, rej) => {
     http
       .get(uri, response => {
-        response.setDefaultEncoding("base64");
-        let body = `data:${response.headers["content-type"]};base64,`;
-        response.on("data", data => (body += data));
-        response.on("end", () => res(body));
+        response.setDefaultEncoding('base64');
+        let body = `data:${response.headers['content-type']};base64,`;
+        response.on('data', data => (body += data));
+        response.on('end', () => res(body));
       })
-      .on("error", e => {
+      .on('error', e => {
         rej(`Error downloading file from ${uri}: ${e.message}`);
       });
   });
 };
 
 const addFileDataIfNeeded = async file => {
-  if (file._source.format === "uri") {
+  if (file._source.format === 'uri') {
     const base64 = await downloadFileFromURI(file._source.uri);
     file._previousSave = file;
     file._data = base64;
@@ -33,19 +33,19 @@ const addFileDataIfNeeded = async file => {
 };
 
 export class FilesRouter {
-  expressRouter({ maxUploadSize = "20Mb" } = {}) {
+  expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
-    router.get("/files/:appId/:filename", this.getHandler);
-    router.get("/files/:appId/metadata/:filename", this.metadataHandler);
+    router.get('/files/:appId/:filename', this.getHandler);
+    router.get('/files/:appId/metadata/:filename', this.metadataHandler);
 
-    router.post("/files", function (req, res, next) {
+    router.post('/files', function (req, res, next) {
       next(
-        new Parse.Error(Parse.Error.INVALID_FILE_NAME, "Filename not provided.")
+        new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.')
       );
     });
 
     router.post(
-      "/files/:filename",
+      '/files/:filename',
       express.raw({
         type: () => {
           return true;
@@ -58,7 +58,7 @@ export class FilesRouter {
     );
 
     router.delete(
-      "/files/:filename",
+      '/files/:filename',
       Middlewares.handleParseHeaders,
       Middlewares.handleParseSession,
       Middlewares.enforceMasterKeyAccess,
@@ -73,7 +73,7 @@ export class FilesRouter {
       res.status(403);
       const err = new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        "Invalid application ID."
+        'Invalid application ID.'
       );
       res.json({ code: err.code, error: err.message });
       return;
@@ -82,9 +82,9 @@ export class FilesRouter {
     let filename = req.params.filename;
     try {
       const filesController = config.filesController;
-      const mime = (await import("mime")).default;
+      const mime = (await import('mime')).default;
       let contentType = mime.getType(filename);
-      let file = new Parse.File(filename, { base64: "" }, contentType);
+      let file = new Parse.File(filename, { base64: '' }, contentType);
       const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeFind,
         { file },
@@ -101,8 +101,8 @@ export class FilesRouter {
           .handleFileStream(config, filename, req, res, contentType)
           .catch(() => {
             res.status(404);
-            res.set("Content-Type", "text/plain");
-            res.end("File not found.");
+            res.set('Content-Type', 'text/plain');
+            res.end('File not found.');
           });
         return;
       }
@@ -111,15 +111,15 @@ export class FilesRouter {
         .getFileData(config, filename)
         .catch(() => {
           res.status(404);
-          res.set("Content-Type", "text/plain");
-          res.end("File not found.");
+          res.set('Content-Type', 'text/plain');
+          res.end('File not found.');
         });
       if (!data) {
         return;
       }
       file = new Parse.File(
         filename,
-        { base64: data.toString("base64") },
+        { base64: data.toString('base64') },
         contentType
       );
       const afterFind = await triggers.maybeRunFileTrigger(
@@ -131,15 +131,15 @@ export class FilesRouter {
 
       if (afterFind?.file) {
         contentType = mime.getType(afterFind.file._name);
-        data = Buffer.from(afterFind.file._data, "base64");
+        data = Buffer.from(afterFind.file._data, 'base64');
       }
 
       res.status(200);
-      res.set("Content-Type", contentType);
-      res.set("Content-Length", data.length);
+      res.set('Content-Type', contentType);
+      res.set('Content-Length', data.length);
       if (afterFind.forceDownload) {
         res.set(
-          "Content-Disposition",
+          'Content-Disposition',
           `attachment;filename=${afterFind.file._name}`
         );
       }
@@ -163,7 +163,7 @@ export class FilesRouter {
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
-          "File upload by anonymous user is disabled."
+          'File upload by anonymous user is disabled.'
         )
       );
       return;
@@ -177,7 +177,7 @@ export class FilesRouter {
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
-          "File upload by authenticated user is disabled."
+          'File upload by authenticated user is disabled.'
         )
       );
       return;
@@ -186,18 +186,18 @@ export class FilesRouter {
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
-          "File upload by public is disabled."
+          'File upload by public is disabled.'
         )
       );
       return;
     }
     const filesController = config.filesController;
     const { filename } = req.params;
-    const contentType = req.get("Content-type");
+    const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
       next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, "Invalid file upload.")
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.')
       );
       return;
     }
@@ -212,7 +212,7 @@ export class FilesRouter {
     if (!isMaster && fileExtensions) {
       const isValidExtension = extension => {
         return fileExtensions.some(ext => {
-          if (ext === "*") {
+          if (ext === '*') {
             return true;
           }
           const regex = new RegExp(ext);
@@ -222,12 +222,12 @@ export class FilesRouter {
         });
       };
       let extension = contentType;
-      if (filename && filename.includes(".")) {
-        extension = filename.substring(filename.lastIndexOf(".") + 1);
-      } else if (contentType && contentType.includes("/")) {
-        extension = contentType.split("/")[1];
+      if (filename && filename.includes('.')) {
+        extension = filename.substring(filename.lastIndexOf('.') + 1);
+      } else if (contentType && contentType.includes('/')) {
+        extension = contentType.split('/')[1];
       }
-      extension = extension?.split(" ")?.join("");
+      extension = extension?.split(' ')?.join('');
 
       if (extension && !isValidExtension(extension)) {
         next(
@@ -240,7 +240,7 @@ export class FilesRouter {
       }
     }
 
-    const base64 = req.body.toString("base64");
+    const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
     try {
@@ -281,7 +281,7 @@ export class FilesRouter {
         // if the ParseFile returned is type uri, download the file before saving it
         await addFileDataIfNeeded(fileObject.file);
         // update fileSize
-        const bufferData = Buffer.from(fileObject.file._data, "base64");
+        const bufferData = Buffer.from(fileObject.file._data, 'base64');
         fileObject.fileSize = Buffer.byteLength(bufferData);
         // prepare file options
         const fileOptions = {
@@ -320,10 +320,10 @@ export class FilesRouter {
         req.auth
       );
       res.status(201);
-      res.set("Location", saveResult.url);
+      res.set('Location', saveResult.url);
       res.json(saveResult);
     } catch (e) {
-      logger.error("Error creating a file: ", e);
+      logger.error('Error creating a file: ', e);
       const error = triggers.resolveError(e, {
         code: Parse.Error.FILE_SAVE_ERROR,
         message: `Could not store file: ${fileObject.file._name}.`,
@@ -362,10 +362,10 @@ export class FilesRouter {
       // TODO: return useful JSON here?
       res.end();
     } catch (e) {
-      logger.error("Error deleting a file: ", e);
+      logger.error('Error deleting a file: ', e);
       const error = triggers.resolveError(e, {
         code: Parse.Error.FILE_DELETE_ERROR,
-        message: "Could not delete file.",
+        message: 'Could not delete file.',
       });
       next(error);
     }
@@ -387,11 +387,11 @@ export class FilesRouter {
 }
 
 function isFileStreamable(req, filesController) {
-  const range = (req.get("Range") || "/-/").split("-");
+  const range = (req.get('Range') || '/-/').split('-');
   const start = Number(range[0]);
   const end = Number(range[1]);
   return (
     (!isNaN(start) || !isNaN(end)) &&
-    typeof filesController.adapter.handleFileStream === "function"
+    typeof filesController.adapter.handleFileStream === 'function'
   );
 }

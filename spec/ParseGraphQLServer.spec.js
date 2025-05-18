@@ -1,31 +1,31 @@
-const http = require("http");
-const express = require("express");
-const req = require("../lib/request");
+const http = require('http');
+const express = require('express');
+const req = require('../lib/request');
 const fetch = (...args) =>
-  import("node-fetch").then(({ default: fetch }) => fetch(...args));
-const FormData = require("form-data");
-const ws = require("ws");
-require("./helper");
-const { updateCLP } = require("./support/dev");
+  import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const FormData = require('form-data');
+const ws = require('ws');
+require('./helper');
+const { updateCLP } = require('./support/dev');
 
-const pluralize = require("pluralize");
-const { getMainDefinition } = require("@apollo/client/utilities");
+const pluralize = require('pluralize');
+const { getMainDefinition } = require('@apollo/client/utilities');
 const createUploadLink = (...args) =>
-  import("apollo-upload-client/createUploadLink.mjs").then(({ default: fn }) =>
+  import('apollo-upload-client/createUploadLink.mjs').then(({ default: fn }) =>
     fn(...args)
   );
-const { SubscriptionClient } = require("subscriptions-transport-ws");
-const { WebSocketLink } = require("@apollo/client/link/ws");
-const { mergeSchemas } = require("@graphql-tools/schema");
+const { SubscriptionClient } = require('subscriptions-transport-ws');
+const { WebSocketLink } = require('@apollo/client/link/ws');
+const { mergeSchemas } = require('@graphql-tools/schema');
 const {
   ApolloClient,
   InMemoryCache,
   ApolloLink,
   split,
   createHttpLink,
-} = require("@apollo/client/core");
-const gql = require("graphql-tag");
-const { toGlobalId } = require("graphql-relay");
+} = require('@apollo/client/core');
+const gql = require('graphql-tag');
+const { toGlobalId } = require('graphql-relay');
 const {
   GraphQLObjectType,
   GraphQLString,
@@ -34,11 +34,11 @@ const {
   GraphQLInputObjectType,
   GraphQLSchema,
   GraphQLList,
-} = require("graphql");
-const { ParseServer } = require("../");
-const { ParseGraphQLServer } = require("../lib/GraphQL/ParseGraphQLServer");
-const { ReadPreference, Collection } = require("mongodb");
-const { v4: uuidv4 } = require("uuid");
+} = require('graphql');
+const { ParseServer } = require('../');
+const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
+const { ReadPreference, Collection } = require('mongodb');
+const { v4: uuidv4 } = require('uuid');
 
 function handleError(e) {
   if (
@@ -53,42 +53,42 @@ function handleError(e) {
   }
 }
 
-describe("ParseGraphQLServer", () => {
+describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
 
   beforeEach(async () => {
     parseServer = await global.reconfigureServer({
-      maxUploadSize: "1kb",
+      maxUploadSize: '1kb',
     });
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-      graphQLPath: "/graphql",
-      playgroundPath: "/playground",
-      subscriptionsPath: "/subscriptions",
+      graphQLPath: '/graphql',
+      playgroundPath: '/playground',
+      subscriptionsPath: '/subscriptions',
     });
   });
 
-  describe("constructor", () => {
-    it("should require a parseServer instance", () => {
+  describe('constructor', () => {
+    it('should require a parseServer instance', () => {
       expect(() => new ParseGraphQLServer()).toThrow(
-        "You must provide a parseServer instance!"
+        'You must provide a parseServer instance!'
       );
     });
 
-    it("should require config.graphQLPath", () => {
+    it('should require config.graphQLPath', () => {
       expect(() => new ParseGraphQLServer(parseServer)).toThrow(
-        "You must provide a config.graphQLPath!"
+        'You must provide a config.graphQLPath!'
       );
       expect(() => new ParseGraphQLServer(parseServer, {})).toThrow(
-        "You must provide a config.graphQLPath!"
+        'You must provide a config.graphQLPath!'
       );
     });
 
-    it("should only require parseServer and config.graphQLPath args", () => {
+    it('should only require parseServer and config.graphQLPath args', () => {
       let parseGraphQLServer;
       expect(() => {
         parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-          graphQLPath: "graphql",
+          graphQLPath: 'graphql',
         });
       }).not.toThrow();
       expect(parseGraphQLServer.parseGraphQLSchema).toBeDefined();
@@ -97,7 +97,7 @@ describe("ParseGraphQLServer", () => {
       );
     });
 
-    it("should initialize parseGraphQLSchema with a log controller", async () => {
+    it('should initialize parseGraphQLSchema with a log controller', async () => {
       const loggerAdapter = {
         log: () => {},
         error: () => {},
@@ -106,7 +106,7 @@ describe("ParseGraphQLServer", () => {
         loggerAdapter,
       });
       const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-        graphQLPath: "graphql",
+        graphQLPath: 'graphql',
       });
       expect(parseGraphQLServer.parseGraphQLSchema.log.adapter).toBe(
         loggerAdapter
@@ -114,15 +114,15 @@ describe("ParseGraphQLServer", () => {
     });
   });
 
-  describe("_getServer", () => {
-    it("should only return new server on schema changes", async () => {
+  describe('_getServer', () => {
+    it('should only return new server on schema changes', async () => {
       parseGraphQLServer.server = undefined;
       const server1 = await parseGraphQLServer._getServer();
       const server2 = await parseGraphQLServer._getServer();
       expect(server1).toBe(server2);
 
       // Trigger a schema change
-      const obj = new Parse.Object("SomeClass");
+      const obj = new Parse.Object('SomeClass');
       await obj.save();
 
       const server3 = await parseGraphQLServer._getServer();
@@ -132,7 +132,7 @@ describe("ParseGraphQLServer", () => {
     });
   });
 
-  describe("_getGraphQLOptions", () => {
+  describe('_getGraphQLOptions', () => {
     const req = {
       info: new Object(),
       config: new Object(),
@@ -143,7 +143,7 @@ describe("ParseGraphQLServer", () => {
       set: () => {},
     };
 
-    it_id("0696675e-060f-414f-bc77-9d57f31807f5")(it)(
+    it_id('0696675e-060f-414f-bc77-9d57f31807f5')(it)(
       "should return schema and context with req's info, config and auth",
       async () => {
         const options = await parseGraphQLServer._getGraphQLOptions();
@@ -157,7 +157,7 @@ describe("ParseGraphQLServer", () => {
       }
     );
 
-    it("should load GraphQL schema in every call", async () => {
+    it('should load GraphQL schema in every call', async () => {
       const originalLoad = parseGraphQLServer.parseGraphQLSchema.load;
       let counter = 0;
       parseGraphQLServer.parseGraphQLSchema.load = () => ++counter;
@@ -174,42 +174,42 @@ describe("ParseGraphQLServer", () => {
     });
   });
 
-  describe("_transformMaxUploadSizeToBytes", () => {
-    it("should transform to bytes", () => {
-      expect(parseGraphQLServer._transformMaxUploadSizeToBytes("20mb")).toBe(
+  describe('_transformMaxUploadSizeToBytes', () => {
+    it('should transform to bytes', () => {
+      expect(parseGraphQLServer._transformMaxUploadSizeToBytes('20mb')).toBe(
         20971520
       );
-      expect(parseGraphQLServer._transformMaxUploadSizeToBytes("333Gb")).toBe(
+      expect(parseGraphQLServer._transformMaxUploadSizeToBytes('333Gb')).toBe(
         357556027392
       );
       expect(
-        parseGraphQLServer._transformMaxUploadSizeToBytes("123456KB")
+        parseGraphQLServer._transformMaxUploadSizeToBytes('123456KB')
       ).toBe(126418944);
     });
   });
 
-  describe("applyGraphQL", () => {
-    it("should require an Express.js app instance", () => {
+  describe('applyGraphQL', () => {
+    it('should require an Express.js app instance', () => {
       expect(() => parseGraphQLServer.applyGraphQL()).toThrow(
-        "You must provide an Express.js app instance!"
+        'You must provide an Express.js app instance!'
       );
       expect(() => parseGraphQLServer.applyGraphQL({})).toThrow(
-        "You must provide an Express.js app instance!"
+        'You must provide an Express.js app instance!'
       );
       expect(() =>
         parseGraphQLServer.applyGraphQL(new express())
       ).not.toThrow();
     });
 
-    it("should apply middlewares at config.graphQLPath", () => {
+    it('should apply middlewares at config.graphQLPath', () => {
       let useCount = 0;
       expect(() =>
         new ParseGraphQLServer(parseServer, {
-          graphQLPath: "somepath",
+          graphQLPath: 'somepath',
         }).applyGraphQL({
           use: path => {
             useCount++;
-            expect(path).toEqual("somepath");
+            expect(path).toEqual('somepath');
           },
         })
       ).not.toThrow();
@@ -217,37 +217,37 @@ describe("ParseGraphQLServer", () => {
     });
   });
 
-  describe("applyPlayground", () => {
-    it("should require an Express.js app instance", () => {
+  describe('applyPlayground', () => {
+    it('should require an Express.js app instance', () => {
       expect(() => parseGraphQLServer.applyPlayground()).toThrow(
-        "You must provide an Express.js app instance!"
+        'You must provide an Express.js app instance!'
       );
       expect(() => parseGraphQLServer.applyPlayground({})).toThrow(
-        "You must provide an Express.js app instance!"
+        'You must provide an Express.js app instance!'
       );
       expect(() =>
         parseGraphQLServer.applyPlayground(new express())
       ).not.toThrow();
     });
 
-    it("should require initialization with config.playgroundPath", () => {
+    it('should require initialization with config.playgroundPath', () => {
       expect(() =>
         new ParseGraphQLServer(parseServer, {
-          graphQLPath: "graphql",
+          graphQLPath: 'graphql',
         }).applyPlayground(new express())
-      ).toThrow("You must provide a config.playgroundPath to applyPlayground!");
+      ).toThrow('You must provide a config.playgroundPath to applyPlayground!');
     });
 
-    it("should apply middlewares at config.playgroundPath", () => {
+    it('should apply middlewares at config.playgroundPath', () => {
       let useCount = 0;
       expect(() =>
         new ParseGraphQLServer(parseServer, {
-          graphQLPath: "graphQL",
-          playgroundPath: "somepath",
+          graphQLPath: 'graphQL',
+          playgroundPath: 'somepath',
         }).applyPlayground({
           get: path => {
             useCount++;
-            expect(path).toEqual("somepath");
+            expect(path).toEqual('somepath');
           },
         })
       ).not.toThrow();
@@ -255,26 +255,26 @@ describe("ParseGraphQLServer", () => {
     });
   });
 
-  describe("createSubscriptions", () => {
-    it("should require initialization with config.subscriptionsPath", () => {
+  describe('createSubscriptions', () => {
+    it('should require initialization with config.subscriptionsPath', () => {
       expect(() =>
         new ParseGraphQLServer(parseServer, {
-          graphQLPath: "graphql",
+          graphQLPath: 'graphql',
         }).createSubscriptions({})
       ).toThrow(
-        "You must provide a config.subscriptionsPath to createSubscriptions!"
+        'You must provide a config.subscriptionsPath to createSubscriptions!'
       );
     });
   });
 
-  describe("setGraphQLConfig", () => {
+  describe('setGraphQLConfig', () => {
     let parseGraphQLServer;
     beforeEach(() => {
       parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-        graphQLPath: "graphql",
+        graphQLPath: 'graphql',
       });
     });
-    it("should pass the graphQLConfig onto the parseGraphQLController", async () => {
+    it('should pass the graphQLConfig onto the parseGraphQLController', async () => {
       let received;
       parseGraphQLServer.parseGraphQLController = {
         async updateGraphQLConfig(graphQLConfig) {
@@ -286,17 +286,17 @@ describe("ParseGraphQLServer", () => {
       await parseGraphQLServer.setGraphQLConfig(graphQLConfig);
       expect(received).toBe(graphQLConfig);
     });
-    it("should not absorb exceptions from parseGraphQLController", async () => {
+    it('should not absorb exceptions from parseGraphQLController', async () => {
       parseGraphQLServer.parseGraphQLController = {
         async updateGraphQLConfig() {
-          throw new Error("Network request failed");
+          throw new Error('Network request failed');
         },
       };
       await expectAsync(
         parseGraphQLServer.setGraphQLConfig({})
-      ).toBeRejectedWith(new Error("Network request failed"));
+      ).toBeRejectedWith(new Error('Network request failed'));
     });
-    it("should return the response from parseGraphQLController", async () => {
+    it('should return the response from parseGraphQLController', async () => {
       parseGraphQLServer.parseGraphQLController = {
         async updateGraphQLConfig() {
           return { response: { result: true } };
@@ -310,12 +310,12 @@ describe("ParseGraphQLServer", () => {
     });
   });
 
-  describe("Auto API", () => {
+  describe('Auto API', () => {
     let httpServer;
     let parseLiveQueryServer;
     const headers = {
-      "X-Parse-Application-Id": "test",
-      "X-Parse-Javascript-Key": "test",
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
     };
 
     let apolloClient;
@@ -336,40 +336,40 @@ describe("ParseGraphQLServer", () => {
       const acl = new Parse.ACL();
       acl.setPublicReadAccess(true);
       user1 = new Parse.User();
-      user1.setUsername("user1");
-      user1.setPassword("user1");
-      user1.setEmail("user1@user1.user1");
+      user1.setUsername('user1');
+      user1.setPassword('user1');
+      user1.setEmail('user1@user1.user1');
       user1.setACL(acl);
       await user1.signUp();
 
       user2 = new Parse.User();
-      user2.setUsername("user2");
-      user2.setPassword("user2");
+      user2.setUsername('user2');
+      user2.setPassword('user2');
       user2.setACL(acl);
       await user2.signUp();
 
       user3 = new Parse.User();
-      user3.setUsername("user3");
-      user3.setPassword("user3");
+      user3.setUsername('user3');
+      user3.setPassword('user3');
       user3.setACL(acl);
       await user3.signUp();
 
       user4 = new Parse.User();
-      user4.setUsername("user4");
-      user4.setPassword("user4");
+      user4.setUsername('user4');
+      user4.setPassword('user4');
       user4.setACL(acl);
       await user4.signUp();
 
       user5 = new Parse.User();
-      user5.setUsername("user5");
-      user5.setPassword("user5");
+      user5.setUsername('user5');
+      user5.setPassword('user5');
       user5.setACL(acl);
       await user5.signUp();
 
       const roleACL = new Parse.ACL();
       roleACL.setPublicReadAccess(true);
       role = new Parse.Role();
-      role.setName("role");
+      role.setName('role');
       role.setACL(roleACL);
       role.getUsers().add(user1);
       role.getUsers().add(user3);
@@ -379,59 +379,59 @@ describe("ParseGraphQLServer", () => {
         await parseServer.config.databaseController.loadSchema();
       try {
         await schemaController.addClassIfNotExists(
-          "GraphQLClass",
+          'GraphQLClass',
           {
-            someField: { type: "String" },
-            pointerToUser: { type: "Pointer", targetClass: "_User" },
+            someField: { type: 'String' },
+            pointerToUser: { type: 'Pointer', targetClass: '_User' },
           },
           {
             find: {
-              "role:role": true,
+              'role:role': true,
               [user1.id]: true,
               [user2.id]: true,
             },
             create: {
-              "role:role": true,
+              'role:role': true,
               [user1.id]: true,
               [user2.id]: true,
             },
             get: {
-              "role:role": true,
+              'role:role': true,
               [user1.id]: true,
               [user2.id]: true,
             },
             update: {
-              "role:role": true,
+              'role:role': true,
               [user1.id]: true,
               [user2.id]: true,
             },
             addField: {
-              "role:role": true,
+              'role:role': true,
               [user1.id]: true,
               [user2.id]: true,
             },
             delete: {
-              "role:role": true,
+              'role:role': true,
               [user1.id]: true,
               [user2.id]: true,
             },
-            readUserFields: ["pointerToUser"],
-            writeUserFields: ["pointerToUser"],
+            readUserFields: ['pointerToUser'],
+            writeUserFields: ['pointerToUser'],
           },
           {}
         );
       } catch (err) {
         if (
           !(err instanceof Parse.Error) ||
-          err.message !== "Class GraphQLClass already exists."
+          err.message !== 'Class GraphQLClass already exists.'
         ) {
           throw err;
         }
       }
 
-      object1 = new Parse.Object("GraphQLClass");
-      object1.set("someField", "someValue1");
-      object1.set("someOtherField", "A");
+      object1 = new Parse.Object('GraphQLClass');
+      object1.set('someField', 'someValue1');
+      object1.set('someOtherField', 'A');
       const object1ACL = new Parse.ACL();
       object1ACL.setPublicReadAccess(false);
       object1ACL.setPublicWriteAccess(false);
@@ -444,9 +444,9 @@ describe("ParseGraphQLServer", () => {
       object1.setACL(object1ACL);
       await object1.save(undefined, { useMasterKey: true });
 
-      object2 = new Parse.Object("GraphQLClass");
-      object2.set("someField", "someValue2");
-      object2.set("someOtherField", "A");
+      object2 = new Parse.Object('GraphQLClass');
+      object2.set('someField', 'someValue2');
+      object2.set('someOtherField', 'A');
       const object2ACL = new Parse.ACL();
       object2ACL.setPublicReadAccess(false);
       object2ACL.setPublicWriteAccess(false);
@@ -459,14 +459,14 @@ describe("ParseGraphQLServer", () => {
       object2.setACL(object2ACL);
       await object2.save(undefined, { useMasterKey: true });
 
-      object3 = new Parse.Object("GraphQLClass");
-      object3.set("someField", "someValue3");
-      object3.set("someOtherField", "B");
-      object3.set("pointerToUser", user5);
+      object3 = new Parse.Object('GraphQLClass');
+      object3.set('someField', 'someValue3');
+      object3.set('someOtherField', 'B');
+      object3.set('pointerToUser', user5);
       await object3.save(undefined, { useMasterKey: true });
 
-      object4 = new Parse.Object("PublicClass");
-      object4.set("someField", "someValue4");
+      object4 = new Parse.Object('PublicClass');
+      object4.set('someField', 'someValue4');
       await object4.save();
 
       objects = [];
@@ -482,7 +482,7 @@ describe("ParseGraphQLServer", () => {
       }
       const expressApp = express();
       httpServer = http.createServer(expressApp);
-      expressApp.use("/parse", _parseServer.app);
+      expressApp.use('/parse', _parseServer.app);
       parseLiveQueryServer = await ParseServer.createLiveQueryServer(
         httpServer,
         {
@@ -490,9 +490,9 @@ describe("ParseGraphQLServer", () => {
         }
       );
       parseGraphQLServer = new ParseGraphQLServer(_parseServer, {
-        graphQLPath: "/graphql",
-        playgroundPath: "/playground",
-        subscriptionsPath: "/subscriptions",
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+        subscriptionsPath: '/subscriptions',
       });
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
@@ -504,7 +504,7 @@ describe("ParseGraphQLServer", () => {
       await createGQLFromParseServer(parseServer);
 
       const subscriptionClient = new SubscriptionClient(
-        "ws://localhost:13377/subscriptions",
+        'ws://localhost:13377/subscriptions',
         {
           reconnect: true,
           connectionParams: headers,
@@ -513,7 +513,7 @@ describe("ParseGraphQLServer", () => {
       );
       const wsLink = new WebSocketLink(subscriptionClient);
       const httpLink = await createUploadLink({
-        uri: "http://localhost:13377/graphql",
+        uri: 'http://localhost:13377/graphql',
         fetch,
         headers,
       });
@@ -522,7 +522,7 @@ describe("ParseGraphQLServer", () => {
           ({ query }) => {
             const { kind, operation } = getMainDefinition(query);
             return (
-              kind === "OperationDefinition" && operation === "subscription"
+              kind === 'OperationDefinition' && operation === 'subscription'
             );
           },
           wsLink,
@@ -531,12 +531,12 @@ describe("ParseGraphQLServer", () => {
         cache: new InMemoryCache(),
         defaultOptions: {
           query: {
-            fetchPolicy: "no-cache",
+            fetchPolicy: 'no-cache',
           },
         },
       });
-      spyOn(console, "warn").and.callFake(() => {});
-      spyOn(console, "error").and.callFake(() => {});
+      spyOn(console, 'warn').and.callFake(() => {});
+      spyOn(console, 'error').and.callFake(() => {});
     });
 
     afterEach(async () => {
@@ -544,8 +544,8 @@ describe("ParseGraphQLServer", () => {
       await httpServer.close();
     });
 
-    describe("GraphQL", () => {
-      it("should be healthy", async () => {
+    describe('GraphQL', () => {
+      it('should be healthy', async () => {
         try {
           const health = (
             await apolloClient.query({
@@ -562,7 +562,7 @@ describe("ParseGraphQLServer", () => {
         }
       });
 
-      it("should be cors enabled and scope the response within the source origin", async () => {
+      it('should be cors enabled and scope the response within the source origin', async () => {
         let checked = false;
         const apolloClient = new ApolloClient({
           link: new ApolloLink((operation, forward) => {
@@ -571,19 +571,19 @@ describe("ParseGraphQLServer", () => {
               const {
                 response: { headers },
               } = context;
-              expect(headers.get("access-control-allow-origin")).toEqual(
-                "http://example.com"
+              expect(headers.get('access-control-allow-origin')).toEqual(
+                'http://example.com'
               );
               checked = true;
               return response;
             });
           }).concat(
             createHttpLink({
-              uri: "http://localhost:13377/graphql",
+              uri: 'http://localhost:13377/graphql',
               fetch,
               headers: {
                 ...headers,
-                Origin: "http://example.com",
+                Origin: 'http://example.com',
               },
             })
           ),
@@ -600,7 +600,7 @@ describe("ParseGraphQLServer", () => {
         expect(checked).toBeTruthy();
       });
 
-      it("should handle Parse headers", async () => {
+      it('should handle Parse headers', async () => {
         const test = {
           context: ({ req: { info, config, auth } }) => {
             expect(req.info).toBeDefined();
@@ -613,7 +613,7 @@ describe("ParseGraphQLServer", () => {
             };
           },
         };
-        const contextSpy = spyOn(test, "context");
+        const contextSpy = spyOn(test, 'context');
         const originalGetGraphQLOptions = parseGraphQLServer._getGraphQLOptions;
         parseGraphQLServer._getGraphQLOptions = async () => {
           return {
@@ -636,17 +636,17 @@ describe("ParseGraphQLServer", () => {
       });
     });
 
-    describe("Playground", () => {
-      it("should mount playground", async () => {
+    describe('Playground', () => {
+      it('should mount playground', async () => {
         const res = await req({
-          method: "GET",
-          url: "http://localhost:13377/playground",
+          method: 'GET',
+          url: 'http://localhost:13377/playground',
         });
         expect(res.status).toEqual(200);
       });
     });
 
-    describe("Schema", () => {
+    describe('Schema', () => {
       const resetGraphQLCache = async () => {
         await Promise.all([
           parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
@@ -654,8 +654,8 @@ describe("ParseGraphQLServer", () => {
         ]);
       };
 
-      describe("Default Types", () => {
-        it("should have Object scalar type", async () => {
+      describe('Default Types', () => {
+        it('should have Object scalar type', async () => {
           const objectType = (
             await apolloClient.query({
               query: gql`
@@ -666,11 +666,11 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
-          expect(objectType.kind).toEqual("SCALAR");
+          ).data['__type'];
+          expect(objectType.kind).toEqual('SCALAR');
         });
 
-        it("should have Date scalar type", async () => {
+        it('should have Date scalar type', async () => {
           const dateType = (
             await apolloClient.query({
               query: gql`
@@ -681,11 +681,11 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
-          expect(dateType.kind).toEqual("SCALAR");
+          ).data['__type'];
+          expect(dateType.kind).toEqual('SCALAR');
         });
 
-        it("should have ArrayResult type", async () => {
+        it('should have ArrayResult type', async () => {
           const arrayResultType = (
             await apolloClient.query({
               query: gql`
@@ -696,11 +696,11 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
-          expect(arrayResultType.kind).toEqual("UNION");
+          ).data['__type'];
+          expect(arrayResultType.kind).toEqual('UNION');
         });
 
-        it("should have File object type", async () => {
+        it('should have File object type', async () => {
           const fileType = (
             await apolloClient.query({
               query: gql`
@@ -714,15 +714,15 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
-          expect(fileType.kind).toEqual("OBJECT");
+          ).data['__type'];
+          expect(fileType.kind).toEqual('OBJECT');
           expect(fileType.fields.map(field => field.name).sort()).toEqual([
-            "name",
-            "url",
+            'name',
+            'url',
           ]);
         });
 
-        it("should have Class interface type", async () => {
+        it('should have Class interface type', async () => {
           const classType = (
             await apolloClient.query({
               query: gql`
@@ -736,17 +736,17 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
-          expect(classType.kind).toEqual("INTERFACE");
+          ).data['__type'];
+          expect(classType.kind).toEqual('INTERFACE');
           expect(classType.fields.map(field => field.name).sort()).toEqual([
-            "ACL",
-            "createdAt",
-            "objectId",
-            "updatedAt",
+            'ACL',
+            'createdAt',
+            'objectId',
+            'updatedAt',
           ]);
         });
 
-        it("should have ReadPreference enum type", async () => {
+        it('should have ReadPreference enum type', async () => {
           const readPreferenceType = (
             await apolloClient.query({
               query: gql`
@@ -760,20 +760,20 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
-          expect(readPreferenceType.kind).toEqual("ENUM");
+          ).data['__type'];
+          expect(readPreferenceType.kind).toEqual('ENUM');
           expect(
             readPreferenceType.enumValues.map(value => value.name).sort()
           ).toEqual([
-            "NEAREST",
-            "PRIMARY",
-            "PRIMARY_PREFERRED",
-            "SECONDARY",
-            "SECONDARY_PREFERRED",
+            'NEAREST',
+            'PRIMARY',
+            'PRIMARY_PREFERRED',
+            'SECONDARY',
+            'SECONDARY_PREFERRED',
           ]);
         });
 
-        it("should have GraphQLUpload object type", async () => {
+        it('should have GraphQLUpload object type', async () => {
           const graphQLUploadType = (
             await apolloClient.query({
               query: gql`
@@ -787,11 +787,11 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
-          expect(graphQLUploadType.kind).toEqual("SCALAR");
+          ).data['__type'];
+          expect(graphQLUploadType.kind).toEqual('SCALAR');
         });
 
-        it("should have all expected types", async () => {
+        it('should have all expected types', async () => {
           const schemaTypes = (
             await apolloClient.query({
               query: gql`
@@ -804,14 +804,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__schema"].types.map(type => type.name);
+          ).data['__schema'].types.map(type => type.name);
 
           const expectedTypes = [
-            "ParseObject",
-            "Date",
-            "FileInfo",
-            "ReadPreference",
-            "Upload",
+            'ParseObject',
+            'Date',
+            'FileInfo',
+            'ReadPreference',
+            'Upload',
           ];
           expect(
             expectedTypes.every(type => schemaTypes.indexOf(type) !== -1)
@@ -819,7 +819,7 @@ describe("ParseGraphQLServer", () => {
         });
       });
 
-      describe("Relay Specific Types", () => {
+      describe('Relay Specific Types', () => {
         let clearCache;
         beforeEach(async () => {
           if (!clearCache) {
@@ -828,7 +828,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should have Node interface", async () => {
+        it('should have Node interface', async () => {
           const schemaTypes = (
             await apolloClient.query({
               query: gql`
@@ -841,12 +841,12 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__schema"].types.map(type => type.name);
+          ).data['__schema'].types.map(type => type.name);
 
-          expect(schemaTypes).toContain("Node");
+          expect(schemaTypes).toContain('Node');
         });
 
-        it("should have node query", async () => {
+        it('should have node query', async () => {
           const queryFields = (
             await apolloClient.query({
               query: gql`
@@ -859,12 +859,12 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields.map(field => field.name);
+          ).data['__type'].fields.map(field => field.name);
 
-          expect(queryFields).toContain("node");
+          expect(queryFields).toContain('node');
         });
 
-        it("should return global id", async () => {
+        it('should return global id', async () => {
           const userFields = (
             await apolloClient.query({
               query: gql`
@@ -877,13 +877,13 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields.map(field => field.name);
+          ).data['__type'].fields.map(field => field.name);
 
-          expect(userFields).toContain("id");
-          expect(userFields).toContain("objectId");
+          expect(userFields).toContain('id');
+          expect(userFields).toContain('objectId');
         });
 
-        it("should have clientMutationId in create file input", async () => {
+        it('should have clientMutationId in create file input', async () => {
           const createFileInputFields = (
             await apolloClient.query({
               query: gql`
@@ -896,14 +896,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
-          expect(createFileInputFields).toEqual(["clientMutationId", "upload"]);
+          expect(createFileInputFields).toEqual(['clientMutationId', 'upload']);
         });
 
-        it("should have clientMutationId in create file payload", async () => {
+        it('should have clientMutationId in create file payload', async () => {
           const createFilePayloadFields = (
             await apolloClient.query({
               query: gql`
@@ -916,18 +916,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
           expect(createFilePayloadFields).toEqual([
-            "clientMutationId",
-            "fileInfo",
+            'clientMutationId',
+            'fileInfo',
           ]);
         });
 
-        it("should have clientMutationId in call function input", async () => {
-          Parse.Cloud.define("hello", () => {});
+        it('should have clientMutationId in call function input', async () => {
+          Parse.Cloud.define('hello', () => {});
 
           const callFunctionInputFields = (
             await apolloClient.query({
@@ -941,19 +941,19 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
           expect(callFunctionInputFields).toEqual([
-            "clientMutationId",
-            "functionName",
-            "params",
+            'clientMutationId',
+            'functionName',
+            'params',
           ]);
         });
 
-        it("should have clientMutationId in call function payload", async () => {
-          Parse.Cloud.define("hello", () => {});
+        it('should have clientMutationId in call function payload', async () => {
+          Parse.Cloud.define('hello', () => {});
 
           const callFunctionPayloadFields = (
             await apolloClient.query({
@@ -967,17 +967,17 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
           expect(callFunctionPayloadFields).toEqual([
-            "clientMutationId",
-            "result",
+            'clientMutationId',
+            'result',
           ]);
         });
 
-        it("should have clientMutationId in sign up mutation input", async () => {
+        it('should have clientMutationId in sign up mutation input', async () => {
           const inputFields = (
             await apolloClient.query({
               query: gql`
@@ -990,14 +990,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
-          expect(inputFields).toEqual(["clientMutationId", "fields"]);
+          expect(inputFields).toEqual(['clientMutationId', 'fields']);
         });
 
-        it("should have clientMutationId in sign up mutation payload", async () => {
+        it('should have clientMutationId in sign up mutation payload', async () => {
           const payloadFields = (
             await apolloClient.query({
               query: gql`
@@ -1010,14 +1010,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
-          expect(payloadFields).toEqual(["clientMutationId", "viewer"]);
+          expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
         });
 
-        it("should have clientMutationId in log in mutation input", async () => {
+        it('should have clientMutationId in log in mutation input', async () => {
           const inputFields = (
             await apolloClient.query({
               query: gql`
@@ -1030,18 +1030,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
           expect(inputFields).toEqual([
-            "authData",
-            "clientMutationId",
-            "password",
-            "username",
+            'authData',
+            'clientMutationId',
+            'password',
+            'username',
           ]);
         });
 
-        it("should have clientMutationId in log in mutation payload", async () => {
+        it('should have clientMutationId in log in mutation payload', async () => {
           const payloadFields = (
             await apolloClient.query({
               query: gql`
@@ -1054,14 +1054,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
-          expect(payloadFields).toEqual(["clientMutationId", "viewer"]);
+          expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
         });
 
-        it("should have clientMutationId in log out mutation input", async () => {
+        it('should have clientMutationId in log out mutation input', async () => {
           const inputFields = (
             await apolloClient.query({
               query: gql`
@@ -1074,14 +1074,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
-          expect(inputFields).toEqual(["clientMutationId"]);
+          expect(inputFields).toEqual(['clientMutationId']);
         });
 
-        it("should have clientMutationId in log out mutation payload", async () => {
+        it('should have clientMutationId in log out mutation payload', async () => {
           const payloadFields = (
             await apolloClient.query({
               query: gql`
@@ -1094,14 +1094,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
-          expect(payloadFields).toEqual(["clientMutationId", "ok"]);
+          expect(payloadFields).toEqual(['clientMutationId', 'ok']);
         });
 
-        it("should have clientMutationId in createClass mutation input", async () => {
+        it('should have clientMutationId in createClass mutation input', async () => {
           const inputFields = (
             await apolloClient.query({
               query: gql`
@@ -1114,18 +1114,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual([
-            "clientMutationId",
-            "name",
-            "schemaFields",
+            'clientMutationId',
+            'name',
+            'schemaFields',
           ]);
         });
 
-        it("should have clientMutationId in createClass mutation payload", async () => {
+        it('should have clientMutationId in createClass mutation payload', async () => {
           const payloadFields = (
             await apolloClient.query({
               query: gql`
@@ -1138,14 +1138,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
-          expect(payloadFields).toEqual(["class", "clientMutationId"]);
+          expect(payloadFields).toEqual(['class', 'clientMutationId']);
         });
 
-        it("should have clientMutationId in updateClass mutation input", async () => {
+        it('should have clientMutationId in updateClass mutation input', async () => {
           const inputFields = (
             await apolloClient.query({
               query: gql`
@@ -1158,18 +1158,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual([
-            "clientMutationId",
-            "name",
-            "schemaFields",
+            'clientMutationId',
+            'name',
+            'schemaFields',
           ]);
         });
 
-        it("should have clientMutationId in updateClass mutation payload", async () => {
+        it('should have clientMutationId in updateClass mutation payload', async () => {
           const payloadFields = (
             await apolloClient.query({
               query: gql`
@@ -1182,14 +1182,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
-          expect(payloadFields).toEqual(["class", "clientMutationId"]);
+          expect(payloadFields).toEqual(['class', 'clientMutationId']);
         });
 
-        it("should have clientMutationId in deleteClass mutation input", async () => {
+        it('should have clientMutationId in deleteClass mutation input', async () => {
           const inputFields = (
             await apolloClient.query({
               query: gql`
@@ -1202,14 +1202,14 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
-          expect(inputFields).toEqual(["clientMutationId", "name"]);
+          expect(inputFields).toEqual(['clientMutationId', 'name']);
         });
 
-        it("should have clientMutationId in deleteClass mutation payload", async () => {
+        it('should have clientMutationId in deleteClass mutation payload', async () => {
           const payloadFields = (
             await apolloClient.query({
               query: gql`
@@ -1222,15 +1222,15 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
-          expect(payloadFields).toEqual(["class", "clientMutationId"]);
+          expect(payloadFields).toEqual(['class', 'clientMutationId']);
         });
 
-        it("should have clientMutationId in custom create object mutation input", async () => {
-          const obj = new Parse.Object("SomeClass");
+        it('should have clientMutationId in custom create object mutation input', async () => {
+          const obj = new Parse.Object('SomeClass');
           await obj.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -1247,18 +1247,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
           expect(createObjectInputFields).toEqual([
-            "clientMutationId",
-            "fields",
+            'clientMutationId',
+            'fields',
           ]);
         });
 
-        it("should have clientMutationId in custom create object mutation payload", async () => {
-          const obj = new Parse.Object("SomeClass");
+        it('should have clientMutationId in custom create object mutation payload', async () => {
+          const obj = new Parse.Object('SomeClass');
           await obj.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -1275,18 +1275,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
           expect(createObjectPayloadFields).toEqual([
-            "clientMutationId",
-            "someClass",
+            'clientMutationId',
+            'someClass',
           ]);
         });
 
-        it("should have clientMutationId in custom update object mutation input", async () => {
-          const obj = new Parse.Object("SomeClass");
+        it('should have clientMutationId in custom update object mutation input', async () => {
+          const obj = new Parse.Object('SomeClass');
           await obj.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -1303,19 +1303,19 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
           expect(createObjectInputFields).toEqual([
-            "clientMutationId",
-            "fields",
-            "id",
+            'clientMutationId',
+            'fields',
+            'id',
           ]);
         });
 
-        it("should have clientMutationId in custom update object mutation payload", async () => {
-          const obj = new Parse.Object("SomeClass");
+        it('should have clientMutationId in custom update object mutation payload', async () => {
+          const obj = new Parse.Object('SomeClass');
           await obj.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -1332,18 +1332,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
           expect(createObjectPayloadFields).toEqual([
-            "clientMutationId",
-            "someClass",
+            'clientMutationId',
+            'someClass',
           ]);
         });
 
-        it("should have clientMutationId in custom delete object mutation input", async () => {
-          const obj = new Parse.Object("SomeClass");
+        it('should have clientMutationId in custom delete object mutation input', async () => {
+          const obj = new Parse.Object('SomeClass');
           await obj.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -1360,15 +1360,15 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].inputFields
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
-          expect(createObjectInputFields).toEqual(["clientMutationId", "id"]);
+          expect(createObjectInputFields).toEqual(['clientMutationId', 'id']);
         });
 
-        it("should have clientMutationId in custom delete object mutation payload", async () => {
-          const obj = new Parse.Object("SomeClass");
+        it('should have clientMutationId in custom delete object mutation payload', async () => {
+          const obj = new Parse.Object('SomeClass');
           await obj.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -1385,19 +1385,19 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
           expect(createObjectPayloadFields).toEqual([
-            "clientMutationId",
-            "someClass",
+            'clientMutationId',
+            'someClass',
           ]);
         });
       });
 
-      describe("Parse Class Types", () => {
-        it("should have all expected types", async () => {
+      describe('Parse Class Types', () => {
+        it('should have all expected types', async () => {
           await parseServer.config.databaseController.loadSchema();
 
           const schemaTypes = (
@@ -1412,26 +1412,26 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__schema"].types.map(type => type.name);
+          ).data['__schema'].types.map(type => type.name);
 
           const expectedTypes = [
-            "Role",
-            "RoleWhereInput",
-            "CreateRoleFieldsInput",
-            "UpdateRoleFieldsInput",
-            "RoleConnection",
-            "User",
-            "UserWhereInput",
-            "UserConnection",
-            "CreateUserFieldsInput",
-            "UpdateUserFieldsInput",
+            'Role',
+            'RoleWhereInput',
+            'CreateRoleFieldsInput',
+            'UpdateRoleFieldsInput',
+            'RoleConnection',
+            'User',
+            'UserWhereInput',
+            'UserConnection',
+            'CreateUserFieldsInput',
+            'UpdateUserFieldsInput',
           ];
           expect(
             expectedTypes.every(type => schemaTypes.indexOf(type) !== -1)
           ).toBeTruthy(JSON.stringify(schemaTypes));
         });
 
-        it("should ArrayResult contains all types", async () => {
+        it('should ArrayResult contains all types', async () => {
           const objectType = (
             await apolloClient.query({
               query: gql`
@@ -1445,18 +1445,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"];
+          ).data['__type'];
           const possibleTypes = objectType.possibleTypes.map(o => o.name);
-          expect(possibleTypes).toContain("User");
-          expect(possibleTypes).toContain("Role");
-          expect(possibleTypes).toContain("Element");
+          expect(possibleTypes).toContain('User');
+          expect(possibleTypes).toContain('Role');
+          expect(possibleTypes).toContain('Element');
         });
 
-        it("should update schema when it changes", async () => {
+        it('should update schema when it changes', async () => {
           const schemaController =
             await parseServer.config.databaseController.loadSchema();
-          await schemaController.updateClass("_User", {
-            foo: { type: "String" },
+          await schemaController.updateClass('_User', {
+            foo: { type: 'String' },
           });
 
           const userFields = (
@@ -1471,11 +1471,11 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields.map(field => field.name);
-          expect(userFields.indexOf("foo") !== -1).toBeTruthy();
+          ).data['__type'].fields.map(field => field.name);
+          expect(userFields.indexOf('foo') !== -1).toBeTruthy();
         });
 
-        it("should not contain password field from _User class", async () => {
+        it('should not contain password field from _User class', async () => {
           const userFields = (
             await apolloClient.query({
               query: gql`
@@ -1488,12 +1488,12 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             })
-          ).data["__type"].fields.map(field => field.name);
-          expect(userFields.includes("password")).toBeFalsy();
+          ).data['__type'].fields.map(field => field.name);
+          expect(userFields.includes('password')).toBeFalsy();
         });
       });
 
-      describe("Configuration", function () {
+      describe('Configuration', function () {
         const resetGraphQLCache = async () => {
           await Promise.all([
             parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
@@ -1506,17 +1506,17 @@ describe("ParseGraphQLServer", () => {
           await resetGraphQLCache();
         });
 
-        it_id("d6a23a2f-ca18-4b15-bc73-3e636f99e6bc")(it)(
-          "should only include types in the enabledForClasses list",
+        it_id('d6a23a2f-ca18-4b15-bc73-3e636f99e6bc')(it)(
+          'should only include types in the enabledForClasses list',
           async () => {
             const schemaController =
               await parseServer.config.databaseController.loadSchema();
-            await schemaController.addClassIfNotExists("SuperCar", {
-              foo: { type: "String" },
+            await schemaController.addClassIfNotExists('SuperCar', {
+              foo: { type: 'String' },
             });
 
             const graphQLConfig = {
-              enabledForClasses: ["SuperCar"],
+              enabledForClasses: ['SuperCar'],
             };
             await parseGraphQLServer.setGraphQLConfig(graphQLConfig);
             await resetGraphQLCache();
@@ -1541,17 +1541,17 @@ describe("ParseGraphQLServer", () => {
             expect(data.superCarType).toBeTruthy();
           }
         );
-        it_id("1db2aceb-d24e-4929-ba43-8dbb5d0395e1")(it)(
-          "should not include types in the disabledForClasses list",
+        it_id('1db2aceb-d24e-4929-ba43-8dbb5d0395e1')(it)(
+          'should not include types in the disabledForClasses list',
           async () => {
             const schemaController =
               await parseServer.config.databaseController.loadSchema();
-            await schemaController.addClassIfNotExists("SuperCar", {
-              foo: { type: "String" },
+            await schemaController.addClassIfNotExists('SuperCar', {
+              foo: { type: 'String' },
             });
 
             const graphQLConfig = {
-              disabledForClasses: ["SuperCar"],
+              disabledForClasses: ['SuperCar'],
             };
             await parseGraphQLServer.setGraphQLConfig(graphQLConfig);
             await resetGraphQLCache();
@@ -1576,13 +1576,13 @@ describe("ParseGraphQLServer", () => {
             expect(data.userType).toBeTruthy();
           }
         );
-        it_id("85c2e02f-0239-4819-b66e-392e0125f6c5")(it)(
-          "should remove query operations when disabled",
+        it_id('85c2e02f-0239-4819-b66e-392e0125f6c5')(it)(
+          'should remove query operations when disabled',
           async () => {
-            const superCar = new Parse.Object("SuperCar");
-            await superCar.save({ foo: "bar" });
-            const customer = new Parse.Object("Customer");
-            await customer.save({ foo: "bar" });
+            const superCar = new Parse.Object('SuperCar');
+            await superCar.save({ foo: 'bar' });
+            const customer = new Parse.Object('Customer');
+            await customer.save({ foo: 'bar' });
 
             await expectAsync(
               apolloClient.query({
@@ -1614,14 +1614,14 @@ describe("ParseGraphQLServer", () => {
             const graphQLConfig = {
               classConfigs: [
                 {
-                  className: "SuperCar",
+                  className: 'SuperCar',
                   query: {
                     get: false,
                     find: true,
                   },
                 },
                 {
-                  className: "Customer",
+                  className: 'Customer',
                   query: {
                     get: true,
                     find: false,
@@ -1685,13 +1685,13 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it_id("972161a6-8108-4e99-a1a5-71d0267d26c2")(it)(
-          "should remove mutation operations, create, update and delete, when disabled",
+        it_id('972161a6-8108-4e99-a1a5-71d0267d26c2')(it)(
+          'should remove mutation operations, create, update and delete, when disabled',
           async () => {
-            const superCar1 = new Parse.Object("SuperCar");
-            await superCar1.save({ foo: "bar" });
-            const customer1 = new Parse.Object("Customer");
-            await customer1.save({ foo: "bar" });
+            const superCar1 = new Parse.Object('SuperCar');
+            await superCar1.save({ foo: 'bar' });
+            const customer1 = new Parse.Object('Customer');
+            await customer1.save({ foo: 'bar' });
 
             await expectAsync(
               apolloClient.query({
@@ -1704,7 +1704,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 variables: {
                   id: superCar1.id,
-                  foo: "lah",
+                  foo: 'lah',
                 },
               })
             ).toBeResolved();
@@ -1735,7 +1735,7 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
               variables: {
-                foo: "rah",
+                foo: 'rah',
               },
             });
             expect(customerData.createCustomer.customer).toBeTruthy();
@@ -1746,7 +1746,7 @@ describe("ParseGraphQLServer", () => {
             await parseGraphQLServer.setGraphQLConfig({
               classConfigs: [
                 {
-                  className: "SuperCar",
+                  className: 'SuperCar',
                   mutation: {
                     create: true,
                     update: false,
@@ -1754,7 +1754,7 @@ describe("ParseGraphQLServer", () => {
                   },
                 },
                 {
-                  className: "Customer",
+                  className: 'Customer',
                   mutation: {
                     create: false,
                     update: true,
@@ -1776,7 +1776,7 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
               variables: {
-                foo: "mah",
+                foo: 'mah',
               },
             });
             expect(superCarData.createSuperCar).toBeTruthy();
@@ -1824,7 +1824,7 @@ describe("ParseGraphQLServer", () => {
                   }
                 `,
                 variables: {
-                  foo: "rah",
+                  foo: 'rah',
                 },
               })
             ).toBeRejected();
@@ -1839,7 +1839,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 variables: {
                   id: customer2Id,
-                  foo: "tah",
+                  foo: 'tah',
                 },
               })
             ).toBeResolved();
@@ -1860,26 +1860,26 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it_id("4af763b1-ff86-43c7-ba30-060a1c07e730")(it)(
-          "should only allow the supplied create and update fields for a class",
+        it_id('4af763b1-ff86-43c7-ba30-060a1c07e730')(it)(
+          'should only allow the supplied create and update fields for a class',
           async () => {
             const schemaController =
               await parseServer.config.databaseController.loadSchema();
-            await schemaController.addClassIfNotExists("SuperCar", {
-              engine: { type: "String" },
-              doors: { type: "Number" },
-              price: { type: "String" },
-              mileage: { type: "Number" },
+            await schemaController.addClassIfNotExists('SuperCar', {
+              engine: { type: 'String' },
+              doors: { type: 'Number' },
+              price: { type: 'String' },
+              mileage: { type: 'Number' },
             });
 
             await parseGraphQLServer.setGraphQLConfig({
               classConfigs: [
                 {
-                  className: "SuperCar",
+                  className: 'SuperCar',
                   type: {
                     inputFields: {
-                      create: ["engine", "doors", "price"],
-                      update: ["price", "mileage"],
+                      create: ['engine', 'doors', 'price'],
+                      update: ['price', 'mileage'],
                     },
                   },
                 },
@@ -1960,16 +1960,16 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it_id("fc9237e9-3e63-4b55-9c1d-e6269f613a93")(it)(
-          "should handle required fields from the Parse class",
+        it_id('fc9237e9-3e63-4b55-9c1d-e6269f613a93')(it)(
+          'should handle required fields from the Parse class',
           async () => {
             const schemaController =
               await parseServer.config.databaseController.loadSchema();
-            await schemaController.addClassIfNotExists("SuperCar", {
-              engine: { type: "String", required: true },
-              doors: { type: "Number", required: true },
-              price: { type: "String" },
-              mileage: { type: "Number" },
+            await schemaController.addClassIfNotExists('SuperCar', {
+              engine: { type: 'String', required: true },
+              doors: { type: 'Number', required: true },
+              price: { type: 'String' },
+              mileage: { type: 'Number' },
             });
 
             await resetGraphQLCache();
@@ -1991,14 +1991,14 @@ describe("ParseGraphQLServer", () => {
               `,
             });
             expect(
-              __type.inputFields.find(o => o.name === "price").type.kind
-            ).toEqual("SCALAR");
+              __type.inputFields.find(o => o.name === 'price').type.kind
+            ).toEqual('SCALAR');
             expect(
-              __type.inputFields.find(o => o.name === "engine").type.kind
-            ).toEqual("NON_NULL");
+              __type.inputFields.find(o => o.name === 'engine').type.kind
+            ).toEqual('NON_NULL');
             expect(
-              __type.inputFields.find(o => o.name === "doors").type.kind
-            ).toEqual("NON_NULL");
+              __type.inputFields.find(o => o.name === 'doors').type.kind
+            ).toEqual('NON_NULL');
 
             const {
               data: { __type: __type2 },
@@ -2017,45 +2017,45 @@ describe("ParseGraphQLServer", () => {
               `,
             });
             expect(
-              __type2.fields.find(o => o.name === "price").type.kind
-            ).toEqual("SCALAR");
+              __type2.fields.find(o => o.name === 'price').type.kind
+            ).toEqual('SCALAR');
             expect(
-              __type2.fields.find(o => o.name === "engine").type.kind
-            ).toEqual("NON_NULL");
+              __type2.fields.find(o => o.name === 'engine').type.kind
+            ).toEqual('NON_NULL');
             expect(
-              __type2.fields.find(o => o.name === "doors").type.kind
-            ).toEqual("NON_NULL");
+              __type2.fields.find(o => o.name === 'doors').type.kind
+            ).toEqual('NON_NULL');
           }
         );
 
-        it_id("83b6895a-7dfd-4e3b-a5ce-acdb1fa39705")(it)(
-          "should only allow the supplied output fields for a class",
+        it_id('83b6895a-7dfd-4e3b-a5ce-acdb1fa39705')(it)(
+          'should only allow the supplied output fields for a class',
           async () => {
             const schemaController =
               await parseServer.config.databaseController.loadSchema();
 
-            await schemaController.addClassIfNotExists("SuperCar", {
-              engine: { type: "String" },
-              doors: { type: "Number" },
-              price: { type: "String" },
-              mileage: { type: "Number" },
-              insuranceClaims: { type: "Number" },
+            await schemaController.addClassIfNotExists('SuperCar', {
+              engine: { type: 'String' },
+              doors: { type: 'Number' },
+              price: { type: 'String' },
+              mileage: { type: 'Number' },
+              insuranceClaims: { type: 'Number' },
             });
 
-            const superCar = await new Parse.Object("SuperCar").save({
-              engine: "petrol",
+            const superCar = await new Parse.Object('SuperCar').save({
+              engine: 'petrol',
               doors: 3,
-              price: "£7500",
+              price: '£7500',
               mileage: 0,
-              insuranceCertificate: "private-file.pdf",
+              insuranceCertificate: 'private-file.pdf',
             });
 
             await parseGraphQLServer.setGraphQLConfig({
               classConfigs: [
                 {
-                  className: "SuperCar",
+                  className: 'SuperCar',
                   type: {
-                    outputFields: ["engine", "doors", "price", "mileage"],
+                    outputFields: ['engine', 'doors', 'price', 'mileage'],
                   },
                 },
               ],
@@ -2107,7 +2107,7 @@ describe("ParseGraphQLServer", () => {
             await parseGraphQLServer.setGraphQLConfig({
               classConfigs: [
                 {
-                  className: "SuperCar",
+                  className: 'SuperCar',
                   type: {
                     outputFields: [],
                   },
@@ -2149,37 +2149,37 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it_id("67dfcf94-92fb-45a3-a012-3b22c81899ba")(it)(
-          "should only allow the supplied constraint fields for a class",
+        it_id('67dfcf94-92fb-45a3-a012-3b22c81899ba')(it)(
+          'should only allow the supplied constraint fields for a class',
           async () => {
             try {
               const schemaController =
                 await parseServer.config.databaseController.loadSchema();
 
-              await schemaController.addClassIfNotExists("SuperCar", {
-                model: { type: "String" },
-                engine: { type: "String" },
-                doors: { type: "Number" },
-                price: { type: "String" },
-                mileage: { type: "Number" },
-                insuranceCertificate: { type: "String" },
+              await schemaController.addClassIfNotExists('SuperCar', {
+                model: { type: 'String' },
+                engine: { type: 'String' },
+                doors: { type: 'Number' },
+                price: { type: 'String' },
+                mileage: { type: 'Number' },
+                insuranceCertificate: { type: 'String' },
               });
 
-              await new Parse.Object("SuperCar").save({
-                model: "McLaren",
-                engine: "petrol",
+              await new Parse.Object('SuperCar').save({
+                model: 'McLaren',
+                engine: 'petrol',
                 doors: 3,
-                price: "£7500",
+                price: '£7500',
                 mileage: 0,
-                insuranceCertificate: "private-file.pdf",
+                insuranceCertificate: 'private-file.pdf',
               });
 
               await parseGraphQLServer.setGraphQLConfig({
                 classConfigs: [
                   {
-                    className: "SuperCar",
+                    className: 'SuperCar',
                     type: {
-                      constraintFields: ["engine", "doors", "price"],
+                      constraintFields: ['engine', 'doors', 'price'],
                     },
                   },
                 ],
@@ -2232,44 +2232,44 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it_id("a3bdbd5d-8779-42fe-91a1-7a7f90a6177b")(it)(
-          "should only allow the supplied sort fields for a class",
+        it_id('a3bdbd5d-8779-42fe-91a1-7a7f90a6177b')(it)(
+          'should only allow the supplied sort fields for a class',
           async () => {
             const schemaController =
               await parseServer.config.databaseController.loadSchema();
 
-            await schemaController.addClassIfNotExists("SuperCar", {
-              engine: { type: "String" },
-              doors: { type: "Number" },
-              price: { type: "String" },
-              mileage: { type: "Number" },
+            await schemaController.addClassIfNotExists('SuperCar', {
+              engine: { type: 'String' },
+              doors: { type: 'Number' },
+              price: { type: 'String' },
+              mileage: { type: 'Number' },
             });
 
-            await new Parse.Object("SuperCar").save({
-              engine: "petrol",
+            await new Parse.Object('SuperCar').save({
+              engine: 'petrol',
               doors: 3,
-              price: "£7500",
+              price: '£7500',
               mileage: 0,
             });
 
             await parseGraphQLServer.setGraphQLConfig({
               classConfigs: [
                 {
-                  className: "SuperCar",
+                  className: 'SuperCar',
                   type: {
                     sortFields: [
                       {
-                        field: "doors",
+                        field: 'doors',
                         asc: true,
                         desc: true,
                       },
                       {
-                        field: "price",
+                        field: 'price',
                         asc: true,
                         desc: true,
                       },
                       {
-                        field: "mileage",
+                        field: 'mileage',
                         asc: true,
                         desc: false,
                       },
@@ -2391,15 +2391,15 @@ describe("ParseGraphQLServer", () => {
         );
       });
 
-      describe("Relay Spec", () => {
+      describe('Relay Spec', () => {
         beforeEach(async () => {
           await resetGraphQLCache();
         });
 
-        describe("Object Identification", () => {
-          it("Class get custom method should return valid gobal id", async () => {
-            const obj = new Parse.Object("SomeClass");
-            obj.set("someField", "some value");
+        describe('Object Identification', () => {
+          it('Class get custom method should return valid gobal id', async () => {
+            const obj = new Parse.Object('SomeClass');
+            obj.set('someField', 'some value');
             await obj.save();
 
             const getResult = await apolloClient.query({
@@ -2437,16 +2437,16 @@ describe("ParseGraphQLServer", () => {
 
             expect(nodeResult.data.node.id).toBe(getResult.data.someClass.id);
             expect(nodeResult.data.node.objectId).toBe(obj.id);
-            expect(nodeResult.data.node.someField).toBe("some value");
+            expect(nodeResult.data.node.someField).toBe('some value');
           });
 
-          it("Class find custom method should return valid gobal id", async () => {
-            const obj1 = new Parse.Object("SomeClass");
-            obj1.set("someField", "some value 1");
+          it('Class find custom method should return valid gobal id', async () => {
+            const obj1 = new Parse.Object('SomeClass');
+            obj1.set('someField', 'some value 1');
             await obj1.save();
 
-            const obj2 = new Parse.Object("SomeClass");
-            obj2.set("someField", "some value 2");
+            const obj2 = new Parse.Object('SomeClass');
+            obj2.set('someField', 'some value 2');
             await obj2.save();
 
             const findResult = await apolloClient.query({
@@ -2500,14 +2500,14 @@ describe("ParseGraphQLServer", () => {
               findResult.data.someClasses.edges[0].node.id
             );
             expect(nodeResult.data.node1.objectId).toBe(obj1.id);
-            expect(nodeResult.data.node1.someField).toBe("some value 1");
+            expect(nodeResult.data.node1.someField).toBe('some value 1');
             expect(nodeResult.data.node2.id).toBe(
               findResult.data.someClasses.edges[1].node.id
             );
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
-            expect(nodeResult.data.node2.someField).toBe("some value 2");
+            expect(nodeResult.data.node2.someField).toBe('some value 2');
           });
-          it("Id inputs should work either with global id or object id", async () => {
+          it('Id inputs should work either with global id or object id', async () => {
             try {
               await apolloClient.mutate({
                 mutation: gql`
@@ -2547,7 +2547,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -2615,7 +2615,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -2713,7 +2713,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -2771,7 +2771,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -2798,7 +2798,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -2861,7 +2861,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -2873,7 +2873,7 @@ describe("ParseGraphQLServer", () => {
                 findSecondaryObjectsResult.data.secondaryObjects.edges
                   .map(value => value.node.someField)
                   .sort()
-              ).toEqual(["some value 22", "some value 44"]);
+              ).toEqual(['some value 22', 'some value 44']);
               // NOTE: Here @davimacedo tried to test RelayID order, but the test is wrong since
               // "objectId1" < "objectId2" do not always keep the order when objectId is transformed
               // to base64 by Relay
@@ -2954,8 +2954,8 @@ describe("ParseGraphQLServer", () => {
                 `,
                 variables: {
                   pointer: {
-                    __type: "Pointer",
-                    className: "SecondaryObject",
+                    __type: 'Pointer',
+                    className: 'SecondaryObject',
                     objectId:
                       getSecondaryObjectsResult.data.secondaryObject4.objectId,
                   },
@@ -2966,7 +2966,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -3028,7 +3028,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -3036,40 +3036,40 @@ describe("ParseGraphQLServer", () => {
               expect(
                 createPrimaryObjectResult.data.createPrimaryObject.primaryObject
                   .stringField
-              ).toEqual("some value");
+              ).toEqual('some value');
               expect(
                 createPrimaryObjectResult.data.createPrimaryObject.primaryObject
                   .arrayField
               ).toEqual([
-                { __typename: "Element", value: 1 },
-                { __typename: "Element", value: "abc" },
-                { __typename: "SecondaryObject", someField: "some value 44" },
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
               ]);
               expect(
                 createPrimaryObjectResult.data.createPrimaryObject.primaryObject
                   .pointerField.someField
-              ).toEqual("some value 22");
+              ).toEqual('some value 22');
               expect(
                 createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
                   .map(value => value.node.someField)
                   .sort()
-              ).toEqual(["some value 22", "some value 44"]);
+              ).toEqual(['some value 22', 'some value 44']);
               expect(
                 updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
                   .stringField
-              ).toEqual("some value");
+              ).toEqual('some value');
               expect(
                 updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
                   .arrayField
               ).toEqual([
-                { __typename: "Element", value: 1 },
-                { __typename: "Element", value: "abc" },
-                { __typename: "SecondaryObject", someField: "some value 44" },
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
               ]);
               expect(
                 updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
                   .pointerField.someField
-              ).toEqual("some value 44");
+              ).toEqual('some value 44');
               expect(
                 updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
                   .relationField.edges
@@ -3078,11 +3078,11 @@ describe("ParseGraphQLServer", () => {
               handleError(e);
             }
           });
-          it("Id inputs should work either with global id or object id with objectId higher than 19", async () => {
+          it('Id inputs should work either with global id or object id with objectId higher than 19', async () => {
             const parseServer = await reconfigureServer({ objectIdSize: 20 });
             await createGQLFromParseServer(parseServer);
-            const obj = new Parse.Object("SomeClass");
-            await obj.save({ name: "aname", type: "robot" });
+            const obj = new Parse.Object('SomeClass');
+            await obj.save({ name: 'aname', type: 'robot' });
             const result = await apolloClient.query({
               query: gql`
                 query getSomeClass($id: ID!) {
@@ -3099,8 +3099,8 @@ describe("ParseGraphQLServer", () => {
         });
       });
 
-      describe("Class Schema Mutations", () => {
-        it("should create a new class", async () => {
+      describe('Class Schema Mutations', () => {
+        it('should create a new class', async () => {
           try {
             const result = await apolloClient.mutate({
               mutation: gql`
@@ -3303,7 +3303,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -3320,130 +3320,130 @@ describe("ParseGraphQLServer", () => {
             }));
             expect(classes).toEqual([
               {
-                clientMutationId: "cmid1",
+                clientMutationId: 'cmid1',
                 class: {
-                  name: "Class1",
+                  name: 'Class1',
                   schemaFields: [
-                    { name: "ACL", __typename: "SchemaACLField" },
-                    { name: "createdAt", __typename: "SchemaDateField" },
-                    { name: "objectId", __typename: "SchemaStringField" },
-                    { name: "updatedAt", __typename: "SchemaDateField" },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
                   ],
-                  __typename: "Class",
+                  __typename: 'Class',
                 },
-                __typename: "CreateClassPayload",
+                __typename: 'CreateClassPayload',
               },
               {
-                clientMutationId: "cmid2",
+                clientMutationId: 'cmid2',
                 class: {
-                  name: "Class2",
+                  name: 'Class2',
                   schemaFields: [
-                    { name: "ACL", __typename: "SchemaACLField" },
-                    { name: "createdAt", __typename: "SchemaDateField" },
-                    { name: "objectId", __typename: "SchemaStringField" },
-                    { name: "updatedAt", __typename: "SchemaDateField" },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
                   ],
-                  __typename: "Class",
+                  __typename: 'Class',
                 },
-                __typename: "CreateClassPayload",
+                __typename: 'CreateClassPayload',
               },
               {
-                clientMutationId: "cmid3",
+                clientMutationId: 'cmid3',
                 class: {
-                  name: "Class3",
+                  name: 'Class3',
                   schemaFields: [
-                    { name: "ACL", __typename: "SchemaACLField" },
-                    { name: "createdAt", __typename: "SchemaDateField" },
-                    { name: "objectId", __typename: "SchemaStringField" },
-                    { name: "updatedAt", __typename: "SchemaDateField" },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
                   ],
-                  __typename: "Class",
+                  __typename: 'Class',
                 },
-                __typename: "CreateClassPayload",
+                __typename: 'CreateClassPayload',
               },
               {
-                clientMutationId: "cmid4",
+                clientMutationId: 'cmid4',
                 class: {
-                  name: "Class4",
+                  name: 'Class4',
                   schemaFields: [
-                    { name: "ACL", __typename: "SchemaACLField" },
-                    { name: "createdAt", __typename: "SchemaDateField" },
-                    { name: "objectId", __typename: "SchemaStringField" },
-                    { name: "updatedAt", __typename: "SchemaDateField" },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
                   ],
-                  __typename: "Class",
+                  __typename: 'Class',
                 },
-                __typename: "CreateClassPayload",
+                __typename: 'CreateClassPayload',
               },
               {
-                clientMutationId: "cmid5",
+                clientMutationId: 'cmid5',
                 class: {
-                  name: "Class5",
+                  name: 'Class5',
                   schemaFields: [
-                    { name: "ACL", __typename: "SchemaACLField" },
-                    { name: "createdAt", __typename: "SchemaDateField" },
-                    { name: "objectId", __typename: "SchemaStringField" },
-                    { name: "updatedAt", __typename: "SchemaDateField" },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
                   ],
-                  __typename: "Class",
+                  __typename: 'Class',
                 },
-                __typename: "CreateClassPayload",
+                __typename: 'CreateClassPayload',
               },
               {
-                clientMutationId: "cmid6",
+                clientMutationId: 'cmid6',
                 class: {
-                  name: "Class6",
+                  name: 'Class6',
                   schemaFields: [
-                    { name: "ACL", __typename: "SchemaACLField" },
-                    { name: "arrayField1", __typename: "SchemaArrayField" },
-                    { name: "arrayField2", __typename: "SchemaArrayField" },
-                    { name: "booleanField1", __typename: "SchemaBooleanField" },
-                    { name: "booleanField2", __typename: "SchemaBooleanField" },
-                    { name: "bytesField1", __typename: "SchemaBytesField" },
-                    { name: "bytesField2", __typename: "SchemaBytesField" },
-                    { name: "createdAt", __typename: "SchemaDateField" },
-                    { name: "dateField1", __typename: "SchemaDateField" },
-                    { name: "dateField2", __typename: "SchemaDateField" },
-                    { name: "fileField1", __typename: "SchemaFileField" },
-                    { name: "fileField2", __typename: "SchemaFileField" },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                    { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                    { name: 'booleanField1', __typename: 'SchemaBooleanField' },
+                    { name: 'booleanField2', __typename: 'SchemaBooleanField' },
+                    { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                    { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'dateField1', __typename: 'SchemaDateField' },
+                    { name: 'dateField2', __typename: 'SchemaDateField' },
+                    { name: 'fileField1', __typename: 'SchemaFileField' },
+                    { name: 'fileField2', __typename: 'SchemaFileField' },
                     {
-                      name: "geoPointField",
-                      __typename: "SchemaGeoPointField",
+                      name: 'geoPointField',
+                      __typename: 'SchemaGeoPointField',
                     },
-                    { name: "numberField1", __typename: "SchemaNumberField" },
-                    { name: "numberField2", __typename: "SchemaNumberField" },
-                    { name: "objectField1", __typename: "SchemaObjectField" },
-                    { name: "objectField2", __typename: "SchemaObjectField" },
-                    { name: "objectId", __typename: "SchemaStringField" },
+                    { name: 'numberField1', __typename: 'SchemaNumberField' },
+                    { name: 'numberField2', __typename: 'SchemaNumberField' },
+                    { name: 'objectField1', __typename: 'SchemaObjectField' },
+                    { name: 'objectField2', __typename: 'SchemaObjectField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
                     {
-                      name: "pointerField1",
-                      __typename: "SchemaPointerField",
-                      targetClassName: "Class1",
-                    },
-                    {
-                      name: "pointerField2",
-                      __typename: "SchemaPointerField",
-                      targetClassName: "Class6",
-                    },
-                    { name: "polygonField1", __typename: "SchemaPolygonField" },
-                    { name: "polygonField2", __typename: "SchemaPolygonField" },
-                    {
-                      name: "relationField1",
-                      __typename: "SchemaRelationField",
-                      targetClassName: "Class1",
+                      name: 'pointerField1',
+                      __typename: 'SchemaPointerField',
+                      targetClassName: 'Class1',
                     },
                     {
-                      name: "relationField2",
-                      __typename: "SchemaRelationField",
-                      targetClassName: "Class6",
+                      name: 'pointerField2',
+                      __typename: 'SchemaPointerField',
+                      targetClassName: 'Class6',
                     },
-                    { name: "stringField1", __typename: "SchemaStringField" },
-                    { name: "stringField2", __typename: "SchemaStringField" },
-                    { name: "updatedAt", __typename: "SchemaDateField" },
+                    { name: 'polygonField1', __typename: 'SchemaPolygonField' },
+                    { name: 'polygonField2', __typename: 'SchemaPolygonField' },
+                    {
+                      name: 'relationField1',
+                      __typename: 'SchemaRelationField',
+                      targetClassName: 'Class1',
+                    },
+                    {
+                      name: 'relationField2',
+                      __typename: 'SchemaRelationField',
+                      targetClassName: 'Class6',
+                    },
+                    { name: 'stringField1', __typename: 'SchemaStringField' },
+                    { name: 'stringField2', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
                   ],
-                  __typename: "Class",
+                  __typename: 'Class',
                 },
-                __typename: "CreateClassPayload",
+                __typename: 'CreateClassPayload',
               },
             ]);
 
@@ -3467,12 +3467,12 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
             findResult.data.classes = findResult.data.classes
-              .filter(schemaClass => !schemaClass.name.startsWith("_"))
+              .filter(schemaClass => !schemaClass.name.startsWith('_'))
               .sort((a, b) => (a.name > b.name ? 1 : -1));
             findResult.data.classes.forEach(schemaClass => {
               schemaClass.schemaFields = schemaClass.schemaFields.sort(
@@ -3481,106 +3481,106 @@ describe("ParseGraphQLServer", () => {
             });
             expect(findResult.data.classes).toEqual([
               {
-                name: "Class1",
+                name: 'Class1',
                 schemaFields: [
-                  { name: "ACL", __typename: "SchemaACLField" },
-                  { name: "createdAt", __typename: "SchemaDateField" },
-                  { name: "objectId", __typename: "SchemaStringField" },
-                  { name: "updatedAt", __typename: "SchemaDateField" },
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
                 ],
-                __typename: "Class",
+                __typename: 'Class',
               },
               {
-                name: "Class2",
+                name: 'Class2',
                 schemaFields: [
-                  { name: "ACL", __typename: "SchemaACLField" },
-                  { name: "createdAt", __typename: "SchemaDateField" },
-                  { name: "objectId", __typename: "SchemaStringField" },
-                  { name: "updatedAt", __typename: "SchemaDateField" },
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
                 ],
-                __typename: "Class",
+                __typename: 'Class',
               },
               {
-                name: "Class3",
+                name: 'Class3',
                 schemaFields: [
-                  { name: "ACL", __typename: "SchemaACLField" },
-                  { name: "createdAt", __typename: "SchemaDateField" },
-                  { name: "objectId", __typename: "SchemaStringField" },
-                  { name: "updatedAt", __typename: "SchemaDateField" },
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
                 ],
-                __typename: "Class",
+                __typename: 'Class',
               },
               {
-                name: "Class4",
+                name: 'Class4',
                 schemaFields: [
-                  { name: "ACL", __typename: "SchemaACLField" },
-                  { name: "createdAt", __typename: "SchemaDateField" },
-                  { name: "objectId", __typename: "SchemaStringField" },
-                  { name: "updatedAt", __typename: "SchemaDateField" },
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
                 ],
-                __typename: "Class",
+                __typename: 'Class',
               },
               {
-                name: "Class5",
+                name: 'Class5',
                 schemaFields: [
-                  { name: "ACL", __typename: "SchemaACLField" },
-                  { name: "createdAt", __typename: "SchemaDateField" },
-                  { name: "objectId", __typename: "SchemaStringField" },
-                  { name: "updatedAt", __typename: "SchemaDateField" },
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
                 ],
-                __typename: "Class",
+                __typename: 'Class',
               },
               {
-                name: "Class6",
+                name: 'Class6',
                 schemaFields: [
-                  { name: "ACL", __typename: "SchemaACLField" },
-                  { name: "arrayField1", __typename: "SchemaArrayField" },
-                  { name: "arrayField2", __typename: "SchemaArrayField" },
-                  { name: "booleanField1", __typename: "SchemaBooleanField" },
-                  { name: "booleanField2", __typename: "SchemaBooleanField" },
-                  { name: "bytesField1", __typename: "SchemaBytesField" },
-                  { name: "bytesField2", __typename: "SchemaBytesField" },
-                  { name: "createdAt", __typename: "SchemaDateField" },
-                  { name: "dateField1", __typename: "SchemaDateField" },
-                  { name: "dateField2", __typename: "SchemaDateField" },
-                  { name: "fileField1", __typename: "SchemaFileField" },
-                  { name: "fileField2", __typename: "SchemaFileField" },
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                  { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                  { name: 'booleanField1', __typename: 'SchemaBooleanField' },
+                  { name: 'booleanField2', __typename: 'SchemaBooleanField' },
+                  { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                  { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'dateField1', __typename: 'SchemaDateField' },
+                  { name: 'dateField2', __typename: 'SchemaDateField' },
+                  { name: 'fileField1', __typename: 'SchemaFileField' },
+                  { name: 'fileField2', __typename: 'SchemaFileField' },
                   {
-                    name: "geoPointField",
-                    __typename: "SchemaGeoPointField",
+                    name: 'geoPointField',
+                    __typename: 'SchemaGeoPointField',
                   },
-                  { name: "numberField1", __typename: "SchemaNumberField" },
-                  { name: "numberField2", __typename: "SchemaNumberField" },
-                  { name: "objectField1", __typename: "SchemaObjectField" },
-                  { name: "objectField2", __typename: "SchemaObjectField" },
-                  { name: "objectId", __typename: "SchemaStringField" },
+                  { name: 'numberField1', __typename: 'SchemaNumberField' },
+                  { name: 'numberField2', __typename: 'SchemaNumberField' },
+                  { name: 'objectField1', __typename: 'SchemaObjectField' },
+                  { name: 'objectField2', __typename: 'SchemaObjectField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
                   {
-                    name: "pointerField1",
-                    __typename: "SchemaPointerField",
-                    targetClassName: "Class1",
-                  },
-                  {
-                    name: "pointerField2",
-                    __typename: "SchemaPointerField",
-                    targetClassName: "Class6",
-                  },
-                  { name: "polygonField1", __typename: "SchemaPolygonField" },
-                  { name: "polygonField2", __typename: "SchemaPolygonField" },
-                  {
-                    name: "relationField1",
-                    __typename: "SchemaRelationField",
-                    targetClassName: "Class1",
+                    name: 'pointerField1',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class1',
                   },
                   {
-                    name: "relationField2",
-                    __typename: "SchemaRelationField",
-                    targetClassName: "Class6",
+                    name: 'pointerField2',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class6',
                   },
-                  { name: "stringField1", __typename: "SchemaStringField" },
-                  { name: "stringField2", __typename: "SchemaStringField" },
-                  { name: "updatedAt", __typename: "SchemaDateField" },
+                  { name: 'polygonField1', __typename: 'SchemaPolygonField' },
+                  { name: 'polygonField2', __typename: 'SchemaPolygonField' },
+                  {
+                    name: 'relationField1',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class1',
+                  },
+                  {
+                    name: 'relationField2',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class6',
+                  },
+                  { name: 'stringField1', __typename: 'SchemaStringField' },
+                  { name: 'stringField2', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
                 ],
-                __typename: "Class",
+                __typename: 'Class',
               },
             ]);
           } catch (e) {
@@ -3588,7 +3588,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should require master key to create a new class", async () => {
+        it('should require master key to create a new class', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3599,18 +3599,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.OPERATION_FORBIDDEN
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "unauthorized: master key is required"
+              'unauthorized: master key is required'
             );
           }
         });
 
-        it("should not allow duplicated field names when creating", async () => {
+        it('should not allow duplicated field names when creating', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3630,22 +3630,22 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.INVALID_KEY_NAME
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "Duplicated field name: someField"
+              'Duplicated field name: someField'
             );
           }
         });
 
-        it("should update an existing class", async () => {
+        it('should update an existing class', async () => {
           try {
             const clientMutationId = uuidv4();
             const result = await apolloClient.mutate({
@@ -3761,7 +3761,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -3777,88 +3777,88 @@ describe("ParseGraphQLServer", () => {
               data: {
                 createClass: {
                   class: {
-                    name: "MyNewClass",
+                    name: 'MyNewClass',
                     schemaFields: [
-                      { name: "ACL", __typename: "SchemaACLField" },
-                      { name: "createdAt", __typename: "SchemaDateField" },
-                      { name: "objectId", __typename: "SchemaStringField" },
-                      { name: "updatedAt", __typename: "SchemaDateField" },
+                      { name: 'ACL', __typename: 'SchemaACLField' },
+                      { name: 'createdAt', __typename: 'SchemaDateField' },
+                      { name: 'objectId', __typename: 'SchemaStringField' },
+                      { name: 'updatedAt', __typename: 'SchemaDateField' },
                       {
-                        name: "willBeRemoved",
-                        __typename: "SchemaStringField",
+                        name: 'willBeRemoved',
+                        __typename: 'SchemaStringField',
                       },
                     ],
-                    __typename: "Class",
+                    __typename: 'Class',
                   },
-                  __typename: "CreateClassPayload",
+                  __typename: 'CreateClassPayload',
                 },
                 updateClass: {
                   clientMutationId,
                   class: {
-                    name: "MyNewClass",
+                    name: 'MyNewClass',
                     schemaFields: [
-                      { name: "ACL", __typename: "SchemaACLField" },
-                      { name: "arrayField1", __typename: "SchemaArrayField" },
-                      { name: "arrayField2", __typename: "SchemaArrayField" },
+                      { name: 'ACL', __typename: 'SchemaACLField' },
+                      { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                      { name: 'arrayField2', __typename: 'SchemaArrayField' },
                       {
-                        name: "booleanField1",
-                        __typename: "SchemaBooleanField",
+                        name: 'booleanField1',
+                        __typename: 'SchemaBooleanField',
                       },
                       {
-                        name: "booleanField2",
-                        __typename: "SchemaBooleanField",
+                        name: 'booleanField2',
+                        __typename: 'SchemaBooleanField',
                       },
-                      { name: "bytesField1", __typename: "SchemaBytesField" },
-                      { name: "bytesField2", __typename: "SchemaBytesField" },
-                      { name: "createdAt", __typename: "SchemaDateField" },
-                      { name: "dateField1", __typename: "SchemaDateField" },
-                      { name: "dateField2", __typename: "SchemaDateField" },
-                      { name: "fileField1", __typename: "SchemaFileField" },
-                      { name: "fileField2", __typename: "SchemaFileField" },
+                      { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                      { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                      { name: 'createdAt', __typename: 'SchemaDateField' },
+                      { name: 'dateField1', __typename: 'SchemaDateField' },
+                      { name: 'dateField2', __typename: 'SchemaDateField' },
+                      { name: 'fileField1', __typename: 'SchemaFileField' },
+                      { name: 'fileField2', __typename: 'SchemaFileField' },
                       {
-                        name: "geoPointField",
-                        __typename: "SchemaGeoPointField",
+                        name: 'geoPointField',
+                        __typename: 'SchemaGeoPointField',
                       },
-                      { name: "numberField1", __typename: "SchemaNumberField" },
-                      { name: "numberField2", __typename: "SchemaNumberField" },
-                      { name: "objectField1", __typename: "SchemaObjectField" },
-                      { name: "objectField2", __typename: "SchemaObjectField" },
-                      { name: "objectId", __typename: "SchemaStringField" },
+                      { name: 'numberField1', __typename: 'SchemaNumberField' },
+                      { name: 'numberField2', __typename: 'SchemaNumberField' },
+                      { name: 'objectField1', __typename: 'SchemaObjectField' },
+                      { name: 'objectField2', __typename: 'SchemaObjectField' },
+                      { name: 'objectId', __typename: 'SchemaStringField' },
                       {
-                        name: "pointerField1",
-                        __typename: "SchemaPointerField",
-                        targetClassName: "Class1",
-                      },
-                      {
-                        name: "pointerField2",
-                        __typename: "SchemaPointerField",
-                        targetClassName: "Class6",
+                        name: 'pointerField1',
+                        __typename: 'SchemaPointerField',
+                        targetClassName: 'Class1',
                       },
                       {
-                        name: "polygonField1",
-                        __typename: "SchemaPolygonField",
+                        name: 'pointerField2',
+                        __typename: 'SchemaPointerField',
+                        targetClassName: 'Class6',
                       },
                       {
-                        name: "polygonField2",
-                        __typename: "SchemaPolygonField",
+                        name: 'polygonField1',
+                        __typename: 'SchemaPolygonField',
                       },
                       {
-                        name: "relationField1",
-                        __typename: "SchemaRelationField",
-                        targetClassName: "Class1",
+                        name: 'polygonField2',
+                        __typename: 'SchemaPolygonField',
                       },
                       {
-                        name: "relationField2",
-                        __typename: "SchemaRelationField",
-                        targetClassName: "Class6",
+                        name: 'relationField1',
+                        __typename: 'SchemaRelationField',
+                        targetClassName: 'Class1',
                       },
-                      { name: "stringField1", __typename: "SchemaStringField" },
-                      { name: "stringField2", __typename: "SchemaStringField" },
-                      { name: "updatedAt", __typename: "SchemaDateField" },
+                      {
+                        name: 'relationField2',
+                        __typename: 'SchemaRelationField',
+                        targetClassName: 'Class6',
+                      },
+                      { name: 'stringField1', __typename: 'SchemaStringField' },
+                      { name: 'stringField2', __typename: 'SchemaStringField' },
+                      { name: 'updatedAt', __typename: 'SchemaDateField' },
                     ],
-                    __typename: "Class",
+                    __typename: 'Class',
                   },
-                  __typename: "UpdateClassPayload",
+                  __typename: 'UpdateClassPayload',
                 },
               },
             });
@@ -3883,7 +3883,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -3893,56 +3893,56 @@ describe("ParseGraphQLServer", () => {
               );
             expect(getResult.data).toEqual({
               class: {
-                name: "MyNewClass",
+                name: 'MyNewClass',
                 schemaFields: [
-                  { name: "ACL", __typename: "SchemaACLField" },
-                  { name: "arrayField1", __typename: "SchemaArrayField" },
-                  { name: "arrayField2", __typename: "SchemaArrayField" },
-                  { name: "booleanField1", __typename: "SchemaBooleanField" },
-                  { name: "booleanField2", __typename: "SchemaBooleanField" },
-                  { name: "bytesField1", __typename: "SchemaBytesField" },
-                  { name: "bytesField2", __typename: "SchemaBytesField" },
-                  { name: "createdAt", __typename: "SchemaDateField" },
-                  { name: "dateField1", __typename: "SchemaDateField" },
-                  { name: "dateField2", __typename: "SchemaDateField" },
-                  { name: "fileField1", __typename: "SchemaFileField" },
-                  { name: "fileField2", __typename: "SchemaFileField" },
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                  { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                  { name: 'booleanField1', __typename: 'SchemaBooleanField' },
+                  { name: 'booleanField2', __typename: 'SchemaBooleanField' },
+                  { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                  { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'dateField1', __typename: 'SchemaDateField' },
+                  { name: 'dateField2', __typename: 'SchemaDateField' },
+                  { name: 'fileField1', __typename: 'SchemaFileField' },
+                  { name: 'fileField2', __typename: 'SchemaFileField' },
                   {
-                    name: "geoPointField",
-                    __typename: "SchemaGeoPointField",
+                    name: 'geoPointField',
+                    __typename: 'SchemaGeoPointField',
                   },
-                  { name: "numberField1", __typename: "SchemaNumberField" },
-                  { name: "numberField2", __typename: "SchemaNumberField" },
-                  { name: "objectField1", __typename: "SchemaObjectField" },
-                  { name: "objectField2", __typename: "SchemaObjectField" },
-                  { name: "objectId", __typename: "SchemaStringField" },
+                  { name: 'numberField1', __typename: 'SchemaNumberField' },
+                  { name: 'numberField2', __typename: 'SchemaNumberField' },
+                  { name: 'objectField1', __typename: 'SchemaObjectField' },
+                  { name: 'objectField2', __typename: 'SchemaObjectField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
                   {
-                    name: "pointerField1",
-                    __typename: "SchemaPointerField",
-                    targetClassName: "Class1",
-                  },
-                  {
-                    name: "pointerField2",
-                    __typename: "SchemaPointerField",
-                    targetClassName: "Class6",
-                  },
-                  { name: "polygonField1", __typename: "SchemaPolygonField" },
-                  { name: "polygonField2", __typename: "SchemaPolygonField" },
-                  {
-                    name: "relationField1",
-                    __typename: "SchemaRelationField",
-                    targetClassName: "Class1",
+                    name: 'pointerField1',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class1',
                   },
                   {
-                    name: "relationField2",
-                    __typename: "SchemaRelationField",
-                    targetClassName: "Class6",
+                    name: 'pointerField2',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class6',
                   },
-                  { name: "stringField1", __typename: "SchemaStringField" },
-                  { name: "stringField2", __typename: "SchemaStringField" },
-                  { name: "updatedAt", __typename: "SchemaDateField" },
+                  { name: 'polygonField1', __typename: 'SchemaPolygonField' },
+                  { name: 'polygonField2', __typename: 'SchemaPolygonField' },
+                  {
+                    name: 'relationField1',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class1',
+                  },
+                  {
+                    name: 'relationField2',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class6',
+                  },
+                  { name: 'stringField1', __typename: 'SchemaStringField' },
+                  { name: 'stringField2', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
                 ],
-                __typename: "Class",
+                __typename: 'Class',
               },
             });
           } catch (e) {
@@ -3950,7 +3950,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should require master key to update an existing class", async () => {
+        it('should require master key to update an existing class', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -3962,7 +3962,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -3980,18 +3980,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.OPERATION_FORBIDDEN
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "unauthorized: master key is required"
+              'unauthorized: master key is required'
             );
           }
         });
 
-        it("should not allow duplicated field names when updating", async () => {
+        it('should not allow duplicated field names when updating', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -4008,7 +4008,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -4032,22 +4032,22 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.INVALID_KEY_NAME
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "Duplicated field name: someField"
+              'Duplicated field name: someField'
             );
           }
         });
 
-        it("should fail if updating an inexistent class", async () => {
+        it('should fail if updating an inexistent class', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -4064,22 +4064,22 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.INVALID_CLASS_NAME
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "Class SomeInexistentClass does not exist."
+              'Class SomeInexistentClass does not exist.'
             );
           }
         });
 
-        it("should delete an existing class", async () => {
+        it('should delete an existing class', async () => {
           try {
             const clientMutationId = uuidv4();
             const result = await apolloClient.mutate({
@@ -4112,7 +4112,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -4128,38 +4128,38 @@ describe("ParseGraphQLServer", () => {
               data: {
                 createClass: {
                   class: {
-                    name: "MyNewClass",
+                    name: 'MyNewClass',
                     schemaFields: [
-                      { name: "ACL", __typename: "SchemaACLField" },
-                      { name: "createdAt", __typename: "SchemaDateField" },
-                      { name: "objectId", __typename: "SchemaStringField" },
-                      { name: "updatedAt", __typename: "SchemaDateField" },
+                      { name: 'ACL', __typename: 'SchemaACLField' },
+                      { name: 'createdAt', __typename: 'SchemaDateField' },
+                      { name: 'objectId', __typename: 'SchemaStringField' },
+                      { name: 'updatedAt', __typename: 'SchemaDateField' },
                       {
-                        name: "willBeRemoved",
-                        __typename: "SchemaStringField",
+                        name: 'willBeRemoved',
+                        __typename: 'SchemaStringField',
                       },
                     ],
-                    __typename: "Class",
+                    __typename: 'Class',
                   },
-                  __typename: "CreateClassPayload",
+                  __typename: 'CreateClassPayload',
                 },
                 deleteClass: {
                   clientMutationId,
                   class: {
-                    name: "MyNewClass",
+                    name: 'MyNewClass',
                     schemaFields: [
-                      { name: "ACL", __typename: "SchemaACLField" },
-                      { name: "createdAt", __typename: "SchemaDateField" },
-                      { name: "objectId", __typename: "SchemaStringField" },
-                      { name: "updatedAt", __typename: "SchemaDateField" },
+                      { name: 'ACL', __typename: 'SchemaACLField' },
+                      { name: 'createdAt', __typename: 'SchemaDateField' },
+                      { name: 'objectId', __typename: 'SchemaStringField' },
+                      { name: 'updatedAt', __typename: 'SchemaDateField' },
                       {
-                        name: "willBeRemoved",
-                        __typename: "SchemaStringField",
+                        name: 'willBeRemoved',
+                        __typename: 'SchemaStringField',
                       },
                     ],
-                    __typename: "Class",
+                    __typename: 'Class',
                   },
-                  __typename: "DeleteClassPayload",
+                  __typename: 'DeleteClassPayload',
                 },
               },
             });
@@ -4175,17 +4175,17 @@ describe("ParseGraphQLServer", () => {
                 `,
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
-              fail("should fail");
+              fail('should fail');
             } catch (e) {
               expect(e.graphQLErrors[0].extensions.code).toEqual(
                 Parse.Error.INVALID_CLASS_NAME
               );
               expect(e.graphQLErrors[0].message).toEqual(
-                "Class MyNewClass does not exist."
+                'Class MyNewClass does not exist.'
               );
             }
           } catch (e) {
@@ -4193,7 +4193,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should require master key to delete an existing class", async () => {
+        it('should require master key to delete an existing class', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -4205,7 +4205,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -4223,18 +4223,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.OPERATION_FORBIDDEN
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "unauthorized: master key is required"
+              'unauthorized: master key is required'
             );
           }
         });
 
-        it("should fail if deleting an inexistent class", async () => {
+        it('should fail if deleting an inexistent class', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -4246,22 +4246,22 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.INVALID_CLASS_NAME
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "Class SomeInexistentClass does not exist."
+              'Class SomeInexistentClass does not exist.'
             );
           }
         });
 
-        it("should require master key to get an existing class", async () => {
+        it('should require master key to get an existing class', async () => {
           try {
             await apolloClient.query({
               query: gql`
@@ -4272,18 +4272,18 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.OPERATION_FORBIDDEN
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "unauthorized: master key is required"
+              'unauthorized: master key is required'
             );
           }
         });
 
-        it("should require master key to find the existing classes", async () => {
+        it('should require master key to find the existing classes', async () => {
           try {
             await apolloClient.query({
               query: gql`
@@ -4294,23 +4294,23 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             });
-            fail("should fail");
+            fail('should fail');
           } catch (e) {
             expect(e.graphQLErrors[0].extensions.code).toEqual(
               Parse.Error.OPERATION_FORBIDDEN
             );
             expect(e.graphQLErrors[0].message).toEqual(
-              "unauthorized: master key is required"
+              'unauthorized: master key is required'
             );
           }
         });
       });
 
-      describe("Objects Queries", () => {
-        describe("Get", () => {
-          it("should return a class object using class specific query", async () => {
-            const obj = new Parse.Object("Customer");
-            obj.set("someField", "someValue");
+      describe('Objects Queries', () => {
+        describe('Get', () => {
+          it('should return a class object using class specific query', async () => {
+            const obj = new Parse.Object('Customer');
+            obj.set('someField', 'someValue');
             await obj.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -4335,27 +4335,27 @@ describe("ParseGraphQLServer", () => {
             ).data.customer;
 
             expect(result.objectId).toEqual(obj.id);
-            expect(result.someField).toEqual("someValue");
+            expect(result.someField).toEqual('someValue');
             expect(new Date(result.createdAt)).toEqual(obj.createdAt);
             expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
           });
 
-          it_only_db("mongo")(
-            "should return child objects in array fields",
+          it_only_db('mongo')(
+            'should return child objects in array fields',
             async () => {
-              const obj1 = new Parse.Object("Customer");
-              const obj2 = new Parse.Object("SomeClass");
-              const obj3 = new Parse.Object("Customer");
+              const obj1 = new Parse.Object('Customer');
+              const obj2 = new Parse.Object('SomeClass');
+              const obj3 = new Parse.Object('Customer');
 
-              obj1.set("someCustomerField", "imCustomerOne");
-              const arrayField = [42.42, 42, "string", true];
-              obj1.set("arrayField", arrayField);
+              obj1.set('someCustomerField', 'imCustomerOne');
+              const arrayField = [42.42, 42, 'string', true];
+              obj1.set('arrayField', arrayField);
               await obj1.save();
 
-              obj2.set("someClassField", "imSomeClassTwo");
+              obj2.set('someClassField', 'imSomeClassTwo');
               await obj2.save();
 
-              obj3.set("manyRelations", [obj1, obj2]);
+              obj3.set('manyRelations', [obj1, obj2]);
               await obj3.save();
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -4405,41 +4405,41 @@ describe("ParseGraphQLServer", () => {
               expect(customerSubObject).toBeDefined();
               expect(someClassSubObject).toBeDefined();
               expect(customerSubObject.someCustomerField).toEqual(
-                "imCustomerOne"
+                'imCustomerOne'
               );
               const formatedArrayField = customerSubObject.arrayField.map(
                 elem => elem.value
               );
               expect(formatedArrayField).toEqual(arrayField);
               expect(someClassSubObject.someClassField).toEqual(
-                "imSomeClassTwo"
+                'imSomeClassTwo'
               );
             }
           );
 
-          it("should return many child objects in allow cyclic query", async () => {
-            const obj1 = new Parse.Object("Employee");
-            const obj2 = new Parse.Object("Team");
-            const obj3 = new Parse.Object("Company");
-            const obj4 = new Parse.Object("Country");
+          it('should return many child objects in allow cyclic query', async () => {
+            const obj1 = new Parse.Object('Employee');
+            const obj2 = new Parse.Object('Team');
+            const obj3 = new Parse.Object('Company');
+            const obj4 = new Parse.Object('Country');
 
-            obj1.set("name", "imAnEmployee");
+            obj1.set('name', 'imAnEmployee');
             await obj1.save();
 
-            obj2.set("name", "imATeam");
-            obj2.set("employees", [obj1]);
+            obj2.set('name', 'imATeam');
+            obj2.set('employees', [obj1]);
             await obj2.save();
 
-            obj3.set("name", "imACompany");
-            obj3.set("teams", [obj2]);
-            obj3.set("employees", [obj1]);
+            obj3.set('name', 'imACompany');
+            obj3.set('teams', [obj2]);
+            obj3.set('employees', [obj1]);
             await obj3.save();
 
-            obj4.set("name", "imACountry");
-            obj4.set("companies", [obj3]);
+            obj4.set('name', 'imACountry');
+            obj4.set('companies', [obj3]);
             await obj4.save();
 
-            obj1.set("country", obj4);
+            obj1.set('country', obj4);
             await obj1.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -4490,34 +4490,34 @@ describe("ParseGraphQLServer", () => {
 
             const expectedResult = {
               objectId: obj4.id,
-              name: "imACountry",
-              __typename: "Country",
+              name: 'imACountry',
+              __typename: 'Country',
               companies: [
                 {
                   objectId: obj3.id,
-                  name: "imACompany",
-                  __typename: "Company",
+                  name: 'imACompany',
+                  __typename: 'Company',
                   employees: [
                     {
                       objectId: obj1.id,
-                      name: "imAnEmployee",
-                      __typename: "Employee",
+                      name: 'imAnEmployee',
+                      __typename: 'Employee',
                     },
                   ],
                   teams: [
                     {
                       objectId: obj2.id,
-                      name: "imATeam",
-                      __typename: "Team",
+                      name: 'imATeam',
+                      __typename: 'Team',
                       employees: [
                         {
                           objectId: obj1.id,
-                          name: "imAnEmployee",
-                          __typename: "Employee",
+                          name: 'imAnEmployee',
+                          __typename: 'Employee',
                           country: {
                             objectId: obj4.id,
-                            name: "imACountry",
-                            __typename: "Country",
+                            name: 'imACountry',
+                            __typename: 'Country',
                           },
                         },
                       ],
@@ -4529,7 +4529,7 @@ describe("ParseGraphQLServer", () => {
             expect(result).toEqual(expectedResult);
           });
 
-          it("should respect level permissions", async () => {
+          it('should respect level permissions', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -4564,22 +4564,22 @@ describe("ParseGraphQLServer", () => {
                 .map(obj =>
                   expectAsync(
                     getObject(obj.className, obj.id)
-                  ).toBeRejectedWith(jasmine.stringMatching("Object not found"))
+                  ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
                 )
             );
             expect(
               (await getObject(object4.className, object4.id)).data.get
                 .someField
-            ).toEqual("someValue4");
+            ).toEqual('someValue4');
             await Promise.all(
               objects.map(async obj =>
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
-                      "X-Parse-Master-Key": "test",
+                      'X-Parse-Master-Key': 'test',
                     })
                   ).data.get.someField
-                ).toEqual(obj.get("someField"))
+                ).toEqual(obj.get('someField'))
               )
             );
             await Promise.all(
@@ -4587,10 +4587,10 @@ describe("ParseGraphQLServer", () => {
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
-                      "X-Parse-Session-Token": user1.getSessionToken(),
+                      'X-Parse-Session-Token': user1.getSessionToken(),
                     })
                   ).data.get.someField
-                ).toEqual(obj.get("someField"))
+                ).toEqual(obj.get('someField'))
               )
             );
             await Promise.all(
@@ -4598,70 +4598,70 @@ describe("ParseGraphQLServer", () => {
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
-                      "X-Parse-Session-Token": user2.getSessionToken(),
+                      'X-Parse-Session-Token': user2.getSessionToken(),
                     })
                   ).data.get.someField
-                ).toEqual(obj.get("someField"))
+                ).toEqual(obj.get('someField'))
               )
             );
             await expectAsync(
               getObject(object2.className, object2.id, {
-                "X-Parse-Session-Token": user3.getSessionToken(),
+                'X-Parse-Session-Token': user3.getSessionToken(),
               })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             await Promise.all(
               [object1, object3, object4].map(async obj =>
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
-                      "X-Parse-Session-Token": user3.getSessionToken(),
+                      'X-Parse-Session-Token': user3.getSessionToken(),
                     })
                   ).data.get.someField
-                ).toEqual(obj.get("someField"))
+                ).toEqual(obj.get('someField'))
               )
             );
             await Promise.all(
               objects.slice(0, 3).map(obj =>
                 expectAsync(
                   getObject(obj.className, obj.id, {
-                    "X-Parse-Session-Token": user4.getSessionToken(),
+                    'X-Parse-Session-Token': user4.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"))
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
               )
             );
             expect(
               (
                 await getObject(object4.className, object4.id, {
-                  "X-Parse-Session-Token": user4.getSessionToken(),
+                  'X-Parse-Session-Token': user4.getSessionToken(),
                 })
               ).data.get.someField
-            ).toEqual("someValue4");
+            ).toEqual('someValue4');
             await Promise.all(
               objects.slice(0, 2).map(obj =>
                 expectAsync(
                   getObject(obj.className, obj.id, {
-                    "X-Parse-Session-Token": user5.getSessionToken(),
+                    'X-Parse-Session-Token': user5.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"))
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
               )
             );
             expect(
               (
                 await getObject(object3.className, object3.id, {
-                  "X-Parse-Session-Token": user5.getSessionToken(),
+                  'X-Parse-Session-Token': user5.getSessionToken(),
                 })
               ).data.get.someField
-            ).toEqual("someValue3");
+            ).toEqual('someValue3');
             expect(
               (
                 await getObject(object4.className, object4.id, {
-                  "X-Parse-Session-Token": user5.getSessionToken(),
+                  'X-Parse-Session-Token': user5.getSessionToken(),
                 })
               ).data.get.someField
-            ).toEqual("someValue4");
+            ).toEqual('someValue4');
           });
 
-          it("should support keys argument", async () => {
+          it('should support keys argument', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -4679,7 +4679,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 },
               },
             });
@@ -4700,7 +4700,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 },
               },
             });
@@ -4711,7 +4711,7 @@ describe("ParseGraphQLServer", () => {
             expect(result2.data.get.pointerToUser).toBeDefined();
           });
 
-          it("should support include argument", async () => {
+          it('should support include argument', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -4731,7 +4731,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 },
               },
             });
@@ -4751,7 +4751,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 },
               },
             });
@@ -4762,21 +4762,21 @@ describe("ParseGraphQLServer", () => {
             ).toBeDefined();
           });
 
-          it("should respect protectedFields", async done => {
+          it('should respect protectedFields', async done => {
             await prepareData();
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const className = "GraphQLClass";
+            const className = 'GraphQLClass';
 
             await updateCLP(
               {
-                get: { "*": true },
-                find: { "*": true },
+                get: { '*': true },
+                find: { '*': true },
 
                 protectedFields: {
-                  "*": ["someField", "someOtherField"],
-                  authenticated: ["someField"],
-                  "userField:pointerToUser": [],
+                  '*': ['someField', 'someOtherField'],
+                  authenticated: ['someField'],
+                  'userField:pointerToUser': [],
                   [user2.id]: [],
                 },
               },
@@ -4785,7 +4785,7 @@ describe("ParseGraphQLServer", () => {
 
             const getObject = async (className, id, user) => {
               const headers = user
-                ? { ["X-Parse-Session-Token"]: user.getSessionToken() }
+                ? { ['X-Parse-Session-Token']: user.getSessionToken() }
                 : undefined;
 
               const specificQueryResult = await apolloClient.query({
@@ -4824,30 +4824,30 @@ describe("ParseGraphQLServer", () => {
             const objectAuth = await getObject(className, id, user1);
 
             expect(objectAuth.someField).toBeNull();
-            expect(objectAuth.someOtherField).toBe("B");
+            expect(objectAuth.someOtherField).toBe('B');
 
             /* pointer field */
             const objectPointed = await getObject(className, id, user5);
 
-            expect(objectPointed.someField).toBe("someValue3");
-            expect(objectPointed.someOtherField).toBe("B");
+            expect(objectPointed.someField).toBe('someValue3');
+            expect(objectPointed.someOtherField).toBe('B');
 
             /* for user id */
             const objectForUser = await getObject(className, id, user2);
 
-            expect(objectForUser.someField).toBe("someValue3");
-            expect(objectForUser.someOtherField).toBe("B");
+            expect(objectForUser.someField).toBe('someValue3');
+            expect(objectForUser.someOtherField).toBe('B');
 
             done();
           });
-          describe_only_db("mongo")("read preferences", () => {
-            it("should read from primary by default", async () => {
+          describe_only_db('mongo')('read preferences', () => {
+            it('should read from primary by default', async () => {
               try {
                 await prepareData();
 
                 await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-                spyOn(Collection.prototype, "find").and.callThrough();
+                spyOn(Collection.prototype, 'find').and.callThrough();
 
                 await apolloClient.query({
                   query: gql`
@@ -4864,7 +4864,7 @@ describe("ParseGraphQLServer", () => {
                   },
                   context: {
                     headers: {
-                      "X-Parse-Session-Token": user1.getSessionToken(),
+                      'X-Parse-Session-Token': user1.getSessionToken(),
                     },
                   },
                 });
@@ -4874,7 +4874,7 @@ describe("ParseGraphQLServer", () => {
                 Collection.prototype.find.calls.all().forEach(call => {
                   if (
                     call.object.s.namespace.collection.indexOf(
-                      "GraphQLClass"
+                      'GraphQLClass'
                     ) >= 0
                   ) {
                     foundGraphQLClassReadPreference = true;
@@ -4882,7 +4882,7 @@ describe("ParseGraphQLServer", () => {
                       ReadPreference.PRIMARY
                     );
                   } else if (
-                    call.object.s.namespace.collection.indexOf("_User") >= 0
+                    call.object.s.namespace.collection.indexOf('_User') >= 0
                   ) {
                     foundUserClassReadPreference = true;
                     expect(call.object.s.readPreference.mode).toBe(
@@ -4898,12 +4898,12 @@ describe("ParseGraphQLServer", () => {
               }
             });
 
-            it("should support readPreference argument", async () => {
+            it('should support readPreference argument', async () => {
               await prepareData();
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              spyOn(Collection.prototype, "find").and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -4923,7 +4923,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -4932,7 +4932,7 @@ describe("ParseGraphQLServer", () => {
               let foundUserClassReadPreference = false;
               Collection.prototype.find.calls.all().forEach(call => {
                 if (
-                  call.object.s.namespace.collection.indexOf("GraphQLClass") >=
+                  call.object.s.namespace.collection.indexOf('GraphQLClass') >=
                   0
                 ) {
                   foundGraphQLClassReadPreference = true;
@@ -4940,7 +4940,7 @@ describe("ParseGraphQLServer", () => {
                     ReadPreference.SECONDARY
                   );
                 } else if (
-                  call.object.s.namespace.collection.indexOf("_User") >= 0
+                  call.object.s.namespace.collection.indexOf('_User') >= 0
                 ) {
                   foundUserClassReadPreference = true;
                   expect(call.args[1].readPreference).toBe(
@@ -4953,12 +4953,12 @@ describe("ParseGraphQLServer", () => {
               expect(foundUserClassReadPreference).toBe(true);
             });
 
-            it("should support includeReadPreference argument", async () => {
+            it('should support includeReadPreference argument', async () => {
               await prepareData();
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              spyOn(Collection.prototype, "find").and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -4981,7 +4981,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -4990,7 +4990,7 @@ describe("ParseGraphQLServer", () => {
               let foundUserClassReadPreference = false;
               Collection.prototype.find.calls.all().forEach(call => {
                 if (
-                  call.object.s.namespace.collection.indexOf("GraphQLClass") >=
+                  call.object.s.namespace.collection.indexOf('GraphQLClass') >=
                   0
                 ) {
                   foundGraphQLClassReadPreference = true;
@@ -4998,7 +4998,7 @@ describe("ParseGraphQLServer", () => {
                     ReadPreference.SECONDARY
                   );
                 } else if (
-                  call.object.s.namespace.collection.indexOf("_User") >= 0
+                  call.object.s.namespace.collection.indexOf('_User') >= 0
                 ) {
                   foundUserClassReadPreference = true;
                   expect(call.args[1].readPreference).toBe(
@@ -5013,13 +5013,13 @@ describe("ParseGraphQLServer", () => {
           });
         });
 
-        describe("Find", () => {
-          it("should return class objects using class specific query", async () => {
-            const obj1 = new Parse.Object("Customer");
-            obj1.set("someField", "someValue1");
+        describe('Find', () => {
+          it('should return class objects using class specific query', async () => {
+            const obj1 = new Parse.Object('Customer');
+            obj1.set('someField', 'someValue1');
             await obj1.save();
-            const obj2 = new Parse.Object("Customer");
-            obj2.set("someField", "someValue1");
+            const obj2 = new Parse.Object('Customer');
+            obj2.set('someField', 'someValue1');
             await obj2.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5046,13 +5046,13 @@ describe("ParseGraphQLServer", () => {
             result.data.customers.edges.forEach(resultObj => {
               const obj = resultObj.node.objectId === obj1.id ? obj1 : obj2;
               expect(resultObj.node.objectId).toEqual(obj.id);
-              expect(resultObj.node.someField).toEqual(obj.get("someField"));
+              expect(resultObj.node.someField).toEqual(obj.get('someField'));
               expect(new Date(resultObj.node.createdAt)).toEqual(obj.createdAt);
               expect(new Date(resultObj.node.updatedAt)).toEqual(obj.updatedAt);
             });
           });
 
-          it("should respect level permissions", async () => {
+          it('should respect level permissions', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5083,82 +5083,82 @@ describe("ParseGraphQLServer", () => {
             }
 
             expect(
-              (await findObjects("GraphQLClass")).data.find.edges.map(
+              (await findObjects('GraphQLClass')).data.find.edges.map(
                 object => object.node.someField
               )
             ).toEqual([]);
             expect(
-              (await findObjects("PublicClass")).data.find.edges.map(
+              (await findObjects('PublicClass')).data.find.edges.map(
                 object => object.node.someField
               )
-            ).toEqual(["someValue4"]);
+            ).toEqual(['someValue4']);
             expect(
               (
-                await findObjects("GraphQLClass", {
-                  "X-Parse-Master-Key": "test",
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Master-Key': 'test',
                 })
               ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
-            ).toEqual(["someValue1", "someValue2", "someValue3"]);
+            ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (
-                await findObjects("PublicClass", {
-                  "X-Parse-Master-Key": "test",
+                await findObjects('PublicClass', {
+                  'X-Parse-Master-Key': 'test',
                 })
               ).data.find.edges.map(object => object.node.someField)
-            ).toEqual(["someValue4"]);
+            ).toEqual(['someValue4']);
             expect(
               (
-                await findObjects("GraphQLClass", {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 })
               ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
-            ).toEqual(["someValue1", "someValue2", "someValue3"]);
+            ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (
-                await findObjects("PublicClass", {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                await findObjects('PublicClass', {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 })
               ).data.find.edges.map(object => object.node.someField)
-            ).toEqual(["someValue4"]);
+            ).toEqual(['someValue4']);
             expect(
               (
-                await findObjects("GraphQLClass", {
-                  "X-Parse-Session-Token": user2.getSessionToken(),
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user2.getSessionToken(),
                 })
               ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
-            ).toEqual(["someValue1", "someValue2", "someValue3"]);
+            ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (
-                await findObjects("GraphQLClass", {
-                  "X-Parse-Session-Token": user3.getSessionToken(),
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user3.getSessionToken(),
                 })
               ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
-            ).toEqual(["someValue1", "someValue3"]);
+            ).toEqual(['someValue1', 'someValue3']);
             expect(
               (
-                await findObjects("GraphQLClass", {
-                  "X-Parse-Session-Token": user4.getSessionToken(),
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user4.getSessionToken(),
                 })
               ).data.find.edges.map(object => object.node.someField)
             ).toEqual([]);
             expect(
               (
-                await findObjects("GraphQLClass", {
-                  "X-Parse-Session-Token": user5.getSessionToken(),
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user5.getSessionToken(),
                 })
               ).data.find.edges.map(object => object.node.someField)
-            ).toEqual(["someValue3"]);
+            ).toEqual(['someValue3']);
           });
 
-          it("should support where argument using class specific query", async () => {
+          it('should support where argument using class specific query', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5178,7 +5178,7 @@ describe("ParseGraphQLServer", () => {
               variables: {
                 where: {
                   someField: {
-                    in: ["someValue1", "someValue2", "someValue3"],
+                    in: ['someValue1', 'someValue2', 'someValue3'],
                   },
                   OR: [
                     {
@@ -5200,7 +5200,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -5209,10 +5209,10 @@ describe("ParseGraphQLServer", () => {
               result.data.graphQLClasses.edges
                 .map(object => object.node.someField)
                 .sort()
-            ).toEqual(["someValue1", "someValue3"]);
+            ).toEqual(['someValue1', 'someValue3']);
           });
 
-          it("should support in pointer operator using class specific query", async () => {
+          it('should support in pointer operator using class specific query', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5242,17 +5242,17 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
 
             const { edges } = result.data.graphQLClasses;
             expect(edges.length).toBe(1);
-            expect(edges[0].node.someField).toEqual("someValue3");
+            expect(edges[0].node.someField).toEqual('someValue3');
           });
 
-          it("should support OR operation", async () => {
+          it('should support OR operation', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5278,7 +5278,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -5287,16 +5287,16 @@ describe("ParseGraphQLServer", () => {
               result.data.graphQLClasses.edges
                 .map(object => object.node.someField)
                 .sort()
-            ).toEqual(["someValue1", "someValue2"]);
+            ).toEqual(['someValue1', 'someValue2']);
           });
 
-          it_id("accc59be-fd13-46c5-a103-ec63f2ad6670")(it)(
-            "should support full text search",
+          it_id('accc59be-fd13-46c5-a103-ec63f2ad6670')(it)(
+            'should support full text search',
             async () => {
               try {
-                const obj = new Parse.Object("FullTextSearchTest");
-                obj.set("field1", "Parse GraphQL Server");
-                obj.set("field2", "It rocks!");
+                const obj = new Parse.Object('FullTextSearchTest');
+                obj.set('field1', 'Parse GraphQL Server');
+                obj.set('field2', 'It rocks!');
                 await obj.save();
 
                 await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5317,7 +5317,7 @@ describe("ParseGraphQLServer", () => {
                   `,
                   context: {
                     headers: {
-                      "X-Parse-Master-Key": "test",
+                      'X-Parse-Master-Key': 'test',
                     },
                   },
                   variables: {
@@ -5325,7 +5325,7 @@ describe("ParseGraphQLServer", () => {
                       field1: {
                         text: {
                           search: {
-                            term: "graphql",
+                            term: 'graphql',
                           },
                         },
                       },
@@ -5342,24 +5342,24 @@ describe("ParseGraphQLServer", () => {
             }
           );
 
-          it("should support in query key", async () => {
+          it('should support in query key', async () => {
             try {
-              const country = new Parse.Object("Country");
-              country.set("code", "FR");
+              const country = new Parse.Object('Country');
+              country.set('code', 'FR');
               await country.save();
 
-              const country2 = new Parse.Object("Country");
-              country2.set("code", "US");
+              const country2 = new Parse.Object('Country');
+              country2.set('code', 'US');
               await country2.save();
 
-              const city = new Parse.Object("City");
-              city.set("country", "FR");
-              city.set("name", "city1");
+              const city = new Parse.Object('City');
+              city.set('country', 'FR');
+              city.set('name', 'city1');
               await city.save();
 
-              const city2 = new Parse.Object("City");
-              city2.set("country", "US");
-              city2.set("name", "city2");
+              const city2 = new Parse.Object('City');
+              city2.set('country', 'US');
+              city2.set('name', 'city2');
               await city2.save();
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5383,7 +5383,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
                 variables: {
@@ -5391,10 +5391,10 @@ describe("ParseGraphQLServer", () => {
                     country: {
                       inQueryKey: {
                         query: {
-                          className: "Country",
-                          where: { code: { equalTo: "US" } },
+                          className: 'Country',
+                          where: { code: { equalTo: 'US' } },
                         },
-                        key: "code",
+                        key: 'code',
                       },
                     },
                   },
@@ -5402,20 +5402,20 @@ describe("ParseGraphQLServer", () => {
               });
 
               expect(result.length).toEqual(1);
-              expect(result[0].node.name).toEqual("city2");
+              expect(result[0].node.name).toEqual('city2');
             } catch (e) {
               handleError(e);
             }
           });
 
-          it_id("0fd03d3c-a2c8-4fac-95cc-2391a3032ca2")(it)(
-            "should support order, skip and first arguments",
+          it_id('0fd03d3c-a2c8-4fac-95cc-2391a3032ca2')(it)(
+            'should support order, skip and first arguments',
             async () => {
               const promises = [];
               for (let i = 0; i < 100; i++) {
-                const obj = new Parse.Object("SomeClass");
-                obj.set("someField", `someValue${i < 10 ? "0" : ""}${i}`);
-                obj.set("numberField", i % 3);
+                const obj = new Parse.Object('SomeClass');
+                obj.set('someField', `someValue${i < 10 ? '0' : ''}${i}`);
+                obj.set('numberField', i % 3);
                 promises.push(obj.save());
               }
               await Promise.all(promises);
@@ -5447,10 +5447,10 @@ describe("ParseGraphQLServer", () => {
                 variables: {
                   where: {
                     someField: {
-                      matchesRegex: "^someValue",
+                      matchesRegex: '^someValue',
                     },
                   },
-                  order: ["numberField_DESC", "someField_ASC"],
+                  order: ['numberField_DESC', 'someField_ASC'],
                   skip: 4,
                   first: 2,
                 },
@@ -5458,12 +5458,12 @@ describe("ParseGraphQLServer", () => {
 
               expect(
                 result.data.find.edges.map(obj => obj.node.someField)
-              ).toEqual(["someValue14", "someValue17"]);
+              ).toEqual(['someValue14', 'someValue17']);
             }
           );
 
-          it_id("588a70c6-2932-4d3b-a838-a74c59d8cffb")(it)(
-            "should support pagination",
+          it_id('588a70c6-2932-4d3b-a838-a74c59d8cffb')(it)(
+            'should support pagination',
             async () => {
               const numberArray = (first, last) => {
                 const array = [];
@@ -5475,8 +5475,8 @@ describe("ParseGraphQLServer", () => {
 
               const promises = [];
               for (let i = 0; i < 100; i++) {
-                const obj = new Parse.Object("SomeClass");
-                obj.set("numberField", i);
+                const obj = new Parse.Object('SomeClass');
+                obj.set('numberField', i);
                 promises.push(obj.save());
               }
               await Promise.all(promises);
@@ -5525,7 +5525,7 @@ describe("ParseGraphQLServer", () => {
                     }
                   `,
                   variables: {
-                    order: ["numberField_ASC"],
+                    order: ['numberField_ASC'],
                     skip,
                     after,
                     first,
@@ -5633,8 +5633,8 @@ describe("ParseGraphQLServer", () => {
             }
           );
 
-          it_id("4f6a5f20-9642-4cf0-b31d-e739672a9096")(it)(
-            "should support count",
+          it_id('4f6a5f20-9642-4cf0-b31d-e739672a9096')(it)(
+            'should support count',
             async () => {
               await prepareData();
 
@@ -5642,7 +5642,7 @@ describe("ParseGraphQLServer", () => {
 
               const where = {
                 someField: {
-                  in: ["someValue1", "someValue2", "someValue3"],
+                  in: ['someValue1', 'someValue2', 'someValue3'],
                 },
                 OR: [
                   {
@@ -5684,7 +5684,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -5694,13 +5694,13 @@ describe("ParseGraphQLServer", () => {
             }
           );
 
-          it("should only count", async () => {
+          it('should only count', async () => {
             await prepareData();
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
             const where = {
               someField: {
-                in: ["someValue1", "someValue2", "someValue3"],
+                in: ['someValue1', 'someValue2', 'someValue3'],
               },
               OR: [
                 {
@@ -5733,7 +5733,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -5742,8 +5742,8 @@ describe("ParseGraphQLServer", () => {
             expect(result.data.find.count).toEqual(2);
           });
 
-          it_id("942b57be-ca8a-4a5b-8104-2adef8743b1a")(it)(
-            "should respect max limit",
+          it_id('942b57be-ca8a-4a5b-8104-2adef8743b1a')(it)(
+            'should respect max limit',
             async () => {
               parseServer = await global.reconfigureServer({
                 maxLimit: 10,
@@ -5751,7 +5751,7 @@ describe("ParseGraphQLServer", () => {
               await createGQLFromParseServer(parseServer);
               const promises = [];
               for (let i = 0; i < 100; i++) {
-                const obj = new Parse.Object("SomeClass");
+                const obj = new Parse.Object('SomeClass');
                 promises.push(obj.save());
               }
               await Promise.all(promises);
@@ -5779,7 +5779,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -5789,8 +5789,8 @@ describe("ParseGraphQLServer", () => {
             }
           );
 
-          it_id("952634f0-0ad5-4a08-8da2-187c1bd9ee94")(it)(
-            "should support keys argument",
+          it_id('952634f0-0ad5-4a08-8da2-187c1bd9ee94')(it)(
+            'should support keys argument',
             async () => {
               await prepareData();
 
@@ -5815,7 +5815,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Session-Token": user1.getSessionToken(),
+                    'X-Parse-Session-Token': user1.getSessionToken(),
                   },
                 },
               });
@@ -5842,7 +5842,7 @@ describe("ParseGraphQLServer", () => {
                 },
                 context: {
                   headers: {
-                    "X-Parse-Session-Token": user1.getSessionToken(),
+                    'X-Parse-Session-Token': user1.getSessionToken(),
                   },
                 },
               });
@@ -5858,7 +5858,7 @@ describe("ParseGraphQLServer", () => {
             }
           );
 
-          it("should support include argument", async () => {
+          it('should support include argument', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -5888,7 +5888,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 },
               },
             });
@@ -5912,7 +5912,7 @@ describe("ParseGraphQLServer", () => {
               },
               context: {
                 headers: {
-                  "X-Parse-Session-Token": user1.getSessionToken(),
+                  'X-Parse-Session-Token': user1.getSessionToken(),
                 },
               },
             });
@@ -5924,13 +5924,13 @@ describe("ParseGraphQLServer", () => {
             ).toBeDefined();
           });
 
-          describe_only_db("mongo")("read preferences", () => {
-            it("should read from primary by default", async () => {
+          describe_only_db('mongo')('read preferences', () => {
+            it('should read from primary by default', async () => {
               await prepareData();
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              spyOn(Collection.prototype, "find").and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -5948,7 +5948,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 context: {
                   headers: {
-                    "X-Parse-Session-Token": user1.getSessionToken(),
+                    'X-Parse-Session-Token': user1.getSessionToken(),
                   },
                 },
               });
@@ -5957,7 +5957,7 @@ describe("ParseGraphQLServer", () => {
               let foundUserClassReadPreference = false;
               Collection.prototype.find.calls.all().forEach(call => {
                 if (
-                  call.object.s.namespace.collection.indexOf("GraphQLClass") >=
+                  call.object.s.namespace.collection.indexOf('GraphQLClass') >=
                   0
                 ) {
                   foundGraphQLClassReadPreference = true;
@@ -5965,7 +5965,7 @@ describe("ParseGraphQLServer", () => {
                     ReadPreference.PRIMARY
                   );
                 } else if (
-                  call.object.s.namespace.collection.indexOf("_User") >= 0
+                  call.object.s.namespace.collection.indexOf('_User') >= 0
                 ) {
                   foundUserClassReadPreference = true;
                   expect(call.object.s.readPreference.mode).toBe(
@@ -5978,12 +5978,12 @@ describe("ParseGraphQLServer", () => {
               expect(foundUserClassReadPreference).toBe(true);
             });
 
-            it("should support readPreference argument", async () => {
+            it('should support readPreference argument', async () => {
               await prepareData();
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              spyOn(Collection.prototype, "find").and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -6003,7 +6003,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -6012,7 +6012,7 @@ describe("ParseGraphQLServer", () => {
               let foundUserClassReadPreference = false;
               Collection.prototype.find.calls.all().forEach(call => {
                 if (
-                  call.object.s.namespace.collection.indexOf("GraphQLClass") >=
+                  call.object.s.namespace.collection.indexOf('GraphQLClass') >=
                   0
                 ) {
                   foundGraphQLClassReadPreference = true;
@@ -6020,7 +6020,7 @@ describe("ParseGraphQLServer", () => {
                     ReadPreference.SECONDARY
                   );
                 } else if (
-                  call.object.s.namespace.collection.indexOf("_User") >= 0
+                  call.object.s.namespace.collection.indexOf('_User') >= 0
                 ) {
                   foundUserClassReadPreference = true;
                   expect(call.args[1].readPreference).toBe(
@@ -6033,12 +6033,12 @@ describe("ParseGraphQLServer", () => {
               expect(foundUserClassReadPreference).toBe(true);
             });
 
-            it("should support includeReadPreference argument", async () => {
+            it('should support includeReadPreference argument', async () => {
               await prepareData();
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              spyOn(Collection.prototype, "find").and.callThrough();
+              spyOn(Collection.prototype, 'find').and.callThrough();
 
               await apolloClient.query({
                 query: gql`
@@ -6061,7 +6061,7 @@ describe("ParseGraphQLServer", () => {
                 `,
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -6070,7 +6070,7 @@ describe("ParseGraphQLServer", () => {
               let foundUserClassReadPreference = false;
               Collection.prototype.find.calls.all().forEach(call => {
                 if (
-                  call.object.s.namespace.collection.indexOf("GraphQLClass") >=
+                  call.object.s.namespace.collection.indexOf('GraphQLClass') >=
                   0
                 ) {
                   foundGraphQLClassReadPreference = true;
@@ -6078,7 +6078,7 @@ describe("ParseGraphQLServer", () => {
                     ReadPreference.SECONDARY
                   );
                 } else if (
-                  call.object.s.namespace.collection.indexOf("_User") >= 0
+                  call.object.s.namespace.collection.indexOf('_User') >= 0
                 ) {
                   foundUserClassReadPreference = true;
                   expect(call.args[1].readPreference).toBe(
@@ -6091,13 +6091,13 @@ describe("ParseGraphQLServer", () => {
               expect(foundUserClassReadPreference).toBe(true);
             });
 
-            it("should support subqueryReadPreference argument", async () => {
+            it('should support subqueryReadPreference argument', async () => {
               try {
                 await prepareData();
 
                 await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-                spyOn(Collection.prototype, "find").and.callThrough();
+                spyOn(Collection.prototype, 'find').and.callThrough();
 
                 await apolloClient.query({
                   query: gql`
@@ -6122,7 +6122,7 @@ describe("ParseGraphQLServer", () => {
                       pointerToUser: {
                         have: {
                           objectId: {
-                            equalTo: "xxxx",
+                            equalTo: 'xxxx',
                           },
                         },
                       },
@@ -6130,7 +6130,7 @@ describe("ParseGraphQLServer", () => {
                   },
                   context: {
                     headers: {
-                      "X-Parse-Master-Key": "test",
+                      'X-Parse-Master-Key': 'test',
                     },
                   },
                 });
@@ -6140,7 +6140,7 @@ describe("ParseGraphQLServer", () => {
                 Collection.prototype.find.calls.all().forEach(call => {
                   if (
                     call.object.s.namespace.collection.indexOf(
-                      "GraphQLClass"
+                      'GraphQLClass'
                     ) >= 0
                   ) {
                     foundGraphQLClassReadPreference = true;
@@ -6148,7 +6148,7 @@ describe("ParseGraphQLServer", () => {
                       ReadPreference.SECONDARY
                     );
                   } else if (
-                    call.object.s.namespace.collection.indexOf("_User") >= 0
+                    call.object.s.namespace.collection.indexOf('_User') >= 0
                   ) {
                     foundUserClassReadPreference = true;
                     expect(call.args[1].readPreference).toBe(
@@ -6165,7 +6165,7 @@ describe("ParseGraphQLServer", () => {
             });
           });
 
-          it("should order by multiple fields", async () => {
+          it('should order by multiple fields', async () => {
             await prepareData();
 
             await resetGraphQLCache();
@@ -6185,11 +6185,11 @@ describe("ParseGraphQLServer", () => {
                   }
                 `,
                 variables: {
-                  order: ["someOtherField_DESC", "someField_ASC"],
+                  order: ['someOtherField_DESC', 'someField_ASC'],
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
@@ -6202,13 +6202,13 @@ describe("ParseGraphQLServer", () => {
             ).toEqual([object3.id, object1.id, object2.id]);
           });
 
-          it_only_db("mongo")(
-            "should order by multiple fields on a relation field",
+          it_only_db('mongo')(
+            'should order by multiple fields on a relation field',
             async () => {
               await prepareData();
 
-              const parentObject = new Parse.Object("ParentClass");
-              const relation = parentObject.relation("graphQLClasses");
+              const parentObject = new Parse.Object('ParentClass');
+              const relation = parentObject.relation('graphQLClasses');
               relation.add(object1);
               relation.add(object2);
               relation.add(object3);
@@ -6237,11 +6237,11 @@ describe("ParseGraphQLServer", () => {
                   `,
                   variables: {
                     id: parentObject.id,
-                    order: ["someOtherField_DESC", "someField_ASC"],
+                    order: ['someOtherField_DESC', 'someField_ASC'],
                   },
                   context: {
                     headers: {
-                      "X-Parse-Master-Key": "test",
+                      'X-Parse-Master-Key': 'test',
                     },
                   },
                 });
@@ -6257,8 +6257,8 @@ describe("ParseGraphQLServer", () => {
             }
           );
 
-          it_id("47a6adf3-1cb4-4d92-b74c-e480363f9cb5")(it)(
-            "should support including relation",
+          it_id('47a6adf3-1cb4-4d92-b74c-e480363f9cb5')(it)(
+            'should support including relation',
             async () => {
               await prepareData();
 
@@ -6279,7 +6279,7 @@ describe("ParseGraphQLServer", () => {
                 variables: {},
                 context: {
                   headers: {
-                    "X-Parse-Session-Token": user1.getSessionToken(),
+                    'X-Parse-Session-Token': user1.getSessionToken(),
                   },
                 },
               });
@@ -6306,7 +6306,7 @@ describe("ParseGraphQLServer", () => {
                 variables: {},
                 context: {
                   headers: {
-                    "X-Parse-Session-Token": user1.getSessionToken(),
+                    'X-Parse-Session-Token': user1.getSessionToken(),
                   },
                 },
               });
@@ -6325,12 +6325,12 @@ describe("ParseGraphQLServer", () => {
         });
       });
 
-      describe("Objects Mutations", () => {
-        describe("Create", () => {
-          it("should return specific type object using class specific mutation", async () => {
+      describe('Objects Mutations', () => {
+        describe('Create', () => {
+          it('should return specific type object using class specific mutation', async () => {
             const clientMutationId = uuidv4();
-            const customerSchema = new Parse.Schema("Customer");
-            customerSchema.addString("someField");
+            const customerSchema = new Parse.Schema('Customer');
+            customerSchema.addString('someField');
             await customerSchema.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6353,7 +6353,7 @@ describe("ParseGraphQLServer", () => {
                 input: {
                   clientMutationId,
                   fields: {
-                    someField: "someValue",
+                    someField: 'someValue',
                   },
                 },
               },
@@ -6364,20 +6364,20 @@ describe("ParseGraphQLServer", () => {
             );
             expect(result.data.createCustomer.customer.id).toBeDefined();
             expect(result.data.createCustomer.customer.someField).toEqual(
-              "someValue"
+              'someValue'
             );
 
-            const customer = await new Parse.Query("Customer").get(
+            const customer = await new Parse.Query('Customer').get(
               result.data.createCustomer.customer.objectId
             );
 
             expect(customer.createdAt).toEqual(
               new Date(result.data.createCustomer.customer.createdAt)
             );
-            expect(customer.get("someField")).toEqual("someValue");
+            expect(customer.get('someField')).toEqual('someValue');
           });
 
-          it("should respect level permissions", async () => {
+          it('should respect level permissions', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6409,61 +6409,61 @@ describe("ParseGraphQLServer", () => {
               return result;
             }
 
-            await expectAsync(createObject("GraphQLClass")).toBeRejectedWith(
+            await expectAsync(createObject('GraphQLClass')).toBeRejectedWith(
               jasmine.stringMatching(
-                "Permission denied for action create on class GraphQLClass"
+                'Permission denied for action create on class GraphQLClass'
               )
             );
-            await expectAsync(createObject("PublicClass")).toBeResolved();
+            await expectAsync(createObject('PublicClass')).toBeResolved();
             await expectAsync(
-              createObject("GraphQLClass", { "X-Parse-Master-Key": "test" })
+              createObject('GraphQLClass', { 'X-Parse-Master-Key': 'test' })
             ).toBeResolved();
             await expectAsync(
-              createObject("PublicClass", { "X-Parse-Master-Key": "test" })
+              createObject('PublicClass', { 'X-Parse-Master-Key': 'test' })
             ).toBeResolved();
             await expectAsync(
-              createObject("GraphQLClass", {
-                "X-Parse-Session-Token": user1.getSessionToken(),
+              createObject('GraphQLClass', {
+                'X-Parse-Session-Token': user1.getSessionToken(),
               })
             ).toBeResolved();
             await expectAsync(
-              createObject("PublicClass", {
-                "X-Parse-Session-Token": user1.getSessionToken(),
+              createObject('PublicClass', {
+                'X-Parse-Session-Token': user1.getSessionToken(),
               })
             ).toBeResolved();
             await expectAsync(
-              createObject("GraphQLClass", {
-                "X-Parse-Session-Token": user2.getSessionToken(),
+              createObject('GraphQLClass', {
+                'X-Parse-Session-Token': user2.getSessionToken(),
               })
             ).toBeResolved();
             await expectAsync(
-              createObject("PublicClass", {
-                "X-Parse-Session-Token": user2.getSessionToken(),
+              createObject('PublicClass', {
+                'X-Parse-Session-Token': user2.getSessionToken(),
               })
             ).toBeResolved();
             await expectAsync(
-              createObject("GraphQLClass", {
-                "X-Parse-Session-Token": user4.getSessionToken(),
+              createObject('GraphQLClass', {
+                'X-Parse-Session-Token': user4.getSessionToken(),
               })
             ).toBeRejectedWith(
               jasmine.stringMatching(
-                "Permission denied for action create on class GraphQLClass"
+                'Permission denied for action create on class GraphQLClass'
               )
             );
             await expectAsync(
-              createObject("PublicClass", {
-                "X-Parse-Session-Token": user4.getSessionToken(),
+              createObject('PublicClass', {
+                'X-Parse-Session-Token': user4.getSessionToken(),
               })
             ).toBeResolved();
           });
         });
 
-        describe("Update", () => {
-          it("should return specific type object using class specific mutation", async () => {
+        describe('Update', () => {
+          it('should return specific type object using class specific mutation', async () => {
             const clientMutationId = uuidv4();
-            const obj = new Parse.Object("Customer");
-            obj.set("someField1", "someField1Value1");
-            obj.set("someField2", "someField2Value1");
+            const obj = new Parse.Object('Customer');
+            obj.set('someField1', 'someField1Value1');
+            obj.set('someField2', 'someField2Value1');
             await obj.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6486,7 +6486,7 @@ describe("ParseGraphQLServer", () => {
                   clientMutationId,
                   id: obj.id,
                   fields: {
-                    someField1: "someField1Value2",
+                    someField1: 'someField1Value2',
                   },
                 },
               },
@@ -6497,22 +6497,22 @@ describe("ParseGraphQLServer", () => {
             );
             expect(result.data.updateCustomer.customer.updatedAt).toBeDefined();
             expect(result.data.updateCustomer.customer.someField1).toEqual(
-              "someField1Value2"
+              'someField1Value2'
             );
             expect(result.data.updateCustomer.customer.someField2).toEqual(
-              "someField2Value1"
+              'someField2Value1'
             );
 
             await obj.fetch();
 
-            expect(obj.get("someField1")).toEqual("someField1Value2");
-            expect(obj.get("someField2")).toEqual("someField2Value1");
+            expect(obj.get('someField1')).toEqual('someField1Value2');
+            expect(obj.get('someField2')).toEqual('someField2Value1');
           });
 
-          it("should return only id using class specific mutation", async () => {
-            const obj = new Parse.Object("Customer");
-            obj.set("someField1", "someField1Value1");
-            obj.set("someField2", "someField2Value1");
+          it('should return only id using class specific mutation', async () => {
+            const obj = new Parse.Object('Customer');
+            obj.set('someField1', 'someField1Value1');
+            obj.set('someField2', 'someField2Value1');
             await obj.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6534,7 +6534,7 @@ describe("ParseGraphQLServer", () => {
               variables: {
                 id: obj.id,
                 fields: {
-                  someField1: "someField1Value2",
+                  someField1: 'someField1Value2',
                 },
               },
             });
@@ -6545,11 +6545,11 @@ describe("ParseGraphQLServer", () => {
 
             await obj.fetch();
 
-            expect(obj.get("someField1")).toEqual("someField1Value2");
-            expect(obj.get("someField2")).toEqual("someField2Value1");
+            expect(obj.get('someField1')).toEqual('someField1Value2');
+            expect(obj.get('someField2')).toEqual('someField2Value1');
           });
 
-          it("should respect level permissions", async () => {
+          it('should respect level permissions', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6582,25 +6582,25 @@ describe("ParseGraphQLServer", () => {
 
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(obj.className, obj.id, {
-                    someField: "changedValue1",
+                    someField: 'changedValue1',
                   })
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
               (
                 await updateObject(object4.className, object4.id, {
-                  someField: "changedValue1",
+                  someField: 'changedValue1',
                 })
               ).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
-            expect(object4.get("someField")).toEqual("changedValue1");
+            expect(object4.get('someField')).toEqual('changedValue1');
             await Promise.all(
               objects.map(async obj => {
                 expect(
@@ -6608,13 +6608,13 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue2" },
-                      { "X-Parse-Master-Key": "test" }
+                      { someField: 'changedValue2' },
+                      { 'X-Parse-Master-Key': 'test' }
                     )
                   ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue2");
+                expect(obj.get('someField')).toEqual('changedValue2');
               })
             );
             await Promise.all(
@@ -6624,13 +6624,13 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue3" },
-                      { "X-Parse-Session-Token": user1.getSessionToken() }
+                      { someField: 'changedValue3' },
+                      { 'X-Parse-Session-Token': user1.getSessionToken() }
                     )
                   ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue3");
+                expect(obj.get('someField')).toEqual('changedValue3');
               })
             );
             await Promise.all(
@@ -6640,13 +6640,13 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue4" },
-                      { "X-Parse-Session-Token": user2.getSessionToken() }
+                      { someField: 'changedValue4' },
+                      { 'X-Parse-Session-Token': user2.getSessionToken() }
                     )
                   ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue4");
+                expect(obj.get('someField')).toEqual('changedValue4');
               })
             );
             await Promise.all(
@@ -6656,39 +6656,39 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue5" },
-                      { "X-Parse-Session-Token": user3.getSessionToken() }
+                      { someField: 'changedValue5' },
+                      { 'X-Parse-Session-Token': user3.getSessionToken() }
                     )
                   ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue5");
+                expect(obj.get('someField')).toEqual('changedValue5');
               })
             );
-            const originalFieldValue = object2.get("someField");
+            const originalFieldValue = object2.get('someField');
             await expectAsync(
               updateObject(
                 object2.className,
                 object2.id,
-                { someField: "changedValue5" },
-                { "X-Parse-Session-Token": user3.getSessionToken() }
+                { someField: 'changedValue5' },
+                { 'X-Parse-Session-Token': user3.getSessionToken() }
               )
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             await object2.fetch({ useMasterKey: true });
-            expect(object2.get("someField")).toEqual(originalFieldValue);
+            expect(object2.get('someField')).toEqual(originalFieldValue);
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
                     obj.className,
                     obj.id,
-                    { someField: "changedValue6" },
-                    { "X-Parse-Session-Token": user4.getSessionToken() }
+                    { someField: 'changedValue6' },
+                    { 'X-Parse-Session-Token': user4.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
@@ -6696,26 +6696,26 @@ describe("ParseGraphQLServer", () => {
                 await updateObject(
                   object4.className,
                   object4.id,
-                  { someField: "changedValue6" },
-                  { "X-Parse-Session-Token": user4.getSessionToken() }
+                  { someField: 'changedValue6' },
+                  { 'X-Parse-Session-Token': user4.getSessionToken() }
                 )
               ).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
-            expect(object4.get("someField")).toEqual("changedValue6");
+            expect(object4.get('someField')).toEqual('changedValue6');
             await Promise.all(
               objects.slice(0, 2).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
                     obj.className,
                     obj.id,
-                    { someField: "changedValue7" },
-                    { "X-Parse-Session-Token": user5.getSessionToken() }
+                    { someField: 'changedValue7' },
+                    { 'X-Parse-Session-Token': user5.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
@@ -6723,28 +6723,28 @@ describe("ParseGraphQLServer", () => {
                 await updateObject(
                   object3.className,
                   object3.id,
-                  { someField: "changedValue7" },
-                  { "X-Parse-Session-Token": user5.getSessionToken() }
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
                 )
               ).data.update.clientMutationId
             ).toBeDefined();
             await object3.fetch({ useMasterKey: true });
-            expect(object3.get("someField")).toEqual("changedValue7");
+            expect(object3.get('someField')).toEqual('changedValue7');
             expect(
               (
                 await updateObject(
                   object4.className,
                   object4.id,
-                  { someField: "changedValue7" },
-                  { "X-Parse-Session-Token": user5.getSessionToken() }
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
                 )
               ).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
-            expect(object4.get("someField")).toEqual("changedValue7");
+            expect(object4.get('someField')).toEqual('changedValue7');
           });
 
-          it("should respect level permissions with specific class mutation", async () => {
+          it('should respect level permissions with specific class mutation', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -6781,20 +6781,20 @@ describe("ParseGraphQLServer", () => {
 
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(obj.className, obj.id, {
-                    someField: "changedValue1",
+                    someField: 'changedValue1',
                   })
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
               (
                 await updateObject(object4.className, object4.id, {
-                  someField: "changedValue1",
+                  someField: 'changedValue1',
                 })
               ).data[`update${object4.className}`][
                 object4.className.charAt(0).toLowerCase() +
@@ -6802,7 +6802,7 @@ describe("ParseGraphQLServer", () => {
               ].updatedAt
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
-            expect(object4.get("someField")).toEqual("changedValue1");
+            expect(object4.get('someField')).toEqual('changedValue1');
             await Promise.all(
               objects.map(async obj => {
                 expect(
@@ -6810,8 +6810,8 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue2" },
-                      { "X-Parse-Master-Key": "test" }
+                      { someField: 'changedValue2' },
+                      { 'X-Parse-Master-Key': 'test' }
                     )
                   ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
@@ -6819,7 +6819,7 @@ describe("ParseGraphQLServer", () => {
                   ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue2");
+                expect(obj.get('someField')).toEqual('changedValue2');
               })
             );
             await Promise.all(
@@ -6829,8 +6829,8 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue3" },
-                      { "X-Parse-Session-Token": user1.getSessionToken() }
+                      { someField: 'changedValue3' },
+                      { 'X-Parse-Session-Token': user1.getSessionToken() }
                     )
                   ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
@@ -6838,7 +6838,7 @@ describe("ParseGraphQLServer", () => {
                   ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue3");
+                expect(obj.get('someField')).toEqual('changedValue3');
               })
             );
             await Promise.all(
@@ -6848,8 +6848,8 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue4" },
-                      { "X-Parse-Session-Token": user2.getSessionToken() }
+                      { someField: 'changedValue4' },
+                      { 'X-Parse-Session-Token': user2.getSessionToken() }
                     )
                   ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
@@ -6857,7 +6857,7 @@ describe("ParseGraphQLServer", () => {
                   ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue4");
+                expect(obj.get('someField')).toEqual('changedValue4');
               })
             );
             await Promise.all(
@@ -6867,8 +6867,8 @@ describe("ParseGraphQLServer", () => {
                     await updateObject(
                       obj.className,
                       obj.id,
-                      { someField: "changedValue5" },
-                      { "X-Parse-Session-Token": user3.getSessionToken() }
+                      { someField: 'changedValue5' },
+                      { 'X-Parse-Session-Token': user3.getSessionToken() }
                     )
                   ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
@@ -6876,33 +6876,33 @@ describe("ParseGraphQLServer", () => {
                   ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual("changedValue5");
+                expect(obj.get('someField')).toEqual('changedValue5');
               })
             );
-            const originalFieldValue = object2.get("someField");
+            const originalFieldValue = object2.get('someField');
             await expectAsync(
               updateObject(
                 object2.className,
                 object2.id,
-                { someField: "changedValue5" },
-                { "X-Parse-Session-Token": user3.getSessionToken() }
+                { someField: 'changedValue5' },
+                { 'X-Parse-Session-Token': user3.getSessionToken() }
               )
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             await object2.fetch({ useMasterKey: true });
-            expect(object2.get("someField")).toEqual(originalFieldValue);
+            expect(object2.get('someField')).toEqual(originalFieldValue);
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
                     obj.className,
                     obj.id,
-                    { someField: "changedValue6" },
-                    { "X-Parse-Session-Token": user4.getSessionToken() }
+                    { someField: 'changedValue6' },
+                    { 'X-Parse-Session-Token': user4.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
@@ -6910,8 +6910,8 @@ describe("ParseGraphQLServer", () => {
                 await updateObject(
                   object4.className,
                   object4.id,
-                  { someField: "changedValue6" },
-                  { "X-Parse-Session-Token": user4.getSessionToken() }
+                  { someField: 'changedValue6' },
+                  { 'X-Parse-Session-Token': user4.getSessionToken() }
                 )
               ).data[`update${object4.className}`][
                 object4.className.charAt(0).toLowerCase() +
@@ -6919,20 +6919,20 @@ describe("ParseGraphQLServer", () => {
               ].updatedAt
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
-            expect(object4.get("someField")).toEqual("changedValue6");
+            expect(object4.get('someField')).toEqual('changedValue6');
             await Promise.all(
               objects.slice(0, 2).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
                     obj.className,
                     obj.id,
-                    { someField: "changedValue7" },
-                    { "X-Parse-Session-Token": user5.getSessionToken() }
+                    { someField: 'changedValue7' },
+                    { 'X-Parse-Session-Token': user5.getSessionToken() }
                   )
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
@@ -6940,8 +6940,8 @@ describe("ParseGraphQLServer", () => {
                 await updateObject(
                   object3.className,
                   object3.id,
-                  { someField: "changedValue7" },
-                  { "X-Parse-Session-Token": user5.getSessionToken() }
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
                 )
               ).data[`update${object3.className}`][
                 object3.className.charAt(0).toLowerCase() +
@@ -6949,14 +6949,14 @@ describe("ParseGraphQLServer", () => {
               ].updatedAt
             ).toBeDefined();
             await object3.fetch({ useMasterKey: true });
-            expect(object3.get("someField")).toEqual("changedValue7");
+            expect(object3.get('someField')).toEqual('changedValue7');
             expect(
               (
                 await updateObject(
                   object4.className,
                   object4.id,
-                  { someField: "changedValue7" },
-                  { "X-Parse-Session-Token": user5.getSessionToken() }
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
                 )
               ).data[`update${object4.className}`][
                 object4.className.charAt(0).toLowerCase() +
@@ -6964,16 +6964,16 @@ describe("ParseGraphQLServer", () => {
               ].updatedAt
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
-            expect(object4.get("someField")).toEqual("changedValue7");
+            expect(object4.get('someField')).toEqual('changedValue7');
           });
         });
 
-        describe("Delete", () => {
-          it("should return a specific type using class specific mutation", async () => {
+        describe('Delete', () => {
+          it('should return a specific type using class specific mutation', async () => {
             const clientMutationId = uuidv4();
-            const obj = new Parse.Object("Customer");
-            obj.set("someField1", "someField1Value1");
-            obj.set("someField2", "someField2Value1");
+            const obj = new Parse.Object('Customer');
+            obj.set('someField1', 'someField1Value1');
+            obj.set('someField2', 'someField2Value1');
             await obj.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -7007,18 +7007,18 @@ describe("ParseGraphQLServer", () => {
               obj.id
             );
             expect(result.data.deleteCustomer.customer.someField1).toEqual(
-              "someField1Value1"
+              'someField1Value1'
             );
             expect(result.data.deleteCustomer.customer.someField2).toEqual(
-              "someField2Value1"
+              'someField2Value1'
             );
 
             await expectAsync(
               obj.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
           });
 
-          it("should respect level permissions", async () => {
+          it('should respect level permissions', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -7049,24 +7049,24 @@ describe("ParseGraphQLServer", () => {
 
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id)
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id, {
-                    "X-Parse-Session-Token": user4.getSessionToken(),
+                    'X-Parse-Session-Token': user4.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
@@ -7074,52 +7074,52 @@ describe("ParseGraphQLServer", () => {
                 object4.className.charAt(0).toLowerCase() +
                   object4.className.slice(1)
               ]
-            ).toEqual({ objectId: object4.id, __typename: "PublicClass" });
+            ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(
               object4.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (
                 await deleteObject(object1.className, object1.id, {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 })
               ).data.delete[
                 object1.className.charAt(0).toLowerCase() +
                   object1.className.slice(1)
               ]
-            ).toEqual({ objectId: object1.id, __typename: "GraphQLClass" });
+            ).toEqual({ objectId: object1.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object1.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (
                 await deleteObject(object2.className, object2.id, {
-                  "X-Parse-Session-Token": user2.getSessionToken(),
+                  'X-Parse-Session-Token': user2.getSessionToken(),
                 })
               ).data.delete[
                 object2.className.charAt(0).toLowerCase() +
                   object2.className.slice(1)
               ]
-            ).toEqual({ objectId: object2.id, __typename: "GraphQLClass" });
+            ).toEqual({ objectId: object2.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object2.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (
                 await deleteObject(object3.className, object3.id, {
-                  "X-Parse-Session-Token": user5.getSessionToken(),
+                  'X-Parse-Session-Token': user5.getSessionToken(),
                 })
               ).data.delete[
                 object3.className.charAt(0).toLowerCase() +
                   object3.className.slice(1)
               ]
-            ).toEqual({ objectId: object3.id, __typename: "GraphQLClass" });
+            ).toEqual({ objectId: object3.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object3.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
           });
 
-          it("should respect level permissions with specific class mutation", async () => {
+          it('should respect level permissions with specific class mutation', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -7150,24 +7150,24 @@ describe("ParseGraphQLServer", () => {
 
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id)
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             await Promise.all(
               objects.slice(0, 3).map(async obj => {
-                const originalFieldValue = obj.get("someField");
+                const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id, {
-                    "X-Parse-Session-Token": user4.getSessionToken(),
+                    'X-Parse-Session-Token': user4.getSessionToken(),
                   })
-                ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
                 await obj.fetch({ useMasterKey: true });
-                expect(obj.get("someField")).toEqual(originalFieldValue);
+                expect(obj.get('someField')).toEqual(originalFieldValue);
               })
             );
             expect(
@@ -7180,11 +7180,11 @@ describe("ParseGraphQLServer", () => {
             ).toEqual(object4.id);
             await expectAsync(
               object4.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (
                 await deleteObject(object1.className, object1.id, {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 })
               ).data[`delete${object1.className}`][
                 object1.className.charAt(0).toLowerCase() +
@@ -7193,11 +7193,11 @@ describe("ParseGraphQLServer", () => {
             ).toEqual(object1.id);
             await expectAsync(
               object1.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (
                 await deleteObject(object2.className, object2.id, {
-                  "X-Parse-Session-Token": user2.getSessionToken(),
+                  'X-Parse-Session-Token': user2.getSessionToken(),
                 })
               ).data[`delete${object2.className}`][
                 object2.className.charAt(0).toLowerCase() +
@@ -7206,11 +7206,11 @@ describe("ParseGraphQLServer", () => {
             ).toEqual(object2.id);
             await expectAsync(
               object2.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (
                 await deleteObject(object3.className, object3.id, {
-                  "X-Parse-Session-Token": user5.getSessionToken(),
+                  'X-Parse-Session-Token': user5.getSessionToken(),
                 })
               ).data[`delete${object3.className}`][
                 object3.className.charAt(0).toLowerCase() +
@@ -7219,37 +7219,37 @@ describe("ParseGraphQLServer", () => {
             ).toEqual(object3.id);
             await expectAsync(
               object3.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching("Object not found"));
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
           });
         });
 
-        it_id("f722e98e-1fd7-45c5-ade3-5177e3d542e8")(it)(
-          "should unset fields when null used on update/create",
+        it_id('f722e98e-1fd7-45c5-ade3-5177e3d542e8')(it)(
+          'should unset fields when null used on update/create',
           async () => {
-            const customerSchema = new Parse.Schema("Customer");
-            customerSchema.addString("aString");
-            customerSchema.addBoolean("aBoolean");
-            customerSchema.addDate("aDate");
-            customerSchema.addArray("aArray");
-            customerSchema.addGeoPoint("aGeoPoint");
-            customerSchema.addPointer("aPointer", "Customer");
-            customerSchema.addObject("aObject");
-            customerSchema.addPolygon("aPolygon");
+            const customerSchema = new Parse.Schema('Customer');
+            customerSchema.addString('aString');
+            customerSchema.addBoolean('aBoolean');
+            customerSchema.addDate('aDate');
+            customerSchema.addArray('aArray');
+            customerSchema.addGeoPoint('aGeoPoint');
+            customerSchema.addPointer('aPointer', 'Customer');
+            customerSchema.addObject('aObject');
+            customerSchema.addPolygon('aPolygon');
             await customerSchema.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const cus = new Parse.Object("Customer");
-            await cus.save({ aString: "hello" });
+            const cus = new Parse.Object('Customer');
+            await cus.save({ aString: 'hello' });
 
             const fields = {
               aString: "i'm string",
               aBoolean: true,
               aDate: new Date().toISOString(),
-              aArray: ["hello", 1],
+              aArray: ['hello', 1],
               aGeoPoint: { latitude: 30, longitude: 30 },
               aPointer: { link: cus.id },
-              aObject: { prop: { subprop: 1 }, prop2: "test" },
+              aObject: { prop: { subprop: 1 }, prop2: 'test' },
               aPolygon: [
                 { latitude: 30, longitude: 30 },
                 { latitude: 31, longitude: 31 },
@@ -7386,18 +7386,18 @@ describe("ParseGraphQLServer", () => {
         );
       });
 
-      describe("Files Mutations", () => {
-        describe("Create", () => {
-          it("should return File object", async () => {
+      describe('Files Mutations', () => {
+        describe('Create', () => {
+          it('should return File object', async () => {
             const clientMutationId = uuidv4();
 
             parseServer = await global.reconfigureServer({
-              publicServerURL: "http://localhost:13377/parse",
+              publicServerURL: 'http://localhost:13377/parse',
             });
             await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
-              "operations",
+              'operations',
               JSON.stringify({
                 query: `
                   mutation CreateFile($input: CreateFileInput!) {
@@ -7419,16 +7419,16 @@ describe("ParseGraphQLServer", () => {
               })
             );
             body.append(
-              "map",
-              JSON.stringify({ 1: ["variables.input.upload"] })
+              'map',
+              JSON.stringify({ 1: ['variables.input.upload'] })
             );
-            body.append("1", "My File Content", {
-              filename: "myFileName.txt",
-              contentType: "text/plain",
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
             });
 
-            let res = await fetch("http://localhost:13377/graphql", {
-              method: "POST",
+            let res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
               headers,
               body,
             });
@@ -7450,16 +7450,16 @@ describe("ParseGraphQLServer", () => {
             res = await fetch(result.data.createFile.fileInfo.url);
 
             expect(res.status).toEqual(200);
-            expect(await res.text()).toEqual("My File Content");
+            expect(await res.text()).toEqual('My File Content');
           });
         });
       });
 
-      describe("Users Queries", () => {
-        it("should return current logged user", async () => {
-          const userName = "user1",
-            password = "user1",
-            email = "emailUser1@parse.com";
+      describe('Users Queries', () => {
+        it('should return current logged user', async () => {
+          const userName = 'user1',
+            password = 'user1',
+            email = 'emailUser1@parse.com';
 
           const user = new Parse.User();
           user.setUsername(userName);
@@ -7482,7 +7482,7 @@ describe("ParseGraphQLServer", () => {
             `,
             context: {
               headers: {
-                "X-Parse-Session-Token": session.getSessionToken(),
+                'X-Parse-Session-Token': session.getSessionToken(),
               },
             },
           });
@@ -7497,19 +7497,19 @@ describe("ParseGraphQLServer", () => {
           expect(resultEmail).toEqual(email);
         });
 
-        it("should return logged user including pointer", async () => {
-          const foo = new Parse.Object("Foo");
-          foo.set("bar", "hello");
+        it('should return logged user including pointer', async () => {
+          const foo = new Parse.Object('Foo');
+          foo.set('bar', 'hello');
 
-          const userName = "user1",
-            password = "user1",
-            email = "emailUser1@parse.com";
+          const userName = 'user1',
+            password = 'user1',
+            email = 'emailUser1@parse.com';
 
           const user = new Parse.User();
           user.setUsername(userName);
           user.setPassword(password);
           user.setEmail(email);
-          user.set("userFoo", foo);
+          user.set('userFoo', foo);
           await user.signUp();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -7532,7 +7532,7 @@ describe("ParseGraphQLServer", () => {
             `,
             context: {
               headers: {
-                "X-Parse-Session-Token": session.getSessionToken(),
+                'X-Parse-Session-Token': session.getSessionToken(),
               },
             },
           });
@@ -7542,25 +7542,25 @@ describe("ParseGraphQLServer", () => {
           expect(objectId).toEqual(user.id);
           expect(sessionToken).toBeDefined();
           expect(resultFoo).toBeDefined();
-          expect(resultFoo.bar).toEqual("hello");
+          expect(resultFoo.bar).toEqual('hello');
         });
-        it("should return logged user and do not by pass pointer security", async () => {
+        it('should return logged user and do not by pass pointer security', async () => {
           const masterKeyOnlyACL = new Parse.ACL();
           masterKeyOnlyACL.setPublicReadAccess(false);
           masterKeyOnlyACL.setPublicWriteAccess(false);
-          const foo = new Parse.Object("Foo");
+          const foo = new Parse.Object('Foo');
           foo.setACL(masterKeyOnlyACL);
-          foo.set("bar", "hello");
+          foo.set('bar', 'hello');
           await foo.save(null, { useMasterKey: true });
-          const userName = "userx1",
-            password = "user1",
-            email = "emailUserx1@parse.com";
+          const userName = 'userx1',
+            password = 'user1',
+            email = 'emailUserx1@parse.com';
 
           const user = new Parse.User();
           user.setUsername(userName);
           user.setPassword(password);
           user.setEmail(email);
-          user.set("userFoo", foo);
+          user.set('userFoo', foo);
           await user.signUp();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -7583,7 +7583,7 @@ describe("ParseGraphQLServer", () => {
             `,
             context: {
               headers: {
-                "X-Parse-Session-Token": session.getSessionToken(),
+                'X-Parse-Session-Token': session.getSessionToken(),
               },
             },
           });
@@ -7596,7 +7596,7 @@ describe("ParseGraphQLServer", () => {
         });
       });
 
-      describe("Users Mutations", () => {
+      describe('Users Mutations', () => {
         const challengeAdapter = {
           validateAuthData: () =>
             Promise.resolve({ response: { someData: true } }),
@@ -7605,9 +7605,9 @@ describe("ParseGraphQLServer", () => {
           options: { anOption: true },
         };
 
-        it("should create user and return authData response", async () => {
+        it('should create user and return authData response', async () => {
           parseServer = await global.reconfigureServer({
-            publicServerURL: "http://localhost:13377/parse",
+            publicServerURL: 'http://localhost:13377/parse',
             auth: {
               challengeAdapter,
             },
@@ -7633,7 +7633,7 @@ describe("ParseGraphQLServer", () => {
                 fields: {
                   authData: {
                     challengeAdapter: {
-                      id: "challengeAdapter",
+                      id: 'challengeAdapter',
                     },
                   },
                 },
@@ -7641,7 +7641,7 @@ describe("ParseGraphQLServer", () => {
             },
             context: {
               headers: {
-                "X-Parse-Master-Key": "test",
+                'X-Parse-Master-Key': 'test',
               },
             },
           });
@@ -7654,18 +7654,18 @@ describe("ParseGraphQLServer", () => {
           });
         });
 
-        it("should sign user up", async () => {
+        it('should sign user up', async () => {
           parseServer = await global.reconfigureServer({
-            publicServerURL: "http://localhost:13377/parse",
+            publicServerURL: 'http://localhost:13377/parse',
             auth: {
               challengeAdapter,
             },
           });
           await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
-          const userSchema = new Parse.Schema("_User");
-          userSchema.addString("someField");
-          userSchema.addPointer("aPointer", "_User");
+          const userSchema = new Parse.Schema('_User');
+          userSchema.addString('someField');
+          userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -7692,22 +7692,22 @@ describe("ParseGraphQLServer", () => {
               input: {
                 clientMutationId,
                 fields: {
-                  username: "user1",
-                  password: "user1",
+                  username: 'user1',
+                  password: 'user1',
                   authData: {
                     challengeAdapter: {
-                      id: "challengeAdapter",
+                      id: 'challengeAdapter',
                     },
                   },
                   aPointer: {
                     createAndLink: {
-                      username: "user2",
-                      password: "user2",
-                      someField: "someValue2",
+                      username: 'user2',
+                      password: 'user2',
+                      someField: 'someValue2',
                       ACL: { public: { read: true, write: true } },
                     },
                   },
-                  someField: "someValue",
+                  someField: 'someValue',
                 },
               },
             },
@@ -7715,32 +7715,32 @@ describe("ParseGraphQLServer", () => {
 
           expect(result.data.signUp.clientMutationId).toEqual(clientMutationId);
           expect(result.data.signUp.viewer.sessionToken).toBeDefined();
-          expect(result.data.signUp.viewer.user.someField).toEqual("someValue");
+          expect(result.data.signUp.viewer.user.someField).toEqual('someValue');
           expect(result.data.signUp.viewer.user.aPointer.id).toBeDefined();
           expect(result.data.signUp.viewer.user.aPointer.username).toEqual(
-            "user2"
+            'user2'
           );
-          expect(typeof result.data.signUp.viewer.sessionToken).toBe("string");
+          expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
           expect(result.data.signUp.viewer.user.authDataResponse).toEqual({
             challengeAdapter: { someData: true },
           });
         });
 
-        it("should login with user", async () => {
+        it('should login with user', async () => {
           const clientMutationId = uuidv4();
-          const userSchema = new Parse.Schema("_User");
+          const userSchema = new Parse.Schema('_User');
           parseServer = await global.reconfigureServer({
-            publicServerURL: "http://localhost:13377/parse",
+            publicServerURL: 'http://localhost:13377/parse',
             auth: {
               challengeAdapter,
               myAuth: {
-                module: global.mockCustomAuthenticator("parse", "graphql"),
+                module: global.mockCustomAuthenticator('parse', 'graphql'),
               },
             },
           });
           await createGQLFromParseServer(parseServer);
-          userSchema.addString("someField");
-          userSchema.addPointer("aPointer", "_User");
+          userSchema.addString('someField');
+          userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
           const result = await apolloClient.mutate({
@@ -7766,19 +7766,19 @@ describe("ParseGraphQLServer", () => {
               input: {
                 clientMutationId,
                 authData: {
-                  challengeAdapter: { id: "challengeAdapter" },
+                  challengeAdapter: { id: 'challengeAdapter' },
                   myAuth: {
-                    id: "parse",
-                    password: "graphql",
+                    id: 'parse',
+                    password: 'graphql',
                   },
                 },
                 fields: {
-                  someField: "someValue",
+                  someField: 'someValue',
                   aPointer: {
                     createAndLink: {
-                      username: "user2",
-                      password: "user2",
-                      someField: "someValue2",
+                      username: 'user2',
+                      password: 'user2',
+                      someField: 'someValue2',
                       ACL: { public: { read: true, write: true } },
                     },
                   },
@@ -7792,33 +7792,33 @@ describe("ParseGraphQLServer", () => {
           );
           expect(result.data.logInWith.viewer.sessionToken).toBeDefined();
           expect(result.data.logInWith.viewer.user.someField).toEqual(
-            "someValue"
+            'someValue'
           );
           expect(typeof result.data.logInWith.viewer.sessionToken).toBe(
-            "string"
+            'string'
           );
           expect(result.data.logInWith.viewer.user.aPointer.id).toBeDefined();
           expect(result.data.logInWith.viewer.user.aPointer.username).toEqual(
-            "user2"
+            'user2'
           );
           expect(result.data.logInWith.viewer.user.authDataResponse).toEqual({
             challengeAdapter: { someData: true },
           });
         });
 
-        it("should handle challenge", async () => {
+        it('should handle challenge', async () => {
           const clientMutationId = uuidv4();
 
-          spyOn(challengeAdapter, "challenge").and.callThrough();
+          spyOn(challengeAdapter, 'challenge').and.callThrough();
           parseServer = await global.reconfigureServer({
-            publicServerURL: "http://localhost:13377/parse",
+            publicServerURL: 'http://localhost:13377/parse',
             auth: {
               challengeAdapter,
             },
           });
           await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
-          await user.save({ username: "username", password: "password" });
+          await user.save({ username: 'username', password: 'password' });
 
           const result = await apolloClient.mutate({
             mutation: gql`
@@ -7832,8 +7832,8 @@ describe("ParseGraphQLServer", () => {
             variables: {
               input: {
                 clientMutationId,
-                username: "username",
-                password: "password",
+                username: 'username',
+                password: 'password',
                 challengeData: {
                   challengeAdapter: { someChallengeData: true },
                 },
@@ -7871,8 +7871,8 @@ describe("ParseGraphQLServer", () => {
               variables: {
                 input: {
                   clientMutationId,
-                  username: "username",
-                  password: "wrongPassword",
+                  username: 'username',
+                  password: 'wrongPassword',
                   challengeData: {
                     challengeAdapter: { someChallengeData: true },
                   },
@@ -7882,9 +7882,9 @@ describe("ParseGraphQLServer", () => {
           ).toBeRejected();
         });
 
-        it("should log the user in", async () => {
+        it('should log the user in', async () => {
           parseServer = await global.reconfigureServer({
-            publicServerURL: "http://localhost:13377/parse",
+            publicServerURL: 'http://localhost:13377/parse',
             auth: {
               challengeAdapter,
             },
@@ -7892,9 +7892,9 @@ describe("ParseGraphQLServer", () => {
           await createGQLFromParseServer(parseServer);
           const clientMutationId = uuidv4();
           const user = new Parse.User();
-          user.setUsername("user1");
-          user.setPassword("user1");
-          user.set("someField", "someValue");
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.set('someField', 'someValue');
           await user.signUp();
           await Parse.User.logOut();
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -7916,8 +7916,8 @@ describe("ParseGraphQLServer", () => {
             variables: {
               input: {
                 clientMutationId,
-                username: "user1",
-                password: "user1",
+                username: 'user1',
+                password: 'user1',
                 authData: { challengeAdapter: { token: true } },
               },
             },
@@ -7925,18 +7925,18 @@ describe("ParseGraphQLServer", () => {
 
           expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
           expect(result.data.logIn.viewer.sessionToken).toBeDefined();
-          expect(result.data.logIn.viewer.user.someField).toEqual("someValue");
-          expect(typeof result.data.logIn.viewer.sessionToken).toBe("string");
+          expect(result.data.logIn.viewer.user.someField).toEqual('someValue');
+          expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
           expect(result.data.logIn.viewer.user.authDataResponse).toEqual({
             challengeAdapter: { someData: true },
           });
         });
 
-        it("should log the user out", async () => {
+        it('should log the user out', async () => {
           const clientMutationId = uuidv4();
           const user = new Parse.User();
-          user.setUsername("user1");
-          user.setPassword("user1");
+          user.setUsername('user1');
+          user.setPassword('user1');
           await user.signUp();
           await Parse.User.logOut();
 
@@ -7952,8 +7952,8 @@ describe("ParseGraphQLServer", () => {
             `,
             variables: {
               input: {
-                username: "user1",
-                password: "user1",
+                username: 'user1',
+                password: 'user1',
               },
             },
           });
@@ -7971,7 +7971,7 @@ describe("ParseGraphQLServer", () => {
             `,
             context: {
               headers: {
-                "X-Parse-Session-Token": sessionToken,
+                'X-Parse-Session-Token': sessionToken,
               },
             },
             variables: {
@@ -7994,22 +7994,22 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Session-Token": sessionToken,
+                  'X-Parse-Session-Token': sessionToken,
                 },
               },
             });
-            fail("should not retrieve current user due to session token");
+            fail('should not retrieve current user due to session token');
           } catch (err) {
             const { statusCode, result } = err.networkError;
             expect(statusCode).toBe(400);
             expect(result).toEqual({
               code: 209,
-              error: "Invalid session token",
+              error: 'Invalid session token',
             });
           }
         });
 
-        it("should send reset password", async () => {
+        it('should send reset password', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
             sendVerificationEmail: () => {},
@@ -8017,15 +8017,15 @@ describe("ParseGraphQLServer", () => {
             sendMail: () => {},
           };
           parseServer = await global.reconfigureServer({
-            appName: "test",
+            appName: 'test',
             emailAdapter: emailAdapter,
-            publicServerURL: "http://test.test",
+            publicServerURL: 'http://test.test',
           });
           await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
-          user.setUsername("user1");
-          user.setPassword("user1");
-          user.setEmail("user1@user1.user1");
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
           await user.signUp();
           await Parse.User.logOut();
           const result = await apolloClient.mutate({
@@ -8040,7 +8040,7 @@ describe("ParseGraphQLServer", () => {
             variables: {
               input: {
                 clientMutationId,
-                email: "user1@user1.user1",
+                email: 'user1@user1.user1',
               },
             },
           });
@@ -8051,34 +8051,34 @@ describe("ParseGraphQLServer", () => {
           expect(result.data.resetPassword.ok).toBeTruthy();
         });
 
-        it("should reset password", async () => {
+        it('should reset password', async () => {
           const clientMutationId = uuidv4();
           let resetPasswordToken;
           const emailAdapter = {
             sendVerificationEmail: () => {},
             sendPasswordResetEmail: ({ link }) => {
-              resetPasswordToken = link.split("token=")[1].split("&")[0];
+              resetPasswordToken = link.split('token=')[1].split('&')[0];
             },
             sendMail: () => {},
           };
           parseServer = await global.reconfigureServer({
-            appName: "test",
+            appName: 'test',
             emailAdapter: emailAdapter,
-            publicServerURL: "http://localhost:13377/parse",
+            publicServerURL: 'http://localhost:13377/parse',
             auth: {
               myAuth: {
-                module: global.mockCustomAuthenticator("parse", "graphql"),
+                module: global.mockCustomAuthenticator('parse', 'graphql'),
               },
             },
           });
           await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
-          user.setUsername("user1");
-          user.setPassword("user1");
-          user.setEmail("user1@user1.user1");
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
           await user.signUp();
           await Parse.User.logOut();
-          await Parse.User.requestPasswordReset("user1@user1.user1");
+          await Parse.User.requestPasswordReset('user1@user1.user1');
           await apolloClient.mutate({
             mutation: gql`
               mutation ConfirmResetPassword(
@@ -8093,8 +8093,8 @@ describe("ParseGraphQLServer", () => {
             variables: {
               input: {
                 clientMutationId,
-                username: "user1",
-                password: "newPassword",
+                username: 'user1',
+                password: 'newPassword',
                 token: resetPasswordToken,
               },
             },
@@ -8113,18 +8113,18 @@ describe("ParseGraphQLServer", () => {
             variables: {
               input: {
                 clientMutationId,
-                username: "user1",
-                password: "newPassword",
+                username: 'user1',
+                password: 'newPassword',
               },
             },
           });
 
           expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
           expect(result.data.logIn.viewer.sessionToken).toBeDefined();
-          expect(typeof result.data.logIn.viewer.sessionToken).toBe("string");
+          expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
         });
 
-        it("should send verification email again", async () => {
+        it('should send verification email again', async () => {
           const clientMutationId = uuidv4();
           const emailAdapter = {
             sendVerificationEmail: () => {},
@@ -8132,15 +8132,15 @@ describe("ParseGraphQLServer", () => {
             sendMail: () => {},
           };
           parseServer = await global.reconfigureServer({
-            appName: "test",
+            appName: 'test',
             emailAdapter: emailAdapter,
-            publicServerURL: "http://test.test",
+            publicServerURL: 'http://test.test',
           });
           await createGQLFromParseServer(parseServer);
           const user = new Parse.User();
-          user.setUsername("user1");
-          user.setPassword("user1");
-          user.setEmail("user1@user1.user1");
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
           await user.signUp();
           await Parse.User.logOut();
           const result = await apolloClient.mutate({
@@ -8157,7 +8157,7 @@ describe("ParseGraphQLServer", () => {
             variables: {
               input: {
                 clientMutationId,
-                email: "user1@user1.user1",
+                email: 'user1@user1.user1',
               },
             },
           });
@@ -8169,8 +8169,8 @@ describe("ParseGraphQLServer", () => {
         });
       });
 
-      describe("Session Token", () => {
-        it("should fail due to invalid session token", async () => {
+      describe('Session Token', () => {
+        it('should fail due to invalid session token', async () => {
           try {
             await apolloClient.query({
               query: gql`
@@ -8182,22 +8182,22 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Session-Token": "foo",
+                  'X-Parse-Session-Token': 'foo',
                 },
               },
             });
-            fail("should not retrieve current user due to session token");
+            fail('should not retrieve current user due to session token');
           } catch (err) {
             const { statusCode, result } = err.networkError;
             expect(statusCode).toBe(400);
             expect(result).toEqual({
               code: 209,
-              error: "Invalid session token",
+              error: 'Invalid session token',
             });
           }
         });
 
-        it("should fail due to empty session token", async () => {
+        it('should fail due to empty session token', async () => {
           try {
             await apolloClient.query({
               query: gql`
@@ -8211,20 +8211,20 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Session-Token": "",
+                  'X-Parse-Session-Token': '',
                 },
               },
             });
-            fail("should not retrieve current user due to session token");
+            fail('should not retrieve current user due to session token');
           } catch (err) {
             const { graphQLErrors } = err;
             expect(graphQLErrors.length).toBe(1);
-            expect(graphQLErrors[0].message).toBe("Invalid session token");
+            expect(graphQLErrors[0].message).toBe('Invalid session token');
           }
         });
 
-        it("should find a user and fail due to empty session token", async () => {
-          const car = new Parse.Object("Car");
+        it('should find a user and fail due to empty session token', async () => {
+          const car = new Parse.Object('Car');
           await car.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -8249,26 +8249,26 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Session-Token": "",
+                  'X-Parse-Session-Token': '',
                 },
               },
             });
-            fail("should not retrieve current user due to session token");
+            fail('should not retrieve current user due to session token');
           } catch (err) {
             const { graphQLErrors } = err;
             expect(graphQLErrors.length).toBe(1);
-            expect(graphQLErrors[0].message).toBe("Invalid session token");
+            expect(graphQLErrors[0].message).toBe('Invalid session token');
           }
         });
       });
 
-      describe("Functions Mutations", () => {
-        it("can be called", async () => {
+      describe('Functions Mutations', () => {
+        it('can be called', async () => {
           try {
             const clientMutationId = uuidv4();
 
-            Parse.Cloud.define("hello", async () => {
-              return "Hello world!";
+            Parse.Cloud.define('hello', async () => {
+              return 'Hello world!';
             });
 
             const result = await apolloClient.mutate({
@@ -8283,7 +8283,7 @@ describe("ParseGraphQLServer", () => {
               variables: {
                 input: {
                   clientMutationId,
-                  functionName: "hello",
+                  functionName: 'hello',
                 },
               },
             });
@@ -8291,15 +8291,15 @@ describe("ParseGraphQLServer", () => {
             expect(result.data.callCloudCode.clientMutationId).toEqual(
               clientMutationId
             );
-            expect(result.data.callCloudCode.result).toEqual("Hello world!");
+            expect(result.data.callCloudCode.result).toEqual('Hello world!');
           } catch (e) {
             handleError(e);
           }
         });
 
-        it("can throw errors", async () => {
-          Parse.Cloud.define("hello", async () => {
-            throw new Error("Some error message.");
+        it('can throw errors', async () => {
+          Parse.Cloud.define('hello', async () => {
+            throw new Error('Some error message.');
           });
 
           try {
@@ -8312,16 +8312,16 @@ describe("ParseGraphQLServer", () => {
                 }
               `,
             });
-            fail("Should throw an error");
+            fail('Should throw an error');
           } catch (e) {
             const { graphQLErrors } = e;
             expect(graphQLErrors.length).toBe(1);
-            expect(graphQLErrors[0].message).toBe("Some error message.");
+            expect(graphQLErrors[0].message).toBe('Some error message.');
           }
         });
 
-        it("should accept different params", done => {
-          Parse.Cloud.define("hello", async req => {
+        it('should accept different params', done => {
+          Parse.Cloud.define('hello', async req => {
             expect(req.params.date instanceof Date).toBe(true);
             expect(req.params.date.getTime()).toBe(1463907600000);
             expect(req.params.dateList[0] instanceof Date).toBe(true);
@@ -8346,13 +8346,13 @@ describe("ParseGraphQLServer", () => {
             ).toBe(1463907600000);
             // Regression for #2294
             expect(req.params.file instanceof Parse.File).toBe(true);
-            expect(req.params.file.url()).toEqual("https://some.url");
+            expect(req.params.file.url()).toEqual('https://some.url');
             // Regression for #2204
-            expect(req.params.array).toEqual(["a", "b", "c"]);
+            expect(req.params.array).toEqual(['a', 'b', 'c']);
             expect(Array.isArray(req.params.array)).toBe(true);
             expect(req.params.arrayOfArray).toEqual([
-              ["a", "b", "c"],
-              ["d", "e", "f"],
+              ['a', 'b', 'c'],
+              ['d', 'e', 'f'],
             ]);
             expect(Array.isArray(req.params.arrayOfArray)).toBe(true);
             expect(Array.isArray(req.params.arrayOfArray[0])).toBe(true);
@@ -8363,49 +8363,49 @@ describe("ParseGraphQLServer", () => {
 
           const params = {
             date: {
-              __type: "Date",
-              iso: "2016-05-22T09:00:00.000Z",
+              __type: 'Date',
+              iso: '2016-05-22T09:00:00.000Z',
             },
             dateList: [
               {
-                __type: "Date",
-                iso: "2016-05-22T09:00:00.000Z",
+                __type: 'Date',
+                iso: '2016-05-22T09:00:00.000Z',
               },
             ],
-            lol: "hello",
+            lol: 'hello',
             complexStructure: {
               date: [
                 {
-                  __type: "Date",
-                  iso: "2016-05-22T09:00:00.000Z",
+                  __type: 'Date',
+                  iso: '2016-05-22T09:00:00.000Z',
                 },
               ],
               deepDate: {
                 date: [
                   {
-                    __type: "Date",
-                    iso: "2016-05-22T09:00:00.000Z",
+                    __type: 'Date',
+                    iso: '2016-05-22T09:00:00.000Z',
                   },
                 ],
               },
               deepDate2: [
                 {
                   date: {
-                    __type: "Date",
-                    iso: "2016-05-22T09:00:00.000Z",
+                    __type: 'Date',
+                    iso: '2016-05-22T09:00:00.000Z',
                   },
                 },
               ],
             },
             file: Parse.File.fromJSON({
-              __type: "File",
-              name: "name",
-              url: "https://some.url",
+              __type: 'File',
+              name: 'name',
+              url: 'https://some.url',
             }),
-            array: ["a", "b", "c"],
+            array: ['a', 'b', 'c'],
             arrayOfArray: [
-              ["a", "b", "c"],
-              ["d", "e", "f"],
+              ['a', 'b', 'c'],
+              ['d', 'e', 'f'],
             ],
           };
 
@@ -8423,22 +8423,22 @@ describe("ParseGraphQLServer", () => {
           });
         });
 
-        it("should list all functions in the enum type", async () => {
+        it('should list all functions in the enum type', async () => {
           try {
-            Parse.Cloud.define("a", async () => {
-              return "hello a";
+            Parse.Cloud.define('a', async () => {
+              return 'hello a';
             });
 
-            Parse.Cloud.define("b", async () => {
-              return "hello b";
+            Parse.Cloud.define('b', async () => {
+              return 'hello b';
             });
 
-            Parse.Cloud.define("_underscored", async () => {
-              return "hello _underscored";
+            Parse.Cloud.define('_underscored', async () => {
+              return 'hello _underscored';
             });
 
-            Parse.Cloud.define("contains1Number", async () => {
-              return "hello contains1Number";
+            Parse.Cloud.define('contains1Number', async () => {
+              return 'hello contains1Number';
             });
 
             const functionEnum = (
@@ -8454,33 +8454,33 @@ describe("ParseGraphQLServer", () => {
                   }
                 `,
               })
-            ).data["__type"];
-            expect(functionEnum.kind).toEqual("ENUM");
+            ).data['__type'];
+            expect(functionEnum.kind).toEqual('ENUM');
             expect(
               functionEnum.enumValues.map(value => value.name).sort()
-            ).toEqual(["_underscored", "a", "b", "contains1Number"]);
+            ).toEqual(['_underscored', 'a', 'b', 'contains1Number']);
           } catch (e) {
             handleError(e);
           }
         });
 
-        it("should warn functions not matching GraphQL allowed names", async () => {
+        it('should warn functions not matching GraphQL allowed names', async () => {
           try {
             spyOn(
               parseGraphQLServer.parseGraphQLSchema.log,
-              "warn"
+              'warn'
             ).and.callThrough();
 
-            Parse.Cloud.define("a", async () => {
-              return "hello a";
+            Parse.Cloud.define('a', async () => {
+              return 'hello a';
             });
 
-            Parse.Cloud.define("double-barrelled", async () => {
-              return "hello b";
+            Parse.Cloud.define('double-barrelled', async () => {
+              return 'hello b';
             });
 
-            Parse.Cloud.define("1NumberInTheBeggning", async () => {
-              return "hello contains1Number";
+            Parse.Cloud.define('1NumberInTheBeggning', async () => {
+              return 'hello contains1Number';
             });
 
             const functionEnum = (
@@ -8496,19 +8496,19 @@ describe("ParseGraphQLServer", () => {
                   }
                 `,
               })
-            ).data["__type"];
-            expect(functionEnum.kind).toEqual("ENUM");
+            ).data['__type'];
+            expect(functionEnum.kind).toEqual('ENUM');
             expect(
               functionEnum.enumValues.map(value => value.name).sort()
-            ).toEqual(["a"]);
+            ).toEqual(['a']);
             expect(
               parseGraphQLServer.parseGraphQLSchema.log.warn.calls
                 .all()
                 .map(call => call.args[0])
                 .sort()
             ).toEqual([
-              "Function 1NumberInTheBeggning could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.",
-              "Function double-barrelled could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.",
+              'Function 1NumberInTheBeggning could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.',
+              'Function double-barrelled could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.',
             ]);
           } catch (e) {
             handleError(e);
@@ -8516,10 +8516,10 @@ describe("ParseGraphQLServer", () => {
         });
       });
 
-      describe("Data Types", () => {
-        it("should support String", async () => {
+      describe('Data Types', () => {
+        it('should support String', async () => {
           try {
-            const someFieldValue = "some string";
+            const someFieldValue = 'some string';
 
             await apolloClient.mutate({
               mutation: gql`
@@ -8533,20 +8533,20 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addStrings: [{ name: "someField" }],
+                  addStrings: [{ name: 'someField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someField.type).toEqual("String");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('String');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -8588,7 +8588,7 @@ describe("ParseGraphQLServer", () => {
               },
             });
 
-            expect(typeof getResult.data.someClass.someField).toEqual("string");
+            expect(typeof getResult.data.someClass.someField).toEqual('string');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
@@ -8596,7 +8596,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support Int numbers", async () => {
+        it('should support Int numbers', async () => {
           try {
             const someFieldValue = 123;
 
@@ -8612,12 +8612,12 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addNumbers: [{ name: "someField" }],
+                  addNumbers: [{ name: 'someField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -8641,8 +8641,8 @@ describe("ParseGraphQLServer", () => {
               },
             });
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someField.type).toEqual("Number");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('Number');
 
             const getResult = await apolloClient.query({
               query: gql`
@@ -8667,7 +8667,7 @@ describe("ParseGraphQLServer", () => {
               },
             });
 
-            expect(typeof getResult.data.someClass.someField).toEqual("number");
+            expect(typeof getResult.data.someClass.someField).toEqual('number');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
@@ -8675,7 +8675,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support Float numbers", async () => {
+        it('should support Float numbers', async () => {
           try {
             const someFieldValue = 123.4;
 
@@ -8691,20 +8691,20 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addNumbers: [{ name: "someField" }],
+                  addNumbers: [{ name: 'someField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someField.type).toEqual("Number");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('Number');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -8746,7 +8746,7 @@ describe("ParseGraphQLServer", () => {
               },
             });
 
-            expect(typeof getResult.data.someClass.someField).toEqual("number");
+            expect(typeof getResult.data.someClass.someField).toEqual('number');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
@@ -8754,7 +8754,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support Boolean", async () => {
+        it('should support Boolean', async () => {
           try {
             const someFieldValueTrue = true;
             const someFieldValueFalse = false;
@@ -8772,23 +8772,23 @@ describe("ParseGraphQLServer", () => {
               variables: {
                 schemaFields: {
                   addBooleans: [
-                    { name: "someFieldTrue" },
-                    { name: "someFieldFalse" },
+                    { name: 'someFieldTrue' },
+                    { name: 'someFieldFalse' },
                   ],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someFieldTrue.type).toEqual("Boolean");
-            expect(schema.fields.someFieldFalse.type).toEqual("Boolean");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someFieldTrue.type).toEqual('Boolean');
+            expect(schema.fields.someFieldFalse.type).toEqual('Boolean');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -8841,10 +8841,10 @@ describe("ParseGraphQLServer", () => {
             });
 
             expect(typeof getResult.data.someClass.someFieldTrue).toEqual(
-              "boolean"
+              'boolean'
             );
             expect(typeof getResult.data.someClass.someFieldFalse).toEqual(
-              "boolean"
+              'boolean'
             );
             expect(getResult.data.someClass.someFieldTrue).toEqual(true);
             expect(getResult.data.someClass.someFieldFalse).toEqual(false);
@@ -8854,7 +8854,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support Date", async () => {
+        it('should support Date', async () => {
           try {
             const someFieldValue = new Date();
 
@@ -8870,20 +8870,20 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addDates: [{ name: "someField" }],
+                  addDates: [{ name: 'someField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someField.type).toEqual("Date");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('Date');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -8931,7 +8931,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support createdAt and updatedAt", async () => {
+        it('should support createdAt and updatedAt', async () => {
           await apolloClient.mutate({
             mutation: gql`
               mutation CreateClass {
@@ -8942,41 +8942,41 @@ describe("ParseGraphQLServer", () => {
             `,
             context: {
               headers: {
-                "X-Parse-Master-Key": "test",
+                'X-Parse-Master-Key': 'test',
               },
             },
           });
 
-          const schema = await new Parse.Schema("SomeClass").get();
-          expect(schema.fields.createdAt.type).toEqual("Date");
-          expect(schema.fields.updatedAt.type).toEqual("Date");
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.createdAt.type).toEqual('Date');
+          expect(schema.fields.updatedAt.type).toEqual('Date');
         });
 
-        it_id("93e748f6-ad9b-4c31-8e1e-c5685e2382fb")(it)(
-          "should support ACL",
+        it_id('93e748f6-ad9b-4c31-8e1e-c5685e2382fb')(it)(
+          'should support ACL',
           async () => {
-            const someClass = new Parse.Object("SomeClass");
+            const someClass = new Parse.Object('SomeClass');
             await someClass.save();
 
             const roleACL = new Parse.ACL();
             roleACL.setPublicReadAccess(true);
 
             const user = new Parse.User();
-            user.set("username", "username");
-            user.set("password", "password");
+            user.set('username', 'username');
+            user.set('password', 'password');
             user.setACL(roleACL);
             await user.signUp();
 
             const user2 = new Parse.User();
-            user2.set("username", "username2");
-            user2.set("password", "password2");
+            user2.set('username', 'username2');
+            user2.set('password', 'password2');
             user2.setACL(roleACL);
             await user2.signUp();
 
-            const role = new Parse.Role("aRole", roleACL);
+            const role = new Parse.Role('aRole', roleACL);
             await role.save();
 
-            const role2 = new Parse.Role("aRole2", roleACL);
+            const role2 = new Parse.Role('aRole2', roleACL);
             await role2.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9030,8 +9030,8 @@ describe("ParseGraphQLServer", () => {
                       { userId: user2.id, read: true, write: false },
                     ],
                     roles: [
-                      { roleName: "aRole", read: true, write: false },
-                      { roleName: "aRole2", read: false, write: true },
+                      { roleName: 'aRole', read: true, write: false },
+                      { roleName: 'aRole2', read: false, write: true },
                     ],
                     public: { read: true, write: true },
                   },
@@ -9040,38 +9040,38 @@ describe("ParseGraphQLServer", () => {
             });
 
             const expectedCreateACL = {
-              __typename: "ACL",
+              __typename: 'ACL',
               users: [
                 {
-                  userId: toGlobalId("_User", user.id),
+                  userId: toGlobalId('_User', user.id),
                   read: true,
                   write: true,
-                  __typename: "UserACL",
+                  __typename: 'UserACL',
                 },
                 {
-                  userId: toGlobalId("_User", user2.id),
+                  userId: toGlobalId('_User', user2.id),
                   read: true,
                   write: false,
-                  __typename: "UserACL",
+                  __typename: 'UserACL',
                 },
               ],
               roles: [
                 {
-                  roleName: "aRole",
+                  roleName: 'aRole',
                   read: true,
                   write: false,
-                  __typename: "RoleACL",
+                  __typename: 'RoleACL',
                 },
                 {
-                  roleName: "aRole2",
+                  roleName: 'aRole2',
                   read: false,
                   write: true,
-                  __typename: "RoleACL",
+                  __typename: 'RoleACL',
                 },
               ],
-              public: { read: true, write: true, __typename: "PublicACL" },
+              public: { read: true, write: true, __typename: 'PublicACL' },
             };
-            const query1 = new Parse.Query("SomeClass");
+            const query1 = new Parse.Query('SomeClass');
             const obj1 = (
               await query1.get(createSomeClass.someClass.objectId, {
                 useMasterKey: true,
@@ -9079,9 +9079,9 @@ describe("ParseGraphQLServer", () => {
             ).toJSON();
             expect(obj1.ACL[user.id]).toEqual({ read: true, write: true });
             expect(obj1.ACL[user2.id]).toEqual({ read: true });
-            expect(obj1.ACL["role:aRole"]).toEqual({ read: true });
-            expect(obj1.ACL["role:aRole2"]).toEqual({ write: true });
-            expect(obj1.ACL["*"]).toEqual({ read: true, write: true });
+            expect(obj1.ACL['role:aRole']).toEqual({ read: true });
+            expect(obj1.ACL['role:aRole2']).toEqual({ write: true });
+            expect(obj1.ACL['*']).toEqual({ read: true, write: true });
             expect(createSomeClass.someClass.ACL).toEqual(expectedCreateACL);
 
             const {
@@ -9117,7 +9117,7 @@ describe("ParseGraphQLServer", () => {
                 id: createSomeClass.someClass.id,
                 fields: {
                   ACL: {
-                    roles: [{ roleName: "aRole", write: true, read: true }],
+                    roles: [{ roleName: 'aRole', write: true, read: true }],
                     public: { read: true, write: false },
                   },
                 },
@@ -9125,45 +9125,45 @@ describe("ParseGraphQLServer", () => {
             });
 
             const expectedUpdateACL = {
-              __typename: "ACL",
+              __typename: 'ACL',
               users: null,
               roles: [
                 {
-                  roleName: "aRole",
+                  roleName: 'aRole',
                   read: true,
                   write: true,
-                  __typename: "RoleACL",
+                  __typename: 'RoleACL',
                 },
               ],
-              public: { read: true, write: false, __typename: "PublicACL" },
+              public: { read: true, write: false, __typename: 'PublicACL' },
             };
 
-            const query2 = new Parse.Query("SomeClass");
+            const query2 = new Parse.Query('SomeClass');
             const obj2 = (
               await query2.get(createSomeClass.someClass.objectId, {
                 useMasterKey: true,
               })
             ).toJSON();
 
-            expect(obj2.ACL["role:aRole"]).toEqual({ write: true, read: true });
+            expect(obj2.ACL['role:aRole']).toEqual({ write: true, read: true });
             expect(obj2.ACL[user.id]).toBeUndefined();
-            expect(obj2.ACL["*"]).toEqual({ read: true });
+            expect(obj2.ACL['*']).toEqual({ read: true });
             expect(updateSomeClass.someClass.ACL).toEqual(expectedUpdateACL);
           }
         );
 
-        it("should support pointer on create", async () => {
-          const company = new Parse.Object("Company");
-          company.set("name", "imACompany1");
+        it('should support pointer on create', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
           await company.save();
 
-          const country = new Parse.Object("Country");
-          country.set("name", "imACountry");
-          country.set("company", company);
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
           await country.save();
 
-          const company2 = new Parse.Object("Company");
-          company2.set("name", "imACompany2");
+          const company2 = new Parse.Object('Company');
+          company2.set('name', 'imACompany2');
           await company2.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9190,7 +9190,7 @@ describe("ParseGraphQLServer", () => {
             `,
             variables: {
               fields: {
-                name: "imCountry2",
+                name: 'imCountry2',
                 company: { link: company2.id },
               },
             },
@@ -9198,17 +9198,17 @@ describe("ParseGraphQLServer", () => {
 
           expect(result.id).toBeDefined();
           expect(result.company.objectId).toEqual(company2.id);
-          expect(result.company.name).toEqual("imACompany2");
+          expect(result.company.name).toEqual('imACompany2');
         });
 
-        it("should support nested pointer on create", async () => {
-          const company = new Parse.Object("Company");
-          company.set("name", "imACompany1");
+        it('should support nested pointer on create', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
           await company.save();
 
-          const country = new Parse.Object("Country");
-          country.set("name", "imACountry");
-          country.set("company", company);
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
           await country.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9233,10 +9233,10 @@ describe("ParseGraphQLServer", () => {
             `,
             variables: {
               fields: {
-                name: "imCountry2",
+                name: 'imCountry2',
                 company: {
                   createAndLink: {
-                    name: "imACompany2",
+                    name: 'imACompany2',
                   },
                 },
               },
@@ -9245,21 +9245,21 @@ describe("ParseGraphQLServer", () => {
 
           expect(result.id).toBeDefined();
           expect(result.company.id).toBeDefined();
-          expect(result.company.name).toEqual("imACompany2");
+          expect(result.company.name).toEqual('imACompany2');
         });
 
-        it("should support pointer on update", async () => {
-          const company = new Parse.Object("Company");
-          company.set("name", "imACompany1");
+        it('should support pointer on update', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
           await company.save();
 
-          const country = new Parse.Object("Country");
-          country.set("name", "imACountry");
-          country.set("company", company);
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
           await country.save();
 
-          const company2 = new Parse.Object("Company");
-          company2.set("name", "imACompany2");
+          const company2 = new Parse.Object('Company');
+          company2.set('name', 'imACompany2');
           await company2.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9294,17 +9294,17 @@ describe("ParseGraphQLServer", () => {
 
           expect(result.id).toBeDefined();
           expect(result.company.objectId).toEqual(company2.id);
-          expect(result.company.name).toEqual("imACompany2");
+          expect(result.company.name).toEqual('imACompany2');
         });
 
-        it("should support nested pointer on update", async () => {
-          const company = new Parse.Object("Company");
-          company.set("name", "imACompany1");
+        it('should support nested pointer on update', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
           await company.save();
 
-          const country = new Parse.Object("Country");
-          country.set("name", "imACountry");
-          country.set("company", company);
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
           await country.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9332,7 +9332,7 @@ describe("ParseGraphQLServer", () => {
               fields: {
                 company: {
                   createAndLink: {
-                    name: "imACompany2",
+                    name: 'imACompany2',
                   },
                 },
               },
@@ -9341,19 +9341,19 @@ describe("ParseGraphQLServer", () => {
 
           expect(result.id).toBeDefined();
           expect(result.company.id).toBeDefined();
-          expect(result.company.name).toEqual("imACompany2");
+          expect(result.company.name).toEqual('imACompany2');
         });
 
-        it_only_db("mongo")(
-          "should support relation and nested relation on create",
+        it_only_db('mongo')(
+          'should support relation and nested relation on create',
           async () => {
-            const company = new Parse.Object("Company");
-            company.set("name", "imACompany1");
+            const company = new Parse.Object('Company');
+            company.set('name', 'imACompany1');
             await company.save();
 
-            const country = new Parse.Object("Country");
-            country.set("name", "imACountry");
-            country.relation("companies").add(company);
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add(company);
             await country.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9385,15 +9385,15 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 fields: {
-                  name: "imACountry2",
+                  name: 'imACountry2',
                   companies: {
                     add: [company.id],
                     createAndAdd: [
                       {
-                        name: "imACompany2",
+                        name: 'imACompany2',
                       },
                       {
-                        name: "imACompany3",
+                        name: 'imACompany3',
                       },
                     ],
                   },
@@ -9402,33 +9402,33 @@ describe("ParseGraphQLServer", () => {
             });
 
             expect(result.id).toBeDefined();
-            expect(result.name).toEqual("imACountry2");
+            expect(result.name).toEqual('imACountry2');
             expect(result.companies.edges.length).toEqual(3);
             expect(
               result.companies.edges.some(o => o.node.objectId === company.id)
             ).toBeTruthy();
             expect(
-              result.companies.edges.some(o => o.node.name === "imACompany2")
+              result.companies.edges.some(o => o.node.name === 'imACompany2')
             ).toBeTruthy();
             expect(
-              result.companies.edges.some(o => o.node.name === "imACompany3")
+              result.companies.edges.some(o => o.node.name === 'imACompany3')
             ).toBeTruthy();
           }
         );
 
-        it_only_db("mongo")("should support deep nested creation", async () => {
-          const team = new Parse.Object("Team");
-          team.set("name", "imATeam1");
+        it_only_db('mongo')('should support deep nested creation', async () => {
+          const team = new Parse.Object('Team');
+          team.set('name', 'imATeam1');
           await team.save();
 
-          const company = new Parse.Object("Company");
-          company.set("name", "imACompany1");
-          company.relation("teams").add(team);
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
+          company.relation('teams').add(team);
           await company.save();
 
-          const country = new Parse.Object("Country");
-          country.set("name", "imACountry");
-          country.relation("companies").add(company);
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.relation('companies').add(company);
           await country.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9466,22 +9466,22 @@ describe("ParseGraphQLServer", () => {
             `,
             variables: {
               fields: {
-                name: "imACountry2",
+                name: 'imACountry2',
                 companies: {
                   createAndAdd: [
                     {
-                      name: "imACompany2",
+                      name: 'imACompany2',
                       teams: {
                         createAndAdd: {
-                          name: "imATeam2",
+                          name: 'imATeam2',
                         },
                       },
                     },
                     {
-                      name: "imACompany3",
+                      name: 'imACompany3',
                       teams: {
                         createAndAdd: {
-                          name: "imATeam3",
+                          name: 'imATeam3',
                         },
                       },
                     },
@@ -9492,38 +9492,38 @@ describe("ParseGraphQLServer", () => {
           });
 
           expect(result.id).toBeDefined();
-          expect(result.name).toEqual("imACountry2");
+          expect(result.name).toEqual('imACountry2');
           expect(result.companies.edges.length).toEqual(2);
           expect(
             result.companies.edges.some(
               c =>
-                c.node.name === "imACompany2" &&
-                c.node.teams.edges.some(t => t.node.name === "imATeam2")
+                c.node.name === 'imACompany2' &&
+                c.node.teams.edges.some(t => t.node.name === 'imATeam2')
             )
           ).toBeTruthy();
           expect(
             result.companies.edges.some(
               c =>
-                c.node.name === "imACompany3" &&
-                c.node.teams.edges.some(t => t.node.name === "imATeam3")
+                c.node.name === 'imACompany3' &&
+                c.node.teams.edges.some(t => t.node.name === 'imATeam3')
             )
           ).toBeTruthy();
         });
 
-        it_only_db("mongo")(
-          "should support relation and nested relation on update",
+        it_only_db('mongo')(
+          'should support relation and nested relation on update',
           async () => {
-            const company1 = new Parse.Object("Company");
-            company1.set("name", "imACompany1");
+            const company1 = new Parse.Object('Company');
+            company1.set('name', 'imACompany1');
             await company1.save();
 
-            const company2 = new Parse.Object("Company");
-            company2.set("name", "imACompany2");
+            const company2 = new Parse.Object('Company');
+            company2.set('name', 'imACompany2');
             await company2.save();
 
-            const country = new Parse.Object("Country");
-            country.set("name", "imACountry");
-            country.relation("companies").add(company1);
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add(company1);
             await country.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9563,7 +9563,7 @@ describe("ParseGraphQLServer", () => {
                     remove: [company1.id],
                     createAndAdd: [
                       {
-                        name: "imACompany3",
+                        name: 'imACompany3',
                       },
                     ],
                   },
@@ -9577,7 +9577,7 @@ describe("ParseGraphQLServer", () => {
               result.companies.edges.some(o => o.node.objectId === company2.id)
             ).toBeTruthy();
             expect(
-              result.companies.edges.some(o => o.node.name === "imACompany3")
+              result.companies.edges.some(o => o.node.name === 'imACompany3')
             ).toBeTruthy();
             expect(
               result.companies.edges.some(o => o.node.objectId === company1.id)
@@ -9585,16 +9585,16 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it_only_db("mongo")(
-          "should support nested relation on create with filter",
+        it_only_db('mongo')(
+          'should support nested relation on create with filter',
           async () => {
-            const company = new Parse.Object("Company");
-            company.set("name", "imACompany1");
+            const company = new Parse.Object('Company');
+            company.set('name', 'imACompany1');
             await company.save();
 
-            const country = new Parse.Object("Country");
-            country.set("name", "imACountry");
-            country.relation("companies").add(company);
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add(company);
             await country.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9628,19 +9628,19 @@ describe("ParseGraphQLServer", () => {
               variables: {
                 where: {
                   name: {
-                    equalTo: "imACompany2",
+                    equalTo: 'imACompany2',
                   },
                 },
                 fields: {
-                  name: "imACountry2",
+                  name: 'imACountry2',
                   companies: {
                     add: [company.id],
                     createAndAdd: [
                       {
-                        name: "imACompany2",
+                        name: 'imACompany2',
                       },
                       {
-                        name: "imACompany3",
+                        name: 'imACompany3',
                       },
                     ],
                   },
@@ -9649,26 +9649,26 @@ describe("ParseGraphQLServer", () => {
             });
 
             expect(result.id).toBeDefined();
-            expect(result.name).toEqual("imACountry2");
+            expect(result.name).toEqual('imACountry2');
             expect(result.companies.edges.length).toEqual(1);
             expect(
-              result.companies.edges.some(o => o.node.name === "imACompany2")
+              result.companies.edges.some(o => o.node.name === 'imACompany2')
             ).toBeTruthy();
           }
         );
 
-        it_only_db("mongo")("should support relation on query", async () => {
-          const company1 = new Parse.Object("Company");
-          company1.set("name", "imACompany1");
+        it_only_db('mongo')('should support relation on query', async () => {
+          const company1 = new Parse.Object('Company');
+          company1.set('name', 'imACompany1');
           await company1.save();
 
-          const company2 = new Parse.Object("Company");
-          company2.set("name", "imACompany2");
+          const company2 = new Parse.Object('Company');
+          company2.set('name', 'imACompany2');
           await company2.save();
 
-          const country = new Parse.Object("Country");
-          country.set("name", "imACountry");
-          country.relation("companies").add([company1, company2]);
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.relation('companies').add([company1, company2]);
           await country.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9733,7 +9733,7 @@ describe("ParseGraphQLServer", () => {
             variables: {
               id: country.id,
               where: {
-                name: { equalTo: "imACompany1" },
+                name: { equalTo: 'imACompany1' },
               },
             },
           });
@@ -9742,39 +9742,39 @@ describe("ParseGraphQLServer", () => {
           expect(result2.companies.edges[0].node.objectId).toEqual(company1.id);
         });
 
-        it_id("f4312f2c-90bb-4583-b033-02078ae0ce84")(it)(
-          "should support relational where query",
+        it_id('f4312f2c-90bb-4583-b033-02078ae0ce84')(it)(
+          'should support relational where query',
           async () => {
-            const president = new Parse.Object("President");
-            president.set("name", "James");
+            const president = new Parse.Object('President');
+            president.set('name', 'James');
             await president.save();
 
-            const employee = new Parse.Object("Employee");
-            employee.set("name", "John");
+            const employee = new Parse.Object('Employee');
+            employee.set('name', 'John');
             await employee.save();
 
-            const company1 = new Parse.Object("Company");
-            company1.set("name", "imACompany1");
+            const company1 = new Parse.Object('Company');
+            company1.set('name', 'imACompany1');
             await company1.save();
 
-            const company2 = new Parse.Object("Company");
-            company2.set("name", "imACompany2");
-            company2.relation("employees").add([employee]);
+            const company2 = new Parse.Object('Company');
+            company2.set('name', 'imACompany2');
+            company2.relation('employees').add([employee]);
             await company2.save();
 
-            const country = new Parse.Object("Country");
-            country.set("name", "imACountry");
-            country.relation("companies").add([company1, company2]);
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add([company1, company2]);
             await country.save();
 
-            const country2 = new Parse.Object("Country");
-            country2.set("name", "imACountry2");
-            country2.relation("companies").add([company1]);
+            const country2 = new Parse.Object('Country');
+            country2.set('name', 'imACountry2');
+            country2.relation('companies').add([company1]);
             await country2.save();
 
-            const country3 = new Parse.Object("Country");
-            country3.set("name", "imACountry3");
-            country3.set("president", president);
+            const country3 = new Parse.Object('Country');
+            country3.set('name', 'imACountry3');
+            country3.set('president', president);
             await country3.save();
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -9809,7 +9809,7 @@ describe("ParseGraphQLServer", () => {
                 where: {
                   companies: {
                     have: {
-                      employees: { have: { name: { equalTo: "John" } } },
+                      employees: { have: { name: { equalTo: 'John' } } },
                     },
                   },
                 },
@@ -9851,8 +9851,8 @@ describe("ParseGraphQLServer", () => {
                   companies: {
                     have: {
                       OR: [
-                        { name: { equalTo: "imACompany1" } },
-                        { name: { equalTo: "imACompany2" } },
+                        { name: { equalTo: 'imACompany1' } },
+                        { name: { equalTo: 'imACompany2' } },
                       ],
                     },
                   },
@@ -9885,7 +9885,7 @@ describe("ParseGraphQLServer", () => {
               },
             });
             expect(result3.length).toEqual(1);
-            expect(result3[0].node.name).toEqual("imACountry3");
+            expect(result3[0].node.name).toEqual('imACountry3');
 
             const {
               data: {
@@ -9958,8 +9958,8 @@ describe("ParseGraphQLServer", () => {
                   companies: {
                     haveNot: {
                       OR: [
-                        { name: { equalTo: "imACompany1" } },
-                        { name: { equalTo: "imACompany2" } },
+                        { name: { equalTo: 'imACompany1' } },
+                        { name: { equalTo: 'imACompany2' } },
                       ],
                     },
                   },
@@ -9968,19 +9968,19 @@ describe("ParseGraphQLServer", () => {
             });
             expect(result6.length).toEqual(1);
             expect(result6.length).toEqual(1);
-            expect(result6[0].node.name).toEqual("imACountry3");
+            expect(result6[0].node.name).toEqual('imACountry3');
           }
         );
 
-        it("should support files", async () => {
+        it('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
-              publicServerURL: "http://localhost:13377/parse",
+              publicServerURL: 'http://localhost:13377/parse',
             });
             await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
-              "operations",
+              'operations',
               JSON.stringify({
                 query: `
                     mutation CreateFile($input: CreateFileInput!) {
@@ -10000,16 +10000,16 @@ describe("ParseGraphQLServer", () => {
               })
             );
             body.append(
-              "map",
-              JSON.stringify({ 1: ["variables.input.upload"] })
+              'map',
+              JSON.stringify({ 1: ['variables.input.upload'] })
             );
-            body.append("1", "My File Content", {
-              filename: "myFileName.txt",
-              contentType: "text/plain",
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
             });
 
-            let res = await fetch("http://localhost:13377/graphql", {
-              method: "POST",
+            let res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
               headers,
               body,
             });
@@ -10038,12 +10038,12 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addFiles: [{ name: "someField" }],
+                  addFiles: [{ name: 'someField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -10052,7 +10052,7 @@ describe("ParseGraphQLServer", () => {
 
             const body2 = new FormData();
             body2.append(
-              "operations",
+              'operations',
               JSON.stringify({
                 query: `
                   mutation CreateSomeObject(
@@ -10104,7 +10104,7 @@ describe("ParseGraphQLServer", () => {
                       file: {
                         name: someFieldObjectValue.name,
                         url: someFieldObjectValue.url,
-                        __type: "File",
+                        __type: 'File',
                       },
                     },
                   },
@@ -10115,16 +10115,16 @@ describe("ParseGraphQLServer", () => {
               })
             );
             body2.append(
-              "map",
-              JSON.stringify({ 1: ["variables.fields3.someField.upload"] })
+              'map',
+              JSON.stringify({ 1: ['variables.fields3.someField.upload'] })
             );
-            body2.append("1", "My File Content", {
-              filename: "myFileName.txt",
-              contentType: "text/plain",
+            body2.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
             });
 
-            res = await fetch("http://localhost:13377/graphql", {
-              method: "POST",
+            res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
               headers,
               body: body2,
             });
@@ -10149,8 +10149,8 @@ describe("ParseGraphQLServer", () => {
               result2.data.createSomeClass3.someClass.someField.url
             ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someField.type).toEqual("File");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('File');
 
             const getResult = await apolloClient.query({
               query: gql`
@@ -10192,7 +10192,7 @@ describe("ParseGraphQLServer", () => {
               },
             });
 
-            expect(typeof getResult.data.someClass.someField).toEqual("object");
+            expect(typeof getResult.data.someClass.someField).toEqual('object');
             expect(getResult.data.someClass.someField.name).toEqual(
               result.data.createFile.fileInfo.name
             );
@@ -10205,7 +10205,7 @@ describe("ParseGraphQLServer", () => {
             res = await fetch(getResult.data.someClass.someField.url);
 
             expect(res.status).toEqual(200);
-            expect(await res.text()).toEqual("My File Content");
+            expect(await res.text()).toEqual('My File Content');
 
             const mutationResult = await apolloClient.mutate({
               mutation: gql`
@@ -10234,18 +10234,18 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support files on required file", async () => {
+        it('should support files on required file', async () => {
           try {
             parseServer = await global.reconfigureServer({
-              publicServerURL: "http://localhost:13377/parse",
+              publicServerURL: 'http://localhost:13377/parse',
             });
             await createGQLFromParseServer(parseServer);
             const schemaController =
               await parseServer.config.databaseController.loadSchema();
             await schemaController.addClassIfNotExists(
-              "SomeClassWithRequiredFile",
+              'SomeClassWithRequiredFile',
               {
-                someField: { type: "File", required: true },
+                someField: { type: 'File', required: true },
               }
             );
             await resetGraphQLCache();
@@ -10253,7 +10253,7 @@ describe("ParseGraphQLServer", () => {
 
             const body = new FormData();
             body.append(
-              "operations",
+              'operations',
               JSON.stringify({
                 query: `
                   mutation CreateSomeObject(
@@ -10280,16 +10280,16 @@ describe("ParseGraphQLServer", () => {
               })
             );
             body.append(
-              "map",
-              JSON.stringify({ 1: ["variables.fields.someField.upload"] })
+              'map',
+              JSON.stringify({ 1: ['variables.fields.someField.upload'] })
             );
-            body.append("1", "My File Content", {
-              filename: "myFileName.txt",
-              contentType: "text/plain",
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
             });
 
-            const res = await fetch("http://localhost:13377/graphql", {
-              method: "POST",
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
               headers,
               body,
             });
@@ -10309,20 +10309,20 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support file upload for on fly creation through pointer and relation", async () => {
+        it('should support file upload for on fly creation through pointer and relation', async () => {
           parseServer = await global.reconfigureServer({
-            publicServerURL: "http://localhost:13377/parse",
+            publicServerURL: 'http://localhost:13377/parse',
           });
           await createGQLFromParseServer(parseServer);
-          const schema = new Parse.Schema("SomeClass");
-          schema.addFile("someFileField");
-          schema.addPointer("somePointerField", "SomeClass");
-          schema.addRelation("someRelationField", "SomeClass");
+          const schema = new Parse.Schema('SomeClass');
+          schema.addFile('someFileField');
+          schema.addPointer('somePointerField', 'SomeClass');
+          schema.addRelation('someRelationField', 'SomeClass');
           await schema.save();
 
           const body = new FormData();
           body.append(
-            "operations",
+            'operations',
             JSON.stringify({
               query: `
                 mutation UploadFiles(
@@ -10379,32 +10379,32 @@ describe("ParseGraphQLServer", () => {
             })
           );
           body.append(
-            "map",
+            'map',
             JSON.stringify({
-              1: ["variables.fields.someFileField.upload"],
+              1: ['variables.fields.someFileField.upload'],
               2: [
-                "variables.fields.somePointerField.createAndLink.someFileField.upload",
+                'variables.fields.somePointerField.createAndLink.someFileField.upload',
               ],
               3: [
-                "variables.fields.someRelationField.createAndAdd.0.someFileField.upload",
+                'variables.fields.someRelationField.createAndAdd.0.someFileField.upload',
               ],
             })
           );
-          body.append("1", "My File Content someFileField", {
-            filename: "someFileField.txt",
-            contentType: "text/plain",
+          body.append('1', 'My File Content someFileField', {
+            filename: 'someFileField.txt',
+            contentType: 'text/plain',
           });
-          body.append("2", "My File Content somePointerField", {
-            filename: "somePointerField.txt",
-            contentType: "text/plain",
+          body.append('2', 'My File Content somePointerField', {
+            filename: 'somePointerField.txt',
+            contentType: 'text/plain',
           });
-          body.append("3", "My File Content someRelationField", {
-            filename: "someRelationField.txt",
-            contentType: "text/plain",
+          body.append('3', 'My File Content someRelationField', {
+            filename: 'someRelationField.txt',
+            contentType: 'text/plain',
           });
 
-          const res = await fetch("http://localhost:13377/graphql", {
-            method: "POST",
+          const res = await fetch('http://localhost:13377/graphql', {
+            method: 'POST',
             headers,
             body,
           });
@@ -10423,15 +10423,15 @@ describe("ParseGraphQLServer", () => {
           ).toEqual(jasmine.stringMatching(/_someRelationField.txt$/));
         });
 
-        it("should support files and add extension from mimetype", async () => {
+        it('should support files and add extension from mimetype', async () => {
           try {
             parseServer = await global.reconfigureServer({
-              publicServerURL: "http://localhost:13377/parse",
+              publicServerURL: 'http://localhost:13377/parse',
             });
             await createGQLFromParseServer(parseServer);
             const body = new FormData();
             body.append(
-              "operations",
+              'operations',
               JSON.stringify({
                 query: `
                     mutation CreateFile($input: CreateFileInput!) {
@@ -10451,17 +10451,17 @@ describe("ParseGraphQLServer", () => {
               })
             );
             body.append(
-              "map",
-              JSON.stringify({ 1: ["variables.input.upload"] })
+              'map',
+              JSON.stringify({ 1: ['variables.input.upload'] })
             );
-            body.append("1", "My File Content", {
+            body.append('1', 'My File Content', {
               // No extension, the system should add it from mimetype
-              filename: "myFileName",
-              contentType: "text/plain",
+              filename: 'myFileName',
+              contentType: 'text/plain',
             });
 
-            const res = await fetch("http://localhost:13377/graphql", {
-              method: "POST",
+            const res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
               headers,
               body,
             });
@@ -10480,10 +10480,10 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should not upload if file is too large", async () => {
+        it('should not upload if file is too large', async () => {
           const body = new FormData();
           body.append(
-            "operations",
+            'operations',
             JSON.stringify({
               query: `
                   mutation CreateFile($input: CreateFileInput!) {
@@ -10502,22 +10502,22 @@ describe("ParseGraphQLServer", () => {
               },
             })
           );
-          body.append("map", JSON.stringify({ 1: ["variables.input.upload"] }));
+          body.append('map', JSON.stringify({ 1: ['variables.input.upload'] }));
           body.append(
-            "1",
+            '1',
             // In this test file parse server is setup with 1kb limit
             Buffer.alloc(
-              parseGraphQLServer._transformMaxUploadSizeToBytes("2kb"),
+              parseGraphQLServer._transformMaxUploadSizeToBytes('2kb'),
               1
             ),
             {
-              filename: "myFileName.txt",
-              contentType: "text/plain",
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
             }
           );
 
-          const res = await fetch("http://localhost:13377/graphql", {
-            method: "POST",
+          const res = await fetch('http://localhost:13377/graphql', {
+            method: 'POST',
             headers,
             body,
           });
@@ -10525,14 +10525,14 @@ describe("ParseGraphQLServer", () => {
           const result = JSON.parse(await res.text());
           expect(res.status).toEqual(200);
           expect(result.errors[0].message).toEqual(
-            "File truncated as it exceeds the 1024 byte size limit."
+            'File truncated as it exceeds the 1024 byte size limit.'
           );
         });
 
-        it("should support object values", async () => {
+        it('should support object values', async () => {
           try {
             const someObjectFieldValue = {
-              foo: { bar: "baz" },
+              foo: { bar: 'baz' },
               number: 10,
             };
 
@@ -10548,19 +10548,19 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addObjects: [{ name: "someObjectField" }],
+                  addObjects: [{ name: 'someObjectField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someObjectField.type).toEqual("Object");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someObjectField.type).toEqual('Object');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -10581,10 +10581,10 @@ describe("ParseGraphQLServer", () => {
 
             const where = {
               someObjectField: {
-                equalTo: { key: "foo.bar", value: "baz" },
-                notEqualTo: { key: "foo.bar", value: "bat" },
-                greaterThan: { key: "number", value: 9 },
-                lessThan: { key: "number", value: 11 },
+                equalTo: { key: 'foo.bar', value: 'baz' },
+                notEqualTo: { key: 'foo.bar', value: 'bat' },
+                greaterThan: { key: 'number', value: 9 },
+                lessThan: { key: 'number', value: 11 },
               },
             };
             const queryResult = await apolloClient.query({
@@ -10613,7 +10613,7 @@ describe("ParseGraphQLServer", () => {
             const { someClass: getResult, someClasses } = queryResult.data;
 
             const { someObjectField } = getResult;
-            expect(typeof someObjectField).toEqual("object");
+            expect(typeof someObjectField).toEqual('object');
             expect(someObjectField).toEqual(someObjectFieldValue);
 
             // Checks class query results
@@ -10626,7 +10626,7 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support where argument on object field that contains false boolean value or 0 number value", async () => {
+        it('should support where argument on object field that contains false boolean value or 0 number value', async () => {
           try {
             const someObjectFieldValue1 = {
               foo: { bar: true, baz: 100 },
@@ -10636,38 +10636,38 @@ describe("ParseGraphQLServer", () => {
               foo: { bar: false, baz: 0 },
             };
 
-            const object1 = new Parse.Object("SomeClass");
+            const object1 = new Parse.Object('SomeClass');
             await object1.save({
               someObjectField: someObjectFieldValue1,
             });
-            const object2 = new Parse.Object("SomeClass");
+            const object2 = new Parse.Object('SomeClass');
             await object2.save({
               someObjectField: someObjectFieldValue2,
             });
 
             const whereToObject1 = {
               someObjectField: {
-                equalTo: { key: "foo.bar", value: true },
-                notEqualTo: { key: "foo.baz", value: 0 },
+                equalTo: { key: 'foo.bar', value: true },
+                notEqualTo: { key: 'foo.baz', value: 0 },
               },
             };
             const whereToObject2 = {
               someObjectField: {
-                notEqualTo: { key: "foo.bar", value: true },
-                equalTo: { key: "foo.baz", value: 0 },
+                notEqualTo: { key: 'foo.bar', value: true },
+                equalTo: { key: 'foo.baz', value: 0 },
               },
             };
 
             const whereToAll = {
               someObjectField: {
-                lessThan: { key: "foo.baz", value: 101 },
+                lessThan: { key: 'foo.baz', value: 101 },
               },
             };
 
             const whereToNone = {
               someObjectField: {
-                notEqualTo: { key: "foo.bar", value: true },
-                equalTo: { key: "foo.baz", value: 1 },
+                notEqualTo: { key: 'foo.bar', value: true },
+                equalTo: { key: 'foo.baz', value: 1 },
               },
             };
 
@@ -10755,15 +10755,15 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support object composed queries", async () => {
+        it('should support object composed queries', async () => {
           try {
             const someObjectFieldValue1 = {
-              lorem: "ipsum",
+              lorem: 'ipsum',
               number: 10,
             };
             const someObjectFieldValue2 = {
               foo: {
-                test: "bar",
+                test: 'bar',
               },
               number: 10,
             };
@@ -10785,7 +10785,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -10824,24 +10824,24 @@ describe("ParseGraphQLServer", () => {
               AND: [
                 {
                   someObjectField: {
-                    greaterThan: { key: "number", value: 9 },
+                    greaterThan: { key: 'number', value: 9 },
                   },
                 },
                 {
                   someObjectField: {
-                    lessThan: { key: "number", value: 11 },
+                    lessThan: { key: 'number', value: 11 },
                   },
                 },
                 {
                   OR: [
                     {
                       someObjectField: {
-                        equalTo: { key: "lorem", value: "ipsum" },
+                        equalTo: { key: 'lorem', value: 'ipsum' },
                       },
                     },
                     {
                       someObjectField: {
-                        equalTo: { key: "foo.test", value: "bar" },
+                        equalTo: { key: 'foo.test', value: 'bar' },
                       },
                     },
                   ],
@@ -10885,13 +10885,13 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support array values", async () => {
+        it('should support array values', async () => {
           try {
             const someArrayFieldValue = [
               1,
-              "foo",
-              ["bar"],
-              { lorem: "ipsum" },
+              'foo',
+              ['bar'],
+              { lorem: 'ipsum' },
               true,
             ];
 
@@ -10907,20 +10907,20 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addArrays: [{ name: "someArrayField" }],
+                  addArrays: [{ name: 'someArrayField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.someArrayField.type).toEqual("Array");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someArrayField.type).toEqual('Array');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -10979,12 +10979,12 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it("should support undefined array", async () => {
-          const schema = await new Parse.Schema("SomeClass");
-          schema.addArray("someArray");
+        it('should support undefined array', async () => {
+          const schema = await new Parse.Schema('SomeClass');
+          schema.addArray('someArray');
           await schema.save();
 
-          const obj = new Parse.Object("SomeClass");
+          const obj = new Parse.Object('SomeClass');
           await obj.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -11009,7 +11009,7 @@ describe("ParseGraphQLServer", () => {
           expect(getResult.data.someClass.someArray).toEqual(null);
         });
 
-        it("should support null values", async () => {
+        it('should support null values', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -11034,7 +11034,7 @@ describe("ParseGraphQLServer", () => {
               `,
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -11053,10 +11053,10 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 fields: {
-                  someStringField: "some string",
+                  someStringField: 'some string',
                   someNumberField: 123,
                   someBooleanField: true,
-                  someObjectField: { someField: "some value" },
+                  someObjectField: { someField: 'some value' },
                   someNullField: null,
                 },
               },
@@ -11080,7 +11080,7 @@ describe("ParseGraphQLServer", () => {
                   someNumberField: null,
                   someBooleanField: null,
                   someObjectField: null,
-                  someNullField: "now it has a string",
+                  someNullField: 'now it has a string',
                 },
               },
             });
@@ -11107,18 +11107,18 @@ describe("ParseGraphQLServer", () => {
             expect(getResult.data.someClass.someBooleanField).toBeFalsy();
             expect(getResult.data.someClass.someObjectField).toBeFalsy();
             expect(getResult.data.someClass.someNullField).toEqual(
-              "now it has a string"
+              'now it has a string'
             );
           } catch (e) {
             handleError(e);
           }
         });
 
-        it_id("43303db7-c5a7-4bc0-91c3-57e03fffa225")(it)(
-          "should support Bytes",
+        it_id('43303db7-c5a7-4bc0-91c3-57e03fffa225')(it)(
+          'should support Bytes',
           async () => {
             try {
-              const someFieldValue = "aGVsbG8gd29ybGQ=";
+              const someFieldValue = 'aGVsbG8gd29ybGQ=';
 
               await apolloClient.mutate({
                 mutation: gql`
@@ -11132,20 +11132,20 @@ describe("ParseGraphQLServer", () => {
                 `,
                 variables: {
                   schemaFields: {
-                    addBytes: [{ name: "someField" }],
+                    addBytes: [{ name: 'someField' }],
                   },
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const schema = await new Parse.Schema("SomeClass").get();
-              expect(schema.fields.someField.type).toEqual("Bytes");
+              const schema = await new Parse.Schema('SomeClass').get();
+              expect(schema.fields.someField.type).toEqual('Bytes');
 
               const createResult = await apolloClient.mutate({
                 mutation: gql`
@@ -11204,7 +11204,7 @@ describe("ParseGraphQLServer", () => {
               });
 
               expect(typeof getResult.data.someClass.someField).toEqual(
-                "string"
+                'string'
               );
               expect(getResult.data.someClass.someField).toEqual(
                 someFieldValue
@@ -11216,12 +11216,12 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it_id("6a253e47-6959-4427-b841-c0c1fa77cf01")(it)(
-          "should support Geo Points",
+        it_id('6a253e47-6959-4427-b841-c0c1fa77cf01')(it)(
+          'should support Geo Points',
           async () => {
             try {
               const someFieldValue = {
-                __typename: "GeoPoint",
+                __typename: 'GeoPoint',
                 latitude: 45,
                 longitude: 45,
               };
@@ -11238,20 +11238,20 @@ describe("ParseGraphQLServer", () => {
                 `,
                 variables: {
                   schemaFields: {
-                    addGeoPoint: { name: "someField" },
+                    addGeoPoint: { name: 'someField' },
                   },
                 },
                 context: {
                   headers: {
-                    "X-Parse-Master-Key": "test",
+                    'X-Parse-Master-Key': 'test',
                   },
                 },
               });
 
               await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-              const schema = await new Parse.Schema("SomeClass").get();
-              expect(schema.fields.someField.type).toEqual("GeoPoint");
+              const schema = await new Parse.Schema('SomeClass').get();
+              expect(schema.fields.someField.type).toEqual('GeoPoint');
 
               const createResult = await apolloClient.mutate({
                 mutation: gql`
@@ -11303,7 +11303,7 @@ describe("ParseGraphQLServer", () => {
               });
 
               expect(typeof getResult.data.someClass.someField).toEqual(
-                "object"
+                'object'
               );
               expect(getResult.data.someClass.someField).toEqual(
                 someFieldValue
@@ -11396,7 +11396,7 @@ describe("ParseGraphQLServer", () => {
           }
         );
 
-        it("should support Polygons", async () => {
+        it('should support Polygons', async () => {
           try {
             const somePolygonFieldValue = [
               [44, 45],
@@ -11420,20 +11420,20 @@ describe("ParseGraphQLServer", () => {
               `,
               variables: {
                 schemaFields: {
-                  addPolygons: [{ name: "somePolygonField" }],
+                  addPolygons: [{ name: 'somePolygonField' }],
                 },
               },
               context: {
                 headers: {
-                  "X-Parse-Master-Key": "test",
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
 
-            const schema = await new Parse.Schema("SomeClass").get();
-            expect(schema.fields.somePolygonField.type).toEqual("Polygon");
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.somePolygonField.type).toEqual('Polygon');
 
             const createResult = await apolloClient.mutate({
               mutation: gql`
@@ -11480,12 +11480,12 @@ describe("ParseGraphQLServer", () => {
             });
 
             expect(typeof getResult.data.someClass.somePolygonField).toEqual(
-              "object"
+              'object'
             );
             expect(getResult.data.someClass.somePolygonField).toEqual(
               somePolygonFieldValue.map(geoPoint => ({
                 ...geoPoint,
-                __typename: "GeoPoint",
+                __typename: 'GeoPoint',
               }))
             );
             expect(getResult.data.someClasses.edges.length).toEqual(1);
@@ -11522,22 +11522,22 @@ describe("ParseGraphQLServer", () => {
           }
         });
 
-        it_only_db("mongo")("should support bytes values", async () => {
-          const SomeClass = Parse.Object.extend("SomeClass");
+        it_only_db('mongo')('should support bytes values', async () => {
+          const SomeClass = Parse.Object.extend('SomeClass');
           const someClass = new SomeClass();
-          someClass.set("someField", {
-            __type: "Bytes",
-            base64: "foo",
+          someClass.set('someField', {
+            __type: 'Bytes',
+            base64: 'foo',
           });
           await someClass.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
-          const schema = await new Parse.Schema("SomeClass").get();
-          expect(schema.fields.someField.type).toEqual("Bytes");
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.someField.type).toEqual('Bytes');
 
           const someFieldValue = {
-            __type: "Bytes",
-            base64: "bytesContent",
+            __type: 'Bytes',
+            base64: 'bytesContent',
           };
 
           const createResult = await apolloClient.mutate({
@@ -11575,8 +11575,8 @@ describe("ParseGraphQLServer", () => {
           );
 
           const updatedSomeFieldValue = {
-            __type: "Bytes",
-            base64: "newBytesContent",
+            __type: 'Bytes',
+            base64: 'newBytesContent',
           };
 
           const updatedResult = await apolloClient.mutate({
@@ -11631,11 +11631,11 @@ describe("ParseGraphQLServer", () => {
         });
       });
 
-      describe("Special Classes", () => {
-        it("should support User class", async () => {
+      describe('Special Classes', () => {
+        it('should support User class', async () => {
           const user = new Parse.User();
-          user.setUsername("user1");
-          user.setPassword("user1");
+          user.setUsername('user1');
+          user.setPassword('user1');
           const acl = new Parse.ACL();
           acl.setPublicReadAccess(true);
           user.setACL(acl);
@@ -11659,10 +11659,10 @@ describe("ParseGraphQLServer", () => {
           expect(getResult.data.get.objectId).toEqual(user.id);
         });
 
-        it("should support Installation class", async () => {
+        it('should support Installation class', async () => {
           const installation = new Parse.Installation();
           await installation.save({
-            deviceType: "foo",
+            deviceType: 'foo',
           });
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -11683,10 +11683,10 @@ describe("ParseGraphQLServer", () => {
           expect(getResult.data.get.objectId).toEqual(installation.id);
         });
 
-        it("should support Role class", async () => {
+        it('should support Role class', async () => {
           const roleACL = new Parse.ACL();
           roleACL.setPublicReadAccess(true);
-          const role = new Parse.Role("MyRole", roleACL);
+          const role = new Parse.Role('MyRole', roleACL);
           await role.save();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -11707,10 +11707,10 @@ describe("ParseGraphQLServer", () => {
           expect(getResult.data.get.objectId).toEqual(role.id);
         });
 
-        it("should support Session class", async () => {
+        it('should support Session class', async () => {
           const user = new Parse.User();
-          user.setUsername("user1");
-          user.setPassword("user1");
+          user.setUsername('user1');
+          user.setPassword('user1');
           await user.signUp();
 
           await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
@@ -11730,7 +11730,7 @@ describe("ParseGraphQLServer", () => {
             },
             context: {
               headers: {
-                "X-Parse-Session-Token": session.getSessionToken(),
+                'X-Parse-Session-Token': session.getSessionToken(),
               },
             },
           });
@@ -11738,16 +11738,16 @@ describe("ParseGraphQLServer", () => {
           expect(getResult.data.get.objectId).toEqual(session.id);
         });
 
-        it("should support Product class", async () => {
-          const Product = Parse.Object.extend("_Product");
+        it('should support Product class', async () => {
+          const Product = Parse.Object.extend('_Product');
           const product = new Product();
           await product.save(
             {
-              productIdentifier: "foo",
-              icon: new Parse.File("icon", ["foo"]),
+              productIdentifier: 'foo',
+              icon: new Parse.File('icon', ['foo']),
               order: 1,
-              title: "Foo",
-              subtitle: "My product",
+              title: 'Foo',
+              subtitle: 'My product',
             },
             { useMasterKey: true }
           );
@@ -11767,7 +11767,7 @@ describe("ParseGraphQLServer", () => {
             },
             context: {
               headers: {
-                "X-Parse-Master-Key": "test",
+                'X-Parse-Master-Key': 'test',
               },
             },
           });
@@ -11778,19 +11778,19 @@ describe("ParseGraphQLServer", () => {
     });
   });
 
-  describe("Custom API", () => {
-    describe("SDL based", () => {
+  describe('Custom API', () => {
+    describe('SDL based', () => {
       let httpServer;
       const headers = {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-Javascript-Key": "test",
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
       };
       let apolloClient;
       beforeEach(async () => {
         const expressApp = express();
         httpServer = http.createServer(expressApp);
         parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-          graphQLPath: "/graphql",
+          graphQLPath: '/graphql',
           graphQLCustomTypeDefs: gql`
             extend type Query {
               hello: String @resolve
@@ -11806,7 +11806,7 @@ describe("ParseGraphQLServer", () => {
           httpServer.listen({ port: 13377 }, resolve)
         );
         const httpLink = await createUploadLink({
-          uri: "http://localhost:13377/graphql",
+          uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
         });
@@ -11815,7 +11815,7 @@ describe("ParseGraphQLServer", () => {
           cache: new InMemoryCache(),
           defaultOptions: {
             query: {
-              fetchPolicy: "no-cache",
+              fetchPolicy: 'no-cache',
             },
           },
         });
@@ -11825,9 +11825,9 @@ describe("ParseGraphQLServer", () => {
         await httpServer.close();
       });
 
-      it("can resolve a custom query using default function name", async () => {
-        Parse.Cloud.define("hello", async () => {
-          return "Hello world!";
+      it('can resolve a custom query using default function name', async () => {
+        Parse.Cloud.define('hello', async () => {
+          return 'Hello world!';
         });
 
         const result = await apolloClient.query({
@@ -11838,12 +11838,12 @@ describe("ParseGraphQLServer", () => {
           `,
         });
 
-        expect(result.data.hello).toEqual("Hello world!");
+        expect(result.data.hello).toEqual('Hello world!');
       });
 
       it('can resolve a custom query using function name set by "to" argument', async () => {
-        Parse.Cloud.define("hello", async () => {
-          return "Hello world!";
+        Parse.Cloud.define('hello', async () => {
+          return 'Hello world!';
         });
 
         const result = await apolloClient.query({
@@ -11854,31 +11854,31 @@ describe("ParseGraphQLServer", () => {
           `,
         });
 
-        expect(result.data.hello2).toEqual("Hello world!");
+        expect(result.data.hello2).toEqual('Hello world!');
       });
 
-      it("order option should continue working", async () => {
+      it('order option should continue working', async () => {
         const schemaController =
           await parseServer.config.databaseController.loadSchema();
 
-        await schemaController.addClassIfNotExists("SuperCar", {
-          engine: { type: "String" },
-          doors: { type: "Number" },
-          price: { type: "String" },
-          mileage: { type: "Number" },
+        await schemaController.addClassIfNotExists('SuperCar', {
+          engine: { type: 'String' },
+          doors: { type: 'Number' },
+          price: { type: 'String' },
+          mileage: { type: 'Number' },
         });
 
-        await new Parse.Object("SuperCar").save({
-          engine: "petrol",
+        await new Parse.Object('SuperCar').save({
+          engine: 'petrol',
           doors: 3,
-          price: "£7500",
+          price: '£7500',
           mileage: 0,
         });
 
-        await new Parse.Object("SuperCar").save({
-          engine: "petrol",
+        await new Parse.Object('SuperCar').save({
+          engine: 'petrol',
           doors: 3,
-          price: "£7500",
+          price: '£7500',
           mileage: 10000,
         });
 
@@ -11905,11 +11905,11 @@ describe("ParseGraphQLServer", () => {
       });
     });
 
-    describe("GraphQL Schema Based", () => {
+    describe('GraphQL Schema Based', () => {
       let httpServer;
       const headers = {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-Javascript-Key": "test",
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
       };
       let apolloClient;
 
@@ -11917,26 +11917,26 @@ describe("ParseGraphQLServer", () => {
         const expressApp = express();
         httpServer = http.createServer(expressApp);
         const TypeEnum = new GraphQLEnumType({
-          name: "TypeEnum",
+          name: 'TypeEnum',
           values: {
-            human: { value: "human" },
-            robot: { value: "robot" },
+            human: { value: 'human' },
+            robot: { value: 'robot' },
           },
         });
         const TypeEnumWhereInput = new GraphQLInputObjectType({
-          name: "TypeEnumWhereInput",
+          name: 'TypeEnumWhereInput',
           fields: {
             equalTo: { type: TypeEnum },
           },
         });
         const SomeClass2WhereInput = new GraphQLInputObjectType({
-          name: "SomeClass2WhereInput",
+          name: 'SomeClass2WhereInput',
           fields: {
             type: { type: TypeEnumWhereInput },
           },
         });
         const SomeClassType = new GraphQLObjectType({
-            name: "SomeClass",
+            name: 'SomeClass',
             fields: {
               nameUpperCase: {
                 type: new GraphQLNonNull(GraphQLString),
@@ -11945,21 +11945,21 @@ describe("ParseGraphQLServer", () => {
               type: { type: TypeEnum },
               language: {
                 type: new GraphQLEnumType({
-                  name: "LanguageEnum",
+                  name: 'LanguageEnum',
                   values: {
-                    fr: { value: "fr" },
-                    en: { value: "en" },
+                    fr: { value: 'fr' },
+                    en: { value: 'en' },
                   },
                 }),
-                resolve: () => "fr",
+                resolve: () => 'fr',
               },
             },
           }),
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-            graphQLPath: "/graphql",
+            graphQLPath: '/graphql',
             graphQLCustomTypeDefs: new GraphQLSchema({
               query: new GraphQLObjectType({
-                name: "Query",
+                name: 'Query',
                 fields: {
                   customQuery: {
                     type: new GraphQLNonNull(GraphQLString),
@@ -11971,7 +11971,7 @@ describe("ParseGraphQLServer", () => {
                   errorQuery: {
                     type: new GraphQLNonNull(GraphQLString),
                     resolve: () => {
-                      throw new Error("A test error");
+                      throw new Error('A test error');
                     },
                   },
                   customQueryWithAutoTypeReturn: {
@@ -11980,7 +11980,7 @@ describe("ParseGraphQLServer", () => {
                       id: { type: new GraphQLNonNull(GraphQLString) },
                     },
                     resolve: async (p, { id }) => {
-                      const obj = new Parse.Object("SomeClass");
+                      const obj = new Parse.Object('SomeClass');
                       obj.id = id;
                       await obj.fetch();
                       return obj.toJSON();
@@ -11992,7 +11992,7 @@ describe("ParseGraphQLServer", () => {
                       id: { type: new GraphQLNonNull(GraphQLString) },
                     },
                     resolve: async (p, { id }) => {
-                      const obj = new Parse.Object("SomeClass");
+                      const obj = new Parse.Object('SomeClass');
                       obj.id = id;
                       await obj.fetch();
                       return [obj.toJSON(), obj.toJSON(), obj.toJSON()];
@@ -12002,20 +12002,20 @@ describe("ParseGraphQLServer", () => {
               }),
               types: [
                 new GraphQLInputObjectType({
-                  name: "CreateSomeClassFieldsInput",
+                  name: 'CreateSomeClassFieldsInput',
                   fields: {
                     type: { type: TypeEnum },
                   },
                 }),
                 new GraphQLInputObjectType({
-                  name: "UpdateSomeClassFieldsInput",
+                  name: 'UpdateSomeClassFieldsInput',
                   fields: {
                     type: { type: TypeEnum },
                   },
                 }),
                 // Enhanced where input with a extended enum
                 new GraphQLInputObjectType({
-                  name: "SomeClassWhereInput",
+                  name: 'SomeClassWhereInput',
                   fields: {
                     type: {
                       type: TypeEnumWhereInput,
@@ -12033,7 +12033,7 @@ describe("ParseGraphQLServer", () => {
           httpServer.listen({ port: 13377 }, resolve)
         );
         const httpLink = await createUploadLink({
-          uri: "http://localhost:13377/graphql",
+          uri: 'http://localhost:13377/graphql',
           fetch,
           headers,
         });
@@ -12042,7 +12042,7 @@ describe("ParseGraphQLServer", () => {
           cache: new InMemoryCache(),
           defaultOptions: {
             query: {
-              fetchPolicy: "no-cache",
+              fetchPolicy: 'no-cache',
             },
           },
         });
@@ -12052,19 +12052,19 @@ describe("ParseGraphQLServer", () => {
         await httpServer.close();
       });
 
-      it("can resolve a custom query", async () => {
+      it('can resolve a custom query', async () => {
         const result = await apolloClient.query({
-          variables: { message: "hello" },
+          variables: { message: 'hello' },
           query: gql`
             query CustomQuery($message: String!) {
               customQuery(message: $message)
             }
           `,
         });
-        expect(result.data.customQuery).toEqual("hello");
+        expect(result.data.customQuery).toEqual('hello');
       });
 
-      it("can forward original error of a custom query", async () => {
+      it('can forward original error of a custom query', async () => {
         await expectAsync(
           apolloClient.query({
             query: gql`
@@ -12073,12 +12073,12 @@ describe("ParseGraphQLServer", () => {
               }
             `,
           })
-        ).toBeRejectedWithError("A test error");
+        ).toBeRejectedWithError('A test error');
       });
 
-      it("can resolve a custom query with auto type return", async () => {
-        const obj = new Parse.Object("SomeClass");
-        await obj.save({ name: "aname", type: "robot" });
+      it('can resolve a custom query with auto type return', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
         await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
         const result = await apolloClient.query({
           variables: { id: obj.id },
@@ -12096,16 +12096,16 @@ describe("ParseGraphQLServer", () => {
         expect(result.data.customQueryWithAutoTypeReturn.objectId).toEqual(
           obj.id
         );
-        expect(result.data.customQueryWithAutoTypeReturn.name).toEqual("aname");
+        expect(result.data.customQueryWithAutoTypeReturn.name).toEqual('aname');
         expect(result.data.customQueryWithAutoTypeReturn.nameUpperCase).toEqual(
-          "ANAME"
+          'ANAME'
         );
-        expect(result.data.customQueryWithAutoTypeReturn.type).toEqual("robot");
+        expect(result.data.customQueryWithAutoTypeReturn.type).toEqual('robot');
       });
 
-      it("can resolve a custom query with auto type list return", async () => {
-        const obj = new Parse.Object("SomeClass");
-        await obj.save({ name: "aname", type: "robot" });
+      it('can resolve a custom query with auto type list return', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
         await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
         const result = await apolloClient.query({
           variables: { id: obj.id },
@@ -12124,17 +12124,17 @@ describe("ParseGraphQLServer", () => {
         result.data.customQueryWithAutoTypeReturnList.forEach(rObj => {
           expect(rObj.objectId).toBeDefined();
           expect(rObj.objectId).toEqual(obj.id);
-          expect(rObj.name).toEqual("aname");
-          expect(rObj.nameUpperCase).toEqual("ANAME");
-          expect(rObj.type).toEqual("robot");
+          expect(rObj.name).toEqual('aname');
+          expect(rObj.nameUpperCase).toEqual('ANAME');
+          expect(rObj.type).toEqual('robot');
         });
       });
 
-      it("can resolve a stacked query with same where variables on overloaded where input", async () => {
-        const objPointer = new Parse.Object("SomeClass2");
-        await objPointer.save({ name: "aname", type: "robot" });
-        const obj = new Parse.Object("SomeClass");
-        await obj.save({ name: "aname", type: "robot", pointer: objPointer });
+      it('can resolve a stacked query with same where variables on overloaded where input', async () => {
+        const objPointer = new Parse.Object('SomeClass2');
+        await objPointer.save({ name: 'aname', type: 'robot' });
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot', pointer: objPointer });
         await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
         const result = await apolloClient.query({
           variables: {
@@ -12168,9 +12168,9 @@ describe("ParseGraphQLServer", () => {
         );
       });
 
-      it("can resolve a custom extend type", async () => {
-        const obj = new Parse.Object("SomeClass");
-        await obj.save({ name: "aname", type: "robot" });
+      it('can resolve a custom extend type', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
         await parseGraphQLServer.parseGraphQLSchema.schemaCache.clear();
         const result = await apolloClient.query({
           variables: { id: obj.id },
@@ -12184,9 +12184,9 @@ describe("ParseGraphQLServer", () => {
             }
           `,
         });
-        expect(result.data.someClass.nameUpperCase).toEqual("ANAME");
-        expect(result.data.someClass.language).toEqual("fr");
-        expect(result.data.someClass.type).toEqual("robot");
+        expect(result.data.someClass.nameUpperCase).toEqual('ANAME');
+        expect(result.data.someClass.language).toEqual('fr');
+        expect(result.data.someClass.type).toEqual('robot');
 
         const result2 = await apolloClient.query({
           variables: { id: obj.id },
@@ -12199,10 +12199,10 @@ describe("ParseGraphQLServer", () => {
             }
           `,
         });
-        expect(result2.data.someClass.name).toEqual("aname");
-        expect(result.data.someClass.language).toEqual("fr");
+        expect(result2.data.someClass.name).toEqual('aname');
+        expect(result.data.someClass.language).toEqual('fr');
         const result3 = await apolloClient.mutate({
-          variables: { id: obj.id, name: "anewname", type: "human" },
+          variables: { id: obj.id, name: 'anewname', type: 'human' },
           mutation: gql`
             mutation someClass($id: ID!, $name: String!, $type: TypeEnum!) {
               updateSomeClass(
@@ -12217,16 +12217,16 @@ describe("ParseGraphQLServer", () => {
           `,
         });
         expect(result3.data.updateSomeClass.someClass.nameUpperCase).toEqual(
-          "ANEWNAME"
+          'ANEWNAME'
         );
-        expect(result3.data.updateSomeClass.someClass.type).toEqual("human");
+        expect(result3.data.updateSomeClass.someClass.type).toEqual('human');
       });
     });
-    describe("Async Function Based Merge", () => {
+    describe('Async Function Based Merge', () => {
       let httpServer;
       const headers = {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-Javascript-Key": "test",
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
       };
       let apolloClient;
 
@@ -12235,7 +12235,7 @@ describe("ParseGraphQLServer", () => {
           const expressApp = express();
           httpServer = http.createServer(expressApp);
           parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-            graphQLPath: "/graphql",
+            graphQLPath: '/graphql',
             graphQLCustomTypeDefs: ({ autoSchema }) =>
               mergeSchemas({ schemas: [autoSchema] }),
           });
@@ -12245,7 +12245,7 @@ describe("ParseGraphQLServer", () => {
             httpServer.listen({ port: 13377 }, resolve)
           );
           const httpLink = await createUploadLink({
-            uri: "http://localhost:13377/graphql",
+            uri: 'http://localhost:13377/graphql',
             fetch,
             headers,
           });
@@ -12254,7 +12254,7 @@ describe("ParseGraphQLServer", () => {
             cache: new InMemoryCache(),
             defaultOptions: {
               query: {
-                fetchPolicy: "no-cache",
+                fetchPolicy: 'no-cache',
               },
             },
           });
@@ -12265,7 +12265,7 @@ describe("ParseGraphQLServer", () => {
         await httpServer.close();
       });
 
-      it("can resolve a query", async () => {
+      it('can resolve a query', async () => {
         const result = await apolloClient.query({
           query: gql`
             query Health {

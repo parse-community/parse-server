@@ -1,27 +1,27 @@
-import PromiseRouter from "../PromiseRouter";
-import Config from "../Config";
-import express from "express";
-import path from "path";
-import fs from "fs";
-import qs from "querystring";
-import { Parse } from "parse/node";
-import Deprecator from "../Deprecator/Deprecator";
+import PromiseRouter from '../PromiseRouter';
+import Config from '../Config';
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import qs from 'querystring';
+import { Parse } from 'parse/node';
+import Deprecator from '../Deprecator/Deprecator';
 
-const public_html = path.resolve(__dirname, "../../public_html");
-const views = path.resolve(__dirname, "../../views");
+const public_html = path.resolve(__dirname, '../../public_html');
+const views = path.resolve(__dirname, '../../views');
 
 export class PublicAPIRouter extends PromiseRouter {
   constructor() {
     super();
     Deprecator.logRuntimeDeprecation({
-      usage: "PublicAPIRouter",
-      solution: "pages.enableRouter",
+      usage: 'PublicAPIRouter',
+      solution: 'pages.enableRouter',
     });
   }
   verifyEmail(req) {
     const { token: rawToken } = req.query;
     const token =
-      rawToken && typeof rawToken !== "string" ? rawToken.toString() : rawToken;
+      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     const appId = req.params.appId;
     const config = Config.get(appId);
@@ -100,19 +100,19 @@ export class PublicAPIRouter extends PromiseRouter {
       if (!config.publicServerURL) {
         return resolve({
           status: 404,
-          text: "Not found.",
+          text: 'Not found.',
         });
       }
       // Should we keep the file in memory or leave like that?
       fs.readFile(
-        path.resolve(views, "choose_password"),
-        "utf-8",
+        path.resolve(views, 'choose_password'),
+        'utf-8',
         (err, data) => {
           if (err) {
             return reject(err);
           }
           data = data.replace(
-            "PARSE_SERVER_URL",
+            'PARSE_SERVER_URL',
             `'${config.publicServerURL}'`
           );
           resolve({
@@ -136,7 +136,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const { token: rawToken } = req.query;
     const token =
-      rawToken && typeof rawToken !== "string" ? rawToken.toString() : rawToken;
+      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!token) {
       return this.invalidLink(req);
@@ -173,18 +173,18 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const { new_password, token: rawToken } = req.body || {};
     const token =
-      rawToken && typeof rawToken !== "string" ? rawToken.toString() : rawToken;
+      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if ((!token || !new_password) && req.xhr === false) {
       return this.invalidLink(req);
     }
 
     if (!token) {
-      throw new Parse.Error(Parse.Error.OTHER_CAUSE, "Missing token");
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing token');
     }
 
     if (!new_password) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, "Missing password");
+      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'Missing password');
     }
 
     return config.userController
@@ -210,7 +210,7 @@ export class PublicAPIRouter extends PromiseRouter {
           app: config.appName,
         };
 
-        if (result?.err === "The password reset link has expired") {
+        if (result?.err === 'The password reset link has expired') {
           delete queryString.token;
           queryString.token = token;
         }
@@ -220,7 +220,7 @@ export class PublicAPIRouter extends PromiseRouter {
           if (result.success) {
             return Promise.resolve({
               status: 200,
-              response: "Password successfully reset",
+              response: 'Password successfully reset',
             });
           }
           if (result.err) {
@@ -264,7 +264,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
   missingPublicServerURL() {
     return Promise.resolve({
-      text: "Not found.",
+      text: 'Not found.',
       status: 404,
     });
   }
@@ -272,7 +272,7 @@ export class PublicAPIRouter extends PromiseRouter {
   invalidRequest() {
     const error = new Error();
     error.status = 403;
-    error.message = "unauthorized";
+    error.message = 'unauthorized';
     throw error;
   }
 
@@ -283,8 +283,8 @@ export class PublicAPIRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route(
-      "GET",
-      "/apps/:appId/verify_email",
+      'GET',
+      '/apps/:appId/verify_email',
       req => {
         this.setConfig(req);
       },
@@ -294,8 +294,8 @@ export class PublicAPIRouter extends PromiseRouter {
     );
 
     this.route(
-      "POST",
-      "/apps/:appId/resend_verification_email",
+      'POST',
+      '/apps/:appId/resend_verification_email',
       req => {
         this.setConfig(req);
       },
@@ -304,13 +304,13 @@ export class PublicAPIRouter extends PromiseRouter {
       }
     );
 
-    this.route("GET", "/apps/choose_password", req => {
+    this.route('GET', '/apps/choose_password', req => {
       return this.changePassword(req);
     });
 
     this.route(
-      "POST",
-      "/apps/:appId/request_password_reset",
+      'POST',
+      '/apps/:appId/request_password_reset',
       req => {
         this.setConfig(req);
       },
@@ -320,8 +320,8 @@ export class PublicAPIRouter extends PromiseRouter {
     );
 
     this.route(
-      "GET",
-      "/apps/:appId/request_password_reset",
+      'GET',
+      '/apps/:appId/request_password_reset',
       req => {
         this.setConfig(req);
       },
@@ -333,8 +333,8 @@ export class PublicAPIRouter extends PromiseRouter {
 
   expressRouter() {
     const router = express.Router();
-    router.use("/apps", express.static(public_html));
-    router.use("/", super.expressRouter());
+    router.use('/apps', express.static(public_html));
+    router.use('/', super.expressRouter());
     return router;
   }
 }

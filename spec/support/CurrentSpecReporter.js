@@ -1,6 +1,6 @@
 // Sets a global variable to the current test spec
 // ex: global.currentSpec.description
-const { performance } = require("perf_hooks");
+const { performance } = require('perf_hooks');
 
 global.currentSpec = null;
 
@@ -11,9 +11,9 @@ global.currentSpec = null;
  */
 const flakyTests = [
   // Timeout
-  "ParseLiveQuery handle invalid websocket payload length",
+  'ParseLiveQuery handle invalid websocket payload length',
   // Unhandled promise rejection: TypeError: message.split is not a function
-  "rest query query internal field",
+  'rest query query internal field',
 ];
 
 /** The minimum execution time in seconds for a test to be considered slow. */
@@ -28,14 +28,14 @@ const duplicates = [];
 class CurrentSpecReporter {
   specStarted(spec) {
     if (timerMap[spec.fullName]) {
-      console.log("Duplicate spec: " + spec.fullName);
+      console.log('Duplicate spec: ' + spec.fullName);
       duplicates.push(spec.fullName);
     }
     timerMap[spec.fullName] = performance.now();
     global.currentSpec = spec;
   }
   specDone(result) {
-    if (result.status === "excluded") {
+    if (result.status === 'excluded') {
       delete timerMap[result.fullName];
       return;
     }
@@ -58,15 +58,15 @@ global.displayTestStats = function () {
       Object.keys(timerMap).find(key => timerMap[key] === time)
     );
   });
-  console.log("\n");
+  console.log('\n');
   duplicates.forEach(spec => {
-    console.warn("Duplicate spec: " + spec);
+    console.warn('Duplicate spec: ' + spec);
   });
-  console.log("\n");
+  console.log('\n');
   Object.keys(retryMap).forEach(spec => {
     console.warn(`Flaky test: ${spec} failed ${retryMap[spec]} times`);
   });
-  console.log("\n");
+  console.log('\n');
 };
 
 global.retryFlakyTests = function () {

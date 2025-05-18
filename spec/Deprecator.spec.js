@@ -1,28 +1,28 @@
-"use strict";
+'use strict';
 
-const Deprecator = require("../lib/Deprecator/Deprecator");
+const Deprecator = require('../lib/Deprecator/Deprecator');
 
-describe("Deprecator", () => {
+describe('Deprecator', () => {
   let deprecations = [];
 
   beforeEach(async () => {
     deprecations = [
-      { optionKey: "exampleKey", changeNewDefault: "exampleNewDefault" },
+      { optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' },
     ];
   });
 
-  it("deprecations are an array", async () => {
+  it('deprecations are an array', async () => {
     expect(Deprecator._getDeprecations()).toBeInstanceOf(Array);
   });
 
-  it("logs deprecation for new default", async () => {
+  it('logs deprecation for new default', async () => {
     deprecations = [
-      { optionKey: "exampleKey", changeNewDefault: "exampleNewDefault" },
+      { optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' },
     ];
 
-    spyOn(Deprecator, "_getDeprecations").and.callFake(() => deprecations);
-    const logger = require("../lib/logger").logger;
-    const logSpy = spyOn(logger, "warn").and.callFake(() => {});
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
 
     await reconfigureServer();
     expect(logSpy.calls.all()[0].args[0]).toEqual(
@@ -30,21 +30,21 @@ describe("Deprecator", () => {
     );
   });
 
-  it("does not log deprecation for new default if option is set manually", async () => {
+  it('does not log deprecation for new default if option is set manually', async () => {
     deprecations = [
-      { optionKey: "exampleKey", changeNewDefault: "exampleNewDefault" },
+      { optionKey: 'exampleKey', changeNewDefault: 'exampleNewDefault' },
     ];
 
-    spyOn(Deprecator, "_getDeprecations").and.callFake(() => deprecations);
-    const logSpy = spyOn(Deprecator, "_logOption").and.callFake(() => {});
-    await reconfigureServer({ [deprecations[0].optionKey]: "manuallySet" });
+    spyOn(Deprecator, '_getDeprecations').and.callFake(() => deprecations);
+    const logSpy = spyOn(Deprecator, '_logOption').and.callFake(() => {});
+    await reconfigureServer({ [deprecations[0].optionKey]: 'manuallySet' });
     expect(logSpy).not.toHaveBeenCalled();
   });
 
-  it("logs runtime deprecation", async () => {
-    const logger = require("../lib/logger").logger;
-    const logSpy = spyOn(logger, "warn").and.callFake(() => {});
-    const options = { usage: "Doing this", solution: "Do that instead." };
+  it('logs runtime deprecation', async () => {
+    const logger = require('../lib/logger').logger;
+    const logSpy = spyOn(logger, 'warn').and.callFake(() => {});
+    const options = { usage: 'Doing this', solution: 'Do that instead.' };
 
     Deprecator.logRuntimeDeprecation(options);
     expect(logSpy.calls.all()[0].args[0]).toEqual(

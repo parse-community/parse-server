@@ -1,22 +1,22 @@
-const emailAdapter = require("./support/MockEmailAdapter");
-const Config = require("../lib/Config");
-const Auth = require("../lib/Auth");
-const { resolvingPromise } = require("../lib/TestUtils");
+const emailAdapter = require('./support/MockEmailAdapter');
+const Config = require('../lib/Config');
+const Auth = require('../lib/Auth');
+const { resolvingPromise } = require('../lib/TestUtils');
 
-describe("UserController", () => {
-  describe("sendVerificationEmail", () => {
-    describe("parseFrameURL not provided", () => {
-      it_id("61338330-eca7-4c33-8816-7ff05966f43b")(it)(
-        "uses publicServerURL",
+describe('UserController', () => {
+  describe('sendVerificationEmail', () => {
+    describe('parseFrameURL not provided', () => {
+      it_id('61338330-eca7-4c33-8816-7ff05966f43b')(it)(
+        'uses publicServerURL',
         async () => {
           await reconfigureServer({
-            publicServerURL: "http://www.example.com",
+            publicServerURL: 'http://www.example.com',
             customPages: {
               parseFrameURL: undefined,
             },
             verifyUserEmails: true,
             emailAdapter,
-            appName: "test",
+            appName: 'test',
           });
 
           let emailOptions;
@@ -26,17 +26,17 @@ describe("UserController", () => {
             sendPromise.resolve();
           };
 
-          const username = "verificationUser";
+          const username = 'verificationUser';
           const user = new Parse.User();
           user.setUsername(username);
-          user.setPassword("pass");
-          user.setEmail("verification@example.com");
+          user.setPassword('pass');
+          user.setEmail('verification@example.com');
           await user.signUp();
           await sendPromise;
 
-          const config = Config.get("test");
+          const config = Config.get('test');
           const rawUser = await config.database.find(
-            "_User",
+            '_User',
             { username },
             {},
             Auth.maintenance(config)
@@ -53,18 +53,18 @@ describe("UserController", () => {
       );
     });
 
-    describe("parseFrameURL provided", () => {
-      it_id("673c2bb1-049e-4dda-b6be-88c866260036")(it)(
-        "uses parseFrameURL and includes the destination in the link parameter",
+    describe('parseFrameURL provided', () => {
+      it_id('673c2bb1-049e-4dda-b6be-88c866260036')(it)(
+        'uses parseFrameURL and includes the destination in the link parameter',
         async () => {
           await reconfigureServer({
-            publicServerURL: "http://www.example.com",
+            publicServerURL: 'http://www.example.com',
             customPages: {
-              parseFrameURL: "http://someother.example.com/handle-parse-iframe",
+              parseFrameURL: 'http://someother.example.com/handle-parse-iframe',
             },
             verifyUserEmails: true,
             emailAdapter,
-            appName: "test",
+            appName: 'test',
           });
 
           let emailOptions;
@@ -74,17 +74,17 @@ describe("UserController", () => {
             sendPromise.resolve();
           };
 
-          const username = "verificationUser";
+          const username = 'verificationUser';
           const user = new Parse.User();
           user.setUsername(username);
-          user.setPassword("pass");
-          user.setEmail("verification@example.com");
+          user.setPassword('pass');
+          user.setEmail('verification@example.com');
           await user.signUp();
           await sendPromise;
 
-          const config = Config.get("test");
+          const config = Config.get('test');
           const rawUser = await config.database.find(
-            "_User",
+            '_User',
             { username },
             {},
             Auth.maintenance(config)

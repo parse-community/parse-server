@@ -1,17 +1,17 @@
-const Config = require("../lib/Config");
+const Config = require('../lib/Config');
 
-describe("Config Keys", () => {
+describe('Config Keys', () => {
   const invalidKeyErrorMessage =
-    "Invalid key\\(s\\) found in Parse Server configuration";
+    'Invalid key\\(s\\) found in Parse Server configuration';
   let loggerErrorSpy;
 
   beforeEach(async () => {
-    const logger = require("../lib/logger").logger;
-    loggerErrorSpy = spyOn(logger, "error").and.callThrough();
-    spyOn(Config, "validateOptions").and.callFake(() => {});
+    const logger = require('../lib/logger').logger;
+    loggerErrorSpy = spyOn(logger, 'error').and.callThrough();
+    spyOn(Config, 'validateOptions').and.callFake(() => {});
   });
 
-  it("recognizes invalid keys in root", async () => {
+  it('recognizes invalid keys in root', async () => {
     await expectAsync(
       reconfigureServer({
         invalidKey: 1,
@@ -19,11 +19,11 @@ describe("Config Keys", () => {
     ).toBeResolved();
     const error = loggerErrorSpy.calls
       .all()
-      .reduce((s, call) => (s += call.args[0]), "");
+      .reduce((s, call) => (s += call.args[0]), '');
     expect(error).toMatch(invalidKeyErrorMessage);
   });
 
-  it("recognizes invalid keys in pages.customUrls", async () => {
+  it('recognizes invalid keys in pages.customUrls', async () => {
     await expectAsync(
       reconfigureServer({
         pages: {
@@ -36,13 +36,13 @@ describe("Config Keys", () => {
     ).toBeResolved();
     const error = loggerErrorSpy.calls
       .all()
-      .reduce((s, call) => (s += call.args[0]), "");
+      .reduce((s, call) => (s += call.args[0]), '');
     expect(error).toMatch(invalidKeyErrorMessage);
     expect(error).toMatch(`invalidKey`);
     expect(error).toMatch(`EmailVerificationSendFail`);
   });
 
-  it("recognizes invalid keys in liveQueryServerOptions", async () => {
+  it('recognizes invalid keys in liveQueryServerOptions', async () => {
     await expectAsync(
       reconfigureServer({
         liveQueryServerOptions: {
@@ -53,12 +53,12 @@ describe("Config Keys", () => {
     ).toBeResolved();
     const error = loggerErrorSpy.calls
       .all()
-      .reduce((s, call) => (s += call.args[0]), "");
+      .reduce((s, call) => (s += call.args[0]), '');
     expect(error).toMatch(invalidKeyErrorMessage);
     expect(error).toMatch(`MasterKey`);
   });
 
-  it("recognizes invalid keys in rateLimit", async () => {
+  it('recognizes invalid keys in rateLimit', async () => {
     await expectAsync(
       reconfigureServer({
         rateLimit: [
@@ -70,15 +70,15 @@ describe("Config Keys", () => {
     ).toBeRejected();
     const error = loggerErrorSpy.calls
       .all()
-      .reduce((s, call) => (s += call.args[0]), "");
+      .reduce((s, call) => (s += call.args[0]), '');
     expect(error).toMatch(invalidKeyErrorMessage);
-    expect(error).toMatch("rateLimit\\[0\\]\\.invalidKey");
-    expect(error).toMatch("rateLimit\\[1\\]\\.RequestPath");
-    expect(error).toMatch("rateLimit\\[2\\]\\.RequestTimeWindow");
+    expect(error).toMatch('rateLimit\\[0\\]\\.invalidKey');
+    expect(error).toMatch('rateLimit\\[1\\]\\.RequestPath');
+    expect(error).toMatch('rateLimit\\[2\\]\\.RequestTimeWindow');
   });
 
-  it_only_db("mongo")(
-    "recognizes valid keys in default configuration",
+  it_only_db('mongo')(
+    'recognizes valid keys in default configuration',
     async () => {
       await expectAsync(
         reconfigureServer({
@@ -86,17 +86,17 @@ describe("Config Keys", () => {
         })
       ).toBeResolved();
       expect(
-        loggerErrorSpy.calls.all().reduce((s, call) => (s += call.args[0]), "")
+        loggerErrorSpy.calls.all().reduce((s, call) => (s += call.args[0]), '')
       ).not.toMatch(invalidKeyErrorMessage);
     }
   );
 
-  it_only_db("mongo")(
-    "recognizes valid keys in databaseOptions (MongoDB)",
+  it_only_db('mongo')(
+    'recognizes valid keys in databaseOptions (MongoDB)',
     async () => {
       await expectAsync(
         reconfigureServer({
-          databaseURI: "mongodb://localhost:27017/parse",
+          databaseURI: 'mongodb://localhost:27017/parse',
           filesAdapter: null,
           databaseAdapter: null,
           databaseOptions: {
@@ -113,7 +113,7 @@ describe("Config Keys", () => {
         })
       ).toBeResolved();
       expect(
-        loggerErrorSpy.calls.all().reduce((s, call) => (s += call.args[0]), "")
+        loggerErrorSpy.calls.all().reduce((s, call) => (s += call.args[0]), '')
       ).not.toMatch(invalidKeyErrorMessage);
     }
   );

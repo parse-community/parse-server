@@ -1,37 +1,37 @@
 // FunctionsRouter.js
 
-var Parse = require("parse/node").Parse,
-  triggers = require("../triggers");
+var Parse = require('parse/node').Parse,
+  triggers = require('../triggers');
 
-import PromiseRouter from "../PromiseRouter";
+import PromiseRouter from '../PromiseRouter';
 import {
   promiseEnforceMasterKeyAccess,
   promiseEnsureIdempotency,
-} from "../middlewares";
-import { jobStatusHandler } from "../StatusHandler";
-import _ from "lodash";
-import { logger } from "../logger";
+} from '../middlewares';
+import { jobStatusHandler } from '../StatusHandler';
+import _ from 'lodash';
+import { logger } from '../logger';
 
 function parseObject(obj, config) {
   if (Array.isArray(obj)) {
     return obj.map(item => {
       return parseObject(item, config);
     });
-  } else if (obj && obj.__type == "Date") {
+  } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);
-  } else if (obj && obj.__type == "File") {
+  } else if (obj && obj.__type == 'File') {
     return Parse.File.fromJSON(obj);
   } else if (
     obj &&
-    obj.__type == "Pointer" &&
+    obj.__type == 'Pointer' &&
     config.encodeParseObjectInCloudFunction
   ) {
     return Parse.Object.fromJSON({
-      __type: "Pointer",
+      __type: 'Pointer',
       className: obj.className,
       objectId: obj.objectId,
     });
-  } else if (obj && typeof obj === "object") {
+  } else if (obj && typeof obj === 'object') {
     return parseParams(obj, config);
   } else {
     return obj;
@@ -45,21 +45,21 @@ function parseParams(params, config) {
 export class FunctionsRouter extends PromiseRouter {
   mountRoutes() {
     this.route(
-      "POST",
-      "/functions/:functionName",
+      'POST',
+      '/functions/:functionName',
       promiseEnsureIdempotency,
       FunctionsRouter.handleCloudFunction
     );
     this.route(
-      "POST",
-      "/jobs/:jobName",
+      'POST',
+      '/jobs/:jobName',
       promiseEnsureIdempotency,
       promiseEnforceMasterKeyAccess,
       function (req) {
         return FunctionsRouter.handleCloudJob(req);
       }
     );
-    this.route("POST", "/jobs", promiseEnforceMasterKeyAccess, function (req) {
+    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function (req) {
       return FunctionsRouter.handleCloudJob(req);
     });
   }
@@ -70,7 +70,7 @@ export class FunctionsRouter extends PromiseRouter {
     const jobHandler = jobStatusHandler(req.config);
     const jobFunction = triggers.getJob(jobName, applicationId);
     if (!jobFunction) {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "Invalid job.");
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid job.');
     }
     let params = Object.assign({}, req.body, req.query);
     params = parseParams(params, req.config);
@@ -102,7 +102,7 @@ export class FunctionsRouter extends PromiseRouter {
       });
       return {
         headers: {
-          "X-Parse-Job-Status-Id": jobStatus.objectId,
+          'X-Parse-Job-Status-Id': jobStatus.objectId,
         },
         response: {},
       };
@@ -155,7 +155,7 @@ export class FunctionsRouter extends PromiseRouter {
       const { success, error } = FunctionsRouter.createResponseObject(
         result => {
           try {
-            if (req.config.logLevels.cloudFunctionSuccess !== "silent") {
+            if (req.config.logLevels.cloudFunctionSuccess !== 'silent') {
               const cleanInput = logger.truncateLogMessage(
                 JSON.stringify(params)
               );
@@ -178,7 +178,7 @@ export class FunctionsRouter extends PromiseRouter {
         },
         error => {
           try {
-            if (req.config.logLevels.cloudFunctionError !== "silent") {
+            if (req.config.logLevels.cloudFunctionError !== 'silent') {
               const cleanInput = logger.truncateLogMessage(
                 JSON.stringify(params)
               );

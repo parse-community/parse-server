@@ -1,14 +1,14 @@
-const TestObject = Parse.Object.extend("TestObject");
-const request = require("../lib/request");
-const TestUtils = require("../lib/TestUtils");
+const TestObject = Parse.Object.extend('TestObject');
+const request = require('../lib/request');
+const TestUtils = require('../lib/TestUtils');
 const defaultHeaders = {
-  "X-Parse-Application-Id": "test",
-  "X-Parse-Rest-API-Key": "rest",
-  "Content-Type": "application/json",
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-Rest-API-Key': 'rest',
+  'Content-Type': 'application/json',
 };
 
-describe("Parse.Polygon testing", () => {
-  it("polygon save open path", done => {
+describe('Parse.Polygon testing', () => {
+  it('polygon save open path', done => {
     const coords = [
       [0, 0],
       [0, 1],
@@ -23,7 +23,7 @@ describe("Parse.Polygon testing", () => {
       [0, 0],
     ];
     const obj = new TestObject();
-    obj.set("polygon", new Parse.Polygon(coords));
+    obj.set('polygon', new Parse.Polygon(coords));
     return obj
       .save()
       .then(() => {
@@ -31,14 +31,14 @@ describe("Parse.Polygon testing", () => {
         return query.get(obj.id);
       })
       .then(result => {
-        const polygon = result.get("polygon");
+        const polygon = result.get('polygon');
         equal(polygon instanceof Parse.Polygon, true);
         equal(polygon.coordinates, closed);
         done();
       }, done.fail);
   });
 
-  it("polygon save closed path", done => {
+  it('polygon save closed path', done => {
     const coords = [
       [0, 0],
       [0, 1],
@@ -47,7 +47,7 @@ describe("Parse.Polygon testing", () => {
       [0, 0],
     ];
     const obj = new TestObject();
-    obj.set("polygon", new Parse.Polygon(coords));
+    obj.set('polygon', new Parse.Polygon(coords));
     return obj
       .save()
       .then(() => {
@@ -55,15 +55,15 @@ describe("Parse.Polygon testing", () => {
         return query.get(obj.id);
       })
       .then(result => {
-        const polygon = result.get("polygon");
+        const polygon = result.get('polygon');
         equal(polygon instanceof Parse.Polygon, true);
         equal(polygon.coordinates, coords);
         done();
       }, done.fail);
   });
 
-  it_id("3019353b-d5b3-4e53-bcb1-716418328bdd")(it)(
-    "polygon equalTo (open/closed) path",
+  it_id('3019353b-d5b3-4e53-bcb1-716418328bdd')(it)(
+    'polygon equalTo (open/closed) path',
     done => {
       const openPoints = [
         [0, 0],
@@ -81,24 +81,24 @@ describe("Parse.Polygon testing", () => {
       const openPolygon = new Parse.Polygon(openPoints);
       const closedPolygon = new Parse.Polygon(closedPoints);
       const obj = new TestObject();
-      obj.set("polygon", openPolygon);
+      obj.set('polygon', openPolygon);
       return obj
         .save()
         .then(() => {
           const query = new Parse.Query(TestObject);
-          query.equalTo("polygon", openPolygon);
+          query.equalTo('polygon', openPolygon);
           return query.find();
         })
         .then(results => {
-          const polygon = results[0].get("polygon");
+          const polygon = results[0].get('polygon');
           equal(polygon instanceof Parse.Polygon, true);
           equal(polygon.coordinates, closedPoints);
           const query = new Parse.Query(TestObject);
-          query.equalTo("polygon", closedPolygon);
+          query.equalTo('polygon', closedPolygon);
           return query.find();
         })
         .then(results => {
-          const polygon = results[0].get("polygon");
+          const polygon = results[0].get('polygon');
           equal(polygon instanceof Parse.Polygon, true);
           equal(polygon.coordinates, closedPoints);
           done();
@@ -106,7 +106,7 @@ describe("Parse.Polygon testing", () => {
     }
   );
 
-  it("polygon update", done => {
+  it('polygon update', done => {
     const oldCoords = [
       [0, 0],
       [0, 1],
@@ -122,11 +122,11 @@ describe("Parse.Polygon testing", () => {
     ];
     const newPolygon = new Parse.Polygon(newCoords);
     const obj = new TestObject();
-    obj.set("polygon", oldPolygon);
+    obj.set('polygon', oldPolygon);
     return obj
       .save()
       .then(() => {
-        obj.set("polygon", newPolygon);
+        obj.set('polygon', newPolygon);
         return obj.save();
       })
       .then(() => {
@@ -134,7 +134,7 @@ describe("Parse.Polygon testing", () => {
         return query.get(obj.id);
       })
       .then(result => {
-        const polygon = result.get("polygon");
+        const polygon = result.get('polygon');
         newCoords.push(newCoords[0]);
         equal(polygon instanceof Parse.Polygon, true);
         equal(polygon.coordinates, newCoords);
@@ -142,16 +142,16 @@ describe("Parse.Polygon testing", () => {
       }, done.fail);
   });
 
-  it("polygon invalid value", done => {
+  it('polygon invalid value', done => {
     const coords = [
-      ["foo", "bar"],
+      ['foo', 'bar'],
       [0, 1],
       [1, 0],
       [1, 1],
       [0, 0],
     ];
     const obj = new TestObject();
-    obj.set("polygon", { __type: "Polygon", coordinates: coords });
+    obj.set('polygon', { __type: 'Polygon', coordinates: coords });
     return obj
       .save()
       .then(() => {
@@ -161,26 +161,26 @@ describe("Parse.Polygon testing", () => {
       .then(done.fail, () => done());
   });
 
-  it("polygon three points minimum", done => {
+  it('polygon three points minimum', done => {
     const coords = [[0, 0]];
     const obj = new TestObject();
     // use raw so we test the server validates properly
-    obj.set("polygon", { __type: "Polygon", coordinates: coords });
+    obj.set('polygon', { __type: 'Polygon', coordinates: coords });
     obj.save().then(done.fail, () => done());
   });
 
-  it("polygon three different points minimum", done => {
+  it('polygon three different points minimum', done => {
     const coords = [
       [0, 0],
       [0, 1],
       [0, 0],
     ];
     const obj = new TestObject();
-    obj.set("polygon", new Parse.Polygon(coords));
+    obj.set('polygon', new Parse.Polygon(coords));
     obj.save().then(done.fail, () => done());
   });
 
-  it("polygon counterclockwise", done => {
+  it('polygon counterclockwise', done => {
     const coords = [
       [1, 1],
       [0, 1],
@@ -195,7 +195,7 @@ describe("Parse.Polygon testing", () => {
       [1, 1],
     ];
     const obj = new TestObject();
-    obj.set("polygon", new Parse.Polygon(coords));
+    obj.set('polygon', new Parse.Polygon(coords));
     obj
       .save()
       .then(() => {
@@ -203,19 +203,19 @@ describe("Parse.Polygon testing", () => {
         return query.get(obj.id);
       })
       .then(result => {
-        const polygon = result.get("polygon");
+        const polygon = result.get('polygon');
         equal(polygon instanceof Parse.Polygon, true);
         equal(polygon.coordinates, closed);
         done();
       }, done.fail);
   });
 
-  describe("with location", () => {
-    if (process.env.PARSE_SERVER_TEST_DB !== "postgres") {
+  describe('with location', () => {
+    if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
       beforeEach(async () => await TestUtils.destroyAllDataPermanently());
     }
 
-    it("polygonContain query", done => {
+    it('polygonContain query', done => {
       const points1 = [
         [0, 0],
         [0, 1],
@@ -246,18 +246,18 @@ describe("Parse.Polygon testing", () => {
           const where = {
             boundary: {
               $geoIntersects: {
-                $point: { __type: "GeoPoint", latitude: 0.5, longitude: 0.5 },
+                $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 0.5 },
               },
             },
           };
           return request({
-            method: "POST",
-            url: Parse.serverURL + "/classes/TestObject",
-            body: { where, _method: "GET" },
+            method: 'POST',
+            url: Parse.serverURL + '/classes/TestObject',
+            body: { where, _method: 'GET' },
             headers: {
-              "X-Parse-Application-Id": Parse.applicationId,
-              "X-Parse-Javascript-Key": Parse.javaScriptKey,
-              "Content-Type": "application/json",
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
@@ -267,7 +267,7 @@ describe("Parse.Polygon testing", () => {
         }, done.fail);
     });
 
-    it("polygonContain query no reverse input (Regression test for #4608)", done => {
+    it('polygonContain query no reverse input (Regression test for #4608)', done => {
       const points1 = [
         [0.25, 0],
         [0.25, 1.25],
@@ -298,18 +298,18 @@ describe("Parse.Polygon testing", () => {
           const where = {
             boundary: {
               $geoIntersects: {
-                $point: { __type: "GeoPoint", latitude: 0.5, longitude: 1.0 },
+                $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 1.0 },
               },
             },
           };
           return request({
-            method: "POST",
-            url: Parse.serverURL + "/classes/TestObject",
-            body: { where, _method: "GET" },
+            method: 'POST',
+            url: Parse.serverURL + '/classes/TestObject',
+            body: { where, _method: 'GET' },
             headers: {
-              "X-Parse-Application-Id": Parse.applicationId,
-              "X-Parse-Javascript-Key": Parse.javaScriptKey,
-              "Content-Type": "application/json",
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
@@ -319,7 +319,7 @@ describe("Parse.Polygon testing", () => {
         }, done.fail);
     });
 
-    it("polygonContain query real data (Regression test for #4608)", done => {
+    it('polygonContain query real data (Regression test for #4608)', done => {
       const detroit = [
         [42.631655189280224, -83.78406753121705],
         [42.633047793854814, -83.75333640366955],
@@ -336,7 +336,7 @@ describe("Parse.Polygon testing", () => {
             boundary: {
               $geoIntersects: {
                 $point: {
-                  __type: "GeoPoint",
+                  __type: 'GeoPoint',
                   latitude: 42.624599,
                   longitude: -83.770162,
                 },
@@ -344,13 +344,13 @@ describe("Parse.Polygon testing", () => {
             },
           };
           return request({
-            method: "POST",
-            url: Parse.serverURL + "/classes/TestObject",
-            body: { where, _method: "GET" },
+            method: 'POST',
+            url: Parse.serverURL + '/classes/TestObject',
+            body: { where, _method: 'GET' },
             headers: {
-              "X-Parse-Application-Id": Parse.applicationId,
-              "X-Parse-Javascript-Key": Parse.javaScriptKey,
-              "Content-Type": "application/json",
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
@@ -360,7 +360,7 @@ describe("Parse.Polygon testing", () => {
         }, done.fail);
     });
 
-    it("polygonContain invalid input", done => {
+    it('polygonContain invalid input', done => {
       const points = [
         [0, 0],
         [0, 1],
@@ -375,24 +375,24 @@ describe("Parse.Polygon testing", () => {
           const where = {
             boundary: {
               $geoIntersects: {
-                $point: { __type: "GeoPoint", latitude: 181, longitude: 181 },
+                $point: { __type: 'GeoPoint', latitude: 181, longitude: 181 },
               },
             },
           };
           return request({
-            method: "POST",
-            url: Parse.serverURL + "/classes/TestObject",
-            body: { where, _method: "GET" },
+            method: 'POST',
+            url: Parse.serverURL + '/classes/TestObject',
+            body: { where, _method: 'GET' },
             headers: {
-              "X-Parse-Application-Id": Parse.applicationId,
-              "X-Parse-Javascript-Key": Parse.javaScriptKey,
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey,
             },
           });
         })
         .then(done.fail, () => done());
     });
 
-    it("polygonContain invalid geoPoint", done => {
+    it('polygonContain invalid geoPoint', done => {
       const points = [
         [0, 0],
         [0, 1],
@@ -412,12 +412,12 @@ describe("Parse.Polygon testing", () => {
             },
           };
           return request({
-            method: "POST",
-            url: Parse.serverURL + "/classes/TestObject",
-            body: { where, _method: "GET" },
+            method: 'POST',
+            url: Parse.serverURL + '/classes/TestObject',
+            body: { where, _method: 'GET' },
             headers: {
-              "X-Parse-Application-Id": Parse.applicationId,
-              "X-Parse-Javascript-Key": Parse.javaScriptKey,
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey,
             },
           });
         })
@@ -426,17 +426,17 @@ describe("Parse.Polygon testing", () => {
   });
 });
 
-describe_only_db("mongo")("Parse.Polygon testing", () => {
-  const Config = require("../lib/Config");
+describe_only_db('mongo')('Parse.Polygon testing', () => {
+  const Config = require('../lib/Config');
   let config;
   beforeEach(async () => {
-    if (process.env.PARSE_SERVER_TEST_DB !== "postgres") {
+    if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
       await TestUtils.destroyAllDataPermanently();
     }
-    config = Config.get("test");
+    config = Config.get('test');
     config.schemaCache.clear();
   });
-  it("support 2d and 2dsphere", done => {
+  it('support 2d and 2dsphere', done => {
     const coords = [
       [0, 0],
       [0, 1],
@@ -445,29 +445,29 @@ describe_only_db("mongo")("Parse.Polygon testing", () => {
       [0, 0],
     ];
     // testings against REST API, use raw formats
-    const polygon = { __type: "Polygon", coordinates: coords };
-    const location = { __type: "GeoPoint", latitude: 10, longitude: 10 };
+    const polygon = { __type: 'Polygon', coordinates: coords };
+    const location = { __type: 'GeoPoint', latitude: 10, longitude: 10 };
     const databaseAdapter = config.database.adapter;
     return reconfigureServer({
-      appId: "test",
-      restAPIKey: "rest",
-      publicServerURL: "http://localhost:8378/1",
+      appId: 'test',
+      restAPIKey: 'rest',
+      publicServerURL: 'http://localhost:8378/1',
       databaseAdapter,
     })
       .then(() => {
-        return databaseAdapter.createIndex("TestObject", { location: "2d" });
+        return databaseAdapter.createIndex('TestObject', { location: '2d' });
       })
       .then(() => {
-        return databaseAdapter.createIndex("TestObject", {
-          polygon: "2dsphere",
+        return databaseAdapter.createIndex('TestObject', {
+          polygon: '2dsphere',
         });
       })
       .then(() => {
         return request({
-          method: "POST",
-          url: "http://localhost:8378/1/classes/TestObject",
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
           body: {
-            _method: "POST",
+            _method: 'POST',
             location,
             polygon,
             polygon2: polygon,
@@ -477,9 +477,9 @@ describe_only_db("mongo")("Parse.Polygon testing", () => {
       })
       .then(resp => {
         return request({
-          method: "POST",
+          method: 'POST',
           url: `http://localhost:8378/1/classes/TestObject/${resp.data.objectId}`,
-          body: { _method: "GET" },
+          body: { _method: 'GET' },
           headers: defaultHeaders,
         });
       })
@@ -487,21 +487,21 @@ describe_only_db("mongo")("Parse.Polygon testing", () => {
         equal(resp.data.location, location);
         equal(resp.data.polygon, polygon);
         equal(resp.data.polygon2, polygon);
-        return databaseAdapter.getIndexes("TestObject");
+        return databaseAdapter.getIndexes('TestObject');
       })
       .then(indexes => {
         equal(indexes.length, 4);
         equal(indexes[0].key, { _id: 1 });
-        equal(indexes[1].key, { location: "2d" });
-        equal(indexes[2].key, { polygon: "2dsphere" });
-        equal(indexes[3].key, { polygon2: "2dsphere" });
+        equal(indexes[1].key, { location: '2d' });
+        equal(indexes[2].key, { polygon: '2dsphere' });
+        equal(indexes[3].key, { polygon2: '2dsphere' });
         done();
       }, done.fail);
   });
 
-  it("polygon coordinates reverse input", done => {
-    const Config = require("../lib/Config");
-    const config = Config.get("test");
+  it('polygon coordinates reverse input', done => {
+    const Config = require('../lib/Config');
+    const config = Config.get('test');
 
     // When stored the first point should be the last point
     const input = [
@@ -520,11 +520,11 @@ describe_only_db("mongo")("Parse.Polygon testing", () => {
       ],
     ];
     const obj = new TestObject();
-    obj.set("polygon", new Parse.Polygon(input));
+    obj.set('polygon', new Parse.Polygon(input));
     obj
       .save()
       .then(() => {
-        return config.database.adapter._rawFind("TestObject", { _id: obj.id });
+        return config.database.adapter._rawFind('TestObject', { _id: obj.id });
       })
       .then(results => {
         expect(results.length).toBe(1);
@@ -533,7 +533,7 @@ describe_only_db("mongo")("Parse.Polygon testing", () => {
       });
   });
 
-  it("polygon loop is not valid", done => {
+  it('polygon loop is not valid', done => {
     const coords = [
       [0, 0],
       [0, 1],
@@ -541,7 +541,7 @@ describe_only_db("mongo")("Parse.Polygon testing", () => {
       [1, 1],
     ];
     const obj = new TestObject();
-    obj.set("polygon", new Parse.Polygon(coords));
+    obj.set('polygon', new Parse.Polygon(coords));
     obj.save().then(done.fail, () => done());
   });
 });

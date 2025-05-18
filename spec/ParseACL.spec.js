@@ -1,22 +1,22 @@
 // This is a port of the test suite:
 // hungry/js/test/parse_acl_test.js
-const rest = require("../lib/rest");
-const Config = require("../lib/Config");
-const auth = require("../lib/Auth");
+const rest = require('../lib/rest');
+const Config = require('../lib/Config');
+const auth = require('../lib/Auth');
 
-describe("Parse.ACL", () => {
-  it("acl must be valid", () => {
+describe('Parse.ACL', () => {
+  it('acl must be valid', () => {
     const user = new Parse.User();
-    expect(() => user.setACL("ACL")).toThrow(
-      new Parse.Error(Parse.Error.OTHER_CAUSE, "ACL must be a Parse ACL.")
+    expect(() => user.setACL('ACL')).toThrow(
+      new Parse.Error(Parse.Error.OTHER_CAUSE, 'ACL must be a Parse ACL.')
     );
   });
 
-  it("refresh object with acl", async done => {
+  it('refresh object with acl', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp(null);
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -26,11 +26,11 @@ describe("Parse.ACL", () => {
     done();
   });
 
-  it("acl an object owned by one user and public get", async done => {
+  it('acl an object owned by one user and public get', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -40,23 +40,23 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
     await Parse.User.logOut();
     const query = new Parse.Query(TestObject);
     try {
       await query.get(object.id);
-      done.fail("Should not have retrieved the object.");
+      done.fail('Should not have retrieved the object.');
     } catch (error) {
       equal(error.code, Parse.Error.OBJECT_NOT_FOUND);
       done();
     }
   });
 
-  it("acl an object owned by one user and public find", async done => {
+  it('acl an object owned by one user and public find', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
 
     const object = new TestObject();
@@ -67,7 +67,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Start making requests by the public, which should all fail.
     await Parse.User.logOut();
@@ -78,11 +78,11 @@ describe("Parse.ACL", () => {
     done();
   });
 
-  it("acl an object owned by one user and public update", async done => {
+  it('acl an object owned by one user and public update', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
 
     const object = new TestObject();
@@ -93,26 +93,26 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Start making requests by the public, which should all fail.
     await Parse.User.logOut();
     // Update
-    object.set("foo", "bar");
+    object.set('foo', 'bar');
     try {
       await object.save();
-      done.fail("Should not have been able to update the object.");
+      done.fail('Should not have been able to update the object.');
     } catch (err) {
       equal(err.code, Parse.Error.OBJECT_NOT_FOUND);
       done();
     }
   });
 
-  it("acl an object owned by one user and public delete", async done => {
+  it('acl an object owned by one user and public delete', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
 
     const object = new TestObject();
@@ -124,24 +124,24 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Start making requests by the public, which should all fail.
     await Parse.User.logOut();
     try {
       await object.destroy();
-      done.fail("destroy should fail");
+      done.fail('destroy should fail');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
       done();
     }
   });
 
-  it("acl an object owned by one user and logged in get", async done => {
+  it('acl an object owned by one user and logged in get', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -151,10 +151,10 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     await Parse.User.logOut();
-    await Parse.User.logIn("alice", "wonderland");
+    await Parse.User.logIn('alice', 'wonderland');
     // Get
     const query = new Parse.Query(TestObject);
     const result = await query.get(object.id);
@@ -164,15 +164,15 @@ describe("Parse.ACL", () => {
     equal(result.getACL().getWriteAccess(user), true);
     equal(result.getACL().getPublicReadAccess(), false);
     equal(result.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
     done();
   });
 
-  it("acl an object owned by one user and logged in find", async done => {
+  it('acl an object owned by one user and logged in find', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -182,9 +182,9 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
     await Parse.User.logOut();
-    await Parse.User.logIn("alice", "wonderland");
+    await Parse.User.logIn('alice', 'wonderland');
     // Find
     const query = new Parse.Query(TestObject);
     const results = await query.find();
@@ -199,15 +199,15 @@ describe("Parse.ACL", () => {
     equal(result.getACL().getWriteAccess(user), true);
     equal(result.getACL().getPublicReadAccess(), false);
     equal(result.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
     done();
   });
 
-  it("acl an object owned by one user and logged in update", async done => {
+  it('acl an object owned by one user and logged in update', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -217,21 +217,21 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     await Parse.User.logOut();
-    await Parse.User.logIn("alice", "wonderland");
+    await Parse.User.logIn('alice', 'wonderland');
     // Update
-    object.set("foo", "bar");
+    object.set('foo', 'bar');
     await object.save();
     done();
   });
 
-  it("acl an object owned by one user and logged in delete", async done => {
+  it('acl an object owned by one user and logged in delete', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -241,19 +241,19 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
     await Parse.User.logOut();
-    await Parse.User.logIn("alice", "wonderland");
+    await Parse.User.logIn('alice', 'wonderland');
     // Delete
     await object.destroy();
     done();
   });
 
-  it("acl making an object publicly readable and public get", async done => {
+  it('acl making an object publicly readable and public get', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -263,7 +263,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicReadAccess(true);
@@ -272,7 +272,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), true);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     await Parse.User.logOut();
     // Get
@@ -283,11 +283,11 @@ describe("Parse.ACL", () => {
     done();
   });
 
-  it("acl making an object publicly readable and public find", async done => {
+  it('acl making an object publicly readable and public find', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -297,7 +297,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicReadAccess(true);
@@ -306,7 +306,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), true);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     await Parse.User.logOut();
     // Find
@@ -319,11 +319,11 @@ describe("Parse.ACL", () => {
     done();
   });
 
-  it("acl making an object publicly readable and public update", async done => {
+  it('acl making an object publicly readable and public update', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -333,7 +333,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicReadAccess(true);
@@ -342,13 +342,13 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), true);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     await Parse.User.logOut();
-    object.set("foo", "bar");
+    object.set('foo', 'bar');
     object.save().then(
       () => {
-        fail("the save should fail");
+        fail('the save should fail');
       },
       error => {
         expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
@@ -357,11 +357,11 @@ describe("Parse.ACL", () => {
     );
   });
 
-  it("acl making an object publicly readable and public delete", async done => {
+  it('acl making an object publicly readable and public delete', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -371,7 +371,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicReadAccess(true);
@@ -380,13 +380,13 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), true);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     Parse.User.logOut()
       .then(() => object.destroy())
       .then(
         () => {
-          fail("expected failure");
+          fail('expected failure');
         },
         error => {
           expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
@@ -395,11 +395,11 @@ describe("Parse.ACL", () => {
       );
   });
 
-  it("acl making an object publicly writable and public get", async done => {
+  it('acl making an object publicly writable and public get', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -409,7 +409,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicWriteAccess(true);
@@ -418,7 +418,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), true);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     await Parse.User.logOut();
     // Get
@@ -432,11 +432,11 @@ describe("Parse.ACL", () => {
       });
   });
 
-  it("acl making an object publicly writable and public find", async done => {
+  it('acl making an object publicly writable and public find', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -446,7 +446,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicWriteAccess(true);
@@ -455,7 +455,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), true);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     await Parse.User.logOut();
     // Find
@@ -466,11 +466,11 @@ describe("Parse.ACL", () => {
     });
   });
 
-  it("acl making an object publicly writable and public update", async done => {
+  it('acl making an object publicly writable and public update', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -480,7 +480,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicWriteAccess(true);
@@ -489,20 +489,20 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), true);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     Parse.User.logOut().then(() => {
       // Update
-      object.set("foo", "bar");
+      object.set('foo', 'bar');
       object.save().then(done);
     });
   });
 
-  it("acl making an object publicly writable and public delete", async done => {
+  it('acl making an object publicly writable and public delete', async done => {
     // Create an object owned by Alice.
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     await user.signUp();
     const object = new TestObject();
     const acl = new Parse.ACL(user);
@@ -512,7 +512,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), false);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     // Now make it public.
     object.getACL().setPublicWriteAccess(true);
@@ -521,7 +521,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getWriteAccess(user), true);
     equal(object.getACL().getPublicReadAccess(), false);
     equal(object.getACL().getPublicWriteAccess(), true);
-    ok(object.get("ACL"));
+    ok(object.get('ACL'));
 
     Parse.User.logOut().then(() => {
       // Delete
@@ -529,13 +529,13 @@ describe("Parse.ACL", () => {
     });
   });
 
-  it("acl making an object privately writable (#3194)", done => {
+  it('acl making an object privately writable (#3194)', done => {
     // Create an object owned by Alice.
     let object;
     let user2;
     const user = new Parse.User();
-    user.set("username", "alice");
-    user.set("password", "wonderland");
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
     user
       .signUp()
       .then(() => {
@@ -550,8 +550,8 @@ describe("Parse.ACL", () => {
       })
       .then(() => {
         user2 = new Parse.User();
-        user2.set("username", "bob");
-        user2.set("password", "burger");
+        user2.set('username', 'bob');
+        user2.set('password', 'burger');
         return user2.signUp();
       })
       .then(() => {
@@ -559,7 +559,7 @@ describe("Parse.ACL", () => {
       })
       .then(
         () => {
-          fail("should not be able to destroy the object");
+          fail('should not be able to destroy the object');
           done();
         },
         err => {
@@ -569,12 +569,12 @@ describe("Parse.ACL", () => {
       );
   });
 
-  it("acl sharing with another user and get", async done => {
+  it('acl sharing with another user and get', async done => {
     // Sign in as Bob.
-    const bob = await Parse.User.signUp("bob", "pass");
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
 
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -590,7 +590,7 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getPublicWriteAccess(), false);
 
     // Sign in as Bob again.
-    await Parse.User.logIn("bob", "pass");
+    await Parse.User.logIn('bob', 'pass');
     const query = new Parse.Query(TestObject);
     query.get(object.id).then(result => {
       ok(result);
@@ -599,12 +599,12 @@ describe("Parse.ACL", () => {
     });
   });
 
-  it("acl sharing with another user and find", async done => {
+  it('acl sharing with another user and find', async done => {
     // Sign in as Bob.
-    const bob = await Parse.User.signUp("bob", "pass");
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
     // Sign in as Alice.
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -620,14 +620,14 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getPublicWriteAccess(), false);
 
     // Sign in as Bob again.
-    await Parse.User.logIn("bob", "pass");
+    await Parse.User.logIn('bob', 'pass');
     const query = new Parse.Query(TestObject);
     query.find().then(results => {
       equal(results.length, 1);
       const result = results[0];
       ok(result);
       if (!result) {
-        fail("should have result");
+        fail('should have result');
       } else {
         equal(result.id, object.id);
       }
@@ -635,12 +635,12 @@ describe("Parse.ACL", () => {
     });
   });
 
-  it("acl sharing with another user and update", async done => {
+  it('acl sharing with another user and update', async done => {
     // Sign in as Bob.
-    const bob = await Parse.User.signUp("bob", "pass");
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
     // Sign in as Alice.
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -656,17 +656,17 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getPublicWriteAccess(), false);
 
     // Sign in as Bob again.
-    await Parse.User.logIn("bob", "pass");
-    object.set("foo", "bar");
+    await Parse.User.logIn('bob', 'pass');
+    object.set('foo', 'bar');
     object.save().then(done);
   });
 
-  it("acl sharing with another user and delete", async done => {
+  it('acl sharing with another user and delete', async done => {
     // Sign in as Bob.
-    const bob = await Parse.User.signUp("bob", "pass");
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
     // Sign in as Alice.
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -682,16 +682,16 @@ describe("Parse.ACL", () => {
     equal(object.getACL().getPublicWriteAccess(), false);
 
     // Sign in as Bob again.
-    await Parse.User.logIn("bob", "pass");
-    object.set("foo", "bar");
+    await Parse.User.logIn('bob', 'pass');
+    object.set('foo', 'bar');
     object.destroy().then(done);
   });
 
-  it("acl sharing with another user and public get", async done => {
-    const bob = await Parse.User.signUp("bob", "pass");
+  it('acl sharing with another user and public get', async done => {
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
     // Sign in as Alice.
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -719,11 +719,11 @@ describe("Parse.ACL", () => {
     );
   });
 
-  it("acl sharing with another user and public find", async done => {
-    const bob = await Parse.User.signUp("bob", "pass");
+  it('acl sharing with another user and public find', async done => {
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
     // Sign in as Alice.
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -748,12 +748,12 @@ describe("Parse.ACL", () => {
     });
   });
 
-  it("acl sharing with another user and public update", async done => {
+  it('acl sharing with another user and public update', async done => {
     // Sign in as Bob.
-    const bob = await Parse.User.signUp("bob", "pass");
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
     // Sign in as Alice.
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -770,10 +770,10 @@ describe("Parse.ACL", () => {
 
     // Start making requests by the public.
     Parse.User.logOut().then(() => {
-      object.set("foo", "bar");
+      object.set('foo', 'bar');
       object.save().then(
         () => {
-          fail("expected failure");
+          fail('expected failure');
         },
         error => {
           expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
@@ -783,12 +783,12 @@ describe("Parse.ACL", () => {
     });
   });
 
-  it("acl sharing with another user and public delete", async done => {
+  it('acl sharing with another user and public delete', async done => {
     // Sign in as Bob.
-    const bob = await Parse.User.signUp("bob", "pass");
+    const bob = await Parse.User.signUp('bob', 'pass');
     await Parse.User.logOut();
     // Sign in as Alice.
-    const alice = await Parse.User.signUp("alice", "wonderland");
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     // Create an object shared by Bob and Alice.
     const object = new TestObject();
     const acl = new Parse.ACL(alice);
@@ -808,7 +808,7 @@ describe("Parse.ACL", () => {
       .then(() => object.destroy())
       .then(
         () => {
-          fail("expected failure");
+          fail('expected failure');
         },
         error => {
           expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
@@ -817,8 +817,8 @@ describe("Parse.ACL", () => {
       );
   });
 
-  it("acl saveAll with permissions", async done => {
-    const alice = await Parse.User.signUp("alice", "wonderland");
+  it('acl saveAll with permissions', async done => {
+    const alice = await Parse.User.signUp('alice', 'wonderland');
     const acl = new Parse.ACL(alice);
     const object1 = new TestObject();
     const object2 = new TestObject();
@@ -835,70 +835,70 @@ describe("Parse.ACL", () => {
     equal(object2.getACL().getPublicWriteAccess(), false);
 
     // Save all the objects after updating them.
-    object1.set("foo", "bar");
-    object2.set("foo", "bar");
+    object1.set('foo', 'bar');
+    object2.set('foo', 'bar');
     await Parse.Object.saveAll([object1, object2]);
     const query = new Parse.Query(TestObject);
-    query.equalTo("foo", "bar");
+    query.equalTo('foo', 'bar');
     query.find().then(function (results) {
       equal(results.length, 2);
       done();
     });
   });
 
-  it("empty acl works", async done => {
-    await Parse.User.signUp("tdurden", "mayhem", {
+  it('empty acl works', async done => {
+    await Parse.User.signUp('tdurden', 'mayhem', {
       ACL: new Parse.ACL(),
-      foo: "bar",
+      foo: 'bar',
     });
 
     await Parse.User.logOut();
-    const user = await Parse.User.logIn("tdurden", "mayhem");
-    equal(user.get("foo"), "bar");
+    const user = await Parse.User.logIn('tdurden', 'mayhem');
+    equal(user.get('foo'), 'bar');
     done();
   });
 
-  it("query for included object with ACL works", async done => {
-    const obj1 = new Parse.Object("TestClass1");
-    const obj2 = new Parse.Object("TestClass2");
+  it('query for included object with ACL works', async done => {
+    const obj1 = new Parse.Object('TestClass1');
+    const obj2 = new Parse.Object('TestClass2');
     const acl = new Parse.ACL();
     acl.setPublicReadAccess(true);
-    obj2.set("ACL", acl);
-    obj1.set("other", obj2);
+    obj2.set('ACL', acl);
+    obj1.set('other', obj2);
     await obj1.save();
     obj2._clearServerData();
-    const query = new Parse.Query("TestClass1");
+    const query = new Parse.Query('TestClass1');
     const obj1Again = await query.first();
-    ok(!obj1Again.get("other").get("ACL"));
+    ok(!obj1Again.get('other').get('ACL'));
 
-    query.include("other");
+    query.include('other');
     const obj1AgainWithInclude = await query.first();
-    ok(obj1AgainWithInclude.get("other").get("ACL"));
+    ok(obj1AgainWithInclude.get('other').get('ACL'));
     done();
   });
 
-  it("restricted ACL does not have public access", done => {
-    const obj = new Parse.Object("TestClassMasterACL");
+  it('restricted ACL does not have public access', done => {
+    const obj = new Parse.Object('TestClassMasterACL');
     const acl = new Parse.ACL();
-    obj.set("ACL", acl);
+    obj.set('ACL', acl);
     obj
       .save()
       .then(() => {
-        const query = new Parse.Query("TestClassMasterACL");
+        const query = new Parse.Query('TestClassMasterACL');
         return query.find();
       })
       .then(results => {
-        ok(!results.length, "Should not have returned object with secure ACL.");
+        ok(!results.length, 'Should not have returned object with secure ACL.');
         done();
       });
   });
 
-  it("regression test #701", done => {
-    const config = Config.get("test");
+  it('regression test #701', done => {
+    const config = Config.get('test');
     const anonUser = {
       authData: {
         anonymous: {
-          id: "00000000-0000-0000-0000-000000000001",
+          id: '00000000-0000-0000-0000-000000000001',
         },
       },
     };
@@ -909,9 +909,9 @@ describe("Parse.ACL", () => {
         const acl = new Parse.ACL(user);
         user.setACL(acl);
         user.save(null, { useMasterKey: true }).then(user => {
-          new Parse.Query("_User").get(user.objectId).then(
+          new Parse.Query('_User').get(user.objectId).then(
             () => {
-              fail("should not have fetched user without public read enabled");
+              fail('should not have fetched user without public read enabled');
               done();
             },
             error => {
@@ -923,33 +923,33 @@ describe("Parse.ACL", () => {
       }
     });
 
-    rest.create(config, auth.nobody(config), "_User", anonUser);
+    rest.create(config, auth.nobody(config), '_User', anonUser);
   });
 
-  it("support defaultACL in schema", async () => {
-    await new Parse.Object("TestObject").save();
+  it('support defaultACL in schema', async () => {
+    await new Parse.Object('TestObject').save();
     const schema = await Parse.Server.database.loadSchema();
     await schema.updateClass(
-      "TestObject",
+      'TestObject',
       {},
       {
         create: {
-          "*": true,
+          '*': true,
         },
         ACL: {
-          "*": { read: true },
+          '*': { read: true },
           currentUser: { read: true, write: true },
         },
       }
     );
     const acls = new Parse.ACL();
     acls.setPublicReadAccess(true);
-    const user = await Parse.User.signUp("testuser", "p@ssword");
-    const obj = new Parse.Object("TestObject");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
     await obj.save(null, { sessionToken: user.getSessionToken() });
     expect(obj.getACL()).toBeDefined();
     const acl = obj.getACL().toJSON();
-    expect(acl["*"]).toEqual({ read: true });
+    expect(acl['*']).toEqual({ read: true });
     expect(acl[user.id].write).toBeTrue();
     expect(acl[user.id].read).toBeTrue();
   });

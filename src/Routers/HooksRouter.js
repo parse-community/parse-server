@@ -1,6 +1,6 @@
-import { Parse } from "parse/node";
-import PromiseRouter from "../PromiseRouter";
-import * as middleware from "../middlewares";
+import { Parse } from 'parse/node';
+import PromiseRouter from '../PromiseRouter';
+import * as middleware from '../middlewares';
 
 export class HooksRouter extends PromiseRouter {
   createHook(aHook, config) {
@@ -96,14 +96,14 @@ export class HooksRouter extends PromiseRouter {
       hook.triggerName = req.params.triggerName;
       hook.url = req.body.url;
     } else {
-      throw new Parse.Error(143, "invalid hook declaration");
+      throw new Parse.Error(143, 'invalid hook declaration');
     }
     return this.updateHook(hook, req.config);
   }
 
   handlePut(req) {
     var body = req.body || {};
-    if (body.__op == "Delete") {
+    if (body.__op == 'Delete') {
       return this.handleDelete(req);
     } else {
       return this.handleUpdate(req);
@@ -112,50 +112,50 @@ export class HooksRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route(
-      "GET",
-      "/hooks/functions",
+      'GET',
+      '/hooks/functions',
       middleware.promiseEnforceMasterKeyAccess,
       this.handleGetFunctions.bind(this)
     );
     this.route(
-      "GET",
-      "/hooks/triggers",
+      'GET',
+      '/hooks/triggers',
       middleware.promiseEnforceMasterKeyAccess,
       this.handleGetTriggers.bind(this)
     );
     this.route(
-      "GET",
-      "/hooks/functions/:functionName",
+      'GET',
+      '/hooks/functions/:functionName',
       middleware.promiseEnforceMasterKeyAccess,
       this.handleGetFunctions.bind(this)
     );
     this.route(
-      "GET",
-      "/hooks/triggers/:className/:triggerName",
+      'GET',
+      '/hooks/triggers/:className/:triggerName',
       middleware.promiseEnforceMasterKeyAccess,
       this.handleGetTriggers.bind(this)
     );
     this.route(
-      "POST",
-      "/hooks/functions",
+      'POST',
+      '/hooks/functions',
       middleware.promiseEnforceMasterKeyAccess,
       this.handlePost.bind(this)
     );
     this.route(
-      "POST",
-      "/hooks/triggers",
+      'POST',
+      '/hooks/triggers',
       middleware.promiseEnforceMasterKeyAccess,
       this.handlePost.bind(this)
     );
     this.route(
-      "PUT",
-      "/hooks/functions/:functionName",
+      'PUT',
+      '/hooks/functions/:functionName',
       middleware.promiseEnforceMasterKeyAccess,
       this.handlePut.bind(this)
     );
     this.route(
-      "PUT",
-      "/hooks/triggers/:className/:triggerName",
+      'PUT',
+      '/hooks/triggers/:className/:triggerName',
       middleware.promiseEnforceMasterKeyAccess,
       this.handlePut.bind(this)
     );

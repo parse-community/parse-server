@@ -1,6 +1,6 @@
-import PromiseRouter from "../PromiseRouter";
-import * as middleware from "../middlewares";
-import Parse from "parse/node";
+import PromiseRouter from '../PromiseRouter';
+import * as middleware from '../middlewares';
+import Parse from 'parse/node';
 
 export class PurgeRouter extends PromiseRouter {
   handlePurge(req) {
@@ -14,9 +14,9 @@ export class PurgeRouter extends PromiseRouter {
       .purgeCollection(req.params.className)
       .then(() => {
         var cacheAdapter = req.config.cacheController;
-        if (req.params.className == "_Session") {
+        if (req.params.className == '_Session') {
           cacheAdapter.user.clear();
-        } else if (req.params.className == "_Role") {
+        } else if (req.params.className == '_Role') {
           cacheAdapter.role.clear();
         }
         return { response: {} };
@@ -31,8 +31,8 @@ export class PurgeRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route(
-      "DELETE",
-      "/purge/:className",
+      'DELETE',
+      '/purge/:className',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
         return this.handlePurge(req);

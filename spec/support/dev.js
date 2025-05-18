@@ -1,8 +1,8 @@
-const Config = require("../../lib/Config");
-const Parse = require("parse/node");
+const Config = require('../../lib/Config');
+const Parse = require('parse/node');
 
-const className = "AnObject";
-const defaultRoleName = "tester";
+const className = 'AnObject';
+const defaultRoleName = 'tester';
 
 module.exports = {
   /* AnObject */
@@ -15,7 +15,7 @@ module.exports = {
    * @param {string} username - username base, will be postfixed with current time in millis;
    * @param {string} [password='password'] - optional, defaults to "password" if not set;
    */
-  createUser: async (username, password = "password") => {
+  createUser: async (username, password = 'password') => {
     const user = new Parse.User({
       username: username + Date.now(),
       password,
@@ -34,7 +34,7 @@ module.exports = {
   logIn: async (userObject, password) => {
     return await Parse.User.logIn(
       userObject.getUsername(),
-      password || "password"
+      password || 'password'
     );
   },
 
@@ -73,19 +73,19 @@ module.exports = {
     acl.setPublicReadAccess(read);
     acl.setPublicWriteAccess(write);
 
-    const role = new Parse.Object("_Role");
+    const role = new Parse.Object('_Role');
     role.setACL(acl);
 
     // generate name based on roleName or use exactName (if botth not provided name is generated)
     const name = roleName ? roleName + Date.now() : exactName;
-    role.set("name", name);
+    role.set('name', name);
 
     if (roles) {
-      role.relation("roles").add(roles);
+      role.relation('roles').add(roles);
     }
 
     if (users) {
-      role.relation("users").add(users);
+      role.relation('users').add(users);
     }
 
     await role.save({ useMasterKey: true });

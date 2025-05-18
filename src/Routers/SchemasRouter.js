@@ -1,10 +1,10 @@
 // schemas.js
 
-var Parse = require("parse/node").Parse,
-  SchemaController = require("../Controllers/SchemaController");
+var Parse = require('parse/node').Parse,
+  SchemaController = require('../Controllers/SchemaController');
 
-import PromiseRouter from "../PromiseRouter";
-import * as middleware from "../middlewares";
+import PromiseRouter from '../PromiseRouter';
+import * as middleware from '../middlewares';
 
 function classNameMismatchResponse(bodyClass, pathClass) {
   throw new Parse.Error(
@@ -37,7 +37,7 @@ function getOneSchema(req) {
       } else {
         throw new Parse.Error(
           Parse.Error.INTERNAL_SERVER_ERROR,
-          "Database adapter error."
+          'Database adapter error.'
         );
       }
     });
@@ -47,7 +47,7 @@ const checkIfDefinedSchemasIsUsed = req => {
   if (req.config?.schema?.lockSchemas === true) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
-      "Cannot perform this operation when schemas options is used."
+      'Cannot perform this operation when schemas options is used.'
     );
   }
 };
@@ -139,38 +139,38 @@ const deleteSchema = req => {
 export class SchemasRouter extends PromiseRouter {
   mountRoutes() {
     this.route(
-      "GET",
-      "/schemas",
+      'GET',
+      '/schemas',
       middleware.promiseEnforceMasterKeyAccess,
       getAllSchemas
     );
     this.route(
-      "GET",
-      "/schemas/:className",
+      'GET',
+      '/schemas/:className',
       middleware.promiseEnforceMasterKeyAccess,
       getOneSchema
     );
     this.route(
-      "POST",
-      "/schemas",
+      'POST',
+      '/schemas',
       middleware.promiseEnforceMasterKeyAccess,
       createSchema
     );
     this.route(
-      "POST",
-      "/schemas/:className",
+      'POST',
+      '/schemas/:className',
       middleware.promiseEnforceMasterKeyAccess,
       createSchema
     );
     this.route(
-      "PUT",
-      "/schemas/:className",
+      'PUT',
+      '/schemas/:className',
       middleware.promiseEnforceMasterKeyAccess,
       modifySchema
     );
     this.route(
-      "DELETE",
-      "/schemas/:className",
+      'DELETE',
+      '/schemas/:className',
       middleware.promiseEnforceMasterKeyAccess,
       deleteSchema
     );

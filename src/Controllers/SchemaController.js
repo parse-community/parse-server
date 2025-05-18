@@ -15,176 +15,176 @@
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
-const Parse = require("parse/node").Parse;
-import { StorageAdapter } from "../Adapters/Storage/StorageAdapter";
-import SchemaCache from "../Adapters/Cache/SchemaCache";
-import DatabaseController from "./DatabaseController";
-import Config from "../Config";
+const Parse = require('parse/node').Parse;
+import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
+import DatabaseController from './DatabaseController';
+import Config from '../Config';
 // @flow-disable-next
-import deepcopy from "deepcopy";
+import deepcopy from 'deepcopy';
 import type {
   Schema,
   SchemaFields,
   ClassLevelPermissions,
   SchemaField,
   LoadSchemaOptions,
-} from "./types";
+} from './types';
 
 const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
   _Default: {
-    objectId: { type: "String" },
-    createdAt: { type: "Date" },
-    updatedAt: { type: "Date" },
-    ACL: { type: "ACL" },
+    objectId: { type: 'String' },
+    createdAt: { type: 'Date' },
+    updatedAt: { type: 'Date' },
+    ACL: { type: 'ACL' },
   },
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _User: {
-    username: { type: "String" },
-    password: { type: "String" },
-    email: { type: "String" },
-    emailVerified: { type: "Boolean" },
-    authData: { type: "Object" },
+    username: { type: 'String' },
+    password: { type: 'String' },
+    email: { type: 'String' },
+    emailVerified: { type: 'Boolean' },
+    authData: { type: 'Object' },
   },
   // The additional default columns for the _Installation collection (in addition to DefaultCols)
   _Installation: {
-    installationId: { type: "String" },
-    deviceToken: { type: "String" },
-    channels: { type: "Array" },
-    deviceType: { type: "String" },
-    pushType: { type: "String" },
-    GCMSenderId: { type: "String" },
-    timeZone: { type: "String" },
-    localeIdentifier: { type: "String" },
-    badge: { type: "Number" },
-    appVersion: { type: "String" },
-    appName: { type: "String" },
-    appIdentifier: { type: "String" },
-    parseVersion: { type: "String" },
+    installationId: { type: 'String' },
+    deviceToken: { type: 'String' },
+    channels: { type: 'Array' },
+    deviceType: { type: 'String' },
+    pushType: { type: 'String' },
+    GCMSenderId: { type: 'String' },
+    timeZone: { type: 'String' },
+    localeIdentifier: { type: 'String' },
+    badge: { type: 'Number' },
+    appVersion: { type: 'String' },
+    appName: { type: 'String' },
+    appIdentifier: { type: 'String' },
+    parseVersion: { type: 'String' },
   },
   // The additional default columns for the _Role collection (in addition to DefaultCols)
   _Role: {
-    name: { type: "String" },
-    users: { type: "Relation", targetClass: "_User" },
-    roles: { type: "Relation", targetClass: "_Role" },
+    name: { type: 'String' },
+    users: { type: 'Relation', targetClass: '_User' },
+    roles: { type: 'Relation', targetClass: '_Role' },
   },
   // The additional default columns for the _Session collection (in addition to DefaultCols)
   _Session: {
-    user: { type: "Pointer", targetClass: "_User" },
-    installationId: { type: "String" },
-    sessionToken: { type: "String" },
-    expiresAt: { type: "Date" },
-    createdWith: { type: "Object" },
+    user: { type: 'Pointer', targetClass: '_User' },
+    installationId: { type: 'String' },
+    sessionToken: { type: 'String' },
+    expiresAt: { type: 'Date' },
+    createdWith: { type: 'Object' },
   },
   _Product: {
-    productIdentifier: { type: "String" },
-    download: { type: "File" },
-    downloadName: { type: "String" },
-    icon: { type: "File" },
-    order: { type: "Number" },
-    title: { type: "String" },
-    subtitle: { type: "String" },
+    productIdentifier: { type: 'String' },
+    download: { type: 'File' },
+    downloadName: { type: 'String' },
+    icon: { type: 'File' },
+    order: { type: 'Number' },
+    title: { type: 'String' },
+    subtitle: { type: 'String' },
   },
   _PushStatus: {
-    pushTime: { type: "String" },
-    source: { type: "String" }, // rest or webui
-    query: { type: "String" }, // the stringified JSON query
-    payload: { type: "String" }, // the stringified JSON payload,
-    title: { type: "String" },
-    expiry: { type: "Number" },
-    expiration_interval: { type: "Number" },
-    status: { type: "String" },
-    numSent: { type: "Number" },
-    numFailed: { type: "Number" },
-    pushHash: { type: "String" },
-    errorMessage: { type: "Object" },
-    sentPerType: { type: "Object" },
-    failedPerType: { type: "Object" },
-    sentPerUTCOffset: { type: "Object" },
-    failedPerUTCOffset: { type: "Object" },
-    count: { type: "Number" }, // tracks # of batches queued and pending
+    pushTime: { type: 'String' },
+    source: { type: 'String' }, // rest or webui
+    query: { type: 'String' }, // the stringified JSON query
+    payload: { type: 'String' }, // the stringified JSON payload,
+    title: { type: 'String' },
+    expiry: { type: 'Number' },
+    expiration_interval: { type: 'Number' },
+    status: { type: 'String' },
+    numSent: { type: 'Number' },
+    numFailed: { type: 'Number' },
+    pushHash: { type: 'String' },
+    errorMessage: { type: 'Object' },
+    sentPerType: { type: 'Object' },
+    failedPerType: { type: 'Object' },
+    sentPerUTCOffset: { type: 'Object' },
+    failedPerUTCOffset: { type: 'Object' },
+    count: { type: 'Number' }, // tracks # of batches queued and pending
   },
   _JobStatus: {
-    jobName: { type: "String" },
-    source: { type: "String" },
-    status: { type: "String" },
-    message: { type: "String" },
-    params: { type: "Object" }, // params received when calling the job
-    finishedAt: { type: "Date" },
+    jobName: { type: 'String' },
+    source: { type: 'String' },
+    status: { type: 'String' },
+    message: { type: 'String' },
+    params: { type: 'Object' }, // params received when calling the job
+    finishedAt: { type: 'Date' },
   },
   _JobSchedule: {
-    jobName: { type: "String" },
-    description: { type: "String" },
-    params: { type: "String" },
-    startAfter: { type: "String" },
-    daysOfWeek: { type: "Array" },
-    timeOfDay: { type: "String" },
-    lastRun: { type: "Number" },
-    repeatMinutes: { type: "Number" },
+    jobName: { type: 'String' },
+    description: { type: 'String' },
+    params: { type: 'String' },
+    startAfter: { type: 'String' },
+    daysOfWeek: { type: 'Array' },
+    timeOfDay: { type: 'String' },
+    lastRun: { type: 'Number' },
+    repeatMinutes: { type: 'Number' },
   },
   _Hooks: {
-    functionName: { type: "String" },
-    className: { type: "String" },
-    triggerName: { type: "String" },
-    url: { type: "String" },
+    functionName: { type: 'String' },
+    className: { type: 'String' },
+    triggerName: { type: 'String' },
+    url: { type: 'String' },
   },
   _GlobalConfig: {
-    objectId: { type: "String" },
-    params: { type: "Object" },
-    masterKeyOnly: { type: "Object" },
+    objectId: { type: 'String' },
+    params: { type: 'Object' },
+    masterKeyOnly: { type: 'Object' },
   },
   _GraphQLConfig: {
-    objectId: { type: "String" },
-    config: { type: "Object" },
+    objectId: { type: 'String' },
+    config: { type: 'Object' },
   },
   _Audience: {
-    objectId: { type: "String" },
-    name: { type: "String" },
-    query: { type: "String" }, //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
-    lastUsed: { type: "Date" },
-    timesUsed: { type: "Number" },
+    objectId: { type: 'String' },
+    name: { type: 'String' },
+    query: { type: 'String' }, //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
+    lastUsed: { type: 'Date' },
+    timesUsed: { type: 'Number' },
   },
   _Idempotency: {
-    reqId: { type: "String" },
-    expire: { type: "Date" },
+    reqId: { type: 'String' },
+    expire: { type: 'Date' },
   },
 });
 
 // fields required for read or write operations on their respective classes.
 const requiredColumns = Object.freeze({
   read: {
-    _User: ["username"],
+    _User: ['username'],
   },
   write: {
-    _Product: ["productIdentifier", "icon", "order", "title", "subtitle"],
-    _Role: ["name", "ACL"],
+    _Product: ['productIdentifier', 'icon', 'order', 'title', 'subtitle'],
+    _Role: ['name', 'ACL'],
   },
 });
 
-const invalidColumns = ["length"];
+const invalidColumns = ['length'];
 
 const systemClasses = Object.freeze([
-  "_User",
-  "_Installation",
-  "_Role",
-  "_Session",
-  "_Product",
-  "_PushStatus",
-  "_JobStatus",
-  "_JobSchedule",
-  "_Audience",
-  "_Idempotency",
+  '_User',
+  '_Installation',
+  '_Role',
+  '_Session',
+  '_Product',
+  '_PushStatus',
+  '_JobStatus',
+  '_JobSchedule',
+  '_Audience',
+  '_Idempotency',
 ]);
 
 const volatileClasses = Object.freeze([
-  "_JobStatus",
-  "_PushStatus",
-  "_Hooks",
-  "_GlobalConfig",
-  "_GraphQLConfig",
-  "_JobSchedule",
-  "_Audience",
-  "_Idempotency",
+  '_JobStatus',
+  '_PushStatus',
+  '_Hooks',
+  '_GlobalConfig',
+  '_GraphQLConfig',
+  '_JobSchedule',
+  '_Audience',
+  '_Idempotency',
 ]);
 
 // Anything that start with role
@@ -255,17 +255,17 @@ function validateProtectedFieldsKey(key, userIdRegExp) {
 }
 
 const CLPValidKeys = Object.freeze([
-  "ACL",
-  "find",
-  "count",
-  "get",
-  "create",
-  "update",
-  "delete",
-  "addField",
-  "readUserFields",
-  "writeUserFields",
-  "protectedFields",
+  'ACL',
+  'find',
+  'count',
+  'get',
+  'create',
+  'update',
+  'delete',
+  'addField',
+  'readUserFields',
+  'writeUserFields',
+  'protectedFields',
 ]);
 
 // validation before setting class-level permissions on collection
@@ -292,8 +292,8 @@ function validateCLP(
     validateCLPjson(operation, operationKey);
 
     if (
-      operationKey === "readUserFields" ||
-      operationKey === "writeUserFields"
+      operationKey === 'readUserFields' ||
+      operationKey === 'writeUserFields'
     ) {
       // validate grouped pointer permissions
       // must be an array with field names
@@ -306,7 +306,7 @@ function validateCLP(
     }
 
     // validate protected fields
-    if (operationKey === "protectedFields") {
+    if (operationKey === 'protectedFields') {
       for (const entity in operation) {
         // throws on unexpected key
         validateProtectedFieldsKey(entity, userIdRegExp);
@@ -355,7 +355,7 @@ function validateCLP(
 
       // entity can be either:
       // "pointerFields": string[]
-      if (entity === "pointerFields") {
+      if (entity === 'pointerFields') {
         const pointerFields = operation[entity];
 
         if (Array.isArray(pointerFields)) {
@@ -374,30 +374,30 @@ function validateCLP(
 
       const permit = operation[entity];
 
-      if (operationKey === "ACL") {
-        if (Object.prototype.toString.call(permit) !== "[object Object]") {
+      if (operationKey === 'ACL') {
+        if (Object.prototype.toString.call(permit) !== '[object Object]') {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
             `'${permit}' is not a valid value for class level permissions acl`
           );
         }
         const invalidKeys = Object.keys(permit).filter(
-          key => !["read", "write"].includes(key)
+          key => !['read', 'write'].includes(key)
         );
         const invalidValues = Object.values(permit).filter(
-          key => typeof key !== "boolean"
+          key => typeof key !== 'boolean'
         );
         if (invalidKeys.length) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `'${invalidKeys.join(",")}' is not a valid key for class level permissions acl`
+            `'${invalidKeys.join(',')}' is not a valid key for class level permissions acl`
           );
         }
 
         if (invalidValues.length) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `'${invalidValues.join(",")}' is not a valid value for class level permissions acl`
+            `'${invalidValues.join(',')}' is not a valid value for class level permissions acl`
           );
         }
       } else if (permit !== true) {
@@ -411,7 +411,7 @@ function validateCLP(
 }
 
 function validateCLPjson(operation: any, operationKey: string) {
-  if (operationKey === "readUserFields" || operationKey === "writeUserFields") {
+  if (operationKey === 'readUserFields' || operationKey === 'writeUserFields') {
     if (!Array.isArray(operation)) {
       throw new Parse.Error(
         Parse.Error.INVALID_JSON,
@@ -419,7 +419,7 @@ function validateCLPjson(operation: any, operationKey: string) {
       );
     }
   } else {
-    if (typeof operation === "object" && operation !== null) {
+    if (typeof operation === 'object' && operation !== null) {
       // ok to proceed
       return;
     } else {
@@ -446,9 +446,9 @@ function validatePointerPermission(
   if (
     !(
       fields[fieldName] &&
-      ((fields[fieldName].type == "Pointer" &&
-        fields[fieldName].targetClass == "_User") ||
-        fields[fieldName].type == "Array")
+      ((fields[fieldName].type == 'Pointer' &&
+        fields[fieldName].targetClass == '_User') ||
+        fields[fieldName].type == 'Array')
     )
   ) {
     throw new Parse.Error(
@@ -475,8 +475,8 @@ function classNameIsValid(className: string): boolean {
 // Valid fields must be alpha-numeric, and not start with an underscore or number
 // must not be a reserved key
 function fieldNameIsValid(fieldName: string, className: string): boolean {
-  if (className && className !== "_Hooks") {
-    if (fieldName === "className") {
+  if (className && className !== '_Hooks') {
+    if (fieldName === 'className') {
       return false;
     }
   }
@@ -504,34 +504,34 @@ function fieldNameIsValidForClass(
 
 function invalidClassNameMessage(className: string): string {
   return (
-    "Invalid classname: " +
+    'Invalid classname: ' +
     className +
-    ", classnames can only have alphanumeric characters and _, and must start with an alpha character "
+    ', classnames can only have alphanumeric characters and _, and must start with an alpha character '
   );
 }
 
 const invalidJsonError = new Parse.Error(
   Parse.Error.INVALID_JSON,
-  "invalid JSON"
+  'invalid JSON'
 );
 const validNonRelationOrPointerTypes = [
-  "Number",
-  "String",
-  "Boolean",
-  "Date",
-  "Object",
-  "Array",
-  "GeoPoint",
-  "File",
-  "Bytes",
-  "Polygon",
+  'Number',
+  'String',
+  'Boolean',
+  'Date',
+  'Object',
+  'Array',
+  'GeoPoint',
+  'File',
+  'Bytes',
+  'Polygon',
 ];
 // Returns an error suitable for throwing if the type is invalid
 const fieldTypeIsInvalid = ({ type, targetClass }) => {
-  if (["Pointer", "Relation"].indexOf(type) >= 0) {
+  if (['Pointer', 'Relation'].indexOf(type) >= 0) {
     if (!targetClass) {
       return new Parse.Error(135, `type ${type} needs a class name`);
-    } else if (typeof targetClass !== "string") {
+    } else if (typeof targetClass !== 'string') {
       return invalidJsonError;
     } else if (!classNameIsValid(targetClass)) {
       return new Parse.Error(
@@ -542,7 +542,7 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
       return undefined;
     }
   }
-  if (typeof type !== "string") {
+  if (typeof type !== 'string') {
     return invalidJsonError;
   }
   if (validNonRelationOrPointerTypes.indexOf(type) < 0) {
@@ -557,12 +557,12 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
 const convertSchemaToAdapterSchema = (schema: any) => {
   schema = injectDefaultSchema(schema);
   delete schema.fields.ACL;
-  schema.fields._rperm = { type: "Array" };
-  schema.fields._wperm = { type: "Array" };
+  schema.fields._rperm = { type: 'Array' };
+  schema.fields._wperm = { type: 'Array' };
 
-  if (schema.className === "_User") {
+  if (schema.className === '_User') {
     delete schema.fields.password;
-    schema.fields._hashed_password = { type: "String" };
+    schema.fields._hashed_password = { type: 'String' };
   }
 
   return schema;
@@ -572,12 +572,12 @@ const convertAdapterSchemaToParseSchema = ({ ...schema }) => {
   delete schema.fields._rperm;
   delete schema.fields._wperm;
 
-  schema.fields.ACL = { type: "ACL" };
+  schema.fields.ACL = { type: 'ACL' };
 
-  if (schema.className === "_User") {
+  if (schema.className === '_User') {
     delete schema.fields.authData; //Auth data is implicit
     delete schema.fields._hashed_password;
-    schema.fields.password = { type: "String" };
+    schema.fields.password = { type: 'String' };
   }
 
   if (schema.indexes && Object.keys(schema.indexes).length === 0) {
@@ -669,46 +669,46 @@ const injectDefaultSchema = ({
   return defaultSchema;
 };
 
-const _HooksSchema = { className: "_Hooks", fields: defaultColumns._Hooks };
+const _HooksSchema = { className: '_Hooks', fields: defaultColumns._Hooks };
 const _GlobalConfigSchema = {
-  className: "_GlobalConfig",
+  className: '_GlobalConfig',
   fields: defaultColumns._GlobalConfig,
 };
 const _GraphQLConfigSchema = {
-  className: "_GraphQLConfig",
+  className: '_GraphQLConfig',
   fields: defaultColumns._GraphQLConfig,
 };
 const _PushStatusSchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
-    className: "_PushStatus",
+    className: '_PushStatus',
     fields: {},
     classLevelPermissions: {},
   })
 );
 const _JobStatusSchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
-    className: "_JobStatus",
+    className: '_JobStatus',
     fields: {},
     classLevelPermissions: {},
   })
 );
 const _JobScheduleSchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
-    className: "_JobSchedule",
+    className: '_JobSchedule',
     fields: {},
     classLevelPermissions: {},
   })
 );
 const _AudienceSchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
-    className: "_Audience",
+    className: '_Audience',
     fields: defaultColumns._Audience,
     classLevelPermissions: {},
   })
 );
 const _IdempotencySchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
-    className: "_Idempotency",
+    className: '_Idempotency',
     fields: defaultColumns._Idempotency,
     classLevelPermissions: {},
   })
@@ -744,7 +744,7 @@ const dbTypeMatchesObjectType = (
 };
 
 const typeToString = (type: SchemaField | string): string => {
-  if (typeof type === "string") {
+  if (typeof type === 'string') {
     return type;
   }
   if (type.targetClass) {
@@ -944,11 +944,11 @@ export default class SchemaController {
           if (
             existingFields[name] &&
             existingFields[name].type !== field.type &&
-            field.__op !== "Delete"
+            field.__op !== 'Delete'
           ) {
             throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
           }
-          if (!existingFields[name] && field.__op === "Delete") {
+          if (!existingFields[name] && field.__op === 'Delete') {
             throw new Parse.Error(
               255,
               `Field ${name} does not exist, cannot delete.`
@@ -980,7 +980,7 @@ export default class SchemaController {
         const deletedFields: string[] = [];
         const insertedFields = [];
         Object.keys(submittedFields).forEach(fieldName => {
-          if (submittedFields[fieldName].__op === "Delete") {
+          if (submittedFields[fieldName].__op === 'Delete') {
             deletedFields.push(fieldName);
           } else {
             insertedFields.push(fieldName);
@@ -1079,7 +1079,7 @@ export default class SchemaController {
           // The schema still doesn't validate. Give up
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            "schema class name does not revalidate"
+            'schema class name does not revalidate'
           );
         })
     );
@@ -1121,13 +1121,13 @@ export default class SchemaController {
         if (!fieldNameIsValid(fieldName, className)) {
           return {
             code: Parse.Error.INVALID_KEY_NAME,
-            error: "invalid field name: " + fieldName,
+            error: 'invalid field name: ' + fieldName,
           };
         }
         if (!fieldNameIsValidForClass(fieldName, className)) {
           return {
             code: 136,
-            error: "field " + fieldName + " cannot be added",
+            error: 'field ' + fieldName + ' cannot be added',
           };
         }
         const fieldType = fields[fieldName];
@@ -1137,11 +1137,11 @@ export default class SchemaController {
         }
         if (fieldType.defaultValue !== undefined) {
           let defaultValueType = getType(fieldType.defaultValue);
-          if (typeof defaultValueType === "string") {
+          if (typeof defaultValueType === 'string') {
             defaultValueType = { type: defaultValueType };
           } else if (
-            typeof defaultValueType === "object" &&
-            fieldType.type === "Relation"
+            typeof defaultValueType === 'object' &&
+            fieldType.type === 'Relation'
           ) {
             return {
               code: Parse.Error.INCORRECT_TYPE,
@@ -1157,7 +1157,7 @@ export default class SchemaController {
             };
           }
         } else if (fieldType.required) {
-          if (typeof fieldType === "object" && fieldType.type === "Relation") {
+          if (typeof fieldType === 'object' && fieldType.type === 'Relation') {
             return {
               code: Parse.Error.INCORRECT_TYPE,
               error: `The 'required' option is not applicable for ${typeToString(fieldType)}`,
@@ -1172,17 +1172,17 @@ export default class SchemaController {
     }
 
     const geoPoints = Object.keys(fields).filter(
-      key => fields[key] && fields[key].type === "GeoPoint"
+      key => fields[key] && fields[key].type === 'GeoPoint'
     );
     if (geoPoints.length > 1) {
       return {
         code: Parse.Error.INCORRECT_TYPE,
         error:
-          "currently, only one GeoPoint field may exist in an object. Adding " +
+          'currently, only one GeoPoint field may exist in an object. Adding ' +
           geoPoints[1] +
-          " when " +
+          ' when ' +
           geoPoints[0] +
-          " already exists.",
+          ' already exists.',
       };
     }
     validateCLP(classLevelPermissions, fields, this.userIdRegEx);
@@ -1190,7 +1190,7 @@ export default class SchemaController {
 
   // Sets the Class-level permissions for a given className, which must exist.
   async setPermissions(className: string, perms: any, newSchema: SchemaFields) {
-    if (typeof perms === "undefined") {
+    if (typeof perms === 'undefined') {
       return Promise.resolve();
     }
     validateCLP(perms, newSchema, this.userIdRegEx);
@@ -1212,24 +1212,24 @@ export default class SchemaController {
     isValidation?: boolean,
     maintenance?: boolean
   ) {
-    if (fieldName.indexOf(".") > 0) {
+    if (fieldName.indexOf('.') > 0) {
       // "<array>.<index>" for Nested Arrays
       // "<embedded document>.<field>" for Nested Objects
       // JSON Arrays are treated as Nested Objects
-      const [x, y] = fieldName.split(".");
+      const [x, y] = fieldName.split('.');
       fieldName = x;
-      const isArrayIndex = Array.from(y).every(c => c >= "0" && c <= "9");
+      const isArrayIndex = Array.from(y).every(c => c >= '0' && c <= '9');
       if (
         isArrayIndex &&
-        !["sentPerUTCOffset", "failedPerUTCOffset"].includes(fieldName)
+        !['sentPerUTCOffset', 'failedPerUTCOffset'].includes(fieldName)
       ) {
-        type = "Array";
+        type = 'Array';
       } else {
-        type = "Object";
+        type = 'Object';
       }
     }
     let fieldNameToValidate = `${fieldName}`;
-    if (maintenance && fieldNameToValidate.charAt(0) === "_") {
+    if (maintenance && fieldNameToValidate.charAt(0) === '_') {
       fieldNameToValidate = fieldNameToValidate.substring(1);
     }
     if (!fieldNameIsValid(fieldNameToValidate, className)) {
@@ -1245,13 +1245,13 @@ export default class SchemaController {
     }
 
     const expectedType = this.getExpectedType(className, fieldName);
-    if (typeof type === "string") {
+    if (typeof type === 'string') {
       type = ({ type }: SchemaField);
     }
 
     if (type.defaultValue !== undefined) {
       let defaultValueType = getType(type.defaultValue);
-      if (typeof defaultValueType === "string") {
+      if (typeof defaultValueType === 'string') {
         defaultValueType = { type: defaultValueType };
       }
       if (!dbTypeMatchesObjectType(type, defaultValueType)) {
@@ -1312,7 +1312,7 @@ export default class SchemaController {
       const { className, fieldName } = fields[i];
       let { type } = fields[i];
       const expectedType = this.getExpectedType(className, fieldName);
-      if (typeof type === "string") {
+      if (typeof type === 'string') {
         type = { type: type };
       }
       if (!expectedType || !dbTypeMatchesObjectType(expectedType, type)) {
@@ -1393,7 +1393,7 @@ export default class SchemaController {
             return Promise.all(
               fieldNames.map(fieldName => {
                 const field = schemaFields[fieldName];
-                if (field && field.type === "Relation") {
+                if (field && field.type === 'Relation') {
                   //For relations, drop the _Join table
                   return database.adapter.deleteClass(
                     `_Join:${fieldName}:${className}`
@@ -1423,14 +1423,14 @@ export default class SchemaController {
     const promises = [];
 
     for (const fieldName in object) {
-      if (object[fieldName] && getType(object[fieldName]) === "GeoPoint") {
+      if (object[fieldName] && getType(object[fieldName]) === 'GeoPoint') {
         geocount++;
       }
       if (geocount > 1) {
         return Promise.reject(
           new Parse.Error(
             Parse.Error.INCORRECT_TYPE,
-            "there can only be one geopoint field in a class"
+            'there can only be one geopoint field in a class'
           )
         );
       }
@@ -1443,7 +1443,7 @@ export default class SchemaController {
       if (!expected) {
         continue;
       }
-      if (fieldName === "ACL") {
+      if (fieldName === 'ACL') {
         // Every object has ACL implicitly.
         continue;
       }
@@ -1479,9 +1479,9 @@ export default class SchemaController {
 
     const missingColumns = columns.filter(function (column) {
       if (query && query.objectId) {
-        if (object[column] && typeof object[column] === "object") {
+        if (object[column] && typeof object[column] === 'object') {
           // Trying to delete a required column
-          return object[column].__op == "Delete";
+          return object[column].__op == 'Delete';
         }
         // Not trying to do anything there
         return false;
@@ -1492,7 +1492,7 @@ export default class SchemaController {
     if (missingColumns.length > 0) {
       throw new Parse.Error(
         Parse.Error.INCORRECT_TYPE,
-        missingColumns[0] + " is required."
+        missingColumns[0] + ' is required.'
       );
     }
     return Promise.resolve(this);
@@ -1520,7 +1520,7 @@ export default class SchemaController {
       return true;
     }
     const perms = classPermissions[operation];
-    if (perms["*"]) {
+    if (perms['*']) {
       return true;
     }
     // Check permissions against the aclGroup provided (array of userId/roles)
@@ -1554,17 +1554,17 @@ export default class SchemaController {
     const perms = classPermissions[operation];
     // If only for authenticated users
     // make sure we have an aclGroup
-    if (perms["requiresAuthentication"]) {
+    if (perms['requiresAuthentication']) {
       // If aclGroup has * (public)
       if (!aclGroup || aclGroup.length == 0) {
         throw new Parse.Error(
           Parse.Error.OBJECT_NOT_FOUND,
-          "Permission denied, user needs to be authenticated."
+          'Permission denied, user needs to be authenticated.'
         );
-      } else if (aclGroup.indexOf("*") > -1 && aclGroup.length == 1) {
+      } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
         throw new Parse.Error(
           Parse.Error.OBJECT_NOT_FOUND,
-          "Permission denied, user needs to be authenticated."
+          'Permission denied, user needs to be authenticated.'
         );
       }
       // requiresAuthentication passed, just move forward
@@ -1575,12 +1575,12 @@ export default class SchemaController {
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
     const permissionField =
-      ["get", "find", "count"].indexOf(operation) > -1
-        ? "readUserFields"
-        : "writeUserFields";
+      ['get', 'find', 'count'].indexOf(operation) > -1
+        ? 'readUserFields'
+        : 'writeUserFields';
 
     // Reject create when write lockdown
-    if (permissionField == "writeUserFields" && operation == "create") {
+    if (permissionField == 'writeUserFields' && operation == 'create') {
       throw new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
         `Permission denied for action ${operation} on class ${className}.`
@@ -1598,7 +1598,7 @@ export default class SchemaController {
     const pointerFields = classPermissions[operation].pointerFields;
     if (Array.isArray(pointerFields) && pointerFields.length > 0) {
       // any op except 'addField as part of create' is ok.
-      if (operation !== "addField" || action === "update") {
+      if (operation !== 'addField' || action === 'update') {
         // We can allow adding field on update flow only.
         return Promise.resolve();
       }
@@ -1641,7 +1641,7 @@ export default class SchemaController {
   ): ?(SchemaField | string) {
     if (this.schemaData[className]) {
       const expectedType = this.schemaData[className].fields[fieldName];
-      return expectedType === "map" ? "Object" : expectedType;
+      return expectedType === 'map' ? 'Object' : expectedType;
     }
     return undefined;
   }
@@ -1682,11 +1682,11 @@ function buildMergedSchemaObject(
       : Object.keys(defaultColumns[existingFields._id]);
   for (const oldField in existingFields) {
     if (
-      oldField !== "_id" &&
-      oldField !== "ACL" &&
-      oldField !== "updatedAt" &&
-      oldField !== "createdAt" &&
-      oldField !== "objectId"
+      oldField !== '_id' &&
+      oldField !== 'ACL' &&
+      oldField !== 'updatedAt' &&
+      oldField !== 'createdAt' &&
+      oldField !== 'objectId'
     ) {
       if (
         sysSchemaField.length > 0 &&
@@ -1695,14 +1695,14 @@ function buildMergedSchemaObject(
         continue;
       }
       const fieldIsDeleted =
-        putRequest[oldField] && putRequest[oldField].__op === "Delete";
+        putRequest[oldField] && putRequest[oldField].__op === 'Delete';
       if (!fieldIsDeleted) {
         newSchema[oldField] = existingFields[oldField];
       }
     }
   }
   for (const newField in putRequest) {
-    if (newField !== "objectId" && putRequest[newField].__op !== "Delete") {
+    if (newField !== 'objectId' && putRequest[newField].__op !== 'Delete') {
       if (
         sysSchemaField.length > 0 &&
         sysSchemaField.indexOf(newField) !== -1
@@ -1731,23 +1731,23 @@ function thenValidateRequiredColumns(schemaPromise, className, object, query) {
 function getType(obj: any): ?(SchemaField | string) {
   const type = typeof obj;
   switch (type) {
-    case "boolean":
-      return "Boolean";
-    case "string":
-      return "String";
-    case "number":
-      return "Number";
-    case "map":
-    case "object":
+    case 'boolean':
+      return 'Boolean';
+    case 'string':
+      return 'String';
+    case 'number':
+      return 'Number';
+    case 'map':
+    case 'object':
       if (!obj) {
         return undefined;
       }
       return getObjectType(obj);
-    case "function":
-    case "symbol":
-    case "undefined":
+    case 'function':
+    case 'symbol':
+    case 'undefined':
     default:
-      throw "bad obj: " + obj;
+      throw 'bad obj: ' + obj;
   }
 }
 
@@ -1756,83 +1756,83 @@ function getType(obj: any): ?(SchemaField | string) {
 // Returns null if the type is unknown.
 function getObjectType(obj): ?(SchemaField | string) {
   if (obj instanceof Array) {
-    return "Array";
+    return 'Array';
   }
   if (obj.__type) {
     switch (obj.__type) {
-      case "Pointer":
+      case 'Pointer':
         if (obj.className) {
           return {
-            type: "Pointer",
+            type: 'Pointer',
             targetClass: obj.className,
           };
         }
         break;
-      case "Relation":
+      case 'Relation':
         if (obj.className) {
           return {
-            type: "Relation",
+            type: 'Relation',
             targetClass: obj.className,
           };
         }
         break;
-      case "File":
+      case 'File':
         if (obj.name) {
-          return "File";
+          return 'File';
         }
         break;
-      case "Date":
+      case 'Date':
         if (obj.iso) {
-          return "Date";
+          return 'Date';
         }
         break;
-      case "GeoPoint":
+      case 'GeoPoint':
         if (obj.latitude != null && obj.longitude != null) {
-          return "GeoPoint";
+          return 'GeoPoint';
         }
         break;
-      case "Bytes":
+      case 'Bytes':
         if (obj.base64) {
-          return "Bytes";
+          return 'Bytes';
         }
         break;
-      case "Polygon":
+      case 'Polygon':
         if (obj.coordinates) {
-          return "Polygon";
+          return 'Polygon';
         }
         break;
     }
     throw new Parse.Error(
       Parse.Error.INCORRECT_TYPE,
-      "This is not a valid " + obj.__type
+      'This is not a valid ' + obj.__type
     );
   }
-  if (obj["$ne"]) {
-    return getObjectType(obj["$ne"]);
+  if (obj['$ne']) {
+    return getObjectType(obj['$ne']);
   }
   if (obj.__op) {
     switch (obj.__op) {
-      case "Increment":
-        return "Number";
-      case "Delete":
+      case 'Increment':
+        return 'Number';
+      case 'Delete':
         return null;
-      case "Add":
-      case "AddUnique":
-      case "Remove":
-        return "Array";
-      case "AddRelation":
-      case "RemoveRelation":
+      case 'Add':
+      case 'AddUnique':
+      case 'Remove':
+        return 'Array';
+      case 'AddRelation':
+      case 'RemoveRelation':
         return {
-          type: "Relation",
+          type: 'Relation',
           targetClass: obj.objects[0].className,
         };
-      case "Batch":
+      case 'Batch':
         return getObjectType(obj.ops[0]);
       default:
-        throw "unexpected op: " + obj.__op;
+        throw 'unexpected op: ' + obj.__op;
     }
   }
-  return "Object";
+  return 'Object';
 }
 
 export {

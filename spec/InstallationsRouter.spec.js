@@ -1,26 +1,26 @@
-const auth = require("../lib/Auth");
-const Config = require("../lib/Config");
-const rest = require("../lib/rest");
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+const rest = require('../lib/rest');
 const InstallationsRouter =
-  require("../lib/Routers/InstallationsRouter").InstallationsRouter;
+  require('../lib/Routers/InstallationsRouter').InstallationsRouter;
 
-describe("InstallationsRouter", () => {
-  it("uses find condition from request.body", done => {
-    const config = Config.get("test");
+describe('InstallationsRouter', () => {
+  it('uses find condition from request.body', done => {
+    const config = Config.get('test');
     const androidDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abc",
-      deviceType: "android",
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
     const iosDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abd",
-      deviceType: "ios",
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
     const request = {
       config: config,
       auth: auth.master(config),
       body: {
         where: {
-          deviceType: "android",
+          deviceType: 'android',
         },
       },
       query: {},
@@ -32,14 +32,14 @@ describe("InstallationsRouter", () => {
       .create(
         config,
         auth.nobody(config),
-        "_Installation",
+        '_Installation',
         androidDeviceRequest
       )
       .then(() => {
         return rest.create(
           config,
           auth.nobody(config),
-          "_Installation",
+          '_Installation',
           iosDeviceRequest
         );
       })
@@ -57,15 +57,15 @@ describe("InstallationsRouter", () => {
       });
   });
 
-  it("uses find condition from request.query", done => {
-    const config = Config.get("test");
+  it('uses find condition from request.query', done => {
+    const config = Config.get('test');
     const androidDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abc",
-      deviceType: "android",
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
     const iosDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abd",
-      deviceType: "ios",
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
     const request = {
       config: config,
@@ -73,7 +73,7 @@ describe("InstallationsRouter", () => {
       body: {},
       query: {
         where: {
-          deviceType: "android",
+          deviceType: 'android',
         },
       },
       info: {},
@@ -84,14 +84,14 @@ describe("InstallationsRouter", () => {
       .create(
         config,
         auth.nobody(config),
-        "_Installation",
+        '_Installation',
         androidDeviceRequest
       )
       .then(() => {
         return rest.create(
           config,
           auth.nobody(config),
-          "_Installation",
+          '_Installation',
           iosDeviceRequest
         );
       })
@@ -109,15 +109,15 @@ describe("InstallationsRouter", () => {
       });
   });
 
-  it("query installations with limit = 0", done => {
-    const config = Config.get("test");
+  it('query installations with limit = 0', done => {
+    const config = Config.get('test');
     const androidDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abc",
-      deviceType: "android",
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
     const iosDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abd",
-      deviceType: "ios",
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
     const request = {
       config: config,
@@ -129,20 +129,20 @@ describe("InstallationsRouter", () => {
       info: {},
     };
 
-    Config.get("test");
+    Config.get('test');
     const router = new InstallationsRouter();
     rest
       .create(
         config,
         auth.nobody(config),
-        "_Installation",
+        '_Installation',
         androidDeviceRequest
       )
       .then(() => {
         return rest.create(
           config,
           auth.nobody(config),
-          "_Installation",
+          '_Installation',
           iosDeviceRequest
         );
       })
@@ -160,15 +160,15 @@ describe("InstallationsRouter", () => {
       });
   });
 
-  it_exclude_dbs(["postgres"])("query installations with count = 1", done => {
-    const config = Config.get("test");
+  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
+    const config = Config.get('test');
     const androidDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abc",
-      deviceType: "android",
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
     const iosDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abd",
-      deviceType: "ios",
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
     const request = {
       config: config,
@@ -185,14 +185,14 @@ describe("InstallationsRouter", () => {
       .create(
         config,
         auth.nobody(config),
-        "_Installation",
+        '_Installation',
         androidDeviceRequest
       )
       .then(() =>
         rest.create(
           config,
           auth.nobody(config),
-          "_Installation",
+          '_Installation',
           iosDeviceRequest
         )
       )
@@ -209,15 +209,15 @@ describe("InstallationsRouter", () => {
       });
   });
 
-  it_only_db("postgres")("query installations with count = 1", async () => {
-    const config = Config.get("test");
+  it_only_db('postgres')('query installations with count = 1', async () => {
+    const config = Config.get('test');
     const androidDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abc",
-      deviceType: "android",
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
     const iosDeviceRequest = {
-      installationId: "12345678-abcd-abcd-abcd-123456789abd",
-      deviceType: "ios",
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
     const request = {
       config: config,
@@ -233,13 +233,13 @@ describe("InstallationsRouter", () => {
     await rest.create(
       config,
       auth.nobody(config),
-      "_Installation",
+      '_Installation',
       androidDeviceRequest
     );
     await rest.create(
       config,
       auth.nobody(config),
-      "_Installation",
+      '_Installation',
       iosDeviceRequest
     );
     let res = await router.handleFind(request);
@@ -248,7 +248,7 @@ describe("InstallationsRouter", () => {
     expect(response.count).toEqual(0); // estimate count is zero
 
     const pgAdapter = config.database.adapter;
-    await pgAdapter.updateEstimatedCount("_Installation");
+    await pgAdapter.updateEstimatedCount('_Installation');
 
     res = await router.handleFind(request);
     response = res.response;
@@ -256,17 +256,17 @@ describe("InstallationsRouter", () => {
     expect(response.count).toEqual(2);
   });
 
-  it_exclude_dbs(["postgres"])(
-    "query installations with limit = 0 and count = 1",
+  it_exclude_dbs(['postgres'])(
+    'query installations with limit = 0 and count = 1',
     done => {
-      const config = Config.get("test");
+      const config = Config.get('test');
       const androidDeviceRequest = {
-        installationId: "12345678-abcd-abcd-abcd-123456789abc",
-        deviceType: "android",
+        installationId: '12345678-abcd-abcd-abcd-123456789abc',
+        deviceType: 'android',
       };
       const iosDeviceRequest = {
-        installationId: "12345678-abcd-abcd-abcd-123456789abd",
-        deviceType: "ios",
+        installationId: '12345678-abcd-abcd-abcd-123456789abd',
+        deviceType: 'ios',
       };
       const request = {
         config: config,
@@ -284,14 +284,14 @@ describe("InstallationsRouter", () => {
         .create(
           config,
           auth.nobody(config),
-          "_Installation",
+          '_Installation',
           androidDeviceRequest
         )
         .then(() => {
           return rest.create(
             config,
             auth.nobody(config),
-            "_Installation",
+            '_Installation',
             iosDeviceRequest
           );
         })

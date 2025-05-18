@@ -1,10 +1,10 @@
-import ClassesRouter from "./ClassesRouter";
-import rest from "../rest";
-import * as middleware from "../middlewares";
+import ClassesRouter from './ClassesRouter';
+import rest from '../rest';
+import * as middleware from '../middlewares';
 
 export class AudiencesRouter extends ClassesRouter {
   className() {
-    return "_Audience";
+    return '_Audience';
   }
 
   handleFind(req) {
@@ -21,7 +21,7 @@ export class AudiencesRouter extends ClassesRouter {
       .find(
         req.config,
         req.auth,
-        "_Audience",
+        '_Audience',
         body.where,
         options,
         req.info.clientSDK,
@@ -46,40 +46,40 @@ export class AudiencesRouter extends ClassesRouter {
 
   mountRoutes() {
     this.route(
-      "GET",
-      "/push_audiences",
+      'GET',
+      '/push_audiences',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
         return this.handleFind(req);
       }
     );
     this.route(
-      "GET",
-      "/push_audiences/:objectId",
+      'GET',
+      '/push_audiences/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
         return this.handleGet(req);
       }
     );
     this.route(
-      "POST",
-      "/push_audiences",
+      'POST',
+      '/push_audiences',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
         return this.handleCreate(req);
       }
     );
     this.route(
-      "PUT",
-      "/push_audiences/:objectId",
+      'PUT',
+      '/push_audiences/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
         return this.handleUpdate(req);
       }
     );
     this.route(
-      "DELETE",
-      "/push_audiences/:objectId",
+      'DELETE',
+      '/push_audiences/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
         return this.handleDelete(req);

@@ -7,77 +7,77 @@ const {
   arrayParser,
   moduleOrObjectParser,
   nullParser,
-} = require("../lib/Options/parsers");
+} = require('../lib/Options/parsers');
 
-describe("parsers", () => {
-  it("parses correctly with numberParser", () => {
-    const parser = numberParser("key");
+describe('parsers', () => {
+  it('parses correctly with numberParser', () => {
+    const parser = numberParser('key');
     expect(parser(2)).toEqual(2);
-    expect(parser("2")).toEqual(2);
+    expect(parser('2')).toEqual(2);
     expect(() => {
-      parser("string");
+      parser('string');
     }).toThrow();
   });
 
-  it("parses correctly with numberOrStringParser", () => {
-    const parser = numberOrStringParser("key");
-    expect(parser("100d")).toEqual("100d");
+  it('parses correctly with numberOrStringParser', () => {
+    const parser = numberOrStringParser('key');
+    expect(parser('100d')).toEqual('100d');
     expect(parser(100)).toEqual(100);
     expect(() => {
       parser(undefined);
     }).toThrow();
   });
 
-  it("parses correctly with numberOrBoolParser", () => {
-    const parser = numberOrBoolParser("key");
+  it('parses correctly with numberOrBoolParser', () => {
+    const parser = numberOrBoolParser('key');
     expect(parser(true)).toEqual(true);
     expect(parser(false)).toEqual(false);
-    expect(parser("true")).toEqual(true);
-    expect(parser("false")).toEqual(false);
+    expect(parser('true')).toEqual(true);
+    expect(parser('false')).toEqual(false);
     expect(parser(1)).toEqual(1);
-    expect(parser("1")).toEqual(1);
+    expect(parser('1')).toEqual(1);
   });
 
-  it("parses correctly with booleanParser", () => {
+  it('parses correctly with booleanParser', () => {
     const parser = booleanParser;
     expect(parser(true)).toEqual(true);
     expect(parser(false)).toEqual(false);
-    expect(parser("true")).toEqual(true);
-    expect(parser("false")).toEqual(false);
+    expect(parser('true')).toEqual(true);
+    expect(parser('false')).toEqual(false);
     expect(parser(1)).toEqual(true);
     expect(parser(2)).toEqual(false);
   });
 
-  it("parses correctly with objectParser", () => {
+  it('parses correctly with objectParser', () => {
     const parser = objectParser;
-    expect(parser({ hello: "world" })).toEqual({ hello: "world" });
-    expect(parser('{"hello": "world"}')).toEqual({ hello: "world" });
+    expect(parser({ hello: 'world' })).toEqual({ hello: 'world' });
+    expect(parser('{"hello": "world"}')).toEqual({ hello: 'world' });
     expect(() => {
-      parser("string");
+      parser('string');
     }).toThrow();
   });
 
-  it("parses correctly with moduleOrObjectParser", () => {
+  it('parses correctly with moduleOrObjectParser', () => {
     const parser = moduleOrObjectParser;
-    expect(parser({ hello: "world" })).toEqual({ hello: "world" });
-    expect(parser('{"hello": "world"}')).toEqual({ hello: "world" });
-    expect(parser("string")).toEqual("string");
+    expect(parser({ hello: 'world' })).toEqual({ hello: 'world' });
+    expect(parser('{"hello": "world"}')).toEqual({ hello: 'world' });
+    expect(parser('string')).toEqual('string');
   });
 
-  it("parses correctly with arrayParser", () => {
+  it('parses correctly with arrayParser', () => {
     const parser = arrayParser;
     expect(parser([1, 2, 3])).toEqual([1, 2, 3]);
     expect(parser('{"hello": "world"}')).toEqual(['{"hello": "world"}']);
-    expect(parser("1,2,3")).toEqual(["1", "2", "3"]);
+    expect(parser('1,2,3')).toEqual(['1', '2', '3']);
     expect(() => {
       parser(1);
     }).toThrow();
   });
 
-  it("parses correctly with nullParser", () => {
+  it('parses correctly with nullParser', () => {
     const parser = nullParser;
-    expect(parser("null")).toEqual(null);
+    expect(parser('null')).toEqual(null);
     expect(parser(1)).toEqual(1);
-    expect(parser("blabla")).toEqual("blabla");
+    expect(parser('blabla')).toEqual('blabla');
   });
 });

@@ -1,19 +1,19 @@
-const auth = require("../lib/Auth");
-const Config = require("../lib/Config");
-const rest = require("../lib/rest");
-const request = require("../lib/request");
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+const rest = require('../lib/rest');
+const request = require('../lib/request');
 const AudiencesRouter =
-  require("../lib/Routers/AudiencesRouter").AudiencesRouter;
+  require('../lib/Routers/AudiencesRouter').AudiencesRouter;
 
-describe("AudiencesRouter", () => {
-  it("uses find condition from request.body", done => {
-    const config = Config.get("test");
+describe('AudiencesRouter', () => {
+  it('uses find condition from request.body', done => {
+    const config = Config.get('test');
     const androidAudienceRequest = {
-      name: "Android Users",
+      name: 'Android Users',
       query: '{ "test": "android" }',
     };
     const iosAudienceRequest = {
-      name: "Iphone Users",
+      name: 'Iphone Users',
       query: '{ "test": "ios" }',
     };
     const request = {
@@ -30,12 +30,12 @@ describe("AudiencesRouter", () => {
 
     const router = new AudiencesRouter();
     rest
-      .create(config, auth.nobody(config), "_Audience", androidAudienceRequest)
+      .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() => {
         return rest.create(
           config,
           auth.nobody(config),
-          "_Audience",
+          '_Audience',
           iosAudienceRequest
         );
       })
@@ -53,14 +53,14 @@ describe("AudiencesRouter", () => {
       });
   });
 
-  it("uses find condition from request.query", done => {
-    const config = Config.get("test");
+  it('uses find condition from request.query', done => {
+    const config = Config.get('test');
     const androidAudienceRequest = {
-      name: "Android Users",
+      name: 'Android Users',
       query: '{ "test": "android" }',
     };
     const iosAudienceRequest = {
-      name: "Iphone Users",
+      name: 'Iphone Users',
       query: '{ "test": "ios" }',
     };
     const request = {
@@ -77,12 +77,12 @@ describe("AudiencesRouter", () => {
 
     const router = new AudiencesRouter();
     rest
-      .create(config, auth.nobody(config), "_Audience", androidAudienceRequest)
+      .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() => {
         return rest.create(
           config,
           auth.nobody(config),
-          "_Audience",
+          '_Audience',
           iosAudienceRequest
         );
       })
@@ -100,14 +100,14 @@ describe("AudiencesRouter", () => {
       });
   });
 
-  it("query installations with limit = 0", done => {
-    const config = Config.get("test");
+  it('query installations with limit = 0', done => {
+    const config = Config.get('test');
     const androidAudienceRequest = {
-      name: "Android Users",
+      name: 'Android Users',
       query: '{ "test": "android" }',
     };
     const iosAudienceRequest = {
-      name: "Iphone Users",
+      name: 'Iphone Users',
       query: '{ "test": "ios" }',
     };
     const request = {
@@ -120,15 +120,15 @@ describe("AudiencesRouter", () => {
       info: {},
     };
 
-    Config.get("test");
+    Config.get('test');
     const router = new AudiencesRouter();
     rest
-      .create(config, auth.nobody(config), "_Audience", androidAudienceRequest)
+      .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() => {
         return rest.create(
           config,
           auth.nobody(config),
-          "_Audience",
+          '_Audience',
           iosAudienceRequest
         );
       })
@@ -146,14 +146,14 @@ describe("AudiencesRouter", () => {
       });
   });
 
-  it_exclude_dbs(["postgres"])("query installations with count = 1", done => {
-    const config = Config.get("test");
+  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
+    const config = Config.get('test');
     const androidAudienceRequest = {
-      name: "Android Users",
+      name: 'Android Users',
       query: '{ "test": "android" }',
     };
     const iosAudienceRequest = {
-      name: "Iphone Users",
+      name: 'Iphone Users',
       query: '{ "test": "ios" }',
     };
     const request = {
@@ -168,12 +168,12 @@ describe("AudiencesRouter", () => {
 
     const router = new AudiencesRouter();
     rest
-      .create(config, auth.nobody(config), "_Audience", androidAudienceRequest)
+      .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() =>
         rest.create(
           config,
           auth.nobody(config),
-          "_Audience",
+          '_Audience',
           iosAudienceRequest
         )
       )
@@ -190,16 +190,16 @@ describe("AudiencesRouter", () => {
       });
   });
 
-  it_exclude_dbs(["postgres"])(
-    "query installations with limit = 0 and count = 1",
+  it_exclude_dbs(['postgres'])(
+    'query installations with limit = 0 and count = 1',
     done => {
-      const config = Config.get("test");
+      const config = Config.get('test');
       const androidAudienceRequest = {
-        name: "Android Users",
+        name: 'Android Users',
         query: '{ "test": "android" }',
       };
       const iosAudienceRequest = {
-        name: "Iphone Users",
+        name: 'Iphone Users',
         query: '{ "test": "ios" }',
       };
       const request = {
@@ -218,14 +218,14 @@ describe("AudiencesRouter", () => {
         .create(
           config,
           auth.nobody(config),
-          "_Audience",
+          '_Audience',
           androidAudienceRequest
         )
         .then(() => {
           return rest.create(
             config,
             auth.nobody(config),
-            "_Audience",
+            '_Audience',
             iosAudienceRequest
           );
         })
@@ -245,49 +245,49 @@ describe("AudiencesRouter", () => {
     }
   );
 
-  it("should create, read, update and delete audiences throw api", done => {
+  it('should create, read, update and delete audiences throw api', done => {
     Parse._request(
-      "POST",
-      "push_audiences",
-      { name: "My Audience", query: JSON.stringify({ deviceType: "ios" }) },
+      'POST',
+      'push_audiences',
+      { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
       { useMasterKey: true }
     ).then(() => {
-      Parse._request("GET", "push_audiences", {}, { useMasterKey: true }).then(
+      Parse._request('GET', 'push_audiences', {}, { useMasterKey: true }).then(
         results => {
           expect(results.results.length).toEqual(1);
-          expect(results.results[0].name).toEqual("My Audience");
-          expect(results.results[0].query.deviceType).toEqual("ios");
+          expect(results.results[0].name).toEqual('My Audience');
+          expect(results.results[0].query.deviceType).toEqual('ios');
           Parse._request(
-            "GET",
+            'GET',
             `push_audiences/${results.results[0].objectId}`,
             {},
             { useMasterKey: true }
           ).then(results => {
-            expect(results.name).toEqual("My Audience");
-            expect(results.query.deviceType).toEqual("ios");
+            expect(results.name).toEqual('My Audience');
+            expect(results.query.deviceType).toEqual('ios');
             Parse._request(
-              "PUT",
+              'PUT',
               `push_audiences/${results.objectId}`,
-              { name: "My Audience 2" },
+              { name: 'My Audience 2' },
               { useMasterKey: true }
             ).then(() => {
               Parse._request(
-                "GET",
+                'GET',
                 `push_audiences/${results.objectId}`,
                 {},
                 { useMasterKey: true }
               ).then(results => {
-                expect(results.name).toEqual("My Audience 2");
-                expect(results.query.deviceType).toEqual("ios");
+                expect(results.name).toEqual('My Audience 2');
+                expect(results.query.deviceType).toEqual('ios');
                 Parse._request(
-                  "DELETE",
+                  'DELETE',
                   `push_audiences/${results.objectId}`,
                   {},
                   { useMasterKey: true }
                 ).then(() => {
                   Parse._request(
-                    "GET",
-                    "push_audiences",
+                    'GET',
+                    'push_audiences',
                     {},
                     { useMasterKey: true }
                   ).then(results => {
@@ -303,75 +303,75 @@ describe("AudiencesRouter", () => {
     });
   });
 
-  it("should only create with master key", done => {
-    Parse._request("POST", "push_audiences", {
-      name: "My Audience",
-      query: JSON.stringify({ deviceType: "ios" }),
+  it('should only create with master key', done => {
+    Parse._request('POST', 'push_audiences', {
+      name: 'My Audience',
+      query: JSON.stringify({ deviceType: 'ios' }),
     }).then(
       () => {},
       error => {
-        expect(error.message).toEqual("unauthorized: master key is required");
+        expect(error.message).toEqual('unauthorized: master key is required');
         done();
       }
     );
   });
 
-  it("should only find with master key", done => {
-    Parse._request("GET", "push_audiences", {}).then(
+  it('should only find with master key', done => {
+    Parse._request('GET', 'push_audiences', {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual("unauthorized: master key is required");
+        expect(error.message).toEqual('unauthorized: master key is required');
         done();
       }
     );
   });
 
-  it("should only get with master key", done => {
-    Parse._request("GET", `push_audiences/someId`, {}).then(
+  it('should only get with master key', done => {
+    Parse._request('GET', `push_audiences/someId`, {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual("unauthorized: master key is required");
+        expect(error.message).toEqual('unauthorized: master key is required');
         done();
       }
     );
   });
 
-  it("should only update with master key", done => {
-    Parse._request("PUT", `push_audiences/someId`, {
-      name: "My Audience 2",
+  it('should only update with master key', done => {
+    Parse._request('PUT', `push_audiences/someId`, {
+      name: 'My Audience 2',
     }).then(
       () => {},
       error => {
-        expect(error.message).toEqual("unauthorized: master key is required");
+        expect(error.message).toEqual('unauthorized: master key is required');
         done();
       }
     );
   });
 
-  it("should only delete with master key", done => {
-    Parse._request("DELETE", `push_audiences/someId`, {}).then(
+  it('should only delete with master key', done => {
+    Parse._request('DELETE', `push_audiences/someId`, {}).then(
       () => {},
       error => {
-        expect(error.message).toEqual("unauthorized: master key is required");
+        expect(error.message).toEqual('unauthorized: master key is required');
         done();
       }
     );
   });
 
-  it_id("af1111b5-3251-4b40-8f06-fb0fc624fa91")(it_exclude_dbs(["postgres"]))(
-    "should support legacy parse.com audience fields",
+  it_id('af1111b5-3251-4b40-8f06-fb0fc624fa91')(it_exclude_dbs(['postgres']))(
+    'should support legacy parse.com audience fields',
     done => {
       const database = Config.get(Parse.applicationId).database.adapter
         .database;
       const now = new Date();
       Parse._request(
-        "POST",
-        "push_audiences",
-        { name: "My Audience", query: JSON.stringify({ deviceType: "ios" }) },
+        'POST',
+        'push_audiences',
+        { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' }) },
         { useMasterKey: true }
       ).then(audience => {
         database
-          .collection("test__Audience")
+          .collection('test__Audience')
           .updateOne(
             { _id: audience.objectId },
             {
@@ -385,21 +385,21 @@ describe("AudiencesRouter", () => {
             expect(result).toBeTruthy();
 
             database
-              .collection("test__Audience")
+              .collection('test__Audience')
               .find({ _id: audience.objectId })
               .toArray()
               .then(rows => {
-                expect(rows[0]["times_used"]).toEqual(1);
-                expect(rows[0]["_last_used"]).toEqual(now);
+                expect(rows[0]['times_used']).toEqual(1);
+                expect(rows[0]['_last_used']).toEqual(now);
                 Parse._request(
-                  "GET",
-                  "push_audiences/" + audience.objectId,
+                  'GET',
+                  'push_audiences/' + audience.objectId,
                   {},
                   { useMasterKey: true }
                 )
                   .then(audience => {
-                    expect(audience.name).toEqual("My Audience");
-                    expect(audience.query.deviceType).toEqual("ios");
+                    expect(audience.name).toEqual('My Audience');
+                    expect(audience.query.deviceType).toEqual('ios');
                     expect(audience.timesUsed).toEqual(1);
                     expect(audience.lastUsed).toEqual(now.toISOString());
                     done();
@@ -416,11 +416,11 @@ describe("AudiencesRouter", () => {
     }
   );
 
-  it("should be able to search on audiences", done => {
+  it('should be able to search on audiences', done => {
     Parse._request(
-      "POST",
-      "push_audiences",
-      { name: "neverUsed", query: JSON.stringify({ deviceType: "ios" }) },
+      'POST',
+      'push_audiences',
+      { name: 'neverUsed', query: JSON.stringify({ deviceType: 'ios' }) },
       { useMasterKey: true }
     ).then(() => {
       const query = {
@@ -428,15 +428,15 @@ describe("AudiencesRouter", () => {
         lastUsed: { $exists: false },
       };
       Parse._request(
-        "GET",
-        "push_audiences?order=-createdAt&limit=1",
+        'GET',
+        'push_audiences?order=-createdAt&limit=1',
         { where: query },
         { useMasterKey: true }
       )
         .then(results => {
           expect(results.results.length).toEqual(1);
           const audience = results.results[0];
-          expect(audience.name).toEqual("neverUsed");
+          expect(audience.name).toEqual('neverUsed');
           done();
         })
         .catch(error => {
@@ -445,27 +445,27 @@ describe("AudiencesRouter", () => {
     });
   });
 
-  it("should handle _Audience invalid fields via rest", async () => {
+  it('should handle _Audience invalid fields via rest', async () => {
     await reconfigureServer({
-      appId: "test",
-      restAPIKey: "test",
-      publicServerURL: "http://localhost:8378/1",
+      appId: 'test',
+      restAPIKey: 'test',
+      publicServerURL: 'http://localhost:8378/1',
     });
     try {
       await request({
-        method: "POST",
-        url: "http://localhost:8378/1/classes/_Audience",
-        body: { lorem: "ipsum", _method: "POST" },
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/_Audience',
+        body: { lorem: 'ipsum', _method: 'POST' },
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-REST-API-Key": "test",
-          "Content-Type": "application/json",
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test',
+          'Content-Type': 'application/json',
         },
       });
       expect(true).toBeFalsy();
     } catch (e) {
       expect(e.data.code).toBe(107);
-      expect(e.data.error).toBe("Could not add field lorem");
+      expect(e.data.error).toBe('Could not add field lorem');
     }
   });
 });

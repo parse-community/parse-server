@@ -1,14 +1,14 @@
-const parser = require("../lib/Adapters/Storage/Postgres/PostgresConfigParser");
-const fs = require("fs");
+const parser = require('../lib/Adapters/Storage/Postgres/PostgresConfigParser');
+const fs = require('fs');
 
 const queryParamTests = {
-  "a=1&b=2": { a: "1", b: "2" },
-  "a=abcd%20efgh&b=abcd%3Defgh": { a: "abcd efgh", b: "abcd=efgh" },
-  "a=1&b&c=true": { a: "1", b: "", c: "true" },
+  'a=1&b=2': { a: '1', b: '2' },
+  'a=abcd%20efgh&b=abcd%3Defgh': { a: 'abcd efgh', b: 'abcd=efgh' },
+  'a=1&b&c=true': { a: '1', b: '', c: 'true' },
 };
 
-describe("PostgresConfigParser.parseQueryParams", () => {
-  it("creates a map from a query string", () => {
+describe('PostgresConfigParser.parseQueryParams', () => {
+  it('creates a map from a query string', () => {
     for (const key in queryParamTests) {
       const result = parser.parseQueryParams(key);
 
@@ -23,16 +23,16 @@ describe("PostgresConfigParser.parseQueryParams", () => {
   });
 });
 
-const baseURI = "postgres://username:password@localhost:5432/db-name";
-const testfile = fs.readFileSync("./Dockerfile").toString();
+const baseURI = 'postgres://username:password@localhost:5432/db-name';
+const testfile = fs.readFileSync('./Dockerfile').toString();
 const dbOptionsTest = {};
 dbOptionsTest[
   `${baseURI}?ssl=true&binary=true&application_name=app_name&fallback_application_name=f_app_name&poolSize=12`
 ] = {
   ssl: true,
   binary: true,
-  application_name: "app_name",
-  fallback_application_name: "f_app_name",
+  application_name: 'app_name',
+  fallback_application_name: 'f_app_name',
   max: 12,
 };
 dbOptionsTest[`${baseURI}?ssl=&binary=aa`] = {
@@ -46,7 +46,7 @@ dbOptionsTest[
     pfx: testfile,
     cert: testfile,
     key: testfile,
-    passphrase: "word",
+    passphrase: 'word',
     secureOptions: 20,
   },
   binary: false,
@@ -69,8 +69,8 @@ dbOptionsTest[
   keepAlive: true,
 };
 
-describe("PostgresConfigParser.getDatabaseOptionsFromURI", () => {
-  it("creates a db options map from a query string", () => {
+describe('PostgresConfigParser.getDatabaseOptionsFromURI', () => {
+  it('creates a db options map from a query string', () => {
     for (const key in dbOptionsTest) {
       const result = parser.getDatabaseOptionsFromURI(key);
 
@@ -82,20 +82,20 @@ describe("PostgresConfigParser.getDatabaseOptionsFromURI", () => {
     }
   });
 
-  it("sets the poolSize to 10 if the it is not a number", () => {
+  it('sets the poolSize to 10 if the it is not a number', () => {
     const result = parser.getDatabaseOptionsFromURI(`${baseURI}?poolSize=sdf`);
 
     expect(result.max).toEqual(10);
   });
 
-  it("sets the max to 10 if the it is not a number", () => {
+  it('sets the max to 10 if the it is not a number', () => {
     const result = parser.getDatabaseOptionsFromURI(`${baseURI}?&max=sdf`);
 
     expect(result.poolSize).toBeUndefined();
     expect(result.max).toEqual(10);
   });
 
-  it("max should take precedence over poolSize", () => {
+  it('max should take precedence over poolSize', () => {
     const result = parser.getDatabaseOptionsFromURI(
       `${baseURI}?poolSize=20&max=12`
     );

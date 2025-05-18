@@ -1,11 +1,11 @@
-const Parse = require("parse/node").Parse;
-const path = require("path");
+const Parse = require('parse/node').Parse;
+const path = require('path');
 // These methods handle batch requests.
-const batchPath = "/batch";
+const batchPath = '/batch';
 
 // Mounts a batch-handler onto a PromiseRouter.
 function mountOnto(router) {
-  router.route("POST", batchPath, req => {
+  router.route('POST', batchPath, req => {
     return handleBatch(router, req);
   });
 }
@@ -30,10 +30,10 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
       throw new Parse.Error(
         Parse.Error.INVALID_JSON,
-        "cannot route batch path " + requestPath
+        'cannot route batch path ' + requestPath
       );
     }
-    return path.posix.join("/", requestPath.slice(apiPrefix.length));
+    return path.posix.join('/', requestPath.slice(apiPrefix.length));
   };
 
   if (
@@ -59,9 +59,9 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
             : publicPath.length;
 
       const newPath = path.posix.join(
-        "/",
+        '/',
         localPath,
-        "/",
+        '/',
         requestPath.slice(pathLengthToUse)
       );
 
@@ -79,7 +79,7 @@ function handleBatch(router, req) {
   if (!Array.isArray(req.body?.requests)) {
     throw new Parse.Error(
       Parse.Error.INVALID_JSON,
-      "requests must be an array"
+      'requests must be an array'
     );
   }
 
@@ -89,7 +89,7 @@ function handleBatch(router, req) {
   // we need to figure out the API prefix, so that we can strip it
   // from all the subrequests.
   if (!req.originalUrl.endsWith(batchPath)) {
-    throw "internal routing problem - expected url to end with batch";
+    throw 'internal routing problem - expected url to end with batch';
   }
 
   const makeRoutablePath = makeBatchRoutingPathFunction(
@@ -131,7 +131,7 @@ function handleBatch(router, req) {
       return Promise.all(promises)
         .then(results => {
           if (req.body?.transaction === true) {
-            if (results.find(result => typeof result.error === "object")) {
+            if (results.find(result => typeof result.error === 'object')) {
               return req.config.database
                 .abortTransactionalSession()
                 .then(() => {
@@ -154,7 +154,7 @@ function handleBatch(router, req) {
             error.response &&
             error.response.find(
               errorItem =>
-                typeof errorItem.error === "object" &&
+                typeof errorItem.error === 'object' &&
                 errorItem.error.code === 251
             ) &&
             transactionRetries > 0

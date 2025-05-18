@@ -1,17 +1,17 @@
 // @flow
 // @flow-disable-next Cannot resolve module `parse/node`.
-const Parse = require("parse/node");
-import { logger } from "../logger";
-import Config from "../Config";
+const Parse = require('parse/node');
+import { logger } from '../logger';
+import Config from '../Config';
 import {
   internalCreateSchema,
   internalUpdateSchema,
-} from "../Routers/SchemasRouter";
-import { defaultColumns, systemClasses } from "../Controllers/SchemaController";
-import { ParseServerOptions } from "../Options";
-import * as Migrations from "./Migrations";
-import Auth from "../Auth";
-import rest from "../rest";
+} from '../Routers/SchemasRouter';
+import { defaultColumns, systemClasses } from '../Controllers/SchemaController';
+import { ParseServerOptions } from '../Options';
+import * as Migrations from './Migrations';
+import Auth from '../Auth';
+import rest from '../rest';
 
 export class DefinedSchemas {
   config: ParseServerOptions;
@@ -72,7 +72,7 @@ export class DefinedSchemas {
 
   async execute() {
     try {
-      logger.info("Running Migrations");
+      logger.info('Running Migrations');
       if (this.schemaOptions && this.schemaOptions.beforeMigration) {
         await Promise.resolve(this.schemaOptions.beforeMigration());
       }
@@ -83,10 +83,10 @@ export class DefinedSchemas {
         await Promise.resolve(this.schemaOptions.afterMigration());
       }
 
-      logger.info("Running Migrations Completed");
+      logger.info('Running Migrations Completed');
     } catch (e) {
       logger.error(`Failed to run migrations: ${e}`);
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === 'production') {
         process.exit(1);
       }
     }
@@ -99,10 +99,10 @@ export class DefinedSchemas {
       // if we fail to get schema
       // pm2 or K8s and many other process managers will try to restart the process
       // after the exit
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === 'production') {
         timeout = setTimeout(() => {
           logger.error(
-            "Timeout occurred during execution of migrations. Exiting..."
+            'Timeout occurred during execution of migrations. Exiting...'
           );
           process.exit(1);
         }, 20000);
@@ -134,7 +134,7 @@ export class DefinedSchemas {
         await this.executeMigrations();
       } else {
         logger.error(`Failed to run migrations: ${e}`);
-        if (process.env.NODE_ENV === "production") {
+        if (process.env.NODE_ENV === 'production') {
           process.exit(1);
         }
       }
@@ -197,13 +197,13 @@ export class DefinedSchemas {
     const { response } = await rest.create(
       this.config,
       Auth.master(this.config),
-      "_Session",
+      '_Session',
       {}
     );
     await rest.del(
       this.config,
       Auth.master(this.config),
-      "_Session",
+      '_Session',
       response.objectId
     );
   }
@@ -356,10 +356,10 @@ export class DefinedSchemas {
       fieldsToRecreate.forEach(field => {
         const from =
           field.from.type +
-          (field.from.targetClass ? ` (${field.from.targetClass})` : "");
+          (field.from.targetClass ? ` (${field.from.targetClass})` : '');
         const to =
           field.to.type +
-          (field.to.targetClass ? ` (${field.to.targetClass})` : "");
+          (field.to.targetClass ? ` (${field.to.targetClass})` : '');
 
         logger.warn(
           `The field "${field.fieldName}" type differ between the schema and the database for "${localSchema.className}"; Schema is defined as "${to}" and current database type is "${from}"`
@@ -421,7 +421,7 @@ export class DefinedSchemas {
     // Apply new/changed indexes
     if (indexesToAdd.length) {
       logger.debug(
-        `Updating indexes for "${newLocalSchema.className}" :  ${indexesToAdd.join(" ,")}`
+        `Updating indexes for "${newLocalSchema.className}" :  ${indexesToAdd.join(' ,')}`
       );
       indexesToAdd.forEach(o => newLocalSchema.addIndex(o.indexName, o.index));
       await this.updateSchemaToDB(newLocalSchema);
@@ -455,22 +455,22 @@ export class DefinedSchemas {
   }
 
   isProtectedIndex(className: string, indexName: string) {
-    const indexes = ["_id_"];
+    const indexes = ['_id_'];
     switch (className) {
-      case "_User":
+      case '_User':
         indexes.push(
-          "case_insensitive_username",
-          "case_insensitive_email",
-          "username_1",
-          "email_1"
+          'case_insensitive_username',
+          'case_insensitive_email',
+          'username_1',
+          'email_1'
         );
         break;
-      case "_Role":
-        indexes.push("name_1");
+      case '_Role':
+        indexes.push('name_1');
         break;
 
-      case "_Idempotency":
-        indexes.push("reqId_1");
+      case '_Idempotency':
+        indexes.push('reqId_1');
         break;
     }
 
@@ -493,9 +493,9 @@ export class DefinedSchemas {
     fieldName: string,
     field: Migrations.FieldType
   ) {
-    if (field.type === "Relation") {
+    if (field.type === 'Relation') {
       newLocalSchema.addRelation(fieldName, field.targetClass);
-    } else if (field.type === "Pointer") {
+    } else if (field.type === 'Pointer') {
       newLocalSchema.addPointer(fieldName, field.targetClass, field);
     } else {
       newLocalSchema.addField(fieldName, field.type, field);

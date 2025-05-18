@@ -1,8 +1,8 @@
-var semver = require("semver");
+var semver = require('semver');
 
 function compatible(compatibleSDK) {
   return function (clientSDK) {
-    if (typeof clientSDK === "string") {
+    if (typeof clientSDK === 'string') {
       clientSDK = fromString(clientSDK);
     }
     // REST API, or custom SDK
@@ -17,7 +17,7 @@ function compatible(compatibleSDK) {
 
 function supportsForwardDelete(clientSDK) {
   return compatible({
-    js: ">=1.9.0",
+    js: '>=1.9.0',
   })(clientSDK);
 }
 

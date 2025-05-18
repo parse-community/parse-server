@@ -1,88 +1,88 @@
-"use strict";
-const Parse = require("parse/node");
+'use strict';
+const Parse = require('parse/node');
 const validatorFail = () => {
-  throw "you are not authorized";
+  throw 'you are not authorized';
 };
 const validatorSuccess = () => {
   return true;
 };
 function testConfig() {
   return Parse.Config.save(
-    { internal: "i", string: "s", number: 12 },
+    { internal: 'i', string: 's', number: 12 },
     { internal: true }
   );
 }
 
-describe("cloud validator", () => {
-  it("complete validator", async done => {
+describe('cloud validator', () => {
+  it('complete validator', async done => {
     Parse.Cloud.define(
-      "myFunction",
+      'myFunction',
       () => {
-        return "myFunc";
+        return 'myFunc';
       },
       () => {}
     );
     try {
-      const result = await Parse.Cloud.run("myFunction", {});
-      expect(result).toBe("myFunc");
+      const result = await Parse.Cloud.run('myFunction', {});
+      expect(result).toBe('myFunc');
       done();
     } catch (e) {
-      fail("should not have thrown error");
+      fail('should not have thrown error');
     }
   });
 
-  it("Throw from validator", async done => {
+  it('Throw from validator', async done => {
     Parse.Cloud.define(
-      "myFunction",
+      'myFunction',
       () => {
-        return "myFunc";
+        return 'myFunc';
       },
       () => {
-        throw "error";
+        throw 'error';
       }
     );
     try {
-      await Parse.Cloud.run("myFunction");
-      fail("cloud function should have failed.");
+      await Parse.Cloud.run('myFunction');
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validator can throw parse error", async done => {
+  it('validator can throw parse error', async done => {
     Parse.Cloud.define(
-      "myFunction",
+      'myFunction',
       () => {
-        return "myFunc";
+        return 'myFunc';
       },
       () => {
-        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "It should fail");
+        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
       }
     );
     try {
-      await Parse.Cloud.run("myFunction");
-      fail("should have validation error");
+      await Parse.Cloud.run('myFunction');
+      fail('should have validation error');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toBe("It should fail");
+      expect(e.message).toBe('It should fail');
       done();
     }
   });
 
-  it("validator can throw parse error with no message", async done => {
+  it('validator can throw parse error with no message', async done => {
     Parse.Cloud.define(
-      "myFunction",
+      'myFunction',
       () => {
-        return "myFunc";
+        return 'myFunc';
       },
       () => {
         throw new Parse.Error(Parse.Error.SCRIPT_FAILED);
       }
     );
     try {
-      await Parse.Cloud.run("myFunction");
-      fail("should have validation error");
+      await Parse.Cloud.run('myFunction');
+      fail('should have validation error');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
       expect(e.message).toBeUndefined();
@@ -90,30 +90,30 @@ describe("cloud validator", () => {
     }
   });
 
-  it("async validator", async done => {
+  it('async validator', async done => {
     Parse.Cloud.define(
-      "myFunction",
+      'myFunction',
       () => {
-        return "myFunc";
+        return 'myFunc';
       },
       async () => {
         await new Promise(resolve => {
           setTimeout(resolve, 1000);
         });
-        throw "async error";
+        throw 'async error';
       }
     );
     try {
-      await Parse.Cloud.run("myFunction");
-      fail("should have validation error");
+      await Parse.Cloud.run('myFunction');
+      fail('should have validation error');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
-      expect(e.message).toBe("async error");
+      expect(e.message).toBe('async error');
       done();
     }
   });
 
-  it("pass function to validator", async done => {
+  it('pass function to validator', async done => {
     const validator = request => {
       expect(request).toBeDefined();
       expect(request.params).toBeDefined();
@@ -127,108 +127,108 @@ describe("cloud validator", () => {
       done();
     };
     Parse.Cloud.define(
-      "myFunction",
+      'myFunction',
       () => {
-        return "myFunc";
+        return 'myFunc';
       },
       validator
     );
-    await Parse.Cloud.run("myFunction");
+    await Parse.Cloud.run('myFunction');
   });
 
-  it("require user on cloud functions", async done => {
+  it('require user on cloud functions', async done => {
     Parse.Cloud.define(
-      "hello1",
+      'hello1',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         requireUser: true,
       }
     );
     try {
-      await Parse.Cloud.run("hello1", {});
-      fail("function should have failed.");
+      await Parse.Cloud.run('hello1', {});
+      fail('function should have failed.');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
       expect(error.message).toEqual(
-        "Validation failed. Please login to continue."
+        'Validation failed. Please login to continue.'
       );
       done();
     }
   });
 
-  it("require master on cloud functions", done => {
+  it('require master on cloud functions', done => {
     Parse.Cloud.define(
-      "hello2",
+      'hello2',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         requireMaster: true,
       }
     );
-    Parse.Cloud.run("hello2", {})
+    Parse.Cloud.run('hello2', {})
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Master key is required to complete this request."
+          'Validation failed. Master key is required to complete this request.'
         );
         done();
       });
   });
 
-  it("set params on cloud functions", done => {
+  it('set params on cloud functions', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
-        fields: ["a"],
+        fields: ['a'],
       }
     );
-    Parse.Cloud.run("hello", {})
+    Parse.Cloud.run('hello', {})
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Please specify data for a."
+          'Validation failed. Please specify data for a.'
         );
         done();
       });
   });
 
-  it("allow params on cloud functions", done => {
+  it('allow params on cloud functions', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       req => {
-        expect(req.params.a).toEqual("yolo");
-        return "Hello world!";
+        expect(req.params.a).toEqual('yolo');
+        return 'Hello world!';
       },
       {
-        fields: ["a"],
+        fields: ['a'],
       }
     );
-    Parse.Cloud.run("hello", { a: "yolo" })
+    Parse.Cloud.run('hello', { a: 'yolo' })
       .then(() => {
         done();
       })
       .catch(() => {
-        fail("Error should not have been called.");
+        fail('Error should not have been called.');
       });
   });
 
-  it("set params type array", done => {
+  it('set params type array', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         fields: {
@@ -238,24 +238,24 @@ describe("cloud validator", () => {
         },
       }
     );
-    Parse.Cloud.run("hello", { data: "" })
+    Parse.Cloud.run('hello', { data: '' })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Invalid type for data. Expected: array"
+          'Validation failed. Invalid type for data. Expected: array'
         );
         done();
       });
   });
 
-  it("set params type allow array", async () => {
+  it('set params type allow array', async () => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         fields: {
@@ -265,15 +265,15 @@ describe("cloud validator", () => {
         },
       }
     );
-    const result = await Parse.Cloud.run("hello", { data: [{ foo: "bar" }] });
-    expect(result).toBe("Hello world!");
+    const result = await Parse.Cloud.run('hello', { data: [{ foo: 'bar' }] });
+    expect(result).toBe('Hello world!');
   });
 
-  it("set params type", done => {
+  it('set params type', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         fields: {
@@ -283,50 +283,50 @@ describe("cloud validator", () => {
         },
       }
     );
-    Parse.Cloud.run("hello", { data: [] })
+    Parse.Cloud.run('hello', { data: [] })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Invalid type for data. Expected: string"
+          'Validation failed. Invalid type for data. Expected: string'
         );
         done();
       });
   });
 
-  it("set params default", done => {
+  it('set params default', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       req => {
-        expect(req.params.data).toBe("yolo");
-        return "Hello world!";
+        expect(req.params.data).toBe('yolo');
+        return 'Hello world!';
       },
       {
         fields: {
           data: {
             type: String,
-            default: "yolo",
+            default: 'yolo',
           },
         },
       }
     );
-    Parse.Cloud.run("hello")
+    Parse.Cloud.run('hello')
       .then(() => {
         done();
       })
       .catch(() => {
-        fail("function should not have failed.");
+        fail('function should not have failed.');
       });
   });
 
-  it("set params required", done => {
+  it('set params required', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       req => {
-        expect(req.params.data).toBe("yolo");
-        return "Hello world!";
+        expect(req.params.data).toBe('yolo');
+        return 'Hello world!';
       },
       {
         fields: {
@@ -337,25 +337,25 @@ describe("cloud validator", () => {
         },
       }
     );
-    Parse.Cloud.run("hello", {})
+    Parse.Cloud.run('hello', {})
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Please specify data for data."
+          'Validation failed. Please specify data for data.'
         );
         done();
       });
   });
 
-  it("set params not-required options data", done => {
+  it('set params not-required options data', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       req => {
-        expect(req.params.data).toBe("abc");
-        return "Hello world!";
+        expect(req.params.data).toBe('abc');
+        return 'Hello world!';
       },
       {
         fields: {
@@ -366,30 +366,30 @@ describe("cloud validator", () => {
               return s.length >= 4 && s.length <= 50;
             },
             error:
-              "Validation failed. Expected length of data to be between 4 and 50.",
+              'Validation failed. Expected length of data to be between 4 and 50.',
           },
         },
       }
     );
-    Parse.Cloud.run("hello", { data: "abc" })
+    Parse.Cloud.run('hello', { data: 'abc' })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Expected length of data to be between 4 and 50."
+          'Validation failed. Expected length of data to be between 4 and 50.'
         );
         done();
       });
   });
 
-  it("set params not-required type", done => {
+  it('set params not-required type', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       req => {
         expect(req.params.data).toBe(null);
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         fields: {
@@ -400,24 +400,24 @@ describe("cloud validator", () => {
         },
       }
     );
-    Parse.Cloud.run("hello", { data: null })
+    Parse.Cloud.run('hello', { data: null })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Invalid type for data. Expected: string"
+          'Validation failed. Invalid type for data. Expected: string'
         );
         done();
       });
   });
 
-  it("set params not-required options", done => {
+  it('set params not-required options', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         fields: {
@@ -431,20 +431,20 @@ describe("cloud validator", () => {
         },
       }
     );
-    Parse.Cloud.run("hello", {})
+    Parse.Cloud.run('hello', {})
       .then(() => {
         done();
       })
       .catch(() => {
-        fail("function should not have failed.");
+        fail('function should not have failed.');
       });
   });
 
-  it("set params not-required no-options", done => {
+  it('set params not-required no-options', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         fields: {
@@ -455,81 +455,81 @@ describe("cloud validator", () => {
         },
       }
     );
-    Parse.Cloud.run("hello", {})
+    Parse.Cloud.run('hello', {})
       .then(() => {
         done();
       })
       .catch(() => {
-        fail("function should not have failed.");
+        fail('function should not have failed.');
       });
   });
 
-  it("set params option", done => {
+  it('set params option', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       req => {
-        expect(req.params.data).toBe("yolo");
-        return "Hello world!";
+        expect(req.params.data).toBe('yolo');
+        return 'Hello world!';
       },
       {
         fields: {
           data: {
             type: String,
             required: true,
-            options: "a",
+            options: 'a',
           },
         },
       }
     );
-    Parse.Cloud.run("hello", { data: "f" })
+    Parse.Cloud.run('hello', { data: 'f' })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Invalid option for data. Expected: a"
+          'Validation failed. Invalid option for data. Expected: a'
         );
         done();
       });
   });
 
-  it("set params options", done => {
+  it('set params options', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       req => {
-        expect(req.params.data).toBe("yolo");
-        return "Hello world!";
+        expect(req.params.data).toBe('yolo');
+        return 'Hello world!';
       },
       {
         fields: {
           data: {
             type: String,
             required: true,
-            options: ["a", "b"],
+            options: ['a', 'b'],
           },
         },
       }
     );
-    Parse.Cloud.run("hello", { data: "f" })
+    Parse.Cloud.run('hello', { data: 'f' })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Invalid option for data. Expected: a, b"
+          'Validation failed. Invalid option for data. Expected: a, b'
         );
         done();
       });
   });
 
-  it("set params options function", done => {
+  it('set params options function', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        fail("cloud function should not run.");
-        return "Hello world!";
+        fail('cloud function should not run.');
+        return 'Hello world!';
       },
       {
         fields: {
@@ -539,30 +539,30 @@ describe("cloud validator", () => {
             options: val => {
               return val > 1 && val < 5;
             },
-            error: "Validation failed. Expected data to be between 1 and 5.",
+            error: 'Validation failed. Expected data to be between 1 and 5.',
           },
         },
       }
     );
-    Parse.Cloud.run("hello", { data: 7 })
+    Parse.Cloud.run('hello', { data: 7 })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Expected data to be between 1 and 5."
+          'Validation failed. Expected data to be between 1 and 5.'
         );
         done();
       });
   });
 
-  it("can run params function on null", done => {
+  it('can run params function on null', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        fail("cloud function should not run.");
-        return "Hello world!";
+        fail('cloud function should not run.');
+        return 'Hello world!';
       },
       {
         fields: {
@@ -570,58 +570,58 @@ describe("cloud validator", () => {
             options: val => {
               return val.length > 5;
             },
-            error: "Validation failed. String should be at least 5 characters",
+            error: 'Validation failed. String should be at least 5 characters',
           },
         },
       }
     );
-    Parse.Cloud.run("hello", { data: null })
+    Parse.Cloud.run('hello', { data: null })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. String should be at least 5 characters"
+          'Validation failed. String should be at least 5 characters'
         );
         done();
       });
   });
 
-  it("can throw from options validator", done => {
+  it('can throw from options validator', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        fail("cloud function should not run.");
-        return "Hello world!";
+        fail('cloud function should not run.');
+        return 'Hello world!';
       },
       {
         fields: {
           data: {
             options: () => {
-              throw "validation failed.";
+              throw 'validation failed.';
             },
           },
         },
       }
     );
-    Parse.Cloud.run("hello", { data: "a" })
+    Parse.Cloud.run('hello', { data: 'a' })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual("validation failed.");
+        expect(error.message).toEqual('validation failed.');
         done();
       });
   });
 
-  it("can throw null from options validator", done => {
+  it('can throw null from options validator', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        fail("cloud function should not run.");
-        return "Hello world!";
+        fail('cloud function should not run.');
+        return 'Hello world!';
       },
       {
         fields: {
@@ -633,24 +633,24 @@ describe("cloud validator", () => {
         },
       }
     );
-    Parse.Cloud.run("hello", { data: "a" })
+    Parse.Cloud.run('hello', { data: 'a' })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Invalid value for data."
+          'Validation failed. Invalid value for data.'
         );
         done();
       });
   });
 
-  it("can create functions", done => {
+  it('can create functions', done => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         requireUser: false,
@@ -661,242 +661,242 @@ describe("cloud validator", () => {
           },
           data1: {
             type: String,
-            default: "default",
+            default: 'default',
           },
         },
       }
     );
-    Parse.Cloud.run("hello", { data: "str" }).then(result => {
-      expect(result).toEqual("Hello world!");
+    Parse.Cloud.run('hello', { data: 'str' }).then(result => {
+      expect(result).toEqual('Hello world!');
       done();
     });
   });
 
-  it("basic beforeSave requireUserKey", async function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", () => {}, {
+  it('basic beforeSave requireUserKey', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireUser: true,
-      requireUserKeys: ["name"],
+      requireUserKeys: ['name'],
     });
-    const user = await Parse.User.signUp("testuser", "p@ssword");
-    user.set("name", "foo");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    user.set('name', 'foo');
     await user.save(null, { sessionToken: user.getSessionToken() });
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     await obj.save(null, { sessionToken: user.getSessionToken() });
-    expect(obj.get("foo")).toBe("bar");
+    expect(obj.get('foo')).toBe('bar');
     done();
   });
 
-  it("basic beforeSave skipWithMasterKey", async function (done) {
+  it('basic beforeSave skipWithMasterKey', async function (done) {
     Parse.Cloud.beforeSave(
-      "BeforeSave",
+      'BeforeSave',
       () => {
-        throw "before save should have resolved using masterKey.";
+        throw 'before save should have resolved using masterKey.';
       },
       {
         skipWithMasterKey: true,
       }
     );
-    const obj = new Parse.Object("BeforeSave");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
     await obj.save(null, { useMasterKey: true });
-    expect(obj.get("foo")).toBe("bar");
+    expect(obj.get('foo')).toBe('bar');
     done();
   });
 
-  it("basic beforeFind skipWithMasterKey", async function (done) {
+  it('basic beforeFind skipWithMasterKey', async function (done) {
     Parse.Cloud.beforeFind(
-      "beforeFind",
+      'beforeFind',
       () => {
-        throw "before find should have resolved using masterKey.";
+        throw 'before find should have resolved using masterKey.';
       },
       {
         skipWithMasterKey: true,
       }
     );
-    const obj = new Parse.Object("beforeFind");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('beforeFind');
+    obj.set('foo', 'bar');
     await obj.save();
-    expect(obj.get("foo")).toBe("bar");
+    expect(obj.get('foo')).toBe('bar');
 
-    const query = new Parse.Query("beforeFind");
+    const query = new Parse.Query('beforeFind');
     const first = await query.first({ useMasterKey: true });
     expect(first).toBeDefined();
     expect(first.id).toBe(obj.id);
     done();
   });
 
-  it("basic beforeDelete skipWithMasterKey", async function (done) {
+  it('basic beforeDelete skipWithMasterKey', async function (done) {
     Parse.Cloud.beforeDelete(
-      "beforeFind",
+      'beforeFind',
       () => {
-        throw "before find should have resolved using masterKey.";
+        throw 'before find should have resolved using masterKey.';
       },
       {
         skipWithMasterKey: true,
       }
     );
-    const obj = new Parse.Object("beforeFind");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('beforeFind');
+    obj.set('foo', 'bar');
     await obj.save();
-    expect(obj.get("foo")).toBe("bar");
+    expect(obj.get('foo')).toBe('bar');
     await obj.destroy({ useMasterKey: true });
     done();
   });
 
-  it("basic beforeSaveFile skipWithMasterKey", async done => {
+  it('basic beforeSaveFile skipWithMasterKey', async done => {
     Parse.Cloud.beforeSave(
       Parse.File,
       () => {
-        throw "beforeSaveFile should have resolved using master key.";
+        throw 'beforeSaveFile should have resolved using master key.';
       },
       {
         skipWithMasterKey: true,
       }
     );
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
     done();
   });
 
-  it_id("893eec0c-41bd-4adf-8f0a-306087ad8d61")(it)(
-    "basic beforeSave Parse.Config skipWithMasterKey",
+  it_id('893eec0c-41bd-4adf-8f0a-306087ad8d61')(it)(
+    'basic beforeSave Parse.Config skipWithMasterKey',
     async () => {
       Parse.Cloud.beforeSave(
         Parse.Config,
         () => {
-          throw "beforeSaveFile should have resolved using master key.";
+          throw 'beforeSaveFile should have resolved using master key.';
         },
         {
           skipWithMasterKey: true,
         }
       );
       const config = await testConfig();
-      expect(config.get("internal")).toBe("i");
-      expect(config.get("string")).toBe("s");
-      expect(config.get("number")).toBe(12);
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
     }
   );
 
-  it_id("91e739a4-6a38-405c-8f83-f36d48220734")(it)(
-    "basic afterSave Parse.Config skipWithMasterKey",
+  it_id('91e739a4-6a38-405c-8f83-f36d48220734')(it)(
+    'basic afterSave Parse.Config skipWithMasterKey',
     async () => {
       Parse.Cloud.afterSave(
         Parse.Config,
         () => {
-          throw "beforeSaveFile should have resolved using master key.";
+          throw 'beforeSaveFile should have resolved using master key.';
         },
         {
           skipWithMasterKey: true,
         }
       );
       const config = await testConfig();
-      expect(config.get("internal")).toBe("i");
-      expect(config.get("string")).toBe("s");
-      expect(config.get("number")).toBe(12);
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
     }
   );
 
-  it("beforeSave validateMasterKey and skipWithMasterKey fail", async function (done) {
+  it('beforeSave validateMasterKey and skipWithMasterKey fail', async function (done) {
     Parse.Cloud.beforeSave(
-      "BeforeSave",
+      'BeforeSave',
       () => {
-        throw "beforeSaveFile should have resolved using master key.";
+        throw 'beforeSaveFile should have resolved using master key.';
       },
       {
-        fields: ["foo"],
+        fields: ['foo'],
         validateMasterKey: true,
         skipWithMasterKey: true,
       }
     );
 
-    const obj = new Parse.Object("BeforeSave");
+    const obj = new Parse.Object('BeforeSave');
     try {
       await obj.save(null, { useMasterKey: true });
-      fail("function should have failed.");
+      fail('function should have failed.');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
       expect(error.message).toEqual(
-        "Validation failed. Please specify data for foo."
+        'Validation failed. Please specify data for foo.'
       );
       done();
     }
   });
 
-  it("beforeSave validateMasterKey and skipWithMasterKey success", async function (done) {
+  it('beforeSave validateMasterKey and skipWithMasterKey success', async function (done) {
     Parse.Cloud.beforeSave(
-      "BeforeSave",
+      'BeforeSave',
       () => {
-        throw "beforeSaveFile should have resolved using master key.";
+        throw 'beforeSaveFile should have resolved using master key.';
       },
       {
-        fields: ["foo"],
+        fields: ['foo'],
         validateMasterKey: true,
         skipWithMasterKey: true,
       }
     );
 
-    const obj = new Parse.Object("BeforeSave");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
     try {
       await obj.save(null, { useMasterKey: true });
       done();
     } catch (error) {
-      fail("error should not have been called.");
+      fail('error should not have been called.');
     }
   });
 
-  it("basic beforeSave requireUserKey on User Class", async function (done) {
+  it('basic beforeSave requireUserKey on User Class', async function (done) {
     Parse.Cloud.beforeSave(Parse.User, () => {}, {
       requireUser: true,
-      requireUserKeys: ["name"],
+      requireUserKeys: ['name'],
     });
     const user = new Parse.User();
-    user.set("username", "testuser");
-    user.set("password", "p@ssword");
-    user.set("name", "foo");
-    expect(user.get("name")).toBe("foo");
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    user.set('name', 'foo');
+    expect(user.get('name')).toBe('foo');
     done();
   });
 
-  it("basic beforeSave requireUserKey rejection", async function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", () => {}, {
+  it('basic beforeSave requireUserKey rejection', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireUser: true,
-      requireUserKeys: ["name"],
+      requireUserKeys: ['name'],
     });
-    const user = await Parse.User.signUp("testuser", "p@ssword");
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     try {
       await obj.save(null, { sessionToken: user.getSessionToken() });
-      fail("should not have been able to save without userkey");
+      fail('should not have been able to save without userkey');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
       expect(error.message).toEqual(
-        "Validation failed. Please set data for name on your account."
+        'Validation failed. Please set data for name on your account.'
       );
       done();
     }
   });
 
-  it("basic beforeSave requireUserKey without user", async function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", () => {}, {
-      requireUserKeys: ["name"],
+  it('basic beforeSave requireUserKey without user', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
+      requireUserKeys: ['name'],
     });
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     try {
       await obj.save();
-      fail("should not have been able to save without user");
+      fail('should not have been able to save without user');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-      expect(error.message).toEqual("Please login to make this request.");
+      expect(error.message).toEqual('Please login to make this request.');
       done();
     }
   });
 
-  it("basic beforeSave requireUserKey as admin", async function (done) {
+  it('basic beforeSave requireUserKey as admin', async function (done) {
     Parse.Cloud.beforeSave(Parse.User, () => {}, {
       fields: {
         admin: {
@@ -906,7 +906,7 @@ describe("cloud validator", () => {
       },
     });
     Parse.Cloud.define(
-      "secureFunction",
+      'secureFunction',
       () => {
         return "Here's all the secure data!";
       },
@@ -914,38 +914,38 @@ describe("cloud validator", () => {
         requireUserKeys: {
           admin: {
             options: true,
-            error: "Unauthorized.",
+            error: 'Unauthorized.',
           },
         },
       }
     );
     const user = new Parse.User();
-    user.set("username", "testuser");
-    user.set("password", "p@ssword");
-    user.set("admin", true);
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    user.set('admin', true);
     await user.signUp();
-    expect(user.get("admin")).toBe(false);
+    expect(user.get('admin')).toBe(false);
     try {
-      await Parse.Cloud.run("secureFunction");
-      fail("function should only be available to admin users");
+      await Parse.Cloud.run('secureFunction');
+      fail('function should only be available to admin users');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-      expect(error.message).toEqual("Unauthorized.");
+      expect(error.message).toEqual('Unauthorized.');
     }
     done();
   });
 
-  it("basic beforeSave requireUserKey as custom function", async function (done) {
+  it('basic beforeSave requireUserKey as custom function', async function (done) {
     Parse.Cloud.beforeSave(Parse.User, () => {}, {
       fields: {
         accType: {
-          default: "normal",
+          default: 'normal',
           constant: true,
         },
       },
     });
     Parse.Cloud.define(
-      "secureFunction",
+      'secureFunction',
       () => {
         return "Here's all the secure data!";
       },
@@ -953,40 +953,40 @@ describe("cloud validator", () => {
         requireUserKeys: {
           accType: {
             options: val => {
-              return ["admin", "admin2"].includes(val);
+              return ['admin', 'admin2'].includes(val);
             },
-            error: "Unauthorized.",
+            error: 'Unauthorized.',
           },
         },
       }
     );
     const user = new Parse.User();
-    user.set("username", "testuser");
-    user.set("password", "p@ssword");
-    user.set("accType", "admin");
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    user.set('accType', 'admin');
     await user.signUp();
-    expect(user.get("accType")).toBe("normal");
+    expect(user.get('accType')).toBe('normal');
     try {
-      await Parse.Cloud.run("secureFunction");
-      fail("function should only be available to admin users");
+      await Parse.Cloud.run('secureFunction');
+      fail('function should only be available to admin users');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-      expect(error.message).toEqual("Unauthorized.");
+      expect(error.message).toEqual('Unauthorized.');
     }
     done();
   });
 
-  it("basic beforeSave allow requireUserKey as custom function", async function (done) {
+  it('basic beforeSave allow requireUserKey as custom function', async function (done) {
     Parse.Cloud.beforeSave(Parse.User, () => {}, {
       fields: {
         accType: {
-          default: "admin",
+          default: 'admin',
           constant: true,
         },
       },
     });
     Parse.Cloud.define(
-      "secureFunction",
+      'secureFunction',
       () => {
         return "Here's all the secure data!";
       },
@@ -994,254 +994,254 @@ describe("cloud validator", () => {
         requireUserKeys: {
           accType: {
             options: val => {
-              return ["admin", "admin2"].includes(val);
+              return ['admin', 'admin2'].includes(val);
             },
-            error: "Unauthorized.",
+            error: 'Unauthorized.',
           },
         },
       }
     );
     const user = new Parse.User();
-    user.set("username", "testuser");
-    user.set("password", "p@ssword");
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
     await user.signUp();
-    expect(user.get("accType")).toBe("admin");
-    const result = await Parse.Cloud.run("secureFunction");
+    expect(user.get('accType')).toBe('admin');
+    const result = await Parse.Cloud.run('secureFunction');
     expect(result).toBe("Here's all the secure data!");
     done();
   });
 
-  it("basic beforeSave requireUser", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", () => {}, {
+  it('basic beforeSave requireUser', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireUser: true,
     });
 
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     obj
       .save()
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Please login to continue."
+          'Validation failed. Please login to continue.'
         );
         done();
       });
   });
 
-  it("basic validator requireAnyUserRoles", async function (done) {
+  it('basic validator requireAnyUserRoles', async function (done) {
     Parse.Cloud.define(
-      "cloudFunction",
+      'cloudFunction',
       () => {
         return true;
       },
       {
         requireUser: true,
-        requireAnyUserRoles: ["Admin"],
+        requireAnyUserRoles: ['Admin'],
       }
     );
-    const user = await Parse.User.signUp("testuser", "p@ssword");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
     try {
-      await Parse.Cloud.run("cloudFunction");
-      fail("cloud validator should have failed.");
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
     } catch (e) {
       expect(e.message).toBe(
-        "Validation failed. User does not match the required roles."
+        'Validation failed. User does not match the required roles.'
       );
     }
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
-    const role = new Parse.Role("Admin", roleACL);
+    const role = new Parse.Role('Admin', roleACL);
     role.getUsers().add(user);
     await role.save({ useMasterKey: true });
-    await Parse.Cloud.run("cloudFunction");
+    await Parse.Cloud.run('cloudFunction');
     done();
   });
 
-  it("basic validator requireAllUserRoles", async function (done) {
+  it('basic validator requireAllUserRoles', async function (done) {
     Parse.Cloud.define(
-      "cloudFunction",
+      'cloudFunction',
       () => {
         return true;
       },
       {
         requireUser: true,
-        requireAllUserRoles: ["Admin", "Admin2"],
+        requireAllUserRoles: ['Admin', 'Admin2'],
       }
     );
-    const user = await Parse.User.signUp("testuser", "p@ssword");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
     try {
-      await Parse.Cloud.run("cloudFunction");
-      fail("cloud validator should have failed.");
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
     } catch (e) {
       expect(e.message).toBe(
-        "Validation failed. User does not match all the required roles."
+        'Validation failed. User does not match all the required roles.'
       );
     }
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
-    const role = new Parse.Role("Admin", roleACL);
+    const role = new Parse.Role('Admin', roleACL);
     role.getUsers().add(user);
 
-    const role2 = new Parse.Role("Admin2", roleACL);
+    const role2 = new Parse.Role('Admin2', roleACL);
     role2.getUsers().add(user);
     await role.save({ useMasterKey: true });
     await role2.save({ useMasterKey: true });
-    await Parse.Cloud.run("cloudFunction");
+    await Parse.Cloud.run('cloudFunction');
     done();
   });
 
-  it("allow requireAnyUserRoles to be a function", async function (done) {
+  it('allow requireAnyUserRoles to be a function', async function (done) {
     Parse.Cloud.define(
-      "cloudFunction",
+      'cloudFunction',
       () => {
         return true;
       },
       {
         requireUser: true,
         requireAnyUserRoles: () => {
-          return ["Admin Func"];
+          return ['Admin Func'];
         },
       }
     );
-    const user = await Parse.User.signUp("testuser", "p@ssword");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
     try {
-      await Parse.Cloud.run("cloudFunction");
-      fail("cloud validator should have failed.");
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
     } catch (e) {
       expect(e.message).toBe(
-        "Validation failed. User does not match the required roles."
+        'Validation failed. User does not match the required roles.'
       );
     }
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
-    const role = new Parse.Role("Admin Func", roleACL);
+    const role = new Parse.Role('Admin Func', roleACL);
     role.getUsers().add(user);
     await role.save({ useMasterKey: true });
-    await Parse.Cloud.run("cloudFunction");
+    await Parse.Cloud.run('cloudFunction');
     done();
   });
 
-  it("allow requireAllUserRoles to be a function", async function (done) {
+  it('allow requireAllUserRoles to be a function', async function (done) {
     Parse.Cloud.define(
-      "cloudFunction",
+      'cloudFunction',
       () => {
         return true;
       },
       {
         requireUser: true,
         requireAllUserRoles: () => {
-          return ["AdminA", "AdminB"];
+          return ['AdminA', 'AdminB'];
         },
       }
     );
-    const user = await Parse.User.signUp("testuser", "p@ssword");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
     try {
-      await Parse.Cloud.run("cloudFunction");
-      fail("cloud validator should have failed.");
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
     } catch (e) {
       expect(e.message).toBe(
-        "Validation failed. User does not match all the required roles."
+        'Validation failed. User does not match all the required roles.'
       );
     }
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
-    const role = new Parse.Role("AdminA", roleACL);
+    const role = new Parse.Role('AdminA', roleACL);
     role.getUsers().add(user);
 
-    const role2 = new Parse.Role("AdminB", roleACL);
+    const role2 = new Parse.Role('AdminB', roleACL);
     role2.getUsers().add(user);
     await role.save({ useMasterKey: true });
     await role2.save({ useMasterKey: true });
-    await Parse.Cloud.run("cloudFunction");
+    await Parse.Cloud.run('cloudFunction');
     done();
   });
 
-  it("basic requireAllUserRoles but no user", async function (done) {
+  it('basic requireAllUserRoles but no user', async function (done) {
     Parse.Cloud.define(
-      "cloudFunction",
+      'cloudFunction',
       () => {
         return true;
       },
       {
-        requireAllUserRoles: ["Admin"],
+        requireAllUserRoles: ['Admin'],
       }
     );
     try {
-      await Parse.Cloud.run("cloudFunction");
-      fail("cloud validator should have failed.");
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
     } catch (e) {
-      expect(e.message).toBe("Validation failed. Please login to continue.");
+      expect(e.message).toBe('Validation failed. Please login to continue.');
     }
-    const user = await Parse.User.signUp("testuser", "p@ssword");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
-    const role = new Parse.Role("Admin", roleACL);
+    const role = new Parse.Role('Admin', roleACL);
     role.getUsers().add(user);
     await role.save({ useMasterKey: true });
-    await Parse.Cloud.run("cloudFunction");
+    await Parse.Cloud.run('cloudFunction');
     done();
   });
 
-  it("basic beforeSave requireMaster", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", () => {}, {
+  it('basic beforeSave requireMaster', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireMaster: true,
     });
 
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     obj
       .save()
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Master key is required to complete this request."
+          'Validation failed. Master key is required to complete this request.'
         );
         done();
       });
   });
 
-  it("basic beforeSave master", async function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", () => {}, {
+  it('basic beforeSave master', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireUser: true,
     });
 
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     await obj.save(null, { useMasterKey: true });
     done();
   });
 
-  it("basic beforeSave validateMasterKey", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", () => {}, {
+  it('basic beforeSave validateMasterKey', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireUser: true,
       validateMasterKey: true,
     });
 
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     obj
       .save(null, { useMasterKey: true })
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Please login to continue."
+          'Validation failed. Please login to continue.'
         );
         done();
       });
   });
 
-  it("basic beforeSave requireKeys", function (done) {
-    Parse.Cloud.beforeSave("beforeSaveRequire", () => {}, {
+  it('basic beforeSave requireKeys', function (done) {
+    Parse.Cloud.beforeSave('beforeSaveRequire', () => {}, {
       fields: {
         foo: {
           required: true,
@@ -1251,113 +1251,113 @@ describe("cloud validator", () => {
         },
       },
     });
-    const obj = new Parse.Object("beforeSaveRequire");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('beforeSaveRequire');
+    obj.set('foo', 'bar');
     obj
       .save()
       .then(() => {
-        fail("function should have failed.");
+        fail('function should have failed.');
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
         expect(error.message).toEqual(
-          "Validation failed. Please specify data for bar."
+          'Validation failed. Please specify data for bar.'
         );
         done();
       });
   });
 
-  it("basic beforeSave constantKeys", async function (done) {
-    Parse.Cloud.beforeSave("BeforeSave", () => {}, {
+  it('basic beforeSave constantKeys', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
       fields: {
         foo: {
           constant: true,
-          default: "bar",
+          default: 'bar',
         },
       },
     });
-    const obj = new Parse.Object("BeforeSave");
-    obj.set("foo", "far");
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'far');
     await obj.save();
-    expect(obj.get("foo")).toBe("bar");
-    obj.set("foo", "yolo");
+    expect(obj.get('foo')).toBe('bar');
+    obj.set('foo', 'yolo');
     await obj.save();
-    expect(obj.get("foo")).toBe("bar");
+    expect(obj.get('foo')).toBe('bar');
     done();
   });
 
-  it("basic beforeSave defaultKeys", async function (done) {
-    Parse.Cloud.beforeSave("BeforeSave", () => {}, {
+  it('basic beforeSave defaultKeys', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
       fields: {
         foo: {
-          default: "bar",
+          default: 'bar',
         },
       },
     });
-    const obj = new Parse.Object("BeforeSave");
+    const obj = new Parse.Object('BeforeSave');
     await obj.save();
-    expect(obj.get("foo")).toBe("bar");
-    obj.set("foo", "yolo");
+    expect(obj.get('foo')).toBe('bar');
+    obj.set('foo', 'yolo');
     await obj.save();
-    expect(obj.get("foo")).toBe("yolo");
+    expect(obj.get('foo')).toBe('yolo');
     done();
   });
 
-  it("validate beforeSave", async done => {
-    Parse.Cloud.beforeSave("MyObject", () => {}, validatorSuccess);
+  it('validate beforeSave', async done => {
+    Parse.Cloud.beforeSave('MyObject', () => {}, validatorSuccess);
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     try {
       await myObject.save();
       done();
     } catch (e) {
-      fail("before save should not have failed.");
+      fail('before save should not have failed.');
     }
   });
 
-  it("validate beforeSave fail", async done => {
-    Parse.Cloud.beforeSave("MyObject", () => {}, validatorFail);
+  it('validate beforeSave fail', async done => {
+    Parse.Cloud.beforeSave('MyObject', () => {}, validatorFail);
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     try {
       await myObject.save();
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate afterSave", async done => {
+  it('validate afterSave', async done => {
     Parse.Cloud.afterSave(
-      "MyObject",
+      'MyObject',
       () => {
         done();
       },
       validatorSuccess
     );
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     try {
       await myObject.save();
     } catch (e) {
-      fail("before save should not have failed.");
+      fail('before save should not have failed.');
     }
   });
 
-  it("validate afterSave fail", async done => {
+  it('validate afterSave fail', async done => {
     Parse.Cloud.afterSave(
-      "MyObject",
+      'MyObject',
       () => {
-        fail("this should not be called.");
+        fail('this should not be called.');
       },
       validatorFail
     );
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     await myObject.save();
     setTimeout(() => {
@@ -1365,109 +1365,109 @@ describe("cloud validator", () => {
     }, 1000);
   });
 
-  it("validate beforeDelete", async done => {
-    Parse.Cloud.beforeDelete("MyObject", () => {}, validatorSuccess);
+  it('validate beforeDelete', async done => {
+    Parse.Cloud.beforeDelete('MyObject', () => {}, validatorSuccess);
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     await myObject.save();
     try {
       await myObject.destroy();
       done();
     } catch (e) {
-      fail("before delete should not have failed.");
+      fail('before delete should not have failed.');
     }
   });
 
-  it("validate beforeDelete fail", async done => {
+  it('validate beforeDelete fail', async done => {
     Parse.Cloud.beforeDelete(
-      "MyObject",
+      'MyObject',
       () => {
-        fail("this should not be called.");
+        fail('this should not be called.');
       },
       validatorFail
     );
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     await myObject.save();
     try {
       await myObject.destroy();
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate afterDelete", async done => {
+  it('validate afterDelete', async done => {
     Parse.Cloud.afterDelete(
-      "MyObject",
+      'MyObject',
       () => {
         done();
       },
       validatorSuccess
     );
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     await myObject.save();
     try {
       await myObject.destroy();
     } catch (e) {
-      fail("after delete should not have failed.");
+      fail('after delete should not have failed.');
     }
   });
 
-  it("validate afterDelete fail", async done => {
+  it('validate afterDelete fail', async done => {
     Parse.Cloud.afterDelete(
-      "MyObject",
+      'MyObject',
       () => {
-        fail("this should not be called.");
+        fail('this should not be called.');
       },
       validatorFail
     );
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     await myObject.save();
     try {
       await myObject.destroy();
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate beforeFind", async done => {
-    Parse.Cloud.beforeFind("MyObject", () => {}, validatorSuccess);
+  it('validate beforeFind', async done => {
+    Parse.Cloud.beforeFind('MyObject', () => {}, validatorSuccess);
     try {
-      const MyObject = Parse.Object.extend("MyObject");
+      const MyObject = Parse.Object.extend('MyObject');
       const myObjectQuery = new Parse.Query(MyObject);
       await myObjectQuery.find();
       done();
     } catch (e) {
-      fail("beforeFind should not have failed.");
+      fail('beforeFind should not have failed.');
     }
   });
-  it("validate beforeFind fail", async done => {
-    Parse.Cloud.beforeFind("MyObject", () => {}, validatorFail);
+  it('validate beforeFind fail', async done => {
+    Parse.Cloud.beforeFind('MyObject', () => {}, validatorFail);
     try {
-      const MyObject = Parse.Object.extend("MyObject");
+      const MyObject = Parse.Object.extend('MyObject');
       const myObjectQuery = new Parse.Query(MyObject);
       await myObjectQuery.find();
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate afterFind", async done => {
-    Parse.Cloud.afterFind("MyObject", () => {}, validatorSuccess);
+  it('validate afterFind', async done => {
+    Parse.Cloud.afterFind('MyObject', () => {}, validatorSuccess);
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     await myObject.save();
     try {
@@ -1475,178 +1475,178 @@ describe("cloud validator", () => {
       await myObjectQuery.find();
       done();
     } catch (e) {
-      fail("beforeFind should not have failed.");
+      fail('beforeFind should not have failed.');
     }
   });
 
-  it("validate afterFind fail", async done => {
-    Parse.Cloud.afterFind("MyObject", () => {}, validatorFail);
+  it('validate afterFind fail', async done => {
+    Parse.Cloud.afterFind('MyObject', () => {}, validatorFail);
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     await myObject.save();
     try {
       const myObjectQuery = new Parse.Query(MyObject);
       await myObjectQuery.find();
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate beforeSaveFile", async done => {
+  it('validate beforeSaveFile', async done => {
     Parse.Cloud.beforeSave(Parse.File, () => {}, validatorSuccess);
 
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
     done();
   });
 
-  it("validate beforeSaveFile fail", async done => {
+  it('validate beforeSaveFile fail', async done => {
     Parse.Cloud.beforeSave(Parse.File, () => {}, validatorFail);
     try {
-      const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save({ useMasterKey: true });
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate afterSaveFile", async done => {
+  it('validate afterSaveFile', async done => {
     Parse.Cloud.afterSave(Parse.File, () => {}, validatorSuccess);
 
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
     done();
   });
 
-  it("validate afterSaveFile fail", async done => {
+  it('validate afterSaveFile fail', async done => {
     Parse.Cloud.afterSave(Parse.File, () => {}, validatorFail);
     try {
-      const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save({ useMasterKey: true });
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate beforeDeleteFile", async done => {
+  it('validate beforeDeleteFile', async done => {
     Parse.Cloud.beforeDelete(Parse.File, () => {}, validatorSuccess);
 
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save();
     await file.destroy();
     done();
   });
 
-  it("validate beforeDeleteFile fail", async done => {
+  it('validate beforeDeleteFile fail', async done => {
     Parse.Cloud.beforeDelete(Parse.File, () => {}, validatorFail);
     try {
-      const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save();
       await file.destroy();
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("validate afterDeleteFile", async done => {
+  it('validate afterDeleteFile', async done => {
     Parse.Cloud.afterDelete(Parse.File, () => {}, validatorSuccess);
 
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save();
     await file.destroy();
     done();
   });
 
-  it("validate afterDeleteFile fail", async done => {
+  it('validate afterDeleteFile fail', async done => {
     Parse.Cloud.afterDelete(Parse.File, () => {}, validatorFail);
     try {
-      const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save();
       await file.destroy();
-      fail("cloud function should have failed.");
+      fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it_id("32ca1a99-7f2b-429d-a7cf-62b6661d0af6")(it)(
-    "validate beforeSave Parse.Config",
+  it_id('32ca1a99-7f2b-429d-a7cf-62b6661d0af6')(it)(
+    'validate beforeSave Parse.Config',
     async () => {
       Parse.Cloud.beforeSave(Parse.Config, () => {}, validatorSuccess);
       const config = await testConfig();
-      expect(config.get("internal")).toBe("i");
-      expect(config.get("string")).toBe("s");
-      expect(config.get("number")).toBe(12);
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
     }
   );
 
-  it_id("c84d11e7-d09c-4843-ad98-f671511bf612")(it)(
-    "validate beforeSave Parse.Config fail",
+  it_id('c84d11e7-d09c-4843-ad98-f671511bf612')(it)(
+    'validate beforeSave Parse.Config fail',
     async () => {
       Parse.Cloud.beforeSave(Parse.Config, () => {}, validatorFail);
       try {
         await testConfig();
-        fail("cloud function should have failed.");
+        fail('cloud function should have failed.');
       } catch (e) {
         expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       }
     }
   );
 
-  it_id("b18b9a6a-0e35-4b60-9771-30f53501df3c")(it)(
-    "validate afterSave Parse.Config",
+  it_id('b18b9a6a-0e35-4b60-9771-30f53501df3c')(it)(
+    'validate afterSave Parse.Config',
     async () => {
       Parse.Cloud.afterSave(Parse.Config, () => {}, validatorSuccess);
       const config = await testConfig();
-      expect(config.get("internal")).toBe("i");
-      expect(config.get("string")).toBe("s");
-      expect(config.get("number")).toBe(12);
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
     }
   );
 
-  it_id("ef761222-1758-4614-b984-da84d73fc10c")(it)(
-    "validate afterSave Parse.Config fail",
+  it_id('ef761222-1758-4614-b984-da84d73fc10c')(it)(
+    'validate afterSave Parse.Config fail',
     async () => {
       Parse.Cloud.afterSave(Parse.Config, () => {}, validatorFail);
       try {
         await testConfig();
-        fail("cloud function should have failed.");
+        fail('cloud function should have failed.');
       } catch (e) {
         expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       }
     }
   );
 
-  it("Should have validator", async done => {
+  it('Should have validator', async done => {
     Parse.Cloud.define(
-      "myFunction",
+      'myFunction',
       () => {},
       () => {
-        throw "error";
+        throw 'error';
       }
     );
     try {
-      await Parse.Cloud.run("myFunction");
+      await Parse.Cloud.run('myFunction');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
       done();
     }
   });
 
-  it("does not log on valid config", () => {
-    Parse.Cloud.define("myFunction", () => {}, {
+  it('does not log on valid config', () => {
+    Parse.Cloud.define('myFunction', () => {}, {
       requireUser: true,
       requireMaster: true,
       validateMasterKey: false,
@@ -1654,85 +1654,85 @@ describe("cloud validator", () => {
       requireUserKeys: {
         Acc: {
           constant: true,
-          options: ["A", "B"],
+          options: ['A', 'B'],
           required: true,
-          default: "f",
-          error: "a",
+          default: 'f',
+          error: 'a',
           type: String,
         },
       },
       fields: {
         Acc: {
           constant: true,
-          options: ["A", "B"],
+          options: ['A', 'B'],
           required: true,
-          default: "f",
-          error: "a",
+          default: 'f',
+          error: 'a',
           type: String,
         },
       },
     });
   });
-  it("Logs on invalid config", () => {
+  it('Logs on invalid config', () => {
     const fields = [
       {
-        field: "requiredUser",
+        field: 'requiredUser',
         value: true,
         error:
-          "requiredUser is not a supported parameter for Cloud Function validations.",
+          'requiredUser is not a supported parameter for Cloud Function validations.',
       },
       {
-        field: "requireUser",
+        field: 'requireUser',
         value: [],
         error:
-          "Invalid type for Cloud Function validation key requireUser. Expected boolean, actual array",
+          'Invalid type for Cloud Function validation key requireUser. Expected boolean, actual array',
       },
       {
-        field: "requireMaster",
+        field: 'requireMaster',
         value: [],
         error:
-          "Invalid type for Cloud Function validation key requireMaster. Expected boolean, actual array",
+          'Invalid type for Cloud Function validation key requireMaster. Expected boolean, actual array',
       },
       {
-        field: "validateMasterKey",
+        field: 'validateMasterKey',
         value: [],
         error:
-          "Invalid type for Cloud Function validation key validateMasterKey. Expected boolean, actual array",
+          'Invalid type for Cloud Function validation key validateMasterKey. Expected boolean, actual array',
       },
       {
-        field: "skipWithMasterKey",
+        field: 'skipWithMasterKey',
         value: [],
         error:
-          "Invalid type for Cloud Function validation key skipWithMasterKey. Expected boolean, actual array",
+          'Invalid type for Cloud Function validation key skipWithMasterKey. Expected boolean, actual array',
       },
       {
-        field: "requireAllUserRoles",
+        field: 'requireAllUserRoles',
         value: true,
         error:
-          "Invalid type for Cloud Function validation key requireAllUserRoles. Expected array|function, actual boolean",
+          'Invalid type for Cloud Function validation key requireAllUserRoles. Expected array|function, actual boolean',
       },
       {
-        field: "requireAnyUserRoles",
+        field: 'requireAnyUserRoles',
         value: true,
         error:
-          "Invalid type for Cloud Function validation key requireAnyUserRoles. Expected array|function, actual boolean",
+          'Invalid type for Cloud Function validation key requireAnyUserRoles. Expected array|function, actual boolean',
       },
       {
-        field: "fields",
+        field: 'fields',
         value: true,
         error:
-          "Invalid type for Cloud Function validation key fields. Expected array|object, actual boolean",
+          'Invalid type for Cloud Function validation key fields. Expected array|object, actual boolean',
       },
       {
-        field: "requireUserKeys",
+        field: 'requireUserKeys',
         value: true,
         error:
-          "Invalid type for Cloud Function validation key requireUserKeys. Expected array|object, actual boolean",
+          'Invalid type for Cloud Function validation key requireUserKeys. Expected array|object, actual boolean',
       },
     ];
     for (const field of fields) {
       try {
-        Parse.Cloud.define("myFunction", () => {}, {
+        Parse.Cloud.define('myFunction', () => {}, {
           [field.field]: field.value,
         });
         fail(
@@ -1744,36 +1744,36 @@ describe("cloud validator", () => {
     }
   });
 
-  it("Logs on multiple invalid configs", () => {
+  it('Logs on multiple invalid configs', () => {
     const fields = [
       {
-        field: "otherKey",
+        field: 'otherKey',
         value: true,
         error:
-          "otherKey is not a supported parameter for Cloud Function validations.",
+          'otherKey is not a supported parameter for Cloud Function validations.',
       },
       {
-        field: "constant",
+        field: 'constant',
         value: [],
         error:
-          "Invalid type for Cloud Function validation key constant. Expected boolean, actual array",
+          'Invalid type for Cloud Function validation key constant. Expected boolean, actual array',
       },
       {
-        field: "required",
+        field: 'required',
         value: [],
         error:
-          "Invalid type for Cloud Function validation key required. Expected boolean, actual array",
+          'Invalid type for Cloud Function validation key required. Expected boolean, actual array',
       },
       {
-        field: "error",
+        field: 'error',
         value: [],
         error:
-          "Invalid type for Cloud Function validation key error. Expected string, actual array",
+          'Invalid type for Cloud Function validation key error. Expected string, actual array',
       },
     ];
     for (const field of fields) {
       try {
-        Parse.Cloud.define("myFunction", () => {}, {
+        Parse.Cloud.define('myFunction', () => {}, {
           fields: {
             name: {
               [field.field]: field.value,
@@ -1787,7 +1787,7 @@ describe("cloud validator", () => {
         expect(e).toBe(field.error);
       }
       try {
-        Parse.Cloud.define("myFunction", () => {}, {
+        Parse.Cloud.define('myFunction', () => {}, {
           requireUserKeys: {
             name: {
               [field.field]: field.value,
@@ -1803,11 +1803,11 @@ describe("cloud validator", () => {
     }
   });
 
-  it("set params options function async", async () => {
+  it('set params options function async', async () => {
     Parse.Cloud.define(
-      "hello",
+      'hello',
       () => {
-        return "Hello world!";
+        return 'Hello world!';
       },
       {
         fields: {
@@ -1818,35 +1818,35 @@ describe("cloud validator", () => {
               await new Promise(resolve => {
                 setTimeout(resolve, 500);
               });
-              return val === "f";
+              return val === 'f';
             },
-            error: "Validation failed.",
+            error: 'Validation failed.',
           },
         },
       }
     );
     try {
-      await Parse.Cloud.run("hello", { data: "d" });
-      fail("validation should have failed");
+      await Parse.Cloud.run('hello', { data: 'd' });
+      fail('validation should have failed');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-      expect(error.message).toEqual("Validation failed.");
+      expect(error.message).toEqual('Validation failed.');
     }
-    const result = await Parse.Cloud.run("hello", { data: "f" });
-    expect(result).toBe("Hello world!");
+    const result = await Parse.Cloud.run('hello', { data: 'f' });
+    expect(result).toBe('Hello world!');
   });
 
-  it("basic beforeSave requireUserKey as custom async function", async () => {
+  it('basic beforeSave requireUserKey as custom async function', async () => {
     Parse.Cloud.beforeSave(Parse.User, () => {}, {
       fields: {
         accType: {
-          default: "normal",
+          default: 'normal',
           constant: true,
         },
       },
     });
     Parse.Cloud.define(
-      "secureFunction",
+      'secureFunction',
       () => {
         return "Here's all the secure data!";
       },
@@ -1857,25 +1857,25 @@ describe("cloud validator", () => {
               await new Promise(resolve => {
                 setTimeout(resolve, 500);
               });
-              return ["admin", "admin2"].includes(val);
+              return ['admin', 'admin2'].includes(val);
             },
-            error: "Unauthorized.",
+            error: 'Unauthorized.',
           },
         },
       }
     );
     const user = new Parse.User();
-    user.set("username", "testuser");
-    user.set("password", "p@ssword");
-    user.set("accType", "admin");
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    user.set('accType', 'admin');
     await user.signUp();
-    expect(user.get("accType")).toBe("normal");
+    expect(user.get('accType')).toBe('normal');
     try {
-      await Parse.Cloud.run("secureFunction");
-      fail("function should only be available to admin users");
+      await Parse.Cloud.run('secureFunction');
+      fail('function should only be available to admin users');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-      expect(error.message).toEqual("Unauthorized.");
+      expect(error.message).toEqual('Unauthorized.');
     }
   });
 });

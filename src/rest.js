@@ -7,12 +7,12 @@
 // routes. That's useful for the routes that do really similar
 // things.
 
-var Parse = require("parse/node").Parse;
+var Parse = require('parse/node').Parse;
 
-var RestQuery = require("./RestQuery");
-var RestWrite = require("./RestWrite");
-var triggers = require("./triggers");
-const { enforceRoleSecurity } = require("./SharedRest");
+var RestQuery = require('./RestQuery');
+var RestWrite = require('./RestWrite');
+var triggers = require('./triggers');
+const { enforceRoleSecurity } = require('./SharedRest');
 
 function checkTriggers(className, config, types) {
   return types.some(triggerType => {
@@ -80,18 +80,18 @@ const get = async (
 
 // Returns a promise that doesn't resolve to any useful value.
 function del(config, auth, className, objectId, context) {
-  if (typeof objectId !== "string") {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, "bad objectId");
+  if (typeof objectId !== 'string') {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
   }
 
-  if (className === "_User" && auth.isUnauthenticated()) {
+  if (className === '_User' && auth.isUnauthenticated()) {
     throw new Parse.Error(
       Parse.Error.SESSION_MISSING,
-      "Insufficient auth to delete user"
+      'Insufficient auth to delete user'
     );
   }
 
-  enforceRoleSecurity("delete", className, auth);
+  enforceRoleSecurity('delete', className, auth);
 
   let inflatedObject;
   let schemaController;
@@ -99,11 +99,11 @@ function del(config, auth, className, objectId, context) {
   return Promise.resolve()
     .then(async () => {
       const hasTriggers = checkTriggers(className, config, [
-        "beforeDelete",
-        "afterDelete",
+        'beforeDelete',
+        'afterDelete',
       ]);
       const hasLiveQuery = checkLiveQuery(className, config);
-      if (hasTriggers || hasLiveQuery || className == "_Session") {
+      if (hasTriggers || hasLiveQuery || className == '_Session') {
         const query = await RestQuery({
           method: RestQuery.Method.get,
           config,
@@ -111,19 +111,19 @@ function del(config, auth, className, objectId, context) {
           className,
           restWhere: { objectId },
         });
-        return query.execute({ op: "delete" }).then(response => {
+        return query.execute({ op: 'delete' }).then(response => {
           if (response && response.results && response.results.length) {
             const firstResult = response.results[0];
             firstResult.className = className;
             if (
-              className === "_Session" &&
+              className === '_Session' &&
               !auth.isMaster &&
               !auth.isMaintenance
             ) {
               if (!auth.user || firstResult.user.objectId !== auth.user.id) {
                 throw new Parse.Error(
                   Parse.Error.INVALID_SESSION_TOKEN,
-                  "Invalid session token"
+                  'Invalid session token'
                 );
               }
             }
@@ -141,7 +141,7 @@ function del(config, auth, className, objectId, context) {
           }
           throw new Parse.Error(
             Parse.Error.OBJECT_NOT_FOUND,
-            "Object not found for delete."
+            'Object not found for delete.'
           );
         });
       }
@@ -159,7 +159,7 @@ function del(config, auth, className, objectId, context) {
       schemaController = s;
       const options = {};
       if (!auth.isMaster && !auth.isMaintenance) {
-        options.acl = ["*"];
+        options.acl = ['*'];
         if (auth.user) {
           options.acl.push(auth.user.id);
           options.acl = options.acl.concat(auth.userRoles);
@@ -200,7 +200,7 @@ function del(config, auth, className, objectId, context) {
 
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject, clientSDK, context) {
-  enforceRoleSecurity("create", className, auth);
+  enforceRoleSecurity('create', className, auth);
   var write = new RestWrite(
     config,
     auth,
@@ -226,13 +226,13 @@ function update(
   clientSDK,
   context
 ) {
-  enforceRoleSecurity("update", className, auth);
+  enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()
     .then(async () => {
       const hasTriggers = checkTriggers(className, config, [
-        "beforeSave",
-        "afterSave",
+        'beforeSave',
+        'afterSave',
       ]);
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
@@ -248,7 +248,7 @@ function update(
           context,
         });
         return query.execute({
-          op: "update",
+          op: 'update',
         });
       }
       return Promise.resolve({});
@@ -267,7 +267,7 @@ function update(
         originalRestObject,
         clientSDK,
         context,
-        "update"
+        'update'
       ).execute();
     })
     .catch(error => {
@@ -278,12 +278,12 @@ function update(
 function handleSessionMissingError(error, className, auth) {
   // If we're trying to update a user without / with bad session token
   if (
-    className === "_User" &&
+    className === '_User' &&
     error.code === Parse.Error.OBJECT_NOT_FOUND &&
     !auth.isMaster &&
     !auth.isMaintenance
   ) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING, "Insufficient auth.");
+    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
 }

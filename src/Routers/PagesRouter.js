@@ -1,68 +1,68 @@
-import PromiseRouter from "../PromiseRouter";
-import Config from "../Config";
-import express from "express";
-import path from "path";
-import { promises as fs } from "fs";
-import { Parse } from "parse/node";
-import Utils from "../Utils";
-import mustache from "mustache";
-import Page from "../Page";
+import PromiseRouter from '../PromiseRouter';
+import Config from '../Config';
+import express from 'express';
+import path from 'path';
+import { promises as fs } from 'fs';
+import { Parse } from 'parse/node';
+import Utils from '../Utils';
+import mustache from 'mustache';
+import Page from '../Page';
 
 // All pages with custom page key for reference and file name
 const pages = Object.freeze({
   passwordReset: new Page({
-    id: "passwordReset",
-    defaultFile: "password_reset.html",
+    id: 'passwordReset',
+    defaultFile: 'password_reset.html',
   }),
   passwordResetSuccess: new Page({
-    id: "passwordResetSuccess",
-    defaultFile: "password_reset_success.html",
+    id: 'passwordResetSuccess',
+    defaultFile: 'password_reset_success.html',
   }),
   passwordResetLinkInvalid: new Page({
-    id: "passwordResetLinkInvalid",
-    defaultFile: "password_reset_link_invalid.html",
+    id: 'passwordResetLinkInvalid',
+    defaultFile: 'password_reset_link_invalid.html',
   }),
   emailVerificationSuccess: new Page({
-    id: "emailVerificationSuccess",
-    defaultFile: "email_verification_success.html",
+    id: 'emailVerificationSuccess',
+    defaultFile: 'email_verification_success.html',
   }),
   emailVerificationSendFail: new Page({
-    id: "emailVerificationSendFail",
-    defaultFile: "email_verification_send_fail.html",
+    id: 'emailVerificationSendFail',
+    defaultFile: 'email_verification_send_fail.html',
   }),
   emailVerificationSendSuccess: new Page({
-    id: "emailVerificationSendSuccess",
-    defaultFile: "email_verification_send_success.html",
+    id: 'emailVerificationSendSuccess',
+    defaultFile: 'email_verification_send_success.html',
   }),
   emailVerificationLinkInvalid: new Page({
-    id: "emailVerificationLinkInvalid",
-    defaultFile: "email_verification_link_invalid.html",
+    id: 'emailVerificationLinkInvalid',
+    defaultFile: 'email_verification_link_invalid.html',
   }),
   emailVerificationLinkExpired: new Page({
-    id: "emailVerificationLinkExpired",
-    defaultFile: "email_verification_link_expired.html",
+    id: 'emailVerificationLinkExpired',
+    defaultFile: 'email_verification_link_expired.html',
   }),
 });
 
 // All page parameters for reference to be used as template placeholders or query params
 const pageParams = Object.freeze({
-  appName: "appName",
-  appId: "appId",
-  token: "token",
-  username: "username",
-  error: "error",
-  locale: "locale",
-  publicServerUrl: "publicServerUrl",
+  appName: 'appName',
+  appId: 'appId',
+  token: 'token',
+  username: 'username',
+  error: 'error',
+  locale: 'locale',
+  publicServerUrl: 'publicServerUrl',
 });
 
 // The header prefix to add page params as response headers
-const pageParamHeaderPrefix = "x-parse-page-param-";
+const pageParamHeaderPrefix = 'x-parse-page-param-';
 
 // The errors being thrown
 const errors = Object.freeze({
-  jsonFailedFileLoading: "failed to load JSON file",
+  jsonFailedFileLoading: 'failed to load JSON file',
   fileOutsideAllowedScope:
-    "not allowed to read file outside of pages directory",
+    'not allowed to read file outside of pages directory',
 });
 
 export class PagesRouter extends PromiseRouter {
@@ -75,10 +75,10 @@ export class PagesRouter extends PromiseRouter {
 
     // Set instance properties
     this.pagesConfig = pages;
-    this.pagesEndpoint = pages.pagesEndpoint ? pages.pagesEndpoint : "apps";
+    this.pagesEndpoint = pages.pagesEndpoint ? pages.pagesEndpoint : 'apps';
     this.pagesPath = pages.pagesPath
-      ? path.resolve("./", pages.pagesPath)
-      : path.resolve(__dirname, "../../public");
+      ? path.resolve('./', pages.pagesPath)
+      : path.resolve(__dirname, '../../public');
     this.loadJsonResource();
     this.mountPagesRoutes();
     this.mountCustomRoutes();
@@ -89,7 +89,7 @@ export class PagesRouter extends PromiseRouter {
     const config = req.config;
     const { token: rawToken } = req.query;
     const token =
-      rawToken && typeof rawToken !== "string" ? rawToken.toString() : rawToken;
+      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!config) {
       this.invalidRequest();
@@ -156,7 +156,7 @@ export class PagesRouter extends PromiseRouter {
 
     const { token: rawToken } = req.query;
     const token =
-      rawToken && typeof rawToken !== "string" ? rawToken.toString() : rawToken;
+      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!token) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);
@@ -186,18 +186,18 @@ export class PagesRouter extends PromiseRouter {
 
     const { new_password, token: rawToken } = req.body || {};
     const token =
-      rawToken && typeof rawToken !== "string" ? rawToken.toString() : rawToken;
+      rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if ((!token || !new_password) && req.xhr === false) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);
     }
 
     if (!token) {
-      throw new Parse.Error(Parse.Error.OTHER_CAUSE, "Missing token");
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing token');
     }
 
     if (!new_password) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, "Missing password");
+      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'Missing password');
     }
 
     return config.userController
@@ -220,7 +220,7 @@ export class PagesRouter extends PromiseRouter {
           if (result.success) {
             return Promise.resolve({
               status: 200,
-              response: "Password successfully reset",
+              response: 'Password successfully reset',
             });
           }
           if (result.err) {
@@ -237,7 +237,7 @@ export class PagesRouter extends PromiseRouter {
               [pageParams.appName]: config.appName,
             };
 
-        if (result?.err === "The password reset link has expired") {
+        if (result?.err === 'The password reset link has expired') {
           delete query[pageParams.token];
           query[pageParams.token] = token;
         }
@@ -272,7 +272,7 @@ export class PagesRouter extends PromiseRouter {
       ? true
       : responseType !== undefined
         ? responseType
-        : req.method == "POST";
+        : req.method == 'POST';
 
     // Include default parameters
     const defaultParams = this.getDefaultParams(config);
@@ -334,13 +334,13 @@ export class PagesRouter extends PromiseRouter {
    */
   staticRoute(req) {
     // Get requested path
-    const relativePath = req.params["resource"][0];
+    const relativePath = req.params['resource'][0];
 
     // Resolve requested path to absolute path
     const absolutePath = path.resolve(this.pagesPath, relativePath);
 
     // If the requested file is not a HTML file send its raw content
-    if (!absolutePath || !absolutePath.endsWith(".html")) {
+    if (!absolutePath || !absolutePath.endsWith('.html')) {
       return this.fileResponse(absolutePath);
     }
 
@@ -395,7 +395,7 @@ export class PagesRouter extends PromiseRouter {
     locale = locale || this.pagesConfig.localizationFallbackLocale;
 
     // Get matching translation by locale, language or fallback locale
-    const language = locale.split("-")[0];
+    const language = locale.split('-')[0];
     const resource =
       this.jsonParameters[locale] ||
       this.jsonParameters[language] ||
@@ -455,10 +455,10 @@ export class PagesRouter extends PromiseRouter {
 
     // Get config placeholders; can be an object, a function or an async function
     let configPlaceholders =
-      typeof this.pagesConfig.placeholders === "function"
+      typeof this.pagesConfig.placeholders === 'function'
         ? this.pagesConfig.placeholders(params)
         : Object.prototype.toString.call(this.pagesConfig.placeholders) ===
-            "[object Object]"
+            '[object Object]'
           ? this.pagesConfig.placeholders
           : {};
     if (configPlaceholders instanceof Promise) {
@@ -522,7 +522,7 @@ export class PagesRouter extends PromiseRouter {
       throw errors.fileOutsideAllowedScope;
     }
 
-    return await fs.readFile(normalizedPath, "utf-8");
+    return await fs.readFile(normalizedPath, 'utf-8');
   }
 
   /**
@@ -534,7 +534,7 @@ export class PagesRouter extends PromiseRouter {
     }
     try {
       const json = require(
-        path.resolve("./", this.pagesConfig.localizationJsonPath)
+        path.resolve('./', this.pagesConfig.localizationJsonPath)
       );
       this.jsonParameters = json;
     } catch (e) {
@@ -616,16 +616,16 @@ export class PagesRouter extends PromiseRouter {
 
   composePageUrl(file, publicServerUrl, locale) {
     let url = publicServerUrl;
-    url += url.endsWith("/") ? "" : "/";
-    url += this.pagesEndpoint + "/";
-    url += locale === undefined ? "" : locale + "/";
+    url += url.endsWith('/') ? '' : '/';
+    url += this.pagesEndpoint + '/';
+    url += locale === undefined ? '' : locale + '/';
     url += file;
     return url;
   }
 
   notFound() {
     return {
-      text: "Not found.",
+      text: 'Not found.',
       status: 404,
     };
   }
@@ -633,7 +633,7 @@ export class PagesRouter extends PromiseRouter {
   invalidRequest() {
     const error = new Error();
     error.status = 403;
-    error.message = "unauthorized";
+    error.message = 'unauthorized';
     throw error;
   }
 
@@ -654,7 +654,7 @@ export class PagesRouter extends PromiseRouter {
 
   mountPagesRoutes() {
     this.route(
-      "GET",
+      'GET',
       `/${this.pagesEndpoint}/:appId/verify_email`,
       req => {
         this.setConfig(req);
@@ -665,7 +665,7 @@ export class PagesRouter extends PromiseRouter {
     );
 
     this.route(
-      "POST",
+      'POST',
       `/${this.pagesEndpoint}/:appId/resend_verification_email`,
       req => {
         this.setConfig(req);
@@ -676,7 +676,7 @@ export class PagesRouter extends PromiseRouter {
     );
 
     this.route(
-      "GET",
+      'GET',
       `/${this.pagesEndpoint}/choose_password`,
       req => {
         this.setConfig(req);
@@ -687,7 +687,7 @@ export class PagesRouter extends PromiseRouter {
     );
 
     this.route(
-      "POST",
+      'POST',
       `/${this.pagesEndpoint}/:appId/request_password_reset`,
       req => {
         this.setConfig(req);
@@ -698,7 +698,7 @@ export class PagesRouter extends PromiseRouter {
     );
 
     this.route(
-      "GET",
+      'GET',
       `/${this.pagesEndpoint}/:appId/request_password_reset`,
       req => {
         this.setConfig(req);
@@ -735,7 +735,7 @@ export class PagesRouter extends PromiseRouter {
 
   mountStaticRoute() {
     this.route(
-      "GET",
+      'GET',
       `/${this.pagesEndpoint}/*resource`,
       req => {
         this.setConfig(req, true);
@@ -748,7 +748,7 @@ export class PagesRouter extends PromiseRouter {
 
   expressRouter() {
     const router = express.Router();
-    router.use("/", super.expressRouter());
+    router.use('/', super.expressRouter());
     return router;
   }
 }

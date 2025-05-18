@@ -1,20 +1,20 @@
 // @flow
 // @flow-disable-next
-import deepcopy from "deepcopy";
-import AdaptableController from "../Controllers/AdaptableController";
-import { master } from "../Auth";
-import Config from "../Config";
-import { PushAdapter } from "../Adapters/Push/PushAdapter";
-import rest from "../rest";
-import { pushStatusHandler } from "../StatusHandler";
-import * as utils from "./utils";
-import { ParseMessageQueue } from "../ParseMessageQueue";
-import { PushQueue } from "./PushQueue";
-import logger from "../logger";
+import deepcopy from 'deepcopy';
+import AdaptableController from '../Controllers/AdaptableController';
+import { master } from '../Auth';
+import Config from '../Config';
+import { PushAdapter } from '../Adapters/Push/PushAdapter';
+import rest from '../rest';
+import { pushStatusHandler } from '../StatusHandler';
+import * as utils from './utils';
+import { ParseMessageQueue } from '../ParseMessageQueue';
+import { PushQueue } from './PushQueue';
+import logger from '../logger';
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
-    const badge = installation.badge + "";
+    const badge = installation.badge + '';
     map[badge] = map[badge] || [];
     map[badge].push(installation);
     return map;
@@ -35,7 +35,7 @@ export class PushWorker {
     if (this.subscriber) {
       const subscriber = this.subscriber;
       subscriber.subscribe(this.channel);
-      subscriber.on("message", (channel, messageStr) => {
+      subscriber.on('message', (channel, messageStr) => {
         const workItem = JSON.parse(messageStr);
         this.run(workItem);
       });
@@ -49,7 +49,7 @@ export class PushWorker {
     delete query.where;
     pushStatus = pushStatusHandler(config, pushStatus.objectId);
     return rest
-      .find(config, auth, "_Installation", where, query)
+      .find(config, auth, '_Installation', where, query)
       .then(({ results }) => {
         if (results.length == 0) {
           return;

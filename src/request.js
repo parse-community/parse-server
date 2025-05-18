@@ -1,26 +1,26 @@
-import querystring from "querystring";
-import log from "./logger";
-import { http, https } from "follow-redirects";
-import { parse } from "url";
+import querystring from 'querystring';
+import log from './logger';
+import { http, https } from 'follow-redirects';
+import { parse } from 'url';
 
 class HTTPResponse {
   constructor(response, body) {
     let _text, _data;
     this.status = response.statusCode;
     this.headers = response.headers || {};
-    this.cookies = this.headers["set-cookie"];
+    this.cookies = this.headers['set-cookie'];
 
-    if (typeof body == "string") {
+    if (typeof body == 'string') {
       _text = body;
     } else if (Buffer.isBuffer(body)) {
       this.buffer = body;
-    } else if (typeof body == "object") {
+    } else if (typeof body == 'object') {
       _data = body;
     }
 
     const getText = () => {
       if (!_text && this.buffer) {
-        _text = this.buffer.toString("utf-8");
+        _text = this.buffer.toString('utf-8');
       } else if (!_text && _data) {
         _text = JSON.stringify(_data);
       }
@@ -38,18 +38,18 @@ class HTTPResponse {
       return _data;
     };
 
-    Object.defineProperty(this, "body", {
+    Object.defineProperty(this, 'body', {
       get: () => {
         return body;
       },
     });
 
-    Object.defineProperty(this, "text", {
+    Object.defineProperty(this, 'text', {
       enumerable: true,
       get: getText,
     });
 
-    Object.defineProperty(this, "data", {
+    Object.defineProperty(this, 'data', {
       enumerable: true,
       get: getData,
     });
@@ -57,17 +57,17 @@ class HTTPResponse {
 }
 
 const clients = {
-  "http:": http,
-  "https:": https,
+  'http:': http,
+  'https:': https,
 };
 
 function makeCallback(resolve, reject) {
   return function (response) {
     const chunks = [];
-    response.on("data", chunk => {
+    response.on('data', chunk => {
       chunks.push(chunk);
     });
-    response.on("end", () => {
+    response.on('end', () => {
       const body = Buffer.concat(chunks);
       const httpResponse = new HTTPResponse(response, body);
 
@@ -78,12 +78,12 @@ function makeCallback(resolve, reject) {
         return resolve(httpResponse);
       }
     });
-    response.on("error", reject);
+    response.on('error', reject);
   };
 }
 
 const encodeBody = function ({ body, headers = {} }) {
-  if (typeof body !== "object") {
+  if (typeof body !== 'object') {
     return { body, headers };
   }
   var contentTypeKeys = Object.keys(headers).filter(key => {
@@ -95,13 +95,13 @@ const encodeBody = function ({ body, headers = {} }) {
     //  As per https://parse.com/docs/cloudcode/guide#cloud-code-advanced-sending-a-post-request the default encoding is supposedly x-www-form-urlencoded
 
     body = querystring.stringify(body);
-    headers["Content-Type"] = "application/x-www-form-urlencoded";
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
   } else {
     /* istanbul ignore next */
     if (contentTypeKeys.length > 1) {
       log.error(
-        "Parse.Cloud.httpRequest",
-        "multiple content-type headers are set."
+        'Parse.Cloud.httpRequest',
+        'multiple content-type headers are set.'
       );
     }
     // There maybe many, we'll just take the 1st one
@@ -126,9 +126,9 @@ function httpRequest(options) {
   }
   options = Object.assign(options, encodeBody(options));
   // support params options
-  if (typeof options.params === "object") {
+  if (typeof options.params === 'object') {
     options.qs = options.params;
-  } else if (typeof options.params === "string") {
+  } else if (typeof options.params === 'string') {
     options.qs = querystring.parse(options.params);
   }
   const client = clients[url.protocol];
@@ -146,7 +146,7 @@ function httpRequest(options) {
   };
   if (requestOptions.headers) {
     Object.keys(requestOptions.headers).forEach(key => {
-      if (typeof requestOptions.headers[key] === "undefined") {
+      if (typeof requestOptions.headers[key] === 'undefined') {
         delete requestOptions.headers[key];
       }
     });
@@ -171,7 +171,7 @@ function httpRequest(options) {
     if (options.body) {
       req.write(options.body);
     }
-    req.on("error", error => {
+    req.on('error', error => {
       reject(error);
     });
     req.end();

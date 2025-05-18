@@ -28,7 +28,7 @@ export class AdaptableController {
   }
 
   expectedAdapterType() {
-    throw new Error("Subclasses should implement expectedAdapterType()");
+    throw new Error('Subclasses should implement expectedAdapterType()');
   }
 
   validateAdapter(adapter) {
@@ -37,7 +37,7 @@ export class AdaptableController {
 
   static validateAdapter(adapter, self, ExpectedType) {
     if (!adapter) {
-      throw new Error(this.constructor.name + " requires an adapter");
+      throw new Error(this.constructor.name + ' requires an adapter');
     }
 
     const Type = ExpectedType || self.expectedAdapterType();

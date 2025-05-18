@@ -1,5 +1,5 @@
-import AppCache from "./cache";
-import SchemaCache from "./Adapters/Cache/SchemaCache";
+import AppCache from './cache';
+import SchemaCache from './Adapters/Cache/SchemaCache';
 
 /**
  * Destroys all data in the database
@@ -7,7 +7,7 @@ import SchemaCache from "./Adapters/Cache/SchemaCache";
  */
 export function destroyAllDataPermanently(fast) {
   if (!process.env.TESTING) {
-    throw "Only supported in test environment";
+    throw 'Only supported in test environment';
   }
   return Promise.all(
     Object.keys(AppCache.cache).map(appId => {
@@ -62,9 +62,9 @@ export class Connections {
   }
 
   track(server) {
-    server.on("connection", socket => {
+    server.on('connection', socket => {
       this.sockets.add(socket);
-      socket.on("close", () => {
+      socket.on('close', () => {
         this.sockets.delete(socket);
       });
     });

@@ -1,12 +1,12 @@
-"use strict";
+'use strict';
 
-const request = require("../lib/request");
+const request = require('../lib/request');
 
 const pushCompleted = async pushId => {
-  const query = new Parse.Query("_PushStatus");
-  query.equalTo("objectId", pushId);
+  const query = new Parse.Query('_PushStatus');
+  query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
-  while (!(result && result.get("status") === "succeeded")) {
+  while (!(result && result.get('status') === 'succeeded')) {
     await jasmine.timeout();
     result = await query.first({ useMasterKey: true });
   }
@@ -31,10 +31,10 @@ const provideInstallations = function (num) {
   const installations = [];
   while (installations.length !== num) {
     // add Android installations
-    const installation = new Parse.Object("_Installation");
-    installation.set("installationId", "installation_" + installations.length);
-    installation.set("deviceToken", "device_token_" + installations.length);
-    installation.set("deviceType", "android");
+    const installation = new Parse.Object('_Installation');
+    installation.set('installationId', 'installation_' + installations.length);
+    installation.set('deviceToken', 'device_token_' + installations.length);
+    installation.set('deviceType', 'android');
     installations.push(installation);
   }
 
@@ -50,7 +50,7 @@ const losingAdapter = {
     return successfulAny(body, installations);
   },
   getValidPushTypes: function () {
-    return ["android"];
+    return ['android'];
   },
 };
 
@@ -63,7 +63,7 @@ const setup = function () {
       const promises = installations.map(installation => {
         sendToInstallationSpy(installation);
 
-        if (installation.deviceType == "ios") {
+        if (installation.deviceType == 'ios') {
           expect(installation.badge).toEqual(badge);
           expect(installation.originalBadge + 1).toEqual(installation.badge);
         } else {
@@ -78,7 +78,7 @@ const setup = function () {
       return Promise.all(promises);
     },
     getValidPushTypes: function () {
-      return ["ios", "android"];
+      return ['ios', 'android'];
     },
   };
 
@@ -93,15 +93,15 @@ const setup = function () {
     .then(() => {
       const installations = [];
       while (installations.length != 10) {
-        const installation = new Parse.Object("_Installation");
+        const installation = new Parse.Object('_Installation');
         installation.set(
-          "installationId",
-          "installation_" + installations.length
+          'installationId',
+          'installation_' + installations.length
         );
-        installation.set("deviceToken", "device_token_" + installations.length);
-        installation.set("badge", installations.length);
-        installation.set("originalBadge", installations.length);
-        installation.set("deviceType", "ios");
+        installation.set('deviceToken', 'device_token_' + installations.length);
+        installation.set('badge', installations.length);
+        installation.set('originalBadge', installations.length);
+        installation.set('deviceType', 'ios');
         installations.push(installation);
       }
       return Parse.Object.saveAll(installations);
@@ -113,18 +113,18 @@ const setup = function () {
     });
 };
 
-describe("Parse.Push", () => {
-  it_id("d1e591c4-2b21-466b-9ee2-5be467b6b771")(it)(
-    "should properly send push",
+describe('Parse.Push', () => {
+  it_id('d1e591c4-2b21-466b-9ee2-5be467b6b771')(it)(
+    'should properly send push',
     async () => {
       const { sendToInstallationSpy } = await setup();
       const pushStatusId = await Parse.Push.send({
         where: {
-          deviceType: "ios",
+          deviceType: 'ios',
         },
         data: {
-          badge: "Increment",
-          alert: "Hello world!",
+          badge: 'Increment',
+          alert: 'Hello world!',
         },
       });
       await pushCompleted(pushStatusId);
@@ -132,72 +132,72 @@ describe("Parse.Push", () => {
     }
   );
 
-  it_id("2a58e3c7-b6f3-4261-a384-6c893b2ac3f3")(it)(
-    "should properly send push with lowercaseIncrement",
+  it_id('2a58e3c7-b6f3-4261-a384-6c893b2ac3f3')(it)(
+    'should properly send push with lowercaseIncrement',
     async () => {
       await setup();
       const pushStatusId = await Parse.Push.send({
         where: {
-          deviceType: "ios",
+          deviceType: 'ios',
         },
         data: {
-          badge: "increment",
-          alert: "Hello world!",
+          badge: 'increment',
+          alert: 'Hello world!',
         },
       });
       await pushCompleted(pushStatusId);
     }
   );
 
-  it_id("e21780b6-2cdd-467e-8013-81030f3288e9")(it)(
-    "should not allow clients to query _PushStatus",
+  it_id('e21780b6-2cdd-467e-8013-81030f3288e9')(it)(
+    'should not allow clients to query _PushStatus',
     async () => {
       await setup();
       const pushStatusId = await Parse.Push.send({
         where: {
-          deviceType: "ios",
+          deviceType: 'ios',
         },
         data: {
-          badge: "increment",
-          alert: "Hello world!",
+          badge: 'increment',
+          alert: 'Hello world!',
         },
       });
       await pushCompleted(pushStatusId);
       try {
         await request({
-          url: "http://localhost:8378/1/classes/_PushStatus",
+          url: 'http://localhost:8378/1/classes/_PushStatus',
           json: true,
           headers: {
-            "X-Parse-Application-Id": "test",
+            'X-Parse-Application-Id': 'test',
           },
         });
         fail();
       } catch (response) {
-        expect(response.data.error).toEqual("unauthorized");
+        expect(response.data.error).toEqual('unauthorized');
       }
     }
   );
 
-  it_id("924cf5f5-f684-4925-978a-e52c0c457366")(it)(
-    "should allow master key to query _PushStatus",
+  it_id('924cf5f5-f684-4925-978a-e52c0c457366')(it)(
+    'should allow master key to query _PushStatus',
     async () => {
       await setup();
       const pushStatusId = await Parse.Push.send({
         where: {
-          deviceType: "ios",
+          deviceType: 'ios',
         },
         data: {
-          badge: "increment",
-          alert: "Hello world!",
+          badge: 'increment',
+          alert: 'Hello world!',
         },
       });
       await pushCompleted(pushStatusId);
       const response = await request({
-        url: "http://localhost:8378/1/classes/_PushStatus",
+        url: 'http://localhost:8378/1/classes/_PushStatus',
         json: true,
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-Master-Key": "test",
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
         },
       });
       const body = response.data;
@@ -209,16 +209,16 @@ describe("Parse.Push", () => {
     }
   );
 
-  it("should throw error if missing push configuration", async () => {
+  it('should throw error if missing push configuration', async () => {
     await reconfigureServer({ push: null });
     try {
       await Parse.Push.send({
         where: {
-          deviceType: "ios",
+          deviceType: 'ios',
         },
         data: {
-          badge: "increment",
-          alert: "Hello world!",
+          badge: 'increment',
+          alert: 'Hello world!',
         },
       });
       fail();
@@ -238,14 +238,14 @@ describe("Parse.Push", () => {
     });
     await Parse.Object.saveAll(provideInstallations());
     const pushStatusId = await Parse.Push.send({
-      data: { alert: "We fixed our status!" },
-      where: { deviceType: "android" },
+      data: { alert: 'We fixed our status!' },
+      where: { deviceType: 'android' },
     });
     await pushCompleted(pushStatusId);
     const result = await Parse.Push.getPushStatus(pushStatusId);
-    expect(result.get("status")).toEqual("succeeded");
-    expect(result.get("numSent")).toEqual(1);
-    expect(result.get("count")).toEqual(undefined);
+    expect(result.get('status')).toEqual('succeeded');
+    expect(result.get('numSent')).toEqual(1);
+    expect(result.get('count')).toEqual(undefined);
   });
 
   /**
@@ -257,13 +257,13 @@ describe("Parse.Push", () => {
     const installations = provideInstallations();
 
     // add 1 iOS installation which we will omit & add later on
-    const iOSInstallation = new Parse.Object("_Installation");
+    const iOSInstallation = new Parse.Object('_Installation');
     iOSInstallation.set(
-      "installationId",
-      "installation_" + installations.length
+      'installationId',
+      'installation_' + installations.length
     );
-    iOSInstallation.set("deviceToken", "device_token_" + installations.length);
-    iOSInstallation.set("deviceType", "ios");
+    iOSInstallation.set('deviceToken', 'device_token_' + installations.length);
+    iOSInstallation.set('deviceType', 'ios');
     installations.push(iOSInstallation);
 
     await reconfigureServer({
@@ -276,21 +276,21 @@ describe("Parse.Push", () => {
             return successfulAny(body, installations);
           },
           getValidPushTypes: function () {
-            return ["android"];
+            return ['android'];
           },
         },
       },
     });
     await Parse.Object.saveAll(installations);
     const pushStatusId = await Parse.Push.send({
-      data: { alert: "We fixed our status!" },
-      where: { deviceType: { $ne: "random" } },
+      data: { alert: 'We fixed our status!' },
+      where: { deviceType: { $ne: 'random' } },
     });
     await pushCompleted(pushStatusId);
     const result = await Parse.Push.getPushStatus(pushStatusId);
-    expect(result.get("status")).toEqual("succeeded");
-    expect(result.get("numSent")).toEqual(3);
-    expect(result.get("count")).toEqual(undefined);
+    expect(result.get('status')).toEqual('succeeded');
+    expect(result.get('numSent')).toEqual(3);
+    expect(result.get('count')).toEqual(undefined);
   });
 
   /**
@@ -307,15 +307,15 @@ describe("Parse.Push", () => {
     });
     await Parse.Object.saveAll(installations);
     const pushStatusId = await Parse.Push.send({
-      data: { alert: "We fixed our status!" },
-      where: { deviceType: "android" },
+      data: { alert: 'We fixed our status!' },
+      where: { deviceType: 'android' },
     });
     await pushCompleted(pushStatusId);
     const result = await Parse.Push.getPushStatus(pushStatusId);
-    expect(result.get("status")).toEqual("succeeded");
+    expect(result.get('status')).toEqual('succeeded');
     // expect # less than # of batches used, assuming each batch is 100 pushes
-    expect(result.get("numSent")).toEqual(devices - devices / 100);
-    expect(result.get("count")).toEqual(undefined);
+    expect(result.get('numSent')).toEqual(devices - devices / 100);
+    expect(result.get('count')).toEqual(undefined);
   });
 
   /**
@@ -330,16 +330,16 @@ describe("Parse.Push", () => {
     // add 1 iOS installation which we will omit & add later on
     const iOSInstallations = [];
     while (iOSInstallations.length !== devices / 100) {
-      const iOSInstallation = new Parse.Object("_Installation");
+      const iOSInstallation = new Parse.Object('_Installation');
       iOSInstallation.set(
-        "installationId",
-        "installation_" + installations.length
+        'installationId',
+        'installation_' + installations.length
       );
       iOSInstallation.set(
-        "deviceToken",
-        "device_token_" + installations.length
+        'deviceToken',
+        'device_token_' + installations.length
       );
-      iOSInstallation.set("deviceType", "ios");
+      iOSInstallation.set('deviceType', 'ios');
       installations.push(iOSInstallation);
       iOSInstallations.push(iOSInstallation);
     }
@@ -353,7 +353,7 @@ describe("Parse.Push", () => {
             return successfulAny(body, installations);
           },
           getValidPushTypes: function () {
-            return ["android"];
+            return ['android'];
           },
         },
       },
@@ -361,14 +361,14 @@ describe("Parse.Push", () => {
     await Parse.Object.saveAll(installations);
 
     const pushStatusId = await Parse.Push.send({
-      data: { alert: "We fixed our status!" },
-      where: { deviceType: { $ne: "random" } },
+      data: { alert: 'We fixed our status!' },
+      where: { deviceType: { $ne: 'random' } },
     });
     await pushCompleted(pushStatusId);
     const result = await Parse.Push.getPushStatus(pushStatusId);
-    expect(result.get("status")).toEqual("succeeded");
+    expect(result.get('status')).toEqual('succeeded');
     // expect # less than # of batches used, assuming each batch is 100 pushes
-    expect(result.get("numSent")).toEqual(devices + devices / 100);
-    expect(result.get("count")).toEqual(undefined);
+    expect(result.get('numSent')).toEqual(devices + devices / 100);
+    expect(result.get('count')).toEqual(undefined);
   });
 });

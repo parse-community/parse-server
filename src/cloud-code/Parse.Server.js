@@ -10,10 +10,10 @@ const ParseServer = {};
  * ...
  */
 ParseServer.RateLimitZone = Object.freeze({
-  global: "global",
-  session: "session",
-  user: "user",
-  ip: "ip",
+  global: 'global',
+  session: 'session',
+  user: 'user',
+  ip: 'ip',
 });
 
 module.exports = ParseServer;

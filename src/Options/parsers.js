@@ -10,13 +10,13 @@ function numberParser(key) {
 
 function numberOrBoolParser(key) {
   return function (opt) {
-    if (typeof opt === "boolean") {
+    if (typeof opt === 'boolean') {
       return opt;
     }
-    if (opt === "true") {
+    if (opt === 'true') {
       return true;
     }
-    if (opt === "false") {
+    if (opt === 'false') {
       return false;
     }
     return numberParser(key)(opt);
@@ -25,7 +25,7 @@ function numberOrBoolParser(key) {
 
 function numberOrStringParser(key) {
   return function (opt) {
-    if (typeof opt === "string") {
+    if (typeof opt === 'string') {
       return opt;
     }
     return numberParser(key)(opt);
@@ -33,7 +33,7 @@ function numberOrStringParser(key) {
 }
 
 function objectParser(opt) {
-  if (typeof opt == "object") {
+  if (typeof opt == 'object') {
     return opt;
   }
   return JSON.parse(opt);
@@ -42,15 +42,15 @@ function objectParser(opt) {
 function arrayParser(opt) {
   if (Array.isArray(opt)) {
     return opt;
-  } else if (typeof opt === "string") {
-    return opt.split(",");
+  } else if (typeof opt === 'string') {
+    return opt.split(',');
   } else {
     throw new Error(`${opt} should be a comma separated string or an array`);
   }
 }
 
 function moduleOrObjectParser(opt) {
-  if (typeof opt == "object") {
+  if (typeof opt == 'object') {
     return opt;
   }
   try {
@@ -62,14 +62,14 @@ function moduleOrObjectParser(opt) {
 }
 
 function booleanParser(opt) {
-  if (opt == true || opt == "true" || opt == "1") {
+  if (opt == true || opt == 'true' || opt == '1') {
     return true;
   }
   return false;
 }
 
 function nullParser(opt) {
-  if (opt == "null") {
+  if (opt == 'null') {
     return null;
   }
   return opt;

@@ -1,12 +1,12 @@
-import { version } from "../../package.json";
-import PromiseRouter from "../PromiseRouter";
-import * as middleware from "../middlewares";
+import { version } from '../../package.json';
+import PromiseRouter from '../PromiseRouter';
+import * as middleware from '../middlewares';
 
 export class FeaturesRouter extends PromiseRouter {
   mountRoutes() {
     this.route(
-      "GET",
-      "/serverInfo",
+      'GET',
+      '/serverInfo',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
         const { config } = req;

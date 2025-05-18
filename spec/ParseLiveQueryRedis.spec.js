@@ -1,34 +1,34 @@
-if (process.env.PARSE_SERVER_TEST_CACHE === "redis") {
-  describe("ParseLiveQuery redis", () => {
+if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
+  describe('ParseLiveQuery redis', () => {
     afterEach(async () => {
       const client =
         await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
       client.close();
     });
-    it("can connect", async () => {
+    it('can connect', async () => {
       await reconfigureServer({
-        appId: "redis_live_query",
+        appId: 'redis_live_query',
         startLiveQueryServer: true,
         liveQuery: {
-          classNames: ["TestObject"],
-          redisURL: "redis://localhost:6379",
+          classNames: ['TestObject'],
+          redisURL: 'redis://localhost:6379',
         },
         liveQueryServerOptions: {
-          redisURL: "redis://localhost:6379",
+          redisURL: 'redis://localhost:6379',
         },
       });
-      const subscription = await new Parse.Query("TestObject").subscribe();
+      const subscription = await new Parse.Query('TestObject').subscribe();
       const [object] = await Promise.all([
-        new Parse.Object("TestObject").save(),
+        new Parse.Object('TestObject').save(),
         new Promise(resolve =>
-          subscription.on("create", () => {
+          subscription.on('create', () => {
             resolve();
           })
         ),
       ]);
       await Promise.all([
         new Promise(resolve =>
-          subscription.on("delete", () => {
+          subscription.on('delete', () => {
             resolve();
           })
         ),
@@ -36,16 +36,16 @@ if (process.env.PARSE_SERVER_TEST_CACHE === "redis") {
       ]);
     });
 
-    it("can call connect twice", async () => {
+    it('can call connect twice', async () => {
       const server = await reconfigureServer({
-        appId: "redis_live_query",
+        appId: 'redis_live_query',
         startLiveQueryServer: true,
         liveQuery: {
-          classNames: ["TestObject"],
-          redisURL: "redis://localhost:6379",
+          classNames: ['TestObject'],
+          redisURL: 'redis://localhost:6379',
         },
         liveQueryServerOptions: {
-          redisURL: "redis://localhost:6379",
+          redisURL: 'redis://localhost:6379',
         },
       });
       expect(

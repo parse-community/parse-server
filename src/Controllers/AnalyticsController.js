@@ -1,5 +1,5 @@
-import AdaptableController from "./AdaptableController";
-import { AnalyticsAdapter } from "../Adapters/Analytics/AnalyticsAdapter";
+import AdaptableController from './AdaptableController';
+import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 
 export class AnalyticsController extends AdaptableController {
   appOpened(req) {

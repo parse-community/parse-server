@@ -1,64 +1,64 @@
-const { loadAdapter, loadModule } = require("../lib/Adapters/AdapterLoader");
-const FilesAdapter = require("@parse/fs-files-adapter").default;
-const MockFilesAdapter = require("mock-files-adapter");
-const Config = require("../lib/Config");
+const { loadAdapter, loadModule } = require('../lib/Adapters/AdapterLoader');
+const FilesAdapter = require('@parse/fs-files-adapter').default;
+const MockFilesAdapter = require('mock-files-adapter');
+const Config = require('../lib/Config');
 
-describe("AdapterLoader", () => {
-  it("should instantiate an adapter from string in object", done => {
-    const adapterPath = require("path").resolve("./spec/support/MockAdapter");
+describe('AdapterLoader', () => {
+  it('should instantiate an adapter from string in object', done => {
+    const adapterPath = require('path').resolve('./spec/support/MockAdapter');
 
     const adapter = loadAdapter({
       adapter: adapterPath,
       options: {
-        key: "value",
-        foo: "bar",
+        key: 'value',
+        foo: 'bar',
       },
     });
 
     expect(adapter instanceof Object).toBe(true);
-    expect(adapter.options.key).toBe("value");
-    expect(adapter.options.foo).toBe("bar");
+    expect(adapter.options.key).toBe('value');
+    expect(adapter.options.foo).toBe('bar');
     done();
   });
 
-  it("should instantiate an adapter from string", done => {
-    const adapterPath = require("path").resolve("./spec/support/MockAdapter");
+  it('should instantiate an adapter from string', done => {
+    const adapterPath = require('path').resolve('./spec/support/MockAdapter');
     const adapter = loadAdapter(adapterPath);
 
     expect(adapter instanceof Object).toBe(true);
     done();
   });
 
-  it("should instantiate an adapter from string that is module", done => {
-    const adapterPath = require("path").resolve(
-      "./lib/Adapters/Files/FilesAdapter"
+  it('should instantiate an adapter from string that is module', done => {
+    const adapterPath = require('path').resolve(
+      './lib/Adapters/Files/FilesAdapter'
     );
     const adapter = loadAdapter({
       adapter: adapterPath,
     });
 
-    expect(typeof adapter).toBe("object");
-    expect(typeof adapter.createFile).toBe("function");
-    expect(typeof adapter.deleteFile).toBe("function");
-    expect(typeof adapter.getFileData).toBe("function");
-    expect(typeof adapter.getFileLocation).toBe("function");
+    expect(typeof adapter).toBe('object');
+    expect(typeof adapter.createFile).toBe('function');
+    expect(typeof adapter.deleteFile).toBe('function');
+    expect(typeof adapter.getFileData).toBe('function');
+    expect(typeof adapter.getFileLocation).toBe('function');
     done();
   });
 
-  it("should instantiate an adapter from npm module", done => {
+  it('should instantiate an adapter from npm module', done => {
     const adapter = loadAdapter({
-      module: "@parse/fs-files-adapter",
+      module: '@parse/fs-files-adapter',
     });
 
-    expect(typeof adapter).toBe("object");
-    expect(typeof adapter.createFile).toBe("function");
-    expect(typeof adapter.deleteFile).toBe("function");
-    expect(typeof adapter.getFileData).toBe("function");
-    expect(typeof adapter.getFileLocation).toBe("function");
+    expect(typeof adapter).toBe('object');
+    expect(typeof adapter.createFile).toBe('function');
+    expect(typeof adapter.deleteFile).toBe('function');
+    expect(typeof adapter.getFileData).toBe('function');
+    expect(typeof adapter.getFileLocation).toBe('function');
     done();
   });
 
-  it("should instantiate an adapter from function/Class", done => {
+  it('should instantiate an adapter from function/Class', done => {
     const adapter = loadAdapter({
       adapter: FilesAdapter,
     });
@@ -66,52 +66,52 @@ describe("AdapterLoader", () => {
     done();
   });
 
-  it("should instantiate the default adapter from Class", done => {
+  it('should instantiate the default adapter from Class', done => {
     const adapter = loadAdapter(null, FilesAdapter);
     expect(adapter instanceof FilesAdapter).toBe(true);
     done();
   });
 
-  it("should use the default adapter", done => {
+  it('should use the default adapter', done => {
     const defaultAdapter = new FilesAdapter();
     const adapter = loadAdapter(null, defaultAdapter);
     expect(adapter instanceof FilesAdapter).toBe(true);
     done();
   });
 
-  it("should use the provided adapter", done => {
+  it('should use the provided adapter', done => {
     const originalAdapter = new FilesAdapter();
     const adapter = loadAdapter(originalAdapter);
     expect(adapter).toBe(originalAdapter);
     done();
   });
 
-  it("should fail loading an improperly configured adapter", done => {
+  it('should fail loading an improperly configured adapter', done => {
     const Adapter = function (options) {
       if (!options.foo) {
-        throw "foo is required for that adapter";
+        throw 'foo is required for that adapter';
       }
     };
     const adapterOptions = {
-      param: "key",
+      param: 'key',
       doSomething: function () {},
     };
 
     expect(() => {
       const adapter = loadAdapter(adapterOptions, Adapter);
       expect(adapter).toEqual(adapterOptions);
-    }).not.toThrow("foo is required for that adapter");
+    }).not.toThrow('foo is required for that adapter');
     done();
   });
 
-  it("should load push adapter from options", async () => {
+  it('should load push adapter from options', async () => {
     const options = {
       android: {
-        senderId: "yolo",
-        apiKey: "yolo",
+        senderId: 'yolo',
+        apiKey: 'yolo',
       },
     };
-    const ParsePushAdapter = await loadModule("@parse/push-adapter");
+    const ParsePushAdapter = await loadModule('@parse/push-adapter');
     expect(() => {
       const adapter = loadAdapter(undefined, ParsePushAdapter, options);
       expect(adapter.constructor).toBe(ParsePushAdapter);
@@ -119,13 +119,13 @@ describe("AdapterLoader", () => {
     }).not.toThrow();
   });
 
-  it("should load custom push adapter from string (#3544)", done => {
-    const adapterPath = require("path").resolve(
-      "./spec/support/MockPushAdapter"
+  it('should load custom push adapter from string (#3544)', done => {
+    const adapterPath = require('path').resolve(
+      './spec/support/MockPushAdapter'
     );
     const options = {
       ios: {
-        bundleId: "bundle.id",
+        bundleId: 'bundle.id',
       },
     };
     const pushAdapterOptions = {
@@ -138,20 +138,20 @@ describe("AdapterLoader", () => {
       }).then(() => {
         const config = Config.get(Parse.applicationId);
         const pushAdapter = config.pushWorker.adapter;
-        expect(pushAdapter.getValidPushTypes()).toEqual(["ios"]);
+        expect(pushAdapter.getValidPushTypes()).toEqual(['ios']);
         expect(pushAdapter.options).toEqual(pushAdapterOptions);
         done();
       });
     }).not.toThrow();
   });
 
-  it("should load custom database adapter from config", done => {
-    const adapterPath = require("path").resolve(
-      "./spec/support/MockDatabaseAdapter"
+  it('should load custom database adapter from config', done => {
+    const adapterPath = require('path').resolve(
+      './spec/support/MockDatabaseAdapter'
     );
     const options = {
-      databaseURI: "oracledb://user:password@localhost:1521/freepdb1",
-      collectionPrefix: "",
+      databaseURI: 'oracledb://user:password@localhost:1521/freepdb1',
+      collectionPrefix: '',
     };
     const databaseAdapterOptions = {
       adapter: adapterPath,
@@ -166,9 +166,9 @@ describe("AdapterLoader", () => {
     done();
   });
 
-  it("should load file adapter from direct passing", done => {
-    spyOn(console, "warn").and.callFake(() => {});
-    const mockFilesAdapter = new MockFilesAdapter("key", "secret", "bucket");
+  it('should load file adapter from direct passing', done => {
+    spyOn(console, 'warn').and.callFake(() => {});
+    const mockFilesAdapter = new MockFilesAdapter('key', 'secret', 'bucket');
     expect(() => {
       const adapter = loadAdapter(mockFilesAdapter, FilesAdapter);
       expect(adapter).toBe(mockFilesAdapter);

@@ -1,8 +1,8 @@
-import Parse from "parse/node";
-import PromiseRouter from "../PromiseRouter";
-import * as middleware from "../middlewares";
+import Parse from 'parse/node';
+import PromiseRouter from '../PromiseRouter';
+import * as middleware from '../middlewares';
 
-const GraphQLConfigPath = "/graphql-config";
+const GraphQLConfigPath = '/graphql-config';
 
 export class GraphQLRouter extends PromiseRouter {
   async getGraphQLConfig(req) {
@@ -29,7 +29,7 @@ export class GraphQLRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route(
-      "GET",
+      'GET',
       GraphQLConfigPath,
       middleware.promiseEnforceMasterKeyAccess,
       req => {
@@ -37,7 +37,7 @@ export class GraphQLRouter extends PromiseRouter {
       }
     );
     this.route(
-      "PUT",
+      'PUT',
       GraphQLConfigPath,
       middleware.promiseEnforceMasterKeyAccess,
       req => {

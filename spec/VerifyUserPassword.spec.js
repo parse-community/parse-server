@@ -1,17 +1,17 @@
-"use strict";
+'use strict';
 
-const request = require("../lib/request");
-const MockEmailAdapterWithOptions = require("./support/MockEmailAdapterWithOptions");
+const request = require('../lib/request');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 
 const verifyPassword = function (login, password, isEmail = false) {
   const body = !isEmail
     ? { username: login, password }
     : { email: login, password };
   return request({
-    url: Parse.serverURL + "/verifyPassword",
+    url: Parse.serverURL + '/verifyPassword',
     headers: {
-      "X-Parse-Application-Id": Parse.applicationId,
-      "X-Parse-REST-API-Key": "rest",
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
     },
     qs: body,
   })
@@ -28,13 +28,13 @@ const isAccountLockoutError = function (
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       Parse.User.logIn(username, password)
-        .then(() => reject("login should have failed"))
+        .then(() => reject('login should have failed'))
         .catch(err => {
           if (
             err.message ===
-            "Your account is locked due to multiple failed login attempts. Please try again after " +
+            'Your account is locked due to multiple failed login attempts. Please try again after ' +
               duration +
-              " minute(s)"
+              ' minute(s)'
           ) {
             resolve();
           } else {
@@ -45,22 +45,22 @@ const isAccountLockoutError = function (
   });
 };
 
-describe("Verify User Password", () => {
-  it("fails to verify password when masterKey has locked out user", done => {
+describe('Verify User Password', () => {
+  it('fails to verify password when masterKey has locked out user', done => {
     const user = new Parse.User();
     const ACL = new Parse.ACL();
     ACL.setPublicReadAccess(false);
     ACL.setPublicWriteAccess(false);
-    user.setUsername("testuser");
-    user.setPassword("mypass");
+    user.setUsername('testuser');
+    user.setPassword('mypass');
     user.setACL(ACL);
     user
       .signUp()
       .then(() => {
-        return Parse.User.logIn("testuser", "mypass");
+        return Parse.User.logIn('testuser', 'mypass');
       })
       .then(user => {
-        equal(user.get("username"), "testuser");
+        equal(user.get('username'), 'testuser');
         // Lock the user down
         const ACL = new Parse.ACL();
         user.setACL(ACL);
@@ -69,14 +69,14 @@ describe("Verify User Password", () => {
       .then(() => {
         expect(user.getACL().getPublicReadAccess()).toBe(false);
         return request({
-          url: Parse.serverURL + "/verifyPassword",
+          url: Parse.serverURL + '/verifyPassword',
           headers: {
-            "X-Parse-Application-Id": Parse.applicationId,
-            "X-Parse-REST-API-Key": "rest",
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
           },
           qs: {
-            username: "testuser",
-            password: "mypass",
+            username: 'testuser',
+            password: 'mypass',
           },
         });
       })
@@ -92,24 +92,24 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when username is not provided in query string REST API", done => {
+  it('fails to verify password when username is not provided in query string REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + "/verifyPassword",
+          url: Parse.serverURL + '/verifyPassword',
           headers: {
-            "X-Parse-Application-Id": Parse.applicationId,
-            "X-Parse-REST-API-Key": "rest",
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
           },
           qs: {
-            username: "",
-            password: "mypass",
+            username: '',
+            password: 'mypass',
           },
         });
       })
@@ -125,24 +125,24 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when email is not provided in query string REST API", done => {
+  it('fails to verify password when email is not provided in query string REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + "/verifyPassword",
+          url: Parse.serverURL + '/verifyPassword',
           headers: {
-            "X-Parse-Application-Id": Parse.applicationId,
-            "X-Parse-REST-API-Key": "rest",
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
           },
           qs: {
-            email: "",
-            password: "mypass",
+            email: '',
+            password: 'mypass',
           },
         });
       })
@@ -158,16 +158,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when username is not provided with json payload REST API", done => {
+  it('fails to verify password when username is not provided with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("", "mypass");
+        return verifyPassword('', 'mypass');
       })
       .then(res => {
         expect(res.status).toBe(400);
@@ -181,16 +181,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when email is not provided with json payload REST API", done => {
+  it('fails to verify password when email is not provided with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("", "mypass", true);
+        return verifyPassword('', 'mypass', true);
       })
       .then(res => {
         expect(res.status).toBe(400);
@@ -204,16 +204,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when password is not provided with json payload REST API", done => {
+  it('fails to verify password when password is not provided with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("testuser", "");
+        return verifyPassword('testuser', '');
       })
       .then(res => {
         expect(res.status).toBe(400);
@@ -227,16 +227,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when username matches but password does not match hash with json payload REST API", done => {
+  it('fails to verify password when username matches but password does not match hash with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("testuser", "wrong password");
+        return verifyPassword('testuser', 'wrong password');
       })
       .then(res => {
         expect(res.status).toBe(404);
@@ -250,16 +250,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when email matches but password does not match hash with json payload REST API", done => {
+  it('fails to verify password when email matches but password does not match hash with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("my@user.com", "wrong password", true);
+        return verifyPassword('my@user.com', 'wrong password', true);
       })
       .then(res => {
         expect(res.status).toBe(404);
@@ -273,16 +273,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when typeof username does not equal string REST API", done => {
+  it('fails to verify password when typeof username does not equal string REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword(123, "mypass");
+        return verifyPassword(123, 'mypass');
       })
       .then(res => {
         expect(res.status).toBe(404);
@@ -296,16 +296,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when typeof email does not equal string REST API", done => {
+  it('fails to verify password when typeof email does not equal string REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword(123, "mypass", true);
+        return verifyPassword(123, 'mypass', true);
       })
       .then(res => {
         expect(res.status).toBe(404);
@@ -319,16 +319,16 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when typeof password does not equal string REST API", done => {
+  it('fails to verify password when typeof password does not equal string REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("my@user.com", 123, true);
+        return verifyPassword('my@user.com', 123, true);
       })
       .then(res => {
         expect(res.status).toBe(404);
@@ -342,8 +342,8 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when username cannot be found REST API", done => {
-    verifyPassword("mytestuser", "mypass")
+  it('fails to verify password when username cannot be found REST API', done => {
+    verifyPassword('mytestuser', 'mypass')
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
@@ -356,8 +356,8 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("fails to verify password when email cannot be found REST API", done => {
-    verifyPassword("my@user.com", "mypass", true)
+  it('fails to verify password when email cannot be found REST API', done => {
+    verifyPassword('my@user.com', 'mypass', true)
       .then(res => {
         expect(res.status).toBe(404);
         expect(res.text).toMatch(
@@ -371,95 +371,95 @@ describe("Verify User Password", () => {
       });
   });
 
-  it("fails to verify password when preventLoginWithUnverifiedEmail is set to true REST API", async () => {
+  it('fails to verify password when preventLoginWithUnverifiedEmail is set to true REST API', async () => {
     await reconfigureServer({
-      publicServerURL: "http://localhost:8378/",
-      appName: "emailVerify",
+      publicServerURL: 'http://localhost:8378/',
+      appName: 'emailVerify',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
       emailAdapter: MockEmailAdapterWithOptions({
-        fromAddress: "parse@example.com",
-        apiKey: "k",
-        domain: "d",
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
       }),
     });
     const user = new Parse.User();
     await user.save({
-      username: "unverified-user",
-      password: "mypass",
-      email: "unverified-email@example.com",
+      username: 'unverified-user',
+      password: 'mypass',
+      email: 'unverified-email@example.com',
     });
     const res = await verifyPassword(
-      "unverified-email@example.com",
-      "mypass",
+      'unverified-email@example.com',
+      'mypass',
       true
     );
     expect(res.status).toBe(400);
     expect(res.data).toEqual({
       code: Parse.Error.EMAIL_NOT_FOUND,
-      error: "User email is not verified.",
+      error: 'User email is not verified.',
     });
   });
 
-  it("verify password lock account if failed verify password attempts are above threshold", done => {
+  it('verify password lock account if failed verify password attempts are above threshold', done => {
     reconfigureServer({
-      appName: "lockout threshold",
+      appName: 'lockout threshold',
       accountLockout: {
         duration: 1,
         threshold: 2,
       },
-      publicServerURL: "http://localhost:8378/",
+      publicServerURL: 'http://localhost:8378/',
     })
       .then(() => {
         const user = new Parse.User();
         return user.save({
-          username: "testuser",
-          password: "mypass",
-          email: "my@user.com",
+          username: 'testuser',
+          password: 'mypass',
+          email: 'my@user.com',
         });
       })
       .then(() => {
-        return verifyPassword("testuser", "wrong password");
+        return verifyPassword('testuser', 'wrong password');
       })
       .then(() => {
-        return verifyPassword("testuser", "wrong password");
+        return verifyPassword('testuser', 'wrong password');
       })
       .then(() => {
-        return verifyPassword("testuser", "wrong password");
+        return verifyPassword('testuser', 'wrong password');
       })
       .then(() => {
-        return isAccountLockoutError("testuser", "wrong password", 1, 1);
+        return isAccountLockoutError('testuser', 'wrong password', 1, 1);
       })
       .then(() => {
         done();
       })
       .catch(err => {
         fail(
-          "lock account after failed login attempts test failed: " +
+          'lock account after failed login attempts test failed: ' +
             JSON.stringify(err)
         );
         done();
       });
   });
-  it("succeed in verifying password when username and email are provided and password matches hash with json payload REST API", done => {
+  it('succeed in verifying password when username and email are provided and password matches hash with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + "/verifyPassword",
+          url: Parse.serverURL + '/verifyPassword',
           headers: {
-            "X-Parse-Application-Id": Parse.applicationId,
-            "X-Parse-REST-API-Key": "rest",
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
           },
           qs: {
-            username: "testuser",
-            email: "my@user.com",
-            password: "mypass",
+            username: 'testuser',
+            email: 'my@user.com',
+            password: 'mypass',
           },
           json: true,
         })
@@ -468,12 +468,12 @@ describe("Verify User Password", () => {
       })
       .then(response => {
         const res = response.data;
-        expect(typeof res).toBe("object");
-        expect(typeof res["objectId"]).toEqual("string");
+        expect(typeof res).toBe('object');
+        expect(typeof res['objectId']).toEqual('string');
         expect(
-          Object.prototype.hasOwnProperty.call(res, "sessionToken")
+          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
         ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, "password")).toEqual(
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
           false
         );
         done();
@@ -483,232 +483,232 @@ describe("Verify User Password", () => {
         done();
       });
   });
-  it("succeed in verifying password when username and password matches hash with json payload REST API", done => {
+  it('succeed in verifying password when username and password matches hash with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("testuser", "mypass");
+        return verifyPassword('testuser', 'mypass');
       })
       .then(response => {
         const res = response.data;
-        expect(typeof res).toBe("object");
-        expect(typeof res["objectId"]).toEqual("string");
+        expect(typeof res).toBe('object');
+        expect(typeof res['objectId']).toEqual('string');
         expect(
-          Object.prototype.hasOwnProperty.call(res, "sessionToken")
+          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
         ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, "password")).toEqual(
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
           false
         );
         done();
       });
   });
-  it("succeed in verifying password when email and password matches hash with json payload REST API", done => {
+  it('succeed in verifying password when email and password matches hash with json payload REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
-        return verifyPassword("my@user.com", "mypass", true);
+        return verifyPassword('my@user.com', 'mypass', true);
       })
       .then(response => {
         const res = response.data;
-        expect(typeof res).toBe("object");
-        expect(typeof res["objectId"]).toEqual("string");
+        expect(typeof res).toBe('object');
+        expect(typeof res['objectId']).toEqual('string');
         expect(
-          Object.prototype.hasOwnProperty.call(res, "sessionToken")
+          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
         ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, "password")).toEqual(
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
           false
         );
         done();
       });
   });
-  it("succeed to verify password when username and password provided in query string REST API", done => {
+  it('succeed to verify password when username and password provided in query string REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + "/verifyPassword",
+          url: Parse.serverURL + '/verifyPassword',
           headers: {
-            "X-Parse-Application-Id": Parse.applicationId,
-            "X-Parse-REST-API-Key": "rest",
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
           },
           qs: {
-            username: "testuser",
-            password: "mypass",
+            username: 'testuser',
+            password: 'mypass',
           },
         });
       })
       .then(response => {
         const res = response.text;
-        expect(typeof res).toBe("string");
+        expect(typeof res).toBe('string');
         const body = JSON.parse(res);
-        expect(typeof body["objectId"]).toEqual("string");
+        expect(typeof body['objectId']).toEqual('string');
         expect(
-          Object.prototype.hasOwnProperty.call(body, "sessionToken")
+          Object.prototype.hasOwnProperty.call(body, 'sessionToken')
         ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(body, "password")).toEqual(
+        expect(Object.prototype.hasOwnProperty.call(body, 'password')).toEqual(
           false
         );
         done();
       });
   });
-  it("succeed to verify password when email and password provided in query string REST API", done => {
+  it('succeed to verify password when email and password provided in query string REST API', done => {
     const user = new Parse.User();
     user
       .save({
-        username: "testuser",
-        password: "mypass",
-        email: "my@user.com",
+        username: 'testuser',
+        password: 'mypass',
+        email: 'my@user.com',
       })
       .then(() => {
         return request({
-          url: Parse.serverURL + "/verifyPassword",
+          url: Parse.serverURL + '/verifyPassword',
           headers: {
-            "X-Parse-Application-Id": Parse.applicationId,
-            "X-Parse-REST-API-Key": "rest",
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
           },
           qs: {
-            email: "my@user.com",
-            password: "mypass",
+            email: 'my@user.com',
+            password: 'mypass',
           },
         });
       })
       .then(response => {
         const res = response.text;
-        expect(typeof res).toBe("string");
+        expect(typeof res).toBe('string');
         const body = JSON.parse(res);
-        expect(typeof body["objectId"]).toEqual("string");
+        expect(typeof body['objectId']).toEqual('string');
         expect(
-          Object.prototype.hasOwnProperty.call(body, "sessionToken")
+          Object.prototype.hasOwnProperty.call(body, 'sessionToken')
         ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(body, "password")).toEqual(
+        expect(Object.prototype.hasOwnProperty.call(body, 'password')).toEqual(
           false
         );
         done();
       });
   });
-  it("succeed to verify password with username when user1 has username === user2 email REST API", done => {
+  it('succeed to verify password with username when user1 has username === user2 email REST API', done => {
     const user1 = new Parse.User();
     user1
       .save({
-        username: "email@user.com",
-        password: "mypass1",
-        email: "1@user.com",
+        username: 'email@user.com',
+        password: 'mypass1',
+        email: '1@user.com',
       })
       .then(() => {
         const user2 = new Parse.User();
         return user2.save({
-          username: "user2",
-          password: "mypass2",
-          email: "email@user.com",
+          username: 'user2',
+          password: 'mypass2',
+          email: 'email@user.com',
         });
       })
       .then(() => {
-        return verifyPassword("email@user.com", "mypass1");
+        return verifyPassword('email@user.com', 'mypass1');
       })
       .then(response => {
         const res = response.data;
-        expect(typeof res).toBe("object");
-        expect(typeof res["objectId"]).toEqual("string");
+        expect(typeof res).toBe('object');
+        expect(typeof res['objectId']).toEqual('string');
         expect(
-          Object.prototype.hasOwnProperty.call(res, "sessionToken")
+          Object.prototype.hasOwnProperty.call(res, 'sessionToken')
         ).toEqual(false);
-        expect(Object.prototype.hasOwnProperty.call(res, "password")).toEqual(
+        expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
           false
         );
         done();
       });
   });
 
-  it("verify password of user with unverified email with master key and ignoreEmailVerification=true", async () => {
+  it('verify password of user with unverified email with master key and ignoreEmailVerification=true', async () => {
     await reconfigureServer({
-      publicServerURL: "http://localhost:8378/",
-      appName: "emailVerify",
+      publicServerURL: 'http://localhost:8378/',
+      appName: 'emailVerify',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
       emailAdapter: MockEmailAdapterWithOptions({
-        fromAddress: "parse@example.com",
-        apiKey: "k",
-        domain: "d",
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
       }),
     });
 
     const user = new Parse.User();
-    user.setUsername("user");
-    user.setPassword("pass");
-    user.setEmail("test@example.com");
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.setEmail('test@example.com');
     await user.signUp();
 
     const { data: res } = await request({
-      method: "POST",
-      url: Parse.serverURL + "/verifyPassword",
+      method: 'POST',
+      url: Parse.serverURL + '/verifyPassword',
       headers: {
-        "X-Parse-Master-Key": Parse.masterKey,
-        "X-Parse-Application-Id": Parse.applicationId,
-        "X-Parse-REST-API-Key": "rest",
-        "Content-Type": "application/json",
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
       },
       body: {
-        username: "user",
-        password: "pass",
+        username: 'user',
+        password: 'pass',
         ignoreEmailVerification: true,
       },
       json: true,
     });
     expect(res.objectId).toBe(user.id);
-    expect(Object.prototype.hasOwnProperty.call(res, "sessionToken")).toEqual(
+    expect(Object.prototype.hasOwnProperty.call(res, 'sessionToken')).toEqual(
       false
     );
-    expect(Object.prototype.hasOwnProperty.call(res, "password")).toEqual(
+    expect(Object.prototype.hasOwnProperty.call(res, 'password')).toEqual(
       false
     );
   });
 
-  it("fails to verify password of user with unverified email with master key and ignoreEmailVerification=false", async () => {
+  it('fails to verify password of user with unverified email with master key and ignoreEmailVerification=false', async () => {
     await reconfigureServer({
-      publicServerURL: "http://localhost:8378/",
-      appName: "emailVerify",
+      publicServerURL: 'http://localhost:8378/',
+      appName: 'emailVerify',
       verifyUserEmails: true,
       preventLoginWithUnverifiedEmail: true,
       emailAdapter: MockEmailAdapterWithOptions({
-        fromAddress: "parse@example.com",
-        apiKey: "k",
-        domain: "d",
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
       }),
     });
 
     const user = new Parse.User();
-    user.setUsername("user");
-    user.setPassword("pass");
-    user.setEmail("test@example.com");
+    user.setUsername('user');
+    user.setPassword('pass');
+    user.setEmail('test@example.com');
     await user.signUp();
 
     const res = await request({
-      method: "POST",
-      url: Parse.serverURL + "/verifyPassword",
+      method: 'POST',
+      url: Parse.serverURL + '/verifyPassword',
       headers: {
-        "X-Parse-Master-Key": Parse.masterKey,
-        "X-Parse-Application-Id": Parse.applicationId,
-        "X-Parse-REST-API-Key": "rest",
-        "Content-Type": "application/json",
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
       },
       body: {
-        username: "user",
-        password: "pass",
+        username: 'user',
+        password: 'pass',
         ignoreEmailVerification: false,
       },
       json: true,

@@ -1,17 +1,17 @@
-const Config = require("./Config");
-const Auth = require("./Auth");
-import RESTController from "parse/lib/node/RESTController";
-const Parse = require("parse/node");
+const Config = require('./Config');
+const Auth = require('./Auth');
+import RESTController from 'parse/lib/node/RESTController';
+const Parse = require('parse/node');
 
 function getSessionToken(options) {
-  if (options && typeof options.sessionToken === "string") {
+  if (options && typeof options.sessionToken === 'string') {
     return Promise.resolve(options.sessionToken);
   }
   return Promise.resolve(null);
 }
 
 function getAuth(options = {}, config) {
-  const installationId = options.installationId || "cloud";
+  const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
     return Promise.resolve(
       new Auth.Auth({ config, isMaster: true, installationId })
@@ -44,11 +44,11 @@ function ParseServerRESTController(applicationId, router) {
       path = path.slice(serverURL.pathname.length, path.length);
     }
 
-    if (path[0] !== "/") {
-      path = "/" + path;
+    if (path[0] !== '/') {
+      path = '/' + path;
     }
 
-    if (path === "/batch") {
+    if (path === '/batch') {
       const batch = transactionRetries => {
         let initialPromise = Promise.resolve();
         if (data.transaction === true) {
@@ -89,7 +89,7 @@ function ParseServerRESTController(applicationId, router) {
               if (data.transaction === true) {
                 if (
                   result.find(
-                    resultItem => typeof resultItem.error === "object"
+                    resultItem => typeof resultItem.error === 'object'
                   )
                 ) {
                   return config.database
@@ -113,7 +113,7 @@ function ParseServerRESTController(applicationId, router) {
                 error &&
                 error.find(
                   errorItem =>
-                    typeof errorItem.error === "object" &&
+                    typeof errorItem.error === 'object' &&
                     errorItem.error.code === 251
                 ) &&
                 transactionRetries > 0
@@ -128,7 +128,7 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     let query;
-    if (method === "GET") {
+    if (method === 'GET') {
       query = data;
     }
 

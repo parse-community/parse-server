@@ -1,10 +1,10 @@
-"use strict";
-const Config = require("../lib/Config");
-const Parse = require("parse/node");
-const ParseServer = require("../lib/index").ParseServer;
-const request = require("../lib/request");
+'use strict';
+const Config = require('../lib/Config');
+const Parse = require('parse/node');
+const ParseServer = require('../lib/index').ParseServer;
+const request = require('../lib/request');
 const InMemoryCacheAdapter =
-  require("../lib/Adapters/Cache/InMemoryCacheAdapter").InMemoryCacheAdapter;
+  require('../lib/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
 
 const mockAdapter = {
   createFile: async filename => ({
@@ -19,26 +19,26 @@ const mockAdapter = {
   },
 };
 
-describe("Cloud Code", () => {
-  it("can load absolute cloud code file", done => {
+describe('Cloud Code', () => {
+  it('can load absolute cloud code file', done => {
     reconfigureServer({
-      cloud: __dirname + "/cloud/cloudCodeRelativeFile.js",
+      cloud: __dirname + '/cloud/cloudCodeRelativeFile.js',
     }).then(() => {
-      Parse.Cloud.run("cloudCodeInFile", {}).then(result => {
+      Parse.Cloud.run('cloudCodeInFile', {}).then(result => {
         expect(result).toEqual(
-          "It is possible to define cloud code in a file."
+          'It is possible to define cloud code in a file.'
         );
         done();
       });
     });
   });
 
-  it("can load relative cloud code file", done => {
-    reconfigureServer({ cloud: "./spec/cloud/cloudCodeAbsoluteFile.js" }).then(
+  it('can load relative cloud code file', done => {
+    reconfigureServer({ cloud: './spec/cloud/cloudCodeAbsoluteFile.js' }).then(
       () => {
-        Parse.Cloud.run("cloudCodeInFile", {}).then(result => {
+        Parse.Cloud.run('cloudCodeInFile', {}).then(result => {
           expect(result).toEqual(
-            "It is possible to define cloud code in a file."
+            'It is possible to define cloud code in a file.'
           );
           done();
         });
@@ -46,115 +46,115 @@ describe("Cloud Code", () => {
     );
   });
 
-  it("can load cloud code as a module", async () => {
-    process.env.npm_package_type = "module";
+  it('can load cloud code as a module', async () => {
+    process.env.npm_package_type = 'module';
     await reconfigureServer({
-      appId: "test1",
-      cloud: "./spec/cloud/cloudCodeModuleFile.js",
+      appId: 'test1',
+      cloud: './spec/cloud/cloudCodeModuleFile.js',
     });
-    const result = await Parse.Cloud.run("cloudCodeInFile");
-    expect(result).toEqual("It is possible to define cloud code in a file.");
+    const result = await Parse.Cloud.run('cloudCodeInFile');
+    expect(result).toEqual('It is possible to define cloud code in a file.');
     delete process.env.npm_package_type;
   });
 
-  it("cloud code must be valid type", async () => {
-    spyOn(console, "error").and.callFake(() => {});
+  it('cloud code must be valid type', async () => {
+    spyOn(console, 'error').and.callFake(() => {});
     await expectAsync(reconfigureServer({ cloud: true })).toBeRejectedWith(
       "argument 'cloud' must either be a string or a function"
     );
   });
 
-  it("should wait for cloud code to load", async () => {
-    await reconfigureServer({ appId: "test3" });
+  it('should wait for cloud code to load', async () => {
+    await reconfigureServer({ appId: 'test3' });
     const initiated = new Date();
     const parseServer = await new ParseServer({
       ...defaultConfiguration,
-      appId: "test3",
-      masterKey: "test",
-      serverURL: "http://localhost:12668/parse",
+      appId: 'test3',
+      masterKey: 'test',
+      serverURL: 'http://localhost:12668/parse',
       async cloud() {
         await new Promise(resolve => setTimeout(resolve, 1000));
-        Parse.Cloud.beforeSave("Test", () => {
-          throw "Cannot save.";
+        Parse.Cloud.beforeSave('Test', () => {
+          throw 'Cannot save.';
         });
       },
     }).start();
-    const express = require("express");
+    const express = require('express');
     const app = express();
-    app.use("/parse", parseServer.app);
+    app.use('/parse', parseServer.app);
     const server = app.listen(12668);
     const now = new Date();
     expect(now.getTime() - initiated.getTime() > 1000).toBeTrue();
-    await expectAsync(new Parse.Object("Test").save()).toBeRejectedWith(
-      new Parse.Error(141, "Cannot save.")
+    await expectAsync(new Parse.Object('Test').save()).toBeRejectedWith(
+      new Parse.Error(141, 'Cannot save.')
     );
     await new Promise(resolve => server.close(resolve));
   });
 
-  it("can create functions", done => {
-    Parse.Cloud.define("hello", () => {
-      return "Hello world!";
+  it('can create functions', done => {
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
     });
 
-    Parse.Cloud.run("hello", {}).then(result => {
-      expect(result).toEqual("Hello world!");
+    Parse.Cloud.run('hello', {}).then(result => {
+      expect(result).toEqual('Hello world!');
       done();
     });
   });
 
-  it("can get config", () => {
+  it('can get config', () => {
     const config = Parse.Server;
-    let currentConfig = Config.get("test");
-    const server = require("../lib/cloud-code/Parse.Server");
+    let currentConfig = Config.get('test');
+    const server = require('../lib/cloud-code/Parse.Server');
     expect(Object.keys(config)).toEqual(
       Object.keys({ ...currentConfig, ...server })
     );
     config.silent = false;
     Parse.Server = config;
-    currentConfig = Config.get("test");
+    currentConfig = Config.get('test');
     expect(currentConfig.silent).toBeFalse();
   });
 
-  it("can get curent version", () => {
-    const version = require("../package.json").version;
-    const currentConfig = Config.get("test");
+  it('can get curent version', () => {
+    const version = require('../package.json').version;
+    const currentConfig = Config.get('test');
     expect(Parse.Server.version).toBeDefined();
     expect(currentConfig.version).toBeDefined();
     expect(Parse.Server.version).toEqual(version);
   });
 
-  it("show warning on duplicate cloud functions", done => {
-    const logger = require("../lib/logger").logger;
-    spyOn(logger, "warn").and.callFake(() => {});
-    Parse.Cloud.define("hello", () => {
-      return "Hello world!";
+  it('show warning on duplicate cloud functions', done => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
     });
-    Parse.Cloud.define("hello", () => {
-      return "Hello world!";
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
     });
     expect(logger.warn).toHaveBeenCalledWith(
-      "Warning: Duplicate cloud functions exist for hello. Only the last one will be used and the others will be ignored."
+      'Warning: Duplicate cloud functions exist for hello. Only the last one will be used and the others will be ignored.'
     );
     done();
   });
 
-  it("is cleared cleared after the previous test", done => {
-    Parse.Cloud.run("hello", {}).catch(error => {
+  it('is cleared cleared after the previous test', done => {
+    Parse.Cloud.run('hello', {}).catch(error => {
       expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
       done();
     });
   });
 
-  it("basic beforeSave rejection", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFail", function () {
-      throw new Error("You shall not pass!");
+  it('basic beforeSave rejection', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', function () {
+      throw new Error('You shall not pass!');
     });
 
-    const obj = new Parse.Object("BeforeSaveFail");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
     obj.save().then(
       () => {
-        fail("Should not have been able to save BeforeSaveFailure class.");
+        fail('Should not have been able to save BeforeSaveFailure class.');
         done();
       },
       () => {
@@ -163,86 +163,86 @@ describe("Cloud Code", () => {
     );
   });
 
-  it("returns an error", done => {
-    Parse.Cloud.define("cloudCodeWithError", () => {
+  it('returns an error', done => {
+    Parse.Cloud.define('cloudCodeWithError', () => {
       /* eslint-disable no-undef */
       foo.bar();
       /* eslint-enable no-undef */
-      return "I better throw an error.";
+      return 'I better throw an error.';
     });
 
-    Parse.Cloud.run("cloudCodeWithError").then(
-      () => done.fail("should not succeed"),
+    Parse.Cloud.run('cloudCodeWithError').then(
+      () => done.fail('should not succeed'),
       e => {
         expect(e).toEqual(
-          new Parse.Error(Parse.Error.SCRIPT_FAILED, "foo is not defined")
+          new Parse.Error(Parse.Error.SCRIPT_FAILED, 'foo is not defined')
         );
         done();
       }
     );
   });
 
-  it("returns an empty error", done => {
-    Parse.Cloud.define("cloudCodeWithError", () => {
+  it('returns an empty error', done => {
+    Parse.Cloud.define('cloudCodeWithError', () => {
       throw null;
     });
 
-    Parse.Cloud.run("cloudCodeWithError").then(
-      () => done.fail("should not succeed"),
+    Parse.Cloud.run('cloudCodeWithError').then(
+      () => done.fail('should not succeed'),
       e => {
         expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
-        expect(e.message).toEqual("Script failed.");
+        expect(e.message).toEqual('Script failed.');
         done();
       }
     );
   });
 
-  it("beforeFind can throw string", async function (done) {
-    Parse.Cloud.beforeFind("beforeFind", () => {
-      throw "throw beforeFind";
+  it('beforeFind can throw string', async function (done) {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      throw 'throw beforeFind';
     });
-    const obj = new Parse.Object("beforeFind");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('beforeFind');
+    obj.set('foo', 'bar');
     await obj.save();
-    expect(obj.get("foo")).toBe("bar");
+    expect(obj.get('foo')).toBe('bar');
     try {
-      const query = new Parse.Query("beforeFind");
+      const query = new Parse.Query('beforeFind');
       await query.first();
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toBe("throw beforeFind");
+      expect(e.message).toBe('throw beforeFind');
       done();
     }
   });
 
-  it("beforeSave rejection with custom error code", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFailWithErrorCode", function () {
-      throw new Parse.Error(999, "Nope");
+  it('beforeSave rejection with custom error code', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
+      throw new Parse.Error(999, 'Nope');
     });
 
-    const obj = new Parse.Object("BeforeSaveFailWithErrorCode");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFailWithErrorCode');
+    obj.set('foo', 'bar');
     obj.save().then(
       function () {
         fail(
-          "Should not have been able to save BeforeSaveFailWithErrorCode class."
+          'Should not have been able to save BeforeSaveFailWithErrorCode class.'
         );
         done();
       },
       function (error) {
         expect(error.code).toEqual(999);
-        expect(error.message).toEqual("Nope");
+        expect(error.message).toEqual('Nope');
         done();
       }
     );
   });
 
-  it("basic beforeSave rejection via promise", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveFailWithPromise", function () {
-      const query = new Parse.Query("Yolo");
+  it('basic beforeSave rejection via promise', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFailWithPromise', function () {
+      const query = new Parse.Query('Yolo');
       return query.find().then(
         () => {
-          throw "Nope";
+          throw 'Nope';
         },
         () => {
           return Promise.response();
@@ -250,34 +250,34 @@ describe("Cloud Code", () => {
       );
     });
 
-    const obj = new Parse.Object("BeforeSaveFailWithPromise");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveFailWithPromise');
+    obj.set('foo', 'bar');
     obj.save().then(
       function () {
-        fail("Should not have been able to save BeforeSaveFailure class.");
+        fail('Should not have been able to save BeforeSaveFailure class.');
         done();
       },
       function (error) {
         expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
-        expect(error.message).toEqual("Nope");
+        expect(error.message).toEqual('Nope');
         done();
       }
     );
   });
 
-  it("test beforeSave changed object success", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveChanged", function (req) {
-      req.object.set("foo", "baz");
+  it('test beforeSave changed object success', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('foo', 'baz');
     });
 
-    const obj = new Parse.Object("BeforeSaveChanged");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
     obj.save().then(
       function () {
-        const query = new Parse.Query("BeforeSaveChanged");
+        const query = new Parse.Query('BeforeSaveChanged');
         query.get(obj.id).then(
           function (objAgain) {
-            expect(objAgain.get("foo")).toEqual("baz");
+            expect(objAgain.get('foo')).toEqual('baz');
             done();
           },
           function (error) {
@@ -293,187 +293,187 @@ describe("Cloud Code", () => {
     );
   });
 
-  it("test beforeSave with invalid field", async () => {
-    Parse.Cloud.beforeSave("BeforeSaveChanged", function (req) {
-      req.object.set("length", 0);
+  it('test beforeSave with invalid field', async () => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('length', 0);
     });
 
-    const obj = new Parse.Object("BeforeSaveChanged");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
     try {
       await obj.save();
-      fail("should not succeed");
+      fail('should not succeed');
     } catch (e) {
-      expect(e.message).toBe("Invalid field name: length.");
+      expect(e.message).toBe('Invalid field name: length.');
     }
   });
 
   it("test beforeSave changed object fail doesn't change object", async function () {
-    Parse.Cloud.beforeSave("BeforeSaveChanged", function (req) {
-      if (req.object.has("fail")) {
-        return Promise.reject(new Error("something went wrong"));
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      if (req.object.has('fail')) {
+        return Promise.reject(new Error('something went wrong'));
       }
 
       return Promise.resolve();
     });
 
-    const obj = new Parse.Object("BeforeSaveChanged");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
     await obj.save();
-    obj.set("foo", "baz").set("fail", true);
+    obj.set('foo', 'baz').set('fail', true);
     try {
       await obj.save();
     } catch (e) {
       await obj.fetch();
-      expect(obj.get("foo")).toBe("bar");
+      expect(obj.get('foo')).toBe('bar');
     }
   });
 
-  it("test beforeSave returns value on create and update", done => {
-    Parse.Cloud.beforeSave("BeforeSaveChanged", function (req) {
-      req.object.set("foo", "baz");
+  it('test beforeSave returns value on create and update', done => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('foo', 'baz');
     });
 
-    const obj = new Parse.Object("BeforeSaveChanged");
-    obj.set("foo", "bing");
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bing');
     obj.save().then(() => {
-      expect(obj.get("foo")).toEqual("baz");
-      obj.set("foo", "bar");
+      expect(obj.get('foo')).toEqual('baz');
+      obj.set('foo', 'bar');
       return obj.save().then(() => {
-        expect(obj.get("foo")).toEqual("baz");
+        expect(obj.get('foo')).toEqual('baz');
         done();
       });
     });
   });
 
-  it("test beforeSave applies changes when beforeSave returns true", done => {
-    Parse.Cloud.beforeSave("Insurance", function (req) {
-      req.object.set("rate", "$49.99/Month");
+  it('test beforeSave applies changes when beforeSave returns true', done => {
+    Parse.Cloud.beforeSave('Insurance', function (req) {
+      req.object.set('rate', '$49.99/Month');
       return true;
     });
 
-    const insurance = new Parse.Object("Insurance");
-    insurance.set("rate", "$5.00/Month");
+    const insurance = new Parse.Object('Insurance');
+    insurance.set('rate', '$5.00/Month');
     insurance.save().then(insurance => {
-      expect(insurance.get("rate")).toEqual("$49.99/Month");
+      expect(insurance.get('rate')).toEqual('$49.99/Month');
       done();
     });
   });
 
-  it("test beforeSave applies changes and resolves returned promise", done => {
-    Parse.Cloud.beforeSave("Insurance", function (req) {
-      req.object.set("rate", "$49.99/Month");
-      return new Parse.Query("Pet").get(req.object.get("pet").id).then(pet => {
-        pet.set("healthy", true);
+  it('test beforeSave applies changes and resolves returned promise', done => {
+    Parse.Cloud.beforeSave('Insurance', function (req) {
+      req.object.set('rate', '$49.99/Month');
+      return new Parse.Query('Pet').get(req.object.get('pet').id).then(pet => {
+        pet.set('healthy', true);
         return pet.save();
       });
     });
 
-    const pet = new Parse.Object("Pet");
-    pet.set("healthy", false);
+    const pet = new Parse.Object('Pet');
+    pet.set('healthy', false);
     pet.save().then(pet => {
-      const insurance = new Parse.Object("Insurance");
-      insurance.set("pet", pet);
-      insurance.set("rate", "$5.00/Month");
+      const insurance = new Parse.Object('Insurance');
+      insurance.set('pet', pet);
+      insurance.set('rate', '$5.00/Month');
       insurance.save().then(insurance => {
-        expect(insurance.get("rate")).toEqual("$49.99/Month");
-        new Parse.Query("Pet").get(insurance.get("pet").id).then(pet => {
-          expect(pet.get("healthy")).toEqual(true);
+        expect(insurance.get('rate')).toEqual('$49.99/Month');
+        new Parse.Query('Pet').get(insurance.get('pet').id).then(pet => {
+          expect(pet.get('healthy')).toEqual(true);
           done();
         });
       });
     });
   });
 
-  it("beforeSave should be called only if user fulfills permissions", async () => {
+  it('beforeSave should be called only if user fulfills permissions', async () => {
     const triggeruser = new Parse.User();
-    triggeruser.setUsername("triggeruser");
-    triggeruser.setPassword("triggeruser");
+    triggeruser.setUsername('triggeruser');
+    triggeruser.setPassword('triggeruser');
     await triggeruser.signUp();
 
     const triggeruser2 = new Parse.User();
-    triggeruser2.setUsername("triggeruser2");
-    triggeruser2.setPassword("triggeruser2");
+    triggeruser2.setUsername('triggeruser2');
+    triggeruser2.setPassword('triggeruser2');
     await triggeruser2.signUp();
 
     const triggeruser3 = new Parse.User();
-    triggeruser3.setUsername("triggeruser3");
-    triggeruser3.setPassword("triggeruser3");
+    triggeruser3.setUsername('triggeruser3');
+    triggeruser3.setPassword('triggeruser3');
     await triggeruser3.signUp();
 
     const triggeruser4 = new Parse.User();
-    triggeruser4.setUsername("triggeruser4");
-    triggeruser4.setPassword("triggeruser4");
+    triggeruser4.setUsername('triggeruser4');
+    triggeruser4.setPassword('triggeruser4');
     await triggeruser4.signUp();
 
     const triggeruser5 = new Parse.User();
-    triggeruser5.setUsername("triggeruser5");
-    triggeruser5.setPassword("triggeruser5");
+    triggeruser5.setUsername('triggeruser5');
+    triggeruser5.setPassword('triggeruser5');
     await triggeruser5.signUp();
 
     const triggerroleacl = new Parse.ACL();
     triggerroleacl.setPublicReadAccess(true);
 
     const triggerrole = new Parse.Role();
-    triggerrole.setName("triggerrole");
+    triggerrole.setName('triggerrole');
     triggerrole.setACL(triggerroleacl);
     triggerrole.getUsers().add(triggeruser);
     triggerrole.getUsers().add(triggeruser3);
     await triggerrole.save();
 
-    const config = Config.get("test");
+    const config = Config.get('test');
     const schema = await config.database.loadSchema();
     await schema.addClassIfNotExists(
-      "triggerclass",
+      'triggerclass',
       {
-        someField: { type: "String" },
-        pointerToUser: { type: "Pointer", targetClass: "_User" },
+        someField: { type: 'String' },
+        pointerToUser: { type: 'Pointer', targetClass: '_User' },
       },
       {
         find: {
-          "role:triggerrole": true,
+          'role:triggerrole': true,
           [triggeruser.id]: true,
           [triggeruser2.id]: true,
         },
         create: {
-          "role:triggerrole": true,
+          'role:triggerrole': true,
           [triggeruser.id]: true,
           [triggeruser2.id]: true,
         },
         get: {
-          "role:triggerrole": true,
+          'role:triggerrole': true,
           [triggeruser.id]: true,
           [triggeruser2.id]: true,
         },
         update: {
-          "role:triggerrole": true,
+          'role:triggerrole': true,
           [triggeruser.id]: true,
           [triggeruser2.id]: true,
         },
         addField: {
-          "role:triggerrole": true,
+          'role:triggerrole': true,
           [triggeruser.id]: true,
           [triggeruser2.id]: true,
         },
         delete: {
-          "role:triggerrole": true,
+          'role:triggerrole': true,
           [triggeruser.id]: true,
           [triggeruser2.id]: true,
         },
-        readUserFields: ["pointerToUser"],
-        writeUserFields: ["pointerToUser"],
+        readUserFields: ['pointerToUser'],
+        writeUserFields: ['pointerToUser'],
       },
       {}
     );
 
     let called = 0;
-    Parse.Cloud.beforeSave("triggerclass", () => {
+    Parse.Cloud.beforeSave('triggerclass', () => {
       called++;
     });
 
-    const triggerobject = new Parse.Object("triggerclass");
-    triggerobject.set("someField", "someValue");
-    triggerobject.set("someField2", "someValue");
+    const triggerobject = new Parse.Object('triggerclass');
+    triggerobject.set('someField', 'someValue');
+    triggerobject.set('someField2', 'someValue');
     const triggerobjectacl = new Parse.ACL();
     triggerobjectacl.setPublicReadAccess(false);
     triggerobjectacl.setPublicWriteAccess(false);
@@ -502,9 +502,9 @@ describe("Cloud Code", () => {
     });
     expect(called).toBe(4);
 
-    const triggerobject2 = new Parse.Object("triggerclass");
-    triggerobject2.set("someField", "someValue");
-    triggerobject2.set("someField22", "someValue");
+    const triggerobject2 = new Parse.Object('triggerclass');
+    triggerobject2.set('someField', 'someValue');
+    triggerobject2.set('someField22', 'someValue');
     const triggerobjectacl2 = new Parse.ACL();
     triggerobjectacl2.setPublicReadAccess(false);
     triggerobjectacl2.setPublicWriteAccess(false);
@@ -565,9 +565,9 @@ describe("Cloud Code", () => {
     expect(catched).toBe(true);
     expect(called).toBe(7);
 
-    const triggerobject3 = new Parse.Object("triggerclass");
-    triggerobject3.set("someField", "someValue");
-    triggerobject3.set("someField33", "someValue");
+    const triggerobject3 = new Parse.Object('triggerclass');
+    triggerobject3.set('someField', 'someValue');
+    triggerobject3.set('someField33', 'someValue');
 
     catched = false;
     try {
@@ -594,19 +594,19 @@ describe("Cloud Code", () => {
     expect(called).toBe(7);
   });
 
-  it("test afterSave ran and created an object", function (done) {
-    Parse.Cloud.afterSave("AfterSaveTest", function (req) {
-      const obj = new Parse.Object("AfterSaveProof");
-      obj.set("proof", req.object.id);
+  it('test afterSave ran and created an object', function (done) {
+    Parse.Cloud.afterSave('AfterSaveTest', function (req) {
+      const obj = new Parse.Object('AfterSaveProof');
+      obj.set('proof', req.object.id);
       obj.save().then(test);
     });
 
-    const obj = new Parse.Object("AfterSaveTest");
+    const obj = new Parse.Object('AfterSaveTest');
     obj.save();
 
     function test() {
-      const query = new Parse.Query("AfterSaveProof");
-      query.equalTo("proof", obj.id);
+      const query = new Parse.Query('AfterSaveProof');
+      query.equalTo('proof', obj.id);
       query.find().then(
         function (results) {
           expect(results.length).toEqual(1);
@@ -620,13 +620,13 @@ describe("Cloud Code", () => {
     }
   });
 
-  it("test afterSave ran on created object and returned a promise", function (done) {
-    Parse.Cloud.afterSave("AfterSaveTest2", function (req) {
+  it('test afterSave ran on created object and returned a promise', function (done) {
+    Parse.Cloud.afterSave('AfterSaveTest2', function (req) {
       const obj = req.object;
       if (!obj.existed()) {
         return new Promise(resolve => {
           setTimeout(function () {
-            obj.set("proof", obj.id);
+            obj.set('proof', obj.id);
             obj.save().then(function () {
               resolve();
             });
@@ -635,15 +635,15 @@ describe("Cloud Code", () => {
       }
     });
 
-    const obj = new Parse.Object("AfterSaveTest2");
+    const obj = new Parse.Object('AfterSaveTest2');
     obj.save().then(function () {
-      const query = new Parse.Query("AfterSaveTest2");
-      query.equalTo("proof", obj.id);
+      const query = new Parse.Query('AfterSaveTest2');
+      query.equalTo('proof', obj.id);
       query.find().then(
         function (results) {
           expect(results.length).toEqual(1);
           const savedObject = results[0];
-          expect(savedObject.get("proof")).toEqual(obj.id);
+          expect(savedObject.get('proof')).toEqual(obj.id);
           done();
         },
         function (error) {
@@ -655,13 +655,13 @@ describe("Cloud Code", () => {
   });
 
   // TODO: Fails on CI randomly as racing
-  xit("test afterSave ignoring promise, object not found", function (done) {
-    Parse.Cloud.afterSave("AfterSaveTest2", function (req) {
+  xit('test afterSave ignoring promise, object not found', function (done) {
+    Parse.Cloud.afterSave('AfterSaveTest2', function (req) {
       const obj = req.object;
       if (!obj.existed()) {
         return new Promise(resolve => {
           setTimeout(function () {
-            obj.set("proof", obj.id);
+            obj.set('proof', obj.id);
             obj.save().then(function () {
               resolve();
             });
@@ -670,13 +670,13 @@ describe("Cloud Code", () => {
       }
     });
 
-    const obj = new Parse.Object("AfterSaveTest2");
+    const obj = new Parse.Object('AfterSaveTest2');
     obj.save().then(function () {
       done();
     });
 
-    const query = new Parse.Query("AfterSaveTest2");
-    query.equalTo("proof", obj.id);
+    const query = new Parse.Query('AfterSaveTest2');
+    query.equalTo('proof', obj.id);
     query.find().then(
       function (results) {
         expect(results.length).toEqual(0);
@@ -687,16 +687,16 @@ describe("Cloud Code", () => {
     );
   });
 
-  it("test afterSave rejecting promise", function (done) {
-    Parse.Cloud.afterSave("AfterSaveTest2", function () {
+  it('test afterSave rejecting promise', function (done) {
+    Parse.Cloud.afterSave('AfterSaveTest2', function () {
       return new Promise((resolve, reject) => {
         setTimeout(function () {
-          reject("THIS SHOULD BE IGNORED");
+          reject('THIS SHOULD BE IGNORED');
         }, 1000);
       });
     });
 
-    const obj = new Parse.Object("AfterSaveTest2");
+    const obj = new Parse.Object('AfterSaveTest2');
     obj.save().then(
       function () {
         done();
@@ -708,12 +708,12 @@ describe("Cloud Code", () => {
     );
   });
 
-  it("test afterDelete returning promise, object is deleted when destroy resolves", function (done) {
-    Parse.Cloud.afterDelete("AfterDeleteTest2", function (req) {
+  it('test afterDelete returning promise, object is deleted when destroy resolves', function (done) {
+    Parse.Cloud.afterDelete('AfterDeleteTest2', function (req) {
       return new Promise(resolve => {
         setTimeout(function () {
-          const obj = new Parse.Object("AfterDeleteTestProof");
-          obj.set("proof", req.object.id);
+          const obj = new Parse.Object('AfterDeleteTestProof');
+          obj.set('proof', req.object.id);
           obj.save().then(function () {
             resolve();
           });
@@ -726,27 +726,27 @@ describe("Cloud Code", () => {
       done();
     };
 
-    const obj = new Parse.Object("AfterDeleteTest2");
+    const obj = new Parse.Object('AfterDeleteTest2');
     obj.save().then(function () {
       obj.destroy().then(function () {
-        const query = new Parse.Query("AfterDeleteTestProof");
-        query.equalTo("proof", obj.id);
+        const query = new Parse.Query('AfterDeleteTestProof');
+        query.equalTo('proof', obj.id);
         query.find().then(function (results) {
           expect(results.length).toEqual(1);
           const deletedObject = results[0];
-          expect(deletedObject.get("proof")).toEqual(obj.id);
+          expect(deletedObject.get('proof')).toEqual(obj.id);
           done();
         }, errorHandler);
       }, errorHandler);
     }, errorHandler);
   });
 
-  it("test afterDelete ignoring promise, object is not yet deleted", function (done) {
-    Parse.Cloud.afterDelete("AfterDeleteTest2", function (req) {
+  it('test afterDelete ignoring promise, object is not yet deleted', function (done) {
+    Parse.Cloud.afterDelete('AfterDeleteTest2', function (req) {
       return new Promise(resolve => {
         setTimeout(function () {
-          const obj = new Parse.Object("AfterDeleteTestProof");
-          obj.set("proof", req.object.id);
+          const obj = new Parse.Object('AfterDeleteTestProof');
+          obj.set('proof', req.object.id);
           obj.save().then(function () {
             resolve();
           });
@@ -759,38 +759,38 @@ describe("Cloud Code", () => {
       done();
     };
 
-    const obj = new Parse.Object("AfterDeleteTest2");
+    const obj = new Parse.Object('AfterDeleteTest2');
     obj.save().then(function () {
       obj.destroy().then(function () {
         done();
       });
 
-      const query = new Parse.Query("AfterDeleteTestProof");
-      query.equalTo("proof", obj.id);
+      const query = new Parse.Query('AfterDeleteTestProof');
+      query.equalTo('proof', obj.id);
       query.find().then(function (results) {
         expect(results.length).toEqual(0);
       }, errorHandler);
     }, errorHandler);
   });
 
-  it("test beforeSave happens on update", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveChanged", function (req) {
-      req.object.set("foo", "baz");
+  it('test beforeSave happens on update', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('foo', 'baz');
     });
 
-    const obj = new Parse.Object("BeforeSaveChanged");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
     obj
       .save()
       .then(function () {
-        obj.set("foo", "bar");
+        obj.set('foo', 'bar');
         return obj.save();
       })
       .then(
         function () {
-          const query = new Parse.Query("BeforeSaveChanged");
+          const query = new Parse.Query('BeforeSaveChanged');
           return query.get(obj.id).then(function (objAgain) {
-            expect(objAgain.get("foo")).toEqual("baz");
+            expect(objAgain.get('foo')).toEqual('baz');
             done();
           });
         },
@@ -801,14 +801,14 @@ describe("Cloud Code", () => {
       );
   });
 
-  it("test beforeDelete failure", function (done) {
-    Parse.Cloud.beforeDelete("BeforeDeleteFail", function () {
-      throw "Nope";
+  it('test beforeDelete failure', function (done) {
+    Parse.Cloud.beforeDelete('BeforeDeleteFail', function () {
+      throw 'Nope';
     });
 
-    const obj = new Parse.Object("BeforeDeleteFail");
+    const obj = new Parse.Object('BeforeDeleteFail');
     let id;
-    obj.set("foo", "bar");
+    obj.set('foo', 'bar');
     obj
       .save()
       .then(() => {
@@ -817,14 +817,14 @@ describe("Cloud Code", () => {
       })
       .then(
         () => {
-          fail("obj.destroy() should have failed, but it succeeded");
+          fail('obj.destroy() should have failed, but it succeeded');
           done();
         },
         error => {
           expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
-          expect(error.message).toEqual("Nope");
+          expect(error.message).toEqual('Nope');
 
-          const objAgain = new Parse.Object("BeforeDeleteFail", {
+          const objAgain = new Parse.Object('BeforeDeleteFail', {
             objectId: id,
           });
           return objAgain.fetch();
@@ -833,9 +833,9 @@ describe("Cloud Code", () => {
       .then(
         objAgain => {
           if (objAgain) {
-            expect(objAgain.get("foo")).toEqual("bar");
+            expect(objAgain.get('foo')).toEqual('bar');
           } else {
-            fail("unable to fetch the object ", id);
+            fail('unable to fetch the object ', id);
           }
           done();
         },
@@ -846,45 +846,45 @@ describe("Cloud Code", () => {
       );
   });
 
-  it("basic beforeDelete rejection via promise", function (done) {
-    Parse.Cloud.beforeSave("BeforeDeleteFailWithPromise", function () {
-      const query = new Parse.Query("Yolo");
+  it('basic beforeDelete rejection via promise', function (done) {
+    Parse.Cloud.beforeSave('BeforeDeleteFailWithPromise', function () {
+      const query = new Parse.Query('Yolo');
       return query.find().then(() => {
-        throw "Nope";
+        throw 'Nope';
       });
     });
 
-    const obj = new Parse.Object("BeforeDeleteFailWithPromise");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeDeleteFailWithPromise');
+    obj.set('foo', 'bar');
     obj.save().then(
       function () {
-        fail("Should not have been able to save BeforeSaveFailure class.");
+        fail('Should not have been able to save BeforeSaveFailure class.');
         done();
       },
       function (error) {
         expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
-        expect(error.message).toEqual("Nope");
+        expect(error.message).toEqual('Nope');
 
         done();
       }
     );
   });
 
-  it("test afterDelete ran and created an object", function (done) {
-    Parse.Cloud.afterDelete("AfterDeleteTest", function (req) {
-      const obj = new Parse.Object("AfterDeleteProof");
-      obj.set("proof", req.object.id);
+  it('test afterDelete ran and created an object', function (done) {
+    Parse.Cloud.afterDelete('AfterDeleteTest', function (req) {
+      const obj = new Parse.Object('AfterDeleteProof');
+      obj.set('proof', req.object.id);
       obj.save().then(test);
     });
 
-    const obj = new Parse.Object("AfterDeleteTest");
+    const obj = new Parse.Object('AfterDeleteTest');
     obj.save().then(function () {
       obj.destroy();
     });
 
     function test() {
-      const query = new Parse.Query("AfterDeleteProof");
-      query.equalTo("proof", obj.id);
+      const query = new Parse.Query('AfterDeleteProof');
+      query.equalTo('proof', obj.id);
       query.find().then(
         function (results) {
           expect(results.length).toEqual(1);
@@ -898,26 +898,26 @@ describe("Cloud Code", () => {
     }
   });
 
-  it("test cloud function return types", function (done) {
-    Parse.Cloud.define("foo", function () {
+  it('test cloud function return types', function (done) {
+    Parse.Cloud.define('foo', function () {
       return {
         object: {
-          __type: "Object",
-          className: "Foo",
-          objectId: "123",
+          __type: 'Object',
+          className: 'Foo',
+          objectId: '123',
           x: 2,
           relation: {
-            __type: "Object",
-            className: "Bar",
-            objectId: "234",
+            __type: 'Object',
+            className: 'Bar',
+            objectId: '234',
             x: 3,
           },
         },
         array: [
           {
-            __type: "Object",
-            className: "Bar",
-            objectId: "345",
+            __type: 'Object',
+            className: 'Bar',
+            objectId: '345',
             x: 2,
           },
         ],
@@ -925,28 +925,28 @@ describe("Cloud Code", () => {
       };
     });
 
-    Parse.Cloud.run("foo").then(result => {
+    Parse.Cloud.run('foo').then(result => {
       expect(result.object instanceof Parse.Object).toBeTruthy();
       if (!result.object) {
-        fail("Unable to run foo");
+        fail('Unable to run foo');
         done();
         return;
       }
-      expect(result.object.className).toEqual("Foo");
-      expect(result.object.get("x")).toEqual(2);
-      const bar = result.object.get("relation");
+      expect(result.object.className).toEqual('Foo');
+      expect(result.object.get('x')).toEqual(2);
+      const bar = result.object.get('relation');
       expect(bar instanceof Parse.Object).toBeTruthy();
-      expect(bar.className).toEqual("Bar");
-      expect(bar.get("x")).toEqual(3);
+      expect(bar.className).toEqual('Bar');
+      expect(bar.get('x')).toEqual(3);
       expect(Array.isArray(result.array)).toEqual(true);
       expect(result.array[0] instanceof Parse.Object).toBeTruthy();
-      expect(result.array[0].get("x")).toEqual(2);
+      expect(result.array[0].get('x')).toEqual(2);
       done();
     });
   });
 
-  it("test cloud function request params types", function (done) {
-    Parse.Cloud.define("params", function (req) {
+  it('test cloud function request params types', function (done) {
+    Parse.Cloud.define('params', function (req) {
       expect(req.params.date instanceof Date).toBe(true);
       expect(req.params.date.getTime()).toBe(1463907600000);
       expect(req.params.dateList[0] instanceof Date).toBe(true);
@@ -967,13 +967,13 @@ describe("Cloud Code", () => {
       );
       // Regression for #2294
       expect(req.params.file instanceof Parse.File).toBe(true);
-      expect(req.params.file.url()).toEqual("https://some.url");
+      expect(req.params.file.url()).toEqual('https://some.url');
       // Regression for #2204
-      expect(req.params.array).toEqual(["a", "b", "c"]);
+      expect(req.params.array).toEqual(['a', 'b', 'c']);
       expect(Array.isArray(req.params.array)).toBe(true);
       expect(req.params.arrayOfArray).toEqual([
-        ["a", "b", "c"],
-        ["d", "e", "f"],
+        ['a', 'b', 'c'],
+        ['d', 'e', 'f'],
       ]);
       expect(Array.isArray(req.params.arrayOfArray)).toBe(true);
       expect(Array.isArray(req.params.arrayOfArray[0])).toBe(true);
@@ -983,58 +983,58 @@ describe("Cloud Code", () => {
 
     const params = {
       date: {
-        __type: "Date",
-        iso: "2016-05-22T09:00:00.000Z",
+        __type: 'Date',
+        iso: '2016-05-22T09:00:00.000Z',
       },
       dateList: [
         {
-          __type: "Date",
-          iso: "2016-05-22T09:00:00.000Z",
+          __type: 'Date',
+          iso: '2016-05-22T09:00:00.000Z',
         },
       ],
-      lol: "hello",
+      lol: 'hello',
       complexStructure: {
         date: [
           {
-            __type: "Date",
-            iso: "2016-05-22T09:00:00.000Z",
+            __type: 'Date',
+            iso: '2016-05-22T09:00:00.000Z',
           },
         ],
         deepDate: {
           date: [
             {
-              __type: "Date",
-              iso: "2016-05-22T09:00:00.000Z",
+              __type: 'Date',
+              iso: '2016-05-22T09:00:00.000Z',
             },
           ],
         },
         deepDate2: [
           {
             date: {
-              __type: "Date",
-              iso: "2016-05-22T09:00:00.000Z",
+              __type: 'Date',
+              iso: '2016-05-22T09:00:00.000Z',
             },
           },
         ],
       },
       file: Parse.File.fromJSON({
-        __type: "File",
-        name: "name",
-        url: "https://some.url",
+        __type: 'File',
+        name: 'name',
+        url: 'https://some.url',
       }),
-      array: ["a", "b", "c"],
+      array: ['a', 'b', 'c'],
       arrayOfArray: [
-        ["a", "b", "c"],
-        ["d", "e", "f"],
+        ['a', 'b', 'c'],
+        ['d', 'e', 'f'],
       ],
     };
-    Parse.Cloud.run("params", params).then(() => {
+    Parse.Cloud.run('params', params).then(() => {
       done();
     });
   });
 
-  it("test cloud function should echo keys", function (done) {
-    Parse.Cloud.define("echoKeys", function () {
+  it('test cloud function should echo keys', function (done) {
+    Parse.Cloud.define('echoKeys', function () {
       return {
         applicationId: Parse.applicationId,
         masterKey: Parse.masterKey,
@@ -1042,7 +1042,7 @@ describe("Cloud Code", () => {
       };
     });
 
-    Parse.Cloud.run("echoKeys").then(result => {
+    Parse.Cloud.run('echoKeys').then(result => {
       expect(result.applicationId).toEqual(Parse.applicationId);
       expect(result.masterKey).toEqual(Parse.masterKey);
       expect(result.javascriptKey).toEqual(Parse.javascriptKey);
@@ -1050,53 +1050,53 @@ describe("Cloud Code", () => {
     });
   });
 
-  it("should properly create an object in before save", done => {
-    Parse.Cloud.beforeSave("BeforeSaveChanged", function (req) {
-      req.object.set("foo", "baz");
+  it('should properly create an object in before save', done => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('foo', 'baz');
     });
 
-    Parse.Cloud.define("createBeforeSaveChangedObject", function () {
-      const obj = new Parse.Object("BeforeSaveChanged");
+    Parse.Cloud.define('createBeforeSaveChangedObject', function () {
+      const obj = new Parse.Object('BeforeSaveChanged');
       return obj.save().then(() => {
         return obj;
       });
     });
 
-    Parse.Cloud.run("createBeforeSaveChangedObject").then(res => {
-      expect(res.get("foo")).toEqual("baz");
+    Parse.Cloud.run('createBeforeSaveChangedObject').then(res => {
+      expect(res.get('foo')).toEqual('baz');
       done();
     });
   });
 
-  it("dirtyKeys are set on update", done => {
+  it('dirtyKeys are set on update', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.beforeSave("GameScore", req => {
+    Parse.Cloud.beforeSave('GameScore', req => {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
-      expect(object.get("fooAgain")).toEqual("barAgain");
+      expect(object.get('fooAgain')).toEqual('barAgain');
       if (triggerTime == 0) {
         // Create
-        expect(object.get("foo")).toEqual("bar");
+        expect(object.get('foo')).toEqual('bar');
       } else if (triggerTime == 1) {
         // Update
-        expect(object.dirtyKeys()).toEqual(["foo"]);
-        expect(object.dirty("foo")).toBeTruthy();
-        expect(object.get("foo")).toEqual("baz");
+        expect(object.dirtyKeys()).toEqual(['foo']);
+        expect(object.dirty('foo')).toBeTruthy();
+        expect(object.get('foo')).toEqual('baz');
       } else {
         throw new Error();
       }
       triggerTime++;
     });
 
-    const obj = new Parse.Object("GameScore");
-    obj.set("foo", "bar");
-    obj.set("fooAgain", "barAgain");
+    const obj = new Parse.Object('GameScore');
+    obj.set('foo', 'bar');
+    obj.set('fooAgain', 'barAgain');
     obj
       .save()
       .then(() => {
         // We only update foo
-        obj.set("foo", "baz");
+        obj.set('foo', 'baz');
         return obj.save();
       })
       .then(
@@ -1112,13 +1112,13 @@ describe("Cloud Code", () => {
       );
   });
 
-  it("test beforeSave unchanged success", function (done) {
-    Parse.Cloud.beforeSave("BeforeSaveUnchanged", function () {
+  it('test beforeSave unchanged success', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveUnchanged', function () {
       return;
     });
 
-    const obj = new Parse.Object("BeforeSaveUnchanged");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeSaveUnchanged');
+    obj.set('foo', 'bar');
     obj.save().then(
       function () {
         done();
@@ -1130,13 +1130,13 @@ describe("Cloud Code", () => {
     );
   });
 
-  it("test beforeDelete success", function (done) {
-    Parse.Cloud.beforeDelete("BeforeDeleteTest", function () {
+  it('test beforeDelete success', function (done) {
+    Parse.Cloud.beforeDelete('BeforeDeleteTest', function () {
       return;
     });
 
-    const obj = new Parse.Object("BeforeDeleteTest");
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('BeforeDeleteTest');
+    obj.set('foo', 'bar');
     obj
       .save()
       .then(function () {
@@ -1144,7 +1144,7 @@ describe("Cloud Code", () => {
       })
       .then(
         function () {
-          const objAgain = new Parse.Object("BeforeDeleteTest", obj.id);
+          const objAgain = new Parse.Object('BeforeDeleteTest', obj.id);
           return objAgain.fetch().then(fail, () => done());
         },
         function (error) {
@@ -1154,27 +1154,27 @@ describe("Cloud Code", () => {
       );
   });
 
-  it("test save triggers get user", async done => {
-    Parse.Cloud.beforeSave("SaveTriggerUser", function (req) {
+  it('test save triggers get user', async done => {
+    Parse.Cloud.beforeSave('SaveTriggerUser', function (req) {
       if (req.user && req.user.id) {
         return;
       } else {
-        throw new Error("No user present on request object for beforeSave.");
+        throw new Error('No user present on request object for beforeSave.');
       }
     });
 
-    Parse.Cloud.afterSave("SaveTriggerUser", function (req) {
+    Parse.Cloud.afterSave('SaveTriggerUser', function (req) {
       if (!req.user || !req.user.id) {
-        console.log("No user present on request object for afterSave.");
+        console.log('No user present on request object for afterSave.');
       }
     });
 
     const user = new Parse.User();
-    user.set("password", "asdf");
-    user.set("email", "asdf@example.com");
-    user.set("username", "zxcv");
+    user.set('password', 'asdf');
+    user.set('email', 'asdf@example.com');
+    user.set('username', 'zxcv');
     await user.signUp();
-    const obj = new Parse.Object("SaveTriggerUser");
+    const obj = new Parse.Object('SaveTriggerUser');
     obj.save().then(
       function () {
         done();
@@ -1186,40 +1186,40 @@ describe("Cloud Code", () => {
     );
   });
 
-  it("beforeSave change propagates through the save response", done => {
-    Parse.Cloud.beforeSave("ChangingObject", function (request) {
-      request.object.set("foo", "baz");
+  it('beforeSave change propagates through the save response', done => {
+    Parse.Cloud.beforeSave('ChangingObject', function (request) {
+      request.object.set('foo', 'baz');
     });
-    const obj = new Parse.Object("ChangingObject");
-    obj.save({ foo: "bar" }).then(
+    const obj = new Parse.Object('ChangingObject');
+    obj.save({ foo: 'bar' }).then(
       objAgain => {
-        expect(objAgain.get("foo")).toEqual("baz");
+        expect(objAgain.get('foo')).toEqual('baz');
         done();
       },
       () => {
-        fail("Should not have failed to save.");
+        fail('Should not have failed to save.');
         done();
       }
     );
   });
 
-  it("beforeSave change propagates through the afterSave #1931", done => {
-    Parse.Cloud.beforeSave("ChangingObject", function (request) {
-      request.object.unset("file");
-      request.object.unset("date");
+  it('beforeSave change propagates through the afterSave #1931', done => {
+    Parse.Cloud.beforeSave('ChangingObject', function (request) {
+      request.object.unset('file');
+      request.object.unset('date');
     });
 
-    Parse.Cloud.afterSave("ChangingObject", function (request) {
-      expect(request.object.has("file")).toBe(false);
-      expect(request.object.has("date")).toBe(false);
-      expect(request.object.get("file")).toBeUndefined();
+    Parse.Cloud.afterSave('ChangingObject', function (request) {
+      expect(request.object.has('file')).toBe(false);
+      expect(request.object.has('date')).toBe(false);
+      expect(request.object.get('file')).toBeUndefined();
       return Promise.resolve();
     });
-    const file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('yolo.txt', [1, 2, 3], 'text/plain');
     file
       .save()
       .then(() => {
-        const obj = new Parse.Object("ChangingObject");
+        const obj = new Parse.Object('ChangingObject');
         return obj.save({ file, date: new Date() });
       })
       .then(
@@ -1233,99 +1233,99 @@ describe("Cloud Code", () => {
       );
   });
 
-  it("test cloud function parameter validation success", done => {
+  it('test cloud function parameter validation success', done => {
     // Register a function with validation
     Parse.Cloud.define(
-      "functionWithParameterValidation",
+      'functionWithParameterValidation',
       () => {
-        return "works";
+        return 'works';
       },
       request => {
         return request.params.success === 100;
       }
     );
 
-    Parse.Cloud.run("functionWithParameterValidation", { success: 100 }).then(
+    Parse.Cloud.run('functionWithParameterValidation', { success: 100 }).then(
       () => {
         done();
       },
       () => {
-        fail("Validation should not have failed.");
+        fail('Validation should not have failed.');
         done();
       }
     );
   });
 
-  it("doesnt receive stale user in cloud code functions after user has been updated with master key (regression test for #1836)", done => {
-    Parse.Cloud.define("testQuery", function (request) {
-      return request.user.get("data");
+  it('doesnt receive stale user in cloud code functions after user has been updated with master key (regression test for #1836)', done => {
+    Parse.Cloud.define('testQuery', function (request) {
+      return request.user.get('data');
     });
 
-    Parse.User.signUp("user", "pass")
+    Parse.User.signUp('user', 'pass')
       .then(user => {
-        user.set("data", "AAA");
+        user.set('data', 'AAA');
         return user.save();
       })
-      .then(() => Parse.Cloud.run("testQuery"))
+      .then(() => Parse.Cloud.run('testQuery'))
       .then(result => {
-        expect(result).toEqual("AAA");
-        Parse.User.current().set("data", "BBB");
+        expect(result).toEqual('AAA');
+        Parse.User.current().set('data', 'BBB');
         return Parse.User.current().save(null, { useMasterKey: true });
       })
-      .then(() => Parse.Cloud.run("testQuery"))
+      .then(() => Parse.Cloud.run('testQuery'))
       .then(result => {
-        expect(result).toEqual("BBB");
+        expect(result).toEqual('BBB');
         done();
       });
   });
 
-  it("clears out the user cache for all sessions when the user is changed", done => {
+  it('clears out the user cache for all sessions when the user is changed', done => {
     let session1;
     let session2;
     let user;
     const cacheAdapter = new InMemoryCacheAdapter({ ttl: 100000000 });
     reconfigureServer({ cacheAdapter })
       .then(() => {
-        Parse.Cloud.define("checkStaleUser", request => {
-          return request.user.get("data");
+        Parse.Cloud.define('checkStaleUser', request => {
+          return request.user.get('data');
         });
 
         user = new Parse.User();
-        user.set("username", "test");
-        user.set("password", "moon-y");
-        user.set("data", "first data");
+        user.set('username', 'test');
+        user.set('password', 'moon-y');
+        user.set('data', 'first data');
         return user.signUp();
       })
       .then(user => {
         session1 = user.getSessionToken();
         return request({
-          url: "http://localhost:8378/1/login?username=test&password=moon-y",
+          url: 'http://localhost:8378/1/login?username=test&password=moon-y',
           headers: {
-            "X-Parse-Application-Id": "test",
-            "X-Parse-REST-API-Key": "rest",
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
           },
         });
       })
       .then(response => {
         session2 = response.data.sessionToken;
         //Ensure both session tokens are in the cache
-        return Parse.Cloud.run("checkStaleUser", { sessionToken: session2 });
+        return Parse.Cloud.run('checkStaleUser', { sessionToken: session2 });
       })
       .then(() =>
         request({
-          method: "POST",
-          url: "http://localhost:8378/1/functions/checkStaleUser",
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/checkStaleUser',
           headers: {
-            "X-Parse-Application-Id": "test",
-            "X-Parse-REST-API-Key": "rest",
-            "X-Parse-Session-Token": session2,
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            'X-Parse-Session-Token': session2,
           },
         })
       )
       .then(() =>
         Promise.all([
-          cacheAdapter.get("test:user:" + session1),
-          cacheAdapter.get("test:user:" + session2),
+          cacheAdapter.get('test:user:' + session1),
+          cacheAdapter.get('test:user:' + session2),
         ])
       )
       .then(cachedVals => {
@@ -1333,165 +1333,165 @@ describe("Cloud Code", () => {
         expect(cachedVals[1].objectId).toEqual(user.id);
 
         //Change with session 1 and then read with session 2.
-        user.set("data", "second data");
+        user.set('data', 'second data');
         return user.save();
       })
       .then(() =>
         request({
-          method: "POST",
-          url: "http://localhost:8378/1/functions/checkStaleUser",
+          method: 'POST',
+          url: 'http://localhost:8378/1/functions/checkStaleUser',
           headers: {
-            "X-Parse-Application-Id": "test",
-            "X-Parse-REST-API-Key": "rest",
-            "X-Parse-Session-Token": session2,
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            'X-Parse-Session-Token': session2,
           },
         })
       )
       .then(response => {
-        expect(response.data.result).toEqual("second data");
+        expect(response.data.result).toEqual('second data');
         done();
       })
       .catch(done.fail);
   });
 
-  it("trivial beforeSave should not affect fetched pointers (regression test for #1238)", done => {
-    Parse.Cloud.beforeSave("BeforeSaveUnchanged", () => {});
+  it('trivial beforeSave should not affect fetched pointers (regression test for #1238)', done => {
+    Parse.Cloud.beforeSave('BeforeSaveUnchanged', () => {});
 
-    const TestObject = Parse.Object.extend("TestObject");
-    const NoBeforeSaveObject = Parse.Object.extend("NoBeforeSave");
-    const BeforeSaveObject = Parse.Object.extend("BeforeSaveUnchanged");
+    const TestObject = Parse.Object.extend('TestObject');
+    const NoBeforeSaveObject = Parse.Object.extend('NoBeforeSave');
+    const BeforeSaveObject = Parse.Object.extend('BeforeSaveUnchanged');
 
     const aTestObject = new TestObject();
-    aTestObject.set("foo", "bar");
+    aTestObject.set('foo', 'bar');
     aTestObject
       .save()
       .then(aTestObject => {
         const aNoBeforeSaveObj = new NoBeforeSaveObject();
-        aNoBeforeSaveObj.set("aTestObject", aTestObject);
-        expect(aNoBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+        aNoBeforeSaveObj.set('aTestObject', aTestObject);
+        expect(aNoBeforeSaveObj.get('aTestObject').get('foo')).toEqual('bar');
         return aNoBeforeSaveObj.save();
       })
       .then(aNoBeforeSaveObj => {
-        expect(aNoBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+        expect(aNoBeforeSaveObj.get('aTestObject').get('foo')).toEqual('bar');
 
         const aBeforeSaveObj = new BeforeSaveObject();
-        aBeforeSaveObj.set("aTestObject", aTestObject);
-        expect(aBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+        aBeforeSaveObj.set('aTestObject', aTestObject);
+        expect(aBeforeSaveObj.get('aTestObject').get('foo')).toEqual('bar');
         return aBeforeSaveObj.save();
       })
       .then(aBeforeSaveObj => {
-        expect(aBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+        expect(aBeforeSaveObj.get('aTestObject').get('foo')).toEqual('bar');
         done();
       });
   });
 
-  it("should not encode Parse Objects", async () => {
+  it('should not encode Parse Objects', async () => {
     await reconfigureServer({ encodeParseObjectInCloudFunction: false });
     const user = new Parse.User();
-    user.setUsername("username");
-    user.setPassword("password");
-    user.set("deleted", false);
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('deleted', false);
     await user.signUp();
     Parse.Cloud.define(
-      "deleteAccount",
+      'deleteAccount',
       async req => {
         expect(req.params.object instanceof Parse.Object).not.toBeTrue();
-        return "Object deleted";
+        return 'Object deleted';
       },
       {
         requireMaster: true,
       }
     );
     await Parse.Cloud.run(
-      "deleteAccount",
+      'deleteAccount',
       { object: user.toPointer() },
       { useMasterKey: true }
     );
   });
 
-  it("allow cloud to encode Parse Objects", async () => {
+  it('allow cloud to encode Parse Objects', async () => {
     await reconfigureServer({ encodeParseObjectInCloudFunction: true });
     const user = new Parse.User();
-    user.setUsername("username");
-    user.setPassword("password");
-    user.set("deleted", false);
+    user.setUsername('username');
+    user.setPassword('password');
+    user.set('deleted', false);
     await user.signUp();
     Parse.Cloud.define(
-      "deleteAccount",
+      'deleteAccount',
       async req => {
         expect(req.params.object instanceof Parse.Object).toBeTrue();
-        req.params.object.set("deleted", true);
+        req.params.object.set('deleted', true);
         await req.params.object.save(null, { useMasterKey: true });
-        return "Object deleted";
+        return 'Object deleted';
       },
       {
         requireMaster: true,
       }
     );
     await Parse.Cloud.run(
-      "deleteAccount",
+      'deleteAccount',
       { object: user.toPointer() },
       { useMasterKey: true }
     );
   });
 
-  it("beforeSave should not affect fetched pointers", done => {
-    Parse.Cloud.beforeSave("BeforeSaveUnchanged", () => {});
+  it('beforeSave should not affect fetched pointers', done => {
+    Parse.Cloud.beforeSave('BeforeSaveUnchanged', () => {});
 
-    Parse.Cloud.beforeSave("BeforeSaveChanged", function (req) {
-      req.object.set("foo", "baz");
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('foo', 'baz');
     });
 
-    const TestObject = Parse.Object.extend("TestObject");
+    const TestObject = Parse.Object.extend('TestObject');
     const BeforeSaveUnchangedObject = Parse.Object.extend(
-      "BeforeSaveUnchanged"
+      'BeforeSaveUnchanged'
     );
-    const BeforeSaveChangedObject = Parse.Object.extend("BeforeSaveChanged");
+    const BeforeSaveChangedObject = Parse.Object.extend('BeforeSaveChanged');
 
     const aTestObject = new TestObject();
-    aTestObject.set("foo", "bar");
+    aTestObject.set('foo', 'bar');
     aTestObject
       .save()
       .then(aTestObject => {
         const aBeforeSaveUnchangedObject = new BeforeSaveUnchangedObject();
-        aBeforeSaveUnchangedObject.set("aTestObject", aTestObject);
+        aBeforeSaveUnchangedObject.set('aTestObject', aTestObject);
         expect(
-          aBeforeSaveUnchangedObject.get("aTestObject").get("foo")
-        ).toEqual("bar");
+          aBeforeSaveUnchangedObject.get('aTestObject').get('foo')
+        ).toEqual('bar');
         return aBeforeSaveUnchangedObject.save();
       })
       .then(aBeforeSaveUnchangedObject => {
         expect(
-          aBeforeSaveUnchangedObject.get("aTestObject").get("foo")
-        ).toEqual("bar");
+          aBeforeSaveUnchangedObject.get('aTestObject').get('foo')
+        ).toEqual('bar');
 
         const aBeforeSaveChangedObject = new BeforeSaveChangedObject();
-        aBeforeSaveChangedObject.set("aTestObject", aTestObject);
-        expect(aBeforeSaveChangedObject.get("aTestObject").get("foo")).toEqual(
-          "bar"
+        aBeforeSaveChangedObject.set('aTestObject', aTestObject);
+        expect(aBeforeSaveChangedObject.get('aTestObject').get('foo')).toEqual(
+          'bar'
         );
         return aBeforeSaveChangedObject.save();
       })
       .then(aBeforeSaveChangedObject => {
-        expect(aBeforeSaveChangedObject.get("aTestObject").get("foo")).toEqual(
-          "bar"
+        expect(aBeforeSaveChangedObject.get('aTestObject').get('foo')).toEqual(
+          'bar'
         );
-        expect(aBeforeSaveChangedObject.get("foo")).toEqual("baz");
+        expect(aBeforeSaveChangedObject.get('foo')).toEqual('baz');
         done();
       });
   });
 
-  it("should fully delete objects when using `unset` with beforeSave (regression test for #1840)", done => {
-    const TestObject = Parse.Object.extend("TestObject");
-    const NoBeforeSaveObject = Parse.Object.extend("NoBeforeSave");
-    const BeforeSaveObject = Parse.Object.extend("BeforeSaveChanged");
+  it('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+    const TestObject = Parse.Object.extend('TestObject');
+    const NoBeforeSaveObject = Parse.Object.extend('NoBeforeSave');
+    const BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
 
-    Parse.Cloud.beforeSave("BeforeSaveChanged", req => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', req => {
       const object = req.object;
-      object.set("before", "save");
+      object.set('before', 'save');
     });
 
-    Parse.Cloud.define("removeme", () => {
+    Parse.Cloud.define('removeme', () => {
       const testObject = new TestObject();
       return testObject
         .save()
@@ -1500,12 +1500,12 @@ describe("Cloud Code", () => {
           return object.save();
         })
         .then(object => {
-          object.unset("remove");
+          object.unset('remove');
           return object.save();
         });
     });
 
-    Parse.Cloud.define("removeme2", () => {
+    Parse.Cloud.define('removeme2', () => {
       const testObject = new TestObject();
       return testObject
         .save()
@@ -1514,20 +1514,20 @@ describe("Cloud Code", () => {
           return object.save();
         })
         .then(object => {
-          object.unset("remove");
+          object.unset('remove');
           return object.save();
         });
     });
 
-    Parse.Cloud.run("removeme")
+    Parse.Cloud.run('removeme')
       .then(aNoBeforeSaveObj => {
-        expect(aNoBeforeSaveObj.get("remove")).toEqual(undefined);
+        expect(aNoBeforeSaveObj.get('remove')).toEqual(undefined);
 
-        return Parse.Cloud.run("removeme2");
+        return Parse.Cloud.run('removeme2');
       })
       .then(aBeforeSaveObj => {
-        expect(aBeforeSaveObj.get("before")).toEqual("save");
-        expect(aBeforeSaveObj.get("remove")).toEqual(undefined);
+        expect(aBeforeSaveObj.get('before')).toEqual('save');
+        expect(aBeforeSaveObj.get('remove')).toEqual(undefined);
         done();
       })
       .catch(err => {
@@ -1540,20 +1540,20 @@ describe("Cloud Code", () => {
     TODO: fix for Postgres
     trying to delete a field that doesn't exists doesn't play nice
    */
-  it_exclude_dbs(["postgres"])(
-    "should fully delete objects when using `unset` and `set` with beforeSave (regression test for #1840)",
+  it_exclude_dbs(['postgres'])(
+    'should fully delete objects when using `unset` and `set` with beforeSave (regression test for #1840)',
     done => {
-      const TestObject = Parse.Object.extend("TestObject");
-      const BeforeSaveObject = Parse.Object.extend("BeforeSaveChanged");
+      const TestObject = Parse.Object.extend('TestObject');
+      const BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
 
-      Parse.Cloud.beforeSave("BeforeSaveChanged", req => {
+      Parse.Cloud.beforeSave('BeforeSaveChanged', req => {
         const object = req.object;
-        object.set("before", "save");
-        object.unset("remove");
+        object.set('before', 'save');
+        object.unset('remove');
       });
 
       let object;
-      const testObject = new TestObject({ key: "value" });
+      const testObject = new TestObject({ key: 'value' });
       testObject
         .save()
         .then(() => {
@@ -1564,8 +1564,8 @@ describe("Cloud Code", () => {
           });
         })
         .then(objectAgain => {
-          expect(objectAgain.get("remove")).toBeUndefined();
-          expect(object.get("remove")).toBeUndefined();
+          expect(objectAgain.get('remove')).toBeUndefined();
+          expect(object.get('remove')).toBeUndefined();
           done();
         })
         .catch(err => {
@@ -1575,16 +1575,16 @@ describe("Cloud Code", () => {
     }
   );
 
-  it("should not include relation op (regression test for #1606)", done => {
-    const TestObject = Parse.Object.extend("TestObject");
-    const BeforeSaveObject = Parse.Object.extend("BeforeSaveChanged");
+  it('should not include relation op (regression test for #1606)', done => {
+    const TestObject = Parse.Object.extend('TestObject');
+    const BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
     let testObj;
-    Parse.Cloud.beforeSave("BeforeSaveChanged", req => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', req => {
       const object = req.object;
-      object.set("before", "save");
+      object.set('before', 'save');
       testObj = new TestObject();
       return testObj.save().then(() => {
-        object.relation("testsRelation").add(testObj);
+        object.relation('testsRelation').add(testObj);
       });
     });
 
@@ -1594,7 +1594,7 @@ describe("Cloud Code", () => {
       .then(objectAgain => {
         // Originally it would throw as it would be a non-relation
         expect(() => {
-          objectAgain.relation("testsRelation");
+          objectAgain.relation('testsRelation');
         }).not.toThrow();
         done();
       })
@@ -1608,63 +1608,63 @@ describe("Cloud Code", () => {
    * Checks that incrementing a value to a zero in a beforeSave hook
    * does not result in that key being omitted from the response.
    */
-  it("before save increment does not return undefined", done => {
-    Parse.Cloud.define("cloudIncrementClassFunction", function (req) {
-      const CloudIncrementClass = Parse.Object.extend("CloudIncrementClass");
+  it('before save increment does not return undefined', done => {
+    Parse.Cloud.define('cloudIncrementClassFunction', function (req) {
+      const CloudIncrementClass = Parse.Object.extend('CloudIncrementClass');
       const obj = new CloudIncrementClass();
       obj.id = req.params.objectId;
       return obj.save();
     });
 
-    Parse.Cloud.beforeSave("CloudIncrementClass", function (req) {
+    Parse.Cloud.beforeSave('CloudIncrementClass', function (req) {
       const obj = req.object;
       if (!req.master) {
-        obj.increment("points", -10);
-        obj.increment("num", -9);
+        obj.increment('points', -10);
+        obj.increment('num', -9);
       }
     });
 
-    const CloudIncrementClass = Parse.Object.extend("CloudIncrementClass");
+    const CloudIncrementClass = Parse.Object.extend('CloudIncrementClass');
     const obj = new CloudIncrementClass();
-    obj.set("points", 10);
-    obj.set("num", 10);
+    obj.set('points', 10);
+    obj.set('num', 10);
     obj.save(null, { useMasterKey: true }).then(function () {
-      Parse.Cloud.run("cloudIncrementClassFunction", { objectId: obj.id }).then(
+      Parse.Cloud.run('cloudIncrementClassFunction', { objectId: obj.id }).then(
         function (savedObj) {
-          expect(savedObj.get("num")).toEqual(1);
-          expect(savedObj.get("points")).toEqual(0);
+          expect(savedObj.get('num')).toEqual(1);
+          expect(savedObj.get('points')).toEqual(0);
           done();
         }
       );
     });
   });
 
-  it("before save can revert fields", async () => {
-    Parse.Cloud.beforeSave("TestObject", ({ object }) => {
-      object.revert("foo");
+  it('before save can revert fields', async () => {
+    Parse.Cloud.beforeSave('TestObject', ({ object }) => {
+      object.revert('foo');
       return object;
     });
 
-    Parse.Cloud.afterSave("TestObject", ({ object }) => {
-      expect(object.get("foo")).toBeUndefined();
+    Parse.Cloud.afterSave('TestObject', ({ object }) => {
+      expect(object.get('foo')).toBeUndefined();
       return object;
     });
 
     const obj = new TestObject();
-    obj.set("foo", "bar");
+    obj.set('foo', 'bar');
     await obj.save();
 
-    expect(obj.get("foo")).toBeUndefined();
+    expect(obj.get('foo')).toBeUndefined();
     await obj.fetch();
 
-    expect(obj.get("foo")).toBeUndefined();
+    expect(obj.get('foo')).toBeUndefined();
   });
 
-  it("before save can revert fields with existing object", async () => {
+  it('before save can revert fields with existing object', async () => {
     Parse.Cloud.beforeSave(
-      "TestObject",
+      'TestObject',
       ({ object }) => {
-        object.revert("foo");
+        object.revert('foo');
         return object;
       },
       {
@@ -1673,9 +1673,9 @@ describe("Cloud Code", () => {
     );
 
     Parse.Cloud.afterSave(
-      "TestObject",
+      'TestObject',
       ({ object }) => {
-        expect(object.get("foo")).toBe("bar");
+        expect(object.get('foo')).toBe('bar');
         return object;
       },
       {
@@ -1684,55 +1684,55 @@ describe("Cloud Code", () => {
     );
 
     const obj = new TestObject();
-    obj.set("foo", "bar");
+    obj.set('foo', 'bar');
     await obj.save(null, { useMasterKey: true });
 
-    expect(obj.get("foo")).toBe("bar");
-    obj.set("foo", "yolo");
+    expect(obj.get('foo')).toBe('bar');
+    obj.set('foo', 'yolo');
     await obj.save();
-    expect(obj.get("foo")).toBe("bar");
+    expect(obj.get('foo')).toBe('bar');
   });
 
-  it("create role with name and ACL and a beforeSave", async () => {
+  it('create role with name and ACL and a beforeSave', async () => {
     Parse.Cloud.beforeSave(Parse.Role, ({ object }) => {
       return object;
     });
 
     const obj = new Parse.Role(
-      "TestRole",
-      new Parse.ACL({ "*": { read: true, write: true } })
+      'TestRole',
+      new Parse.ACL({ '*': { read: true, write: true } })
     );
     await obj.save();
 
     expect(obj.getACL()).toEqual(
-      new Parse.ACL({ "*": { read: true, write: true } })
+      new Parse.ACL({ '*': { read: true, write: true } })
     );
-    expect(obj.get("name")).toEqual("TestRole");
+    expect(obj.get('name')).toEqual('TestRole');
     await obj.fetch();
 
     expect(obj.getACL()).toEqual(
-      new Parse.ACL({ "*": { read: true, write: true } })
+      new Parse.ACL({ '*': { read: true, write: true } })
     );
-    expect(obj.get("name")).toEqual("TestRole");
+    expect(obj.get('name')).toEqual('TestRole');
   });
 
-  it("can unset in afterSave", async () => {
-    Parse.Cloud.beforeSave("TestObject", ({ object }) => {
+  it('can unset in afterSave', async () => {
+    Parse.Cloud.beforeSave('TestObject', ({ object }) => {
       if (!object.existed()) {
-        object.set("secret", true);
+        object.set('secret', true);
         return object;
       }
-      object.revert("secret");
+      object.revert('secret');
     });
 
-    Parse.Cloud.afterSave("TestObject", ({ object }) => {
-      object.unset("secret");
+    Parse.Cloud.afterSave('TestObject', ({ object }) => {
+      object.unset('secret');
     });
 
     Parse.Cloud.beforeFind(
-      "TestObject",
+      'TestObject',
       ({ query }) => {
-        query.exclude("secret");
+        query.exclude('secret');
       },
       {
         skipWithMasterKey: true,
@@ -1741,45 +1741,45 @@ describe("Cloud Code", () => {
 
     const obj = new TestObject();
     await obj.save();
-    expect(obj.get("secret")).toBeUndefined();
+    expect(obj.get('secret')).toBeUndefined();
     await obj.fetch();
-    expect(obj.get("secret")).toBeUndefined();
+    expect(obj.get('secret')).toBeUndefined();
     await obj.fetch({ useMasterKey: true });
-    expect(obj.get("secret")).toBe(true);
+    expect(obj.get('secret')).toBe(true);
   });
 
-  it("should revert in beforeSave", async () => {
-    Parse.Cloud.beforeSave("MyObject", ({ object }) => {
+  it('should revert in beforeSave', async () => {
+    Parse.Cloud.beforeSave('MyObject', ({ object }) => {
       if (!object.existed()) {
-        object.set("count", 0);
+        object.set('count', 0);
         return object;
       }
-      object.revert("count");
+      object.revert('count');
       return object;
     });
-    const obj = await new Parse.Object("MyObject").save();
-    expect(obj.get("count")).toBe(0);
-    obj.set("count", 10);
+    const obj = await new Parse.Object('MyObject').save();
+    expect(obj.get('count')).toBe(0);
+    obj.set('count', 10);
     await obj.save();
-    expect(obj.get("count")).toBe(0);
+    expect(obj.get('count')).toBe(0);
     await obj.fetch();
-    expect(obj.get("count")).toBe(0);
+    expect(obj.get('count')).toBe(0);
   });
 
-  it("pointer should not be cleared by triggers", async () => {
-    Parse.Cloud.afterSave("MyObject", () => {});
-    const foo = await new Parse.Object("Test", { foo: "bar" }).save();
-    const obj = await new Parse.Object("MyObject", { foo }).save();
-    const foo2 = obj.get("foo");
-    expect(foo2.get("foo")).toBe("bar");
+  it('pointer should not be cleared by triggers', async () => {
+    Parse.Cloud.afterSave('MyObject', () => {});
+    const foo = await new Parse.Object('Test', { foo: 'bar' }).save();
+    const obj = await new Parse.Object('MyObject', { foo }).save();
+    const foo2 = obj.get('foo');
+    expect(foo2.get('foo')).toBe('bar');
   });
 
-  it("can set a pointer in triggers", async () => {
-    Parse.Cloud.beforeSave("MyObject", () => {});
+  it('can set a pointer in triggers', async () => {
+    Parse.Cloud.beforeSave('MyObject', () => {});
     Parse.Cloud.afterSave(
-      "MyObject",
+      'MyObject',
       async ({ object }) => {
-        const foo = await new Parse.Object("Test", { foo: "bar" }).save();
+        const foo = await new Parse.Object('Test', { foo: 'bar' }).save();
         object.set({ foo });
         await object.save(null, { useMasterKey: true });
       },
@@ -1787,40 +1787,40 @@ describe("Cloud Code", () => {
         skipWithMasterKey: true,
       }
     );
-    const obj = await new Parse.Object("MyObject").save();
-    const foo2 = obj.get("foo");
-    expect(foo2.get("foo")).toBe("bar");
+    const obj = await new Parse.Object('MyObject').save();
+    const foo2 = obj.get('foo');
+    expect(foo2.get('foo')).toBe('bar');
   });
 
-  it("beforeSave should not sanitize database", async done => {
+  it('beforeSave should not sanitize database', async done => {
     const { adapter } = Config.get(Parse.applicationId).database;
-    const spy = spyOn(adapter, "findOneAndUpdate").and.callThrough();
+    const spy = spyOn(adapter, 'findOneAndUpdate').and.callThrough();
     spy.calls.saveArgumentsByValue();
 
     let count = 0;
-    Parse.Cloud.beforeSave("CloudIncrementNested", req => {
+    Parse.Cloud.beforeSave('CloudIncrementNested', req => {
       count += 1;
-      req.object.set("foo", "baz");
-      expect(typeof req.object.get("objectField").number).toBe("number");
+      req.object.set('foo', 'baz');
+      expect(typeof req.object.get('objectField').number).toBe('number');
     });
 
-    Parse.Cloud.afterSave("CloudIncrementNested", req => {
-      expect(typeof req.object.get("objectField").number).toBe("number");
+    Parse.Cloud.afterSave('CloudIncrementNested', req => {
+      expect(typeof req.object.get('objectField').number).toBe('number');
     });
 
-    const obj = new Parse.Object("CloudIncrementNested");
-    obj.set("objectField", { number: 5 });
-    obj.set("foo", "bar");
+    const obj = new Parse.Object('CloudIncrementNested');
+    obj.set('objectField', { number: 5 });
+    obj.set('foo', 'bar');
     await obj.save();
 
-    obj.increment("objectField.number", 10);
+    obj.increment('objectField.number', 10);
     await obj.save();
 
     const [, , , /* className */ /* schema */ /* query */ update] =
       adapter.findOneAndUpdate.calls.first().args;
     expect(update).toEqual({
-      "objectField.number": { __op: "Increment", amount: 10 },
-      foo: "baz",
+      'objectField.number': { __op: 'Increment', amount: 10 },
+      foo: 'baz',
       updatedAt: obj.updatedAt.toISOString(),
     });
 
@@ -1831,38 +1831,38 @@ describe("Cloud Code", () => {
    * Verifies that an afterSave hook throwing an exception
    * will not prevent a successful save response from being returned
    */
-  it("should succeed on afterSave exception", done => {
-    Parse.Cloud.afterSave("AfterSaveTestClass", function () {
-      throw "Exception";
+  it('should succeed on afterSave exception', done => {
+    Parse.Cloud.afterSave('AfterSaveTestClass', function () {
+      throw 'Exception';
     });
-    const AfterSaveTestClass = Parse.Object.extend("AfterSaveTestClass");
+    const AfterSaveTestClass = Parse.Object.extend('AfterSaveTestClass');
     const obj = new AfterSaveTestClass();
     obj.save().then(done, done.fail);
   });
 
-  describe("cloud jobs", () => {
-    it("should define a job", done => {
+  describe('cloud jobs', () => {
+    it('should define a job', done => {
       expect(() => {
-        Parse.Cloud.job("myJob", ({ message }) => {
-          message("Hello, world!!!");
+        Parse.Cloud.job('myJob', ({ message }) => {
+          message('Hello, world!!!');
         });
       }).not.toThrow();
 
       request({
-        method: "POST",
-        url: "http://localhost:8378/1/jobs/myJob",
+        method: 'POST',
+        url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
-          "X-Parse-Application-Id": Parse.applicationId,
-          "X-Parse-Master-Key": Parse.masterKey,
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
         },
       })
         .then(async response => {
-          const jobStatusId = response.headers["x-parse-job-status-id"];
+          const jobStatusId = response.headers['x-parse-job-status-id'];
           const checkJobStatus = async () => {
             const jobStatus = await getJobStatus(jobStatusId);
             return (
-              jobStatus.get("finishedAt") &&
-              jobStatus.get("message") === "Hello, world!!!"
+              jobStatus.get('finishedAt') &&
+              jobStatus.get('message') === 'Hello, world!!!'
             );
           };
           while (!(await checkJobStatus())) {
@@ -1873,21 +1873,21 @@ describe("Cloud Code", () => {
         .catch(done.fail);
     });
 
-    it("should not run without master key", done => {
+    it('should not run without master key', done => {
       expect(() => {
-        Parse.Cloud.job("myJob", () => {});
+        Parse.Cloud.job('myJob', () => {});
       }).not.toThrow();
 
       request({
-        method: "POST",
-        url: "http://localhost:8378/1/jobs/myJob",
+        method: 'POST',
+        url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
-          "X-Parse-Application-Id": Parse.applicationId,
-          "X-Parse-REST-API-Key": "rest",
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
         },
       }).then(
         () => {
-          fail("Expected to be unauthorized");
+          fail('Expected to be unauthorized');
           done();
         },
         err => {
@@ -1897,30 +1897,30 @@ describe("Cloud Code", () => {
       );
     });
 
-    it("should run with master key", done => {
+    it('should run with master key', done => {
       expect(() => {
-        Parse.Cloud.job("myJob", (req, res) => {
+        Parse.Cloud.job('myJob', (req, res) => {
           expect(req.functionName).toBeUndefined();
-          expect(req.jobName).toBe("myJob");
-          expect(typeof req.jobId).toBe("string");
-          expect(typeof req.message).toBe("function");
-          expect(typeof res).toBe("undefined");
+          expect(req.jobName).toBe('myJob');
+          expect(typeof req.jobId).toBe('string');
+          expect(typeof req.message).toBe('function');
+          expect(typeof res).toBe('undefined');
         });
       }).not.toThrow();
 
       request({
-        method: "POST",
-        url: "http://localhost:8378/1/jobs/myJob",
+        method: 'POST',
+        url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
-          "X-Parse-Application-Id": Parse.applicationId,
-          "X-Parse-Master-Key": Parse.masterKey,
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
         },
       })
         .then(async response => {
-          const jobStatusId = response.headers["x-parse-job-status-id"];
+          const jobStatusId = response.headers['x-parse-job-status-id'];
           const checkJobStatus = async () => {
             const jobStatus = await getJobStatus(jobStatusId);
-            return jobStatus.get("finishedAt");
+            return jobStatus.get('finishedAt');
           };
           while (!(await checkJobStatus())) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -1930,26 +1930,26 @@ describe("Cloud Code", () => {
         .catch(done.fail);
     });
 
-    it("should run with master key basic auth", done => {
+    it('should run with master key basic auth', done => {
       expect(() => {
-        Parse.Cloud.job("myJob", (req, res) => {
+        Parse.Cloud.job('myJob', (req, res) => {
           expect(req.functionName).toBeUndefined();
-          expect(req.jobName).toBe("myJob");
-          expect(typeof req.jobId).toBe("string");
-          expect(typeof req.message).toBe("function");
-          expect(typeof res).toBe("undefined");
+          expect(req.jobName).toBe('myJob');
+          expect(typeof req.jobId).toBe('string');
+          expect(typeof req.message).toBe('function');
+          expect(typeof res).toBe('undefined');
         });
       }).not.toThrow();
 
       request({
-        method: "POST",
+        method: 'POST',
         url: `http://${Parse.applicationId}:${Parse.masterKey}@localhost:8378/1/jobs/myJob`,
       })
         .then(async response => {
-          const jobStatusId = response.headers["x-parse-job-status-id"];
+          const jobStatusId = response.headers['x-parse-job-status-id'];
           const checkJobStatus = async () => {
             const jobStatus = await getJobStatus(jobStatusId);
-            return jobStatus.get("finishedAt");
+            return jobStatus.get('finishedAt');
           };
           while (!(await checkJobStatus())) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -1959,35 +1959,35 @@ describe("Cloud Code", () => {
         .catch(done.fail);
     });
 
-    it("should set the message / success on the job", done => {
-      Parse.Cloud.job("myJob", req => {
+    it('should set the message / success on the job', done => {
+      Parse.Cloud.job('myJob', req => {
         return req
-          .message("hello")
+          .message('hello')
           .then(() => {
             return getJobStatus(req.jobId);
           })
           .then(jobStatus => {
-            expect(jobStatus.get("message")).toEqual("hello");
-            expect(jobStatus.get("status")).toEqual("running");
+            expect(jobStatus.get('message')).toEqual('hello');
+            expect(jobStatus.get('status')).toEqual('running');
           });
       });
 
       request({
-        method: "POST",
-        url: "http://localhost:8378/1/jobs/myJob",
+        method: 'POST',
+        url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
-          "X-Parse-Application-Id": Parse.applicationId,
-          "X-Parse-Master-Key": Parse.masterKey,
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
         },
       })
         .then(async response => {
-          const jobStatusId = response.headers["x-parse-job-status-id"];
+          const jobStatusId = response.headers['x-parse-job-status-id'];
           const checkJobStatus = async () => {
             const jobStatus = await getJobStatus(jobStatusId);
             return (
-              jobStatus.get("finishedAt") &&
-              jobStatus.get("message") === "hello" &&
-              jobStatus.get("status") === "succeeded"
+              jobStatus.get('finishedAt') &&
+              jobStatus.get('message') === 'hello' &&
+              jobStatus.get('status') === 'succeeded'
             );
           };
           while (!(await checkJobStatus())) {
@@ -1998,27 +1998,27 @@ describe("Cloud Code", () => {
         .catch(done.fail);
     });
 
-    it("should set the failure on the job", done => {
-      Parse.Cloud.job("myJob", () => {
-        return Promise.reject("Something went wrong");
+    it('should set the failure on the job', done => {
+      Parse.Cloud.job('myJob', () => {
+        return Promise.reject('Something went wrong');
       });
 
       request({
-        method: "POST",
-        url: "http://localhost:8378/1/jobs/myJob",
+        method: 'POST',
+        url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
-          "X-Parse-Application-Id": Parse.applicationId,
-          "X-Parse-Master-Key": Parse.masterKey,
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
         },
       })
         .then(async response => {
-          const jobStatusId = response.headers["x-parse-job-status-id"];
+          const jobStatusId = response.headers['x-parse-job-status-id'];
           const checkJobStatus = async () => {
             const jobStatus = await getJobStatus(jobStatusId);
             return (
-              jobStatus.get("finishedAt") &&
-              jobStatus.get("message") === "Something went wrong" &&
-              jobStatus.get("status") === "failed"
+              jobStatus.get('finishedAt') &&
+              jobStatus.get('message') === 'Something went wrong' &&
+              jobStatus.get('status') === 'failed'
             );
           };
           while (!(await checkJobStatus())) {
@@ -2029,157 +2029,157 @@ describe("Cloud Code", () => {
         .catch(done.fail);
     });
 
-    it("should set the failure message on the job error", async () => {
-      Parse.Cloud.job("myJobError", () => {
+    it('should set the failure message on the job error', async () => {
+      Parse.Cloud.job('myJobError', () => {
         throw new Parse.Error(
           Parse.Error.OBJECT_NOT_FOUND,
-          "Something went wrong"
+          'Something went wrong'
         );
       });
-      const job = await Parse.Cloud.startJob("myJobError");
+      const job = await Parse.Cloud.startJob('myJobError');
       let jobStatus, status;
-      while (status !== "failed") {
+      while (status !== 'failed') {
         if (jobStatus) {
           await new Promise(resolve => setTimeout(resolve, 10));
         }
         jobStatus = await Parse.Cloud.getJobStatus(job);
-        status = jobStatus.get("status");
+        status = jobStatus.get('status');
       }
-      expect(jobStatus.get("message")).toEqual("Something went wrong");
+      expect(jobStatus.get('message')).toEqual('Something went wrong');
     });
 
     function getJobStatus(jobId) {
-      const q = new Parse.Query("_JobStatus");
+      const q = new Parse.Query('_JobStatus');
       return q.get(jobId, { useMasterKey: true });
     }
   });
 });
 
-describe("cloud functions", () => {
-  it("Should have request ip", done => {
-    Parse.Cloud.define("myFunction", req => {
+describe('cloud functions', () => {
+  it('Should have request ip', done => {
+    Parse.Cloud.define('myFunction', req => {
       expect(req.ip).toBeDefined();
-      return "success";
+      return 'success';
     });
 
-    Parse.Cloud.run("myFunction", {}).then(() => done());
+    Parse.Cloud.run('myFunction', {}).then(() => done());
   });
 });
 
-describe("beforeSave hooks", () => {
-  it("should have request headers", done => {
-    Parse.Cloud.beforeSave("MyObject", req => {
+describe('beforeSave hooks', () => {
+  it('should have request headers', done => {
+    Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.headers).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject.save().then(() => done());
   });
 
-  it("should have request ip", done => {
-    Parse.Cloud.beforeSave("MyObject", req => {
+  it('should have request ip', done => {
+    Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject.save().then(() => done());
   });
 
-  it("should respect custom object ids (#6733)", async () => {
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.object.id).toEqual("test_6733");
+  it('should respect custom object ids (#6733)', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.object.id).toEqual('test_6733');
     });
 
     await reconfigureServer({ allowCustomObjectId: true });
 
     const req = request({
       // Parse JS SDK does not currently support custom object ids (see #1097), so we do a REST request
-      method: "POST",
-      url: "http://localhost:8378/1/classes/TestObject",
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-REST-API-Key": "rest",
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
       },
       body: {
-        objectId: "test_6733",
-        foo: "bar",
+        objectId: 'test_6733',
+        foo: 'bar',
       },
     });
 
     {
       const res = await req;
-      expect(res.data.objectId).toEqual("test_6733");
+      expect(res.data.objectId).toEqual('test_6733');
     }
 
-    const query = new Parse.Query("TestObject");
-    query.equalTo("objectId", "test_6733");
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', 'test_6733');
     const res = await query.find();
     expect(res.length).toEqual(1);
-    expect(res[0].get("foo")).toEqual("bar");
+    expect(res[0].get('foo')).toEqual('bar');
   });
 });
 
-describe("afterSave hooks", () => {
-  it("should have request headers", done => {
-    Parse.Cloud.afterSave("MyObject", req => {
+describe('afterSave hooks', () => {
+  it('should have request headers', done => {
+    Parse.Cloud.afterSave('MyObject', req => {
       expect(req.headers).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject.save().then(() => done());
   });
 
-  it("should have request ip", done => {
-    Parse.Cloud.afterSave("MyObject", req => {
+  it('should have request ip', done => {
+    Parse.Cloud.afterSave('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject.save().then(() => done());
   });
 
-  it("should unset in afterSave", async () => {
+  it('should unset in afterSave', async () => {
     Parse.Cloud.afterSave(
-      "MyObject",
+      'MyObject',
       ({ object }) => {
-        object.unset("secret");
+        object.unset('secret');
       },
       {
         skipWithMasterKey: true,
       }
     );
-    const obj = new Parse.Object("MyObject");
-    obj.set("secret", "bar");
+    const obj = new Parse.Object('MyObject');
+    obj.set('secret', 'bar');
     await obj.save();
-    expect(obj.get("secret")).toBeUndefined();
+    expect(obj.get('secret')).toBeUndefined();
     await obj.fetch();
-    expect(obj.get("secret")).toBe("bar");
+    expect(obj.get('secret')).toBe('bar');
   });
 
-  it("should unset", async () => {
-    Parse.Cloud.beforeSave("MyObject", ({ object }) => {
-      object.set("secret", "hidden");
+  it('should unset', async () => {
+    Parse.Cloud.beforeSave('MyObject', ({ object }) => {
+      object.set('secret', 'hidden');
     });
 
-    Parse.Cloud.afterSave("MyObject", ({ object }) => {
-      object.unset("secret");
+    Parse.Cloud.afterSave('MyObject', ({ object }) => {
+      object.unset('secret');
     });
-    const obj = await new Parse.Object("MyObject").save();
-    expect(obj.get("secret")).toBeUndefined();
+    const obj = await new Parse.Object('MyObject').save();
+    expect(obj.get('secret')).toBeUndefined();
   });
 });
 
-describe("beforeDelete hooks", () => {
-  it("should have request headers", done => {
-    Parse.Cloud.beforeDelete("MyObject", req => {
+describe('beforeDelete hooks', () => {
+  it('should have request headers', done => {
+    Parse.Cloud.beforeDelete('MyObject', req => {
       expect(req.headers).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
@@ -2187,12 +2187,12 @@ describe("beforeDelete hooks", () => {
       .then(() => done());
   });
 
-  it("should have request ip", done => {
-    Parse.Cloud.beforeDelete("MyObject", req => {
+  it('should have request ip', done => {
+    Parse.Cloud.beforeDelete('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
@@ -2201,13 +2201,13 @@ describe("beforeDelete hooks", () => {
   });
 });
 
-describe("afterDelete hooks", () => {
-  it("should have request headers", done => {
-    Parse.Cloud.afterDelete("MyObject", req => {
+describe('afterDelete hooks', () => {
+  it('should have request headers', done => {
+    Parse.Cloud.afterDelete('MyObject', req => {
       expect(req.headers).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
@@ -2215,12 +2215,12 @@ describe("afterDelete hooks", () => {
       .then(() => done());
   });
 
-  it("should have request ip", done => {
-    Parse.Cloud.afterDelete("MyObject", req => {
+  it('should have request ip', done => {
+    Parse.Cloud.afterDelete('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
@@ -2229,80 +2229,80 @@ describe("afterDelete hooks", () => {
   });
 });
 
-describe("beforeFind hooks", () => {
-  it("should add beforeFind trigger", done => {
-    Parse.Cloud.beforeFind("MyObject", req => {
+describe('beforeFind hooks', () => {
+  it('should add beforeFind trigger', done => {
+    Parse.Cloud.beforeFind('MyObject', req => {
       const q = req.query;
       expect(q instanceof Parse.Query).toBe(true);
       const jsonQuery = q.toJSON();
-      expect(jsonQuery.where.key).toEqual("value");
+      expect(jsonQuery.where.key).toEqual('value');
       expect(jsonQuery.where.some).toEqual({ $gt: 10 });
-      expect(jsonQuery.include).toEqual("otherKey,otherValue");
-      expect(jsonQuery.excludeKeys).toBe("exclude");
+      expect(jsonQuery.include).toEqual('otherKey,otherValue');
+      expect(jsonQuery.excludeKeys).toBe('exclude');
       expect(jsonQuery.limit).toEqual(100);
       expect(jsonQuery.skip).toBe(undefined);
-      expect(jsonQuery.order).toBe("key");
-      expect(jsonQuery.keys).toBe("select");
-      expect(jsonQuery.readPreference).toBe("PRIMARY");
-      expect(jsonQuery.includeReadPreference).toBe("SECONDARY");
-      expect(jsonQuery.subqueryReadPreference).toBe("SECONDARY_PREFERRED");
+      expect(jsonQuery.order).toBe('key');
+      expect(jsonQuery.keys).toBe('select');
+      expect(jsonQuery.readPreference).toBe('PRIMARY');
+      expect(jsonQuery.includeReadPreference).toBe('SECONDARY');
+      expect(jsonQuery.subqueryReadPreference).toBe('SECONDARY_PREFERRED');
 
       expect(req.isGet).toEqual(false);
     });
 
-    const query = new Parse.Query("MyObject");
-    query.equalTo("key", "value");
-    query.greaterThan("some", 10);
-    query.include("otherKey");
-    query.include("otherValue");
-    query.ascending("key");
-    query.select("select");
-    query.exclude("exclude");
-    query.readPreference("PRIMARY", "SECONDARY", "SECONDARY_PREFERRED");
+    const query = new Parse.Query('MyObject');
+    query.equalTo('key', 'value');
+    query.greaterThan('some', 10);
+    query.include('otherKey');
+    query.include('otherValue');
+    query.ascending('key');
+    query.select('select');
+    query.exclude('exclude');
+    query.readPreference('PRIMARY', 'SECONDARY', 'SECONDARY_PREFERRED');
     query.find().then(() => {
       done();
     });
   });
 
-  it("should use modify", done => {
-    Parse.Cloud.beforeFind("MyObject", req => {
+  it('should use modify', done => {
+    Parse.Cloud.beforeFind('MyObject', req => {
       const q = req.query;
-      q.equalTo("forced", true);
+      q.equalTo('forced', true);
     });
 
-    const obj0 = new Parse.Object("MyObject");
-    obj0.set("forced", false);
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('forced', false);
 
-    const obj1 = new Parse.Object("MyObject");
-    obj1.set("forced", true);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('forced', true);
     Parse.Object.saveAll([obj0, obj1]).then(() => {
-      const query = new Parse.Query("MyObject");
-      query.equalTo("forced", false);
+      const query = new Parse.Query('MyObject');
+      query.equalTo('forced', false);
       query.find().then(results => {
         expect(results.length).toBe(1);
         const firstResult = results[0];
-        expect(firstResult.get("forced")).toBe(true);
+        expect(firstResult.get('forced')).toBe(true);
         done();
       });
     });
   });
 
-  it("should use the modified the query", done => {
-    Parse.Cloud.beforeFind("MyObject", req => {
+  it('should use the modified the query', done => {
+    Parse.Cloud.beforeFind('MyObject', req => {
       const q = req.query;
-      const otherQuery = new Parse.Query("MyObject");
-      otherQuery.equalTo("forced", true);
+      const otherQuery = new Parse.Query('MyObject');
+      otherQuery.equalTo('forced', true);
       return Parse.Query.or(q, otherQuery);
     });
 
-    const obj0 = new Parse.Object("MyObject");
-    obj0.set("forced", false);
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('forced', false);
 
-    const obj1 = new Parse.Object("MyObject");
-    obj1.set("forced", true);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('forced', true);
     Parse.Object.saveAll([obj0, obj1]).then(() => {
-      const query = new Parse.Query("MyObject");
-      query.equalTo("forced", false);
+      const query = new Parse.Query('MyObject');
+      query.equalTo('forced', false);
       query.find().then(results => {
         expect(results.length).toBe(2);
         done();
@@ -2310,77 +2310,77 @@ describe("beforeFind hooks", () => {
     });
   });
 
-  it("should have object found with nested relational data query", async () => {
-    const obj1 = Parse.Object.extend("TestObject");
-    const obj2 = Parse.Object.extend("TestObject2");
+  it('should have object found with nested relational data query', async () => {
+    const obj1 = Parse.Object.extend('TestObject');
+    const obj2 = Parse.Object.extend('TestObject2');
     let item2 = new obj2();
     item2 = await item2.save();
     let item1 = new obj1();
-    const relation = item1.relation("rel");
+    const relation = item1.relation('rel');
     relation.add(item2);
     item1 = await item1.save();
-    Parse.Cloud.beforeFind("TestObject", req => {
-      const additionalQ = new Parse.Query("TestObject");
-      additionalQ.equalTo("rel", item2);
+    Parse.Cloud.beforeFind('TestObject', req => {
+      const additionalQ = new Parse.Query('TestObject');
+      additionalQ.equalTo('rel', item2);
       return Parse.Query.and(req.query, additionalQ);
     });
-    const q = new Parse.Query("TestObject");
+    const q = new Parse.Query('TestObject');
     const res = await q.first();
     expect(res.id).toEqual(item1.id);
   });
 
-  it("should use the modified exclude query", async () => {
-    Parse.Cloud.beforeFind("MyObject", req => {
+  it('should use the modified exclude query', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
       const q = req.query;
-      q.exclude("number");
+      q.exclude('number');
     });
 
-    const obj = new Parse.Object("MyObject");
-    obj.set("number", 100);
-    obj.set("string", "hello");
+    const obj = new Parse.Object('MyObject');
+    obj.set('number', 100);
+    obj.set('string', 'hello');
     await obj.save();
 
-    const query = new Parse.Query("MyObject");
-    query.equalTo("objectId", obj.id);
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get("number")).toBeUndefined();
-    expect(results[0].get("string")).toBe("hello");
+    expect(results[0].get('number')).toBeUndefined();
+    expect(results[0].get('string')).toBe('hello');
   });
 
-  it("should reject queries", done => {
-    Parse.Cloud.beforeFind("MyObject", () => {
-      return Promise.reject("Do not run that query");
+  it('should reject queries', done => {
+    Parse.Cloud.beforeFind('MyObject', () => {
+      return Promise.reject('Do not run that query');
     });
 
-    const query = new Parse.Query("MyObject");
+    const query = new Parse.Query('MyObject');
     query.find().then(
       () => {
-        fail("should not succeed");
+        fail('should not succeed');
         done();
       },
       err => {
         expect(err.code).toBe(Parse.Error.SCRIPT_FAILED);
-        expect(err.message).toEqual("Do not run that query");
+        expect(err.message).toEqual('Do not run that query');
         done();
       }
     );
   });
 
-  it_id("6ef0d226-af30-4dfd-8306-972a1b4becd3")(it)(
-    "should handle empty where",
+  it_id('6ef0d226-af30-4dfd-8306-972a1b4becd3')(it)(
+    'should handle empty where',
     done => {
-      Parse.Cloud.beforeFind("MyObject", req => {
-        const otherQuery = new Parse.Query("MyObject");
-        otherQuery.equalTo("some", true);
+      Parse.Cloud.beforeFind('MyObject', req => {
+        const otherQuery = new Parse.Query('MyObject');
+        otherQuery.equalTo('some', true);
         return Parse.Query.or(req.query, otherQuery);
       });
 
       request({
-        url: "http://localhost:8378/1/classes/MyObject",
+        url: 'http://localhost:8378/1/classes/MyObject',
         headers: {
-          "X-Parse-Application-Id": Parse.applicationId,
-          "X-Parse-REST-API-Key": "rest",
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
         },
       }).then(
         () => {
@@ -2394,251 +2394,251 @@ describe("beforeFind hooks", () => {
     }
   );
 
-  it("should handle sorting where", done => {
-    Parse.Cloud.beforeFind("MyObject", req => {
+  it('should handle sorting where', done => {
+    Parse.Cloud.beforeFind('MyObject', req => {
       const query = req.query;
-      query.ascending("score");
+      query.ascending('score');
       return query;
     });
 
     const count = 20;
     const objects = [];
     while (objects.length != count) {
-      const object = new Parse.Object("MyObject");
-      object.set("score", Math.floor(Math.random() * 100));
+      const object = new Parse.Object('MyObject');
+      object.set('score', Math.floor(Math.random() * 100));
       objects.push(object);
     }
     Parse.Object.saveAll(objects)
       .then(() => {
-        const query = new Parse.Query("MyObject");
+        const query = new Parse.Query('MyObject');
         return query.find();
       })
       .then(objects => {
         let lastScore = -1;
         objects.forEach(element => {
-          expect(element.get("score") >= lastScore).toBe(true);
-          lastScore = element.get("score");
+          expect(element.get('score') >= lastScore).toBe(true);
+          lastScore = element.get('score');
         });
       })
       .then(done)
       .catch(done.fail);
   });
 
-  it("should add beforeFind trigger using get API", done => {
+  it('should add beforeFind trigger using get API', done => {
     const hook = {
       method: function (req) {
         expect(req.isGet).toEqual(true);
         return Promise.resolve();
       },
     };
-    spyOn(hook, "method").and.callThrough();
-    Parse.Cloud.beforeFind("MyObject", hook.method);
-    const obj = new Parse.Object("MyObject");
-    obj.set("secretField", "SSID");
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
     obj.save().then(function () {
       request({
-        method: "GET",
-        url: "http://localhost:8378/1/classes/MyObject/" + obj.id,
+        method: 'GET',
+        url: 'http://localhost:8378/1/classes/MyObject/' + obj.id,
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-REST-API-Key": "rest",
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       }).then(response => {
         const body = response.data;
-        expect(body.secretField).toEqual("SSID");
+        expect(body.secretField).toEqual('SSID');
         expect(hook.method).toHaveBeenCalled();
         done();
       });
     });
   });
 
-  it("sets correct beforeFind trigger isGet parameter for Parse.Object.fetch request", async () => {
+  it('sets correct beforeFind trigger isGet parameter for Parse.Object.fetch request', async () => {
     const hook = {
       method: req => {
         expect(req.isGet).toEqual(true);
         return Promise.resolve();
       },
     };
-    spyOn(hook, "method").and.callThrough();
-    Parse.Cloud.beforeFind("MyObject", hook.method);
-    const obj = new Parse.Object("MyObject");
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
     await obj.save();
     const getObj = await obj.fetch();
     expect(getObj).toBeInstanceOf(Parse.Object);
     expect(hook.method).toHaveBeenCalledTimes(1);
   });
 
-  it("sets correct beforeFind trigger isGet parameter for Parse.Query.get request", async () => {
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.get request', async () => {
     const hook = {
       method: req => {
         expect(req.isGet).toEqual(false);
         return Promise.resolve();
       },
     };
-    spyOn(hook, "method").and.callThrough();
-    Parse.Cloud.beforeFind("MyObject", hook.method);
-    const obj = new Parse.Object("MyObject");
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
     await obj.save();
-    const query = new Parse.Query("MyObject");
+    const query = new Parse.Query('MyObject');
     const getObj = await query.get(obj.id);
     expect(getObj).toBeInstanceOf(Parse.Object);
     expect(hook.method).toHaveBeenCalledTimes(1);
   });
 
-  it("sets correct beforeFind trigger isGet parameter for Parse.Query.find request", async () => {
+  it('sets correct beforeFind trigger isGet parameter for Parse.Query.find request', async () => {
     const hook = {
       method: req => {
         expect(req.isGet).toEqual(false);
         return Promise.resolve();
       },
     };
-    spyOn(hook, "method").and.callThrough();
-    Parse.Cloud.beforeFind("MyObject", hook.method);
-    const obj = new Parse.Object("MyObject");
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
     await obj.save();
-    const query = new Parse.Query("MyObject");
+    const query = new Parse.Query('MyObject');
     const findObjs = await query.find();
     expect(findObjs?.[0]).toBeInstanceOf(Parse.Object);
     expect(hook.method).toHaveBeenCalledTimes(1);
   });
 
-  it("should have request headers", done => {
-    Parse.Cloud.beforeFind("MyObject", req => {
+  it('should have request headers', done => {
+    Parse.Cloud.beforeFind('MyObject', req => {
       expect(req.headers).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
       .then(myObj => {
-        const query = new Parse.Query("MyObject");
-        query.equalTo("objectId", myObj.id);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
         return Promise.all([query.get(myObj.id), query.first(), query.find()]);
       })
       .then(() => done());
   });
 
-  it("should have request ip", done => {
-    Parse.Cloud.beforeFind("MyObject", req => {
+  it('should have request ip', done => {
+    Parse.Cloud.beforeFind('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
       .then(myObj => {
-        const query = new Parse.Query("MyObject");
-        query.equalTo("objectId", myObj.id);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
         return Promise.all([query.get(myObj.id), query.first(), query.find()]);
       })
       .then(() => done());
   });
 
-  it("should run beforeFind on pointers and array of pointers from an object", async () => {
-    const obj1 = new Parse.Object("TestObject");
-    const obj2 = new Parse.Object("TestObject2");
-    const obj3 = new Parse.Object("TestObject");
-    obj2.set("aField", "aFieldValue");
+  it('should run beforeFind on pointers and array of pointers from an object', async () => {
+    const obj1 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    const obj3 = new Parse.Object('TestObject');
+    obj2.set('aField', 'aFieldValue');
     await obj2.save();
-    obj1.set("pointerField", obj2);
-    obj3.set("pointerFieldArray", [obj2]);
+    obj1.set('pointerField', obj2);
+    obj3.set('pointerFieldArray', [obj2]);
     await obj1.save();
     await obj3.save();
-    const spy = jasmine.createSpy("beforeFindSpy");
-    Parse.Cloud.beforeFind("TestObject2", spy);
-    const query = new Parse.Query("TestObject");
+    const spy = jasmine.createSpy('beforeFindSpy');
+    Parse.Cloud.beforeFind('TestObject2', spy);
+    const query = new Parse.Query('TestObject');
     await query.get(obj1.id);
     // Pointer not included in query so we don't expect beforeFind to be called
     expect(spy).not.toHaveBeenCalled();
-    const query2 = new Parse.Query("TestObject");
-    query2.include("pointerField");
+    const query2 = new Parse.Query('TestObject');
+    query2.include('pointerField');
     const res = await query2.get(obj1.id);
-    expect(res.get("pointerField").get("aField")).toBe("aFieldValue");
+    expect(res.get('pointerField').get('aField')).toBe('aFieldValue');
     // Pointer included in query so we expect beforeFind to be called
     expect(spy).toHaveBeenCalledTimes(1);
-    const query3 = new Parse.Query("TestObject");
-    query3.include("pointerFieldArray");
+    const query3 = new Parse.Query('TestObject');
+    query3.include('pointerFieldArray');
     const res2 = await query3.get(obj3.id);
-    expect(res2.get("pointerFieldArray")[0].get("aField")).toBe("aFieldValue");
+    expect(res2.get('pointerFieldArray')[0].get('aField')).toBe('aFieldValue');
     expect(spy).toHaveBeenCalledTimes(2);
   });
 
-  it("should have access to context in include query in beforeFind hook", async () => {
+  it('should have access to context in include query in beforeFind hook', async () => {
     let beforeFindTestObjectCalled = false;
     let beforeFindTestObject2Called = false;
-    const obj1 = new Parse.Object("TestObject");
-    const obj2 = new Parse.Object("TestObject2");
-    obj2.set("aField", "aFieldValue");
+    const obj1 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    obj2.set('aField', 'aFieldValue');
     await obj2.save();
-    obj1.set("pointerField", obj2);
+    obj1.set('pointerField', obj2);
     await obj1.save();
-    Parse.Cloud.beforeFind("TestObject", req => {
+    Parse.Cloud.beforeFind('TestObject', req => {
       expect(req.context).toBeDefined();
-      expect(req.context.a).toEqual("a");
+      expect(req.context.a).toEqual('a');
       beforeFindTestObjectCalled = true;
     });
-    Parse.Cloud.beforeFind("TestObject2", req => {
+    Parse.Cloud.beforeFind('TestObject2', req => {
       expect(req.context).toBeDefined();
-      expect(req.context.a).toEqual("a");
+      expect(req.context.a).toEqual('a');
       beforeFindTestObject2Called = true;
     });
-    const query = new Parse.Query("TestObject");
-    await query.include("pointerField").find({ context: { a: "a" } });
+    const query = new Parse.Query('TestObject');
+    await query.include('pointerField').find({ context: { a: 'a' } });
     expect(beforeFindTestObjectCalled).toBeTrue();
     expect(beforeFindTestObject2Called).toBeTrue();
   });
 });
 
-describe("afterFind hooks", () => {
-  it("should add afterFind trigger", done => {
-    Parse.Cloud.afterFind("MyObject", req => {
+describe('afterFind hooks', () => {
+  it('should add afterFind trigger', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
       const q = req.query;
       expect(q instanceof Parse.Query).toBe(true);
       const jsonQuery = q.toJSON();
-      expect(jsonQuery.where.key).toEqual("value");
+      expect(jsonQuery.where.key).toEqual('value');
       expect(jsonQuery.where.some).toEqual({ $gt: 10 });
-      expect(jsonQuery.include).toEqual("otherKey,otherValue");
-      expect(jsonQuery.excludeKeys).toBe("exclude");
+      expect(jsonQuery.include).toEqual('otherKey,otherValue');
+      expect(jsonQuery.excludeKeys).toBe('exclude');
       expect(jsonQuery.limit).toEqual(100);
       expect(jsonQuery.skip).toBe(undefined);
-      expect(jsonQuery.order).toBe("key");
-      expect(jsonQuery.keys).toBe("select");
-      expect(jsonQuery.readPreference).toBe("PRIMARY");
-      expect(jsonQuery.includeReadPreference).toBe("SECONDARY");
-      expect(jsonQuery.subqueryReadPreference).toBe("SECONDARY_PREFERRED");
+      expect(jsonQuery.order).toBe('key');
+      expect(jsonQuery.keys).toBe('select');
+      expect(jsonQuery.readPreference).toBe('PRIMARY');
+      expect(jsonQuery.includeReadPreference).toBe('SECONDARY');
+      expect(jsonQuery.subqueryReadPreference).toBe('SECONDARY_PREFERRED');
     });
 
-    const query = new Parse.Query("MyObject");
-    query.equalTo("key", "value");
-    query.greaterThan("some", 10);
-    query.include("otherKey");
-    query.include("otherValue");
-    query.ascending("key");
-    query.select("select");
-    query.exclude("exclude");
-    query.readPreference("PRIMARY", "SECONDARY", "SECONDARY_PREFERRED");
+    const query = new Parse.Query('MyObject');
+    query.equalTo('key', 'value');
+    query.greaterThan('some', 10);
+    query.include('otherKey');
+    query.include('otherValue');
+    query.ascending('key');
+    query.select('select');
+    query.exclude('exclude');
+    query.readPreference('PRIMARY', 'SECONDARY', 'SECONDARY_PREFERRED');
     query.find().then(() => {
       done();
     });
   });
-  it("should add afterFind trigger using get", done => {
-    Parse.Cloud.afterFind("MyObject", req => {
+  it('should add afterFind trigger using get', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
       for (let i = 0; i < req.objects.length; i++) {
-        req.objects[i].set("secretField", "###");
+        req.objects[i].set('secretField', '###');
       }
       return req.objects;
     });
-    const obj = new Parse.Object("MyObject");
-    obj.set("secretField", "SSID");
+    const obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
     obj.save().then(
       function () {
-        const query = new Parse.Query("MyObject");
+        const query = new Parse.Query('MyObject');
         query.get(obj.id).then(
           function (result) {
-            expect(result.get("secretField")).toEqual("###");
+            expect(result.get('secretField')).toEqual('###');
             done();
           },
           function (error) {
@@ -2654,22 +2654,22 @@ describe("afterFind hooks", () => {
     );
   });
 
-  it("should add afterFind trigger using find", done => {
-    Parse.Cloud.afterFind("MyObject", req => {
+  it('should add afterFind trigger using find', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
       for (let i = 0; i < req.objects.length; i++) {
-        req.objects[i].set("secretField", "###");
+        req.objects[i].set('secretField', '###');
       }
       return req.objects;
     });
-    const obj = new Parse.Object("MyObject");
-    obj.set("secretField", "SSID");
+    const obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
     obj.save().then(
       function () {
-        const query = new Parse.Query("MyObject");
-        query.equalTo("objectId", obj.id);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', obj.id);
         query.find().then(
           function (results) {
-            expect(results[0].get("secretField")).toEqual("###");
+            expect(results[0].get('secretField')).toEqual('###');
             done();
           },
           function (error) {
@@ -2685,26 +2685,26 @@ describe("afterFind hooks", () => {
     );
   });
 
-  it("should filter out results", done => {
-    Parse.Cloud.afterFind("MyObject", req => {
+  it('should filter out results', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
       const filteredResults = [];
       for (let i = 0; i < req.objects.length; i++) {
-        if (req.objects[i].get("secretField") === "SSID1") {
+        if (req.objects[i].get('secretField') === 'SSID1') {
           filteredResults.push(req.objects[i]);
         }
       }
       return filteredResults;
     });
-    const obj0 = new Parse.Object("MyObject");
-    obj0.set("secretField", "SSID1");
-    const obj1 = new Parse.Object("MyObject");
-    obj1.set("secretField", "SSID2");
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('secretField', 'SSID1');
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('secretField', 'SSID2');
     Parse.Object.saveAll([obj0, obj1]).then(
       function () {
-        const query = new Parse.Query("MyObject");
+        const query = new Parse.Query('MyObject');
         query.find().then(
           function (results) {
-            expect(results[0].get("secretField")).toEqual("SSID1");
+            expect(results[0].get('secretField')).toEqual('SSID1');
             expect(results.length).toEqual(1);
             done();
           },
@@ -2721,19 +2721,19 @@ describe("afterFind hooks", () => {
     );
   });
 
-  it("should handle failures", done => {
-    Parse.Cloud.afterFind("MyObject", () => {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "It should fail");
+  it('should handle failures', done => {
+    Parse.Cloud.afterFind('MyObject', () => {
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
     });
-    const obj = new Parse.Object("MyObject");
-    obj.set("secretField", "SSID");
+    const obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
     obj.save().then(
       function () {
-        const query = new Parse.Query("MyObject");
-        query.equalTo("objectId", obj.id);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', obj.id);
         query.find().then(
           function () {
-            fail("AfterFind should handle response failure correctly");
+            fail('AfterFind should handle response failure correctly');
             done();
           },
           function () {
@@ -2747,26 +2747,26 @@ describe("afterFind hooks", () => {
     );
   });
 
-  it("should also work with promise", done => {
-    Parse.Cloud.afterFind("MyObject", req => {
+  it('should also work with promise', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
       return new Promise(resolve => {
         setTimeout(function () {
           for (let i = 0; i < req.objects.length; i++) {
-            req.objects[i].set("secretField", "###");
+            req.objects[i].set('secretField', '###');
           }
           resolve(req.objects);
         }, 1000);
       });
     });
-    const obj = new Parse.Object("MyObject");
-    obj.set("secretField", "SSID");
+    const obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
     obj.save().then(
       function () {
-        const query = new Parse.Query("MyObject");
-        query.equalTo("objectId", obj.id);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', obj.id);
         query.find().then(
           function (results) {
-            expect(results[0].get("secretField")).toEqual("###");
+            expect(results[0].get('secretField')).toEqual('###');
             done();
           },
           function (error) {
@@ -2780,237 +2780,237 @@ describe("afterFind hooks", () => {
     );
   });
 
-  it("should alter select", done => {
-    Parse.Cloud.beforeFind("MyObject", req => {
-      req.query.select("white");
+  it('should alter select', done => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      req.query.select('white');
       return req.query;
     });
 
-    const obj0 = new Parse.Object("MyObject")
-      .set("white", true)
-      .set("black", true);
+    const obj0 = new Parse.Object('MyObject')
+      .set('white', true)
+      .set('black', true);
     obj0.save().then(() => {
-      new Parse.Query("MyObject").first().then(result => {
-        expect(result.get("white")).toBe(true);
-        expect(result.get("black")).toBe(undefined);
+      new Parse.Query('MyObject').first().then(result => {
+        expect(result.get('white')).toBe(true);
+        expect(result.get('black')).toBe(undefined);
         done();
       });
     });
   });
 
-  it("should not alter select", done => {
-    const obj0 = new Parse.Object("MyObject")
-      .set("white", true)
-      .set("black", true);
+  it('should not alter select', done => {
+    const obj0 = new Parse.Object('MyObject')
+      .set('white', true)
+      .set('black', true);
     obj0.save().then(() => {
-      new Parse.Query("MyObject").first().then(result => {
-        expect(result.get("white")).toBe(true);
-        expect(result.get("black")).toBe(true);
+      new Parse.Query('MyObject').first().then(result => {
+        expect(result.get('white')).toBe(true);
+        expect(result.get('black')).toBe(true);
         done();
       });
     });
   });
 
-  it("should set count to true on beforeFind hooks if query is count", done => {
+  it('should set count to true on beforeFind hooks if query is count', done => {
     const hook = {
       method: function (req) {
         expect(req.count).toBe(true);
         return Promise.resolve();
       },
     };
-    spyOn(hook, "method").and.callThrough();
-    Parse.Cloud.beforeFind("Stuff", hook.method);
-    new Parse.Query("Stuff").count().then(count => {
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('Stuff', hook.method);
+    new Parse.Query('Stuff').count().then(count => {
       expect(count).toBe(0);
       expect(hook.method).toHaveBeenCalled();
       done();
     });
   });
 
-  it("should set count to false on beforeFind hooks if query is not count", done => {
+  it('should set count to false on beforeFind hooks if query is not count', done => {
     const hook = {
       method: function (req) {
         expect(req.count).toBe(false);
         return Promise.resolve();
       },
     };
-    spyOn(hook, "method").and.callThrough();
-    Parse.Cloud.beforeFind("Stuff", hook.method);
-    new Parse.Query("Stuff").find().then(res => {
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('Stuff', hook.method);
+    new Parse.Query('Stuff').find().then(res => {
       expect(res.length).toBe(0);
       expect(hook.method).toHaveBeenCalled();
       done();
     });
   });
 
-  it("can set a pointer object in afterFind", async () => {
-    const obj = new Parse.Object("MyObject");
+  it('can set a pointer object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
     await obj.save();
-    Parse.Cloud.afterFind("MyObject", async ({ objects }) => {
-      const otherObject = new Parse.Object("Test");
-      otherObject.set("foo", "bar");
+    Parse.Cloud.afterFind('MyObject', async ({ objects }) => {
+      const otherObject = new Parse.Object('Test');
+      otherObject.set('foo', 'bar');
       await otherObject.save();
-      objects[0].set("Pointer", otherObject);
-      objects[0].set("xyz", "yolo");
-      expect(objects[0].get("Pointer").get("foo")).toBe("bar");
+      objects[0].set('Pointer', otherObject);
+      objects[0].set('xyz', 'yolo');
+      expect(objects[0].get('Pointer').get('foo')).toBe('bar');
     });
-    const query = new Parse.Query("MyObject");
-    query.equalTo("objectId", obj.id);
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
     const obj2 = await query.first();
-    expect(obj2.get("xyz")).toBe("yolo");
-    const pointer = obj2.get("Pointer");
-    expect(pointer.get("foo")).toBe("bar");
+    expect(obj2.get('xyz')).toBe('yolo');
+    const pointer = obj2.get('Pointer');
+    expect(pointer.get('foo')).toBe('bar');
   });
 
-  it("can set invalid object in afterFind", async () => {
-    const obj = new Parse.Object("MyObject");
+  it('can set invalid object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
     await obj.save();
-    Parse.Cloud.afterFind("MyObject", () => [{}]);
-    const query = new Parse.Query("MyObject");
-    query.equalTo("objectId", obj.id);
+    Parse.Cloud.afterFind('MyObject', () => [{}]);
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
     const obj2 = await query.first();
     expect(obj2).toBeDefined();
     expect(obj2.toJSON()).toEqual({});
     expect(obj2.id).toBeUndefined();
   });
 
-  it("can return a unsaved object in afterFind", async () => {
-    const obj = new Parse.Object("MyObject");
+  it('can return a unsaved object in afterFind', async () => {
+    const obj = new Parse.Object('MyObject');
     await obj.save();
-    Parse.Cloud.afterFind("MyObject", async () => {
-      const otherObject = new Parse.Object("Test");
-      otherObject.set("foo", "bar");
+    Parse.Cloud.afterFind('MyObject', async () => {
+      const otherObject = new Parse.Object('Test');
+      otherObject.set('foo', 'bar');
       return [otherObject];
     });
-    const query = new Parse.Query("MyObject");
+    const query = new Parse.Query('MyObject');
     const obj2 = await query.first();
-    expect(obj2.get("foo")).toEqual("bar");
+    expect(obj2.get('foo')).toEqual('bar');
     expect(obj2.id).toBeUndefined();
     await obj2.save();
     expect(obj2.id).toBeDefined();
   });
 
-  it("should have request headers", done => {
-    Parse.Cloud.afterFind("MyObject", req => {
+  it('should have request headers', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
       expect(req.headers).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
       .then(myObj => {
-        const query = new Parse.Query("MyObject");
-        query.equalTo("objectId", myObj.id);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
         return Promise.all([query.get(myObj.id), query.first(), query.find()]);
       })
       .then(() => done());
   });
 
-  it("should have request ip", done => {
-    Parse.Cloud.afterFind("MyObject", req => {
+  it('should have request ip', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
       expect(req.ip).toBeDefined();
     });
 
-    const MyObject = Parse.Object.extend("MyObject");
+    const MyObject = Parse.Object.extend('MyObject');
     const myObject = new MyObject();
     myObject
       .save()
       .then(myObj => {
-        const query = new Parse.Query("MyObject");
-        query.equalTo("objectId", myObj.id);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
         return Promise.all([query.get(myObj.id), query.first(), query.find()]);
       })
       .then(() => done())
       .catch(done.fail);
   });
 
-  it("should validate triggers correctly", () => {
+  it('should validate triggers correctly', () => {
     expect(() => {
-      Parse.Cloud.beforeSave("_Session", () => {});
+      Parse.Cloud.beforeSave('_Session', () => {});
     }).toThrow(
-      "Only the afterLogout trigger is allowed for the _Session class."
+      'Only the afterLogout trigger is allowed for the _Session class.'
     );
     expect(() => {
-      Parse.Cloud.afterSave("_Session", () => {});
+      Parse.Cloud.afterSave('_Session', () => {});
     }).toThrow(
-      "Only the afterLogout trigger is allowed for the _Session class."
+      'Only the afterLogout trigger is allowed for the _Session class.'
     );
     expect(() => {
-      Parse.Cloud.beforeSave("_PushStatus", () => {});
-    }).toThrow("Only afterSave is allowed on _PushStatus");
+      Parse.Cloud.beforeSave('_PushStatus', () => {});
+    }).toThrow('Only afterSave is allowed on _PushStatus');
     expect(() => {
-      Parse.Cloud.afterSave("_PushStatus", () => {});
+      Parse.Cloud.afterSave('_PushStatus', () => {});
     }).not.toThrow();
     expect(() => {
       Parse.Cloud.beforeLogin(() => {});
     }).not.toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
-      Parse.Cloud.beforeLogin("_User", () => {});
+      Parse.Cloud.beforeLogin('_User', () => {});
     }).not.toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
       Parse.Cloud.beforeLogin(Parse.User, () => {});
     }).not.toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
-      Parse.Cloud.beforeLogin("SomeClass", () => {});
+      Parse.Cloud.beforeLogin('SomeClass', () => {});
     }).toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
       Parse.Cloud.afterLogin(() => {});
     }).not.toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
-      Parse.Cloud.afterLogin("_User", () => {});
+      Parse.Cloud.afterLogin('_User', () => {});
     }).not.toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
       Parse.Cloud.afterLogin(Parse.User, () => {});
     }).not.toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
-      Parse.Cloud.afterLogin("SomeClass", () => {});
+      Parse.Cloud.afterLogin('SomeClass', () => {});
     }).toThrow(
-      "Only the _User class is allowed for the beforeLogin and afterLogin triggers"
+      'Only the _User class is allowed for the beforeLogin and afterLogin triggers'
     );
     expect(() => {
       Parse.Cloud.afterLogout(() => {});
     }).not.toThrow();
     expect(() => {
-      Parse.Cloud.afterLogout("_Session", () => {});
+      Parse.Cloud.afterLogout('_Session', () => {});
     }).not.toThrow();
     expect(() => {
-      Parse.Cloud.afterLogout("_User", () => {});
+      Parse.Cloud.afterLogout('_User', () => {});
     }).toThrow(
-      "Only the _Session class is allowed for the afterLogout trigger."
+      'Only the _Session class is allowed for the afterLogout trigger.'
     );
     expect(() => {
-      Parse.Cloud.afterLogout("SomeClass", () => {});
+      Parse.Cloud.afterLogout('SomeClass', () => {});
     }).toThrow(
-      "Only the _Session class is allowed for the afterLogout trigger."
+      'Only the _Session class is allowed for the afterLogout trigger.'
     );
   });
 
-  it_id("c16159b5-e8ee-42d5-8fe3-e2f7c006881d")(it)(
-    "should skip afterFind hooks for aggregate",
+  it_id('c16159b5-e8ee-42d5-8fe3-e2f7c006881d')(it)(
+    'should skip afterFind hooks for aggregate',
     done => {
       const hook = {
         method: function () {
           return Promise.reject();
         },
       };
-      spyOn(hook, "method").and.callThrough();
-      Parse.Cloud.afterFind("MyObject", hook.method);
-      const obj = new Parse.Object("MyObject");
+      spyOn(hook, 'method').and.callThrough();
+      Parse.Cloud.afterFind('MyObject', hook.method);
+      const obj = new Parse.Object('MyObject');
       const pipeline = [
         {
           $group: { _id: {} },
@@ -3019,7 +3019,7 @@ describe("afterFind hooks", () => {
       obj
         .save()
         .then(() => {
-          const query = new Parse.Query("MyObject");
+          const query = new Parse.Query('MyObject');
           return query.aggregate(pipeline);
         })
         .then(results => {
@@ -3030,23 +3030,23 @@ describe("afterFind hooks", () => {
     }
   );
 
-  it_id("ca55c90d-36db-422c-9060-a30583ce5224")(it)(
-    "should skip afterFind hooks for distinct",
+  it_id('ca55c90d-36db-422c-9060-a30583ce5224')(it)(
+    'should skip afterFind hooks for distinct',
     done => {
       const hook = {
         method: function () {
           return Promise.reject();
         },
       };
-      spyOn(hook, "method").and.callThrough();
-      Parse.Cloud.afterFind("MyObject", hook.method);
-      const obj = new Parse.Object("MyObject");
-      obj.set("score", 10);
+      spyOn(hook, 'method').and.callThrough();
+      Parse.Cloud.afterFind('MyObject', hook.method);
+      const obj = new Parse.Object('MyObject');
+      obj.set('score', 10);
       obj
         .save()
         .then(() => {
-          const query = new Parse.Query("MyObject");
-          return query.distinct("score");
+          const query = new Parse.Query('MyObject');
+          return query.distinct('score');
         })
         .then(results => {
           expect(results[0]).toEqual(10);
@@ -3056,30 +3056,30 @@ describe("afterFind hooks", () => {
     }
   );
 
-  it("should throw error if context header is malformed", async () => {
+  it('should throw error if context header is malformed', async () => {
     let calledBefore = false;
     let calledAfter = false;
-    Parse.Cloud.beforeSave("TestObject", () => {
+    Parse.Cloud.beforeSave('TestObject', () => {
       calledBefore = true;
     });
-    Parse.Cloud.afterSave("TestObject", () => {
+    Parse.Cloud.afterSave('TestObject', () => {
       calledAfter = true;
     });
     const req = request({
-      method: "POST",
-      url: "http://localhost:8378/1/classes/TestObject",
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Cloud-Context": "key",
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': 'key',
       },
       body: {
-        foo: "bar",
+        foo: 'bar',
       },
     });
     try {
       await req;
-      fail("Should have thrown error");
+      fail('Should have thrown error');
     } catch (e) {
       expect(e).toBeDefined();
       expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
@@ -3091,27 +3091,27 @@ describe("afterFind hooks", () => {
   it('should throw error if context header is string "1"', async () => {
     let calledBefore = false;
     let calledAfter = false;
-    Parse.Cloud.beforeSave("TestObject", () => {
+    Parse.Cloud.beforeSave('TestObject', () => {
       calledBefore = true;
     });
-    Parse.Cloud.afterSave("TestObject", () => {
+    Parse.Cloud.afterSave('TestObject', () => {
       calledAfter = true;
     });
     const req = request({
-      method: "POST",
-      url: "http://localhost:8378/1/classes/TestObject",
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Cloud-Context": "1",
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '1',
       },
       body: {
-        foo: "bar",
+        foo: 'bar',
       },
     });
     try {
       await req;
-      fail("Should have thrown error");
+      fail('Should have thrown error');
     } catch (e) {
       expect(e).toBeDefined();
       expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
@@ -3120,33 +3120,33 @@ describe("afterFind hooks", () => {
     expect(calledAfter).toBe(false);
   });
 
-  it_id("55ef1741-cf72-4a7c-a029-00cb75f53233")(it)(
-    "should expose context in beforeSave/afterSave via header",
+  it_id('55ef1741-cf72-4a7c-a029-00cb75f53233')(it)(
+    'should expose context in beforeSave/afterSave via header',
     async () => {
       let calledBefore = false;
       let calledAfter = false;
-      Parse.Cloud.beforeSave("TestObject", req => {
-        expect(req.object.get("foo")).toEqual("bar");
+      Parse.Cloud.beforeSave('TestObject', req => {
+        expect(req.object.get('foo')).toEqual('bar');
         expect(req.context.otherKey).toBe(1);
-        expect(req.context.key).toBe("value");
+        expect(req.context.key).toBe('value');
         calledBefore = true;
       });
-      Parse.Cloud.afterSave("TestObject", req => {
-        expect(req.object.get("foo")).toEqual("bar");
+      Parse.Cloud.afterSave('TestObject', req => {
+        expect(req.object.get('foo')).toEqual('bar');
         expect(req.context.otherKey).toBe(1);
-        expect(req.context.key).toBe("value");
+        expect(req.context.key).toBe('value');
         calledAfter = true;
       });
       const req = request({
-        method: "POST",
-        url: "http://localhost:8378/1/classes/TestObject",
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-REST-API-Key": "rest",
-          "X-Parse-Cloud-Context": '{"key":"value","otherKey":1}',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
         },
         body: {
-          foo: "bar",
+          foo: 'bar',
         },
       });
       await req;
@@ -3155,31 +3155,31 @@ describe("afterFind hooks", () => {
     }
   );
 
-  it("should override header context with body context in beforeSave/afterSave", async () => {
+  it('should override header context with body context in beforeSave/afterSave', async () => {
     let calledBefore = false;
     let calledAfter = false;
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.object.get("foo")).toEqual("bar");
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
       expect(req.context.otherKey).toBe(10);
-      expect(req.context.key).toBe("hello");
+      expect(req.context.key).toBe('hello');
       calledBefore = true;
     });
-    Parse.Cloud.afterSave("TestObject", req => {
-      expect(req.object.get("foo")).toEqual("bar");
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.object.get('foo')).toEqual('bar');
       expect(req.context.otherKey).toBe(10);
-      expect(req.context.key).toBe("hello");
+      expect(req.context.key).toBe('hello');
       calledAfter = true;
     });
     const req = request({
-      method: "POST",
-      url: "http://localhost:8378/1/classes/TestObject",
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Cloud-Context": '{"key":"value","otherKey":1}',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
       },
       body: {
-        foo: "bar",
-        _ApplicationId: "test",
+        foo: 'bar',
+        _ApplicationId: 'test',
         _context: '{"key":"hello","otherKey":10}',
       },
     });
@@ -3188,31 +3188,31 @@ describe("afterFind hooks", () => {
     expect(calledAfter).toBe(true);
   });
 
-  it("should throw error if context body is malformed", async () => {
+  it('should throw error if context body is malformed', async () => {
     let calledBefore = false;
     let calledAfter = false;
-    Parse.Cloud.beforeSave("TestObject", () => {
+    Parse.Cloud.beforeSave('TestObject', () => {
       calledBefore = true;
     });
-    Parse.Cloud.afterSave("TestObject", () => {
+    Parse.Cloud.afterSave('TestObject', () => {
       calledAfter = true;
     });
     const req = request({
-      method: "POST",
-      url: "http://localhost:8378/1/classes/TestObject",
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Cloud-Context": '{"key":"value","otherKey":1}',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
       },
       body: {
-        foo: "bar",
-        _ApplicationId: "test",
-        _context: "key",
+        foo: 'bar',
+        _ApplicationId: 'test',
+        _context: 'key',
       },
     });
     try {
       await req;
-      fail("Should have thrown error");
+      fail('Should have thrown error');
     } catch (e) {
       expect(e).toBeDefined();
       expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
@@ -3224,28 +3224,28 @@ describe("afterFind hooks", () => {
   it('should throw error if context body is string "true"', async () => {
     let calledBefore = false;
     let calledAfter = false;
-    Parse.Cloud.beforeSave("TestObject", () => {
+    Parse.Cloud.beforeSave('TestObject', () => {
       calledBefore = true;
     });
-    Parse.Cloud.afterSave("TestObject", () => {
+    Parse.Cloud.afterSave('TestObject', () => {
       calledAfter = true;
     });
     const req = request({
-      method: "POST",
-      url: "http://localhost:8378/1/classes/TestObject",
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Cloud-Context": '{"key":"value","otherKey":1}',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"key":"value","otherKey":1}',
       },
       body: {
-        foo: "bar",
-        _ApplicationId: "test",
-        _context: "true",
+        foo: 'bar',
+        _ApplicationId: 'test',
+        _context: 'true',
       },
     });
     try {
       await req;
-      fail("Should have thrown error");
+      fail('Should have thrown error');
     } catch (e) {
       expect(e).toBeDefined();
       expect(e.data.code).toEqual(Parse.Error.INVALID_JSON);
@@ -3254,123 +3254,123 @@ describe("afterFind hooks", () => {
     expect(calledAfter).toBe(false);
   });
 
-  it("should expose context in before and afterSave", async () => {
+  it('should expose context in before and afterSave', async () => {
     let calledBefore = false;
     let calledAfter = false;
-    Parse.Cloud.beforeSave("MyClass", req => {
+    Parse.Cloud.beforeSave('MyClass', req => {
       req.context = {
-        key: "value",
+        key: 'value',
         otherKey: 1,
       };
       calledBefore = true;
     });
-    Parse.Cloud.afterSave("MyClass", req => {
+    Parse.Cloud.afterSave('MyClass', req => {
       expect(req.context.otherKey).toBe(1);
-      expect(req.context.key).toBe("value");
+      expect(req.context.key).toBe('value');
       calledAfter = true;
     });
 
-    const object = new Parse.Object("MyClass");
+    const object = new Parse.Object('MyClass');
     await object.save();
     expect(calledBefore).toBe(true);
     expect(calledAfter).toBe(true);
   });
 
-  it("should expose context in before and afterSave and let keys be set individually", async () => {
+  it('should expose context in before and afterSave and let keys be set individually', async () => {
     let calledBefore = false;
     let calledAfter = false;
-    Parse.Cloud.beforeSave("MyClass", req => {
-      req.context.some = "value";
+    Parse.Cloud.beforeSave('MyClass', req => {
+      req.context.some = 'value';
       req.context.yolo = 1;
       calledBefore = true;
     });
-    Parse.Cloud.afterSave("MyClass", req => {
+    Parse.Cloud.afterSave('MyClass', req => {
       expect(req.context.yolo).toBe(1);
-      expect(req.context.some).toBe("value");
+      expect(req.context.some).toBe('value');
       calledAfter = true;
     });
 
-    const object = new Parse.Object("MyClass");
+    const object = new Parse.Object('MyClass');
     await object.save();
     expect(calledBefore).toBe(true);
     expect(calledAfter).toBe(true);
   });
 });
 
-describe("beforeLogin hook", () => {
-  it("should run beforeLogin with correct credentials", async done => {
+describe('beforeLogin hook', () => {
+  it('should run beforeLogin with correct credentials', async done => {
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
       hit++;
-      expect(req.object.get("username")).toEqual("tupac");
+      expect(req.object.get('username')).toEqual('tupac');
     });
 
-    await Parse.User.signUp("tupac", "shakur");
-    const user = await Parse.User.logIn("tupac", "shakur");
+    await Parse.User.signUp('tupac', 'shakur');
+    const user = await Parse.User.logIn('tupac', 'shakur');
     expect(hit).toBe(1);
     expect(user).toBeDefined();
-    expect(user.getUsername()).toBe("tupac");
+    expect(user.getUsername()).toBe('tupac');
     expect(user.getSessionToken()).toBeDefined();
     done();
   });
 
-  it("should be able to block login if an error is thrown", async done => {
+  it('should be able to block login if an error is thrown', async done => {
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
       hit++;
-      if (req.object.get("isBanned")) {
-        throw new Error("banned account");
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
       }
     });
 
-    const user = await Parse.User.signUp("tupac", "shakur");
+    const user = await Parse.User.signUp('tupac', 'shakur');
     await user.save({ isBanned: true });
 
     try {
-      await Parse.User.logIn("tupac", "shakur");
-      throw new Error("should not have been logged in.");
+      await Parse.User.logIn('tupac', 'shakur');
+      throw new Error('should not have been logged in.');
     } catch (e) {
-      expect(e.message).toBe("banned account");
+      expect(e.message).toBe('banned account');
     }
     expect(hit).toBe(1);
     done();
   });
 
-  it("should be able to block login if an error is thrown even if the user has a attached file", async done => {
+  it('should be able to block login if an error is thrown even if the user has a attached file', async done => {
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
       hit++;
-      if (req.object.get("isBanned")) {
-        throw new Error("banned account");
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
       }
     });
 
-    const user = await Parse.User.signUp("tupac", "shakur");
-    const base64 = "V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=";
-    const file = new Parse.File("myfile.txt", { base64 });
+    const user = await Parse.User.signUp('tupac', 'shakur');
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
     await file.save();
     await user.save({ isBanned: true, file });
 
     try {
-      await Parse.User.logIn("tupac", "shakur");
-      throw new Error("should not have been logged in.");
+      await Parse.User.logIn('tupac', 'shakur');
+      throw new Error('should not have been logged in.');
     } catch (e) {
-      expect(e.message).toBe("banned account");
+      expect(e.message).toBe('banned account');
     }
     expect(hit).toBe(1);
     done();
   });
 
-  it("should not run beforeLogin with incorrect credentials", async done => {
+  it('should not run beforeLogin with incorrect credentials', async done => {
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
       hit++;
-      expect(req.object.get("username")).toEqual("tupac");
+      expect(req.object.get('username')).toEqual('tupac');
     });
 
-    await Parse.User.signUp("tupac", "shakur");
+    await Parse.User.signUp('tupac', 'shakur');
     try {
-      await Parse.User.logIn("tony", "shakur");
+      await Parse.User.logIn('tony', 'shakur');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
@@ -3378,67 +3378,67 @@ describe("beforeLogin hook", () => {
     done();
   });
 
-  it("should not run beforeLogin on sign up", async done => {
+  it('should not run beforeLogin on sign up', async done => {
     let hit = 0;
     Parse.Cloud.beforeLogin(req => {
       hit++;
-      expect(req.object.get("username")).toEqual("tupac");
+      expect(req.object.get('username')).toEqual('tupac');
     });
 
-    const user = await Parse.User.signUp("tupac", "shakur");
+    const user = await Parse.User.signUp('tupac', 'shakur');
     expect(user).toBeDefined();
     expect(hit).toBe(0);
     done();
   });
 
-  it("should trigger afterLogout hook on logout", async done => {
+  it('should trigger afterLogout hook on logout', async done => {
     let userId;
     Parse.Cloud.afterLogout(req => {
-      expect(req.object.className).toEqual("_Session");
+      expect(req.object.className).toEqual('_Session');
       expect(req.object.id).toBeDefined();
-      const user = req.object.get("user");
+      const user = req.object.get('user');
       expect(user).toBeDefined();
       userId = user.id;
     });
 
-    const user = await Parse.User.signUp("user", "pass");
+    const user = await Parse.User.signUp('user', 'pass');
     await Parse.User.logOut();
     expect(user.id).toBe(userId);
     done();
   });
 
-  it("does not crash server when throwing in afterLogin hook", async () => {
-    const error = new Parse.Error(2000, "afterLogin error");
+  it('does not crash server when throwing in afterLogin hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogin error');
     const trigger = {
       afterLogin() {
         throw error;
       },
     };
-    const spy = spyOn(trigger, "afterLogin").and.callThrough();
+    const spy = spyOn(trigger, 'afterLogin').and.callThrough();
     Parse.Cloud.afterLogin(trigger.afterLogin);
-    await Parse.User.signUp("user", "pass");
-    const response = await Parse.User.logIn("user", "pass").catch(e => e);
+    await Parse.User.signUp('user', 'pass');
+    const response = await Parse.User.logIn('user', 'pass').catch(e => e);
     expect(spy).toHaveBeenCalled();
     expect(response).toEqual(error);
   });
 
-  it("does not crash server when throwing in afterLogout hook", async () => {
-    const error = new Parse.Error(2000, "afterLogout error");
+  it('does not crash server when throwing in afterLogout hook', async () => {
+    const error = new Parse.Error(2000, 'afterLogout error');
     const trigger = {
       afterLogout() {
         throw error;
       },
     };
-    const spy = spyOn(trigger, "afterLogout").and.callThrough();
+    const spy = spyOn(trigger, 'afterLogout').and.callThrough();
     Parse.Cloud.afterLogout(trigger.afterLogout);
-    await Parse.User.signUp("user", "pass");
+    await Parse.User.signUp('user', 'pass');
     const response = await Parse.User.logOut().catch(e => e);
     expect(spy).toHaveBeenCalled();
     expect(response).toEqual(error);
   });
 
-  it_id("5656d6d7-65ef-43d1-8ca6-6942ae3614d5")(it)(
-    "should have expected data in request in beforeLogin",
+  it_id('5656d6d7-65ef-43d1-8ca6-6942ae3614d5')(it)(
+    'should have expected data in request in beforeLogin',
     async done => {
       Parse.Cloud.beforeLogin(req => {
         expect(req.object).toBeDefined();
@@ -3449,35 +3449,35 @@ describe("beforeLogin hook", () => {
         expect(req.context).toBeDefined();
       });
 
-      await Parse.User.signUp("tupac", "shakur");
-      await Parse.User.logIn("tupac", "shakur");
+      await Parse.User.signUp('tupac', 'shakur');
+      await Parse.User.logIn('tupac', 'shakur');
       done();
     }
   );
 
-  it("afterFind should not be triggered when saving an object", async () => {
+  it('afterFind should not be triggered when saving an object', async () => {
     let beforeSaves = 0;
-    Parse.Cloud.beforeSave("SavingTest", () => {
+    Parse.Cloud.beforeSave('SavingTest', () => {
       beforeSaves++;
     });
 
     let afterSaves = 0;
-    Parse.Cloud.afterSave("SavingTest", () => {
+    Parse.Cloud.afterSave('SavingTest', () => {
       afterSaves++;
     });
 
     let beforeFinds = 0;
-    Parse.Cloud.beforeFind("SavingTest", () => {
+    Parse.Cloud.beforeFind('SavingTest', () => {
       beforeFinds++;
     });
 
     let afterFinds = 0;
-    Parse.Cloud.afterFind("SavingTest", () => {
+    Parse.Cloud.afterFind('SavingTest', () => {
       afterFinds++;
     });
 
-    const obj = new Parse.Object("SavingTest");
-    obj.set("someField", "some value 1");
+    const obj = new Parse.Object('SavingTest');
+    obj.set('someField', 'some value 1');
     await obj.save();
 
     expect(beforeSaves).toEqual(1);
@@ -3485,7 +3485,7 @@ describe("beforeLogin hook", () => {
     expect(beforeFinds).toEqual(0);
     expect(afterFinds).toEqual(0);
 
-    obj.set("someField", "some value 2");
+    obj.set('someField', 'some value 2');
     await obj.save();
 
     expect(beforeSaves).toEqual(2);
@@ -3500,7 +3500,7 @@ describe("beforeLogin hook", () => {
     expect(beforeFinds).toEqual(1);
     expect(afterFinds).toEqual(1);
 
-    obj.set("someField", "some value 3");
+    obj.set('someField', 'some value 3');
     await obj.save();
 
     expect(beforeSaves).toEqual(3);
@@ -3510,33 +3510,33 @@ describe("beforeLogin hook", () => {
   });
 });
 
-describe("afterLogin hook", () => {
-  it("should run afterLogin after successful login", async done => {
+describe('afterLogin hook', () => {
+  it('should run afterLogin after successful login', async done => {
     let hit = 0;
     Parse.Cloud.afterLogin(req => {
       hit++;
-      expect(req.object.get("username")).toEqual("testuser");
+      expect(req.object.get('username')).toEqual('testuser');
     });
 
-    await Parse.User.signUp("testuser", "p@ssword");
-    const user = await Parse.User.logIn("testuser", "p@ssword");
+    await Parse.User.signUp('testuser', 'p@ssword');
+    const user = await Parse.User.logIn('testuser', 'p@ssword');
     expect(hit).toBe(1);
     expect(user).toBeDefined();
-    expect(user.getUsername()).toBe("testuser");
+    expect(user.getUsername()).toBe('testuser');
     expect(user.getSessionToken()).toBeDefined();
     done();
   });
 
-  it("should not run afterLogin after unsuccessful login", async done => {
+  it('should not run afterLogin after unsuccessful login', async done => {
     let hit = 0;
     Parse.Cloud.afterLogin(req => {
       hit++;
-      expect(req.object.get("username")).toEqual("testuser");
+      expect(req.object.get('username')).toEqual('testuser');
     });
 
-    await Parse.User.signUp("testuser", "p@ssword");
+    await Parse.User.signUp('testuser', 'p@ssword');
     try {
-      await Parse.User.logIn("testuser", "badpassword");
+      await Parse.User.logIn('testuser', 'badpassword');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
@@ -3544,21 +3544,21 @@ describe("afterLogin hook", () => {
     done();
   });
 
-  it("should not run afterLogin on sign up", async done => {
+  it('should not run afterLogin on sign up', async done => {
     let hit = 0;
     Parse.Cloud.afterLogin(req => {
       hit++;
-      expect(req.object.get("username")).toEqual("testuser");
+      expect(req.object.get('username')).toEqual('testuser');
     });
 
-    const user = await Parse.User.signUp("testuser", "p@ssword");
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
     expect(user).toBeDefined();
     expect(hit).toBe(0);
     done();
   });
 
-  it_id("e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2")(it)(
-    "should have expected data in request in afterLogin",
+  it_id('e86155c4-62e1-4c6e-ab4a-9ac6c87c60f2')(it)(
+    'should have expected data in request in afterLogin',
     async done => {
       Parse.Cloud.afterLogin(req => {
         expect(req.object).toBeDefined();
@@ -3569,264 +3569,264 @@ describe("afterLogin hook", () => {
         expect(req.context).toBeDefined();
       });
 
-      await Parse.User.signUp("testuser", "p@ssword");
-      await Parse.User.logIn("testuser", "p@ssword");
+      await Parse.User.signUp('testuser', 'p@ssword');
+      await Parse.User.logIn('testuser', 'p@ssword');
       done();
     }
   );
 
-  it("context options should override _context object property when saving a new object", async () => {
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('context options should override _context object property when saving a new object', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
       expect(req.context.hello).not.toBeDefined();
       expect(req._context).not.toBeDefined();
       expect(req.object._context).not.toBeDefined();
       expect(req.object.context).not.toBeDefined();
     });
-    Parse.Cloud.afterSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
       expect(req.context.hello).not.toBeDefined();
       expect(req._context).not.toBeDefined();
       expect(req.object._context).not.toBeDefined();
       expect(req.object.context).not.toBeDefined();
     });
     await request({
-      url: "http://localhost:8378/1/classes/TestObject",
-      method: "POST",
+      url: 'http://localhost:8378/1/classes/TestObject',
+      method: 'POST',
       headers: {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Cloud-Context": '{"a":"a"}',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Cloud-Context': '{"a":"a"}',
       },
-      body: JSON.stringify({ _context: { hello: "world" } }),
+      body: JSON.stringify({ _context: { hello: 'world' } }),
     });
   });
 
-  it("should have access to context when saving a new object", async () => {
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context when saving a new object', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
     const obj = new TestObject();
-    await obj.save(null, { context: { a: "a" } });
+    await obj.save(null, { context: { a: 'a' } });
   });
 
-  it("should have access to context when saving an existing object", async () => {
+  it('should have access to context when saving an existing object', async () => {
     const obj = new TestObject();
     await obj.save(null);
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    await obj.save(null, { context: { a: "a" } });
+    await obj.save(null, { context: { a: 'a' } });
   });
 
-  it("should have access to context when saving a new object in a trigger", async () => {
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context when saving a new object in a trigger', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterSave("TriggerObject", async () => {
+    Parse.Cloud.afterSave('TriggerObject', async () => {
       const obj = new TestObject();
-      await obj.save(null, { context: { a: "a" } });
+      await obj.save(null, { context: { a: 'a' } });
     });
-    const obj = new Parse.Object("TriggerObject");
+    const obj = new Parse.Object('TriggerObject');
     await obj.save(null);
   });
 
-  it("should have access to context when cascade-saving objects", async () => {
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context when cascade-saving objects', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.beforeSave("TestObject2", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.beforeSave('TestObject2', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterSave("TestObject2", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterSave('TestObject2', req => {
+      expect(req.context.a).toEqual('a');
     });
-    const obj = new Parse.Object("TestObject");
-    const obj2 = new Parse.Object("TestObject2");
-    obj.set("obj2", obj2);
-    await obj.save(null, { context: { a: "a" } });
+    const obj = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('TestObject2');
+    obj.set('obj2', obj2);
+    await obj.save(null, { context: { a: 'a' } });
   });
 
-  it("should have access to context as saveAll argument", async () => {
-    Parse.Cloud.beforeSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context as saveAll argument', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterSave("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterSave('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
     const obj1 = new TestObject();
     const obj2 = new TestObject();
-    await Parse.Object.saveAll([obj1, obj2], { context: { a: "a" } });
+    await Parse.Object.saveAll([obj1, obj2], { context: { a: 'a' } });
   });
 
-  it("should have access to context as destroyAll argument", async () => {
-    Parse.Cloud.beforeDelete("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context as destroyAll argument', async () => {
+    Parse.Cloud.beforeDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterDelete("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     await Parse.Object.saveAll([obj1, obj2]);
-    await Parse.Object.destroyAll([obj1, obj2], { context: { a: "a" } });
+    await Parse.Object.destroyAll([obj1, obj2], { context: { a: 'a' } });
   });
 
-  it("should have access to context as destroy a object", async () => {
-    Parse.Cloud.beforeDelete("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context as destroy a object', async () => {
+    Parse.Cloud.beforeDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    Parse.Cloud.afterDelete("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+    Parse.Cloud.afterDelete('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
     const obj = new TestObject();
     await obj.save();
-    await obj.destroy({ context: { a: "a" } });
+    await obj.destroy({ context: { a: 'a' } });
   });
 
-  it("should have access to context in beforeFind hook", async () => {
-    Parse.Cloud.beforeFind("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context in beforeFind hook', async () => {
+    Parse.Cloud.beforeFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
-    const query = new Parse.Query("TestObject");
-    return query.find({ context: { a: "a" } });
+    const query = new Parse.Query('TestObject');
+    return query.find({ context: { a: 'a' } });
   });
 
-  it("should have access to context when cloud function is called.", async () => {
-    Parse.Cloud.define("contextTest", async req => {
-      expect(req.context.a).toEqual("a");
+  it('should have access to context when cloud function is called.', async () => {
+    Parse.Cloud.define('contextTest', async req => {
+      expect(req.context.a).toEqual('a');
       return {};
     });
 
-    await Parse.Cloud.run("contextTest", {}, { context: { a: "a" } });
+    await Parse.Cloud.run('contextTest', {}, { context: { a: 'a' } });
   });
 
-  it("afterFind should have access to context", async () => {
-    Parse.Cloud.afterFind("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('afterFind should have access to context', async () => {
+    Parse.Cloud.afterFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
     });
     const obj = new TestObject();
     await obj.save();
     const query = new Parse.Query(TestObject);
-    await query.find({ context: { a: "a" } });
+    await query.find({ context: { a: 'a' } });
   });
 
-  it("beforeFind and afterFind should have access to context while making fetch call", async () => {
-    Parse.Cloud.beforeFind("TestObject", req => {
-      expect(req.context.a).toEqual("a");
+  it('beforeFind and afterFind should have access to context while making fetch call', async () => {
+    Parse.Cloud.beforeFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
       expect(req.context.b).toBeUndefined();
-      req.context.b = "b";
+      req.context.b = 'b';
     });
-    Parse.Cloud.afterFind("TestObject", req => {
-      expect(req.context.a).toEqual("a");
-      expect(req.context.b).toEqual("b");
+    Parse.Cloud.afterFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+      expect(req.context.b).toEqual('b');
     });
     const obj = new TestObject();
     await obj.save();
-    await obj.fetch({ context: { a: "a" } });
+    await obj.fetch({ context: { a: 'a' } });
   });
 });
 
-describe("saveFile hooks", () => {
-  it("beforeSave(Parse.File)  should return file that is already saved and not save anything to files adapter", async () => {
+describe('saveFile hooks', () => {
+  it('beforeSave(Parse.File)  should return file that is already saved and not save anything to files adapter', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
-    const createFileSpy = spyOn(mockAdapter, "createFile").and.callThrough();
+    const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSave(Parse.File, () => {
-      const newFile = new Parse.File("some-file.txt");
+      const newFile = new Parse.File('some-file.txt');
       newFile._url =
-        "http://www.somewhere.com/parse/files/some-app-id/some-file.txt";
+        'http://www.somewhere.com/parse/files/some-app-id/some-file.txt';
       return newFile;
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
-    expect(result._name).toBe("some-file.txt");
+    expect(result._name).toBe('some-file.txt');
     expect(result._url).toBe(
-      "http://www.somewhere.com/parse/files/some-app-id/some-file.txt"
+      'http://www.somewhere.com/parse/files/some-app-id/some-file.txt'
     );
     expect(createFileSpy).not.toHaveBeenCalled();
   });
 
-  it("beforeSave(Parse.File)  should throw error", async () => {
+  it('beforeSave(Parse.File)  should throw error', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeSave(Parse.File, () => {
-      throw new Parse.Error(400, "some-error-message");
+      throw new Parse.Error(400, 'some-error-message');
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     try {
       await file.save({ useMasterKey: true });
     } catch (error) {
-      expect(error.message).toBe("some-error-message");
+      expect(error.message).toBe('some-error-message');
     }
   });
 
-  it("beforeSave(Parse.File)  should change values of uploaded file by editing fileObject directly", async () => {
+  it('beforeSave(Parse.File)  should change values of uploaded file by editing fileObject directly', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
-    const createFileSpy = spyOn(mockAdapter, "createFile").and.callThrough();
+    const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSave(Parse.File, async req => {
-      expect(req.triggerName).toEqual("beforeSave");
+      expect(req.triggerName).toEqual('beforeSave');
       expect(req.master).toBe(true);
-      req.file.addMetadata("foo", "bar");
-      req.file.addTag("tagA", "some-tag");
+      req.file.addMetadata('foo', 'bar');
+      req.file.addTag('tagA', 'some-tag');
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
     const newData = new Buffer([1, 2, 3]);
     const newOptions = {
       tags: {
-        tagA: "some-tag",
+        tagA: 'some-tag',
       },
       metadata: {
-        foo: "bar",
+        foo: 'bar',
       },
     };
     expect(createFileSpy).toHaveBeenCalledWith(
       jasmine.any(String),
       newData,
-      "text/plain",
+      'text/plain',
       newOptions
     );
   });
 
-  it("beforeSave(Parse.File)  should change values by returning new fileObject", async () => {
+  it('beforeSave(Parse.File)  should change values by returning new fileObject', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
-    const createFileSpy = spyOn(mockAdapter, "createFile").and.callThrough();
+    const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSave(Parse.File, async req => {
-      expect(req.triggerName).toEqual("beforeSave");
+      expect(req.triggerName).toEqual('beforeSave');
       expect(req.fileSize).toBe(3);
       const newFile = new Parse.File(
-        "donald_duck.pdf",
+        'donald_duck.pdf',
         [4, 5, 6],
-        "application/pdf"
+        'application/pdf'
       );
-      newFile.setMetadata({ foo: "bar" });
-      newFile.setTags({ tagA: "some-tag" });
+      newFile.setMetadata({ foo: 'bar' });
+      newFile.setTags({ tagA: 'some-tag' });
       return newFile;
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBeInstanceOf(Parse.File);
     const newData = new Buffer([4, 5, 6]);
-    const newContentType = "application/pdf";
+    const newContentType = 'application/pdf';
     const newOptions = {
       tags: {
-        tagA: "some-tag",
+        tagA: 'some-tag',
       },
       metadata: {
-        foo: "bar",
+        foo: 'bar',
       },
     };
     expect(createFileSpy).toHaveBeenCalledWith(
@@ -3835,117 +3835,117 @@ describe("saveFile hooks", () => {
       newContentType,
       newOptions
     );
-    const expectedFileName = "donald_duck.pdf";
+    const expectedFileName = 'donald_duck.pdf';
     expect(file._name.indexOf(expectedFileName)).toBe(
       file._name.length - expectedFileName.length
     );
   });
 
-  it("beforeSave(Parse.File)  should contain metadata and tags saved from client", async () => {
+  it('beforeSave(Parse.File)  should contain metadata and tags saved from client', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
-    const createFileSpy = spyOn(mockAdapter, "createFile").and.callThrough();
+    const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSave(Parse.File, async req => {
-      expect(req.triggerName).toEqual("beforeSave");
+      expect(req.triggerName).toEqual('beforeSave');
       expect(req.fileSize).toBe(3);
       expect(req.file).toBeInstanceOf(Parse.File);
-      expect(req.file.name()).toBe("popeye.txt");
-      expect(req.file.metadata()).toEqual({ foo: "bar" });
-      expect(req.file.tags()).toEqual({ bar: "foo" });
+      expect(req.file.name()).toBe('popeye.txt');
+      expect(req.file.metadata()).toEqual({ foo: 'bar' });
+      expect(req.file.tags()).toEqual({ bar: 'foo' });
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
-    file.setMetadata({ foo: "bar" });
-    file.setTags({ bar: "foo" });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    file.setMetadata({ foo: 'bar' });
+    file.setTags({ bar: 'foo' });
     const result = await file.save({ useMasterKey: true });
     expect(result).toBeInstanceOf(Parse.File);
     const options = {
-      metadata: { foo: "bar" },
-      tags: { bar: "foo" },
+      metadata: { foo: 'bar' },
+      tags: { bar: 'foo' },
     };
     expect(createFileSpy).toHaveBeenCalledWith(
       jasmine.any(String),
       jasmine.any(Buffer),
-      "text/plain",
+      'text/plain',
       options
     );
   });
 
-  it("beforeSave(Parse.File)  should return same file data with new file name", async () => {
+  it('beforeSave(Parse.File)  should return same file data with new file name', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
-    const config = Config.get("test");
+    const config = Config.get('test');
     config.filesController.options.preserveFileName = true;
     Parse.Cloud.beforeSave(Parse.File, async ({ file }) => {
-      expect(file.name()).toBe("popeye.txt");
+      expect(file.name()).toBe('popeye.txt');
       const fileData = await file.getData();
-      const newFile = new Parse.File("2020-04-01.txt", { base64: fileData });
+      const newFile = new Parse.File('2020-04-01.txt', { base64: fileData });
       return newFile;
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
-    expect(result.name()).toBe("2020-04-01.txt");
+    expect(result.name()).toBe('2020-04-01.txt');
   });
 
-  it("afterSave(Parse.File)  should set fileSize to null if beforeSave returns an already saved file", async () => {
+  it('afterSave(Parse.File)  should set fileSize to null if beforeSave returns an already saved file', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
-    const createFileSpy = spyOn(mockAdapter, "createFile").and.callThrough();
+    const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSave(Parse.File, req => {
       expect(req.fileSize).toBe(3);
-      const newFile = new Parse.File("some-file.txt");
+      const newFile = new Parse.File('some-file.txt');
       newFile._url =
-        "http://www.somewhere.com/parse/files/some-app-id/some-file.txt";
+        'http://www.somewhere.com/parse/files/some-app-id/some-file.txt';
       return newFile;
     });
     Parse.Cloud.afterSave(Parse.File, req => {
       expect(req.fileSize).toBe(null);
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(result);
-    expect(result._name).toBe("some-file.txt");
+    expect(result._name).toBe('some-file.txt');
     expect(result._url).toBe(
-      "http://www.somewhere.com/parse/files/some-app-id/some-file.txt"
+      'http://www.somewhere.com/parse/files/some-app-id/some-file.txt'
     );
     expect(createFileSpy).not.toHaveBeenCalled();
   });
 
-  it("afterSave(Parse.File)  should throw error", async () => {
+  it('afterSave(Parse.File)  should throw error', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.afterSave(Parse.File, async () => {
-      throw new Parse.Error(400, "some-error-message");
+      throw new Parse.Error(400, 'some-error-message');
     });
-    const filename = "donald_duck.pdf";
-    const file = new Parse.File(filename, [1, 2, 3], "text/plain");
+    const filename = 'donald_duck.pdf';
+    const file = new Parse.File(filename, [1, 2, 3], 'text/plain');
     try {
       await file.save({ useMasterKey: true });
     } catch (error) {
-      expect(error.message).toBe("some-error-message");
+      expect(error.message).toBe('some-error-message');
     }
   });
 
-  it("afterSave(Parse.File)  should call with fileObject", async done => {
+  it('afterSave(Parse.File)  should call with fileObject', async done => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeSave(Parse.File, async req => {
-      req.file.setTags({ tagA: "some-tag" });
-      req.file.setMetadata({ foo: "bar" });
+      req.file.setTags({ tagA: 'some-tag' });
+      req.file.setMetadata({ foo: 'bar' });
     });
     Parse.Cloud.afterSave(Parse.File, async req => {
       expect(req.master).toBe(true);
-      expect(req.file._tags).toEqual({ tagA: "some-tag" });
-      expect(req.file._metadata).toEqual({ foo: "bar" });
+      expect(req.file._tags).toEqual({ tagA: 'some-tag' });
+      expect(req.file._metadata).toEqual({ foo: 'bar' });
       done();
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
   });
 
-  it("afterSave(Parse.File)  should change fileSize when file data changes", async done => {
+  it('afterSave(Parse.File)  should change fileSize when file data changes', async done => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeSave(Parse.File, async req => {
       expect(req.fileSize).toBe(3);
       expect(req.master).toBe(true);
       const newFile = new Parse.File(
-        "donald_duck.pdf",
+        'donald_duck.pdf',
         [4, 5, 6, 7, 8, 9],
-        "application/pdf"
+        'application/pdf'
       );
       return newFile;
     });
@@ -3954,85 +3954,85 @@ describe("saveFile hooks", () => {
       expect(req.master).toBe(true);
       done();
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
   });
 
-  it("beforeDelete(Parse.File)  should call with fileObject", async () => {
+  it('beforeDelete(Parse.File)  should call with fileObject', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeDelete(Parse.File, req => {
       expect(req.file).toBeInstanceOf(Parse.File);
-      expect(req.file._name).toEqual("popeye.txt");
-      expect(req.file._url).toEqual("http://www.somewhere.com/popeye.txt");
+      expect(req.file._name).toEqual('popeye.txt');
+      expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
       expect(req.fileSize).toBe(null);
     });
-    const file = new Parse.File("popeye.txt");
+    const file = new Parse.File('popeye.txt');
     await file.destroy({ useMasterKey: true });
   });
 
-  it("beforeDelete(Parse.File)  should throw error", async done => {
+  it('beforeDelete(Parse.File)  should throw error', async done => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeDelete(Parse.File, () => {
-      throw new Error("some error message");
+      throw new Error('some error message');
     });
-    const file = new Parse.File("popeye.txt");
+    const file = new Parse.File('popeye.txt');
     try {
       await file.destroy({ useMasterKey: true });
     } catch (error) {
-      expect(error.message).toBe("some error message");
+      expect(error.message).toBe('some error message');
       done();
     }
   });
 
-  it("afterDelete(Parse.File)  should call with fileObject", async done => {
+  it('afterDelete(Parse.File)  should call with fileObject', async done => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeDelete(Parse.File, req => {
       expect(req.file).toBeInstanceOf(Parse.File);
-      expect(req.file._name).toEqual("popeye.txt");
-      expect(req.file._url).toEqual("http://www.somewhere.com/popeye.txt");
+      expect(req.file._name).toEqual('popeye.txt');
+      expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
     });
     Parse.Cloud.afterDelete(Parse.File, req => {
       expect(req.file).toBeInstanceOf(Parse.File);
-      expect(req.file._name).toEqual("popeye.txt");
-      expect(req.file._url).toEqual("http://www.somewhere.com/popeye.txt");
+      expect(req.file._name).toEqual('popeye.txt');
+      expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
       done();
     });
-    const file = new Parse.File("popeye.txt");
+    const file = new Parse.File('popeye.txt');
     await file.destroy({ useMasterKey: true });
   });
 
-  it("beforeSave(Parse.File)  should not change file if nothing is returned", async () => {
+  it('beforeSave(Parse.File)  should not change file if nothing is returned', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeSave(Parse.File, () => {
       return;
     });
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
   });
 
-  it("throw custom error from beforeSave(Parse.File) ", async done => {
+  it('throw custom error from beforeSave(Parse.File) ', async done => {
     Parse.Cloud.beforeSave(Parse.File, () => {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "It should fail");
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
     });
     try {
-      const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save({ useMasterKey: true });
-      fail("error should have thrown");
+      fail('error should have thrown');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
       done();
     }
   });
 
-  it("throw empty error from beforeSave(Parse.File)", async done => {
+  it('throw empty error from beforeSave(Parse.File)', async done => {
     Parse.Cloud.beforeSave(Parse.File, () => {
       throw null;
     });
     try {
-      const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
       await file.save({ useMasterKey: true });
-      fail("error should have thrown");
+      fail('error should have thrown');
     } catch (e) {
       expect(e.code).toBe(130);
       done();
@@ -4040,23 +4040,23 @@ describe("saveFile hooks", () => {
   });
 });
 
-describe("Parse.File hooks", () => {
-  it("find hooks should run", async () => {
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+describe('Parse.File hooks', () => {
+  it('find hooks should run', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
-    const user = await Parse.User.signUp("username", "password");
+    const user = await Parse.User.signUp('username', 'password');
     const hooks = {
       beforeFind(req) {
         expect(req).toBeDefined();
         expect(req.file).toBeDefined();
-        expect(req.triggerName).toBe("beforeFind");
+        expect(req.triggerName).toBe('beforeFind');
         expect(req.master).toBeFalse();
         expect(req.log).toBeDefined();
       },
       afterFind(req) {
         expect(req).toBeDefined();
         expect(req.file).toBeDefined();
-        expect(req.triggerName).toBe("afterFind");
+        expect(req.triggerName).toBe('afterFind');
         expect(req.master).toBeFalse();
         expect(req.log).toBeDefined();
         expect(req.forceDownload).toBeFalse();
@@ -4069,9 +4069,9 @@ describe("Parse.File hooks", () => {
     await request({
       url: file.url(),
       headers: {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Session-Token": user.getSessionToken(),
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': user.getSessionToken(),
       },
     });
     for (const hook in hooks) {
@@ -4079,13 +4079,13 @@ describe("Parse.File hooks", () => {
     }
   });
 
-  it("beforeFind can throw", async () => {
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+  it('beforeFind can throw', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
-    const user = await Parse.User.signUp("username", "password");
+    const user = await Parse.User.signUp('username', 'password');
     const hooks = {
       beforeFind() {
-        throw "unauthorized";
+        throw 'unauthorized';
       },
       afterFind() {},
     };
@@ -4097,29 +4097,29 @@ describe("Parse.File hooks", () => {
       request({
         url: file.url(),
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-REST-API-Key": "rest",
-          "X-Parse-Session-Token": user.getSessionToken(),
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
         },
       }).catch(e => {
         throw new Parse.Error(e.data.code, e.data.error);
       })
     ).toBeRejectedWith(
-      new Parse.Error(Parse.Error.SCRIPT_FAILED, "unauthorized")
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized')
     );
 
     expect(hooks.beforeFind).toHaveBeenCalled();
     expect(hooks.afterFind).not.toHaveBeenCalled();
   });
 
-  it("afterFind can throw", async () => {
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+  it('afterFind can throw', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
-    const user = await Parse.User.signUp("username", "password");
+    const user = await Parse.User.signUp('username', 'password');
     const hooks = {
       beforeFind() {},
       afterFind() {
-        throw "unauthorized";
+        throw 'unauthorized';
       },
     };
     for (const hook in hooks) {
@@ -4130,52 +4130,52 @@ describe("Parse.File hooks", () => {
       request({
         url: file.url(),
         headers: {
-          "X-Parse-Application-Id": "test",
-          "X-Parse-REST-API-Key": "rest",
-          "X-Parse-Session-Token": user.getSessionToken(),
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': user.getSessionToken(),
         },
       }).catch(e => {
         throw new Parse.Error(e.data.code, e.data.error);
       })
     ).toBeRejectedWith(
-      new Parse.Error(Parse.Error.SCRIPT_FAILED, "unauthorized")
+      new Parse.Error(Parse.Error.SCRIPT_FAILED, 'unauthorized')
     );
     for (const hook in hooks) {
       expect(hooks[hook]).toHaveBeenCalled();
     }
   });
 
-  it("can force download", async () => {
-    const file = new Parse.File("popeye.txt", [1, 2, 3], "text/plain");
+  it('can force download', async () => {
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
-    const user = await Parse.User.signUp("username", "password");
+    const user = await Parse.User.signUp('username', 'password');
     Parse.Cloud.afterFind(Parse.File, req => {
       req.forceDownload = true;
     });
     const response = await request({
       url: file.url(),
       headers: {
-        "X-Parse-Application-Id": "test",
-        "X-Parse-REST-API-Key": "rest",
-        "X-Parse-Session-Token": user.getSessionToken(),
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': user.getSessionToken(),
       },
     });
-    expect(response.headers["content-disposition"]).toBe(
+    expect(response.headers['content-disposition']).toBe(
       `attachment;filename=${file._name}`
     );
   });
 });
 
-describe("Cloud Config hooks", () => {
+describe('Cloud Config hooks', () => {
   function testConfig() {
     return Parse.Config.save(
-      { internal: "i", string: "s", number: 12 },
+      { internal: 'i', string: 's', number: 12 },
       { internal: true }
     );
   }
 
-  it_id("997fe20a-96f7-454a-a5b0-c155b8d02f05")(it)(
-    "beforeSave(Parse.Config) can run hook with new config",
+  it_id('997fe20a-96f7-454a-a5b0-c155b8d02f05')(it)(
+    'beforeSave(Parse.Config) can run hook with new config',
     async () => {
       let count = 0;
       Parse.Cloud.beforeSave(Parse.Config, req => {
@@ -4187,32 +4187,32 @@ describe("Cloud Config hooks", () => {
         expect(req.installationId).toBeDefined();
         expect(req.context).toBeDefined();
         const config = req.object;
-        expect(config.get("internal")).toBe("i");
-        expect(config.get("string")).toBe("s");
-        expect(config.get("number")).toBe(12);
+        expect(config.get('internal')).toBe('i');
+        expect(config.get('string')).toBe('s');
+        expect(config.get('number')).toBe(12);
         count += 1;
       });
       await testConfig();
       const config = await Parse.Config.get({ useMasterKey: true });
-      expect(config.get("internal")).toBe("i");
-      expect(config.get("string")).toBe("s");
-      expect(config.get("number")).toBe(12);
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
       expect(count).toBe(1);
     }
   );
 
-  it_id("06a9b66c-ffb4-43d1-a025-f7d2192500e7")(it)(
-    "beforeSave(Parse.Config) can run hook with existing config",
+  it_id('06a9b66c-ffb4-43d1-a025-f7d2192500e7')(it)(
+    'beforeSave(Parse.Config) can run hook with existing config',
     async () => {
       let count = 0;
       Parse.Cloud.beforeSave(Parse.Config, req => {
         if (count === 0) {
-          expect(req.object.get("number")).toBe(12);
+          expect(req.object.get('number')).toBe(12);
           expect(req.original).toBeUndefined();
         }
         if (count === 1) {
-          expect(req.object.get("number")).toBe(13);
-          expect(req.original.get("number")).toBe(12);
+          expect(req.object.get('number')).toBe(13);
+          expect(req.original.get('number')).toBe(12);
         }
         count += 1;
       });
@@ -4222,8 +4222,8 @@ describe("Cloud Config hooks", () => {
     }
   );
 
-  it_id("ca76de8e-671b-4c2d-9535-bd28a855fa1a")(it)(
-    "beforeSave(Parse.Config) should not change config if nothing is returned",
+  it_id('ca76de8e-671b-4c2d-9535-bd28a855fa1a')(it)(
+    'beforeSave(Parse.Config) should not change config if nothing is returned',
     async () => {
       let count = 0;
       Parse.Cloud.beforeSave(Parse.Config, () => {
@@ -4232,54 +4232,54 @@ describe("Cloud Config hooks", () => {
       });
       await testConfig();
       const config = await Parse.Config.get({ useMasterKey: true });
-      expect(config.get("internal")).toBe("i");
-      expect(config.get("string")).toBe("s");
-      expect(config.get("number")).toBe(12);
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
       expect(count).toBe(1);
     }
   );
 
-  it("beforeSave(Parse.Config) throw custom error", async () => {
+  it('beforeSave(Parse.Config) throw custom error', async () => {
     Parse.Cloud.beforeSave(Parse.Config, () => {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "It should fail");
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
     });
     try {
       await testConfig();
-      fail("error should have thrown");
+      fail('error should have thrown');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toBe("It should fail");
+      expect(e.message).toBe('It should fail');
     }
   });
 
-  it("beforeSave(Parse.Config) throw string error", async () => {
+  it('beforeSave(Parse.Config) throw string error', async () => {
     Parse.Cloud.beforeSave(Parse.Config, () => {
-      throw "before save failed";
+      throw 'before save failed';
     });
     try {
       await testConfig();
-      fail("error should have thrown");
+      fail('error should have thrown');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toBe("before save failed");
+      expect(e.message).toBe('before save failed');
     }
   });
 
-  it("beforeSave(Parse.Config) throw empty error", async () => {
+  it('beforeSave(Parse.Config) throw empty error', async () => {
     Parse.Cloud.beforeSave(Parse.Config, () => {
       throw null;
     });
     try {
       await testConfig();
-      fail("error should have thrown");
+      fail('error should have thrown');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toBe("Script failed. Unknown error.");
+      expect(e.message).toBe('Script failed. Unknown error.');
     }
   });
 
-  it_id("3e7a75c0-6c2e-4c7e-b042-6eb5f23acf94")(it)(
-    "afterSave(Parse.Config) can run hook with new config",
+  it_id('3e7a75c0-6c2e-4c7e-b042-6eb5f23acf94')(it)(
+    'afterSave(Parse.Config) can run hook with new config',
     async () => {
       let count = 0;
       Parse.Cloud.afterSave(Parse.Config, req => {
@@ -4291,32 +4291,32 @@ describe("Cloud Config hooks", () => {
         expect(req.installationId).toBeDefined();
         expect(req.context).toBeDefined();
         const config = req.object;
-        expect(config.get("internal")).toBe("i");
-        expect(config.get("string")).toBe("s");
-        expect(config.get("number")).toBe(12);
+        expect(config.get('internal')).toBe('i');
+        expect(config.get('string')).toBe('s');
+        expect(config.get('number')).toBe(12);
         count += 1;
       });
       await testConfig();
       const config = await Parse.Config.get({ useMasterKey: true });
-      expect(config.get("internal")).toBe("i");
-      expect(config.get("string")).toBe("s");
-      expect(config.get("number")).toBe(12);
+      expect(config.get('internal')).toBe('i');
+      expect(config.get('string')).toBe('s');
+      expect(config.get('number')).toBe(12);
       expect(count).toBe(1);
     }
   );
 
-  it_id("5cffb28a-2924-4857-84bb-f5778d80372a")(it)(
-    "afterSave(Parse.Config) can run hook with existing config",
+  it_id('5cffb28a-2924-4857-84bb-f5778d80372a')(it)(
+    'afterSave(Parse.Config) can run hook with existing config',
     async () => {
       let count = 0;
       Parse.Cloud.afterSave(Parse.Config, req => {
         if (count === 0) {
-          expect(req.object.get("number")).toBe(12);
+          expect(req.object.get('number')).toBe(12);
           expect(req.original).toBeUndefined();
         }
         if (count === 1) {
-          expect(req.object.get("number")).toBe(13);
-          expect(req.original.get("number")).toBe(12);
+          expect(req.object.get('number')).toBe(13);
+          expect(req.original.get('number')).toBe(12);
         }
         count += 1;
       });
@@ -4326,45 +4326,45 @@ describe("Cloud Config hooks", () => {
     }
   );
 
-  it_id("49883992-ce91-4797-85f9-7cce1f819407")(it)(
-    "afterSave(Parse.Config) should throw error",
+  it_id('49883992-ce91-4797-85f9-7cce1f819407')(it)(
+    'afterSave(Parse.Config) should throw error',
     async () => {
       Parse.Cloud.afterSave(Parse.Config, () => {
-        throw new Parse.Error(400, "It should fail");
+        throw new Parse.Error(400, 'It should fail');
       });
       try {
         await testConfig();
-        fail("error should have thrown");
+        fail('error should have thrown');
       } catch (e) {
         expect(e.code).toBe(400);
-        expect(e.message).toBe("It should fail");
+        expect(e.message).toBe('It should fail');
       }
     }
   );
 });
 
-describe("sendEmail", () => {
-  it("can send email via Parse.Cloud", async done => {
+describe('sendEmail', () => {
+  it('can send email via Parse.Cloud', async done => {
     const emailAdapter = {
       sendMail: mailData => {
         expect(mailData).toBeDefined();
-        expect(mailData.to).toBe("test");
+        expect(mailData.to).toBe('test');
         reconfigureServer().then(done, done);
       },
     };
     await reconfigureServer({
       emailAdapter: emailAdapter,
     });
-    const mailData = { to: "test" };
+    const mailData = { to: 'test' };
     await Parse.Cloud.sendEmail(mailData);
   });
 
-  it("cannot send email without adapter", async () => {
-    const logger = require("../lib/logger").logger;
-    spyOn(logger, "error").and.callFake(() => {});
+  it('cannot send email without adapter', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
     await Parse.Cloud.sendEmail({});
     expect(logger.error).toHaveBeenCalledWith(
-      "Failed to send email because no mail adapter is configured for Parse Server."
+      'Failed to send email because no mail adapter is configured for Parse Server.'
     );
   });
 });

@@ -1,12 +1,12 @@
 // FilesController.js
-import { randomHexString } from "../cryptoUtils";
-import AdaptableController from "./AdaptableController";
-import { validateFilename, FilesAdapter } from "../Adapters/Files/FilesAdapter";
-import path from "path";
-const Parse = require("parse").Parse;
+import { randomHexString } from '../cryptoUtils';
+import AdaptableController from './AdaptableController';
+import { validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import path from 'path';
+const Parse = require('parse').Parse;
 
 const legacyFilesRegex = new RegExp(
-  "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*"
+  '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*'
 );
 
 export class FilesController extends AdaptableController {
@@ -18,15 +18,15 @@ export class FilesController extends AdaptableController {
     const extname = path.extname(filename);
 
     const hasExtension = extname.length > 0;
-    const mime = (await import("mime")).default;
+    const mime = (await import('mime')).default;
     if (!hasExtension && contentType && mime.getExtension(contentType)) {
-      filename = filename + "." + mime.getExtension(contentType);
+      filename = filename + '.' + mime.getExtension(contentType);
     } else if (hasExtension && !contentType) {
       contentType = mime.getType(filename);
     }
 
     if (!this.options.preserveFileName) {
-      filename = randomHexString(32) + "_" + filename;
+      filename = randomHexString(32) + '_' + filename;
     }
 
     const location = await this.adapter.getFileLocation(config, filename);
@@ -42,7 +42,7 @@ export class FilesController extends AdaptableController {
   }
 
   getMetadata(filename) {
-    if (typeof this.adapter.getMetadata === "function") {
+    if (typeof this.adapter.getMetadata === 'function') {
       return this.adapter.getMetadata(filename);
     }
     return Promise.resolve({});
@@ -59,39 +59,39 @@ export class FilesController extends AdaptableController {
       await Promise.all(promises);
       return;
     }
-    if (typeof object !== "object") {
+    if (typeof object !== 'object') {
       return;
     }
     for (const key in object) {
       const fileObject = object[key];
-      if (fileObject && fileObject["__type"] === "File") {
-        if (fileObject["url"]) {
+      if (fileObject && fileObject['__type'] === 'File') {
+        if (fileObject['url']) {
           continue;
         }
-        const filename = fileObject["name"];
+        const filename = fileObject['name'];
         // all filenames starting with "tfss-" should be from files.parsetfss.com
         // all filenames starting with a "-" seperated UUID should be from files.parse.com
         // all other filenames have been migrated or created from Parse Server
         if (config.fileKey === undefined) {
-          fileObject["url"] = await this.adapter.getFileLocation(
+          fileObject['url'] = await this.adapter.getFileLocation(
             config,
             filename
           );
         } else {
-          if (filename.indexOf("tfss-") === 0) {
-            fileObject["url"] =
-              "http://files.parsetfss.com/" +
+          if (filename.indexOf('tfss-') === 0) {
+            fileObject['url'] =
+              'http://files.parsetfss.com/' +
               config.fileKey +
-              "/" +
+              '/' +
               encodeURIComponent(filename);
           } else if (legacyFilesRegex.test(filename)) {
-            fileObject["url"] =
-              "http://files.parse.com/" +
+            fileObject['url'] =
+              'http://files.parse.com/' +
               config.fileKey +
-              "/" +
+              '/' +
               encodeURIComponent(filename);
           } else {
-            fileObject["url"] = await this.adapter.getFileLocation(
+            fileObject['url'] = await this.adapter.getFileLocation(
               config,
               filename
             );
@@ -110,9 +110,9 @@ export class FilesController extends AdaptableController {
   }
 
   validateFilename(filename) {
-    if (typeof this.adapter.validateFilename === "function") {
+    if (typeof this.adapter.validateFilename === 'function') {
       const error = this.adapter.validateFilename(filename);
-      if (typeof error !== "string") {
+      if (typeof error !== 'string') {
         return error;
       }
       return new Parse.Error(Parse.Error.INVALID_FILE_NAME, error);
