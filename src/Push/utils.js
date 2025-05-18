@@ -1,5 +1,5 @@
-import Parse from 'parse/node';
-import deepcopy from 'deepcopy';
+import Parse from "parse/node";
+import deepcopy from "deepcopy";
 
 export function isPushIncrementing(body) {
   if (!body.data || !body.data.badge) {
@@ -7,19 +7,19 @@ export function isPushIncrementing(body) {
   }
 
   const badge = body.data.badge;
-  if (typeof badge == 'string' && badge.toLowerCase() == 'increment') {
+  if (typeof badge == "string" && badge.toLowerCase() == "increment") {
     return true;
   }
 
   return (
-    typeof badge == 'object' &&
-    typeof badge.__op == 'string' &&
-    badge.__op.toLowerCase() == 'increment' &&
+    typeof badge == "object" &&
+    typeof badge.__op == "string" &&
+    badge.__op.toLowerCase() == "increment" &&
     Number(badge.amount)
   );
 }
 
-const localizableKeys = ['alert', 'title'];
+const localizableKeys = ["alert", "title"];
 
 export function getLocalesFromPush(body) {
   const data = body.data;
@@ -88,7 +88,10 @@ export function groupByLocaleIdentifier(installations, locales = []) {
         if (added) {
           return;
         }
-        if (installation.localeIdentifier && installation.localeIdentifier.indexOf(locale) === 0) {
+        if (
+          installation.localeIdentifier &&
+          installation.localeIdentifier.indexOf(locale) === 0
+        ) {
           added = true;
           map[locale] = map[locale] || [];
           map[locale].push(installation);
@@ -111,17 +114,17 @@ export function groupByLocaleIdentifier(installations, locales = []) {
 export function validatePushType(where = {}, validPushTypes = []) {
   var deviceTypeField = where.deviceType || {};
   var deviceTypes = [];
-  if (typeof deviceTypeField === 'string') {
+  if (typeof deviceTypeField === "string") {
     deviceTypes.push(deviceTypeField);
-  } else if (Array.isArray(deviceTypeField['$in'])) {
-    deviceTypes.concat(deviceTypeField['$in']);
+  } else if (Array.isArray(deviceTypeField["$in"])) {
+    deviceTypes.concat(deviceTypeField["$in"]);
   }
   for (var i = 0; i < deviceTypes.length; i++) {
     var deviceType = deviceTypes[i];
     if (validPushTypes.indexOf(deviceType) < 0) {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
-        deviceType + ' is not supported push type.'
+        deviceType + " is not supported push type."
       );
     }
   }
@@ -129,8 +132,8 @@ export function validatePushType(where = {}, validPushTypes = []) {
 
 export function applyDeviceTokenExists(where) {
   where = deepcopy(where);
-  if (!Object.prototype.hasOwnProperty.call(where, 'deviceToken')) {
-    where['deviceToken'] = { $exists: true };
+  if (!Object.prototype.hasOwnProperty.call(where, "deviceToken")) {
+    where["deviceToken"] = { $exists: true };
   }
   return where;
 }

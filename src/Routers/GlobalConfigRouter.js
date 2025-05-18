@@ -1,8 +1,8 @@
 // global_config.js
-import Parse from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
-import * as middleware from '../middlewares';
-import * as triggers from '../triggers';
+import Parse from "parse/node";
+import PromiseRouter from "../PromiseRouter";
+import * as middleware from "../middlewares";
+import * as triggers from "../triggers";
 
 const getConfigFromParams = params => {
   const config = new Parse.Config();
@@ -15,7 +15,7 @@ const getConfigFromParams = params => {
 export class GlobalConfigRouter extends PromiseRouter {
   getGlobalConfig(req) {
     return req.config.database
-      .find('_GlobalConfig', { objectId: '1' }, { limit: 1 })
+      .find("_GlobalConfig", { objectId: "1" }, { limit: 1 })
       .then(results => {
         if (results.length != 1) {
           // If there is no config in the database - return empty config.
@@ -71,8 +71,8 @@ export class GlobalConfigRouter extends PromiseRouter {
     configObject.attributes = params;
 
     const results = await req.config.database.find(
-      '_GlobalConfig',
-      { objectId: '1' },
+      "_GlobalConfig",
+      { objectId: "1" },
       { limit: 1 }
     );
     const isNew = results.length !== 1;
@@ -90,8 +90,8 @@ export class GlobalConfigRouter extends PromiseRouter {
       );
       if (isNew) {
         await req.config.database.update(
-          '_GlobalConfig',
-          { objectId: '1' },
+          "_GlobalConfig",
+          { objectId: "1" },
           update,
           { upsert: true },
           true
@@ -99,8 +99,8 @@ export class GlobalConfigRouter extends PromiseRouter {
         updatedConfigObject = configObject;
       } else {
         const result = await req.config.database.update(
-          '_GlobalConfig',
-          { objectId: '1' },
+          "_GlobalConfig",
+          { objectId: "1" },
           update,
           {},
           true
@@ -119,19 +119,24 @@ export class GlobalConfigRouter extends PromiseRouter {
     } catch (err) {
       const error = triggers.resolveError(err, {
         code: Parse.Error.SCRIPT_FAILED,
-        message: 'Script failed. Unknown error.',
+        message: "Script failed. Unknown error.",
       });
       throw error;
     }
   }
 
   mountRoutes() {
-    this.route('GET', '/config', req => {
+    this.route("GET", "/config", req => {
       return this.getGlobalConfig(req);
     });
-    this.route('PUT', '/config', middleware.promiseEnforceMasterKeyAccess, req => {
-      return this.updateGlobalConfig(req);
-    });
+    this.route(
+      "PUT",
+      "/config",
+      middleware.promiseEnforceMasterKeyAccess,
+      req => {
+        return this.updateGlobalConfig(req);
+      }
+    );
   }
 }
 

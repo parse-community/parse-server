@@ -1,15 +1,15 @@
 /** @flow weak */
 
-import * as triggers from '../triggers';
+import * as triggers from "../triggers";
 // @flow-disable-next
-import * as Parse from 'parse/node';
+import * as Parse from "parse/node";
 // @flow-disable-next
-import request from '../request';
-import { logger } from '../logger';
-import http from 'http';
-import https from 'https';
+import request from "../request";
+import { logger } from "../logger";
+import http from "http";
+import https from "https";
 
-const DefaultHooksCollectionName = '_Hooks';
+const DefaultHooksCollectionName = "_Hooks";
 const HTTPAgents = {
   http: new http.Agent({ keepAlive: true }),
   https: new https.Agent({ keepAlive: true }),
@@ -36,7 +36,9 @@ export class HooksController {
   }
 
   getFunction(functionName) {
-    return this._getHooks({ functionName: functionName }).then(results => results[0]);
+    return this._getHooks({ functionName: functionName }).then(
+      results => results[0]
+    );
   }
 
   getFunctions() {
@@ -71,12 +73,14 @@ export class HooksController {
   }
 
   _getHooks(query = {}) {
-    return this.database.find(DefaultHooksCollectionName, query).then(results => {
-      return results.map(result => {
-        delete result.objectId;
-        return result;
+    return this.database
+      .find(DefaultHooksCollectionName, query)
+      .then(results => {
+        return results.map(result => {
+          delete result.objectId;
+          return result;
+        });
       });
-    });
   }
 
   _removeHooks(query) {
@@ -92,7 +96,7 @@ export class HooksController {
     } else if (hook.triggerName && hook.className && hook.url) {
       query = { className: hook.className, triggerName: hook.triggerName };
     } else {
-      throw new Parse.Error(143, 'invalid hook declaration');
+      throw new Parse.Error(143, "invalid hook declaration");
     }
     return this.database
       .update(DefaultHooksCollectionName, query, hook, { upsert: true })
@@ -105,9 +109,19 @@ export class HooksController {
     var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
     wrappedFunction.url = hook.url;
     if (hook.className) {
-      triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId);
+      triggers.addTrigger(
+        hook.triggerName,
+        hook.className,
+        wrappedFunction,
+        this._applicationId
+      );
     } else {
-      triggers.addFunction(hook.functionName, wrappedFunction, null, this._applicationId);
+      triggers.addFunction(
+        hook.functionName,
+        wrappedFunction,
+        null,
+        this._applicationId
+      );
     }
   }
 
@@ -134,7 +148,7 @@ export class HooksController {
       hook.url = aHook.url;
       hook.triggerName = aHook.triggerName;
     } else {
-      throw new Parse.Error(143, 'invalid hook declaration');
+      throw new Parse.Error(143, "invalid hook declaration");
     }
 
     return this.addHook(hook);
@@ -144,24 +158,29 @@ export class HooksController {
     if (aHook.functionName) {
       return this.getFunction(aHook.functionName).then(result => {
         if (result) {
-          throw new Parse.Error(143, `function name: ${aHook.functionName} already exists`);
+          throw new Parse.Error(
+            143,
+            `function name: ${aHook.functionName} already exists`
+          );
         } else {
           return this.createOrUpdateHook(aHook);
         }
       });
     } else if (aHook.className && aHook.triggerName) {
-      return this.getTrigger(aHook.className, aHook.triggerName).then(result => {
-        if (result) {
-          throw new Parse.Error(
-            143,
-            `class ${aHook.className} already has trigger ${aHook.triggerName}`
-          );
+      return this.getTrigger(aHook.className, aHook.triggerName).then(
+        result => {
+          if (result) {
+            throw new Parse.Error(
+              143,
+              `class ${aHook.className} already has trigger ${aHook.triggerName}`
+            );
+          }
+          return this.createOrUpdateHook(aHook);
         }
-        return this.createOrUpdateHook(aHook);
-      });
+      );
     }
 
-    throw new Parse.Error(143, 'invalid hook declaration');
+    throw new Parse.Error(143, "invalid hook declaration");
   }
 
   updateHook(aHook) {
@@ -170,17 +189,22 @@ export class HooksController {
         if (result) {
           return this.createOrUpdateHook(aHook);
         }
-        throw new Parse.Error(143, `no function named: ${aHook.functionName} is defined`);
+        throw new Parse.Error(
+          143,
+          `no function named: ${aHook.functionName} is defined`
+        );
       });
     } else if (aHook.className && aHook.triggerName) {
-      return this.getTrigger(aHook.className, aHook.triggerName).then(result => {
-        if (result) {
-          return this.createOrUpdateHook(aHook);
+      return this.getTrigger(aHook.className, aHook.triggerName).then(
+        result => {
+          if (result) {
+            return this.createOrUpdateHook(aHook);
+          }
+          throw new Parse.Error(143, `class ${aHook.className} does not exist`);
         }
-        throw new Parse.Error(143, `class ${aHook.className} does not exist`);
-      });
+      );
     }
-    throw new Parse.Error(143, 'invalid hook declaration');
+    throw new Parse.Error(143, "invalid hook declaration");
   }
 }
 
@@ -201,31 +225,35 @@ function wrapToHTTPRequest(hook, key) {
     const jsonRequest: any = {
       url: hook.url,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: jsonBody,
-      method: 'POST',
+      method: "POST",
     };
 
-    const agent = hook.url.startsWith('https') ? HTTPAgents['https'] : HTTPAgents['http'];
+    const agent = hook.url.startsWith("https")
+      ? HTTPAgents["https"]
+      : HTTPAgents["http"];
     jsonRequest.agent = agent;
 
     if (key) {
-      jsonRequest.headers['X-Parse-Webhook-Key'] = key;
+      jsonRequest.headers["X-Parse-Webhook-Key"] = key;
     } else {
-      logger.warn('Making outgoing webhook request without webhookKey being set!');
+      logger.warn(
+        "Making outgoing webhook request without webhookKey being set!"
+      );
     }
     return request(jsonRequest).then(response => {
       let err;
       let result;
       let body = response.data;
       if (body) {
-        if (typeof body === 'string') {
+        if (typeof body === "string") {
           try {
             body = JSON.parse(body);
           } catch (e) {
             err = {
-              error: 'Malformed response',
+              error: "Malformed response",
               code: -1,
               partialResponse: body.substring(0, 100),
             };
@@ -238,8 +266,8 @@ function wrapToHTTPRequest(hook, key) {
       }
       if (err) {
         throw err;
-      } else if (hook.triggerName === 'beforeSave') {
-        if (typeof result === 'object') {
+      } else if (hook.triggerName === "beforeSave") {
+        if (typeof result === "object") {
           delete result.createdAt;
           delete result.updatedAt;
           delete result.className;

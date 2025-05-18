@@ -1,12 +1,12 @@
-import PromiseRouter from '../PromiseRouter';
-import * as middleware from '../middlewares';
-import CheckRunner from '../Security/CheckRunner';
+import PromiseRouter from "../PromiseRouter";
+import * as middleware from "../middlewares";
+import CheckRunner from "../Security/CheckRunner";
 
 export class SecurityRouter extends PromiseRouter {
   mountRoutes() {
     this.route(
-      'GET',
-      '/security',
+      "GET",
+      "/security",
       middleware.promiseEnforceMasterKeyAccess,
       this._enforceSecurityCheckEnabled,
       async req => {
@@ -24,7 +24,8 @@ export class SecurityRouter extends PromiseRouter {
     if (!config.security || !config.security.enableCheck) {
       const error = new Error();
       error.status = 409;
-      error.message = 'Enable Parse Server option `security.enableCheck` to run security check.';
+      error.message =
+        "Enable Parse Server option `security.enableCheck` to run security check.";
       throw error;
     }
   }

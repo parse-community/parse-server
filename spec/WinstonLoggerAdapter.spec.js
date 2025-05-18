@@ -1,28 +1,30 @@
-'use strict';
+"use strict";
 
 const WinstonLoggerAdapter =
-  require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
-const request = require('../lib/request');
+  require("../lib/Adapters/Logger/WinstonLoggerAdapter").WinstonLoggerAdapter;
+const request = require("../lib/request");
 
 describe_only(() => {
-  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
-})('info logs', () => {
-  it('Verify INFO logs', done => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== "debug";
+})("info logs", () => {
+  it("Verify INFO logs", done => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('info', 'testing info logs with 1234');
+    winstonLoggerAdapter.log("info", "testing info logs with 1234");
     winstonLoggerAdapter.query(
       {
         from: new Date(Date.now() - 500),
         size: 100,
-        level: 'info',
-        order: 'desc',
+        level: "info",
+        order: "desc",
       },
       results => {
         if (results.length == 0) {
-          fail('The adapter should return non-empty results');
+          fail("The adapter should return non-empty results");
         } else {
-          const log = results.find(x => x.message === 'testing info logs with 1234');
-          expect(log.level).toEqual('info');
+          const log = results.find(
+            x => x.message === "testing info logs with 1234"
+          );
+          expect(log.level).toEqual("info");
         }
         // Check the error log
         // Regression #2639
@@ -30,10 +32,12 @@ describe_only(() => {
           {
             from: new Date(Date.now() - 200),
             size: 100,
-            level: 'error',
+            level: "error",
           },
           errors => {
-            const log = errors.find(x => x.message === 'testing info logs with 1234');
+            const log = errors.find(
+              x => x.message === "testing info logs with 1234"
+            );
             expect(log).toBeUndefined();
             done();
           }
@@ -42,140 +46,148 @@ describe_only(() => {
     );
   });
 
-  it('info logs should interpolate string', async () => {
+  it("info logs should interpolate string", async () => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('info', 'testing info logs with %s', 'replace');
+    winstonLoggerAdapter.log("info", "testing info logs with %s", "replace");
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'info',
-      order: 'desc',
+      level: "info",
+      order: "desc",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing info logs with replace');
+    const log = results.find(
+      x => x.message === "testing info logs with replace"
+    );
     expect(log);
   });
 
-  it('info logs should interpolate json', async () => {
+  it("info logs should interpolate json", async () => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('info', 'testing info logs with %j', {
-      hello: 'world',
+    winstonLoggerAdapter.log("info", "testing info logs with %j", {
+      hello: "world",
     });
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'info',
-      order: 'desc',
+      level: "info",
+      order: "desc",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing info logs with {"hello":"world"}');
+    const log = results.find(
+      x => x.message === 'testing info logs with {"hello":"world"}'
+    );
     expect(log);
   });
 
-  it('info logs should interpolate number', async () => {
+  it("info logs should interpolate number", async () => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('info', 'testing info logs with %d', 123);
+    winstonLoggerAdapter.log("info", "testing info logs with %d", 123);
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'info',
-      order: 'desc',
+      level: "info",
+      order: "desc",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing info logs with 123');
+    const log = results.find(x => x.message === "testing info logs with 123");
     expect(log);
   });
 });
 
 describe_only(() => {
-  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
-})('error logs', () => {
-  it('Verify ERROR logs', done => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== "debug";
+})("error logs", () => {
+  it("Verify ERROR logs", done => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('error', 'testing error logs');
+    winstonLoggerAdapter.log("error", "testing error logs");
     winstonLoggerAdapter.query(
       {
         from: new Date(Date.now() - 500),
         size: 100,
-        level: 'error',
+        level: "error",
       },
       results => {
         if (results.length == 0) {
-          fail('The adapter should return non-empty results');
+          fail("The adapter should return non-empty results");
           done();
         } else {
-          expect(results[0].message).toEqual('testing error logs');
+          expect(results[0].message).toEqual("testing error logs");
           done();
         }
       }
     );
   });
 
-  it('Should filter on query', done => {
+  it("Should filter on query", done => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('error', 'testing error logs');
+    winstonLoggerAdapter.log("error", "testing error logs");
     winstonLoggerAdapter.query(
       {
         from: new Date(Date.now() - 500),
         size: 100,
-        level: 'error',
+        level: "error",
       },
       results => {
-        expect(results.filter(e => e.level !== 'error').length).toBe(0);
+        expect(results.filter(e => e.level !== "error").length).toBe(0);
         done();
       }
     );
   });
 
-  it('error logs should interpolate string', async () => {
+  it("error logs should interpolate string", async () => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('error', 'testing error logs with %s', 'replace');
+    winstonLoggerAdapter.log("error", "testing error logs with %s", "replace");
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'error',
+      level: "error",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing error logs with replace');
+    const log = results.find(
+      x => x.message === "testing error logs with replace"
+    );
     expect(log);
   });
 
-  it('error logs should interpolate json', async () => {
+  it("error logs should interpolate json", async () => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('error', 'testing error logs with %j', {
-      hello: 'world',
+    winstonLoggerAdapter.log("error", "testing error logs with %j", {
+      hello: "world",
     });
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'error',
-      order: 'desc',
+      level: "error",
+      order: "desc",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing error logs with {"hello":"world"}');
+    const log = results.find(
+      x => x.message === 'testing error logs with {"hello":"world"}'
+    );
     expect(log);
   });
 
-  it('error logs should interpolate number', async () => {
+  it("error logs should interpolate number", async () => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('error', 'testing error logs with %d', 123);
+    winstonLoggerAdapter.log("error", "testing error logs with %d", 123);
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'error',
-      order: 'desc',
+      level: "error",
+      order: "desc",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing error logs with 123');
+    const log = results.find(x => x.message === "testing error logs with 123");
     expect(log);
   });
 });
 
 describe_only(() => {
-  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
-})('verbose logs', () => {
-  it_id('9ca72994-d255-4c11-a5a2-693c99ee2cdb')(it)(
-    'mask sensitive information in _User class',
+  return process.env.PARSE_SERVER_LOG_LEVEL !== "debug";
+})("verbose logs", () => {
+  it_id("9ca72994-d255-4c11-a5a2-693c99ee2cdb")(it)(
+    "mask sensitive information in _User class",
     done => {
       reconfigureServer({ verbose: true })
         .then(() => createTestUser())
@@ -184,7 +196,7 @@ describe_only(() => {
           return winstonLoggerAdapter.query({
             from: new Date(Date.now() - 500),
             size: 100,
-            level: 'verbose',
+            level: "verbose",
           });
         })
         .then(results => {
@@ -193,19 +205,19 @@ describe_only(() => {
           expect(logString.match(/moon-y/g)).toBe(null);
 
           const headers = {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
+            "X-Parse-Application-Id": "test",
+            "X-Parse-REST-API-Key": "rest",
           };
           request({
             headers: headers,
-            url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+            url: "http://localhost:8378/1/login?username=test&password=moon-y",
           }).then(() => {
             const winstonLoggerAdapter = new WinstonLoggerAdapter();
             return winstonLoggerAdapter
               .query({
                 from: new Date(Date.now() - 500),
                 size: 100,
-                level: 'verbose',
+                level: "verbose",
               })
               .then(results => {
                 const logString = JSON.stringify(results);
@@ -222,60 +234,72 @@ describe_only(() => {
     }
   );
 
-  it('verbose logs should interpolate string', async () => {
+  it("verbose logs should interpolate string", async () => {
     await reconfigureServer({ verbose: true });
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('verbose', 'testing verbose logs with %s', 'replace');
+    winstonLoggerAdapter.log(
+      "verbose",
+      "testing verbose logs with %s",
+      "replace"
+    );
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'verbose',
+      level: "verbose",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing verbose logs with replace');
+    const log = results.find(
+      x => x.message === "testing verbose logs with replace"
+    );
     expect(log);
   });
 
-  it('verbose logs should interpolate json', async () => {
+  it("verbose logs should interpolate json", async () => {
     await reconfigureServer({ verbose: true });
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('verbose', 'testing verbose logs with %j', {
-      hello: 'world',
+    winstonLoggerAdapter.log("verbose", "testing verbose logs with %j", {
+      hello: "world",
     });
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'verbose',
-      order: 'desc',
+      level: "verbose",
+      order: "desc",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing verbose logs with {"hello":"world"}');
+    const log = results.find(
+      x => x.message === 'testing verbose logs with {"hello":"world"}'
+    );
     expect(log);
   });
 
-  it('verbose logs should interpolate number', async () => {
+  it("verbose logs should interpolate number", async () => {
     await reconfigureServer({ verbose: true });
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('verbose', 'testing verbose logs with %d', 123);
+    winstonLoggerAdapter.log("verbose", "testing verbose logs with %d", 123);
     const results = await winstonLoggerAdapter.query({
       from: new Date(Date.now() - 500),
       size: 100,
-      level: 'verbose',
-      order: 'desc',
+      level: "verbose",
+      order: "desc",
     });
     expect(results.length > 0).toBeTruthy();
-    const log = results.find(x => x.message === 'testing verbose logs with 123');
+    const log = results.find(
+      x => x.message === "testing verbose logs with 123"
+    );
     expect(log);
   });
 
-  it('verbose logs should interpolate stdout', async () => {
+  it("verbose logs should interpolate stdout", async () => {
     await reconfigureServer({ verbose: true, silent: false, logsFolder: null });
-    spyOn(process.stdout, 'write');
+    spyOn(process.stdout, "write");
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('verbose', 'testing verbose logs with %j', {
-      hello: 'world',
+    winstonLoggerAdapter.log("verbose", "testing verbose logs with %j", {
+      hello: "world",
     });
     const firstLog = process.stdout.write.calls.first().args[0];
-    expect(firstLog).toBe('verbose: testing verbose logs with {"hello":"world"}\n');
+    expect(firstLog).toBe(
+      'verbose: testing verbose logs with {"hello":"world"}\n'
+    );
   });
 });

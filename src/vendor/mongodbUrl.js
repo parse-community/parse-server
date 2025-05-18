@@ -3,9 +3,9 @@
  * See https://github.com/nodejs/node for licensing information.
  */
 
-'use strict';
+"use strict";
 
-import punycode from 'punycode/punycode.js';
+import punycode from "punycode/punycode.js";
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
@@ -42,27 +42,27 @@ const simplePathPattern = /^(\/\/?(?!\/)[^\?\s]*)(\?[^\s]*)?$/;
 // protocols that can allow "unsafe" and "unwise" chars.
 const unsafeProtocol = {
   javascript: true,
-  'javascript:': true,
+  "javascript:": true,
 };
 // protocols that never have a hostname.
 const hostlessProtocol = {
   javascript: true,
-  'javascript:': true,
+  "javascript:": true,
 };
 // protocols that always contain a // bit.
 const slashedProtocol = {
   http: true,
-  'http:': true,
+  "http:": true,
   https: true,
-  'https:': true,
+  "https:": true,
   ftp: true,
-  'ftp:': true,
+  "ftp:": true,
   gopher: true,
-  'gopher:': true,
+  "gopher:": true,
   file: true,
-  'file:': true,
+  "file:": true,
 };
-const querystring = require('querystring');
+const querystring = require("querystring");
 
 /* istanbul ignore next: improve coverage */
 function urlParse(url, parseQueryString, slashesDenoteHost) {
@@ -77,7 +77,7 @@ function urlParse(url, parseQueryString, slashesDenoteHost) {
 
 /* istanbul ignore next: improve coverage */
 Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
-  if (typeof url !== 'string') {
+  if (typeof url !== "string") {
     throw new TypeError('Parameter "url" must be a string, not ' + typeof url);
   }
 
@@ -87,7 +87,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
   var hasHash = false;
   var start = -1;
   var end = -1;
-  var rest = '';
+  var rest = "";
   var lastPos = 0;
   var i = 0;
   for (var inWs = false, split = false; i < url.length; ++i) {
@@ -132,7 +132,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
           if (i - lastPos > 0) {
             rest += url.slice(lastPos, i);
           }
-          rest += '/';
+          rest += "/";
           lastPos = i + 1;
           break;
       }
@@ -179,7 +179,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
           this.query = this.search.slice(1);
         }
       } else if (parseQueryString) {
-        this.search = '';
+        this.search = "";
         this.query = {};
       }
       return this;
@@ -199,14 +199,18 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
   // resolution will treat //foo/bar as host=foo,path=bar because that's
   // how the browser resolves relative URLs.
   if (slashesDenoteHost || proto || /^\/\/[^@\/]+@[^@\/]+/.test(rest)) {
-    var slashes = rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47; /*/*/
+    var slashes =
+      rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47; /*/*/
     if (slashes && !(proto && hostlessProtocol[proto])) {
       rest = rest.slice(2);
       this.slashes = true;
     }
   }
 
-  if (!hostlessProtocol[proto] && (slashes || (proto && !slashedProtocol[proto]))) {
+  if (
+    !hostlessProtocol[proto] &&
+    (slashes || (proto && !slashedProtocol[proto]))
+  ) {
     // there's a hostname.
     // the first instance of /, ?, ;, or # ends the host.
     //
@@ -275,7 +279,7 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     }
     if (nonHost === -1) {
       this.host = rest.slice(start);
-      rest = '';
+      rest = "";
     } else {
       this.host = rest.slice(start, nonHost);
       rest = rest.slice(nonHost);
@@ -286,8 +290,8 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
 
     // we've indicated that there is a hostname,
     // so even if it's empty, it has to be present.
-    if (typeof this.hostname !== 'string') {
-      this.hostname = '';
+    if (typeof this.hostname !== "string") {
+      this.hostname = "";
     }
 
     var hostname = this.hostname;
@@ -295,7 +299,8 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     // if hostname begins with [ and ends with ]
     // assume that it's an IPv6 address.
     var ipv6Hostname =
-      hostname.charCodeAt(0) === 91 /*[*/ && hostname.charCodeAt(hostname.length - 1) === 93; /*]*/
+      hostname.charCodeAt(0) === 91 /*[*/ &&
+      hostname.charCodeAt(hostname.length - 1) === 93; /*]*/
 
     // validate a little.
     if (!ipv6Hostname) {
@@ -316,16 +321,16 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
       this.hostname = punycode.toASCII(this.hostname);
     }
 
-    var p = this.port ? ':' + this.port : '';
-    var h = this.hostname || '';
+    var p = this.port ? ":" + this.port : "";
+    var h = this.hostname || "";
     this.host = h + p;
 
     // strip [ and ] from the hostname
     // the host field still retains them, though
     if (ipv6Hostname) {
       this.hostname = this.hostname.slice(1, -1);
-      if (rest[0] !== '/') {
-        rest = '/' + rest;
+      if (rest[0] !== "/") {
+        rest = "/" + rest;
       }
     }
   }
@@ -368,12 +373,14 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     }
   } else if (parseQueryString) {
     // no query string, but parseQueryString still requested
-    this.search = '';
+    this.search = "";
     this.query = {};
   }
 
   var firstIdx =
-    questionIdx !== -1 && (hashIdx === -1 || questionIdx < hashIdx) ? questionIdx : hashIdx;
+    questionIdx !== -1 && (hashIdx === -1 || questionIdx < hashIdx)
+      ? questionIdx
+      : hashIdx;
   if (firstIdx === -1) {
     if (rest.length > 0) {
       this.pathname = rest;
@@ -382,13 +389,13 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
     this.pathname = rest.slice(0, firstIdx);
   }
   if (slashedProtocol[lowerProto] && this.hostname && !this.pathname) {
-    this.pathname = '/';
+    this.pathname = "/";
   }
 
   // to support http.request
   if (this.pathname || this.search) {
-    const p = this.pathname || '';
-    const s = this.search || '';
+    const p = this.pathname || "";
+    const s = this.search || "";
     this.path = p + s;
   }
 
@@ -408,7 +415,7 @@ function validateHostname(self, rest, hostname) {
       if (i - lastPos > 0) {
         if (i - lastPos > 63) {
           self.hostname = hostname.slice(0, lastPos + 63);
-          return '/' + hostname.slice(lastPos + 63) + rest;
+          return "/" + hostname.slice(lastPos + 63) + rest;
         }
       }
       lastPos = i + 1;
@@ -431,7 +438,7 @@ function validateHostname(self, rest, hostname) {
     // Invalid host character
     self.hostname = hostname.slice(0, i);
     if (i < hostname.length) {
-      return '/' + hostname.slice(i) + rest;
+      return "/" + hostname.slice(i) + rest;
     }
     break;
   }
@@ -439,7 +446,7 @@ function validateHostname(self, rest, hostname) {
 
 /* istanbul ignore next: improve coverage */
 function autoEscapeStr(rest) {
-  var newRest = '';
+  var newRest = "";
   var lastPos = 0;
   for (var i = 0; i < rest.length; ++i) {
     // Automatically escape all delimiters and unwise characters from RFC 2396
@@ -449,98 +456,98 @@ function autoEscapeStr(rest) {
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%09';
+        newRest += "%09";
         lastPos = i + 1;
         break;
       case 10: // '\n'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%0A';
+        newRest += "%0A";
         lastPos = i + 1;
         break;
       case 13: // '\r'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%0D';
+        newRest += "%0D";
         lastPos = i + 1;
         break;
       case 32: // ' '
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%20';
+        newRest += "%20";
         lastPos = i + 1;
         break;
       case 34: // '"'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%22';
+        newRest += "%22";
         lastPos = i + 1;
         break;
       case 39: // '\''
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%27';
+        newRest += "%27";
         lastPos = i + 1;
         break;
       case 60: // '<'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%3C';
+        newRest += "%3C";
         lastPos = i + 1;
         break;
       case 62: // '>'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%3E';
+        newRest += "%3E";
         lastPos = i + 1;
         break;
       case 92: // '\\'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%5C';
+        newRest += "%5C";
         lastPos = i + 1;
         break;
       case 94: // '^'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%5E';
+        newRest += "%5E";
         lastPos = i + 1;
         break;
       case 96: // '`'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%60';
+        newRest += "%60";
         lastPos = i + 1;
         break;
       case 123: // '{'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%7B';
+        newRest += "%7B";
         lastPos = i + 1;
         break;
       case 124: // '|'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%7C';
+        newRest += "%7C";
         lastPos = i + 1;
         break;
       case 125: // '}'
         if (i - lastPos > 0) {
           newRest += rest.slice(lastPos, i);
         }
-        newRest += '%7D';
+        newRest += "%7D";
         lastPos = i + 1;
         break;
     }
@@ -562,11 +569,12 @@ function urlFormat(obj) {
   // If it's an obj, this is a no-op.
   // this way, you can call url_format() on strings
   // to clean up potentially wonky urls.
-  if (typeof obj === 'string') {
+  if (typeof obj === "string") {
     obj = urlParse(obj);
-  } else if (typeof obj !== 'object' || obj === null) {
+  } else if (typeof obj !== "object" || obj === null) {
     throw new TypeError(
-      'Parameter "urlObj" must be an object, not ' + (obj === null ? 'null' : typeof obj)
+      'Parameter "urlObj" must be an object, not ' +
+        (obj === null ? "null" : typeof obj)
     );
   } else if (!(obj instanceof Url)) {
     return Url.prototype.format.call(obj);
@@ -577,38 +585,42 @@ function urlFormat(obj) {
 
 /* istanbul ignore next: improve coverage */
 Url.prototype.format = function () {
-  var auth = this.auth || '';
+  var auth = this.auth || "";
   if (auth) {
     auth = encodeAuth(auth);
-    auth += '@';
+    auth += "@";
   }
 
-  var protocol = this.protocol || '';
-  var pathname = this.pathname || '';
-  var hash = this.hash || '';
+  var protocol = this.protocol || "";
+  var pathname = this.pathname || "";
+  var hash = this.hash || "";
   var host = false;
-  var query = '';
+  var query = "";
 
   if (this.host) {
     host = auth + this.host;
   } else if (this.hostname) {
-    host = auth + (this.hostname.indexOf(':') === -1 ? this.hostname : '[' + this.hostname + ']');
+    host =
+      auth +
+      (this.hostname.indexOf(":") === -1
+        ? this.hostname
+        : "[" + this.hostname + "]");
     if (this.port) {
-      host += ':' + this.port;
+      host += ":" + this.port;
     }
   }
 
-  if (this.query !== null && typeof this.query === 'object') {
+  if (this.query !== null && typeof this.query === "object") {
     query = querystring.stringify(this.query);
   }
 
-  var search = this.search || (query && '?' + query) || '';
+  var search = this.search || (query && "?" + query) || "";
 
   if (protocol && protocol.charCodeAt(protocol.length - 1) !== 58 /*:*/) {
-    protocol += ':';
+    protocol += ":";
   }
 
-  var newPathname = '';
+  var newPathname = "";
   var lastPos = 0;
   for (var i = 0; i < pathname.length; ++i) {
     switch (pathname.charCodeAt(i)) {
@@ -616,14 +628,14 @@ Url.prototype.format = function () {
         if (i - lastPos > 0) {
           newPathname += pathname.slice(lastPos, i);
         }
-        newPathname += '%23';
+        newPathname += "%23";
         lastPos = i + 1;
         break;
       case 63: // '?'
         if (i - lastPos > 0) {
           newPathname += pathname.slice(lastPos, i);
         }
-        newPathname += '%3F';
+        newPathname += "%3F";
         lastPos = i + 1;
         break;
     }
@@ -638,22 +650,25 @@ Url.prototype.format = function () {
 
   // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
   // unless they had them to begin with.
-  if (this.slashes || ((!protocol || slashedProtocol[protocol]) && host !== false)) {
-    host = '//' + (host || '');
+  if (
+    this.slashes ||
+    ((!protocol || slashedProtocol[protocol]) && host !== false)
+  ) {
+    host = "//" + (host || "");
     if (pathname && pathname.charCodeAt(0) !== 47 /*/*/) {
-      pathname = '/' + pathname;
+      pathname = "/" + pathname;
     }
   } else if (!host) {
-    host = '';
+    host = "";
   }
 
-  search = search.replace('#', '%23');
+  search = search.replace("#", "%23");
 
   if (hash && hash.charCodeAt(0) !== 35 /*#*/) {
-    hash = '#' + hash;
+    hash = "#" + hash;
   }
   if (search && search.charCodeAt(0) !== 63 /*?*/) {
-    search = '?' + search;
+    search = "?" + search;
   }
 
   return protocol + host + pathname + search + hash;
@@ -679,7 +694,7 @@ function urlResolveObject(source, relative) {
 
 /* istanbul ignore next: improve coverage */
 Url.prototype.resolveObject = function (relative) {
-  if (typeof relative === 'string') {
+  if (typeof relative === "string") {
     var rel = new Url();
     rel.parse(relative, false, true);
     relative = rel;
@@ -697,7 +712,7 @@ Url.prototype.resolveObject = function (relative) {
   result.hash = relative.hash;
 
   // if the relative url is empty, then there's nothing left to do here.
-  if (relative.href === '') {
+  if (relative.href === "") {
     result.href = result.format();
     return result;
   }
@@ -708,14 +723,18 @@ Url.prototype.resolveObject = function (relative) {
     var rkeys = Object.keys(relative);
     for (var rk = 0; rk < rkeys.length; rk++) {
       var rkey = rkeys[rk];
-      if (rkey !== 'protocol') {
+      if (rkey !== "protocol") {
         result[rkey] = relative[rkey];
       }
     }
 
     //urlParse appends trailing / to urls like http://www.example.com
-    if (slashedProtocol[result.protocol] && result.hostname && !result.pathname) {
-      result.path = result.pathname = '/';
+    if (
+      slashedProtocol[result.protocol] &&
+      result.hostname &&
+      !result.pathname
+    ) {
+      result.path = result.pathname = "/";
     }
 
     result.href = result.format();
@@ -747,7 +766,7 @@ Url.prototype.resolveObject = function (relative) {
       !/^file:?$/.test(relative.protocol) &&
       !hostlessProtocol[relative.protocol]
     ) {
-      const relPath = (relative.pathname || '').split('/');
+      const relPath = (relative.pathname || "").split("/");
       while (relPath.length) {
         const shifted = relPath.shift();
         if (shifted) {
@@ -756,31 +775,31 @@ Url.prototype.resolveObject = function (relative) {
         }
       }
       if (!relative.host) {
-        relative.host = '';
+        relative.host = "";
       }
       if (!relative.hostname) {
-        relative.hostname = '';
+        relative.hostname = "";
       }
-      if (relPath[0] !== '') {
-        relPath.unshift('');
+      if (relPath[0] !== "") {
+        relPath.unshift("");
       }
       if (relPath.length < 2) {
-        relPath.unshift('');
+        relPath.unshift("");
       }
-      result.pathname = relPath.join('/');
+      result.pathname = relPath.join("/");
     } else {
       result.pathname = relative.pathname;
     }
     result.search = relative.search;
     result.query = relative.query;
-    result.host = relative.host || '';
+    result.host = relative.host || "";
     result.auth = relative.auth;
     result.hostname = relative.hostname || relative.host;
     result.port = relative.port;
     // to support http.request
     if (result.pathname || result.search) {
-      var p = result.pathname || '';
-      var s = result.search || '';
+      var p = result.pathname || "";
+      var s = result.search || "";
       result.path = p + s;
     }
     result.slashes = result.slashes || relative.slashes;
@@ -788,12 +807,14 @@ Url.prototype.resolveObject = function (relative) {
     return result;
   }
 
-  var isSourceAbs = result.pathname && result.pathname.charAt(0) === '/';
-  var isRelAbs = relative.host || (relative.pathname && relative.pathname.charAt(0) === '/');
-  var mustEndAbs = isRelAbs || isSourceAbs || (result.host && relative.pathname);
+  var isSourceAbs = result.pathname && result.pathname.charAt(0) === "/";
+  var isRelAbs =
+    relative.host || (relative.pathname && relative.pathname.charAt(0) === "/");
+  var mustEndAbs =
+    isRelAbs || isSourceAbs || (result.host && relative.pathname);
   var removeAllDots = mustEndAbs;
-  var srcPath = (result.pathname && result.pathname.split('/')) || [];
-  var relPath = (relative.pathname && relative.pathname.split('/')) || [];
+  var srcPath = (result.pathname && result.pathname.split("/")) || [];
+  var relPath = (relative.pathname && relative.pathname.split("/")) || [];
   var psychotic = result.protocol && !slashedProtocol[result.protocol];
 
   // if the url is a non-slashed url, then relative
@@ -802,21 +823,21 @@ Url.prototype.resolveObject = function (relative) {
   // result.protocol has already been set by now.
   // Later on, put the first path part into the host field.
   if (psychotic) {
-    result.hostname = '';
+    result.hostname = "";
     result.port = null;
     if (result.host) {
-      if (srcPath[0] === '') {
+      if (srcPath[0] === "") {
         srcPath[0] = result.host;
       } else {
         srcPath.unshift(result.host);
       }
     }
-    result.host = '';
+    result.host = "";
     if (relative.protocol) {
       relative.hostname = null;
       relative.port = null;
       if (relative.host) {
-        if (relPath[0] === '') {
+        if (relPath[0] === "") {
           relPath[0] = relative.host;
         } else {
           relPath.unshift(relative.host);
@@ -824,14 +845,17 @@ Url.prototype.resolveObject = function (relative) {
       }
       relative.host = null;
     }
-    mustEndAbs = mustEndAbs && (relPath[0] === '' || srcPath[0] === '');
+    mustEndAbs = mustEndAbs && (relPath[0] === "" || srcPath[0] === "");
   }
 
   if (isRelAbs) {
     // it's absolute.
-    result.host = relative.host || relative.host === '' ? relative.host : result.host;
+    result.host =
+      relative.host || relative.host === "" ? relative.host : result.host;
     result.hostname =
-      relative.hostname || relative.hostname === '' ? relative.hostname : result.hostname;
+      relative.hostname || relative.hostname === ""
+        ? relative.hostname
+        : result.hostname;
     result.search = relative.search;
     result.query = relative.query;
     srcPath = relPath;
@@ -856,7 +880,9 @@ Url.prototype.resolveObject = function (relative) {
       //this especially happens in cases like
       //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
       const authInHost =
-        result.host && result.host.indexOf('@') > 0 ? result.host.split('@') : false;
+        result.host && result.host.indexOf("@") > 0
+          ? result.host.split("@")
+          : false;
       if (authInHost) {
         result.auth = authInHost.shift();
         result.host = result.hostname = authInHost.shift();
@@ -866,7 +892,9 @@ Url.prototype.resolveObject = function (relative) {
     result.query = relative.query;
     //to support http.request
     if (result.pathname !== null || result.search !== null) {
-      result.path = (result.pathname ? result.pathname : '') + (result.search ? result.search : '');
+      result.path =
+        (result.pathname ? result.pathname : "") +
+        (result.search ? result.search : "");
     }
     result.href = result.format();
     return result;
@@ -878,7 +906,7 @@ Url.prototype.resolveObject = function (relative) {
     result.pathname = null;
     //to support http.request
     if (result.search) {
-      result.path = '/' + result.search;
+      result.path = "/" + result.search;
     } else {
       result.path = null;
     }
@@ -891,17 +919,18 @@ Url.prototype.resolveObject = function (relative) {
   // then it must NOT get a trailing slash.
   var last = srcPath.slice(-1)[0];
   var hasTrailingSlash =
-    ((result.host || relative.host || srcPath.length > 1) && (last === '.' || last === '..')) ||
-    last === '';
+    ((result.host || relative.host || srcPath.length > 1) &&
+      (last === "." || last === "..")) ||
+    last === "";
 
   // strip single dots, resolve double dots to parent dir
   // if the path tries to go above the root, `up` ends up > 0
   var up = 0;
   for (var i = srcPath.length; i >= 0; i--) {
     last = srcPath[i];
-    if (last === '.') {
+    if (last === ".") {
       spliceOne(srcPath, i);
-    } else if (last === '..') {
+    } else if (last === "..") {
       spliceOne(srcPath, i);
       up++;
     } else if (up) {
@@ -913,31 +942,39 @@ Url.prototype.resolveObject = function (relative) {
   // if the path is allowed to go above the root, restore leading ..s
   if (!mustEndAbs && !removeAllDots) {
     for (; up--; up) {
-      srcPath.unshift('..');
+      srcPath.unshift("..");
     }
   }
 
-  if (mustEndAbs && srcPath[0] !== '' && (!srcPath[0] || srcPath[0].charAt(0) !== '/')) {
-    srcPath.unshift('');
+  if (
+    mustEndAbs &&
+    srcPath[0] !== "" &&
+    (!srcPath[0] || srcPath[0].charAt(0) !== "/")
+  ) {
+    srcPath.unshift("");
   }
 
-  if (hasTrailingSlash && srcPath.join('/').substr(-1) !== '/') {
-    srcPath.push('');
+  if (hasTrailingSlash && srcPath.join("/").substr(-1) !== "/") {
+    srcPath.push("");
   }
 
-  var isAbsolute = srcPath[0] === '' || (srcPath[0] && srcPath[0].charAt(0) === '/');
+  var isAbsolute =
+    srcPath[0] === "" || (srcPath[0] && srcPath[0].charAt(0) === "/");
 
   // put the host back
   if (psychotic) {
     if (isAbsolute) {
-      result.hostname = result.host = '';
+      result.hostname = result.host = "";
     } else {
-      result.hostname = result.host = srcPath.length ? srcPath.shift() : '';
+      result.hostname = result.host = srcPath.length ? srcPath.shift() : "";
     }
     //occasionally the auth can get stuck only in host
     //this especially happens in cases like
     //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
-    const authInHost = result.host && result.host.indexOf('@') > 0 ? result.host.split('@') : false;
+    const authInHost =
+      result.host && result.host.indexOf("@") > 0
+        ? result.host.split("@")
+        : false;
     if (authInHost) {
       result.auth = authInHost.shift();
       result.host = result.hostname = authInHost.shift();
@@ -947,19 +984,21 @@ Url.prototype.resolveObject = function (relative) {
   mustEndAbs = mustEndAbs || (result.host && srcPath.length);
 
   if (mustEndAbs && !isAbsolute) {
-    srcPath.unshift('');
+    srcPath.unshift("");
   }
 
   if (!srcPath.length) {
     result.pathname = null;
     result.path = null;
   } else {
-    result.pathname = srcPath.join('/');
+    result.pathname = srcPath.join("/");
   }
 
   //to support request.http
   if (result.pathname !== null || result.search !== null) {
-    result.path = (result.pathname ? result.pathname : '') + (result.search ? result.search : '');
+    result.path =
+      (result.pathname ? result.pathname : "") +
+      (result.search ? result.search : "");
   }
   result.auth = relative.auth || result.auth;
   result.slashes = result.slashes || relative.slashes;
@@ -973,7 +1012,7 @@ Url.prototype.parseHost = function () {
   var port = portPattern.exec(host);
   if (port) {
     port = port[0];
-    if (port !== ':') {
+    if (port !== ":") {
       this.port = port.slice(1);
     }
     host = host.slice(0, host.length - port.length);
@@ -994,12 +1033,12 @@ function spliceOne(list, index) {
 
 var hexTable = new Array(256);
 for (var i = 0; i < 256; ++i) {
-  hexTable[i] = '%' + ((i < 16 ? '0' : '') + i.toString(16)).toUpperCase();
+  hexTable[i] = "%" + ((i < 16 ? "0" : "") + i.toString(16)).toUpperCase();
 }
 /* istanbul ignore next: improve coverage */
 function encodeAuth(str) {
   // faster encodeURIComponent alternative for encoding auth uri components
-  var out = '';
+  var out = "";
   var lastPos = 0;
   for (var i = 0; i < str.length; ++i) {
     var c = str.charCodeAt(i);

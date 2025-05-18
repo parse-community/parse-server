@@ -1,13 +1,13 @@
 // @flow
-import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
-import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
-import { MailAdapter } from '../Adapters/Email/MailAdapter';
-import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
-import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
-import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
-import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
-import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
-import { CheckGroup } from '../Security/CheckGroup';
+import { AnalyticsAdapter } from "../Adapters/Analytics/AnalyticsAdapter";
+import { CacheAdapter } from "../Adapters/Cache/CacheAdapter";
+import { MailAdapter } from "../Adapters/Email/MailAdapter";
+import { FilesAdapter } from "../Adapters/Files/FilesAdapter";
+import { LoggerAdapter } from "../Adapters/Logger/LoggerAdapter";
+import { PubSubAdapter } from "../Adapters/PubSub/PubSubAdapter";
+import { StorageAdapter } from "../Adapters/Storage/StorageAdapter";
+import { WSSAdapter } from "../Adapters/WebSocketServer/WSSAdapter";
+import { CheckGroup } from "../Security/CheckGroup";
 
 export interface SchemaOptions {
   /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema

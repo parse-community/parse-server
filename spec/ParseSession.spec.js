@@ -2,8 +2,8 @@
 // Tests behavior of Parse Sessions
 //
 
-'use strict';
-const request = require('../lib/request');
+"use strict";
+const request = require("../lib/request");
 
 function setupTestUsers() {
   const acl = new Parse.ACL();
@@ -12,13 +12,13 @@ function setupTestUsers() {
   const user2 = new Parse.User();
   const user3 = new Parse.User();
 
-  user1.set('username', 'testuser_1');
-  user2.set('username', 'testuser_2');
-  user3.set('username', 'testuser_3');
+  user1.set("username", "testuser_1");
+  user2.set("username", "testuser_2");
+  user3.set("username", "testuser_3");
 
-  user1.set('password', 'password');
-  user2.set('password', 'password');
-  user3.set('password', 'password');
+  user1.set("password", "password");
+  user2.set("password", "password");
+  user3.set("password", "password");
 
   user1.setACL(acl);
   user2.setACL(acl);
@@ -34,24 +34,24 @@ function setupTestUsers() {
     });
 }
 
-describe('Parse.Session', () => {
+describe("Parse.Session", () => {
   // multiple sessions with masterKey + sessionToken
-  it('should retain original sessionTokens with masterKey & sessionToken set', done => {
+  it("should retain original sessionTokens with masterKey & sessionToken set", done => {
     setupTestUsers()
       .then(user => {
         const query = new Parse.Query(Parse.Session);
         return query.find({
           useMasterKey: true,
-          sessionToken: user.get('sessionToken'),
+          sessionToken: user.get("sessionToken"),
         });
       })
       .then(results => {
         const foundKeys = [];
         expect(results.length).toBe(3);
         for (const key in results) {
-          const sessionToken = results[key].get('sessionToken');
+          const sessionToken = results[key].get("sessionToken");
           if (foundKeys[sessionToken]) {
-            fail('Duplicate session token present in response');
+            fail("Duplicate session token present in response");
             break;
           }
           foundKeys[sessionToken] = 1;
@@ -64,11 +64,11 @@ describe('Parse.Session', () => {
   });
 
   // single session returned, with just one sessionToken
-  it('should retain original sessionTokens with just sessionToken set', done => {
+  it("should retain original sessionTokens with just sessionToken set", done => {
     let knownSessionToken;
     setupTestUsers()
       .then(user => {
-        knownSessionToken = user.get('sessionToken');
+        knownSessionToken = user.get("sessionToken");
         const query = new Parse.Query(Parse.Session);
         return query.find({
           sessionToken: knownSessionToken,
@@ -76,7 +76,7 @@ describe('Parse.Session', () => {
       })
       .then(results => {
         expect(results.length).toBe(1);
-        const sessionToken = results[0].get('sessionToken');
+        const sessionToken = results[0].get("sessionToken");
         expect(sessionToken).toBe(knownSessionToken);
         done();
       })
@@ -86,22 +86,22 @@ describe('Parse.Session', () => {
   });
 
   // multiple users with masterKey + sessionToken
-  it('token on users should retain original sessionTokens with masterKey & sessionToken set', done => {
+  it("token on users should retain original sessionTokens with masterKey & sessionToken set", done => {
     setupTestUsers()
       .then(user => {
         const query = new Parse.Query(Parse.User);
         return query.find({
           useMasterKey: true,
-          sessionToken: user.get('sessionToken'),
+          sessionToken: user.get("sessionToken"),
         });
       })
       .then(results => {
         const foundKeys = [];
         expect(results.length).toBe(3);
         for (const key in results) {
-          const sessionToken = results[key].get('sessionToken');
+          const sessionToken = results[key].get("sessionToken");
           if (foundKeys[sessionToken] && sessionToken !== undefined) {
-            fail('Duplicate session token present in response');
+            fail("Duplicate session token present in response");
             break;
           }
           foundKeys[sessionToken] = 1;
@@ -114,11 +114,11 @@ describe('Parse.Session', () => {
   });
 
   // multiple users with just sessionToken
-  it('token on users should retain original sessionTokens with just sessionToken set', done => {
+  it("token on users should retain original sessionTokens with just sessionToken set", done => {
     let knownSessionToken;
     setupTestUsers()
       .then(user => {
-        knownSessionToken = user.get('sessionToken');
+        knownSessionToken = user.get("sessionToken");
         const query = new Parse.Query(Parse.User);
         return query.find({
           sessionToken: knownSessionToken,
@@ -128,9 +128,9 @@ describe('Parse.Session', () => {
         const foundKeys = [];
         expect(results.length).toBe(3);
         for (const key in results) {
-          const sessionToken = results[key].get('sessionToken');
+          const sessionToken = results[key].get("sessionToken");
           if (foundKeys[sessionToken] && sessionToken !== undefined) {
-            fail('Duplicate session token present in response');
+            fail("Duplicate session token present in response");
             break;
           }
           foundKeys[sessionToken] = 1;
@@ -143,30 +143,32 @@ describe('Parse.Session', () => {
       });
   });
 
-  it('cannot edit session with known ID', async () => {
+  it("cannot edit session with known ID", async () => {
     await setupTestUsers();
-    const [first, second] = await new Parse.Query(Parse.Session).find({ useMasterKey: true });
+    const [first, second] = await new Parse.Query(Parse.Session).find({
+      useMasterKey: true,
+    });
     const headers = {
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-Rest-API-Key': 'rest',
-      'X-Parse-Session-Token': second.get('sessionToken'),
-      'Content-Type': 'application/json',
+      "X-Parse-Application-Id": "test",
+      "X-Parse-Rest-API-Key": "rest",
+      "X-Parse-Session-Token": second.get("sessionToken"),
+      "Content-Type": "application/json",
     };
-    const firstUser = first.get('user').id;
-    const secondUser = second.get('user').id;
+    const firstUser = first.get("user").id;
+    const secondUser = second.get("user").id;
     const e = await request({
-      method: 'PUT',
+      method: "PUT",
       headers,
       url: `http://localhost:8378/1/sessions/${first.id}`,
       body: JSON.stringify({
-        foo: 'bar',
-        user: { __type: 'Pointer', className: '_User', objectId: secondUser },
+        foo: "bar",
+        user: { __type: "Pointer", className: "_User", objectId: secondUser },
       }),
     }).catch(e => e.data);
     expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-    expect(e.error).toBe('Object not found.');
+    expect(e.error).toBe("Object not found.");
     await Parse.Object.fetchAll([first, second], { useMasterKey: true });
-    expect(first.get('user').id).toBe(firstUser);
-    expect(second.get('user').id).toBe(secondUser);
+    expect(first.get("user").id).toBe(firstUser);
+    expect(second.get("user").id).toBe(secondUser);
   });
 });

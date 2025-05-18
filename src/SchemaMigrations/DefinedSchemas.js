@@ -1,14 +1,17 @@
 // @flow
 // @flow-disable-next Cannot resolve module `parse/node`.
-const Parse = require('parse/node');
-import { logger } from '../logger';
-import Config from '../Config';
-import { internalCreateSchema, internalUpdateSchema } from '../Routers/SchemasRouter';
-import { defaultColumns, systemClasses } from '../Controllers/SchemaController';
-import { ParseServerOptions } from '../Options';
-import * as Migrations from './Migrations';
-import Auth from '../Auth';
-import rest from '../rest';
+const Parse = require("parse/node");
+import { logger } from "../logger";
+import Config from "../Config";
+import {
+  internalCreateSchema,
+  internalUpdateSchema,
+} from "../Routers/SchemasRouter";
+import { defaultColumns, systemClasses } from "../Controllers/SchemaController";
+import { ParseServerOptions } from "../Options";
+import * as Migrations from "./Migrations";
+import Auth from "../Auth";
+import rest from "../rest";
 
 export class DefinedSchemas {
   config: ParseServerOptions;
@@ -18,7 +21,10 @@ export class DefinedSchemas {
   maxRetries: number;
   allCloudSchemas: Parse.Schema[];
 
-  constructor(schemaOptions: Migrations.SchemaOptions, config: ParseServerOptions) {
+  constructor(
+    schemaOptions: Migrations.SchemaOptions,
+    config: ParseServerOptions
+  ) {
     this.localSchemas = [];
     this.config = Config.get(config.appId);
     this.schemaOptions = schemaOptions;
@@ -66,7 +72,7 @@ export class DefinedSchemas {
 
   async execute() {
     try {
-      logger.info('Running Migrations');
+      logger.info("Running Migrations");
       if (this.schemaOptions && this.schemaOptions.beforeMigration) {
         await Promise.resolve(this.schemaOptions.beforeMigration());
       }
@@ -77,10 +83,10 @@ export class DefinedSchemas {
         await Promise.resolve(this.schemaOptions.afterMigration());
       }
 
-      logger.info('Running Migrations Completed');
+      logger.info("Running Migrations Completed");
     } catch (e) {
       logger.error(`Failed to run migrations: ${e}`);
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
         process.exit(1);
       }
     }
@@ -93,9 +99,11 @@ export class DefinedSchemas {
       // if we fail to get schema
       // pm2 or K8s and many other process managers will try to restart the process
       // after the exit
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === "production") {
         timeout = setTimeout(() => {
-          logger.error('Timeout occurred during execution of migrations. Exiting...');
+          logger.error(
+            "Timeout occurred during execution of migrations. Exiting..."
+          );
           process.exit(1);
         }, 20000);
       }
@@ -105,7 +113,11 @@ export class DefinedSchemas {
       const schemaController = await this.config.database.loadSchema();
       this.allCloudSchemas = await schemaController.getAllClasses();
       clearTimeout(timeout);
-      await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
+      await Promise.all(
+        this.localSchemas.map(async localSchema =>
+          this.saveOrUpdate(localSchema)
+        )
+      );
 
       this.checkForMissingSchemas();
       await this.enforceCLPForNonProvidedClass();
@@ -122,7 +134,7 @@ export class DefinedSchemas {
         await this.executeMigrations();
       } else {
         logger.error(`Failed to run migrations: ${e}`);
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === "production") {
           process.exit(1);
         }
       }
@@ -166,7 +178,9 @@ export class DefinedSchemas {
   async enforceCLPForNonProvidedClass(): Promise<void> {
     const nonProvidedClasses = this.allCloudSchemas.filter(
       cloudSchema =>
-        !this.localSchemas.some(localSchema => localSchema.className === cloudSchema.className)
+        !this.localSchemas.some(
+          localSchema => localSchema.className === cloudSchema.className
+        )
     );
     await Promise.all(
       nonProvidedClasses.map(async schema => {
@@ -180,12 +194,24 @@ export class DefinedSchemas {
   // Create a fake session since Parse do not create the _Session until
   // a session is created
   async createDeleteSession() {
-    const { response } = await rest.create(this.config, Auth.master(this.config), '_Session', {});
-    await rest.del(this.config, Auth.master(this.config), '_Session', response.objectId);
+    const { response } = await rest.create(
+      this.config,
+      Auth.master(this.config),
+      "_Session",
+      {}
+    );
+    await rest.del(
+      this.config,
+      Auth.master(this.config),
+      "_Session",
+      response.objectId
+    );
   }
 
   async saveOrUpdate(localSchema: Migrations.JSONSchema) {
-    const cloudSchema = this.allCloudSchemas.find(sc => sc.className === localSchema.className);
+    const cloudSchema = this.allCloudSchemas.find(
+      sc => sc.className === localSchema.className
+    );
     if (cloudSchema) {
       try {
         await this.updateSchema(localSchema, cloudSchema);
@@ -206,7 +232,9 @@ export class DefinedSchemas {
     if (localSchema.fields) {
       // Handle fields
       Object.keys(localSchema.fields)
-        .filter(fieldName => !this.isProtectedFields(localSchema.className, fieldName))
+        .filter(
+          fieldName => !this.isProtectedFields(localSchema.className, fieldName)
+        )
         .forEach(fieldName => {
           if (localSchema.fields) {
             const field = localSchema.fields[fieldName];
@@ -217,7 +245,10 @@ export class DefinedSchemas {
     // Handle indexes
     if (localSchema.indexes) {
       Object.keys(localSchema.indexes).forEach(indexName => {
-        if (localSchema.indexes && !this.isProtectedIndex(localSchema.className, indexName)) {
+        if (
+          localSchema.indexes &&
+          !this.isProtectedIndex(localSchema.className, indexName)
+        ) {
           newLocalSchema.addIndex(indexName, localSchema.indexes[indexName]);
         }
       });
@@ -228,14 +259,19 @@ export class DefinedSchemas {
     return await this.saveSchemaToDB(newLocalSchema);
   }
 
-  async updateSchema(localSchema: Migrations.JSONSchema, cloudSchema: Parse.Schema) {
+  async updateSchema(
+    localSchema: Migrations.JSONSchema,
+    cloudSchema: Parse.Schema
+  ) {
     const newLocalSchema = new Parse.Schema(localSchema.className);
 
     // Handle fields
     // Check addition
     if (localSchema.fields) {
       Object.keys(localSchema.fields)
-        .filter(fieldName => !this.isProtectedFields(localSchema.className, fieldName))
+        .filter(
+          fieldName => !this.isProtectedFields(localSchema.className, fieldName)
+        )
         .forEach(fieldName => {
           // @flow-disable-next
           const field = localSchema.fields[fieldName];
@@ -255,7 +291,9 @@ export class DefinedSchemas {
 
     // Check deletion
     Object.keys(cloudSchema.fields)
-      .filter(fieldName => !this.isProtectedFields(localSchema.className, fieldName))
+      .filter(
+        fieldName => !this.isProtectedFields(localSchema.className, fieldName)
+      )
       .forEach(fieldName => {
         const field = cloudSchema.fields[fieldName];
         if (!localSchema.fields || !localSchema.fields[fieldName]) {
@@ -317,8 +355,11 @@ export class DefinedSchemas {
     } else if (this.schemaOptions.strict === true && fieldsToRecreate.length) {
       fieldsToRecreate.forEach(field => {
         const from =
-          field.from.type + (field.from.targetClass ? ` (${field.from.targetClass})` : '');
-        const to = field.to.type + (field.to.targetClass ? ` (${field.to.targetClass})` : '');
+          field.from.type +
+          (field.from.targetClass ? ` (${field.from.targetClass})` : "");
+        const to =
+          field.to.type +
+          (field.to.targetClass ? ` (${field.to.targetClass})` : "");
 
         logger.warn(
           `The field "${field.fieldName}" type differ between the schema and the database for "${localSchema.className}"; Schema is defined as "${to}" and current database type is "${from}"`
@@ -357,7 +398,10 @@ export class DefinedSchemas {
           if (!localSchema.indexes || !localSchema.indexes[indexName]) {
             newLocalSchema.deleteIndex(indexName);
           } else if (
-            !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
+            !this.paramsAreEquals(
+              localSchema.indexes[indexName],
+              cloudSchema.indexes[indexName]
+            )
           ) {
             newLocalSchema.deleteIndex(indexName);
             if (localSchema.indexes) {
@@ -377,7 +421,7 @@ export class DefinedSchemas {
     // Apply new/changed indexes
     if (indexesToAdd.length) {
       logger.debug(
-        `Updating indexes for "${newLocalSchema.className}" :  ${indexesToAdd.join(' ,')}`
+        `Updating indexes for "${newLocalSchema.className}" :  ${indexesToAdd.join(" ,")}`
       );
       indexesToAdd.forEach(o => newLocalSchema.addIndex(o.indexName, o.index));
       await this.updateSchemaToDB(newLocalSchema);
@@ -390,10 +434,14 @@ export class DefinedSchemas {
     cloudSchema: Parse.Schema
   ) {
     if (!localSchema.classLevelPermissions && !cloudSchema) {
-      logger.warn(`classLevelPermissions not provided for ${localSchema.className}.`);
+      logger.warn(
+        `classLevelPermissions not provided for ${localSchema.className}.`
+      );
     }
     // Use spread to avoid read only issue (encountered by Moumouls using directAccess)
-    const clp = ({ ...(localSchema.classLevelPermissions || {}) }: Parse.CLP.PermissionsMap);
+    const clp = ({
+      ...(localSchema.classLevelPermissions || {}),
+    }: Parse.CLP.PermissionsMap);
     // To avoid inconsistency we need to remove all rights on addField
     clp.addField = {};
     newLocalSchema.setCLP(clp);
@@ -407,22 +455,22 @@ export class DefinedSchemas {
   }
 
   isProtectedIndex(className: string, indexName: string) {
-    const indexes = ['_id_'];
+    const indexes = ["_id_"];
     switch (className) {
-      case '_User':
+      case "_User":
         indexes.push(
-          'case_insensitive_username',
-          'case_insensitive_email',
-          'username_1',
-          'email_1'
+          "case_insensitive_username",
+          "case_insensitive_email",
+          "username_1",
+          "email_1"
         );
         break;
-      case '_Role':
-        indexes.push('name_1');
+      case "_Role":
+        indexes.push("name_1");
         break;
 
-      case '_Idempotency':
-        indexes.push('reqId_1');
+      case "_Idempotency":
+        indexes.push("reqId_1");
         break;
     }
 
@@ -440,10 +488,14 @@ export class DefinedSchemas {
     return keysA.every(k => objA[k] === objB[k]);
   }
 
-  handleFields(newLocalSchema: Parse.Schema, fieldName: string, field: Migrations.FieldType) {
-    if (field.type === 'Relation') {
+  handleFields(
+    newLocalSchema: Parse.Schema,
+    fieldName: string,
+    field: Migrations.FieldType
+  ) {
+    if (field.type === "Relation") {
       newLocalSchema.addRelation(fieldName, field.targetClass);
-    } else if (field.type === 'Pointer') {
+    } else if (field.type === "Pointer") {
       newLocalSchema.addPointer(fieldName, field.targetClass, field);
     } else {
       newLocalSchema.addField(fieldName, field.type, field);

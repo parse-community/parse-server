@@ -1,6 +1,6 @@
 // Sets a global variable to the current test spec
 // ex: global.currentSpec.description
-const { performance } = require('perf_hooks');
+const { performance } = require("perf_hooks");
 
 global.currentSpec = null;
 
@@ -28,45 +28,51 @@ const duplicates = [];
 class CurrentSpecReporter {
   specStarted(spec) {
     if (timerMap[spec.fullName]) {
-      console.log('Duplicate spec: ' + spec.fullName);
+      console.log("Duplicate spec: " + spec.fullName);
       duplicates.push(spec.fullName);
     }
     timerMap[spec.fullName] = performance.now();
     global.currentSpec = spec;
   }
   specDone(result) {
-    if (result.status === 'excluded') {
+    if (result.status === "excluded") {
       delete timerMap[result.fullName];
       return;
     }
-    timerMap[result.fullName] = (performance.now() - timerMap[result.fullName]) / 1000;
+    timerMap[result.fullName] =
+      (performance.now() - timerMap[result.fullName]) / 1000;
     global.currentSpec = null;
   }
 }
 
-global.displayTestStats = function() {
-  const times = Object.values(timerMap).sort((a,b) => b - a).filter(time => time >= slowTestLimit);
+global.displayTestStats = function () {
+  const times = Object.values(timerMap)
+    .sort((a, b) => b - a)
+    .filter(time => time >= slowTestLimit);
   if (times.length > 0) {
     console.log(`Slow tests with execution time >=${slowTestLimit}s:`);
   }
-  times.forEach((time) => {
-    console.warn(`${time.toFixed(1)}s:`, Object.keys(timerMap).find(key => timerMap[key] === time));
+  times.forEach(time => {
+    console.warn(
+      `${time.toFixed(1)}s:`,
+      Object.keys(timerMap).find(key => timerMap[key] === time)
+    );
   });
-  console.log('\n');
-  duplicates.forEach((spec) => {
-    console.warn('Duplicate spec: ' + spec);
+  console.log("\n");
+  duplicates.forEach(spec => {
+    console.warn("Duplicate spec: " + spec);
   });
-  console.log('\n');
-  Object.keys(retryMap).forEach((spec) => {
+  console.log("\n");
+  Object.keys(retryMap).forEach(spec => {
     console.warn(`Flaky test: ${spec} failed ${retryMap[spec]} times`);
   });
-  console.log('\n');
+  console.log("\n");
 };
 
-global.retryFlakyTests = function() {
+global.retryFlakyTests = function () {
   const originalSpecConstructor = jasmine.Spec;
 
-  jasmine.Spec = function(attrs) {
+  jasmine.Spec = function (attrs) {
     const spec = new originalSpecConstructor(attrs);
     const originalTestFn = spec.queueableFn.fn;
     const runOriginalTest = () => {
@@ -75,12 +81,12 @@ global.retryFlakyTests = function() {
         return originalTestFn();
       } else {
         // handle done() callback
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
           originalTestFn(resolve);
         });
       }
     };
-    spec.queueableFn.fn = async function() {
+    spec.queueableFn.fn = async function () {
       const isFlaky = flakyTests.includes(spec.result.fullName);
       const runs = isFlaky ? retries : 1;
       let exceptionCaught;
@@ -95,13 +101,15 @@ global.retryFlakyTests = function() {
         } catch (exception) {
           exceptionCaught = exception;
         }
-        const failed = !spec.markedPending &&
-            (exceptionCaught || spec.result.failedExpectations.length != 0);
+        const failed =
+          !spec.markedPending &&
+          (exceptionCaught || spec.result.failedExpectations.length != 0);
         if (!failed) {
           break;
         }
         if (isFlaky) {
-          retryMap[spec.result.fullName] = (retryMap[spec.result.fullName] || 0) + 1;
+          retryMap[spec.result.fullName] =
+            (retryMap[spec.result.fullName] || 0) + 1;
           await global.afterEachFn();
         }
       }
@@ -112,6 +120,6 @@ global.retryFlakyTests = function() {
     };
     return spec;
   };
-}
+};
 
 module.exports = CurrentSpecReporter;

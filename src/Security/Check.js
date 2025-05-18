@@ -2,8 +2,8 @@
  * @module SecurityCheck
  */
 
-import Utils from '../Utils';
-import { isFunction, isString } from 'lodash';
+import Utils from "../Utils";
+import { isFunction, isString } from "lodash";
 
 /**
  * A security check.
@@ -60,11 +60,11 @@ class Check {
    */
   _validateParams(params) {
     Utils.validateParams(params, {
-      group: { t: 'string', v: isString },
-      title: { t: 'string', v: isString },
-      warning: { t: 'string', v: isString },
-      solution: { t: 'string', v: isString },
-      check: { t: 'function', v: isFunction },
+      group: { t: "string", v: isString },
+      title: { t: "string", v: isString },
+      warning: { t: "string", v: isString },
+      solution: { t: "string", v: isString },
+      check: { t: "function", v: isFunction },
     });
   }
 }
@@ -73,9 +73,9 @@ class Check {
  * The check state.
  */
 const CheckState = Object.freeze({
-  none: 'none',
-  fail: 'fail',
-  success: 'success',
+  none: "none",
+  fail: "fail",
+  success: "success",
 });
 
 export default Check;

@@ -1,26 +1,26 @@
-'use strict';
+"use strict";
 
-describe('Auth', () => {
-  const { Auth, getAuthForSessionToken } = require('../lib/Auth.js');
-  const Config = require('../lib/Config');
-  describe('getUserRoles', () => {
+describe("Auth", () => {
+  const { Auth, getAuthForSessionToken } = require("../lib/Auth.js");
+  const Config = require("../lib/Config");
+  describe("getUserRoles", () => {
     let auth;
     let config;
     let currentRoles = null;
-    const currentUserId = 'userId';
+    const currentUserId = "userId";
 
     beforeEach(() => {
-      currentRoles = ['role:userId'];
+      currentRoles = ["role:userId"];
 
       config = {
         cacheController: {
           role: {
             get: () => Promise.resolve(currentRoles),
-            set: jasmine.createSpy('set'),
+            set: jasmine.createSpy("set"),
           },
         },
       };
-      spyOn(config.cacheController.role, 'get').and.callThrough();
+      spyOn(config.cacheController.role, "get").and.callThrough();
 
       auth = new Auth({
         config: config,
@@ -28,11 +28,11 @@ describe('Auth', () => {
         user: {
           id: currentUserId,
         },
-        installationId: 'installationId',
+        installationId: "installationId",
       });
     });
 
-    it('should get user roles from the cache', done => {
+    it("should get user roles from the cache", done => {
       auth.getUserRoles().then(roles => {
         const firstSet = config.cacheController.role.set.calls.first();
         expect(firstSet).toEqual(undefined);
@@ -44,8 +44,8 @@ describe('Auth', () => {
       });
     });
 
-    it('should only query the roles once', done => {
-      const loadRolesSpy = spyOn(auth, '_loadRoles').and.callThrough();
+    it("should only query the roles once", done => {
+      const loadRolesSpy = spyOn(auth, "_loadRoles").and.callThrough();
       auth
         .getUserRoles()
         .then(roles => {
@@ -66,7 +66,7 @@ describe('Auth', () => {
         });
     });
 
-    it('should not have any roles with no user', done => {
+    it("should not have any roles with no user", done => {
       auth.user = null;
       auth
         .getUserRoles()
@@ -74,7 +74,7 @@ describe('Auth', () => {
         .then(() => done());
     });
 
-    it('should not have any user roles with master', done => {
+    it("should not have any user roles with master", done => {
       auth.isMaster = true;
       auth
         .getUserRoles()
@@ -83,26 +83,26 @@ describe('Auth', () => {
     });
   });
 
-  it('can use extendSessionOnUse', async () => {
+  it("can use extendSessionOnUse", async () => {
     await reconfigureServer({
       extendSessionOnUse: true,
     });
 
     const user = new Parse.User();
     await user.signUp({
-      username: 'hello',
-      password: 'password',
+      username: "hello",
+      password: "password",
     });
     const session = await new Parse.Query(Parse.Session).first();
-    const updatedAt = new Date('2010');
+    const updatedAt = new Date("2010");
     const expiry = new Date();
     expiry.setHours(expiry.getHours() + 1);
 
     await Parse.Server.database.update(
-      '_Session',
+      "_Session",
       { objectId: session.id },
       {
-        expiresAt: { __type: 'Date', iso: expiry.toISOString() },
+        expiresAt: { __type: "Date", iso: expiry.toISOString() },
         updatedAt: updatedAt.toISOString(),
       }
     );
@@ -111,14 +111,14 @@ describe('Auth', () => {
     await session.fetch();
     await new Promise(resolve => setTimeout(resolve, 1000));
     await session.fetch();
-    expect(session.get('expiresAt') > expiry).toBeTrue();
+    expect(session.get("expiresAt") > expiry).toBeTrue();
   });
 
-  it('should load auth without a config', async () => {
+  it("should load auth without a config", async () => {
     const user = new Parse.User();
     await user.signUp({
-      username: 'hello',
-      password: 'password',
+      username: "hello",
+      password: "password",
     });
     expect(user.getSessionToken()).not.toBeUndefined();
     const userAuth = await getAuthForSessionToken({
@@ -128,29 +128,29 @@ describe('Auth', () => {
     expect(userAuth.user.id).toBe(user.id);
   });
 
-  it('should load auth with a config', async () => {
+  it("should load auth with a config", async () => {
     const user = new Parse.User();
     await user.signUp({
-      username: 'hello',
-      password: 'password',
+      username: "hello",
+      password: "password",
     });
     expect(user.getSessionToken()).not.toBeUndefined();
     const userAuth = await getAuthForSessionToken({
       sessionToken: user.getSessionToken(),
-      config: Config.get('test'),
+      config: Config.get("test"),
     });
     expect(userAuth.user instanceof Parse.User).toBe(true);
     expect(userAuth.user.id).toBe(user.id);
   });
 
-  describe('getRolesForUser', () => {
+  describe("getRolesForUser", () => {
     const rolesNumber = 100;
 
-    it('should load all roles without config', async () => {
+    it("should load all roles without config", async () => {
       const user = new Parse.User();
       await user.signUp({
-        username: 'hello',
-        password: 'password',
+        username: "hello",
+        password: "password",
       });
       expect(user.getSessionToken()).not.toBeUndefined();
       const userAuth = await getAuthForSessionToken({
@@ -159,7 +159,7 @@ describe('Auth', () => {
       const roles = [];
       for (let i = 0; i < rolesNumber; i++) {
         const acl = new Parse.ACL();
-        const role = new Parse.Role('roleloadtest' + i, acl);
+        const role = new Parse.Role("roleloadtest" + i, acl);
         role.getUsers().add([user]);
         roles.push(role);
       }
@@ -169,21 +169,21 @@ describe('Auth', () => {
       expect(cloudRoles.length).toBe(rolesNumber);
     });
 
-    it('should load all roles with config', async () => {
+    it("should load all roles with config", async () => {
       const user = new Parse.User();
       await user.signUp({
-        username: 'hello',
-        password: 'password',
+        username: "hello",
+        password: "password",
       });
       expect(user.getSessionToken()).not.toBeUndefined();
       const userAuth = await getAuthForSessionToken({
         sessionToken: user.getSessionToken(),
-        config: Config.get('test'),
+        config: Config.get("test"),
       });
       const roles = [];
       for (let i = 0; i < rolesNumber; i++) {
         const acl = new Parse.ACL();
-        const role = new Parse.Role('roleloadtest' + i, acl);
+        const role = new Parse.Role("roleloadtest" + i, acl);
         role.getUsers().add([user]);
         roles.push(role);
       }
@@ -193,32 +193,32 @@ describe('Auth', () => {
       expect(cloudRoles.length).toBe(rolesNumber);
     });
 
-    it('should load all roles for different users with config', async () => {
+    it("should load all roles for different users with config", async () => {
       const user = new Parse.User();
       await user.signUp({
-        username: 'hello',
-        password: 'password',
+        username: "hello",
+        password: "password",
       });
       const user2 = new Parse.User();
       await user2.signUp({
-        username: 'world',
-        password: '1234',
+        username: "world",
+        password: "1234",
       });
       expect(user.getSessionToken()).not.toBeUndefined();
       const userAuth = await getAuthForSessionToken({
         sessionToken: user.getSessionToken(),
-        config: Config.get('test'),
+        config: Config.get("test"),
       });
       const user2Auth = await getAuthForSessionToken({
         sessionToken: user2.getSessionToken(),
-        config: Config.get('test'),
+        config: Config.get("test"),
       });
       const roles = [];
       for (let i = 0; i < rolesNumber; i += 1) {
         const acl = new Parse.ACL();
         const acl2 = new Parse.ACL();
-        const role = new Parse.Role('roleloadtest' + i, acl);
-        const role2 = new Parse.Role('role2loadtest' + i, acl2);
+        const role = new Parse.Role("roleloadtest" + i, acl);
+        const role2 = new Parse.Role("role2loadtest" + i, acl2);
         role.getUsers().add([user]);
         role2.getUsers().add([user2]);
         roles.push(role);
@@ -234,15 +234,21 @@ describe('Auth', () => {
   });
 });
 
-describe('extendSessionOnUse', () => {
+describe("extendSessionOnUse", () => {
   it(`shouldUpdateSessionExpiry()`, async () => {
-    const { shouldUpdateSessionExpiry } = require('../lib/Auth');
+    const { shouldUpdateSessionExpiry } = require("../lib/Auth");
     let update = new Date(Date.now() - 86410 * 1000);
 
-    const res = shouldUpdateSessionExpiry({ sessionLength: 86460 }, { updatedAt: update });
+    const res = shouldUpdateSessionExpiry(
+      { sessionLength: 86460 },
+      { updatedAt: update }
+    );
 
     update = new Date(Date.now() - 43210 * 1000);
-    const res2 = shouldUpdateSessionExpiry({ sessionLength: 86460 }, { updatedAt: update });
+    const res2 = shouldUpdateSessionExpiry(
+      { sessionLength: 86460 },
+      { updatedAt: update }
+    );
 
     expect(res).toBe(true);
     expect(res2).toBe(false);

@@ -1,28 +1,31 @@
-import { Parse } from 'parse/node';
-import * as triggers from '../triggers';
-import { addRateLimit } from '../middlewares';
-const Config = require('../Config');
+import { Parse } from "parse/node";
+import * as triggers from "../triggers";
+import { addRateLimit } from "../middlewares";
+const Config = require("../Config");
 
 function isParseObjectConstructor(object) {
-  return typeof object === 'function' && Object.prototype.hasOwnProperty.call(object, 'className');
+  return (
+    typeof object === "function" &&
+    Object.prototype.hasOwnProperty.call(object, "className")
+  );
 }
 
 function validateValidator(validator) {
-  if (!validator || typeof validator === 'function') {
+  if (!validator || typeof validator === "function") {
     return;
   }
   const fieldOptions = {
-    type: ['Any'],
+    type: ["Any"],
     constant: [Boolean],
-    default: ['Any'],
-    options: [Array, 'function', 'Any'],
+    default: ["Any"],
+    options: [Array, "function", "Any"],
     required: [Boolean],
     error: [String],
   };
   const allowedKeys = {
     requireUser: [Boolean],
-    requireAnyUserRoles: [Array, 'function'],
-    requireAllUserRoles: [Array, 'function'],
+    requireAnyUserRoles: [Array, "function"],
+    requireAllUserRoles: [Array, "function"],
     requireMaster: [Boolean],
     validateMasterKey: [Boolean],
     skipWithMasterKey: [Boolean],
@@ -32,15 +35,15 @@ function validateValidator(validator) {
   };
   const getType = fn => {
     if (Array.isArray(fn)) {
-      return 'array';
+      return "array";
     }
-    if (fn === 'Any' || fn === 'function') {
+    if (fn === "Any" || fn === "function") {
       return fn;
     }
     const type = typeof fn;
-    if (typeof fn === 'function') {
+    if (typeof fn === "function") {
       const match = fn && fn.toString().match(/^\s*function (\w+)/);
-      return (match ? match[1] : 'function').toLowerCase();
+      return (match ? match[1] : "function").toLowerCase();
     }
     return type;
   };
@@ -51,15 +54,15 @@ function validateValidator(validator) {
     }
     const types = parameter.map(type => getType(type));
     const type = getType(validatorParam);
-    if (!types.includes(type) && !types.includes('Any')) {
+    if (!types.includes(type) && !types.includes("Any")) {
       throw `Invalid type for Cloud Function validation key ${key}. Expected ${types.join(
-        '|'
+        "|"
       )}, actual ${type}`;
     }
   };
   for (const key in validator) {
     checkKey(key, allowedKeys, validator[key]);
-    if (key === 'fields' || key === 'requireUserKeys') {
+    if (key === "fields" || key === "requireUserKeys") {
       const values = validator[key];
       if (Array.isArray(values)) {
         continue;
@@ -76,15 +79,15 @@ function validateValidator(validator) {
 const getRoute = parseClass => {
   const route =
     {
-      _User: 'users',
-      _Session: 'sessions',
-      '@File': 'files',
-      '@Config': 'config',
-    }[parseClass] || 'classes';
-  if (parseClass === '@File') {
+      _User: "users",
+      _Session: "sessions",
+      "@File": "files",
+      "@Config": "config",
+    }[parseClass] || "classes";
+  if (parseClass === "@File") {
     return `/${route}/:id?(.*)`;
   }
-  if (parseClass === '@Config') {
+  if (parseClass === "@Config") {
     return `/${route}`;
   }
   return `/${route}/${parseClass}/:id?(.*)`;
@@ -127,10 +130,18 @@ var ParseCloud = {};
  */
 ParseCloud.define = function (functionName, handler, validationHandler) {
   validateValidator(validationHandler);
-  triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
+  triggers.addFunction(
+    functionName,
+    handler,
+    validationHandler,
+    Parse.applicationId
+  );
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
-      { requestPath: `/functions/${functionName}`, ...validationHandler.rateLimit },
+      {
+        requestPath: `/functions/${functionName}`,
+        ...validationHandler.rateLimit,
+      },
       Parse.applicationId,
       true
     );
@@ -192,7 +203,7 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
     addRateLimit(
       {
         requestPath: getRoute(className),
-        requestMethods: ['POST', 'PUT'],
+        requestMethods: ["POST", "PUT"],
         ...validationHandler.rateLimit,
       },
       Parse.applicationId,
@@ -239,7 +250,7 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
     addRateLimit(
       {
         requestPath: getRoute(className),
-        requestMethods: 'DELETE',
+        requestMethods: "DELETE",
         ...validationHandler.rateLimit,
       },
       Parse.applicationId,
@@ -272,18 +283,27 @@ ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
  * @param {Function} func The function to run before a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
 ParseCloud.beforeLogin = function (handler, validationHandler) {
-  let className = '_User';
-  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
+  let className = "_User";
+  if (typeof handler === "string" || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
     className = triggers.getClassName(handler);
     handler = arguments[1];
     validationHandler = arguments.length >= 2 ? arguments[2] : null;
   }
-  triggers.addTrigger(triggers.Types.beforeLogin, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.beforeLogin,
+    className,
+    handler,
+    Parse.applicationId
+  );
   if (validationHandler && validationHandler.rateLimit) {
     addRateLimit(
-      { requestPath: `/login`, requestMethods: 'POST', ...validationHandler.rateLimit },
+      {
+        requestPath: `/login`,
+        requestMethods: "POST",
+        ...validationHandler.rateLimit,
+      },
       Parse.applicationId,
       true
     );
@@ -310,14 +330,19 @@ ParseCloud.beforeLogin = function (handler, validationHandler) {
  * @param {Function} func The function to run after a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
 ParseCloud.afterLogin = function (handler) {
-  let className = '_User';
-  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
+  let className = "_User";
+  if (typeof handler === "string" || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
     className = triggers.getClassName(handler);
     handler = arguments[1];
   }
-  triggers.addTrigger(triggers.Types.afterLogin, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.afterLogin,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -339,14 +364,19 @@ ParseCloud.afterLogin = function (handler) {
  * @param {Function} func The function to run after a logout. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
 ParseCloud.afterLogout = function (handler) {
-  let className = '_Session';
-  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
+  let className = "_Session";
+  if (typeof handler === "string" || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
     // code consistency with the other hook types.
     className = triggers.getClassName(handler);
     handler = arguments[1];
   }
-  triggers.addTrigger(triggers.Types.afterLogout, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.afterLogout,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -460,7 +490,7 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
     addRateLimit(
       {
         requestPath: getRoute(className),
-        requestMethods: 'GET',
+        requestMethods: "GET",
         ...validationHandler.rateLimit,
       },
       Parse.applicationId,
@@ -561,7 +591,7 @@ ParseCloud.sendEmail = function (data) {
   const emailAdapter = config.userController.adapter;
   if (!emailAdapter) {
     config.loggerController.error(
-      'Failed to send email because no mail adapter is configured for Parse Server.'
+      "Failed to send email because no mail adapter is configured for Parse Server."
     );
     return;
   }
@@ -631,7 +661,11 @@ ParseCloud.onLiveQueryEvent = function (handler) {
  * @param {Function} func The function to run after a live query event. This function can be async and should take one parameter, a {@link Parse.Cloud.LiveQueryEventTrigger}.
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.LiveQueryEventTrigger}, or a {@link Parse.Cloud.ValidatorObject}.
  */
-ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandler) {
+ParseCloud.afterLiveQueryEvent = function (
+  parseClass,
+  handler,
+  validationHandler
+) {
   const className = triggers.getClassName(parseClass);
   validateValidator(validationHandler);
   triggers.addTrigger(
@@ -652,7 +686,7 @@ ParseCloud._removeAllHooks = () => {
 ParseCloud.useMasterKey = () => {
   // eslint-disable-next-line
   console.warn(
-    'Parse.Cloud.useMasterKey is deprecated (and has no effect anymore) on parse-server, please refer to the cloud code migration notes: http://docs.parseplatform.org/parse-server/guide/#master-key-must-be-passed-explicitly'
+    "Parse.Cloud.useMasterKey is deprecated (and has no effect anymore) on parse-server, please refer to the cloud code migration notes: http://docs.parseplatform.org/parse-server/guide/#master-key-must-be-passed-explicitly"
   );
 };
 

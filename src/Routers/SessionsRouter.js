@@ -1,24 +1,27 @@
-import ClassesRouter from './ClassesRouter';
-import Parse from 'parse/node';
-import rest from '../rest';
-import Auth from '../Auth';
-import RestWrite from '../RestWrite';
+import ClassesRouter from "./ClassesRouter";
+import Parse from "parse/node";
+import rest from "../rest";
+import Auth from "../Auth";
+import RestWrite from "../RestWrite";
 
 export class SessionsRouter extends ClassesRouter {
   className() {
-    return '_Session';
+    return "_Session";
   }
 
   handleMe(req) {
     // TODO: Verify correct behavior
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token required.');
+      throw new Parse.Error(
+        Parse.Error.INVALID_SESSION_TOKEN,
+        "Session token required."
+      );
     }
     return rest
       .find(
         req.config,
         Auth.master(req.config),
-        '_Session',
+        "_Session",
         { sessionToken: req.info.sessionToken },
         undefined,
         req.info.clientSDK,
@@ -26,7 +29,10 @@ export class SessionsRouter extends ClassesRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Session token not found.');
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            "Session token not found."
+          );
         }
         return {
           response: response.results[0],
@@ -40,12 +46,12 @@ export class SessionsRouter extends ClassesRouter {
     // Issue #2720
     // Calling without a session token would result in a not found user
     if (!user) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid session');
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, "invalid session");
     }
     const { sessionData, createSession } = RestWrite.createSession(config, {
       userId: user.id,
       createdWith: {
-        action: 'upgrade',
+        action: "upgrade",
       },
       installationId: req.auth.installationId,
     });
@@ -54,12 +60,12 @@ export class SessionsRouter extends ClassesRouter {
       .then(() => {
         // delete the session token, use the db to skip beforeSave
         return config.database.update(
-          '_User',
+          "_User",
           {
             objectId: user.id,
           },
           {
-            sessionToken: { __op: 'Delete' },
+            sessionToken: { __op: "Delete" },
           }
         );
       })
@@ -69,25 +75,25 @@ export class SessionsRouter extends ClassesRouter {
   }
 
   mountRoutes() {
-    this.route('GET', '/sessions/me', req => {
+    this.route("GET", "/sessions/me", req => {
       return this.handleMe(req);
     });
-    this.route('GET', '/sessions', req => {
+    this.route("GET", "/sessions", req => {
       return this.handleFind(req);
     });
-    this.route('GET', '/sessions/:objectId', req => {
+    this.route("GET", "/sessions/:objectId", req => {
       return this.handleGet(req);
     });
-    this.route('POST', '/sessions', req => {
+    this.route("POST", "/sessions", req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/sessions/:objectId', req => {
+    this.route("PUT", "/sessions/:objectId", req => {
       return this.handleUpdate(req);
     });
-    this.route('DELETE', '/sessions/:objectId', req => {
+    this.route("DELETE", "/sessions/:objectId", req => {
       return this.handleDelete(req);
     });
-    this.route('POST', '/upgradeToRevocableSession', req => {
+    this.route("POST", "/upgradeToRevocableSession", req => {
       return this.handleUpdateToRevocableSession(req);
     });
   }

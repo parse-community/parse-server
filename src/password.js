@@ -1,9 +1,9 @@
 // Tools for encrypting and decrypting passwords.
 // Basically promise-friendly wrappers for bcrypt.
-var bcrypt = require('bcryptjs');
+var bcrypt = require("bcryptjs");
 
 try {
-  const _bcrypt = require('@node-rs/bcrypt');
+  const _bcrypt = require("@node-rs/bcrypt");
   bcrypt = {
     hash: _bcrypt.hash,
     compare: _bcrypt.verify,

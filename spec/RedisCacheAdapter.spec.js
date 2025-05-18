@@ -1,4 +1,5 @@
-const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const RedisCacheAdapter =
+  require("../lib/Adapters/Cache/RedisCacheAdapter").default;
 
 function wait(sleep) {
   return new Promise(function (resolve) {
@@ -11,10 +12,10 @@ set PARSE_SERVER_TEST_CACHE='redis'
 and make sure a redis server is available on the default port
  */
 describe_only(() => {
-  return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
-})('RedisCacheAdapter', function () {
-  const KEY = 'hello';
-  const VALUE = 'world';
+  return process.env.PARSE_SERVER_TEST_CACHE === "redis";
+})("RedisCacheAdapter", function () {
+  const KEY = "hello";
+  const VALUE = "world";
   let cache;
 
   beforeEach(async () => {
@@ -23,7 +24,7 @@ describe_only(() => {
     await cache.clear();
   });
 
-  it('should get/set/clear', async () => {
+  it("should get/set/clear", async () => {
     const cacheNaN = new RedisCacheAdapter({
       ttl: NaN,
     });
@@ -37,7 +38,7 @@ describe_only(() => {
     await cacheNaN.clear();
   });
 
-  it('should expire after ttl', done => {
+  it("should expire after ttl", done => {
     cache
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
@@ -48,7 +49,7 @@ describe_only(() => {
       .then(done);
   });
 
-  it('should not store value for ttl=0', done => {
+  it("should not store value for ttl=0", done => {
     cache
       .put(KEY, VALUE, 0)
       .then(() => cache.get(KEY))
@@ -56,7 +57,7 @@ describe_only(() => {
       .then(done);
   });
 
-  it('should not expire when ttl=Infinity', done => {
+  it("should not expire when ttl=Infinity", done => {
     cache
       .put(KEY, VALUE, Infinity)
       .then(() => cache.get(KEY))
@@ -67,10 +68,10 @@ describe_only(() => {
       .then(done);
   });
 
-  it('should fallback to default ttl', done => {
+  it("should fallback to default ttl", done => {
     let promise = Promise.resolve();
 
-    [-100, null, undefined, 'not number', true].forEach(ttl => {
+    [-100, null, undefined, "not number", true].forEach(ttl => {
       promise = promise.then(() =>
         cache
           .put(KEY, VALUE, ttl)
@@ -85,7 +86,7 @@ describe_only(() => {
     promise.then(done);
   });
 
-  it('should find un-expired records', done => {
+  it("should find un-expired records", done => {
     cache
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
@@ -96,7 +97,7 @@ describe_only(() => {
       .then(done);
   });
 
-  it('handleShutdown, close connection', async () => {
+  it("handleShutdown, close connection", async () => {
     await cache.handleShutdown();
     setTimeout(() => {
       expect(cache.client.isOpen).toBe(false);
@@ -105,11 +106,11 @@ describe_only(() => {
 });
 
 describe_only(() => {
-  return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
-})('RedisCacheAdapter/KeyPromiseQueue', function () {
-  const KEY1 = 'key1';
-  const KEY2 = 'key2';
-  const VALUE = 'hello';
+  return process.env.PARSE_SERVER_TEST_CACHE === "redis";
+})("RedisCacheAdapter/KeyPromiseQueue", function () {
+  const KEY1 = "key1";
+  const KEY2 = "key2";
+  const VALUE = "hello";
 
   // number of chained ops on a single key
   function getQueueCountForKey(cache, key) {
@@ -121,7 +122,7 @@ describe_only(() => {
     return Object.keys(cache.queue.queue).length;
   }
 
-  it('it should clear completed operations from queue', async done => {
+  it("it should clear completed operations from queue", async done => {
     const cache = new RedisCacheAdapter({ ttl: NaN });
     await cache.connect();
 
@@ -144,7 +145,7 @@ describe_only(() => {
     promise.then(() => expect(getQueueCount(cache)).toEqual(0)).then(done);
   });
 
-  it('it should count per key chained operations correctly', async done => {
+  it("it should count per key chained operations correctly", async done => {
     const cache = new RedisCacheAdapter({ ttl: NaN });
     await cache.connect();
 
@@ -168,12 +169,12 @@ describe_only(() => {
       .then(done);
   });
 
-  it('should start and connect cache adapter', async () => {
+  it("should start and connect cache adapter", async () => {
     const server = await reconfigureServer({
       cacheAdapter: {
-        module: `${__dirname.replace('/spec', '')}/lib/Adapters/Cache/RedisCacheAdapter`,
+        module: `${__dirname.replace("/spec", "")}/lib/Adapters/Cache/RedisCacheAdapter`,
         options: {
-          url: 'redis://127.0.0.1:6379/1',
+          url: "redis://127.0.0.1:6379/1",
         },
       },
     });

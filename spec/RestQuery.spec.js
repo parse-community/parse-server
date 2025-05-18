@@ -1,28 +1,28 @@
-'use strict';
+"use strict";
 // These tests check the "find" functionality of the REST API.
-const auth = require('../lib/Auth');
-const Config = require('../lib/Config');
-const rest = require('../lib/rest');
-const RestQuery = require('../lib/RestQuery');
-const request = require('../lib/request');
+const auth = require("../lib/Auth");
+const Config = require("../lib/Config");
+const rest = require("../lib/rest");
+const RestQuery = require("../lib/RestQuery");
+const request = require("../lib/request");
 
-const querystring = require('querystring');
+const querystring = require("querystring");
 
 let config;
 let database;
 const nobody = auth.nobody(config);
 
-describe('rest query', () => {
+describe("rest query", () => {
   beforeEach(() => {
-    config = Config.get('test');
+    config = Config.get("test");
     database = config.database;
   });
 
-  it('basic query', done => {
+  it("basic query", done => {
     rest
-      .create(config, nobody, 'TestObject', {})
+      .create(config, nobody, "TestObject", {})
       .then(() => {
-        return rest.find(config, nobody, 'TestObject', {});
+        return rest.find(config, nobody, "TestObject", {});
       })
       .then(response => {
         expect(response.results.length).toEqual(1);
@@ -30,14 +30,14 @@ describe('rest query', () => {
       });
   });
 
-  it('query with limit', done => {
+  it("query with limit", done => {
     rest
-      .create(config, nobody, 'TestObject', { foo: 'baz' })
+      .create(config, nobody, "TestObject", { foo: "baz" })
       .then(() => {
-        return rest.create(config, nobody, 'TestObject', { foo: 'qux' });
+        return rest.create(config, nobody, "TestObject", { foo: "qux" });
       })
       .then(() => {
-        return rest.find(config, nobody, 'TestObject', {}, { limit: 1 });
+        return rest.find(config, nobody, "TestObject", {}, { limit: 1 });
       })
       .then(response => {
         expect(response.results.length).toEqual(1);
@@ -47,22 +47,22 @@ describe('rest query', () => {
   });
 
   const data = {
-    username: 'blah',
-    password: 'pass',
-    sessionToken: 'abc123',
+    username: "blah",
+    password: "pass",
+    sessionToken: "abc123",
   };
 
-  it_exclude_dbs(['postgres'])(
-    'query for user w/ legacy credentials without masterKey has them stripped from results',
+  it_exclude_dbs(["postgres"])(
+    "query for user w/ legacy credentials without masterKey has them stripped from results",
     done => {
       database
-        .create('_User', data)
+        .create("_User", data)
         .then(() => {
-          return rest.find(config, nobody, '_User');
+          return rest.find(config, nobody, "_User");
         })
         .then(result => {
           const user = result.results[0];
-          expect(user.username).toEqual('blah');
+          expect(user.username).toEqual("blah");
           expect(user.sessionToken).toBeUndefined();
           expect(user.password).toBeUndefined();
           done();
@@ -70,17 +70,17 @@ describe('rest query', () => {
     }
   );
 
-  it_exclude_dbs(['postgres'])(
-    'query for user w/ legacy credentials with masterKey has them stripped from results',
+  it_exclude_dbs(["postgres"])(
+    "query for user w/ legacy credentials with masterKey has them stripped from results",
     done => {
       database
-        .create('_User', data)
+        .create("_User", data)
         .then(() => {
-          return rest.find(config, { isMaster: true }, '_User');
+          return rest.find(config, { isMaster: true }, "_User");
         })
         .then(result => {
           const user = result.results[0];
-          expect(user.username).toEqual('blah');
+          expect(user.username).toEqual("blah");
           expect(user.sessionToken).toBeUndefined();
           expect(user.password).toBeUndefined();
           done();
@@ -89,64 +89,70 @@ describe('rest query', () => {
   );
 
   // Created to test a scenario in AnyPic
-  it_exclude_dbs(['postgres'])('query with include', done => {
+  it_exclude_dbs(["postgres"])("query with include", done => {
     let photo = {
-      foo: 'bar',
+      foo: "bar",
     };
     let user = {
-      username: 'aUsername',
-      password: 'aPassword',
-      ACL: { '*': { read: true } },
+      username: "aUsername",
+      password: "aPassword",
+      ACL: { "*": { read: true } },
     };
     const activity = {
-      type: 'comment',
+      type: "comment",
       photo: {
-        __type: 'Pointer',
-        className: 'TestPhoto',
-        objectId: '',
+        __type: "Pointer",
+        className: "TestPhoto",
+        objectId: "",
       },
       fromUser: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: '',
+        __type: "Pointer",
+        className: "_User",
+        objectId: "",
       },
     };
     const queryWhere = {
       photo: {
-        __type: 'Pointer',
-        className: 'TestPhoto',
-        objectId: '',
+        __type: "Pointer",
+        className: "TestPhoto",
+        objectId: "",
       },
-      type: 'comment',
+      type: "comment",
     };
     const queryOptions = {
-      include: 'fromUser',
-      order: 'createdAt',
+      include: "fromUser",
+      order: "createdAt",
       limit: 30,
     };
     rest
-      .create(config, nobody, 'TestPhoto', photo)
+      .create(config, nobody, "TestPhoto", photo)
       .then(p => {
         photo = p;
-        return rest.create(config, nobody, '_User', user);
+        return rest.create(config, nobody, "_User", user);
       })
       .then(u => {
         user = u.response;
         activity.photo.objectId = photo.objectId;
         activity.fromUser.objectId = user.objectId;
-        return rest.create(config, nobody, 'TestActivity', activity);
+        return rest.create(config, nobody, "TestActivity", activity);
       })
       .then(() => {
         queryWhere.photo.objectId = photo.objectId;
-        return rest.find(config, nobody, 'TestActivity', queryWhere, queryOptions);
+        return rest.find(
+          config,
+          nobody,
+          "TestActivity",
+          queryWhere,
+          queryOptions
+        );
       })
       .then(response => {
         const results = response.results;
         expect(results.length).toEqual(1);
-        expect(typeof results[0].objectId).toEqual('string');
-        expect(typeof results[0].photo).toEqual('object');
-        expect(typeof results[0].fromUser).toEqual('object');
-        expect(typeof results[0].fromUser.username).toEqual('string');
+        expect(typeof results[0].objectId).toEqual("string");
+        expect(typeof results[0].photo).toEqual("object");
+        expect(typeof results[0].fromUser).toEqual("object");
+        expect(typeof results[0].fromUser.username).toEqual("string");
         done();
       })
       .catch(error => {
@@ -154,59 +160,70 @@ describe('rest query', () => {
       });
   });
 
-  it('query non-existent class when disabled client class creation', done => {
+  it("query non-existent class when disabled client class creation", done => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
-      () => {
-        fail('Should throw an error');
-        done();
-      },
-      err => {
-        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-        expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
-        );
-        done();
-      }
-    );
+    rest
+      .find(customConfig, auth.nobody(customConfig), "ClientClassCreation", {})
+      .then(
+        () => {
+          fail("Should throw an error");
+          done();
+        },
+        err => {
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          expect(err.message).toEqual(
+            "This user is not allowed to access " +
+              "non-existent class: ClientClassCreation"
+          );
+          done();
+        }
+      );
   });
 
-  it('query existent class when disabled client class creation', async () => {
+  it("query existent class when disabled client class creation", async () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
     const schema = await config.database.loadSchema();
-    const actualSchema = await schema.addClassIfNotExists('ClientClassCreation', {});
-    expect(actualSchema.className).toEqual('ClientClassCreation');
+    const actualSchema = await schema.addClassIfNotExists(
+      "ClientClassCreation",
+      {}
+    );
+    expect(actualSchema.className).toEqual("ClientClassCreation");
 
     await schema.reloadData({ clearCache: true });
     // Should not throw
     const result = await rest.find(
       customConfig,
       auth.nobody(customConfig),
-      'ClientClassCreation',
+      "ClientClassCreation",
       {}
     );
     expect(result.results.length).toEqual(0);
   });
 
-  it('query internal field', async () => {
+  it("query internal field", async () => {
     const internalFields = [
-      '_email_verify_token',
-      '_perishable_token',
-      '_tombstone',
-      '_email_verify_token_expires_at',
-      '_failed_login_count',
-      '_account_lockout_expires_at',
-      '_password_changed_at',
-      '_password_history',
+      "_email_verify_token",
+      "_perishable_token",
+      "_tombstone",
+      "_email_verify_token_expires_at",
+      "_failed_login_count",
+      "_account_lockout_expires_at",
+      "_password_changed_at",
+      "_password_history",
     ];
     await Promise.all([
       ...internalFields.map(field =>
-        expectAsync(new Parse.Query(Parse.User).exists(field).find()).toBeRejectedWith(
-          new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${field}`)
+        expectAsync(
+          new Parse.Query(Parse.User).exists(field).find()
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.INVALID_KEY_NAME,
+            `Invalid key name: ${field}`
+          )
         )
       ),
       ...internalFields.map(field =>
@@ -215,80 +232,85 @@ describe('rest query', () => {
     ]);
   });
 
-  it('query protected field', async () => {
+  it("query protected field", async () => {
     const user = new Parse.User();
-    user.setUsername('username1');
-    user.setPassword('password');
+    user.setUsername("username1");
+    user.setPassword("password");
     await user.signUp();
     const config = Config.get(Parse.applicationId);
-    const obj = new Parse.Object('Test');
+    const obj = new Parse.Object("Test");
 
-    obj.set('owner', user);
-    obj.set('test', 'test');
-    obj.set('zip', 1234);
+    obj.set("owner", user);
+    obj.set("test", "test");
+    obj.set("zip", 1234);
     await obj.save();
 
     const schema = await config.database.loadSchema();
     await schema.updateClass(
-      'Test',
+      "Test",
       {},
       {
-        get: { '*': true },
-        find: { '*': true },
-        protectedFields: { [user.id]: ['zip'] },
+        get: { "*": true },
+        find: { "*": true },
+        protectedFields: { [user.id]: ["zip"] },
       }
     );
     await Promise.all([
-      new Parse.Query('Test').exists('test').find(),
-      expectAsync(new Parse.Query('Test').exists('zip').find()).toBeRejectedWith(
+      new Parse.Query("Test").exists("test").find(),
+      expectAsync(
+        new Parse.Query("Test").exists("zip").find()
+      ).toBeRejectedWith(
         new Parse.Error(
           Parse.Error.OPERATION_FORBIDDEN,
-          'This user is not allowed to query zip on class Test'
+          "This user is not allowed to query zip on class Test"
         )
       ),
     ]);
   });
 
-  it('query protected field with matchesQuery', async () => {
+  it("query protected field with matchesQuery", async () => {
     const user = new Parse.User();
-    user.setUsername('username1');
-    user.setPassword('password');
+    user.setUsername("username1");
+    user.setPassword("password");
     await user.signUp();
-    const test = new Parse.Object('TestObject', { user });
+    const test = new Parse.Object("TestObject", { user });
     await test.save();
     const subQuery = new Parse.Query(Parse.User);
-    subQuery.exists('_perishable_token');
+    subQuery.exists("_perishable_token");
     await expectAsync(
-      new Parse.Query('TestObject').matchesQuery('user', subQuery).find()
+      new Parse.Query("TestObject").matchesQuery("user", subQuery).find()
     ).toBeRejectedWith(
-      new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: _perishable_token')
+      new Parse.Error(
+        Parse.Error.INVALID_KEY_NAME,
+        "Invalid key name: _perishable_token"
+      )
     );
   });
 
-  it('query with wrongly encoded parameter', done => {
+  it("query with wrongly encoded parameter", done => {
     rest
-      .create(config, nobody, 'TestParameterEncode', { foo: 'bar' })
+      .create(config, nobody, "TestParameterEncode", { foo: "bar" })
       .then(() => {
-        return rest.create(config, nobody, 'TestParameterEncode', {
-          foo: 'baz',
+        return rest.create(config, nobody, "TestParameterEncode", {
+          foo: "baz",
         });
       })
       .then(() => {
         const headers = {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
+          "X-Parse-Application-Id": "test",
+          "X-Parse-REST-API-Key": "rest",
         };
 
         const p0 = request({
           headers: headers,
           url:
-            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            "http://localhost:8378/1/classes/TestParameterEncode?" +
             querystring
               .stringify({
                 where: '{"foo":{"$ne": "baz"}}',
                 limit: 1,
               })
-              .replace('=', '%3D'),
+              .replace("=", "%3D"),
         }).then(fail, response => {
           const error = response.data;
           expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
@@ -297,12 +319,12 @@ describe('rest query', () => {
         const p1 = request({
           headers: headers,
           url:
-            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            "http://localhost:8378/1/classes/TestParameterEncode?" +
             querystring
               .stringify({
                 limit: 1,
               })
-              .replace('=', '%3D'),
+              .replace("=", "%3D"),
         }).then(fail, response => {
           const error = response.data;
           expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
@@ -312,19 +334,19 @@ describe('rest query', () => {
       .then(done)
       .catch(err => {
         jfail(err);
-        fail('should not fail');
+        fail("should not fail");
         done();
       });
   });
 
-  it('query with limit = 0', done => {
+  it("query with limit = 0", done => {
     rest
-      .create(config, nobody, 'TestObject', { foo: 'baz' })
+      .create(config, nobody, "TestObject", { foo: "baz" })
       .then(() => {
-        return rest.create(config, nobody, 'TestObject', { foo: 'qux' });
+        return rest.create(config, nobody, "TestObject", { foo: "qux" });
       })
       .then(() => {
-        return rest.find(config, nobody, 'TestObject', {}, { limit: 0 });
+        return rest.find(config, nobody, "TestObject", {}, { limit: 0 });
       })
       .then(response => {
         expect(response.results.length).toEqual(0);
@@ -332,14 +354,20 @@ describe('rest query', () => {
       });
   });
 
-  it('query with limit = 0 and count = 1', done => {
+  it("query with limit = 0 and count = 1", done => {
     rest
-      .create(config, nobody, 'TestObject', { foo: 'baz' })
+      .create(config, nobody, "TestObject", { foo: "baz" })
       .then(() => {
-        return rest.create(config, nobody, 'TestObject', { foo: 'qux' });
+        return rest.create(config, nobody, "TestObject", { foo: "qux" });
       })
       .then(() => {
-        return rest.find(config, nobody, 'TestObject', {}, { limit: 0, count: 1 });
+        return rest.find(
+          config,
+          nobody,
+          "TestObject",
+          {},
+          { limit: 0, count: 1 }
+        );
       })
       .then(response => {
         expect(response.results.length).toEqual(0);
@@ -348,23 +376,23 @@ describe('rest query', () => {
       });
   });
 
-  it('makes sure null pointers are handed correctly #2189', done => {
-    const object = new Parse.Object('AnObject');
-    const anotherObject = new Parse.Object('AnotherObject');
+  it("makes sure null pointers are handed correctly #2189", done => {
+    const object = new Parse.Object("AnObject");
+    const anotherObject = new Parse.Object("AnotherObject");
     anotherObject
       .save()
       .then(() => {
-        object.set('values', [null, null, anotherObject]);
+        object.set("values", [null, null, anotherObject]);
         return object.save();
       })
       .then(() => {
-        const query = new Parse.Query('AnObject');
-        query.include('values');
+        const query = new Parse.Query("AnObject");
+        query.include("values");
         return query.first();
       })
       .then(
         result => {
-          const values = result.get('values');
+          const values = result.get("values");
           expect(values.length).toBe(3);
           let anotherObjectFound = false;
           let nullCounts = 0;
@@ -388,54 +416,60 @@ describe('rest query', () => {
   });
 });
 
-describe('RestQuery.each', () => {
+describe("RestQuery.each", () => {
   beforeEach(() => {
-    config = Config.get('test');
+    config = Config.get("test");
   });
-  it_id('3416c90b-ee2e-4bb5-9231-46cd181cd0a2')(it)('should run each', async () => {
-    const objects = [];
-    while (objects.length != 10) {
-      objects.push(new Parse.Object('Object', { value: objects.length }));
-    }
-    const config = Config.get('test');
-    await Parse.Object.saveAll(objects);
-    const query = await RestQuery({
-      method: RestQuery.Method.find,
-      config,
-      auth: auth.master(config),
-      className: 'Object',
-      restWhere: { value: { $gt: 2 } },
-      restOptions: { limit: 2 },
-    });
-    const spy = spyOn(query, 'execute').and.callThrough();
-    const classSpy = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
-    const results = [];
-    await query.each(result => {
-      expect(result.value).toBeGreaterThan(2);
-      results.push(result);
-    });
-    expect(spy.calls.count()).toBe(0);
-    expect(classSpy.calls.count()).toBe(4);
-    expect(results.length).toBe(7);
-  });
-
-  it_id('0fe22501-4b18-461e-b87d-82ceac4a496e')(it)(
-    'should work with query on relations',
+  it_id("3416c90b-ee2e-4bb5-9231-46cd181cd0a2")(it)(
+    "should run each",
     async () => {
-      const objectA = new Parse.Object('Letter', { value: 'A' });
-      const objectB = new Parse.Object('Letter', { value: 'B' });
+      const objects = [];
+      while (objects.length != 10) {
+        objects.push(new Parse.Object("Object", { value: objects.length }));
+      }
+      const config = Config.get("test");
+      await Parse.Object.saveAll(objects);
+      const query = await RestQuery({
+        method: RestQuery.Method.find,
+        config,
+        auth: auth.master(config),
+        className: "Object",
+        restWhere: { value: { $gt: 2 } },
+        restOptions: { limit: 2 },
+      });
+      const spy = spyOn(query, "execute").and.callThrough();
+      const classSpy = spyOn(
+        RestQuery._UnsafeRestQuery.prototype,
+        "execute"
+      ).and.callThrough();
+      const results = [];
+      await query.each(result => {
+        expect(result.value).toBeGreaterThan(2);
+        results.push(result);
+      });
+      expect(spy.calls.count()).toBe(0);
+      expect(classSpy.calls.count()).toBe(4);
+      expect(results.length).toBe(7);
+    }
+  );
 
-      const object1 = new Parse.Object('Number', { value: '1' });
-      const object2 = new Parse.Object('Number', { value: '2' });
-      const object3 = new Parse.Object('Number', { value: '3' });
-      const object4 = new Parse.Object('Number', { value: '4' });
+  it_id("0fe22501-4b18-461e-b87d-82ceac4a496e")(it)(
+    "should work with query on relations",
+    async () => {
+      const objectA = new Parse.Object("Letter", { value: "A" });
+      const objectB = new Parse.Object("Letter", { value: "B" });
+
+      const object1 = new Parse.Object("Number", { value: "1" });
+      const object2 = new Parse.Object("Number", { value: "2" });
+      const object3 = new Parse.Object("Number", { value: "3" });
+      const object4 = new Parse.Object("Number", { value: "4" });
       await Parse.Object.saveAll([object1, object2, object3, object4]);
 
-      objectA.relation('numbers').add(object1);
-      objectB.relation('numbers').add(object2);
+      objectA.relation("numbers").add(object1);
+      objectB.relation("numbers").add(object2);
       await Parse.Object.saveAll([objectA, objectB]);
 
-      const config = Config.get('test');
+      const config = Config.get("test");
 
       /**
        * Two queries needed since objectId are sorted and we can't know which one
@@ -445,11 +479,11 @@ describe('RestQuery.each', () => {
         method: RestQuery.Method.get,
         config,
         auth: auth.master(config),
-        className: 'Letter',
+        className: "Letter",
         restWhere: {
           numbers: {
-            __type: 'Pointer',
-            className: 'Number',
+            __type: "Pointer",
+            className: "Number",
             objectId: object1.id,
           },
         },
@@ -460,18 +494,21 @@ describe('RestQuery.each', () => {
         method: RestQuery.Method.get,
         config,
         auth: auth.master(config),
-        className: 'Letter',
+        className: "Letter",
         restWhere: {
           numbers: {
-            __type: 'Pointer',
-            className: 'Number',
+            __type: "Pointer",
+            className: "Number",
             objectId: object2.id,
           },
         },
         restOptions: { limit: 1 },
       });
 
-      const classSpy = spyOn(RestQuery._UnsafeRestQuery.prototype, 'execute').and.callThrough();
+      const classSpy = spyOn(
+        RestQuery._UnsafeRestQuery.prototype,
+        "execute"
+      ).and.callThrough();
       const resultsOne = [];
       const resultsTwo = [];
       await queryOne.each(result => {
@@ -486,13 +523,13 @@ describe('RestQuery.each', () => {
     }
   );
 
-  it('test afterSave response object is return', done => {
-    Parse.Cloud.beforeSave('TestObject2', function (req) {
-      req.object.set('tobeaddbefore', true);
-      req.object.set('tobeaddbeforeandremoveafter', true);
+  it("test afterSave response object is return", done => {
+    Parse.Cloud.beforeSave("TestObject2", function (req) {
+      req.object.set("tobeaddbefore", true);
+      req.object.set("tobeaddbeforeandremoveafter", true);
     });
 
-    Parse.Cloud.afterSave('TestObject2', function (req) {
+    Parse.Cloud.afterSave("TestObject2", function (req) {
       const jsonObject = req.object.toJSON();
       delete jsonObject.todelete;
       delete jsonObject.tobeaddbeforeandremoveafter;
@@ -501,34 +538,36 @@ describe('RestQuery.each', () => {
       return jsonObject;
     });
 
-    rest.create(config, nobody, 'TestObject2', { todelete: true, tokeep: true }).then(response => {
-      expect(response.response.toadd).toBeTruthy();
-      expect(response.response.tokeep).toBeTruthy();
-      expect(response.response.tobeaddbefore).toBeTruthy();
-      expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
-      expect(response.response.todelete).toBeUndefined();
-      done();
-    });
+    rest
+      .create(config, nobody, "TestObject2", { todelete: true, tokeep: true })
+      .then(response => {
+        expect(response.response.toadd).toBeTruthy();
+        expect(response.response.tokeep).toBeTruthy();
+        expect(response.response.tobeaddbefore).toBeTruthy();
+        expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
+        expect(response.response.todelete).toBeUndefined();
+        done();
+      });
   });
 
-  it('test afterSave should not affect save response', async () => {
-    Parse.Cloud.beforeSave('TestObject2', ({ object }) => {
-      object.set('addedBeforeSave', true);
+  it("test afterSave should not affect save response", async () => {
+    Parse.Cloud.beforeSave("TestObject2", ({ object }) => {
+      object.set("addedBeforeSave", true);
     });
-    Parse.Cloud.afterSave('TestObject2', ({ object }) => {
-      object.set('addedAfterSave', true);
-      object.unset('initialToRemove');
+    Parse.Cloud.afterSave("TestObject2", ({ object }) => {
+      object.set("addedAfterSave", true);
+      object.unset("initialToRemove");
     });
-    const { response } = await rest.create(config, nobody, 'TestObject2', {
+    const { response } = await rest.create(config, nobody, "TestObject2", {
       initialSave: true,
       initialToRemove: true,
     });
     expect(Object.keys(response).sort()).toEqual([
-      'addedAfterSave',
-      'addedBeforeSave',
-      'createdAt',
-      'initialToRemove',
-      'objectId',
+      "addedAfterSave",
+      "addedBeforeSave",
+      "createdAt",
+      "initialToRemove",
+      "objectId",
     ]);
   });
 });

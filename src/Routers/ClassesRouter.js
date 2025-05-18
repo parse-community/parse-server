@@ -1,16 +1,16 @@
-import PromiseRouter from '../PromiseRouter';
-import rest from '../rest';
-import _ from 'lodash';
-import Parse from 'parse/node';
-import { promiseEnsureIdempotency } from '../middlewares';
+import PromiseRouter from "../PromiseRouter";
+import rest from "../rest";
+import _ from "lodash";
+import Parse from "parse/node";
+import { promiseEnsureIdempotency } from "../middlewares";
 
 const ALLOWED_GET_QUERY_KEYS = [
-  'keys',
-  'include',
-  'excludeKeys',
-  'readPreference',
-  'includeReadPreference',
-  'subqueryReadPreference',
+  "keys",
+  "include",
+  "excludeKeys",
+  "readPreference",
+  "includeReadPreference",
+  "subqueryReadPreference",
 ];
 
 export class ClassesRouter extends PromiseRouter {
@@ -19,8 +19,14 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleFind(req) {
-    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
-    const options = ClassesRouter.optionsFromBody(body, req.config.defaultLimit);
+    const body = Object.assign(
+      req.body || {},
+      ClassesRouter.JSONFromQuery(req.query)
+    );
+    const options = ClassesRouter.optionsFromBody(
+      body,
+      req.config.defaultLimit
+    );
     if (req.config.maxLimit && body.limit > req.config.maxLimit) {
       // Silently replace the limit on the query with the max configured
       options.limit = Number(req.config.maxLimit);
@@ -28,7 +34,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.redirectClassNameForKey) {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
     }
-    if (typeof body.where === 'string') {
+    if (typeof body.where === "string") {
       body.where = JSON.parse(body.where);
     }
     return rest
@@ -48,12 +54,18 @@ export class ClassesRouter extends PromiseRouter {
 
   // Returns a promise for a {response} object.
   handleGet(req) {
-    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(
+      req.body || {},
+      ClassesRouter.JSONFromQuery(req.query)
+    );
     const options = {};
 
     for (const key of Object.keys(body)) {
       if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          "Improper encode of parameter"
+        );
       }
     }
 
@@ -66,13 +78,13 @@ export class ClassesRouter extends PromiseRouter {
     if (body.excludeKeys != null) {
       options.excludeKeys = String(body.excludeKeys);
     }
-    if (typeof body.readPreference === 'string') {
+    if (typeof body.readPreference === "string") {
       options.readPreference = body.readPreference;
     }
-    if (typeof body.includeReadPreference === 'string') {
+    if (typeof body.includeReadPreference === "string") {
       options.includeReadPreference = body.includeReadPreference;
     }
-    if (typeof body.subqueryReadPreference === 'string') {
+    if (typeof body.subqueryReadPreference === "string") {
       options.subqueryReadPreference = body.subqueryReadPreference;
     }
 
@@ -88,10 +100,13 @@ export class ClassesRouter extends PromiseRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            "Object not found."
+          );
         }
 
-        if (this.className(req) === '_User') {
+        if (this.className(req) === "_User") {
           delete response.results[0].sessionToken;
 
           const user = response.results[0];
@@ -107,11 +122,14 @@ export class ClassesRouter extends PromiseRouter {
 
   handleCreate(req) {
     if (
-      this.className(req) === '_User' &&
-      typeof req.body?.objectId === 'string' &&
-      req.body.objectId.startsWith('role:')
+      this.className(req) === "_User" &&
+      typeof req.body?.objectId === "string" &&
+      req.body.objectId.startsWith("role:")
     ) {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Invalid object ID.');
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        "Invalid object ID."
+      );
     }
     return rest.create(
       req.config,
@@ -138,7 +156,13 @@ export class ClassesRouter extends PromiseRouter {
 
   handleDelete(req) {
     return rest
-      .del(req.config, req.auth, this.className(req), req.params.objectId, req.info.context)
+      .del(
+        req.config,
+        req.auth,
+        this.className(req),
+        req.params.objectId,
+        req.info.context
+      )
       .then(() => {
         return { response: {} };
       });
@@ -158,27 +182,30 @@ export class ClassesRouter extends PromiseRouter {
 
   static optionsFromBody(body, defaultLimit) {
     const allowConstraints = [
-      'skip',
-      'limit',
-      'order',
-      'count',
-      'keys',
-      'excludeKeys',
-      'include',
-      'includeAll',
-      'redirectClassNameForKey',
-      'where',
-      'readPreference',
-      'includeReadPreference',
-      'subqueryReadPreference',
-      'hint',
-      'explain',
-      'comment',
+      "skip",
+      "limit",
+      "order",
+      "count",
+      "keys",
+      "excludeKeys",
+      "include",
+      "includeAll",
+      "redirectClassNameForKey",
+      "where",
+      "readPreference",
+      "includeReadPreference",
+      "subqueryReadPreference",
+      "hint",
+      "explain",
+      "comment",
     ];
 
     for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          `Invalid parameter for query: ${key}`
+        );
       }
     }
     const options = {};
@@ -208,41 +235,49 @@ export class ClassesRouter extends PromiseRouter {
     if (body.includeAll) {
       options.includeAll = true;
     }
-    if (typeof body.readPreference === 'string') {
+    if (typeof body.readPreference === "string") {
       options.readPreference = body.readPreference;
     }
-    if (typeof body.includeReadPreference === 'string') {
+    if (typeof body.includeReadPreference === "string") {
       options.includeReadPreference = body.includeReadPreference;
     }
-    if (typeof body.subqueryReadPreference === 'string') {
+    if (typeof body.subqueryReadPreference === "string") {
       options.subqueryReadPreference = body.subqueryReadPreference;
     }
-    if (body.hint && (typeof body.hint === 'string' || typeof body.hint === 'object')) {
+    if (
+      body.hint &&
+      (typeof body.hint === "string" || typeof body.hint === "object")
+    ) {
       options.hint = body.hint;
     }
     if (body.explain) {
       options.explain = body.explain;
     }
-    if (body.comment && typeof body.comment === 'string') {
+    if (body.comment && typeof body.comment === "string") {
       options.comment = body.comment;
     }
     return options;
   }
 
   mountRoutes() {
-    this.route('GET', '/classes/:className', req => {
+    this.route("GET", "/classes/:className", req => {
       return this.handleFind(req);
     });
-    this.route('GET', '/classes/:className/:objectId', req => {
+    this.route("GET", "/classes/:className/:objectId", req => {
       return this.handleGet(req);
     });
-    this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
+    this.route("POST", "/classes/:className", promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
-      return this.handleUpdate(req);
-    });
-    this.route('DELETE', '/classes/:className/:objectId', req => {
+    this.route(
+      "PUT",
+      "/classes/:className/:objectId",
+      promiseEnsureIdempotency,
+      req => {
+        return this.handleUpdate(req);
+      }
+    );
+    this.route("DELETE", "/classes/:className/:objectId", req => {
       return this.handleDelete(req);
     });
   }

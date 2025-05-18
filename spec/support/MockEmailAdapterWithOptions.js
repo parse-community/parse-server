@@ -1,6 +1,6 @@
 module.exports = options => {
   if (!options) {
-    throw 'Options were not provided';
+    throw "Options were not provided";
   }
   const adapter = {
     sendVerificationEmail: () => Promise.resolve(),

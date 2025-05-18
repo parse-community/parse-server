@@ -1,5 +1,5 @@
-import logger from '../logger';
-import Deprecations from './Deprecations';
+import logger from "../logger";
+import Deprecations from "./Deprecations";
 
 /**
  * The deprecator class.
@@ -76,7 +76,7 @@ class Deprecator {
   static _logGeneric({ usage, solution }) {
     // Compose message
     let output = `DeprecationWarning: ${usage} is deprecated and will be removed in a future version.`;
-    output += solution ? ` ${solution}` : '';
+    output += solution ? ` ${solution}` : "";
     logger.warn(output);
   }
 
@@ -94,8 +94,14 @@ class Deprecator {
    * automatically added to the message. It should only contain the instruction on how
    * to resolve this warning.
    */
-  static _logOption({ optionKey, envKey, changeNewKey, changeNewDefault, solution }) {
-    const type = optionKey ? 'option' : 'environment key';
+  static _logOption({
+    optionKey,
+    envKey,
+    changeNewKey,
+    changeNewDefault,
+    solution,
+  }) {
+    const type = optionKey ? "option" : "environment key";
     const key = optionKey ? optionKey : envKey;
     const keyAction =
       changeNewKey == null
@@ -106,11 +112,13 @@ class Deprecator {
 
     // Compose message
     let output = `DeprecationWarning: The Parse Server ${type} '${key}' `;
-    output += changeNewKey ? `is deprecated and will be ${keyAction} in a future version.` : '';
+    output += changeNewKey
+      ? `is deprecated and will be ${keyAction} in a future version.`
+      : "";
     output += changeNewDefault
       ? `default will change to '${changeNewDefault}' in a future version.`
-      : '';
-    output += solution ? ` ${solution}` : '';
+      : "";
+    output += solution ? ` ${solution}` : "";
     logger.warn(output);
   }
 }

@@ -1,8 +1,8 @@
-'use strict';
+"use strict";
 
-const Parse = require('parse/node');
-const { ReadPreference, Collection } = require('mongodb');
-const request = require('../lib/request');
+const Parse = require("parse/node");
+const { ReadPreference, Collection } = require("mongodb");
+const request = require("../lib/request");
 
 function waitForReplication() {
   return new Promise(function (resolve) {
@@ -10,28 +10,30 @@ function waitForReplication() {
   });
 }
 
-describe_only_db('mongo')('Read preference option', () => {
-  it('should find in primary by default', done => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+describe_only_db("mongo")("Read preference option", () => {
+  it("should find in primary by default", done => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     Parse.Object.saveAll([obj0, obj1])
       .then(() => {
-        spyOn(Collection.prototype, 'find').and.callThrough();
+        spyOn(Collection.prototype, "find").and.callThrough();
 
-        const query = new Parse.Query('MyObject');
-        query.equalTo('boolKey', false);
+        const query = new Parse.Query("MyObject");
+        query.equalTo("boolKey", false);
 
         return query.find().then(results => {
           expect(results.length).toBe(1);
-          expect(results[0].get('boolKey')).toBe(false);
+          expect(results[0].get("boolKey")).toBe(false);
           let myObjectReadPreference = null;
           Collection.prototype.find.calls.all().forEach(call => {
-            if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+            if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
               myObjectReadPreference = true;
-              expect(call.object.s.readPreference.mode).toBe(ReadPreference.PRIMARY);
+              expect(call.object.s.readPreference.mode).toBe(
+                ReadPreference.PRIMARY
+              );
             }
           });
 
@@ -43,10 +45,12 @@ describe_only_db('mongo')('Read preference option', () => {
       .catch(done.fail);
   });
 
-  xit('should preserve the read preference set (#4831)', async () => {
-    const { MongoStorageAdapter } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
+  xit("should preserve the read preference set (#4831)", async () => {
+    const {
+      MongoStorageAdapter,
+    } = require("../lib/Adapters/Storage/Mongo/MongoStorageAdapter");
     const adapterOptions = {
-      uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+      uri: "mongodb://localhost:27017/parseServerMongoAdapterTestDatabase",
       mongoOptions: {
         readPreference: ReadPreference.NEAREST,
       },
@@ -55,24 +59,24 @@ describe_only_db('mongo')('Read preference option', () => {
       databaseAdapter: new MongoStorageAdapter(adapterOptions),
     });
 
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = true;
         expect(call.args[1].readPreference).toBe(ReadPreference.NEAREST);
       }
@@ -81,30 +85,30 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toBe(true);
   });
 
-  it('should change read preference in the beforeFind trigger', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference in the beforeFind trigger", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -112,31 +116,31 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should check read preference as case insensitive', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should check read preference as case insensitive", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'sEcOnDarY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "sEcOnDarY";
     });
 
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -144,31 +148,31 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference in the beforeFind trigger even changing query', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference in the beforeFind trigger even changing query", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.query.equalTo('boolKey', true);
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.query.equalTo("boolKey", true);
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(true);
+    expect(results[0].get("boolKey")).toBe(true);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -176,35 +180,35 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference in the beforeFind trigger even returning query', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference in the beforeFind trigger even returning query", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY";
 
-      const otherQuery = new Parse.Query('MyObject');
-      otherQuery.equalTo('boolKey', true);
+      const otherQuery = new Parse.Query("MyObject");
+      otherQuery.equalTo("boolKey", true);
       return otherQuery;
     });
 
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(true);
+    expect(results[0].get("boolKey")).toBe(true);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -212,34 +216,34 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference in the beforeFind trigger even returning promise', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference in the beforeFind trigger even returning promise", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY";
 
-      const otherQuery = new Parse.Query('MyObject');
-      otherQuery.equalTo('boolKey', true);
+      const otherQuery = new Parse.Query("MyObject");
+      otherQuery.equalTo("boolKey", true);
       return Promise.resolve(otherQuery);
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(true);
+    expect(results[0].get("boolKey")).toBe(true);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -247,30 +251,30 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference to PRIMARY_PREFERRED', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference to PRIMARY_PREFERRED", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'PRIMARY_PREFERRED';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "PRIMARY_PREFERRED";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -278,30 +282,30 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.PRIMARY_PREFERRED);
   });
 
-  it('should change read preference to SECONDARY_PREFERRED', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference to SECONDARY_PREFERRED", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY_PREFERRED';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY_PREFERRED";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -309,30 +313,30 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should change read preference to NEAREST', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference to NEAREST", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'NEAREST';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "NEAREST";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
 
     const results = await query.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -340,28 +344,28 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.NEAREST);
   });
 
-  it('should change read preference for GET', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference for GET", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject');
+    const query = new Parse.Query("MyObject");
 
     const result = await query.get(obj0.id);
-    expect(result.get('boolKey')).toBe(false);
+    expect(result.get("boolKey")).toBe(false);
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -369,26 +373,26 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for GET using API', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference for GET using API", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
+      method: "GET",
+      url: "http://localhost:8378/1/classes/MyObject/" + obj0.id,
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -397,7 +401,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -405,22 +409,25 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for GET directly from API', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference for GET directly from API", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
+      method: "GET",
+      url:
+        "http://localhost:8378/1/classes/MyObject/" +
+        obj0.id +
+        "?readPreference=SECONDARY",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -428,7 +435,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -436,26 +443,29 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for GET using API through the beforeFind overriding API option', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference for GET using API through the beforeFind overriding API option", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY_PREFERRED';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY_PREFERRED";
     });
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
+      method: "GET",
+      url:
+        "http://localhost:8378/1/classes/MyObject/" +
+        obj0.id +
+        "?readPreference=SECONDARY",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -463,7 +473,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -471,26 +481,26 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should change read preference for FIND using API through beforeFind trigger', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference for FIND using API through beforeFind trigger", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/',
+      method: "GET",
+      url: "http://localhost:8378/1/classes/MyObject/",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -498,7 +508,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -506,22 +516,22 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for FIND directly from API', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference for FIND directly from API", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject?readPreference=SECONDARY',
+      method: "GET",
+      url: "http://localhost:8378/1/classes/MyObject?readPreference=SECONDARY",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -529,7 +539,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -537,26 +547,26 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for FIND using API through the beforeFind overriding API option', async () => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  it("should change read preference for FIND using API through the beforeFind overriding API option", async () => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     await Parse.Object.saveAll([obj0, obj1]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY_PREFERRED';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY_PREFERRED";
     });
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
-      url: 'http://localhost:8378/1/classes/MyObject/?readPreference=SECONDARY',
+      method: "GET",
+      url: "http://localhost:8378/1/classes/MyObject/?readPreference=SECONDARY",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -564,7 +574,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
@@ -572,21 +582,21 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  xit('should change read preference for count', done => {
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+  xit("should change read preference for count", done => {
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
 
     Parse.Object.saveAll([obj0, obj1]).then(() => {
-      spyOn(Collection.prototype, 'find').and.callThrough();
+      spyOn(Collection.prototype, "find").and.callThrough();
 
-      Parse.Cloud.beforeFind('MyObject', req => {
-        req.readPreference = 'SECONDARY';
+      Parse.Cloud.beforeFind("MyObject", req => {
+        req.readPreference = "SECONDARY";
       });
 
-      const query = new Parse.Query('MyObject');
-      query.equalTo('boolKey', false);
+      const query = new Parse.Query("MyObject");
+      query.equalTo("boolKey", false);
 
       query
         .count()
@@ -595,7 +605,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
           let myObjectReadPreference = null;
           Collection.prototype.find.calls.all().forEach(call => {
-            if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+            if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
               myObjectReadPreference = call.args[1].readPreference;
             }
           });
@@ -608,129 +618,131 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-  it('should change read preference for `aggregate` using `beforeFind`', async () => {
+  it("should change read preference for `aggregate` using `beforeFind`", async () => {
     // Save objects
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
     await Parse.Object.saveAll([obj0, obj1]);
     // Add trigger
-    Parse.Cloud.beforeFind('MyObject', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject", req => {
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
     // Spy on DB adapter
-    spyOn(Collection.prototype, 'aggregate').and.callThrough();
+    spyOn(Collection.prototype, "aggregate").and.callThrough();
     // Query
-    const query = new Parse.Query('MyObject');
+    const query = new Parse.Query("MyObject");
     const results = await query.aggregate([{ $match: { boolKey: false } }]);
     // Validate
     expect(results.length).toBe(1);
     let readPreference = null;
     Collection.prototype.aggregate.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') > -1) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") > -1) {
         readPreference = call.args[1].readPreference;
       }
     });
     expect(readPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for `find` using query option', async () => {
+  it("should change read preference for `find` using query option", async () => {
     // Save objects
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
     await Parse.Object.saveAll([obj0, obj1]);
     await waitForReplication();
 
     // Spy on DB adapter
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
     // Query
-    const query = new Parse.Query('MyObject');
-    query.equalTo('boolKey', false);
-    query.readPreference('SECONDARY');
+    const query = new Parse.Query("MyObject");
+    query.equalTo("boolKey", false);
+    query.readPreference("SECONDARY");
     const results = await query.find();
     // Validate
     expect(results.length).toBe(1);
     let myObjectReadPreference = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") >= 0) {
         myObjectReadPreference = call.args[1].readPreference;
       }
     });
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for `aggregate` using query option', async () => {
+  it("should change read preference for `aggregate` using query option", async () => {
     // Save objects
-    const obj0 = new Parse.Object('MyObject');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject');
-    obj1.set('boolKey', true);
+    const obj0 = new Parse.Object("MyObject");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject");
+    obj1.set("boolKey", true);
     await Parse.Object.saveAll([obj0, obj1]);
     await waitForReplication();
 
     // Spy on DB adapter
-    spyOn(Collection.prototype, 'aggregate').and.callThrough();
+    spyOn(Collection.prototype, "aggregate").and.callThrough();
     // Query
-    const query = new Parse.Query('MyObject');
-    query.readPreference('SECONDARY');
+    const query = new Parse.Query("MyObject");
+    query.readPreference("SECONDARY");
     const results = await query.aggregate([{ $match: { boolKey: false } }]);
     // Validate
     expect(results.length).toBe(1);
     let readPreference = null;
     Collection.prototype.aggregate.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject') > -1) {
+      if (call.object.s.namespace.collection.indexOf("MyObject") > -1) {
         readPreference = call.args[1].readPreference;
       }
     });
     expect(readPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should find includes in same replica of readPreference by default', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should find includes in same replica of readPreference by default", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject2', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject2", req => {
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject2');
-    query.equalTo('boolKey', false);
-    query.include('myObject1');
-    query.include('myObject1.myObject0');
+    const query = new Parse.Query("MyObject2");
+    query.equalTo("boolKey", false);
+    query.include("myObject1");
+    query.include("myObject1.myObject0");
 
     const results = await query.find();
     expect(results.length).toBe(1);
     const firstResult = results[0];
-    expect(firstResult.get('boolKey')).toBe(false);
-    expect(firstResult.get('myObject1').get('boolKey')).toBe(true);
-    expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(false);
+    expect(firstResult.get("boolKey")).toBe(false);
+    expect(firstResult.get("myObject1").get("boolKey")).toBe(true);
+    expect(firstResult.get("myObject1").get("myObject0").get("boolKey")).toBe(
+      false
+    );
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -740,48 +752,50 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change includes read preference', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should change includes read preference", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject2', req => {
-      req.readPreference = 'SECONDARY_PREFERRED';
-      req.includeReadPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject2", req => {
+      req.readPreference = "SECONDARY_PREFERRED";
+      req.includeReadPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query = new Parse.Query('MyObject2');
-    query.equalTo('boolKey', false);
-    query.include('myObject1');
-    query.include('myObject1.myObject0');
+    const query = new Parse.Query("MyObject2");
+    query.equalTo("boolKey", false);
+    query.include("myObject1");
+    query.include("myObject1.myObject0");
 
     const results = await query.find();
     expect(results.length).toBe(1);
     const firstResult = results[0];
-    expect(firstResult.get('boolKey')).toBe(false);
-    expect(firstResult.get('myObject1').get('boolKey')).toBe(true);
-    expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(false);
+    expect(firstResult.get("boolKey")).toBe(false);
+    expect(firstResult.get("myObject1").get("boolKey")).toBe(true);
+    expect(firstResult.get("myObject1").get("myObject0").get("boolKey")).toBe(
+      false
+    );
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -791,31 +805,31 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should change includes read preference when finding through API', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should change includes read preference when finding through API", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
+      method: "GET",
       url:
-        'http://localhost:8378/1/classes/MyObject2/' +
+        "http://localhost:8378/1/classes/MyObject2/" +
         obj2.id +
-        '?include=' +
-        JSON.stringify(['myObject1', 'myObject1.myObject0']) +
-        '&readPreference=SECONDARY_PREFERRED&includeReadPreference=SECONDARY',
+        "?include=" +
+        JSON.stringify(["myObject1", "myObject1.myObject0"]) +
+        "&readPreference=SECONDARY_PREFERRED&includeReadPreference=SECONDARY",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -828,13 +842,13 @@ describe_only_db('mongo')('Read preference option', () => {
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -844,31 +858,31 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should change includes read preference when getting through API', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should change includes read preference when getting through API", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
     await waitForReplication();
 
     const response = await request({
-      method: 'GET',
+      method: "GET",
       url:
-        'http://localhost:8378/1/classes/MyObject2?where=' +
+        "http://localhost:8378/1/classes/MyObject2?where=" +
         JSON.stringify({ boolKey: false }) +
-        '&include=' +
-        JSON.stringify(['myObject1', 'myObject1.myObject0']) +
-        '&readPreference=SECONDARY_PREFERRED&includeReadPreference=SECONDARY',
+        "&include=" +
+        JSON.stringify(["myObject1", "myObject1.myObject0"]) +
+        "&readPreference=SECONDARY_PREFERRED&includeReadPreference=SECONDARY",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -882,13 +896,13 @@ describe_only_db('mongo')('Read preference option', () => {
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -898,48 +912,48 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should find subqueries in same replica of readPreference by default', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should find subqueries in same replica of readPreference by default", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject2', req => {
-      req.readPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject2", req => {
+      req.readPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query0 = new Parse.Query('MyObject0');
-    query0.equalTo('boolKey', false);
+    const query0 = new Parse.Query("MyObject0");
+    query0.equalTo("boolKey", false);
 
-    const query1 = new Parse.Query('MyObject1');
-    query1.matchesQuery('myObject0', query0);
+    const query1 = new Parse.Query("MyObject1");
+    query1.matchesQuery("myObject0", query0);
 
-    const query2 = new Parse.Query('MyObject2');
-    query2.matchesQuery('myObject1', query1);
+    const query2 = new Parse.Query("MyObject2");
+    query2.matchesQuery("myObject1", query1);
 
     const results = await query2.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -949,49 +963,49 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change subqueries read preference when using matchesQuery', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should change subqueries read preference when using matchesQuery", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject2', req => {
-      req.readPreference = 'SECONDARY_PREFERRED';
-      req.subqueryReadPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject2", req => {
+      req.readPreference = "SECONDARY_PREFERRED";
+      req.subqueryReadPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query0 = new Parse.Query('MyObject0');
-    query0.equalTo('boolKey', false);
+    const query0 = new Parse.Query("MyObject0");
+    query0.equalTo("boolKey", false);
 
-    const query1 = new Parse.Query('MyObject1');
-    query1.matchesQuery('myObject0', query0);
+    const query1 = new Parse.Query("MyObject1");
+    query1.matchesQuery("myObject0", query0);
 
-    const query2 = new Parse.Query('MyObject2');
-    query2.matchesQuery('myObject1', query1);
+    const query2 = new Parse.Query("MyObject2");
+    query2.matchesQuery("myObject1", query1);
 
     const results = await query2.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -1001,49 +1015,49 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should change subqueries read preference when using doesNotMatchQuery', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should change subqueries read preference when using doesNotMatchQuery", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject2', req => {
-      req.readPreference = 'SECONDARY_PREFERRED';
-      req.subqueryReadPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject2", req => {
+      req.readPreference = "SECONDARY_PREFERRED";
+      req.subqueryReadPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query0 = new Parse.Query('MyObject0');
-    query0.equalTo('boolKey', false);
+    const query0 = new Parse.Query("MyObject0");
+    query0.equalTo("boolKey", false);
 
-    const query1 = new Parse.Query('MyObject1');
-    query1.doesNotMatchQuery('myObject0', query0);
+    const query1 = new Parse.Query("MyObject1");
+    query1.doesNotMatchQuery("myObject0", query0);
 
-    const query2 = new Parse.Query('MyObject2');
-    query2.doesNotMatchQuery('myObject1', query1);
+    const query2 = new Parse.Query("MyObject2");
+    query2.doesNotMatchQuery("myObject1", query1);
 
     const results = await query2.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -1053,50 +1067,50 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
 
-    Parse.Cloud.beforeFind('MyObject2', req => {
-      req.readPreference = 'SECONDARY_PREFERRED';
-      req.subqueryReadPreference = 'SECONDARY';
+    Parse.Cloud.beforeFind("MyObject2", req => {
+      req.readPreference = "SECONDARY_PREFERRED";
+      req.subqueryReadPreference = "SECONDARY";
     });
     await waitForReplication();
 
-    const query0 = new Parse.Query('MyObject0');
-    query0.equalTo('boolKey', false);
+    const query0 = new Parse.Query("MyObject0");
+    query0.equalTo("boolKey", false);
 
-    const query1 = new Parse.Query('MyObject1');
-    query1.equalTo('boolKey', true);
+    const query1 = new Parse.Query("MyObject1");
+    query1.equalTo("boolKey", true);
 
-    const query2 = new Parse.Query('MyObject2');
-    query2.matchesKeyInQuery('boolKey', 'boolKey', query0);
-    query2.doesNotMatchKeyInQuery('boolKey', 'boolKey', query1);
+    const query2 = new Parse.Query("MyObject2");
+    query2.matchesKeyInQuery("boolKey", "boolKey", query0);
+    query2.doesNotMatchKeyInQuery("boolKey", "boolKey", query1);
 
     const results = await query2.find();
     expect(results.length).toBe(1);
-    expect(results[0].get('boolKey')).toBe(false);
+    expect(results[0].get("boolKey")).toBe(false);
 
     let myObjectReadPreference0 = null;
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });
@@ -1106,48 +1120,48 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
   });
 
-  it('should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery to find through API', async () => {
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    const obj1 = new Parse.Object('MyObject1');
-    obj1.set('boolKey', true);
-    obj1.set('myObject0', obj0);
-    const obj2 = new Parse.Object('MyObject2');
-    obj2.set('boolKey', false);
-    obj2.set('myObject1', obj1);
+  it("should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery to find through API", async () => {
+    const obj0 = new Parse.Object("MyObject0");
+    obj0.set("boolKey", false);
+    const obj1 = new Parse.Object("MyObject1");
+    obj1.set("boolKey", true);
+    obj1.set("myObject0", obj0);
+    const obj2 = new Parse.Object("MyObject2");
+    obj2.set("boolKey", false);
+    obj2.set("myObject1", obj1);
 
     await Parse.Object.saveAll([obj0, obj1, obj2]);
-    spyOn(Collection.prototype, 'find').and.callThrough();
+    spyOn(Collection.prototype, "find").and.callThrough();
     await waitForReplication();
 
     const whereString = JSON.stringify({
       boolKey: {
         $select: {
           query: {
-            className: 'MyObject0',
+            className: "MyObject0",
             where: { boolKey: false },
           },
-          key: 'boolKey',
+          key: "boolKey",
         },
         $dontSelect: {
           query: {
-            className: 'MyObject1',
+            className: "MyObject1",
             where: { boolKey: true },
           },
-          key: 'boolKey',
+          key: "boolKey",
         },
       },
     });
 
     const response = await request({
-      method: 'GET',
+      method: "GET",
       url:
-        'http://localhost:8378/1/classes/MyObject2/?where=' +
+        "http://localhost:8378/1/classes/MyObject2/?where=" +
         whereString +
-        '&readPreference=SECONDARY_PREFERRED&subqueryReadPreference=SECONDARY',
+        "&readPreference=SECONDARY_PREFERRED&subqueryReadPreference=SECONDARY",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
       json: true,
     });
@@ -1158,13 +1172,13 @@ describe_only_db('mongo')('Read preference option', () => {
     let myObjectReadPreference1 = null;
     let myObjectReadPreference2 = null;
     Collection.prototype.find.calls.all().forEach(call => {
-      if (call.object.s.namespace.collection.indexOf('MyObject0') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject0") >= 0) {
         myObjectReadPreference0 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject1') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject1") >= 0) {
         myObjectReadPreference1 = call.args[1].readPreference;
       }
-      if (call.object.s.namespace.collection.indexOf('MyObject2') >= 0) {
+      if (call.object.s.namespace.collection.indexOf("MyObject2") >= 0) {
         myObjectReadPreference2 = call.args[1].readPreference;
       }
     });

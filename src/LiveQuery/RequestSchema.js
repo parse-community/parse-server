@@ -1,151 +1,151 @@
 const general = {
-  title: 'General request schema',
-  type: 'object',
+  title: "General request schema",
+  type: "object",
   properties: {
     op: {
-      type: 'string',
-      enum: ['connect', 'subscribe', 'unsubscribe', 'update'],
+      type: "string",
+      enum: ["connect", "subscribe", "unsubscribe", "update"],
     },
   },
-  required: ['op'],
+  required: ["op"],
 };
 
 const connect = {
-  title: 'Connect operation schema',
-  type: 'object',
+  title: "Connect operation schema",
+  type: "object",
   properties: {
-    op: 'connect',
+    op: "connect",
     applicationId: {
-      type: 'string',
+      type: "string",
     },
     javascriptKey: {
-      type: 'string',
+      type: "string",
     },
     masterKey: {
-      type: 'string',
+      type: "string",
     },
     clientKey: {
-      type: 'string',
+      type: "string",
     },
     windowsKey: {
-      type: 'string',
+      type: "string",
     },
     restAPIKey: {
-      type: 'string',
+      type: "string",
     },
     sessionToken: {
-      type: 'string',
+      type: "string",
     },
     installationId: {
-      type: 'string',
+      type: "string",
     },
   },
-  required: ['op', 'applicationId'],
+  required: ["op", "applicationId"],
   additionalProperties: false,
 };
 
 const subscribe = {
-  title: 'Subscribe operation schema',
-  type: 'object',
+  title: "Subscribe operation schema",
+  type: "object",
   properties: {
-    op: 'subscribe',
+    op: "subscribe",
     requestId: {
-      type: 'number',
+      type: "number",
     },
     query: {
-      title: 'Query field schema',
-      type: 'object',
+      title: "Query field schema",
+      type: "object",
       properties: {
         className: {
-          type: 'string',
+          type: "string",
         },
         where: {
-          type: 'object',
+          type: "object",
         },
         keys: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'string',
+            type: "string",
           },
           minItems: 1,
           uniqueItems: true,
         },
         watch: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'string',
+            type: "string",
           },
           minItems: 1,
           uniqueItems: true,
         },
       },
-      required: ['where', 'className'],
+      required: ["where", "className"],
       additionalProperties: false,
     },
     sessionToken: {
-      type: 'string',
+      type: "string",
     },
   },
-  required: ['op', 'requestId', 'query'],
+  required: ["op", "requestId", "query"],
   additionalProperties: false,
 };
 
 const update = {
-  title: 'Update operation schema',
-  type: 'object',
+  title: "Update operation schema",
+  type: "object",
   properties: {
-    op: 'update',
+    op: "update",
     requestId: {
-      type: 'number',
+      type: "number",
     },
     query: {
-      title: 'Query field schema',
-      type: 'object',
+      title: "Query field schema",
+      type: "object",
       properties: {
         className: {
-          type: 'string',
+          type: "string",
         },
         where: {
-          type: 'object',
+          type: "object",
         },
         keys: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'string',
+            type: "string",
           },
           minItems: 1,
           uniqueItems: true,
         },
         watch: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'string',
+            type: "string",
           },
           minItems: 1,
           uniqueItems: true,
         },
       },
-      required: ['where', 'className'],
+      required: ["where", "className"],
       additionalProperties: false,
     },
     sessionToken: {
-      type: 'string',
+      type: "string",
     },
   },
-  required: ['op', 'requestId', 'query'],
+  required: ["op", "requestId", "query"],
   additionalProperties: false,
 };
 
 const unsubscribe = {
-  title: 'Unsubscribe operation schema',
-  type: 'object',
+  title: "Unsubscribe operation schema",
+  type: "object",
   properties: {
-    op: 'unsubscribe',
+    op: "unsubscribe",
     requestId: {
-      type: 'number',
+      type: "number",
     },
   },
-  required: ['op', 'requestId'],
+  required: ["op", "requestId"],
   additionalProperties: false,
 };
 

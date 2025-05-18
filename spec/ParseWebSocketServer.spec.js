@@ -1,28 +1,34 @@
-const { ParseWebSocketServer } = require('../lib/LiveQuery/ParseWebSocketServer');
-const EventEmitter = require('events');
+const {
+  ParseWebSocketServer,
+} = require("../lib/LiveQuery/ParseWebSocketServer");
+const EventEmitter = require("events");
 
-describe('ParseWebSocketServer', function () {
+describe("ParseWebSocketServer", function () {
   beforeEach(function (done) {
     // Mock ws server
 
     const mockServer = function () {
       return new EventEmitter();
     };
-    jasmine.mockLibrary('ws', 'Server', mockServer);
+    jasmine.mockLibrary("ws", "Server", mockServer);
     done();
   });
 
-  it('can handle connect event when ws is open', function (done) {
-    const onConnectCallback = jasmine.createSpy('onConnectCallback');
-    const http = require('http');
+  it("can handle connect event when ws is open", function (done) {
+    const onConnectCallback = jasmine.createSpy("onConnectCallback");
+    const http = require("http");
     const server = http.createServer();
-    const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
-      websocketTimeout: 5,
-    }).server;
+    const parseWebSocketServer = new ParseWebSocketServer(
+      server,
+      onConnectCallback,
+      {
+        websocketTimeout: 5,
+      }
+    ).server;
     const ws = new EventEmitter();
     ws.readyState = 0;
     ws.OPEN = 0;
-    ws.ping = jasmine.createSpy('ping');
+    ws.ping = jasmine.createSpy("ping");
     ws.terminate = () => {};
 
     parseWebSocketServer.onConnection(ws);
@@ -37,9 +43,9 @@ describe('ParseWebSocketServer', function () {
     }, 10);
   });
 
-  it('can handle error event', async () => {
-    jasmine.restoreLibrary('ws', 'Server');
-    const WebSocketServer = require('ws').Server;
+  it("can handle error event", async () => {
+    jasmine.restoreLibrary("ws", "Server");
+    const WebSocketServer = require("ws").Server;
     let wssError;
     class WSSAdapter {
       constructor(options) {
@@ -50,9 +56,9 @@ describe('ParseWebSocketServer', function () {
       onError() {}
       start() {
         const wss = new WebSocketServer({ server: this.options.server });
-        wss.on('listening', this.onListen);
-        wss.on('connection', this.onConnection);
-        wss.on('error', error => {
+        wss.on("listening", this.onListen);
+        wss.on("connection", this.onConnection);
+        wss.on("error", error => {
           wssError = error;
           this.onError(error);
         });
@@ -62,7 +68,7 @@ describe('ParseWebSocketServer', function () {
 
     const server = await reconfigureServer({
       liveQuery: {
-        classNames: ['TestObject'],
+        classNames: ["TestObject"],
       },
       liveQueryServerOptions: {
         wssAdapter: WSSAdapter,
@@ -72,23 +78,27 @@ describe('ParseWebSocketServer', function () {
       silent: true,
     });
     const wssAdapter = server.liveQueryServer.parseWebSocketServer.server;
-    wssAdapter.wss.emit('error', 'Invalid Packet');
-    expect(wssError).toBe('Invalid Packet');
+    wssAdapter.wss.emit("error", "Invalid Packet");
+    expect(wssError).toBe("Invalid Packet");
   });
 
-  it('can handle ping/pong', async () => {
-    const onConnectCallback = jasmine.createSpy('onConnectCallback');
-    const http = require('http');
+  it("can handle ping/pong", async () => {
+    const onConnectCallback = jasmine.createSpy("onConnectCallback");
+    const http = require("http");
     const server = http.createServer();
-    const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
-      websocketTimeout: 10,
-    }).server;
+    const parseWebSocketServer = new ParseWebSocketServer(
+      server,
+      onConnectCallback,
+      {
+        websocketTimeout: 10,
+      }
+    ).server;
 
     const ws = new EventEmitter();
     ws.readyState = 0;
     ws.OPEN = 0;
-    ws.ping = jasmine.createSpy('ping');
-    ws.terminate = jasmine.createSpy('terminate');
+    ws.ping = jasmine.createSpy("ping");
+    ws.terminate = jasmine.createSpy("terminate");
 
     parseWebSocketServer.onConnection(ws);
 
@@ -97,7 +107,7 @@ describe('ParseWebSocketServer', function () {
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(ws.ping).toHaveBeenCalled();
     expect(ws.waitingForPong).toBe(true);
-    ws.emit('pong');
+    ws.emit("pong");
     expect(ws.waitingForPong).toBe(false);
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(ws.waitingForPong).toBe(true);
@@ -105,18 +115,22 @@ describe('ParseWebSocketServer', function () {
     server.close();
   });
 
-  it('closes interrupted connection', async () => {
-    const onConnectCallback = jasmine.createSpy('onConnectCallback');
-    const http = require('http');
+  it("closes interrupted connection", async () => {
+    const onConnectCallback = jasmine.createSpy("onConnectCallback");
+    const http = require("http");
     const server = http.createServer();
-    const parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, {
-      websocketTimeout: 5,
-    }).server;
+    const parseWebSocketServer = new ParseWebSocketServer(
+      server,
+      onConnectCallback,
+      {
+        websocketTimeout: 5,
+      }
+    ).server;
     const ws = new EventEmitter();
     ws.readyState = 0;
     ws.OPEN = 0;
-    ws.ping = jasmine.createSpy('ping');
-    ws.terminate = jasmine.createSpy('terminate');
+    ws.ping = jasmine.createSpy("ping");
+    ws.terminate = jasmine.createSpy("terminate");
 
     parseWebSocketServer.onConnection(ws);
 
@@ -132,6 +146,6 @@ describe('ParseWebSocketServer', function () {
   });
 
   afterEach(function () {
-    jasmine.restoreLibrary('ws', 'Server');
+    jasmine.restoreLibrary("ws", "Server");
   });
 });

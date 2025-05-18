@@ -1,12 +1,15 @@
-import Parse from 'parse/node';
-import * as middleware from '../middlewares';
-import rest from '../rest';
-import ClassesRouter from './ClassesRouter';
-import UsersRouter from './UsersRouter';
+import Parse from "parse/node";
+import * as middleware from "../middlewares";
+import rest from "../rest";
+import ClassesRouter from "./ClassesRouter";
+import UsersRouter from "./UsersRouter";
 
 export class AggregateRouter extends ClassesRouter {
   async handleFind(req) {
-    const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(
+      req.body || {},
+      ClassesRouter.JSONFromQuery(req.query)
+    );
     const options = {};
     if (body.distinct) {
       options.distinct = String(body.distinct);
@@ -28,7 +31,7 @@ export class AggregateRouter extends ClassesRouter {
       delete body.readPreference;
     }
     options.pipeline = AggregateRouter.getPipeline(body);
-    if (typeof body.where === 'string') {
+    if (typeof body.where === "string") {
       body.where = JSON.parse(body.where);
     }
     try {
@@ -42,7 +45,7 @@ export class AggregateRouter extends ClassesRouter {
         req.info.context
       );
       for (const result of response.results) {
-        if (typeof result === 'object') {
+        if (typeof result === "object") {
           UsersRouter.removeHiddenProperties(result);
         }
       }
@@ -92,7 +95,7 @@ export class AggregateRouter extends ClassesRouter {
       if (keys.length !== 1) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
-          `Pipeline stages should only have one key but found ${keys.join(', ')}.`
+          `Pipeline stages should only have one key but found ${keys.join(", ")}.`
         );
       }
       return AggregateRouter.transformStage(keys[0], stage);
@@ -100,21 +103,24 @@ export class AggregateRouter extends ClassesRouter {
   }
 
   static transformStage(stageName, stage) {
-    const skipKeys = ['distinct', 'where'];
+    const skipKeys = ["distinct", "where"];
     if (skipKeys.includes(stageName)) {
       return;
     }
-    if (stageName[0] !== '$') {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid aggregate stage '${stageName}'.`);
+    if (stageName[0] !== "$") {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Invalid aggregate stage '${stageName}'.`
+      );
     }
-    if (stageName === '$group') {
-      if (Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
+    if (stageName === "$group") {
+      if (Object.prototype.hasOwnProperty.call(stage[stageName], "objectId")) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
           `Cannot use 'objectId' in aggregation stage $group.`
         );
       }
-      if (!Object.prototype.hasOwnProperty.call(stage[stageName], '_id')) {
+      if (!Object.prototype.hasOwnProperty.call(stage[stageName], "_id")) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
           `Invalid parameter for query: group. Missing key _id`
@@ -125,9 +131,14 @@ export class AggregateRouter extends ClassesRouter {
   }
 
   mountRoutes() {
-    this.route('GET', '/aggregate/:className', middleware.promiseEnforceMasterKeyAccess, req => {
-      return this.handleFind(req);
-    });
+    this.route(
+      "GET",
+      "/aggregate/:className",
+      middleware.promiseEnforceMasterKeyAccess,
+      req => {
+        return this.handleFind(req);
+      }
+    );
   }
 }
 

@@ -44,7 +44,7 @@ module.exports = [
         create: "readonly",
         arrayContains: "readonly",
         databaseAdapter: "readonly",
-        databaseURI: "readonly"
+        databaseURI: "readonly",
       },
     },
     rules: {
@@ -52,6 +52,6 @@ module.exports = [
       "no-var": "error",
       "no-unused-vars": "off",
       "no-useless-escape": "off",
-    }
+    },
   },
 ];

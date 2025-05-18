@@ -3,10 +3,10 @@ const {
   GraphQLConfigClassName,
   GraphQLConfigId,
   GraphQLConfigKey,
-} = require('../lib/Controllers/ParseGraphQLController');
-const { isEqual } = require('lodash');
+} = require("../lib/Controllers/ParseGraphQLController");
+const { isEqual } = require("lodash");
 
-describe('ParseGraphQLController', () => {
+describe("ParseGraphQLController", () => {
   let parseServer;
   let databaseController;
   let cacheController;
@@ -36,7 +36,10 @@ describe('ParseGraphQLController', () => {
 
       const defaultFind = databaseController.find.bind(databaseController);
       databaseController.find = async (className, query, ...args) => {
-        if (className === GraphQLConfigClassName && isEqual(query, { objectId: GraphQLConfigId })) {
+        if (
+          className === GraphQLConfigClassName &&
+          isEqual(query, { objectId: GraphQLConfigId })
+        ) {
           const graphQLConfigRecord = getConfigFromDb();
           return graphQLConfigRecord ? [graphQLConfigRecord] : [];
         } else {
@@ -45,7 +48,12 @@ describe('ParseGraphQLController', () => {
       };
 
       const defaultUpdate = databaseController.update.bind(databaseController);
-      databaseController.update = async (className, query, update, fullQueryOptions) => {
+      databaseController.update = async (
+        className,
+        query,
+        update,
+        fullQueryOptions
+      ) => {
         databaseUpdateArgs = [className, query, update, fullQueryOptions];
         if (
           className === GraphQLConfigClassName &&
@@ -64,8 +72,8 @@ describe('ParseGraphQLController', () => {
     databaseUpdateArgs = null;
   });
 
-  describe('constructor', () => {
-    it('should require a databaseController', () => {
+  describe("constructor", () => {
+    it("should require a databaseController", () => {
       expect(() => new ParseGraphQLController()).toThrow(
         'ParseGraphQLController requires a "databaseController" to be instantiated.'
       );
@@ -78,9 +86,11 @@ describe('ParseGraphQLController', () => {
             cacheController,
             mountGraphQL: false,
           })
-      ).toThrow('ParseGraphQLController requires a "databaseController" to be instantiated.');
+      ).toThrow(
+        'ParseGraphQLController requires a "databaseController" to be instantiated.'
+      );
     });
-    it('should construct without a cacheController', () => {
+    it("should construct without a cacheController", () => {
       expect(
         () =>
           new ParseGraphQLController({
@@ -95,7 +105,7 @@ describe('ParseGraphQLController', () => {
           })
       ).not.toThrow();
     });
-    it('should set isMounted to true if config.mountGraphQL is true', () => {
+    it("should set isMounted to true if config.mountGraphQL is true", () => {
       const mountedController = new ParseGraphQLController({
         databaseController,
         mountGraphQL: true,
@@ -113,8 +123,8 @@ describe('ParseGraphQLController', () => {
     });
   });
 
-  describe('getGraphQLConfig', () => {
-    it('should return an empty graphQLConfig if collection has none', async () => {
+  describe("getGraphQLConfig", () => {
+    it("should return an empty graphQLConfig if collection has none", async () => {
       removeConfigFromDb();
 
       const parseGraphQLController = new ParseGraphQLController({
@@ -125,17 +135,17 @@ describe('ParseGraphQLController', () => {
       const graphQLConfig = await parseGraphQLController.getGraphQLConfig();
       expect(graphQLConfig).toEqual({});
     });
-    it('should return an existing graphQLConfig', async () => {
-      setConfigOnDb({ enabledForClasses: ['_User'] });
+    it("should return an existing graphQLConfig", async () => {
+      setConfigOnDb({ enabledForClasses: ["_User"] });
 
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
         mountGraphQL: false,
       });
       const graphQLConfig = await parseGraphQLController.getGraphQLConfig();
-      expect(graphQLConfig).toEqual({ enabledForClasses: ['_User'] });
+      expect(graphQLConfig).toEqual({ enabledForClasses: ["_User"] });
     });
-    it('should use the cache if mounted, and return the stored graphQLConfig', async () => {
+    it("should use the cache if mounted, and return the stored graphQLConfig", async () => {
       removeConfigFromDb();
       cacheController.graphQL.clear();
       const parseGraphQLController = new ParseGraphQLController({
@@ -144,14 +154,14 @@ describe('ParseGraphQLController', () => {
         mountGraphQL: true,
       });
       cacheController.graphQL.put(parseGraphQLController.configCacheKey, {
-        enabledForClasses: ['SuperCar'],
+        enabledForClasses: ["SuperCar"],
       });
 
       const graphQLConfig = await parseGraphQLController.getGraphQLConfig();
-      expect(graphQLConfig).toEqual({ enabledForClasses: ['SuperCar'] });
+      expect(graphQLConfig).toEqual({ enabledForClasses: ["SuperCar"] });
     });
-    it('should use the database when mounted and cache is empty', async () => {
-      setConfigOnDb({ disabledForClasses: ['SuperCar'] });
+    it("should use the database when mounted and cache is empty", async () => {
+      setConfigOnDb({ disabledForClasses: ["SuperCar"] });
       cacheController.graphQL.clear();
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
@@ -159,10 +169,10 @@ describe('ParseGraphQLController', () => {
         mountGraphQL: true,
       });
       const graphQLConfig = await parseGraphQLController.getGraphQLConfig();
-      expect(graphQLConfig).toEqual({ disabledForClasses: ['SuperCar'] });
+      expect(graphQLConfig).toEqual({ disabledForClasses: ["SuperCar"] });
     });
-    it('should store the graphQLConfig in cache if mounted', async () => {
-      setConfigOnDb({ enabledForClasses: ['SuperCar'] });
+    it("should store the graphQLConfig in cache if mounted", async () => {
+      setConfigOnDb({ enabledForClasses: ["SuperCar"] });
       cacheController.graphQL.clear();
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
@@ -177,32 +187,32 @@ describe('ParseGraphQLController', () => {
       const cachedValueAfter = await cacheController.graphQL.get(
         parseGraphQLController.configCacheKey
       );
-      expect(cachedValueAfter).toEqual({ enabledForClasses: ['SuperCar'] });
+      expect(cachedValueAfter).toEqual({ enabledForClasses: ["SuperCar"] });
     });
   });
 
-  describe('updateGraphQLConfig', () => {
+  describe("updateGraphQLConfig", () => {
     const successfulUpdateResponse = { response: { result: true } };
 
-    it('should throw if graphQLConfig is not provided', async function () {
+    it("should throw if graphQLConfig is not provided", async function () {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
-      expectAsync(parseGraphQLController.updateGraphQLConfig()).toBeRejectedWith(
-        'You must provide a graphQLConfig!'
-      );
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig()
+      ).toBeRejectedWith("You must provide a graphQLConfig!");
     });
 
-    it('should correct update the graphQLConfig object using the databaseController', async () => {
+    it("should correct update the graphQLConfig object using the databaseController", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
       const graphQLConfig = {
-        enabledForClasses: ['ClassA', 'ClassB'],
+        enabledForClasses: ["ClassA", "ClassB"],
         disabledForClasses: [],
         classConfigs: [
-          { className: 'ClassA', query: { get: false } },
-          { className: 'ClassB', mutation: { destroy: false }, type: {} },
+          { className: "ClassA", query: { get: false } },
+          { className: "ClassB", mutation: { destroy: false }, type: {} },
         ],
       };
 
@@ -218,28 +228,38 @@ describe('ParseGraphQLController', () => {
       expect(op).toEqual({ upsert: true });
     });
 
-    it('should throw if graphQLConfig is not an object', async () => {
+    it("should throw if graphQLConfig is not an object", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
-      expectAsync(parseGraphQLController.updateGraphQLConfig([])).toBeRejected();
-      expectAsync(parseGraphQLController.updateGraphQLConfig(function () {})).toBeRejected();
-      expectAsync(parseGraphQLController.updateGraphQLConfig(Promise.resolve({}))).toBeRejected();
-      expectAsync(parseGraphQLController.updateGraphQLConfig('')).toBeRejected();
-      expectAsync(parseGraphQLController.updateGraphQLConfig({})).toBeResolvedTo(
-        successfulUpdateResponse
-      );
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig([])
+      ).toBeRejected();
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig(function () {})
+      ).toBeRejected();
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig(Promise.resolve({}))
+      ).toBeRejected();
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig("")
+      ).toBeRejected();
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({})
+      ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if graphQLConfig has an invalid root key', async () => {
+    it("should throw if graphQLConfig has an invalid root key", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
-      expectAsync(parseGraphQLController.updateGraphQLConfig({ invalidKey: true })).toBeRejected();
-      expectAsync(parseGraphQLController.updateGraphQLConfig({})).toBeResolvedTo(
-        successfulUpdateResponse
-      );
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({ invalidKey: true })
+      ).toBeRejected();
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({})
+      ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if graphQLConfig has invalid class filters', async () => {
+    it("should throw if graphQLConfig has invalid class filters", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -258,24 +278,26 @@ describe('ParseGraphQLController', () => {
       ).toBeRejected();
       expectAsync(
         parseGraphQLController.updateGraphQLConfig({
-          enabledForClasses: ['_User', null],
+          enabledForClasses: ["_User", null],
         })
       ).toBeRejected();
       expectAsync(
-        parseGraphQLController.updateGraphQLConfig({ disabledForClasses: [''] })
+        parseGraphQLController.updateGraphQLConfig({ disabledForClasses: [""] })
       ).toBeRejected();
       expectAsync(
         parseGraphQLController.updateGraphQLConfig({
           enabledForClasses: [],
-          disabledForClasses: ['_User'],
+          disabledForClasses: ["_User"],
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if classConfigs array is invalid', async () => {
+    it("should throw if classConfigs array is invalid", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
-      expectAsync(parseGraphQLController.updateGraphQLConfig({ classConfigs: {} })).toBeRejected();
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({ classConfigs: {} })
+      ).toBeRejected();
       expectAsync(
         parseGraphQLController.updateGraphQLConfig({ classConfigs: [null] })
       ).toBeRejected();
@@ -286,23 +308,23 @@ describe('ParseGraphQLController', () => {
       ).toBeRejected();
       expectAsync(
         parseGraphQLController.updateGraphQLConfig({
-          classConfigs: [{ className: 'ValidClass' }, null],
+          classConfigs: [{ className: "ValidClass" }, null],
         })
       ).toBeRejected();
-      expectAsync(parseGraphQLController.updateGraphQLConfig({ classConfigs: [] })).toBeResolvedTo(
-        successfulUpdateResponse
-      );
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({ classConfigs: [] })
+      ).toBeResolvedTo(successfulUpdateResponse);
       expectAsync(
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
             },
           ],
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if a classConfig has invalid type settings', async () => {
+    it("should throw if a classConfig has invalid type settings", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -310,7 +332,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: [],
             },
           ],
@@ -320,7 +342,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 invalidKey: true,
               },
@@ -332,14 +354,14 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {},
             },
           ],
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if a classConfig has invalid type.inputFields settings', async () => {
+    it("should throw if a classConfig has invalid type.inputFields settings", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -347,7 +369,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: 'SuperCar',
+              className: "SuperCar",
               type: {
                 inputFields: [],
               },
@@ -359,7 +381,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: 'SuperCar',
+              className: "SuperCar",
               type: {
                 inputFields: {
                   invalidKey: true,
@@ -373,7 +395,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: 'SuperCar',
+              className: "SuperCar",
               type: {
                 inputFields: {
                   create: {},
@@ -387,7 +409,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: 'SuperCar',
+              className: "SuperCar",
               type: {
                 inputFields: {
                   update: [null],
@@ -401,7 +423,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: 'SuperCar',
+              className: "SuperCar",
               type: {
                 inputFields: {
                   create: [],
@@ -416,10 +438,10 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: 'SuperCar',
+              className: "SuperCar",
               type: {
                 inputFields: {
-                  create: ['make', 'model'],
+                  create: ["make", "model"],
                   update: [],
                 },
               },
@@ -428,7 +450,7 @@ describe('ParseGraphQLController', () => {
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if a classConfig has invalid type.outputFields settings', async () => {
+    it("should throw if a classConfig has invalid type.outputFields settings", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -436,7 +458,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 outputFields: {},
               },
@@ -448,7 +470,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 outputFields: [null],
               },
@@ -460,9 +482,9 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
-                outputFields: ['name', undefined],
+                outputFields: ["name", undefined],
               },
             },
           ],
@@ -472,9 +494,9 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
-                outputFields: [''],
+                outputFields: [""],
               },
             },
           ],
@@ -484,7 +506,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 outputFields: [],
               },
@@ -496,16 +518,16 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
-                outputFields: ['name'],
+                outputFields: ["name"],
               },
             },
           ],
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if a classConfig has invalid type.constraintFields settings', async () => {
+    it("should throw if a classConfig has invalid type.constraintFields settings", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -513,7 +535,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 constraintFields: {},
               },
@@ -525,7 +547,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 constraintFields: [null],
               },
@@ -537,9 +559,9 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
-                constraintFields: ['name', undefined],
+                constraintFields: ["name", undefined],
               },
             },
           ],
@@ -549,9 +571,9 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
-                constraintFields: [''],
+                constraintFields: [""],
               },
             },
           ],
@@ -561,7 +583,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 constraintFields: [],
               },
@@ -573,16 +595,16 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
-                constraintFields: ['name'],
+                constraintFields: ["name"],
               },
             },
           ],
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if a classConfig has invalid type.sortFields settings', async () => {
+    it("should throw if a classConfig has invalid type.sortFields settings", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -590,7 +612,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: {},
               },
@@ -602,7 +624,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: [null],
               },
@@ -614,7 +636,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: [
                   {
@@ -632,11 +654,11 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: [
                   {
-                    field: '',
+                    field: "",
                     asc: true,
                     desc: false,
                   },
@@ -650,13 +672,13 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: [
                   {
-                    field: 'name',
+                    field: "name",
                     asc: true,
-                    desc: 'false',
+                    desc: "false",
                   },
                 ],
               },
@@ -668,11 +690,11 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: [
                   {
-                    field: 'name',
+                    field: "name",
                     asc: true,
                     desc: true,
                   },
@@ -687,7 +709,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: [],
               },
@@ -699,11 +721,11 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 sortFields: [
                   {
-                    field: 'name',
+                    field: "name",
                     asc: true,
                     desc: true,
                   },
@@ -714,7 +736,7 @@ describe('ParseGraphQLController', () => {
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if a classConfig has invalid query params', async () => {
+    it("should throw if a classConfig has invalid query params", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -722,7 +744,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               query: [],
             },
           ],
@@ -732,7 +754,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               query: {
                 invalidKey: true,
               },
@@ -744,7 +766,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               query: {
                 get: 1,
               },
@@ -756,9 +778,9 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               query: {
-                find: 'true',
+                find: "true",
               },
             },
           ],
@@ -768,7 +790,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               query: {
                 get: false,
                 find: true,
@@ -781,14 +803,14 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               query: {},
             },
           ],
         })
       ).toBeResolvedTo(successfulUpdateResponse);
     });
-    it('should throw if a classConfig has invalid mutation params', async () => {
+    it("should throw if a classConfig has invalid mutation params", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -796,7 +818,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               mutation: [],
             },
           ],
@@ -806,7 +828,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               mutation: {
                 invalidKey: true,
               },
@@ -818,7 +840,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               mutation: {
                 destroy: 1,
               },
@@ -830,9 +852,9 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               mutation: {
-                update: 'true',
+                update: "true",
               },
             },
           ],
@@ -842,7 +864,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               mutation: {},
             },
           ],
@@ -852,7 +874,7 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               mutation: {
                 create: true,
                 update: true,
@@ -864,7 +886,7 @@ describe('ParseGraphQLController', () => {
       ).toBeResolvedTo(successfulUpdateResponse);
     });
 
-    it('should throw if _User create fields is missing username or password', async () => {
+    it("should throw if _User create fields is missing username or password", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
@@ -872,10 +894,10 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 inputFields: {
-                  create: ['username', 'no-password'],
+                  create: ["username", "no-password"],
                 },
               },
             },
@@ -886,10 +908,10 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig({
           classConfigs: [
             {
-              className: '_User',
+              className: "_User",
               type: {
                 inputFields: {
-                  create: ['username', 'password'],
+                  create: ["username", "password"],
                 },
               },
             },
@@ -897,7 +919,7 @@ describe('ParseGraphQLController', () => {
         })
       ).toBeResolved(successfulUpdateResponse);
     });
-    it('should update the cache if mounted', async () => {
+    it("should update the cache if mounted", async () => {
       removeConfigFromDb();
       cacheController.graphQL.clear();
       const mountedController = new ParseGraphQLController({
@@ -914,37 +936,45 @@ describe('ParseGraphQLController', () => {
       let cacheBeforeValue;
       let cacheAfterValue;
 
-      cacheBeforeValue = await cacheController.graphQL.get(mountedController.configCacheKey);
+      cacheBeforeValue = await cacheController.graphQL.get(
+        mountedController.configCacheKey
+      );
       expect(cacheBeforeValue).toBeNull();
 
       await mountedController.updateGraphQLConfig({
-        enabledForClasses: ['SuperCar'],
+        enabledForClasses: ["SuperCar"],
       });
-      cacheAfterValue = await cacheController.graphQL.get(mountedController.configCacheKey);
-      expect(cacheAfterValue).toEqual({ enabledForClasses: ['SuperCar'] });
+      cacheAfterValue = await cacheController.graphQL.get(
+        mountedController.configCacheKey
+      );
+      expect(cacheAfterValue).toEqual({ enabledForClasses: ["SuperCar"] });
 
       // reset
       removeConfigFromDb();
       cacheController.graphQL.clear();
 
-      cacheBeforeValue = await cacheController.graphQL.get(unmountedController.configCacheKey);
+      cacheBeforeValue = await cacheController.graphQL.get(
+        unmountedController.configCacheKey
+      );
       expect(cacheBeforeValue).toBeNull();
 
       await unmountedController.updateGraphQLConfig({
-        enabledForClasses: ['SuperCar'],
+        enabledForClasses: ["SuperCar"],
       });
-      cacheAfterValue = await cacheController.graphQL.get(unmountedController.configCacheKey);
+      cacheAfterValue = await cacheController.graphQL.get(
+        unmountedController.configCacheKey
+      );
       expect(cacheAfterValue).toBeNull();
     });
   });
 
-  describe('alias', () => {
-    it('should fail if query alias is not a string', async () => {
+  describe("alias", () => {
+    it("should fail if query alias is not a string", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
 
-      const className = 'Bar';
+      const className = "Bar";
 
       expectAsync(
         parseGraphQLController.updateGraphQLConfig({
@@ -969,7 +999,7 @@ describe('ParseGraphQLController', () => {
               className,
               query: {
                 find: true,
-                findAlias: { not: 'valid' },
+                findAlias: { not: "valid" },
               },
             },
           ],
@@ -979,12 +1009,12 @@ describe('ParseGraphQLController', () => {
       );
     });
 
-    it('should fail if mutation alias is not a string', async () => {
+    it("should fail if mutation alias is not a string", async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
       });
 
-      const className = 'Bar';
+      const className = "Bar";
 
       expectAsync(
         parseGraphQLController.updateGraphQLConfig({
@@ -1025,7 +1055,7 @@ describe('ParseGraphQLController', () => {
               className,
               mutation: {
                 destroy: true,
-                destroyAlias: { not: 'valid' },
+                destroyAlias: { not: "valid" },
               },
             },
           ],

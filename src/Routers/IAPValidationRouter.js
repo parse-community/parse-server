@@ -1,39 +1,39 @@
-import PromiseRouter from '../PromiseRouter';
-const request = require('../request');
-const rest = require('../rest');
-import Parse from 'parse/node';
+import PromiseRouter from "../PromiseRouter";
+const request = require("../request");
+const rest = require("../rest");
+import Parse from "parse/node";
 
 // TODO move validation logic in IAPValidationController
-const IAP_SANDBOX_URL = 'https://sandbox.itunes.apple.com/verifyReceipt';
-const IAP_PRODUCTION_URL = 'https://buy.itunes.apple.com/verifyReceipt';
+const IAP_SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt";
+const IAP_PRODUCTION_URL = "https://buy.itunes.apple.com/verifyReceipt";
 
 const APP_STORE_ERRORS = {
-  21000: 'The App Store could not read the JSON object you provided.',
-  21002: 'The data in the receipt-data property was malformed or missing.',
-  21003: 'The receipt could not be authenticated.',
+  21000: "The App Store could not read the JSON object you provided.",
+  21002: "The data in the receipt-data property was malformed or missing.",
+  21003: "The receipt could not be authenticated.",
   21004:
-    'The shared secret you provided does not match the shared secret on file for your account.',
-  21005: 'The receipt server is not currently available.',
-  21006: 'This receipt is valid but the subscription has expired.',
+    "The shared secret you provided does not match the shared secret on file for your account.",
+  21005: "The receipt server is not currently available.",
+  21006: "This receipt is valid but the subscription has expired.",
   21007:
-    'This receipt is from the test environment, but it was sent to the production environment for verification. Send it to the test environment instead.',
+    "This receipt is from the test environment, but it was sent to the production environment for verification. Send it to the test environment instead.",
   21008:
-    'This receipt is from the production environment, but it was sent to the test environment for verification. Send it to the production environment instead.',
+    "This receipt is from the production environment, but it was sent to the test environment for verification. Send it to the production environment instead.",
 };
 
 function appStoreError(status) {
   status = parseInt(status);
-  var errorString = APP_STORE_ERRORS[status] || 'unknown error.';
+  var errorString = APP_STORE_ERRORS[status] || "unknown error.";
   return { status: status, error: errorString };
 }
 
 function validateWithAppStore(url, receipt) {
   return request({
     url: url,
-    method: 'POST',
-    body: { 'receipt-data': receipt },
+    method: "POST",
+    body: { "receipt-data": receipt },
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   }).then(httpResponse => {
     const body = httpResponse.data;
@@ -51,7 +51,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
     .find(
       req.config,
       req.auth,
-      '_Product',
+      "_Product",
       { productIdentifier: productIdentifier },
       undefined,
       req.info.clientSDK,
@@ -61,7 +61,10 @@ function getFileForProductIdentifier(productIdentifier, req) {
       const products = result.results;
       if (!products || products.length != 1) {
         // Error not found or too many
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+        throw new Parse.Error(
+          Parse.Error.OBJECT_NOT_FOUND,
+          "Object not found."
+        );
       }
 
       var download = products[0].download;
@@ -76,18 +79,21 @@ export class IAPValidationRouter extends PromiseRouter {
 
     if (!receipt || !productIdentifier) {
       // TODO: Error, malformed request
-      throw new Parse.Error(Parse.Error.INVALID_JSON, 'missing receipt or productIdentifier');
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        "missing receipt or productIdentifier"
+      );
     }
 
     // Transform the object if there
     // otherwise assume it's in Base64 already
-    if (typeof receipt == 'object') {
-      if (receipt['__type'] == 'Bytes') {
+    if (typeof receipt == "object") {
+      if (receipt["__type"] == "Bytes") {
         receipt = receipt.base64;
       }
     }
 
-    if (process.env.TESTING == '1' && req.body?.bypassAppStoreValidation) {
+    if (process.env.TESTING == "1" && req.body?.bypassAppStoreValidation) {
       return getFileForProductIdentifier(productIdentifier, req);
     }
 
@@ -121,6 +127,6 @@ export class IAPValidationRouter extends PromiseRouter {
   }
 
   mountRoutes() {
-    this.route('POST', '/validate_purchase', this.handleRequest);
+    this.route("POST", "/validate_purchase", this.handleRequest);
   }
 }

@@ -1,50 +1,50 @@
-import AppCache from './cache';
-import Parse from 'parse/node';
-import auth from './Auth';
-import Config from './Config';
-import ClientSDK from './ClientSDK';
-import defaultLogger from './logger';
-import rest from './rest';
-import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
-import PostgresStorageAdapter from './Adapters/Storage/Postgres/PostgresStorageAdapter';
-import rateLimit from 'express-rate-limit';
-import { RateLimitOptions } from './Options/Definitions';
-import { pathToRegexp } from 'path-to-regexp';
-import RedisStore from 'rate-limit-redis';
-import { createClient } from 'redis';
-import { BlockList, isIPv4 } from 'net';
+import AppCache from "./cache";
+import Parse from "parse/node";
+import auth from "./Auth";
+import Config from "./Config";
+import ClientSDK from "./ClientSDK";
+import defaultLogger from "./logger";
+import rest from "./rest";
+import MongoStorageAdapter from "./Adapters/Storage/Mongo/MongoStorageAdapter";
+import PostgresStorageAdapter from "./Adapters/Storage/Postgres/PostgresStorageAdapter";
+import rateLimit from "express-rate-limit";
+import { RateLimitOptions } from "./Options/Definitions";
+import { pathToRegexp } from "path-to-regexp";
+import RedisStore from "rate-limit-redis";
+import { createClient } from "redis";
+import { BlockList, isIPv4 } from "net";
 
 export const DEFAULT_ALLOWED_HEADERS =
-  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
+  "X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control";
 
 const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
   const mountPath = req.originalUrl.slice(0, mountPathLength);
-  return req.protocol + '://' + req.get('host') + mountPath;
+  return req.protocol + "://" + req.get("host") + mountPath;
 };
 
 const getBlockList = (ipRangeList, store) => {
-  if (store.get('blockList')) {
-    return store.get('blockList');
+  if (store.get("blockList")) {
+    return store.get("blockList");
   }
   const blockList = new BlockList();
   ipRangeList.forEach(fullIp => {
-    if (fullIp === '::/0' || fullIp === '::') {
-      store.set('allowAllIpv6', true);
+    if (fullIp === "::/0" || fullIp === "::") {
+      store.set("allowAllIpv6", true);
       return;
     }
-    if (fullIp === '0.0.0.0/0' || fullIp === '0.0.0.0') {
-      store.set('allowAllIpv4', true);
+    if (fullIp === "0.0.0.0/0" || fullIp === "0.0.0.0") {
+      store.set("allowAllIpv4", true);
       return;
     }
-    const [ip, mask] = fullIp.split('/');
+    const [ip, mask] = fullIp.split("/");
     if (!mask) {
-      blockList.addAddress(ip, isIPv4(ip) ? 'ipv4' : 'ipv6');
+      blockList.addAddress(ip, isIPv4(ip) ? "ipv4" : "ipv6");
     } else {
-      blockList.addSubnet(ip, Number(mask), isIPv4(ip) ? 'ipv4' : 'ipv6');
+      blockList.addSubnet(ip, Number(mask), isIPv4(ip) ? "ipv4" : "ipv6");
     }
   });
-  store.set('blockList', blockList);
+  store.set("blockList", blockList);
   return blockList;
 };
 
@@ -55,13 +55,13 @@ export const checkIp = (ip, ipRangeList, store) => {
   if (store.get(ip)) {
     return true;
   }
-  if (store.get('allowAllIpv4') && incomingIpIsV4) {
+  if (store.get("allowAllIpv4") && incomingIpIsV4) {
     return true;
   }
-  if (store.get('allowAllIpv6') && !incomingIpIsV4) {
+  if (store.get("allowAllIpv6") && !incomingIpIsV4) {
     return true;
   }
-  const result = blockList.check(ip, incomingIpIsV4 ? 'ipv4' : 'ipv6');
+  const result = blockList.check(ip, incomingIpIsV4 ? "ipv4" : "ipv6");
 
   // If the ip is in the list, we store the result in the store
   // so we have a optimized path for the next request
@@ -81,27 +81,27 @@ export async function handleParseHeaders(req, res, next) {
   var mount = getMountForRequest(req);
 
   let context = {};
-  if (req.get('X-Parse-Cloud-Context') != null) {
+  if (req.get("X-Parse-Cloud-Context") != null) {
     try {
-      context = JSON.parse(req.get('X-Parse-Cloud-Context'));
-      if (Object.prototype.toString.call(context) !== '[object Object]') {
-        throw 'Context is not an object';
+      context = JSON.parse(req.get("X-Parse-Cloud-Context"));
+      if (Object.prototype.toString.call(context) !== "[object Object]") {
+        throw "Context is not an object";
       }
     } catch (e) {
       return malformedContext(req, res);
     }
   }
   var info = {
-    appId: req.get('X-Parse-Application-Id'),
-    sessionToken: req.get('X-Parse-Session-Token'),
-    masterKey: req.get('X-Parse-Master-Key'),
-    maintenanceKey: req.get('X-Parse-Maintenance-Key'),
-    installationId: req.get('X-Parse-Installation-Id'),
-    clientKey: req.get('X-Parse-Client-Key'),
-    javascriptKey: req.get('X-Parse-Javascript-Key'),
-    dotNetKey: req.get('X-Parse-Windows-Key'),
-    restAPIKey: req.get('X-Parse-REST-API-Key'),
-    clientVersion: req.get('X-Parse-Client-Version'),
+    appId: req.get("X-Parse-Application-Id"),
+    sessionToken: req.get("X-Parse-Session-Token"),
+    masterKey: req.get("X-Parse-Master-Key"),
+    maintenanceKey: req.get("X-Parse-Maintenance-Key"),
+    installationId: req.get("X-Parse-Installation-Id"),
+    clientKey: req.get("X-Parse-Client-Key"),
+    javascriptKey: req.get("X-Parse-Javascript-Key"),
+    dotNetKey: req.get("X-Parse-Windows-Key"),
+    restAPIKey: req.get("X-Parse-REST-API-Key"),
+    clientVersion: req.get("X-Parse-Client-Version"),
     context: context,
   };
 
@@ -148,10 +148,11 @@ export async function handleParseHeaders(req, res, next) {
       req.body &&
       req.body._ApplicationId &&
       AppCache.get(req.body._ApplicationId) &&
-      (!info.masterKey || AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
+      (!info.masterKey ||
+        AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
     ) {
       info.appId = req.body._ApplicationId;
-      info.javascriptKey = req.body._JavaScriptKey || '';
+      info.javascriptKey = req.body._JavaScriptKey || "";
       delete req.body._ApplicationId;
       delete req.body._JavaScriptKey;
       // TODO: test that the REST API formats generated by the other
@@ -178,8 +179,10 @@ export async function handleParseHeaders(req, res, next) {
         } else {
           try {
             info.context = JSON.parse(req.body._context);
-            if (Object.prototype.toString.call(info.context) !== '[object Object]') {
-              throw 'Context is not an object';
+            if (
+              Object.prototype.toString.call(info.context) !== "[object Object]"
+            ) {
+              throw "Context is not an object";
             }
           } catch (e) {
             return malformedContext(req, res);
@@ -188,7 +191,7 @@ export async function handleParseHeaders(req, res, next) {
         delete req.body._context;
       }
       if (req.body._ContentType) {
-        req.headers['content-type'] = req.body._ContentType;
+        req.headers["content-type"] = req.body._ContentType;
         delete req.body._ContentType;
       }
     } else {
@@ -196,7 +199,7 @@ export async function handleParseHeaders(req, res, next) {
     }
   }
 
-  if (info.sessionToken && typeof info.sessionToken !== 'string') {
+  if (info.sessionToken && typeof info.sessionToken !== "string") {
     info.sessionToken = info.sessionToken.toString();
   }
 
@@ -208,12 +211,12 @@ export async function handleParseHeaders(req, res, next) {
     req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
-    req.body = Buffer.from(base64, 'base64');
+    req.body = Buffer.from(base64, "base64");
   }
 
   const clientIp = getClientIp(req);
   const config = Config.get(info.appId, mount);
-  if (config.state && config.state !== 'ok') {
+  if (config.state && config.state !== "ok") {
     res.status(500);
     res.json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,
@@ -229,9 +232,16 @@ export async function handleParseHeaders(req, res, next) {
   req.info = info;
 
   const isMaintenance =
-    req.config.maintenanceKey && info.maintenanceKey === req.config.maintenanceKey;
+    req.config.maintenanceKey &&
+    info.maintenanceKey === req.config.maintenanceKey;
   if (isMaintenance) {
-    if (checkIp(clientIp, req.config.maintenanceKeyIps || [], req.config.maintenanceKeyIpsStore)) {
+    if (
+      checkIp(
+        clientIp,
+        req.config.maintenanceKeyIps || [],
+        req.config.maintenanceKeyIpsStore
+      )
+    ) {
       req.auth = new auth.Auth({
         config: req.config,
         installationId: info.installationId,
@@ -249,7 +259,14 @@ export async function handleParseHeaders(req, res, next) {
   const masterKey = await req.config.loadMasterKey();
   let isMaster = info.masterKey === masterKey;
 
-  if (isMaster && !checkIp(clientIp, req.config.masterKeyIps || [], req.config.masterKeyIpsStore)) {
+  if (
+    isMaster &&
+    !checkIp(
+      clientIp,
+      req.config.masterKeyIps || [],
+      req.config.masterKeyIpsStore
+    )
+  ) {
     const log = req.config?.loggerController || defaultLogger;
     log.error(
       `Request using master key rejected as the request IP address '${clientIp}' is not set in Parse Server option 'masterKeyIps'.`
@@ -272,7 +289,7 @@ export async function handleParseHeaders(req, res, next) {
 
   var isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
   if (
-    typeof req.config.readOnlyMasterKey != 'undefined' &&
+    typeof req.config.readOnlyMasterKey != "undefined" &&
     req.config.readOnlyMasterKey &&
     isReadOnlyMaster
   ) {
@@ -287,7 +304,7 @@ export async function handleParseHeaders(req, res, next) {
 
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
-  const keys = ['clientKey', 'javascriptKey', 'dotNetKey', 'restAPIKey'];
+  const keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
   const oneKeyConfigured = keys.some(function (key) {
     return req.config[key] !== undefined;
   });
@@ -299,7 +316,7 @@ export async function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  if (req.url == '/login') {
+  if (req.url == "/login") {
     delete info.sessionToken;
   }
 
@@ -336,7 +353,7 @@ const handleRateLimit = async (req, res, next) => {
                 throw err;
               }
               req.config.loggerController.error(
-                'An unknown error occured when attempting to apply the rate limiter: ',
+                "An unknown error occured when attempting to apply the rate limiter: ",
                 err
               );
             }
@@ -355,15 +372,15 @@ const handleRateLimit = async (req, res, next) => {
 export const handleParseSession = async (req, res, next) => {
   try {
     const info = req.info;
-    if (req.auth || req.url === '/sessions/me') {
+    if (req.auth || req.url === "/sessions/me") {
       next();
       return;
     }
     let requestAuth = null;
     if (
       info.sessionToken &&
-      req.url === '/upgradeToRevocableSession' &&
-      info.sessionToken.indexOf('r:') != 0
+      req.url === "/upgradeToRevocableSession" &&
+      info.sessionToken.indexOf("r:") != 0
     ) {
       requestAuth = await auth.getAuthForLegacySessionToken({
         config: req.config,
@@ -385,7 +402,10 @@ export const handleParseSession = async (req, res, next) => {
       return;
     }
     // TODO: Determine the correct error scenario.
-    req.config.loggerController.error('error getting auth for sessionToken', error);
+    req.config.loggerController.error(
+      "error getting auth for sessionToken",
+      error
+    );
     throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
   }
 };
@@ -403,19 +423,19 @@ function httpAuth(req) {
   var appId, masterKey, javascriptKey;
 
   // parse header
-  var authPrefix = 'basic ';
+  var authPrefix = "basic ";
 
   var match = header.toLowerCase().indexOf(authPrefix);
 
   if (match == 0) {
     var encodedAuth = header.substring(authPrefix.length, header.length);
-    var credentials = decodeBase64(encodedAuth).split(':');
+    var credentials = decodeBase64(encodedAuth).split(":");
 
     if (credentials.length == 2) {
       appId = credentials[0];
       var key = credentials[1];
 
-      var jsKeyPrefix = 'javascript-key=';
+      var jsKeyPrefix = "javascript-key=";
 
       var matchKey = key.indexOf(jsKeyPrefix);
       if (matchKey == 0) {
@@ -430,7 +450,7 @@ function httpAuth(req) {
 }
 
 function decodeBase64(str) {
-  return Buffer.from(str, 'base64').toString();
+  return Buffer.from(str, "base64").toString();
 }
 
 export function allowCrossDomain(appId) {
@@ -438,22 +458,27 @@ export function allowCrossDomain(appId) {
     const config = Config.get(appId, getMountForRequest(req));
     let allowHeaders = DEFAULT_ALLOWED_HEADERS;
     if (config && config.allowHeaders) {
-      allowHeaders += `, ${config.allowHeaders.join(', ')}`;
+      allowHeaders += `, ${config.allowHeaders.join(", ")}`;
     }
 
     const baseOrigins =
-      typeof config?.allowOrigin === 'string'
+      typeof config?.allowOrigin === "string"
         ? [config.allowOrigin]
-        : (config?.allowOrigin ?? ['*']);
+        : (config?.allowOrigin ?? ["*"]);
     const requestOrigin = req.headers.origin;
     const allowOrigins =
-      requestOrigin && baseOrigins.includes(requestOrigin) ? requestOrigin : baseOrigins[0];
-    res.header('Access-Control-Allow-Origin', allowOrigins);
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', allowHeaders);
-    res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
+      requestOrigin && baseOrigins.includes(requestOrigin)
+        ? requestOrigin
+        : baseOrigins[0];
+    res.header("Access-Control-Allow-Origin", allowOrigins);
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+    res.header("Access-Control-Allow-Headers", allowHeaders);
+    res.header(
+      "Access-Control-Expose-Headers",
+      "X-Parse-Job-Status-Id, X-Parse-Push-Status-Id"
+    );
     // intercept OPTIONS method
-    if ('OPTIONS' == req.method) {
+    if ("OPTIONS" == req.method) {
       res.sendStatus(200);
     } else {
       next();
@@ -462,7 +487,7 @@ export function allowCrossDomain(appId) {
 }
 
 export function allowMethodOverride(req, res, next) {
-  if (req.method === 'POST' && req.body?._method) {
+  if (req.method === "POST" && req.body?._method) {
     req.originalMethod = req.method;
     req.method = req.body._method;
     delete req.body._method;
@@ -490,7 +515,7 @@ export function handleParseErrors(err, req, res, next) {
     }
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
-    log.error('Parse error: ', err);
+    log.error("Parse error: ", err);
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });
@@ -498,11 +523,11 @@ export function handleParseErrors(err, req, res, next) {
       next(err);
     }
   } else {
-    log.error('Uncaught internal server error.', err, err.stack);
+    log.error("Uncaught internal server error.", err, err.stack);
     res.status(500);
     res.json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error.',
+      message: "Internal server error.",
     });
     if (!(process && process.env.TESTING)) {
       next(err);
@@ -523,14 +548,14 @@ export function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
     const error = new Error();
     error.status = 403;
-    error.message = 'unauthorized: master key is required';
+    error.message = "unauthorized: master key is required";
     throw error;
   }
   return Promise.resolve();
 }
 
 export const addRateLimit = (route, config, cloud) => {
-  if (typeof config === 'string') {
+  if (typeof config === "string") {
     config = Config.get(config);
   }
   for (const key in route) {
@@ -550,12 +575,12 @@ export const addRateLimit = (route, config, cloud) => {
     const client = createClient({
       url: route.redisUrl,
     });
-    client.on('error', err => {
-      log.error('Middlewares addRateLimit Redis client error', { error: err });
+    client.on("error", err => {
+      log.error("Middlewares addRateLimit Redis client error", { error: err });
     });
-    client.on('connect', () => {});
-    client.on('reconnecting', () => {});
-    client.on('ready', () => {});
+    client.on("connect", () => {});
+    client.on("reconnecting", () => {});
+    client.on("ready", () => {});
     redisStore.connectionPromise = async () => {
       if (client.isOpen) {
         return;
@@ -574,16 +599,18 @@ export const addRateLimit = (route, config, cloud) => {
       },
     });
   }
-  let transformPath = route.requestPath.split('/*').join('/(.*)');
-  if (transformPath === '*') {
-    transformPath = '(.*)';
+  let transformPath = route.requestPath.split("/*").join("/(.*)");
+  if (transformPath === "*") {
+    transformPath = "(.*)";
   }
   config.rateLimits.push({
     path: pathToRegexp(transformPath),
     handler: rateLimit({
       windowMs: route.requestTimeWindow,
       max: route.requestCount,
-      message: route.errorResponseMessage || RateLimitOptions.errorResponseMessage.default,
+      message:
+        route.errorResponseMessage ||
+        RateLimitOptions.errorResponseMessage.default,
       handler: (request, response, next, options) => {
         throw {
           code: Parse.Error.CONNECTION_FAILED,
@@ -591,7 +618,7 @@ export const addRateLimit = (route, config, cloud) => {
         };
       },
       skip: request => {
-        if (request.ip === '127.0.0.1' && !route.includeInternalRequests) {
+        if (request.ip === "127.0.0.1" && !route.includeInternalRequests) {
           return true;
         }
         if (route.includeMasterKey) {
@@ -621,9 +648,11 @@ export const addRateLimit = (route, config, cloud) => {
         }
         if (route.zone === Parse.Server.RateLimitZone.user && token) {
           if (!request.auth) {
-            await new Promise(resolve => handleParseSession(request, null, resolve));
+            await new Promise(resolve =>
+              handleParseSession(request, null, resolve)
+            );
           }
-          if (request.auth?.user?.id && request.zone === 'user') {
+          if (request.auth?.user?.id && request.zone === "user") {
             return request.auth.user.id;
           }
         }
@@ -654,19 +683,19 @@ export function promiseEnsureIdempotency(req) {
   }
   // Get parameters
   const config = req.config;
-  const requestId = ((req || {}).headers || {})['x-parse-request-id'];
+  const requestId = ((req || {}).headers || {})["x-parse-request-id"];
   const { paths, ttl } = config.idempotencyOptions;
   if (!requestId || !config.idempotencyOptions) {
     return Promise.resolve();
   }
   // Request path may contain trailing slashes, depending on the original request, so remove
   // leading and trailing slashes to make it easier to specify paths in the configuration
-  const reqPath = req.path.replace(/^\/|\/$/, '');
+  const reqPath = req.path.replace(/^\/|\/$/, "");
   // Determine whether idempotency is enabled for current request path
   let match = false;
   for (const path of paths) {
     // Assume one wants a path to always match from the beginning to prevent any mistakes
-    const regex = new RegExp(path.charAt(0) === '^' ? path : '^' + path);
+    const regex = new RegExp(path.charAt(0) === "^" ? path : "^" + path);
     if (reqPath.match(regex)) {
       match = true;
       break;
@@ -676,15 +705,20 @@ export function promiseEnsureIdempotency(req) {
     return Promise.resolve();
   }
   // Try to store request
-  const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
+  const expiryDate = new Date(
+    new Date().setSeconds(new Date().getSeconds() + ttl)
+  );
   return rest
-    .create(config, auth.master(config), '_Idempotency', {
+    .create(config, auth.master(config), "_Idempotency", {
       reqId: requestId,
       expire: Parse._encode(expiryDate),
     })
     .catch(e => {
       if (e.code == Parse.Error.DUPLICATE_VALUE) {
-        throw new Parse.Error(Parse.Error.DUPLICATE_REQUEST, 'Duplicate request');
+        throw new Parse.Error(
+          Parse.Error.DUPLICATE_REQUEST,
+          "Duplicate request"
+        );
       }
       throw e;
     });
@@ -697,7 +731,10 @@ function invalidRequest(req, res) {
 
 function malformedContext(req, res) {
   res.status(400);
-  res.json({ code: Parse.Error.INVALID_JSON, error: 'Invalid object for context.' });
+  res.json({
+    code: Parse.Error.INVALID_JSON,
+    error: "Invalid object for context.",
+  });
 }
 
 /**
@@ -709,6 +746,6 @@ function malformedContext(req, res) {
  * http://localhost:1337/parse//functions/testFunction
  */
 export function allowDoubleForwardSlash(req, res, next) {
-  req.url = req.url.startsWith('//') ? req.url.substring(1) : req.url;
+  req.url = req.url.startsWith("//") ? req.url.substring(1) : req.url;
   next();
 }

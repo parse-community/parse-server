@@ -1,17 +1,18 @@
-'use strict';
+"use strict";
 
-const request = require('../lib/request');
-const LogsRouter = require('../lib/Routers/LogsRouter').LogsRouter;
-const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
+const request = require("../lib/request");
+const LogsRouter = require("../lib/Routers/LogsRouter").LogsRouter;
+const LoggerController =
+  require("../lib/Controllers/LoggerController").LoggerController;
 const WinstonLoggerAdapter =
-  require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+  require("../lib/Adapters/Logger/WinstonLoggerAdapter").WinstonLoggerAdapter;
 
 const loggerController = new LoggerController(new WinstonLoggerAdapter());
 
 describe_only(() => {
-  return process.env.PARSE_SERVER_LOG_LEVEL !== 'debug';
-})('LogsRouter', () => {
-  it('can check valid master key of request', done => {
+  return process.env.PARSE_SERVER_LOG_LEVEL !== "debug";
+})("LogsRouter", () => {
+  it("can check valid master key of request", done => {
     // Make mock request
     const request = {
       auth: {
@@ -31,7 +32,7 @@ describe_only(() => {
     done();
   });
 
-  it('can check invalid construction of controller', done => {
+  it("can check invalid construction of controller", done => {
     // Make mock request
     const request = {
       auth: {
@@ -51,52 +52,54 @@ describe_only(() => {
     done();
   });
 
-  it('can check invalid master key of request', done => {
+  it("can check invalid master key of request", done => {
     request({
-      url: 'http://localhost:8378/1/scriptlog',
+      url: "http://localhost:8378/1/scriptlog",
       headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        "X-Parse-Application-Id": "test",
+        "X-Parse-REST-API-Key": "rest",
       },
     }).then(fail, response => {
       const body = response.data;
       expect(response.status).toEqual(403);
-      expect(body.error).toEqual('unauthorized: master key is required');
+      expect(body.error).toEqual("unauthorized: master key is required");
       done();
     });
   });
 
   const headers = {
-    'X-Parse-Application-Id': 'test',
-    'X-Parse-REST-API-Key': 'rest',
-    'X-Parse-Master-Key': 'test',
+    "X-Parse-Application-Id": "test",
+    "X-Parse-REST-API-Key": "rest",
+    "X-Parse-Master-Key": "test",
   };
 
   /**
    * Verifies simple passwords in GET login requests with special characters are scrubbed from the verbose log
    */
-  it_id('e36d6141-2a20-41d0-85fc-d1534c3e4bae')(it)(
-    'does scrub simple passwords on GET login',
+  it_id("e36d6141-2a20-41d0-85fc-d1534c3e4bae")(it)(
+    "does scrub simple passwords on GET login",
     done => {
       reconfigureServer({
         verbose: true,
       }).then(function () {
         request({
           headers: headers,
-          url: 'http://localhost:8378/1/login?username=test&password=simplepass.com',
+          url: "http://localhost:8378/1/login?username=test&password=simplepass.com",
         })
           .catch(() => {})
           .then(() => {
             request({
-              url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+              url: "http://localhost:8378/1/scriptlog?size=4&level=verbose",
               headers: headers,
             }).then(response => {
               const body = response.data;
               expect(response.status).toEqual(200);
               // 4th entry is our actual GET request
-              expect(body[2].url).toEqual('/1/login?username=test&password=********');
+              expect(body[2].url).toEqual(
+                "/1/login?username=test&password=********"
+              );
               expect(body[2].message).toEqual(
-                'REQUEST for [GET] /1/login?username=test&password=********: {}'
+                "REQUEST for [GET] /1/login?username=test&password=********: {}"
               );
               done();
             });
@@ -108,8 +111,8 @@ describe_only(() => {
   /**
    * Verifies complex passwords in GET login requests with special characters are scrubbed from the verbose log
    */
-  it_id('24b277c5-250f-4a35-a449-2c8c519d4c03')(it)(
-    'does scrub complex passwords on GET login',
+  it_id("24b277c5-250f-4a35-a449-2c8c519d4c03")(it)(
+    "does scrub complex passwords on GET login",
     done => {
       reconfigureServer({
         verbose: true,
@@ -118,20 +121,22 @@ describe_only(() => {
           return request({
             headers: headers,
             // using urlencoded password, 'simple @,/?:&=+$#pass.com'
-            url: 'http://localhost:8378/1/login?username=test&password=simple%20%40%2C%2F%3F%3A%26%3D%2B%24%23pass.com',
+            url: "http://localhost:8378/1/login?username=test&password=simple%20%40%2C%2F%3F%3A%26%3D%2B%24%23pass.com",
           })
             .catch(() => {})
             .then(() => {
               return request({
-                url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+                url: "http://localhost:8378/1/scriptlog?size=4&level=verbose",
                 headers: headers,
               }).then(response => {
                 const body = response.data;
                 expect(response.status).toEqual(200);
                 // 4th entry is our actual GET request
-                expect(body[2].url).toEqual('/1/login?username=test&password=********');
+                expect(body[2].url).toEqual(
+                  "/1/login?username=test&password=********"
+                );
                 expect(body[2].message).toEqual(
-                  'REQUEST for [GET] /1/login?username=test&password=********: {}'
+                  "REQUEST for [GET] /1/login?username=test&password=********: {}"
                 );
                 done();
               });
@@ -144,31 +149,31 @@ describe_only(() => {
   /**
    * Verifies fields in POST login requests are NOT present in the verbose log
    */
-  it_id('33143ec9-b32d-467c-ba65-ff2bbefdaadd')(it)(
-    'does not have password field in POST login',
+  it_id("33143ec9-b32d-467c-ba65-ff2bbefdaadd")(it)(
+    "does not have password field in POST login",
     done => {
       reconfigureServer({
         verbose: true,
       }).then(function () {
         request({
-          method: 'POST',
+          method: "POST",
           headers: headers,
-          url: 'http://localhost:8378/1/login',
+          url: "http://localhost:8378/1/login",
           body: {
-            username: 'test',
-            password: 'simplepass.com',
+            username: "test",
+            password: "simplepass.com",
           },
         })
           .catch(() => {})
           .then(() => {
             request({
-              url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+              url: "http://localhost:8378/1/scriptlog?size=4&level=verbose",
               headers: headers,
             }).then(response => {
               const body = response.data;
               expect(response.status).toEqual(200);
               // 4th entry is our actual GET request
-              expect(body[2].url).toEqual('/1/login');
+              expect(body[2].url).toEqual("/1/login");
               expect(body[2].message).toEqual(
                 'REQUEST for [POST] /1/login: {\n  "username": "test",\n  "password": "********"\n}'
               );

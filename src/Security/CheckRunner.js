@@ -1,8 +1,8 @@
-import Utils from '../Utils';
-import { CheckState } from './Check';
-import * as CheckGroups from './CheckGroups/CheckGroups';
-import logger from '../logger';
-import { isArray, isBoolean } from 'lodash';
+import Utils from "../Utils";
+import { CheckState } from "./Check";
+import * as CheckGroups from "./CheckGroups/CheckGroups";
+import logger from "../logger";
+import { isArray, isBoolean } from "lodash";
 
 /**
  * The security check runner.
@@ -18,7 +18,11 @@ class CheckRunner {
    */
   constructor(config = {}) {
     this._validateParams(config);
-    const { enableCheck = false, enableCheckLog = false, checkGroups = CheckGroups } = config;
+    const {
+      enableCheck = false,
+      enableCheckLog = false,
+      checkGroups = CheckGroups,
+    } = config;
     this.enableCheck = enableCheck;
     this.enableCheckLog = enableCheckLog;
     this.checkGroups = checkGroups;
@@ -29,10 +33,10 @@ class CheckRunner {
    * @params
    * @returns {Object} The security check report.
    */
-  async run({ version = '1.0.0' } = {}) {
+  async run({ version = "1.0.0" } = {}) {
     // Instantiate check groups
     const groups = Object.values(this.checkGroups)
-      .filter(c => typeof c === 'function')
+      .filter(c => typeof c === "function")
       .map(CheckGroup => new CheckGroup());
 
     // Run checks
@@ -88,7 +92,7 @@ class CheckRunner {
 
     // Identify report version
     switch (version) {
-      case '1.0.0':
+      case "1.0.0":
       default:
         // For each check group
         for (const group of groups) {
@@ -127,11 +131,13 @@ class CheckRunner {
   _logReport(report) {
     // Determine log level depending on whether any check failed
     const log =
-      report.report.state == CheckState.success ? s => logger.info(s) : s => logger.warn(s);
+      report.report.state == CheckState.success
+        ? s => logger.info(s)
+        : s => logger.warn(s);
 
     // Declare output
-    const indent = '   ';
-    let output = '';
+    const indent = "   ";
+    let output = "";
     let checksCount = 0;
     let failedChecksCount = 0;
     let skippedCheckCount = 0;
@@ -163,8 +169,8 @@ class CheckRunner {
       `\n###################################` +
       `\n` +
       `\n${
-        failedChecksCount > 0 ? 'Warning: ' : ''
-      }${failedChecksCount} weak security setting(s) found${failedChecksCount > 0 ? '!' : ''}` +
+        failedChecksCount > 0 ? "Warning: " : ""
+      }${failedChecksCount} weak security setting(s) found${failedChecksCount > 0 ? "!" : ""}` +
       `\n${checksCount} check(s) executed` +
       `\n${skippedCheckCount} check(s) skipped` +
       `\n` +
@@ -182,11 +188,11 @@ class CheckRunner {
   _getLogIconForState(state) {
     switch (state) {
       case CheckState.success:
-        return '✅';
+        return "✅";
       case CheckState.fail:
-        return '❌';
+        return "❌";
       default:
-        return 'ℹ️';
+        return "ℹ️";
     }
   }
 
@@ -196,9 +202,9 @@ class CheckRunner {
    */
   _validateParams(params) {
     Utils.validateParams(params, {
-      enableCheck: { t: 'boolean', v: isBoolean, o: true },
-      enableCheckLog: { t: 'boolean', v: isBoolean, o: true },
-      checkGroups: { t: 'array', v: isArray, o: true },
+      enableCheck: { t: "boolean", v: isBoolean, o: true },
+      enableCheckLog: { t: "boolean", v: isBoolean, o: true },
+      checkGroups: { t: "array", v: isArray, o: true },
     });
   }
 }

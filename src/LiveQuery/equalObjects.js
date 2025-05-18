@@ -8,14 +8,14 @@ function equalObjects(a, b) {
   if (typeof a !== typeof b) {
     return false;
   }
-  if (typeof a !== 'object') {
+  if (typeof a !== "object") {
     return a === b;
   }
   if (a === b) {
     return true;
   }
-  if (toString.call(a) === '[object Date]') {
-    if (toString.call(b) === '[object Date]') {
+  if (toString.call(a) === "[object Date]") {
+    if (toString.call(b) === "[object Date]") {
       return +a === +b;
     }
     return false;

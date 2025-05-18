@@ -1,50 +1,50 @@
-'use strict';
+"use strict";
 // These tests check the "create" / "update" functionality of the REST API.
-const auth = require('../lib/Auth');
-const Config = require('../lib/Config');
-const Parse = require('parse/node').Parse;
-const rest = require('../lib/rest');
-const RestWrite = require('../lib/RestWrite');
-const request = require('../lib/request');
+const auth = require("../lib/Auth");
+const Config = require("../lib/Config");
+const Parse = require("parse/node").Parse;
+const rest = require("../lib/rest");
+const RestWrite = require("../lib/RestWrite");
+const request = require("../lib/request");
 
 let config;
 let database;
 
-describe('rest create', () => {
+describe("rest create", () => {
   beforeEach(() => {
-    config = Config.get('test');
+    config = Config.get("test");
     database = config.database;
   });
 
-  it('handles _id', done => {
+  it("handles _id", done => {
     rest
-      .create(config, auth.nobody(config), 'Foo', {})
-      .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
+      .create(config, auth.nobody(config), "Foo", {})
+      .then(() => database.adapter.find("Foo", { fields: {} }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
-        expect(typeof obj.objectId).toEqual('string');
+        expect(typeof obj.objectId).toEqual("string");
         expect(obj.objectId.length).toEqual(10);
         expect(obj._id).toBeUndefined();
         done();
       });
   });
 
-  it('can use custom _id size', done => {
+  it("can use custom _id size", done => {
     config.objectIdSize = 20;
     rest
-      .create(config, auth.nobody(config), 'Foo', {})
-      .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
+      .create(config, auth.nobody(config), "Foo", {})
+      .then(() => database.adapter.find("Foo", { fields: {} }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const obj = results[0];
-        expect(typeof obj.objectId).toEqual('string');
+        expect(typeof obj.objectId).toEqual("string");
         expect(obj.objectId.length).toEqual(20);
         done();
       });
   });
 
-  it('should use objectId from client when allowCustomObjectId true', async () => {
+  it("should use objectId from client when allowCustomObjectId true", async () => {
     config.allowCustomObjectId = true;
 
     // use time as unique custom id for test reusability
@@ -56,13 +56,13 @@ describe('rest create', () => {
     const {
       status,
       response: { objectId },
-    } = await rest.create(config, auth.nobody(config), 'MyClass', obj);
+    } = await rest.create(config, auth.nobody(config), "MyClass", obj);
 
     expect(status).toEqual(201);
     expect(objectId).toEqual(customId);
   });
 
-  it('should throw on invalid objectId when allowCustomObjectId true', () => {
+  it("should throw on invalid objectId when allowCustomObjectId true", () => {
     config.allowCustomObjectId = true;
 
     const objIdNull = {
@@ -74,36 +74,42 @@ describe('rest create', () => {
     };
 
     const objIdEmpty = {
-      objectId: '',
+      objectId: "",
     };
 
-    const err = 'objectId must not be empty, null or undefined';
+    const err = "objectId must not be empty, null or undefined";
 
-    expect(() => rest.create(config, auth.nobody(config), 'MyClass', objIdEmpty)).toThrowError(err);
+    expect(() =>
+      rest.create(config, auth.nobody(config), "MyClass", objIdEmpty)
+    ).toThrowError(err);
 
-    expect(() => rest.create(config, auth.nobody(config), 'MyClass', objIdNull)).toThrowError(err);
+    expect(() =>
+      rest.create(config, auth.nobody(config), "MyClass", objIdNull)
+    ).toThrowError(err);
 
-    expect(() => rest.create(config, auth.nobody(config), 'MyClass', objIdUndef)).toThrowError(err);
+    expect(() =>
+      rest.create(config, auth.nobody(config), "MyClass", objIdUndef)
+    ).toThrowError(err);
   });
 
-  it('should generate objectId when not set by client with allowCustomObjectId true', async () => {
+  it("should generate objectId when not set by client with allowCustomObjectId true", async () => {
     config.allowCustomObjectId = true;
 
     const {
       status,
       response: { objectId },
-    } = await rest.create(config, auth.nobody(config), 'MyClass', {});
+    } = await rest.create(config, auth.nobody(config), "MyClass", {});
 
     expect(status).toEqual(201);
     expect(objectId).toBeDefined();
   });
 
-  it('is backwards compatible when _id size changes', done => {
+  it("is backwards compatible when _id size changes", done => {
     rest
-      .create(config, auth.nobody(config), 'Foo', { size: 10 })
+      .create(config, auth.nobody(config), "Foo", { size: 10 })
       .then(() => {
         config.objectIdSize = 20;
-        return rest.find(config, auth.nobody(config), 'Foo', { size: 10 });
+        return rest.find(config, auth.nobody(config), "Foo", { size: 10 });
       })
       .then(response => {
         expect(response.results.length).toEqual(1);
@@ -111,23 +117,23 @@ describe('rest create', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          'Foo',
+          "Foo",
           { objectId: response.results[0].objectId },
           { update: 20 }
         );
       })
       .then(() => {
-        return rest.find(config, auth.nobody(config), 'Foo', { size: 10 });
+        return rest.find(config, auth.nobody(config), "Foo", { size: 10 });
       })
       .then(response => {
         expect(response.results.length).toEqual(1);
         expect(response.results[0].objectId.length).toEqual(10);
         expect(response.results[0].update).toEqual(20);
-        return rest.create(config, auth.nobody(config), 'Foo', { size: 20 });
+        return rest.create(config, auth.nobody(config), "Foo", { size: 20 });
       })
       .then(() => {
         config.objectIdSize = 10;
-        return rest.find(config, auth.nobody(config), 'Foo', { size: 20 });
+        return rest.find(config, auth.nobody(config), "Foo", { size: 20 });
       })
       .then(response => {
         expect(response.results.length).toEqual(1);
@@ -136,16 +142,16 @@ describe('rest create', () => {
       });
   });
 
-  describe('with maintenance key', () => {
+  describe("with maintenance key", () => {
     let req;
 
     async function getObject(id) {
       const res = await request({
         headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
+          "X-Parse-Application-Id": "test",
+          "X-Parse-REST-API-Key": "rest",
         },
-        method: 'GET',
+        method: "GET",
         url: `http://localhost:8378/1/classes/TestObject/${id}`,
       });
 
@@ -155,27 +161,27 @@ describe('rest create', () => {
     beforeEach(() => {
       req = {
         headers: {
-          'Content-Type': 'application/json',
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Maintenance-Key': 'testing',
+          "Content-Type": "application/json",
+          "X-Parse-Application-Id": "test",
+          "X-Parse-REST-API-Key": "rest",
+          "X-Parse-Maintenance-Key": "testing",
         },
-        method: 'POST',
-        url: 'http://localhost:8378/1/classes/TestObject',
+        method: "POST",
+        url: "http://localhost:8378/1/classes/TestObject",
       };
     });
 
-    it('allows createdAt', async () => {
-      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
+    it("allows createdAt", async () => {
+      const createdAt = { __type: "Date", iso: "2019-01-01T00:00:00.000Z" };
       req.body = { createdAt };
 
       const res = await request(req);
       expect(res.data.createdAt).toEqual(createdAt.iso);
     });
 
-    it('allows createdAt and updatedAt', async () => {
-      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
-      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+    it("allows createdAt and updatedAt", async () => {
+      const createdAt = { __type: "Date", iso: "2019-01-01T00:00:00.000Z" };
+      const updatedAt = { __type: "Date", iso: "2019-02-01T00:00:00.000Z" };
       req.body = { createdAt, updatedAt };
 
       const res = await request(req);
@@ -185,9 +191,9 @@ describe('rest create', () => {
       expect(obj.updatedAt).toEqual(updatedAt.iso);
     });
 
-    it('allows createdAt, updatedAt, and additional field', async () => {
-      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
-      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+    it("allows createdAt, updatedAt, and additional field", async () => {
+      const createdAt = { __type: "Date", iso: "2019-01-01T00:00:00.000Z" };
+      const updatedAt = { __type: "Date", iso: "2019-02-01T00:00:00.000Z" };
       req.body = { createdAt, updatedAt, testing: 123 };
 
       const res = await request(req);
@@ -198,9 +204,9 @@ describe('rest create', () => {
       expect(obj.testing).toEqual(123);
     });
 
-    it('cannot set updatedAt dated before createdAt', async () => {
-      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
-      const updatedAt = { __type: 'Date', iso: '2018-12-01T00:00:00.000Z' };
+    it("cannot set updatedAt dated before createdAt", async () => {
+      const createdAt = { __type: "Date", iso: "2019-01-01T00:00:00.000Z" };
+      const updatedAt = { __type: "Date", iso: "2018-12-01T00:00:00.000Z" };
       req.body = { createdAt, updatedAt };
 
       try {
@@ -211,8 +217,8 @@ describe('rest create', () => {
       }
     });
 
-    it('cannot set updatedAt without createdAt', async () => {
-      const updatedAt = { __type: 'Date', iso: '2018-12-01T00:00:00.000Z' };
+    it("cannot set updatedAt without createdAt", async () => {
+      const updatedAt = { __type: "Date", iso: "2018-12-01T00:00:00.000Z" };
       req.body = { updatedAt };
 
       const res = await request(req);
@@ -221,7 +227,7 @@ describe('rest create', () => {
       expect(obj.updatedAt).not.toEqual(updatedAt.iso);
     });
 
-    it('handles bad types for createdAt and updatedAt', async () => {
+    it("handles bad types for createdAt and updatedAt", async () => {
       const createdAt = 12345;
       const updatedAt = true;
       req.body = { createdAt, updatedAt };
@@ -234,11 +240,11 @@ describe('rest create', () => {
       }
     });
 
-    it('cannot set createdAt or updatedAt without maintenance key', async () => {
-      const createdAt = { __type: 'Date', iso: '2019-01-01T00:00:00.000Z' };
-      const updatedAt = { __type: 'Date', iso: '2019-02-01T00:00:00.000Z' };
+    it("cannot set createdAt or updatedAt without maintenance key", async () => {
+      const createdAt = { __type: "Date", iso: "2019-01-01T00:00:00.000Z" };
+      const updatedAt = { __type: "Date", iso: "2019-02-01T00:00:00.000Z" };
       req.body = { createdAt, updatedAt };
-      delete req.headers['X-Parse-Maintenance-Key'];
+      delete req.headers["X-Parse-Maintenance-Key"];
 
       const res = await request(req);
 
@@ -247,189 +253,214 @@ describe('rest create', () => {
     });
   });
 
-  it_id('6c30306f-328c-47f2-88a7-2deffaee997f')(it)('handles array, object, date', done => {
-    const now = new Date();
-    const obj = {
-      array: [1, 2, 3],
-      object: { foo: 'bar' },
-      date: Parse._encode(now),
-    };
-    rest
-      .create(config, auth.nobody(config), 'MyClass', obj)
-      .then(() =>
-        database.adapter.find(
-          'MyClass',
-          {
-            fields: {
-              array: { type: 'Array' },
-              object: { type: 'Object' },
-              date: { type: 'Date' },
+  it_id("6c30306f-328c-47f2-88a7-2deffaee997f")(it)(
+    "handles array, object, date",
+    done => {
+      const now = new Date();
+      const obj = {
+        array: [1, 2, 3],
+        object: { foo: "bar" },
+        date: Parse._encode(now),
+      };
+      rest
+        .create(config, auth.nobody(config), "MyClass", obj)
+        .then(() =>
+          database.adapter.find(
+            "MyClass",
+            {
+              fields: {
+                array: { type: "Array" },
+                object: { type: "Object" },
+                date: { type: "Date" },
+              },
             },
-          },
-          {},
-          {}
+            {},
+            {}
+          )
         )
-      )
-      .then(results => {
-        expect(results.length).toEqual(1);
-        const mob = results[0];
-        expect(mob.array instanceof Array).toBe(true);
-        expect(typeof mob.object).toBe('object');
-        expect(mob.date.__type).toBe('Date');
-        expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());
-        done();
-      });
-  });
+        .then(results => {
+          expect(results.length).toEqual(1);
+          const mob = results[0];
+          expect(mob.array instanceof Array).toBe(true);
+          expect(typeof mob.object).toBe("object");
+          expect(mob.date.__type).toBe("Date");
+          expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());
+          done();
+        });
+    }
+  );
 
-  it('handles object and subdocument', done => {
-    const obj = { subdoc: { foo: 'bar', wu: 'tan' } };
+  it("handles object and subdocument", done => {
+    const obj = { subdoc: { foo: "bar", wu: "tan" } };
 
-    Parse.Cloud.beforeSave('MyClass', function () {
+    Parse.Cloud.beforeSave("MyClass", function () {
       // this beforeSave trigger should do nothing but can mess with the object
     });
 
     rest
-      .create(config, auth.nobody(config), 'MyClass', obj)
-      .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
+      .create(config, auth.nobody(config), "MyClass", obj)
+      .then(() => database.adapter.find("MyClass", { fields: {} }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const mob = results[0];
-        expect(typeof mob.subdoc).toBe('object');
-        expect(mob.subdoc.foo).toBe('bar');
-        expect(mob.subdoc.wu).toBe('tan');
-        expect(typeof mob.objectId).toEqual('string');
-        const obj = { 'subdoc.wu': 'clan' };
-        return rest.update(config, auth.nobody(config), 'MyClass', { objectId: mob.objectId }, obj);
+        expect(typeof mob.subdoc).toBe("object");
+        expect(mob.subdoc.foo).toBe("bar");
+        expect(mob.subdoc.wu).toBe("tan");
+        expect(typeof mob.objectId).toEqual("string");
+        const obj = { "subdoc.wu": "clan" };
+        return rest.update(
+          config,
+          auth.nobody(config),
+          "MyClass",
+          { objectId: mob.objectId },
+          obj
+        );
       })
-      .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
+      .then(() => database.adapter.find("MyClass", { fields: {} }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const mob = results[0];
-        expect(typeof mob.subdoc).toBe('object');
-        expect(mob.subdoc.foo).toBe('bar');
-        expect(mob.subdoc.wu).toBe('clan');
+        expect(typeof mob.subdoc).toBe("object");
+        expect(mob.subdoc.foo).toBe("bar");
+        expect(mob.subdoc.wu).toBe("clan");
         done();
       })
       .catch(done.fail);
   });
 
-  it('handles create on non-existent class when disabled client class creation', done => {
+  it("handles create on non-existent class when disabled client class creation", done => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
-      () => {
-        fail('Should throw an error');
-        done();
-      },
-      err => {
-        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-        expect(err.message).toEqual(
-          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
-        );
-        done();
-      }
-    );
+    rest
+      .create(
+        customConfig,
+        auth.nobody(customConfig),
+        "ClientClassCreation",
+        {}
+      )
+      .then(
+        () => {
+          fail("Should throw an error");
+          done();
+        },
+        err => {
+          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+          expect(err.message).toEqual(
+            "This user is not allowed to access " +
+              "non-existent class: ClientClassCreation"
+          );
+          done();
+        }
+      );
   });
 
-  it('handles create on existent class when disabled client class creation', async () => {
+  it("handles create on existent class when disabled client class creation", async () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
     const schema = await config.database.loadSchema();
-    const actualSchema = await schema.addClassIfNotExists('ClientClassCreation', {});
-    expect(actualSchema.className).toEqual('ClientClassCreation');
+    const actualSchema = await schema.addClassIfNotExists(
+      "ClientClassCreation",
+      {}
+    );
+    expect(actualSchema.className).toEqual("ClientClassCreation");
 
     await schema.reloadData({ clearCache: true });
     // Should not throw
-    await rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+    await rest.create(
+      customConfig,
+      auth.nobody(customConfig),
+      "ClientClassCreation",
+      {}
+    );
   });
 
-  it('handles user signup', done => {
+  it("handles user signup", done => {
     const user = {
-      username: 'asdf',
-      password: 'zxcv',
-      foo: 'bar',
+      username: "asdf",
+      password: "zxcv",
+      foo: "bar",
     };
-    rest.create(config, auth.nobody(config), '_User', user).then(r => {
+    rest.create(config, auth.nobody(config), "_User", user).then(r => {
       expect(Object.keys(r.response).length).toEqual(3);
-      expect(typeof r.response.objectId).toEqual('string');
-      expect(typeof r.response.createdAt).toEqual('string');
-      expect(typeof r.response.sessionToken).toEqual('string');
+      expect(typeof r.response.objectId).toEqual("string");
+      expect(typeof r.response.createdAt).toEqual("string");
+      expect(typeof r.response.sessionToken).toEqual("string");
       done();
     });
   });
 
-  it('handles anonymous user signup', done => {
+  it("handles anonymous user signup", done => {
     const data1 = {
       authData: {
         anonymous: {
-          id: '00000000-0000-0000-0000-000000000001',
+          id: "00000000-0000-0000-0000-000000000001",
         },
       },
     };
     const data2 = {
       authData: {
         anonymous: {
-          id: '00000000-0000-0000-0000-000000000002',
+          id: "00000000-0000-0000-0000-000000000002",
         },
       },
     };
     let username1;
     rest
-      .create(config, auth.nobody(config), '_User', data1)
+      .create(config, auth.nobody(config), "_User", data1)
       .then(r => {
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        expect(typeof r.response.username).toEqual('string');
-        return rest.create(config, auth.nobody(config), '_User', data1);
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.sessionToken).toEqual("string");
+        expect(typeof r.response.username).toEqual("string");
+        return rest.create(config, auth.nobody(config), "_User", data1);
       })
       .then(r => {
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.username).toEqual('string');
-        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.username).toEqual("string");
+        expect(typeof r.response.updatedAt).toEqual("string");
         username1 = r.response.username;
-        return rest.create(config, auth.nobody(config), '_User', data2);
+        return rest.create(config, auth.nobody(config), "_User", data2);
       })
       .then(r => {
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        return rest.create(config, auth.nobody(config), '_User', data2);
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.sessionToken).toEqual("string");
+        return rest.create(config, auth.nobody(config), "_User", data2);
       })
       .then(r => {
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.username).toEqual('string');
-        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.username).toEqual("string");
+        expect(typeof r.response.updatedAt).toEqual("string");
         expect(r.response.username).not.toEqual(username1);
         done();
       });
   });
 
-  it('handles anonymous user signup and upgrade to new user', done => {
+  it("handles anonymous user signup and upgrade to new user", done => {
     const data1 = {
       authData: {
         anonymous: {
-          id: '00000000-0000-0000-0000-000000000001',
+          id: "00000000-0000-0000-0000-000000000001",
         },
       },
     };
 
     const updatedData = {
       authData: { anonymous: null },
-      username: 'hello',
-      password: 'world',
+      username: "hello",
+      password: "world",
     };
     let objectId;
     rest
-      .create(config, auth.nobody(config), '_User', data1)
+      .create(config, auth.nobody(config), "_User", data1)
       .then(r => {
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.sessionToken).toEqual("string");
         objectId = r.response.objectId;
         return auth.getAuthForSessionToken({
           config,
@@ -437,16 +468,22 @@ describe('rest create', () => {
         });
       })
       .then(sessionAuth => {
-        return rest.update(config, sessionAuth, '_User', { objectId }, updatedData);
+        return rest.update(
+          config,
+          sessionAuth,
+          "_User",
+          { objectId },
+          updatedData
+        );
       })
       .then(() => {
         return Parse.User.logOut().then(() => {
-          return Parse.User.logIn('hello', 'world');
+          return Parse.User.logIn("hello", "world");
         });
       })
       .then(r => {
         expect(r.id).toEqual(objectId);
-        expect(r.get('username')).toEqual('hello');
+        expect(r.get("username")).toEqual("hello");
         done();
       })
       .catch(err => {
@@ -455,56 +492,58 @@ describe('rest create', () => {
       });
   });
 
-  it('handles no anonymous users config', done => {
+  it("handles no anonymous users config", done => {
     const NoAnnonConfig = Object.assign({}, config);
     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
     const data1 = {
       authData: {
         anonymous: {
-          id: '00000000-0000-0000-0000-000000000001',
+          id: "00000000-0000-0000-0000-000000000001",
         },
       },
     };
-    rest.create(NoAnnonConfig, auth.nobody(NoAnnonConfig), '_User', data1).then(
+    rest.create(NoAnnonConfig, auth.nobody(NoAnnonConfig), "_User", data1).then(
       () => {
-        fail('Should throw an error');
+        fail("Should throw an error");
         done();
       },
       err => {
         expect(err.code).toEqual(Parse.Error.UNSUPPORTED_SERVICE);
-        expect(err.message).toEqual('This authentication method is unsupported.');
+        expect(err.message).toEqual(
+          "This authentication method is unsupported."
+        );
         NoAnnonConfig.authDataManager.setEnableAnonymousUsers(true);
         done();
       }
     );
   });
 
-  it('test facebook signup and login', done => {
+  it("test facebook signup and login", done => {
     const data = {
       authData: {
         facebook: {
-          id: '8675309',
-          access_token: 'jenny',
+          id: "8675309",
+          access_token: "jenny",
         },
       },
     };
     let newUserSignedUpByFacebookObjectId;
     rest
-      .create(config, auth.nobody(config), '_User', data)
+      .create(config, auth.nobody(config), "_User", data)
       .then(r => {
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.sessionToken).toEqual("string");
         newUserSignedUpByFacebookObjectId = r.response.objectId;
-        return rest.create(config, auth.nobody(config), '_User', data);
+        return rest.create(config, auth.nobody(config), "_User", data);
       })
       .then(r => {
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.username).toEqual('string');
-        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.username).toEqual("string");
+        expect(typeof r.response.updatedAt).toEqual("string");
         expect(r.response.objectId).toEqual(newUserSignedUpByFacebookObjectId);
-        return rest.find(config, auth.master(config), '_Session', {
+        return rest.find(config, auth.master(config), "_Session", {
           sessionToken: r.response.sessionToken,
         });
       })
@@ -520,24 +559,24 @@ describe('rest create', () => {
       });
   });
 
-  it('stores pointers', done => {
+  it("stores pointers", done => {
     const obj = {
-      foo: 'bar',
+      foo: "bar",
       aPointer: {
-        __type: 'Pointer',
-        className: 'JustThePointer',
-        objectId: 'qwerty1234', // make it 10 chars to match PG storage
+        __type: "Pointer",
+        className: "JustThePointer",
+        objectId: "qwerty1234", // make it 10 chars to match PG storage
       },
     };
     rest
-      .create(config, auth.nobody(config), 'APointerDarkly', obj)
+      .create(config, auth.nobody(config), "APointerDarkly", obj)
       .then(() =>
         database.adapter.find(
-          'APointerDarkly',
+          "APointerDarkly",
           {
             fields: {
-              foo: { type: 'String' },
-              aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
+              foo: { type: "String" },
+              aPointer: { type: "Pointer", targetClass: "JustThePointer" },
             },
           },
           {},
@@ -547,36 +586,36 @@ describe('rest create', () => {
       .then(results => {
         expect(results.length).toEqual(1);
         const output = results[0];
-        expect(typeof output.foo).toEqual('string');
-        expect(typeof output._p_aPointer).toEqual('undefined');
+        expect(typeof output.foo).toEqual("string");
+        expect(typeof output._p_aPointer).toEqual("undefined");
         expect(output._p_aPointer).toBeUndefined();
         expect(output.aPointer).toEqual({
-          __type: 'Pointer',
-          className: 'JustThePointer',
-          objectId: 'qwerty1234',
+          __type: "Pointer",
+          className: "JustThePointer",
+          objectId: "qwerty1234",
         });
         done();
       });
   });
 
-  it('stores pointers to objectIds larger than 10 characters', done => {
+  it("stores pointers to objectIds larger than 10 characters", done => {
     const obj = {
-      foo: 'bar',
+      foo: "bar",
       aPointer: {
-        __type: 'Pointer',
-        className: 'JustThePointer',
-        objectId: '49F62F92-9B56-46E7-A3D4-BBD14C52F666',
+        __type: "Pointer",
+        className: "JustThePointer",
+        objectId: "49F62F92-9B56-46E7-A3D4-BBD14C52F666",
       },
     };
     rest
-      .create(config, auth.nobody(config), 'APointerDarkly', obj)
+      .create(config, auth.nobody(config), "APointerDarkly", obj)
       .then(() =>
         database.adapter.find(
-          'APointerDarkly',
+          "APointerDarkly",
           {
             fields: {
-              foo: { type: 'String' },
-              aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
+              foo: { type: "String" },
+              aPointer: { type: "Pointer", targetClass: "JustThePointer" },
             },
           },
           {},
@@ -586,78 +625,78 @@ describe('rest create', () => {
       .then(results => {
         expect(results.length).toEqual(1);
         const output = results[0];
-        expect(typeof output.foo).toEqual('string');
-        expect(typeof output._p_aPointer).toEqual('undefined');
+        expect(typeof output.foo).toEqual("string");
+        expect(typeof output._p_aPointer).toEqual("undefined");
         expect(output._p_aPointer).toBeUndefined();
         expect(output.aPointer).toEqual({
-          __type: 'Pointer',
-          className: 'JustThePointer',
-          objectId: '49F62F92-9B56-46E7-A3D4-BBD14C52F666',
+          __type: "Pointer",
+          className: "JustThePointer",
+          objectId: "49F62F92-9B56-46E7-A3D4-BBD14C52F666",
         });
         done();
       });
   });
 
-  it('cannot set objectId', done => {
+  it("cannot set objectId", done => {
     const headers = {
-      'Content-Type': 'application/json',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest',
+      "Content-Type": "application/json",
+      "X-Parse-Application-Id": "test",
+      "X-Parse-REST-API-Key": "rest",
     };
     request({
       headers: headers,
-      method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      method: "POST",
+      url: "http://localhost:8378/1/classes/TestObject",
       body: JSON.stringify({
-        foo: 'bar',
-        objectId: 'hello',
+        foo: "bar",
+        objectId: "hello",
       }),
     }).then(fail, response => {
       const b = response.data;
       expect(b.code).toEqual(105);
-      expect(b.error).toEqual('objectId is an invalid field name.');
+      expect(b.error).toEqual("objectId is an invalid field name.");
       done();
     });
   });
 
-  it('cannot set id', done => {
+  it("cannot set id", done => {
     const headers = {
-      'Content-Type': 'application/json',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest',
+      "Content-Type": "application/json",
+      "X-Parse-Application-Id": "test",
+      "X-Parse-REST-API-Key": "rest",
     };
     request({
       headers: headers,
-      method: 'POST',
-      url: 'http://localhost:8378/1/classes/TestObject',
+      method: "POST",
+      url: "http://localhost:8378/1/classes/TestObject",
       body: JSON.stringify({
-        foo: 'bar',
-        id: 'hello',
+        foo: "bar",
+        id: "hello",
       }),
     }).then(fail, response => {
       const b = response.data;
       expect(b.code).toEqual(105);
-      expect(b.error).toEqual('id is an invalid field name.');
+      expect(b.error).toEqual("id is an invalid field name.");
       done();
     });
   });
 
-  it('test default session length', done => {
+  it("test default session length", done => {
     const user = {
-      username: 'asdf',
-      password: 'zxcv',
-      foo: 'bar',
+      username: "asdf",
+      password: "zxcv",
+      foo: "bar",
     };
     const now = new Date();
 
     rest
-      .create(config, auth.nobody(config), '_User', user)
+      .create(config, auth.nobody(config), "_User", user)
       .then(r => {
         expect(Object.keys(r.response).length).toEqual(3);
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        return rest.find(config, auth.master(config), '_Session', {
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.sessionToken).toEqual("string");
+        return rest.find(config, auth.master(config), "_Session", {
           sessionToken: r.response.sessionToken,
         });
       })
@@ -668,30 +707,32 @@ describe('rest create', () => {
         const actual = new Date(session.expiresAt.iso);
         const expected = new Date(now.getTime() + 1000 * 3600 * 24 * 365);
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(
+          Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL
+        ).toEqual(true);
 
         done();
       });
   });
 
-  it('test specified session length', done => {
+  it("test specified session length", done => {
     const user = {
-      username: 'asdf',
-      password: 'zxcv',
-      foo: 'bar',
+      username: "asdf",
+      password: "zxcv",
+      foo: "bar",
     };
     const sessionLength = 3600, // 1 Hour ahead
       now = new Date(); // For reference later
     config.sessionLength = sessionLength;
 
     rest
-      .create(config, auth.nobody(config), '_User', user)
+      .create(config, auth.nobody(config), "_User", user)
       .then(r => {
         expect(Object.keys(r.response).length).toEqual(3);
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        return rest.find(config, auth.master(config), '_Session', {
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.sessionToken).toEqual("string");
+        return rest.find(config, auth.master(config), "_Session", {
           sessionToken: r.response.sessionToken,
         });
       })
@@ -702,7 +743,9 @@ describe('rest create', () => {
         const actual = new Date(session.expiresAt.iso);
         const expected = new Date(now.getTime() + sessionLength * 1000);
 
-        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
+        expect(
+          Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL
+        ).toEqual(true);
 
         done();
       })
@@ -712,22 +755,22 @@ describe('rest create', () => {
       });
   });
 
-  it('can create a session with no expiration', done => {
+  it("can create a session with no expiration", done => {
     const user = {
-      username: 'asdf',
-      password: 'zxcv',
-      foo: 'bar',
+      username: "asdf",
+      password: "zxcv",
+      foo: "bar",
     };
     config.expireInactiveSessions = false;
 
     rest
-      .create(config, auth.nobody(config), '_User', user)
+      .create(config, auth.nobody(config), "_User", user)
       .then(r => {
         expect(Object.keys(r.response).length).toEqual(3);
-        expect(typeof r.response.objectId).toEqual('string');
-        expect(typeof r.response.createdAt).toEqual('string');
-        expect(typeof r.response.sessionToken).toEqual('string');
-        return rest.find(config, auth.master(config), '_Session', {
+        expect(typeof r.response.objectId).toEqual("string");
+        expect(typeof r.response.createdAt).toEqual("string");
+        expect(typeof r.response.sessionToken).toEqual("string");
+        return rest.find(config, auth.master(config), "_Session", {
           sessionToken: r.response.sessionToken,
         });
       })
@@ -746,24 +789,24 @@ describe('rest create', () => {
       });
   });
 
-  it('can create object in volatileClasses if masterKey', done => {
+  it("can create object in volatileClasses if masterKey", done => {
     rest
-      .create(config, auth.master(config), '_PushStatus', {})
+      .create(config, auth.master(config), "_PushStatus", {})
       .then(r => {
         expect(r.response.objectId.length).toBe(10);
       })
       .then(() => {
-        rest.create(config, auth.master(config), '_JobStatus', {}).then(r => {
+        rest.create(config, auth.master(config), "_JobStatus", {}).then(r => {
           expect(r.response.objectId.length).toBe(10);
           done();
         });
       });
   });
 
-  it('cannot create object in volatileClasses if not masterKey', done => {
+  it("cannot create object in volatileClasses if not masterKey", done => {
     Promise.resolve()
       .then(() => {
-        return rest.create(config, auth.nobody(config), '_PushStatus', {});
+        return rest.create(config, auth.nobody(config), "_PushStatus", {});
       })
       .catch(error => {
         expect(error.code).toEqual(119);
@@ -771,66 +814,66 @@ describe('rest create', () => {
       });
   });
 
-  it('cannot get object in volatileClasses if not masterKey through pointer', async () => {
-    const masterKeyOnlyClassObject = new Parse.Object('_PushStatus');
+  it("cannot get object in volatileClasses if not masterKey through pointer", async () => {
+    const masterKeyOnlyClassObject = new Parse.Object("_PushStatus");
     await masterKeyOnlyClassObject.save(null, { useMasterKey: true });
-    const obj2 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object("TestObject");
     // Anyone is can basically create a pointer to any object
     // or some developers can use master key in some hook to link
     // private objects to standard objects
-    obj2.set('pointer', masterKeyOnlyClassObject);
+    obj2.set("pointer", masterKeyOnlyClassObject);
     await obj2.save();
-    const query = new Parse.Query('TestObject');
-    query.include('pointer');
+    const query = new Parse.Query("TestObject");
+    query.include("pointer");
     await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
       "Clients aren't allowed to perform the get operation on the _PushStatus collection."
     );
   });
 
-  it_id('3ce563bf-93aa-4d0b-9af9-c5fb246ac9fc')(it)(
-    'cannot get object in _GlobalConfig if not masterKey through pointer',
+  it_id("3ce563bf-93aa-4d0b-9af9-c5fb246ac9fc")(it)(
+    "cannot get object in _GlobalConfig if not masterKey through pointer",
     async () => {
-      await Parse.Config.save({ privateData: 'secret' }, { privateData: true });
-      const obj2 = new Parse.Object('TestObject');
-      obj2.set('globalConfigPointer', {
-        __type: 'Pointer',
-        className: '_GlobalConfig',
+      await Parse.Config.save({ privateData: "secret" }, { privateData: true });
+      const obj2 = new Parse.Object("TestObject");
+      obj2.set("globalConfigPointer", {
+        __type: "Pointer",
+        className: "_GlobalConfig",
         objectId: 1,
       });
       await obj2.save();
-      const query = new Parse.Query('TestObject');
-      query.include('globalConfigPointer');
+      const query = new Parse.Query("TestObject");
+      query.include("globalConfigPointer");
       await expectAsync(query.get(obj2.id)).toBeRejectedWithError(
         "Clients aren't allowed to perform the get operation on the _GlobalConfig collection."
       );
     }
   );
 
-  it('locks down session', done => {
+  it("locks down session", done => {
     let currentUser;
-    Parse.User.signUp('foo', 'bar')
+    Parse.User.signUp("foo", "bar")
       .then(user => {
         currentUser = user;
         const sessionToken = user.getSessionToken();
         const headers = {
-          'Content-Type': 'application/json',
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Session-Token': sessionToken,
+          "Content-Type": "application/json",
+          "X-Parse-Application-Id": "test",
+          "X-Parse-REST-API-Key": "rest",
+          "X-Parse-Session-Token": sessionToken,
         };
         let sessionId;
         return request({
           headers: headers,
-          url: 'http://localhost:8378/1/sessions/me',
+          url: "http://localhost:8378/1/sessions/me",
         })
           .then(response => {
             sessionId = response.data.objectId;
             return request({
               headers,
-              method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              method: "PUT",
+              url: "http://localhost:8378/1/sessions/" + sessionId,
               body: {
-                installationId: 'yolo',
+                installationId: "yolo",
               },
             });
           })
@@ -839,25 +882,25 @@ describe('rest create', () => {
             expect(res.data.code).toBe(105);
             return request({
               headers,
-              method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              method: "PUT",
+              url: "http://localhost:8378/1/sessions/" + sessionId,
               body: {
-                sessionToken: 'yolo',
+                sessionToken: "yolo",
               },
             });
           })
           .then(done.fail, res => {
             expect(res.status).toBe(400);
             expect(res.data.code).toBe(105);
-            return Parse.User.signUp('other', 'user');
+            return Parse.User.signUp("other", "user");
           })
           .then(otherUser => {
             const user = new Parse.User();
             user.id = otherUser.id;
             return request({
               headers,
-              method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              method: "PUT",
+              url: "http://localhost:8378/1/sessions/" + sessionId,
               body: {
                 user: Parse._encode(user),
               },
@@ -870,8 +913,8 @@ describe('rest create', () => {
             user.id = currentUser.id;
             return request({
               headers,
-              method: 'PUT',
-              url: 'http://localhost:8378/1/sessions/' + sessionId,
+              method: "PUT",
+              url: "http://localhost:8378/1/sessions/" + sessionId,
               body: {
                 user: Parse._encode(user),
               },
@@ -883,24 +926,24 @@ describe('rest create', () => {
       .catch(done.fail);
   });
 
-  it('sets current user in new sessions', done => {
+  it("sets current user in new sessions", done => {
     let currentUser;
-    Parse.User.signUp('foo', 'bar')
+    Parse.User.signUp("foo", "bar")
       .then(user => {
         currentUser = user;
         const sessionToken = user.getSessionToken();
         const headers = {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Session-Token': sessionToken,
-          'Content-Type': 'application/json',
+          "X-Parse-Application-Id": "test",
+          "X-Parse-REST-API-Key": "rest",
+          "X-Parse-Session-Token": sessionToken,
+          "Content-Type": "application/json",
         };
         return request({
           headers,
-          method: 'POST',
-          url: 'http://localhost:8378/1/sessions',
+          method: "POST",
+          url: "http://localhost:8378/1/sessions",
           body: {
-            user: { __type: 'Pointer', className: '_User', objectId: 'fakeId' },
+            user: { __type: "Pointer", className: "_User", objectId: "fakeId" },
           },
         });
       })
@@ -915,27 +958,29 @@ describe('rest create', () => {
   });
 });
 
-describe('rest update', () => {
-  it('ignores createdAt', done => {
-    const config = Config.get('test');
+describe("rest update", () => {
+  it("ignores createdAt", done => {
+    const config = Config.get("test");
     const nobody = auth.nobody(config);
-    const className = 'Foo';
-    const newCreatedAt = new Date('1970-01-01T00:00:00.000Z');
+    const className = "Foo";
+    const newCreatedAt = new Date("1970-01-01T00:00:00.000Z");
 
     rest
       .create(config, nobody, className, {})
       .then(res => {
         const objectId = res.response.objectId;
         const restObject = {
-          createdAt: { __type: 'Date', iso: newCreatedAt }, // should be ignored
+          createdAt: { __type: "Date", iso: newCreatedAt }, // should be ignored
         };
 
-        return rest.update(config, nobody, className, { objectId }, restObject).then(() => {
-          const restWhere = {
-            objectId: objectId,
-          };
-          return rest.find(config, nobody, className, restWhere, {});
-        });
+        return rest
+          .update(config, nobody, className, { objectId }, restObject)
+          .then(() => {
+            const restWhere = {
+              objectId: objectId,
+            };
+            return rest.find(config, nobody, className, restWhere, {});
+          });
       })
       .then(res2 => {
         const updatedObject = res2.results[0];
@@ -947,12 +992,12 @@ describe('rest update', () => {
   });
 });
 
-describe('read-only masterKey', () => {
-  it('properly throws on rest.create, rest.update and rest.del', () => {
-    const config = Config.get('test');
+describe("read-only masterKey", () => {
+  it("properly throws on rest.create, rest.update and rest.del", () => {
+    const config = Config.get("test");
     const readOnly = auth.readOnly(config);
     expect(() => {
-      rest.create(config, readOnly, 'AnObject', {});
+      rest.create(config, readOnly, "AnObject", {});
     }).toThrow(
       new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
@@ -960,27 +1005,27 @@ describe('read-only masterKey', () => {
       )
     );
     expect(() => {
-      rest.update(config, readOnly, 'AnObject', {});
+      rest.update(config, readOnly, "AnObject", {});
     }).toThrow();
     expect(() => {
-      rest.del(config, readOnly, 'AnObject', {});
+      rest.del(config, readOnly, "AnObject", {});
     }).toThrow();
   });
 
-  it('properly blocks writes', async () => {
+  it("properly blocks writes", async () => {
     await reconfigureServer({
-      readOnlyMasterKey: 'yolo-read-only',
+      readOnlyMasterKey: "yolo-read-only",
     });
     try {
       await request({
         url: `${Parse.serverURL}/classes/MyYolo`,
-        method: 'POST',
+        method: "POST",
         headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': 'yolo-read-only',
-          'Content-Type': 'application/json',
+          "X-Parse-Application-Id": Parse.applicationId,
+          "X-Parse-Master-Key": "yolo-read-only",
+          "Content-Type": "application/json",
         },
-        body: { foo: 'bar' },
+        body: { foo: "bar" },
       });
       fail();
     } catch (res) {
@@ -992,143 +1037,157 @@ describe('read-only masterKey', () => {
     await reconfigureServer();
   });
 
-  it('should throw when masterKey and readOnlyMasterKey are the same', async () => {
+  it("should throw when masterKey and readOnlyMasterKey are the same", async () => {
     try {
       await reconfigureServer({
-        masterKey: 'yolo',
-        readOnlyMasterKey: 'yolo',
+        masterKey: "yolo",
+        readOnlyMasterKey: "yolo",
       });
       fail();
     } catch (err) {
-      expect(err).toEqual(new Error('masterKey and readOnlyMasterKey should be different'));
+      expect(err).toEqual(
+        new Error("masterKey and readOnlyMasterKey should be different")
+      );
     }
     await reconfigureServer();
   });
 
-  it('should throw when masterKey and maintenanceKey are the same', async () => {
+  it("should throw when masterKey and maintenanceKey are the same", async () => {
     await expectAsync(
       reconfigureServer({
-        masterKey: 'yolo',
-        maintenanceKey: 'yolo',
+        masterKey: "yolo",
+        maintenanceKey: "yolo",
       })
-    ).toBeRejectedWith(new Error('masterKey and maintenanceKey should be different'));
+    ).toBeRejectedWith(
+      new Error("masterKey and maintenanceKey should be different")
+    );
   });
 
-  it('should throw when trying to create RestWrite', () => {
-    const config = Config.get('test');
+  it("should throw when trying to create RestWrite", () => {
+    const config = Config.get("test");
     expect(() => {
       new RestWrite(config, auth.readOnly(config));
     }).toThrow(
       new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        'Cannot perform a write operation when using readOnlyMasterKey'
+        "Cannot perform a write operation when using readOnlyMasterKey"
       )
     );
   });
 
-  it('should throw when trying to create schema', done => {
+  it("should throw when trying to create schema", done => {
     request({
-      method: 'POST',
+      method: "POST",
       url: `${Parse.serverURL}/schemas`,
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-Master-Key': 'read-only-test',
-        'Content-Type': 'application/json',
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-Master-Key": "read-only-test",
+        "Content-Type": "application/json",
       },
       json: {},
     })
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to create a schema.");
+        expect(res.data.error).toBe(
+          "read-only masterKey isn't allowed to create a schema."
+        );
         done();
       });
   });
 
-  it('should throw when trying to create schema with a name', done => {
+  it("should throw when trying to create schema with a name", done => {
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
-      method: 'POST',
+      method: "POST",
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-Master-Key': 'read-only-test',
-        'Content-Type': 'application/json',
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-Master-Key": "read-only-test",
+        "Content-Type": "application/json",
       },
       json: {},
     })
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to create a schema.");
+        expect(res.data.error).toBe(
+          "read-only masterKey isn't allowed to create a schema."
+        );
         done();
       });
   });
 
-  it('should throw when trying to update schema', done => {
+  it("should throw when trying to update schema", done => {
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-Master-Key': 'read-only-test',
-        'Content-Type': 'application/json',
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-Master-Key": "read-only-test",
+        "Content-Type": "application/json",
       },
       json: {},
     })
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to update a schema.");
+        expect(res.data.error).toBe(
+          "read-only masterKey isn't allowed to update a schema."
+        );
         done();
       });
   });
 
-  it('should throw when trying to delete schema', done => {
+  it("should throw when trying to delete schema", done => {
     request({
       url: `${Parse.serverURL}/schemas/MyClass`,
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-Master-Key': 'read-only-test',
-        'Content-Type': 'application/json',
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-Master-Key": "read-only-test",
+        "Content-Type": "application/json",
       },
       json: {},
     })
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to delete a schema.");
+        expect(res.data.error).toBe(
+          "read-only masterKey isn't allowed to delete a schema."
+        );
         done();
       });
   });
 
-  it('should throw when trying to update the global config', done => {
+  it("should throw when trying to update the global config", done => {
     request({
       url: `${Parse.serverURL}/config`,
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-Master-Key': 'read-only-test',
-        'Content-Type': 'application/json',
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-Master-Key": "read-only-test",
+        "Content-Type": "application/json",
       },
       json: {},
     })
       .then(done.fail)
       .catch(res => {
         expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.data.error).toBe("read-only masterKey isn't allowed to update the config.");
+        expect(res.data.error).toBe(
+          "read-only masterKey isn't allowed to update the config."
+        );
         done();
       });
   });
 
-  it('should throw when trying to send push', done => {
+  it("should throw when trying to send push", done => {
     request({
       url: `${Parse.serverURL}/push`,
-      method: 'POST',
+      method: "POST",
       headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-Master-Key': 'read-only-test',
-        'Content-Type': 'application/json',
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-Master-Key": "read-only-test",
+        "Content-Type": "application/json",
       },
       json: {},
     })

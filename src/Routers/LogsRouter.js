@@ -1,12 +1,12 @@
-import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
-import * as middleware from '../middlewares';
+import { Parse } from "parse/node";
+import PromiseRouter from "../PromiseRouter";
+import * as middleware from "../middlewares";
 
 export class LogsRouter extends PromiseRouter {
   mountRoutes() {
     this.route(
-      'GET',
-      '/scriptlog',
+      "GET",
+      "/scriptlog",
       middleware.promiseEnforceMasterKeyAccess,
       this.validateRequest,
       req => {
@@ -17,7 +17,10 @@ export class LogsRouter extends PromiseRouter {
 
   validateRequest(req) {
     if (!req.config || !req.config.loggerController) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Logger adapter is not available');
+      throw new Parse.Error(
+        Parse.Error.PUSH_MISCONFIGURED,
+        "Logger adapter is not available"
+      );
     }
   }
 

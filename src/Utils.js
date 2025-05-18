@@ -4,8 +4,8 @@
  * @description General purpose utilities.
  */
 
-const path = require('path');
-const fs = require('fs').promises;
+const path = require("path");
+const fs = require("fs").promises;
 
 /**
  * The general purpose utilities.
@@ -59,7 +59,7 @@ class Utils {
     }
 
     // Check file for language exists
-    const language = locale.split('-')[0];
+    const language = locale.split("-")[0];
     const languagePath = path.join(basePath, language, file);
     const languageFileExists = await Utils.fileExists(languagePath);
 
@@ -104,12 +104,12 @@ class Utils {
    * @param {Object} result
    * @returns {Object} The flattened object.
    **/
-  static flattenObject(obj, parentKey, delimiter = '.', result = {}) {
+  static flattenObject(obj, parentKey, delimiter = ".", result = {}) {
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const newKey = parentKey ? parentKey + delimiter + key : key;
 
-        if (typeof obj[key] === 'object' && obj[key] !== null) {
+        if (typeof obj[key] === "object" && obj[key] !== null) {
           this.flattenObject(obj[key], newKey, delimiter, result);
         } else {
           result[newKey] = obj[key];
@@ -152,7 +152,12 @@ class Utils {
    * @param {Object} [current={}] The current result entry being composed.
    * @param {Array} [results=[]] The resulting array of permutations.
    */
-  static getObjectKeyPermutations(object, index = 0, current = {}, results = []) {
+  static getObjectKeyPermutations(
+    object,
+    index = 0,
+    current = {},
+    results = []
+  ) {
     const keys = Object.keys(object);
     const key = keys[index];
     const values = object[key];
@@ -209,24 +214,24 @@ class Utils {
    **/
   static relativeTimeToDate(text, now = new Date()) {
     text = text.toLowerCase();
-    let parts = text.split(' ');
+    let parts = text.split(" ");
 
     // Filter out whitespace
-    parts = parts.filter(part => part !== '');
+    parts = parts.filter(part => part !== "");
 
-    const future = parts[0] === 'in';
-    const past = parts[parts.length - 1] === 'ago';
+    const future = parts[0] === "in";
+    const past = parts[parts.length - 1] === "ago";
 
-    if (!future && !past && text !== 'now') {
+    if (!future && !past && text !== "now") {
       return {
-        status: 'error',
+        status: "error",
         info: "Time should either start with 'in' or end with 'ago'",
       };
     }
 
     if (future && past) {
       return {
-        status: 'error',
+        status: "error",
         info: "Time cannot have both 'in' and 'ago'",
       };
     }
@@ -239,10 +244,10 @@ class Utils {
       parts = parts.slice(0, parts.length - 1);
     }
 
-    if (parts.length % 2 !== 0 && text !== 'now') {
+    if (parts.length % 2 !== 0 && text !== "now") {
       return {
-        status: 'error',
-        info: 'Invalid time string. Dangling unit or number.',
+        status: "error",
+        info: "Invalid time string. Dangling unit or number.",
       };
     }
 
@@ -256,56 +261,56 @@ class Utils {
       const val = Number(num);
       if (!Number.isInteger(val)) {
         return {
-          status: 'error',
+          status: "error",
           info: `'${num}' is not an integer.`,
         };
       }
 
       switch (interval) {
-        case 'yr':
-        case 'yrs':
-        case 'year':
-        case 'years':
+        case "yr":
+        case "yrs":
+        case "year":
+        case "years":
           seconds += val * 31536000; // 365 * 24 * 60 * 60
           break;
 
-        case 'wk':
-        case 'wks':
-        case 'week':
-        case 'weeks':
+        case "wk":
+        case "wks":
+        case "week":
+        case "weeks":
           seconds += val * 604800; // 7 * 24 * 60 * 60
           break;
 
-        case 'd':
-        case 'day':
-        case 'days':
+        case "d":
+        case "day":
+        case "days":
           seconds += val * 86400; // 24 * 60 * 60
           break;
 
-        case 'hr':
-        case 'hrs':
-        case 'hour':
-        case 'hours':
+        case "hr":
+        case "hrs":
+        case "hour":
+        case "hours":
           seconds += val * 3600; // 60 * 60
           break;
 
-        case 'min':
-        case 'mins':
-        case 'minute':
-        case 'minutes':
+        case "min":
+        case "mins":
+        case "minute":
+        case "minutes":
           seconds += val * 60;
           break;
 
-        case 'sec':
-        case 'secs':
-        case 'second':
-        case 'seconds':
+        case "sec":
+        case "secs":
+        case "second":
+        case "seconds":
           seconds += val;
           break;
 
         default:
           return {
-            status: 'error',
+            status: "error",
             info: `Invalid interval: '${interval}'`,
           };
       }
@@ -314,20 +319,20 @@ class Utils {
     const milliseconds = seconds * 1000;
     if (future) {
       return {
-        status: 'success',
-        info: 'future',
+        status: "success",
+        info: "future",
         result: new Date(now.valueOf() + milliseconds),
       };
     } else if (past) {
       return {
-        status: 'success',
-        info: 'past',
+        status: "success",
+        info: "past",
         result: new Date(now.valueOf() - milliseconds),
       };
     } else {
       return {
-        status: 'success',
-        info: 'present',
+        status: "success",
+        info: "present",
         result: new Date(now.valueOf()),
       };
     }
@@ -341,7 +346,8 @@ class Utils {
    * @returns {Boolean} True if a match was found, false otherwise.
    */
   static objectContainsKeyValue(obj, key, value) {
-    const isMatch = (a, b) => (typeof a === 'string' && new RegExp(b).test(a)) || a === b;
+    const isMatch = (a, b) =>
+      (typeof a === "string" && new RegExp(b).test(a)) || a === b;
     const isKeyMatch = k => isMatch(k, key);
     const isValueMatch = v => isMatch(v, value);
     for (const [k, v] of Object.entries(obj)) {
@@ -349,10 +355,19 @@ class Utils {
         return true;
       } else if (key === undefined && value !== undefined && isValueMatch(v)) {
         return true;
-      } else if (key !== undefined && value !== undefined && isKeyMatch(k) && isValueMatch(v)) {
+      } else if (
+        key !== undefined &&
+        value !== undefined &&
+        isKeyMatch(k) &&
+        isValueMatch(v)
+      ) {
         return true;
       }
-      if (['[object Object]', '[object Array]'].includes(Object.prototype.toString.call(v))) {
+      if (
+        ["[object Object]", "[object Array]"].includes(
+          Object.prototype.toString.call(v)
+        )
+      ) {
         return Utils.objectContainsKeyValue(v, key, value);
       }
     }
@@ -363,7 +378,11 @@ class Utils {
     if (config?.requestKeywordDenylist) {
       // Scan request data for denied keywords
       for (const keyword of config.requestKeywordDenylist) {
-        const match = Utils.objectContainsKeyValue(data, keyword.key, keyword.value);
+        const match = Utils.objectContainsKeyValue(
+          data,
+          keyword.key,
+          keyword.value
+        );
         if (match) {
           throw `Prohibited keyword in request data: ${JSON.stringify(keyword)}.`;
         }
@@ -391,7 +410,7 @@ class Utils {
    * // Output: { a: 1, e: 4, c: 2, d: 3 }
    */
   static addNestedKeysToRoot(obj, key) {
-    if (obj[key] && typeof obj[key] === 'object') {
+    if (obj[key] && typeof obj[key] === "object") {
       // Add nested keys to root
       Object.assign(obj, { ...obj[key] });
       // Delete original nested key
@@ -408,7 +427,7 @@ class Utils {
   static encodeForUrl(input) {
     return encodeURIComponent(input).replace(
       /[!'.()*]/g,
-      char => '%' + char.charCodeAt(0).toString(16).toUpperCase()
+      char => "%" + char.charCodeAt(0).toString(16).toUpperCase()
     );
   }
 }
