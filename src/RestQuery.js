@@ -53,15 +53,15 @@ async function RestQuery({
   enforceRoleSecurity(method, className, auth);
   const result = runBeforeFind
     ? await triggers.maybeRunQueryTrigger(
-        triggers.Types.beforeFind,
-        className,
-        restWhere,
-        restOptions,
-        config,
-        auth,
-        context,
-        method === RestQuery.Method.get
-      )
+      triggers.Types.beforeFind,
+      className,
+      restWhere,
+      restOptions,
+      config,
+      auth,
+      context,
+      method === RestQuery.Method.get
+    )
     : Promise.resolve({ restWhere, restOptions });
 
   return new _UnsafeRestQuery(
