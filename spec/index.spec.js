@@ -62,6 +62,7 @@ describe('server', () => {
   });
 
   it('fails if database is unreachable', async () => {
+    spyOn(console, 'error').and.callFake(() => {});
     const server = new ParseServer.default({
       ...defaultConfiguration,
       databaseAdapter: new MongoStorageAdapter({
@@ -145,7 +146,7 @@ describe('server', () => {
         },
         publicServerURL: 'http://localhost:8378/1',
       };
-      expectAsync(reconfigureServer(options)).toBeRejected('MockMailAdapterConstructor');
+      await expectAsync(reconfigureServer(options)).toBeRejected('MockMailAdapterConstructor');
     });
   });
 

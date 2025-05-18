@@ -5,7 +5,7 @@ import ClassesRouter from './ClassesRouter';
 import UsersRouter from './UsersRouter';
 
 export class AggregateRouter extends ClassesRouter {
-  handleFind(req) {
+  async handleFind(req) {
     const body = Object.assign(req.body || {}, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
     if (body.distinct) {
@@ -31,8 +31,8 @@ export class AggregateRouter extends ClassesRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    return rest
-      .find(
+    try {
+      const response = await rest.find(
         req.config,
         req.auth,
         this.className(req),
@@ -40,15 +40,16 @@ export class AggregateRouter extends ClassesRouter {
         options,
         req.info.clientSDK,
         req.info.context
-      )
-      .then(response => {
-        for (const result of response.results) {
-          if (typeof result === 'object') {
-            UsersRouter.removeHiddenProperties(result);
-          }
+      );
+      for (const result of response.results) {
+        if (typeof result === 'object') {
+          UsersRouter.removeHiddenProperties(result);
         }
-        return { response };
-      });
+      }
+      return { response };
+    } catch (e) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, e.message);
+    }
   }
 
   /* Builds a pipeline from the body. Originally the body could be passed as a single object,

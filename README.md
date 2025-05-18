@@ -47,7 +47,7 @@ A big *thank you* 🙏 to our [sponsors](#sponsors) and [backers](#backers) who 
       - [PostgreSQL](#postgresql)
     - [Locally](#locally)
     - [Docker Container](#docker-container)
-    - [Saving an Object](#saving-an-object)
+    - [Saving and Querying Objects](#saving-and-querying-objects)
     - [Connect an SDK](#connect-an-sdk)
   - [Running Parse Server elsewhere](#running-parse-server-elsewhere)
     - [Sample Application](#sample-application)
@@ -186,70 +186,9 @@ That's it! You are now running a standalone version of Parse Server on your mach
 
 **Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
 
-### Saving an Object
+### Saving and Querying Objects
 
-Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://parseplatform.org/#sdks). Run the following:
-
-```bash
-$ curl -X POST \
--H "X-Parse-Application-Id: APPLICATION_ID" \
--H "Content-Type: application/json" \
--d '{"score":1337,"playerName":"Sean Plott","cheatMode":false}' \
-http://localhost:1337/parse/classes/GameScore
-```
-
-You should get a response similar to this:
-
-```js
-{
-  "objectId": "2ntvSpRGIK",
-  "createdAt": "2016-03-11T23:51:48.050Z"
-}
-```
-
-You can now retrieve this object directly (make sure to replace `2ntvSpRGIK` with the actual `objectId` you received when the object was created):
-
-```bash
-$ curl -X GET \
-  -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore/2ntvSpRGIK
-```
-```json
-// Response
-{
-  "objectId": "2ntvSpRGIK",
-  "score": 1337,
-  "playerName": "Sean Plott",
-  "cheatMode": false,
-  "updatedAt": "2016-03-11T23:51:48.050Z",
-  "createdAt": "2016-03-11T23:51:48.050Z"
-}
-```
-
-Keeping tracks of individual object ids is not ideal, however. In most cases you will want to run a query over the collection, like so:
-
-```bash
-$ curl -X GET \
-  -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore
-```
-```json
-// The response will provide all the matching objects within the `results` array:
-{
-  "results": [
-    {
-      "objectId": "2ntvSpRGIK",
-      "score": 1337,
-      "playerName": "Sean Plott",
-      "cheatMode": false,
-      "updatedAt": "2016-03-11T23:51:48.050Z",
-      "createdAt": "2016-03-11T23:51:48.050Z"
-    }
-  ]
-}
-```
-
-To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](http://docs.parseplatform.org).
+Now that you're running Parse Server, it is time to save your first object. The easiest way is to use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://parseplatform.org/#sdks). To learn more check out the [documentation](http://docs.parseplatform.org).
 
 ### Connect an SDK
 

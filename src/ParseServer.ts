@@ -45,13 +45,22 @@ import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
 import { DefinedSchemas } from './SchemaMigrations/DefinedSchemas';
 import OptionsDefinitions from './Options/Definitions';
+import { resolvingPromise, Connections } from './TestUtils';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
+// Track connections to destroy them on shutdown
+const connections = new Connections();
+
 // ParseServer works like a constructor of an express app.
 // https://parseplatform.org/parse-server/api/master/ParseServerOptions.html
 class ParseServer {
+  _app: any;
+  config: any;
+  server: any;
+  expressApp: any;
+  liveQueryServer: any;
   /**
    * @constructor
    * @param {ParseServerOptions} options the parse server initialization options
@@ -107,7 +116,7 @@ class ParseServer {
 
     const diff = validateKeyNames(options, optionsBlueprint);
     if (diff.length > 0) {
-      const logger = logging.logger;
+      const logger = (logging as any).logger;
       logger.error(`Invalid key(s) found in Parse Server configuration: ${diff.join(', ')}`);
     }
 
@@ -125,7 +134,7 @@ class ParseServer {
     Config.validateOptions(options);
     const allControllers = controllers.getControllers(options);
 
-    options.state = 'initialized';
+    (options as any).state = 'initialized';
     this.config = Config.put(Object.assign({}, options, allControllers));
     this.config.masterKeyIpsStore = new Map();
     this.config.maintenanceKeyIpsStore = new Map();
@@ -136,7 +145,7 @@ class ParseServer {
    * Starts Parse Server as an express app; this promise resolves when Parse Server is ready to accept requests.
    */
 
-  async start() {
+  async start(): Promise<this> {
     try {
       if (this.config.state === 'ok') {
         return this;
@@ -214,8 +223,39 @@ class ParseServer {
     return this._app;
   }
 
-  handleShutdown() {
+  /**
+   * Stops the parse server, cancels any ongoing requests and closes all connections.
+   *
+   * Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM
+   * if it has client connections that haven't timed out.
+   * (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+   *
+   * @returns {Promise<void>} a promise that resolves when the server is stopped
+   */
+  async handleShutdown() {
+    const serverClosePromise = resolvingPromise();
+    const liveQueryServerClosePromise = resolvingPromise();
     const promises = [];
+    this.server.close((error) => {
+      /* istanbul ignore next */
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error while closing parse server', error);
+      }
+      serverClosePromise.resolve();
+    });
+    if (this.liveQueryServer?.server?.close && this.liveQueryServer.server !== this.server) {
+      this.liveQueryServer.server.close((error) => {
+        /* istanbul ignore next */
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error while closing live query server', error);
+        }
+        liveQueryServerClosePromise.resolve();
+      });
+    } else {
+      liveQueryServerClosePromise.resolve();
+    }
     const { adapter: databaseAdapter } = this.config.databaseController;
     if (databaseAdapter && typeof databaseAdapter.handleShutdown === 'function') {
       promises.push(databaseAdapter.handleShutdown());
@@ -228,17 +268,15 @@ class ParseServer {
     if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
       promises.push(cacheAdapter.handleShutdown());
     }
-    if (this.liveQueryServer?.server?.close) {
-      promises.push(new Promise(resolve => this.liveQueryServer.server.close(resolve)));
-    }
     if (this.liveQueryServer) {
       promises.push(this.liveQueryServer.shutdown());
     }
-    return (promises.length > 0 ? Promise.all(promises) : Promise.resolve()).then(() => {
-      if (this.config.serverCloseComplete) {
-        this.config.serverCloseComplete();
-      }
-    });
+    await Promise.all(promises);
+    connections.destroyAll();
+    await Promise.all([serverClosePromise, liveQueryServerClosePromise]);
+    if (this.config.serverCloseComplete) {
+      this.config.serverCloseComplete();
+    }
   }
 
   /**
@@ -298,7 +336,7 @@ class ParseServer {
     if (!process.env.TESTING) {
       //This causes tests to spew some useless warnings, so disable in test
       /* istanbul ignore next */
-      process.on('uncaughtException', err => {
+      process.on('uncaughtException', (err: any) => {
         if (err.code === 'EADDRINUSE') {
           // user-friendly message for this common error
           process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
@@ -419,6 +457,7 @@ class ParseServer {
       });
     });
     this.server = server;
+    connections.track(server);
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
       this.liveQueryServer = await ParseServer.createLiveQueryServer(
@@ -426,6 +465,9 @@ class ParseServer {
         options.liveQueryServerOptions,
         options
       );
+      if (this.liveQueryServer.server !== this.server) {
+        connections.track(this.liveQueryServer.server);
+      }
     }
     if (options.trustProxy) {
       app.set('trust proxy', options.trustProxy);
@@ -460,7 +502,7 @@ class ParseServer {
     httpServer,
     config: LiveQueryServerOptions,
     options: ParseServerOptions
-  ) {
+  ): Promise<ParseLiveQueryServer> {
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
@@ -600,32 +642,8 @@ function injectDefaults(options: ParseServerOptions) {
 // Those can't be tested as it requires a subprocess
 /* istanbul ignore next */
 function configureListeners(parseServer) {
-  const server = parseServer.server;
-  const sockets = {};
-  /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
-    This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
-  server.on('connection', socket => {
-    const socketId = socket.remoteAddress + ':' + socket.remotePort;
-    sockets[socketId] = socket;
-    socket.on('close', () => {
-      delete sockets[socketId];
-    });
-  });
-
-  const destroyAliveConnections = function () {
-    for (const socketId in sockets) {
-      try {
-        sockets[socketId].destroy();
-      } catch (e) {
-        /* */
-      }
-    }
-  };
-
   const handleShutdown = function () {
     process.stdout.write('Termination signal received. Shutting down.');
-    destroyAliveConnections();
-    server.close();
     parseServer.handleShutdown();
   };
   process.on('SIGTERM', handleShutdown);

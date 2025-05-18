@@ -147,6 +147,8 @@ jobs:
       - run: npm ci
       - name: Build types
         run: npm run build:types
+      - name: Test Types
+        run: npm run test:types
   check-mongo:
     strategy:
       matrix:

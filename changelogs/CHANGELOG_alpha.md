@@ -1,3 +1,52 @@
+## [8.2.1-alpha.2](https://github.com/parse-community/parse-server/compare/8.2.1-alpha.1...8.2.1-alpha.2) (2025-05-14)
+
+
+### Performance Improvements
+
+* Remove saving Parse Cloud Job request parameters in internal collection `_JobStatus` ([#8343](https://github.com/parse-community/parse-server/issues/8343)) ([e98733c](https://github.com/parse-community/parse-server/commit/e98733cbac9451521a3acc388d2f9d29eb4610e0))
+
+## [8.2.1-alpha.1](https://github.com/parse-community/parse-server/compare/8.2.0...8.2.1-alpha.1) (2025-05-03)
+
+
+### Bug Fixes
+
+* `Parse.Query.containedIn` and `matchesQuery` do not work with nested objects ([#9738](https://github.com/parse-community/parse-server/issues/9738)) ([0db3a6f](https://github.com/parse-community/parse-server/commit/0db3a6ff27a129427770e314a792cc586e4255b5))
+
+# [8.2.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.1.1-alpha.1...8.2.0-alpha.1) (2025-04-15)
+
+
+### Features
+
+* Add TypeScript definitions ([#9693](https://github.com/parse-community/parse-server/issues/9693)) ([e86718f](https://github.com/parse-community/parse-server/commit/e86718fc59c7c8e6f3c6abd0feb7d1a68ca76c23))
+
+## [8.1.1-alpha.1](https://github.com/parse-community/parse-server/compare/8.1.0...8.1.1-alpha.1) (2025-04-07)
+
+
+### Performance Improvements
+
+* Add details to error message in `Parse.Query.aggregate` ([#9689](https://github.com/parse-community/parse-server/issues/9689)) ([9de6999](https://github.com/parse-community/parse-server/commit/9de6999e257d839b68bbca282447777edfdb1ddf))
+
+# [8.1.0-alpha.4](https://github.com/parse-community/parse-server/compare/8.1.0-alpha.3...8.1.0-alpha.4) (2025-04-01)
+
+
+### Features
+
+* Upgrade Parse JS SDK from 6.0.0 to 6.1.0 ([#9686](https://github.com/parse-community/parse-server/issues/9686)) ([f49c371](https://github.com/parse-community/parse-server/commit/f49c371c1373d41e68b091e65f33a71ff6fc6dd0))
+
+# [8.1.0-alpha.3](https://github.com/parse-community/parse-server/compare/8.1.0-alpha.2...8.1.0-alpha.3) (2025-03-27)
+
+
+### Bug Fixes
+
+* Parse Server doesn't shutdown gracefully ([#9634](https://github.com/parse-community/parse-server/issues/9634)) ([aed918d](https://github.com/parse-community/parse-server/commit/aed918d3109e739f7231d481b5f48c68fc01cf04))
+
+# [8.1.0-alpha.2](https://github.com/parse-community/parse-server/compare/8.1.0-alpha.1...8.1.0-alpha.2) (2025-03-27)
+
+
+### Features
+
+* Add Cloud Code triggers `Parse.Cloud.beforeFind(Parse.File)`and `Parse.Cloud.afterFind(Parse.File)` ([#8700](https://github.com/parse-community/parse-server/issues/8700)) ([b2beaa8](https://github.com/parse-community/parse-server/commit/b2beaa86ff543a7aa4ad274c7a23bc4aa302c3fa))
+
 # [8.1.0-alpha.1](https://github.com/parse-community/parse-server/compare/8.0.2...8.1.0-alpha.1) (2025-03-24)
 
 

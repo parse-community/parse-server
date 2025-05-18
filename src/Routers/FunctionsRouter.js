@@ -76,7 +76,7 @@ export class FunctionsRouter extends PromiseRouter {
       message: jobHandler.setMessage.bind(jobHandler),
     };
 
-    return jobHandler.setRunning(jobName, params).then(jobStatus => {
+    return jobHandler.setRunning(jobName).then(jobStatus => {
       request.jobId = jobStatus.objectId;
       // run the function async
       process.nextTick(() => {

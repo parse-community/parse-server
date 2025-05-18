@@ -1,0 +1,40 @@
+import { Auth } from '../Auth';
+declare class ParseLiveQueryServer {
+    server: any;
+    config: any;
+    clients: Map<string, any>;
+    subscriptions: Map<string, any>;
+    parseWebSocketServer: any;
+    keyPairs: any;
+    subscriber: any;
+    authCache: any;
+    cacheController: any;
+    constructor(server: any, config?: any, parseServerConfig?: any);
+    connect(): Promise<void>;
+    shutdown(): Promise<void>;
+    _createSubscribers(): void;
+    _inflateParseObject(message: any): void;
+    _onAfterDelete(message: any): Promise<void>;
+    _onAfterSave(message: any): Promise<void>;
+    _onConnect(parseWebsocket: any): void;
+    _matchesSubscription(parseObject: any, subscription: any): boolean;
+    _clearCachedRoles(userId: string): Promise<void>;
+    getAuthForSessionToken(sessionToken?: string): Promise<{
+        auth?: Auth;
+        userId?: string;
+    }>;
+    _matchesCLP(classLevelPermissions?: any, object?: any, client?: any, requestId?: number, op?: string): Promise<any>;
+    _filterSensitiveData(classLevelPermissions?: any, res?: any, client?: any, requestId?: number, op?: string, query?: any): Promise<void>;
+    _getCLPOperation(query: any): "get" | "find";
+    _verifyACL(acl: any, token: string): Promise<boolean>;
+    getAuthFromClient(client: any, requestId: number, sessionToken?: string): Promise<Auth>;
+    _checkWatchFields(client: any, requestId: any, message: any): any;
+    _matchesACL(acl: any, client: any, requestId: number): Promise<boolean>;
+    _handleConnect(parseWebsocket: any, request: any): Promise<any>;
+    _hasMasterKey(request: any, validKeyPairs: any): boolean;
+    _validateKeys(request: any, validKeyPairs: any): boolean;
+    _handleSubscribe(parseWebsocket: any, request: any): Promise<any>;
+    _handleUpdateSubscription(parseWebsocket: any, request: any): any;
+    _handleUnsubscribe(parseWebsocket: any, request: any, notifyClient?: boolean): any;
+}
+export { ParseLiveQueryServer };

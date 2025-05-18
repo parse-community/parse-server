@@ -3,11 +3,8 @@
 const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
-let databaseAdapter;
 
 const fullTextHelper = async () => {
-  const config = Config.get('test');
-  databaseAdapter = config.database.adapter;
   const subjects = [
     'coffee',
     'Coffee Shopping',
@@ -18,12 +15,6 @@ const fullTextHelper = async () => {
     'coffee and cream',
     'Cafe con Leche',
   ];
-  await reconfigureServer({
-    appId: 'test',
-    restAPIKey: 'test',
-    publicServerURL: 'http://localhost:8378/1',
-    databaseAdapter,
-  });
   await Parse.Object.saveAll(
     subjects.map(subject => new Parse.Object('TestObject').set({ subject, comment: subject }))
   );
@@ -76,88 +67,70 @@ describe('Parse.Query Full Text Search testing', () => {
     expect(resp.length).toBe(2);
   });
 
-  it_id('7d3da216-9582-40ee-a2fe-8316feaf5c0c')(it)(
-    'fullTextSearch: $diacriticSensitive',
-    async () => {
-      await fullTextHelper();
-      const query = new Parse.Query('TestObject');
-      query.fullText('subject', 'CAFÉ', { diacriticSensitive: true });
-      const resp = await query.find();
-      expect(resp.length).toBe(1);
-    }
-  );
+  it_id('7d3da216-9582-40ee-a2fe-8316feaf5c0c')(it)('fullTextSearch: $diacriticSensitive', async () => {
+    await fullTextHelper();
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'CAFÉ', { diacriticSensitive: true });
+    const resp = await query.find();
+    expect(resp.length).toBe(1);
+  });
 
-  it_id('dade10c8-2b9c-4f43-bb3f-a13bbd82ac22')(it)(
-    'fullTextSearch: $search, invalid input',
-    async () => {
-      await fullTextHelper();
-      const invalidQuery = async () => {
-        const where = {
-          subject: {
-            $text: {
-              $search: true,
-            },
+  it_id('dade10c8-2b9c-4f43-bb3f-a13bbd82ac22')(it)('fullTextSearch: $search, invalid input', async () => {
+    await fullTextHelper();
+    const invalidQuery = async () => {
+      const where = {
+        subject: {
+          $text: {
+            $search: true,
           },
-        };
-        try {
-          await request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/classes/TestObject',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          });
-        } catch (e) {
-          throw new Parse.Error(e.data.code, e.data.error);
-        }
+        },
       };
-      await expectAsync(invalidQuery()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $search, should be object')
-      );
-    }
-  );
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch (e) {
+        throw new Parse.Error(e.data.code, e.data.error);
+      }
+    };
+    await expectAsync(invalidQuery()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $search, should be object')
+    );
+  });
 
-  it_id('ff7c6b1c-4712-4847-bb76-f4e1f641f7b5')(it)(
-    'fullTextSearch: $language, invalid input',
-    async () => {
-      await fullTextHelper();
-      const query = new Parse.Query('TestObject');
-      query.fullText('subject', 'leche', { language: true });
-      await expectAsync(query.find()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $language, should be string')
-      );
-    }
-  );
+  it_id('ff7c6b1c-4712-4847-bb76-f4e1f641f7b5')(it)('fullTextSearch: $language, invalid input', async () => {
+    await fullTextHelper();
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'leche', { language: true });
+    await expectAsync(query.find()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $language, should be string')
+    );
+  });
 
-  it_id('de262dbc-ec75-4ec6-9217-fbb90146c272')(it)(
-    'fullTextSearch: $caseSensitive, invalid input',
-    async () => {
-      await fullTextHelper();
-      const query = new Parse.Query('TestObject');
-      query.fullText('subject', 'leche', { caseSensitive: 'string' });
-      await expectAsync(query.find()).toBeRejectedWith(
-        new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $caseSensitive, should be boolean')
-      );
-    }
-  );
+  it_id('de262dbc-ec75-4ec6-9217-fbb90146c272')(it)('fullTextSearch: $caseSensitive, invalid input', async () => {
+    await fullTextHelper();
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'leche', { caseSensitive: 'string' });
+    await expectAsync(query.find()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $caseSensitive, should be boolean')
+    );
+  });
 
-  it_id('b7b7b3a9-8d6c-4f98-a0ff-0113593d06d4')(it)(
-    'fullTextSearch: $diacriticSensitive, invalid input',
-    async () => {
-      await fullTextHelper();
-      const query = new Parse.Query('TestObject');
-      query.fullText('subject', 'leche', { diacriticSensitive: 'string' });
-      await expectAsync(query.find()).toBeRejectedWith(
-        new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $text: $diacriticSensitive, should be boolean'
-        )
-      );
-    }
-  );
+  it_id('b7b7b3a9-8d6c-4f98-a0ff-0113593d06d4')(it)('fullTextSearch: $diacriticSensitive, invalid input', async () => {
+    await fullTextHelper();
+    const query = new Parse.Query('TestObject');
+    query.fullText('subject', 'leche', { diacriticSensitive: 'string' });
+    await expectAsync(query.find()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.INVALID_JSON, 'bad $text: $diacriticSensitive, should be boolean')
+    );
+  });
 });
 
 describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () => {
@@ -207,7 +180,7 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
           url: 'http://localhost:8378/1/schemas/TestObject',
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'X-Parse-Master-Key': 'test',
             'Content-Type': 'application/json',
           },
@@ -238,7 +211,7 @@ describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () =
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'Content-Type': 'application/json',
           },
         });
@@ -306,7 +279,7 @@ describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', 
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'Content-Type': 'application/json',
           },
         });
@@ -340,7 +313,7 @@ describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', 
           body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-REST-API-Key': 'rest',
             'Content-Type': 'application/json',
           },
         });

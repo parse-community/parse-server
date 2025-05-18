@@ -33,9 +33,7 @@ describe('miscellaneous', () => {
     expect(results.length).toEqual(1);
     expect(results[0]['foo']).toEqual('bar');
   });
-});
 
-describe('miscellaneous', function () {
   it('create a GameScore object', function (done) {
     const obj = new Parse.Object('GameScore');
     obj.set('score', 1337);

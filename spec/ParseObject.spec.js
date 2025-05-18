@@ -302,9 +302,7 @@ describe('Parse.Object testing', () => {
 
   it('invalid key name', function (done) {
     const item = new Parse.Object('Item');
-    expect(() => item.set({ 'foo^bar': 'baz' })).toThrow(
-      new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: "foo^bar"')
-    );
+    expect(() => item.set({ 'foo^bar': 'baz' })).toThrow(new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Invalid key name: foo^bar'));
     item.save({ 'foo^bar': 'baz' }).then(fail, () => done());
   });
 
@@ -572,10 +570,7 @@ describe('Parse.Object testing', () => {
 
   it_only_db('mongo')('can increment array nested fields', async () => {
     const obj = new TestObject();
-    obj.set('items', [
-      { value: 'a', count: 5 },
-      { value: 'b', count: 1 },
-    ]);
+    obj.set('items', [ { value: 'a', count: 5 }, { value: 'b', count: 1 } ]);
     await obj.save();
     obj.increment('items.0.count', 15);
     obj.increment('items.1.count', 4);
@@ -2127,15 +2122,15 @@ describe('Parse.Object testing', () => {
 
   it('should not change the json field to array in afterSave', async () => {
     Parse.Cloud.beforeSave('failingJSONTestCase', req => {
-      expect(req.object.get('jsonField')).toEqual({ 123: 'test' });
+      expect(req.object.get('jsonField')).toEqual({ '123': 'test' });
     });
 
     Parse.Cloud.afterSave('failingJSONTestCase', req => {
-      expect(req.object.get('jsonField')).toEqual({ 123: 'test' });
+      expect(req.object.get('jsonField')).toEqual({ '123': 'test' });
     });
 
     const object = new Parse.Object('failingJSONTestCase');
-    object.set('jsonField', { 123: 'test' });
+    object.set('jsonField', { '123': 'test' });
     await object.save();
   });
 
@@ -2146,15 +2141,15 @@ describe('Parse.Object testing', () => {
       { field: 'boolean', value: true },
       { field: 'array', value: [0, 1, 2] },
       { field: 'array', value: [1, 2, 3] },
-      { field: 'array', value: [{ 0: 'a' }, 2, 3] },
+      { field: 'array', value: [{ '0': 'a' }, 2, 3] },
       { field: 'object', value: { key: 'value' } },
       { field: 'object', value: { key1: 'value1', key2: 'value2' } },
       { field: 'object', value: { key1: 1, key2: 2 } },
       { field: 'object', value: { '1x1': 1 } },
-      { field: 'object', value: { '1x1': 1, 2: 2 } },
-      { field: 'object', value: { 0: 0 } },
-      { field: 'object', value: { 1: 1 } },
-      { field: 'object', value: { 0: { 0: 'a', 1: 'b' } } },
+      { field: 'object', value: { '1x1': 1, '2': 2 } },
+      { field: 'object', value: { '0': 0 } },
+      { field: 'object', value: { '1': 1 } },
+      { field: 'object', value: { '0': { '0': 'a', '1': 'b' } } },
       { field: 'date', value: new Date() },
       {
         field: 'file',
